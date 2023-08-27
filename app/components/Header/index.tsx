@@ -1,3 +1,3 @@
-import Header from './Layout'
+import Header from './layout'
 
 export {Header}
