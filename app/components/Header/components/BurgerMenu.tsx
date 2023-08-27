@@ -1,19 +1,20 @@
 "use client";
-import React, { useState } from "react";
-import { useMediaQuery } from "@react-hook/media-query";
+import React from "react";
 import { AiOutlineMenu, AiOutlineClose } from "react-icons/ai";
 import { IconContext } from "react-icons";
+import { useToggleMenuState } from "@/app/store/store";
 
 export default function BurgerMenu() {
-    const isLargeScreen = useMediaQuery("(min-width: 768px)");
-	const [isOpen, setIsOpen] = useState(false);
-	const handleOpenMenu = () => {
-		setIsOpen(!isOpen);
-	};
+	const {menu, toggleMenu} = useToggleMenuState()
+
 	return (
-		<div onClick={handleOpenMenu}>
-			<IconContext.Provider value={{ size: isLargeScreen ? "40px" : "30px", color: "#B3B3B3" }}>
-				{!isOpen ? <AiOutlineMenu /> : <AiOutlineClose />}
+		<div onClick={toggleMenu}>
+			<IconContext.Provider
+				value={{
+					size: "30px",
+					color: "#B3B3B3",
+				}}>
+				{!menu ? <AiOutlineMenu /> : <AiOutlineClose />}
 			</IconContext.Provider>
 		</div>
 	);

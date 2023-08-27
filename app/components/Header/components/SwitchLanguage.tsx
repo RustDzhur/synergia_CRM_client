@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import Image from "next/image";
+import { v4 as uuidv4 } from 'uuid';
 import { RiArrowDownSLine, RiArrowUpSLine } from "react-icons/ri";
 import { IconContext } from "react-icons";
 import ukraine from "@/app/assets/svgs/ukraine-flag-icon.svg";
@@ -37,7 +38,7 @@ export default function SwitchLanguage() {
 						{avalableFlags.map((flag: string) => (
 							<li
 								onClick={() => handleFlagChange(flag)}
-								key={flag}
+								key={uuidv4()}
 								className={`${isOpenDropDown ? "mt-6" : ""} cursor-pointer`}>
 								<Image src={flag} alt={flag} />
 							</li>

@@ -34,7 +34,7 @@ export default function SwitchCompany() {
 					<ul className="absolute right-0 top-full w-full bg-headerBackground border-b-switchCompany rounded-b-8">
 						<li
 							onClick={() => changeCompanyName("Oliver Miller")}
-							className={`border-r-switchCompany border-l-switchCompany border-t-switchCompany py-15 px-20 cursor-pointer ${
+							className={` border-t-switchCompany py-15 px-20 cursor-pointer ${
 								companyName === "Oliver Miller" ? "bg-gray" : ""
 							}`}>
 							<p className="font-medium text-16 leading-16 text-black">
@@ -43,7 +43,7 @@ export default function SwitchCompany() {
 						</li>
 						<li
 							onClick={() => changeCompanyName("Volkswagen")}
-							className={`border-r-switchCompany border-l-switchCompany border-t-switchCompany py-15 px-20 cursor-pointer ${
+							className={` border-t-switchCompany py-15 px-20 cursor-pointer ${
 								companyName === "Volkswagen" ? "bg-gray" : ""
 							}`}>
 							<p className="font-medium text-16 leading-16 text-black">
@@ -52,7 +52,7 @@ export default function SwitchCompany() {
 						</li>
 						<li
 							onClick={() => changeCompanyName("BMW")}
-							className={`border-r-switchCompany border-l-switchCompany border-t-switchCompany py-15 px-20 cursor-pointer ${
+							className={` border-t-switchCompany py-15 px-20 cursor-pointer ${
 								companyName === "BMW" ? "bg-gray" : ""
 							}`}>
 							<p className="font-medium text-16 leading-16 text-black">BMW</p>
