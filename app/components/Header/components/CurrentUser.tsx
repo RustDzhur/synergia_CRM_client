@@ -12,7 +12,7 @@ export default function CurrentUser() {
 	};
 	return (
 		<div onClick={handleDropDown} className="flex items-center relative">
-			<div className=" w-50 mr-8">
+			<div className=" w-50 mr-8 hidden mp:block">
 				<Image src={user} alt="user" />
 			</div>
 			<div className="mr-8">

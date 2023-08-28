@@ -10,6 +10,7 @@ const config: Config = {
 		screens: {
 			sm: "375px",
 			md: "768px",
+      mp: '900px',
 			lg: "1440px",
 		},
 		colors: {
@@ -19,7 +20,8 @@ const config: Config = {
 			black: "#4D4D4D",
 			gray: "#EBEEF8",
 			iconColor: "#B3B3B3",
-      white: "#ffffff"
+      white: "#ffffff",
+      modalBG: 'rgba(217, 217, 217, 0.80)'
 		},
 		spacing: {
 			px: "1px",
@@ -28,6 +30,7 @@ const config: Config = {
 			8: "8px",
 			12: "12px",
 			13: "13px",
+      14: '14px',
 			16: "16px",
 			15: "15px",
 			18: "18px",
@@ -41,6 +44,7 @@ const config: Config = {
 			60: "60px",
 			83: "83px",
       270: '270px',
+      300: '300px',
 			350: "350px",
 		},
 		opacity: {

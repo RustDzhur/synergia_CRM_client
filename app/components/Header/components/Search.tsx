@@ -20,7 +20,7 @@ export default function Search() {
 				<input
 					{...register("example")}
                     placeholder="Search"
-					className=" py-15 px-20 pr-40 focus:outline-none font-normal text-18 w-350"
+					className=" py-15 px-20 pr-40 focus:outline-none font-normal lg:text-18 md:text-16 lg:w-350 md:w-300"
 					style={{ background: "#FBFBFB", color: '#B3B3B3', borderRadius: "8px" }}
 				/>
 				<div className="absolute inset-y-0 right-15 flex items-center pointer-events-none">
