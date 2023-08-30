@@ -3,8 +3,9 @@ import { useToggleMenuState } from "@/app/store/store";
 import React, { useEffect, useRef } from "react";
 import ModalMobNav from "./ModalMobNav";
 import MobileMenu from "../../Header/components/MobileMenu";
-import SwitchLanguage from "../../Header/components/SwitchLanguage";
+import SwitchLanguage from "@/app/components/Modal/components/SwitchLanguage";
 import SwitchCompany from "../../Header/components/SwitchCompany";
+import CurrentUser from "../../Header/components/CurrentUser";
 
 export default function ModalMenu() {
 	const { mobileMenu, menu, toggleMobileMenu, toggleMenu } =
@@ -40,19 +41,21 @@ export default function ModalMenu() {
 					ref={modalRef}
 					onClick={handleCloseModal}
 					className="fixed inset-0 flex items-start justify-end z-50 bg-modalBG">
-					<div className="flex bg-white md:p-20 md:pt-50 md:pb-50 h-[100vh] sm:w-[100vw] md:w-auto">
-						<div className="flex flex-col justify-start items-start">
-							<div className="md:hidden">
+					<div className="flex sm:bg-secondaryColor md:bg-white md:p-20 md:pt-50 md:pb-50 h-[100vh] sm:w-[100vw] md:w-auto overflow-y-auto">
+						<div >
+							<div className="md:hidden border-b-switchCompany ">
 								<ModalMobNav />
 							</div>
-							{/* <div className="flex justify-between">
-								<p>Language</p>
-								<SwitchLanguage />
-							</div> */}
 							<div>
+								<SwitchLanguage />
+							</div>
+							<div className="flex justify-center sm:mb-30">
 								<SwitchCompany />
 							</div>
-							<div className="absolute top-8 right-8">
+							<div className="md:hidden  sm:flex sm:justify-center ">
+								<CurrentUser />
+							</div>
+							<div className="md:absolute md:top-8 md:right-8">
 								<MobileMenu />
 							</div>
 						</div>

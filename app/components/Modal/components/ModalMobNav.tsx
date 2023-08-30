@@ -40,7 +40,7 @@ export default function ModalMobNav() {
 		<div
 			className={`${
 				!mobileMenu && "flex-col items-left inline-block"
-			}  bg-secondaryColor  h-[100vh] sm:w-[100vw] md:w-auto inline-block`}>
+			}  bg-secondaryColor  sm:w-[100vw] md:w-auto inline-block`}>
 			<IconContext.Provider value={{ color: "#B3B3B3" }}>
 				<ul>
 					{menuItems.map((item, index) => (

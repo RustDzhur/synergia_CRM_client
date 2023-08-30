@@ -11,12 +11,12 @@ export default function CurrentUser() {
 		setIsDropDown(!isDropDown);
 	};
 	return (
-		<div onClick={handleDropDown} className="flex items-center relative">
-			<div className=" w-50 mr-8 hidden mp:block">
+		<div onClick={handleDropDown} className="flex items-center relative cursor-pointer">
+			<div className=" w-50 mr-8 sm:block md:hidden mp:block">
 				<Image src={user} alt="user" />
 			</div>
 			<div className="mr-8">
-				<p className="text-18 font-medium">Rustem Dzhuraiev</p>
+				<p className="sm:text-14 md-text-16 lg:text-18 font-medium">Rustem Dzhuraiev</p>
 			</div>
 			<IconContext.Provider value={{ size: "18px" }}>
 				{isDropDown ? <RiArrowDownSLine /> : <RiArrowUpSLine />}

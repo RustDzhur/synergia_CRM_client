@@ -41,7 +41,7 @@ export default function Layout() {
 		<div
 			className={`${
 				!menu && "flex-col items-left inline-block"
-			}  bg-secondaryColor  h-[100vh] inline-block`}>
+			}  bg-secondaryColor h-[100vh]  inline-block`}>
 			<IconContext.Provider value={{ color: "#B3B3B3" }}>
 				<ul className="">
 					{menuItems.map((item, index) => (
