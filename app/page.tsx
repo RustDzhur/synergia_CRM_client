@@ -1,4 +1,5 @@
 import { Header } from "./components/Header";
+import { ModalNavigation } from "./components/Modal";
 import { Sidebar } from "./components/Sidebar";
 
 export default function Home() {
@@ -9,12 +10,11 @@ export default function Home() {
 					<Header />
 				</div>
 			</header>
-      <aside className="lg:max-w-screen-lg m-auto">
-        <Sidebar/>
-      </aside>
-			<main>
-
-      </main>
+			<aside className="lg:max-w-screen-lg m-auto">
+				<Sidebar />
+        <ModalNavigation/>
+			</aside>
+			<main></main>
 		</>
 	);
 }

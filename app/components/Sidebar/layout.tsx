@@ -1,14 +1,12 @@
 import React from "react";
 import Sidebar from "./components/layout";
-import ModalMenu from "./components/ModalMenu";
+import ModalMenu from "../Modal/components/ModalMenu";
+import ModalMobNav from "../Modal/components/ModalMobNav";
 
 export default function layout() {
 	return (
-		<div>
-			<div className="hidden md:block">
-				<Sidebar />
-			</div>
-			<ModalMenu />
+		<div className="hidden md:block">
+			<Sidebar />
 		</div>
 	);
 }
