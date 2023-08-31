@@ -2,7 +2,7 @@
 import React from "react";
 import { AiOutlineMore } from "react-icons/ai";
 import { IconContext } from "react-icons";
-import { useToggleMenuState } from "@/app/store/store";
+import { useToggleMenuState } from "@/app/store/useToggleMenuState";
 
 export default function MobileMenu() {
 	const { mobileMenu, toggleMobileMenu } = useToggleMenuState();

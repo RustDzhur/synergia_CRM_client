@@ -1,15 +1,20 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { BsFillBellFill } from "react-icons/bs";
 import { IconContext } from "react-icons";
+import { useNotificationStore } from "@/app/store/useNotificationStore";
 
 export default function Notification() {
-	const [hasNotifications, setHasNotifications] = useState(false);
-	const [numberNotification, setNumberNotification] = useState(10);
+	const {
+		hasNotifications,
+		numberNotification,
+		toggleNotifications,
+		fetchNotifications,
+	} = useNotificationStore();
 
-	const toggleNotifications = () => {
-		setHasNotifications(!hasNotifications);
-	};
+	useEffect(() => {
+		fetchNotifications();
+	}, [fetchNotifications]);
 
 	const color = hasNotifications ? "#B3B3B3" : "#ffffff";
 
@@ -25,11 +30,13 @@ export default function Notification() {
 					}}
 				/>
 			</IconContext.Provider>
-			<div className="flex items-center justify-center  w-16 h-16 rounded-8 bg-primaryColor absolute top-[-10px] right-[-8px]">
-				<p className="text-12 text-black font-medium">
-					{numberNotification >= 99 ? 99 : numberNotification}
-				</p>
-			</div>
+			{numberNotification > 0 && (
+				<div className="flex items-center justify-center w-16 h-16 rounded-8 bg-primaryColor absolute top-[-10px] right-[-8px]">
+					<p className="text-12 text-black font-medium">
+						{numberNotification >= 99 ? 99 : numberNotification}
+					</p>
+				</div>
+			)}
 		</div>
 	);
 }

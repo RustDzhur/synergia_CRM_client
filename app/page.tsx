@@ -1,3 +1,4 @@
+import { Toaster } from "react-hot-toast";
 import { Header } from "./components/Header";
 import { ModalNavigation } from "./components/Modal";
 import { Sidebar } from "./components/Sidebar";
@@ -15,6 +16,7 @@ export default function Home() {
         <ModalNavigation/>
 			</aside>
 			<main></main>
+      <Toaster/>
 		</>
 	);
 }

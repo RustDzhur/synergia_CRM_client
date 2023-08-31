@@ -2,7 +2,7 @@
 import React from "react";
 import { RiMenuFoldFill, RiMenuUnfoldFill } from "react-icons/ri";
 import { IconContext } from "react-icons";
-import { useToggleMenuState } from "@/app/store/store";
+import { useToggleMenuState } from "@/app/store/useToggleMenuState";
 
 export default function BurgerMenu() {
 	const { menu, toggleMenu } = useToggleMenuState();

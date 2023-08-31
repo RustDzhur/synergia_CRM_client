@@ -3,25 +3,40 @@ import React from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { AiOutlineSearch } from "react-icons/ai";
 import { IconContext } from "react-icons";
+import { useSearchStore } from "@/app/store/useSearchStore";
+
+interface Inputs {
+	search: string;
+}
 
 export default function Search() {
+	const { query, setQuery, searchData, fetchSearchData } = useSearchStore();
+
 	const {
 		register,
 		handleSubmit,
-		watch,
 		formState: { errors },
 	} = useForm<Inputs>();
-	const onSubmit: SubmitHandler<Inputs> = (data) => console.log(data);
+
+	const onSubmit: SubmitHandler<Inputs> = (data) => {
+		setQuery(data.search);
+		fetchSearchData();
+	};
+
 	return (
 		<form
 			onSubmit={handleSubmit(onSubmit)}
 			className="flex items-center rounded-8 shadow-custom">
 			<div className="relative">
 				<input
-					{...register("example")}
-                    placeholder="Search"
-					className=" py-15 px-20 pr-40 focus:outline-none font-normal lg:text-18 md:text-16 lg:w-350 md:w-300"
-					style={{ background: "#FBFBFB", color: '#B3B3B3', borderRadius: "8px" }}
+					{...register("search")}
+					placeholder="Search"
+					className="py-15 px-20 pr-40 focus:outline-none font-normal lg:text-18 md:text-16 lg:w-350 md:w-300"
+					style={{
+						background: "#FBFBFB",
+						color: "#B3B3B3",
+						borderRadius: "8px",
+					}}
 				/>
 				<div className="absolute inset-y-0 right-15 flex items-center pointer-events-none">
 					<IconContext.Provider value={{ color: "#B3B3B3", size: "20px" }}>
@@ -29,6 +44,10 @@ export default function Search() {
 					</IconContext.Provider>
 				</div>
 			</div>
+			{searchData.map((result) => (
+				//Here I should make styles
+				<div key={result}>{result}</div>
+			))}
 		</form>
 	);
 }
