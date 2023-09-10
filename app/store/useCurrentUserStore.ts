@@ -21,7 +21,7 @@ export const useCurrentUserStore = create<CurrentUserStore>((set) => ({
   toggleDropDown: () => set((state) => ({ isDropDown: !state.isDropDown })),
   fetchUser: async () => {
     try {
-      const response = await fetch("your_server_endpoint"); // Replace with the actual server endpoint
+      const response = await fetch("https://synergia-crm-server.onrender.com/api/currentUser"); // Replace with the actual server endpoint
       const userData: User = await response.json();
       set({ user: userData, isLoading: false });
     } catch (error) {
