@@ -10,7 +10,7 @@ const config: Config = {
 		screens: {
 			sm: "375px",
 			md: "768px",
-      mp: '900px',
+			mp: "900px",
 			lg: "1440px",
 		},
 		colors: {
@@ -20,17 +20,20 @@ const config: Config = {
 			black: "#4D4D4D",
 			gray: "#EBEEF8",
 			iconColor: "#B3B3B3",
-      white: "#ffffff",
-      modalBG: 'rgba(217, 217, 217, 0.80)'
+			white: "#ffffff",
+			modalBG: "rgba(217, 217, 217, 0.80)",
+			menu: "#cccccc",
+			activeMenu: "#313D45",
 		},
 		spacing: {
 			px: "1px",
 			0: "0",
 			6: "6px",
 			8: "8px",
+			10: "10px",
 			12: "12px",
 			13: "13px",
-      14: '14px',
+			14: "14px",
 			16: "16px",
 			15: "15px",
 			18: "18px",
@@ -43,9 +46,11 @@ const config: Config = {
 			52: "52px",
 			60: "60px",
 			83: "83px",
-      270: '270px',
-      300: '300px',
+			100: "100px",
+			270: "270px",
+			300: "300px",
 			350: "350px",
+			800: "800px",
 		},
 		opacity: {
 			"0": "0",
@@ -76,15 +81,33 @@ const config: Config = {
 		},
 		borderColor: {
 			switchCompany: "#E2F1F5",
+			activeLink: "#313D45",
 		},
 		boxShadow: {
 			custom: "0px 1px 2px 0px rgba(0, 0, 0, 0.08)",
+			circleShadow: "0px 4px 8px 0px rgba(49, 61, 69, 0.24)",
+		},
+		backgroundImage: {
+			"gradient-background":
+				"linear-gradient(49deg, #ff008a 15.09%, #768fe5 59.33%, rgba(255, 0, 138, 0) 87.2%)",
 		},
 		borderRadius: {
 			"8": "8px",
+			"300": "300px",
+			"800": "800px",
 		},
 		extend: {},
 	},
-	plugins: [],
+	plugins: [
+		function ({ addUtilities }: any) {
+			const newUtilities = {
+				".active-link": {
+					textDecoration: "underline",
+					"text-underline-offset": "10px", // Set the margin-bottom
+				},
+			};
+			addUtilities(newUtilities);
+		},
+	],
 };
 export default config;

@@ -1,7 +1,13 @@
-import WebSite from "./website";
+import { Navigation, MainPage, Footer } from "./website";
+
+Navigation;
 
 export default function Home() {
 	return (
-		<WebSite/>
+		<>
+			<Navigation />
+			<MainPage />
+			<Footer />
+		</>
 	);
 }
