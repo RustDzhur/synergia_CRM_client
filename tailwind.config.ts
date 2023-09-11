@@ -92,6 +92,7 @@ const config: Config = {
 				"linear-gradient(49deg, #ff008a 15.09%, #768fe5 59.33%, rgba(255, 0, 138, 0) 87.2%)",
 		},
 		borderRadius: {
+			"4": "4px",
 			"8": "8px",
 			"300": "300px",
 			"800": "800px",

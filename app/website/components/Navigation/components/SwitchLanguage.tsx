@@ -13,7 +13,7 @@ const languageTranslations: Record<string, Record<string, string>> = {
   "en-US": {
     us: "English",
     de: "Germany",
-    ua: "Ukrainian",
+    ua: "Ukraine",
   },
   "de-DE": {
     us: "Englisch",

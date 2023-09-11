@@ -1,5 +1,6 @@
 import React from "react";
 import NavLink from "./NavLink";
+import SwitchLanguage from "./SwitchLanguage";
 
 export default function Links() {
 	return (
@@ -20,7 +21,7 @@ export default function Links() {
 				<NavLink href="/contacts">Contact</NavLink>
 			</li>
 
-			<li className="cursor-pointer">Language</li>
+			<li className="cursor-pointer"><SwitchLanguage/></li>
 		</ul>
 	);
 }

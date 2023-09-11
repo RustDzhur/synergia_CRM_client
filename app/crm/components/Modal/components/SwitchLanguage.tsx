@@ -1,57 +1,37 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { v4 as uuidv4 } from "uuid";
 import { RiArrowDownSLine, RiArrowUpSLine } from "react-icons/ri";
 import { IconContext } from "react-icons";
-import ukraine from "@/app/assets/svgs/ukraine-flag-icon.svg";
-import usa from "@/app/assets/svgs/united-states-flag-icon.svg";
-import germany from "@/app/assets/svgs/germany-flag-icon.svg";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
+import { languages } from "@/app/languages/languages";
+import { languageCodeToProperties } from "@/app/languages/languages";
+import { Language } from "@/app/types/languageType";
 
-interface Language {
-	id: string;
-	name: string;
-	code: string;
-}
-
-const flags: Language[] = [
-	{
-		id: "us",
-		name: "United States",
-		code: "en-US",
+const languageTranslations: Record<string, Record<string, string>> = {
+	"en-US": {
+	  us: "English",
+	  de: "Germany",
+	  ua: "Ukrainian",
 	},
-	{
-		id: "de",
-		name: "Germany",
-		code: "de-DE",
+	"de-DE": {
+	  us: "Englisch",
+	  de: "Deutsch",
+	  ua: "Ukrainisch",
 	},
-	{
-		id: "ua",
-		name: "Ukraine",
-		code: "uk-UA",
+	"uk-UA": {
+	  us: "Англійська",
+	  de: "Німецька",
+	  ua: "Українська",
 	},
-];
-
-const languageCodeToProperties = (
-	code: string
-): { flagUrl: string; width: number; height: number } => {
-	if (code === "en-US") {
-		return { flagUrl: usa, width: 40, height: 30 };
-	} else if (code === "de-DE") {
-		return { flagUrl: germany, width: 40, height: 30 };
-	} else if (code === "uk-UA") {
-		return { flagUrl: ukraine, width: 40, height: 30 };
-	}
-	// Default values if code doesn't match
-	return { flagUrl: "", width: 0, height: 0 };
-};
+  };
 
 export default function SwitchLanguage() {
 	const [isOpenDropDown, setIsOpenDropDown] = useState(false);
 	const { selectedLanguage, setSelectedLanguage } = useLanguageStore();
 
-	const availableLanguages = flags.filter(
+	const availableLanguages = languages.filter(
 		(flag) => flag.code !== selectedLanguage.code
 	);
 
@@ -62,20 +42,31 @@ export default function SwitchLanguage() {
 	const handleLanguageChange = (language: Language) => {
 		setSelectedLanguage(language);
 		setIsOpenDropDown(false);
-
-		// TODO: Send a request to update the user's language in the database
-		// You can use an API call here to update the user's language preference.
+		localStorage.setItem("language", language.id);
 	};
 
 	const selectedLanguageProperties = languageCodeToProperties(
 		selectedLanguage.code
 	);
 
+	useEffect(() => {
+		const savedLanguage = localStorage.getItem("language");
+		if (savedLanguage) {
+		  const language = languages.find((flag) => flag.id === savedLanguage);
+		  if (language) {
+			setSelectedLanguage(language);
+		  }
+		}
+	  }, [setSelectedLanguage]);
+	
+	  const translations = languageTranslations[selectedLanguage.code];
+
+
 	return (
 		<div>
 			<div onClick={handleOpenDropDown} className="mb-30 sm:p-20 md:p-0 ">
 				<div className="flex items-center justify-between pl-12 pr-12 mb-24">
-					<p> Language</p>
+					<p>{translations[selectedLanguage.id]}</p>
 					<div className="flex items-center">
 						<Image
 							src={selectedLanguageProperties.flagUrl}
@@ -103,7 +94,7 @@ export default function SwitchLanguage() {
 								} cursor-pointer flex items-center justify-between ${
 									index !== availableLanguages.length - 1 ? "mb-20" : ""
 								}`}>
-								<p>{lang.name}</p>
+								<p>{translations[lang.id]}</p>
 								<Image
 									src={languageCodeToProperties(lang.code).flagUrl}
 									alt={lang.name}
