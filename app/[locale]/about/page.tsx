@@ -1,6 +1,6 @@
 import React from "react";
-import AboutUs from "../website/components/AboutUs";
-import { Footer, Navigation } from "../website";
+import AboutUs from "../../../components/website/components/AboutUs";
+import { Footer, Navigation } from "../../../components/website";
 
 export default function About() {
 	return (

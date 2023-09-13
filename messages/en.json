@@ -1,0 +1,12 @@
+{
+    "navBar": {
+        "company": "Company",
+        "switch": "Switch Company",
+        "lang" : {
+            "uk-UA": "Ukrainian",
+            "de-DE": "Germany",
+            "en-US": "English"
+        },
+        "search": "Search"
+    }
+}

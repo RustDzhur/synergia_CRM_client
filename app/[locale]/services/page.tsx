@@ -1,6 +1,6 @@
 import React from "react";
-import ServicesPage from "../website/components/Services";
-import { Footer, Navigation } from "../website";
+import ServicesPage from "../../../components/website/components/Services";
+import { Footer, Navigation } from "../../../components/website";
 
 export default function Services() {
 	return (

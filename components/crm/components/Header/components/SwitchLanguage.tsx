@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useEffect } from "react";
+import {useTranslations} from 'next-intl';
 import Image from "next/image";
 import { v4 as uuidv4 } from "uuid";
 import { RiArrowDownSLine, RiArrowUpSLine } from "react-icons/ri";
@@ -9,27 +10,10 @@ import { languages } from "@/app/languages/languages";
 import { languageCodeToProperties } from "@/app/languages/languages";
 import { Language } from "@/app/types/languageType";
 
-const languageTranslations: Record<string, Record<string, string>> = {
-  "en-US": {
-    us: "English",
-    de: "Germany",
-    ua: "Ukrainian",
-  },
-  "de-DE": {
-    us: "Englisch",
-    de: "Deutsch",
-    ua: "Ukrainisch",
-  },
-  "uk-UA": {
-    us: "Англійська",
-    de: "Німецька",
-    ua: "Українська",
-  },
-};
-
 export default function SwitchLanguage() {
   const [isOpenDropDown, setIsOpenDropDown] = useState(false);
   const { selectedLanguage, setSelectedLanguage } = useLanguageStore();
+  const t = useTranslations('navBar');
 
   const handleOpenDropDown = () => {
     setIsOpenDropDown(!isOpenDropDown);
@@ -55,7 +39,6 @@ export default function SwitchLanguage() {
     }
   }, [setSelectedLanguage]);
 
-  const translations = languageTranslations[selectedLanguage.code];
 
   return (
     <div>
@@ -93,7 +76,7 @@ export default function SwitchLanguage() {
                   className="w-40 cursor-pointer mr-20 rounded-4"
                 />
                 <p className="font-medium lg:text-18 text-menu hover:text-activeMenu">
-                  {translations[lang.id]}
+                {t(`lang.${lang.code}`)}
                 </p>
               </li>
             ))}

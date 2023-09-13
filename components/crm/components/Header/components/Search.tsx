@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import {useTranslations} from 'next-intl';
 import { useForm, SubmitHandler } from "react-hook-form";
 import { AiOutlineSearch } from "react-icons/ai";
 import { IconContext } from "react-icons";
@@ -11,6 +12,7 @@ interface Inputs {
 
 export default function Search() {
 	const { query, setQuery, searchData, fetchSearchData } = useSearchStore();
+	const t = useTranslations('navBar');
 
 	const {
 		register,
@@ -30,7 +32,7 @@ export default function Search() {
 			<div className="relative">
 				<input
 					{...register("search")}
-					placeholder="Search"
+					placeholder={t('search')}
 					className="py-15 px-20 pr-40 focus:outline-none font-normal lg:text-18 md:text-16 lg:w-350 md:w-300"
 					style={{
 						background: "#FBFBFB",

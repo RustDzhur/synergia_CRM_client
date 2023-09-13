@@ -1,7 +1,5 @@
 import { Toaster } from "react-hot-toast";
-import { Header } from "@/app/crm/components/Header";
-import { ModalNavigation } from "@/app/crm/components/Modal";
-import { Sidebar } from "@/app/crm/components/Sidebar";
+import { Header, ModalNavigation, Sidebar } from "@/components/crm";
 
 export default function crm() {
 	return (

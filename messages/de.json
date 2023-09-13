@@ -1,0 +1,12 @@
+{
+    "navBar": {
+        "company": "Firma",
+        "switch": "Firma wechseln",
+        "lang" : {
+            "uk-UA": "Ukrainisch",
+            "de-DE": "Deutsch",
+            "en-US": "Englisch"
+        },
+        "search": "Suchen"
+    }
+}

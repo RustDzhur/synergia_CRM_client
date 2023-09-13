@@ -3,7 +3,7 @@ import { useToggleMenuState } from "@/app/store/useToggleMenuState";
 import React, { useEffect, useRef } from "react";
 import ModalMobNav from "./ModalMobNav";
 import MobileMenu from "../../Header/components/MobileMenu";
-import SwitchLanguage from "@/app/crm/components/Modal/components/SwitchLanguage";
+import SwitchLanguage from "@/components/crm/components/Modal/components/SwitchLanguage";
 import SwitchCompany from "../../Header/components/SwitchCompany";
 import CurrentUser from "../../Header/components/CurrentUser";
 
