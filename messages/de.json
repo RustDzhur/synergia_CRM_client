@@ -3,10 +3,33 @@
         "company": "Firma",
         "switch": "Firma wechseln",
         "lang" : {
-            "uk-UA": "Ukrainisch",
-            "de-DE": "Deutsch",
-            "en-US": "Englisch"
+            "ua": "Ukrainisch",
+            "de": "Deutsch",
+            "en": "Englisch"
         },
-        "search": "Suchen"
+        "search": "Suchen",
+        "currentUser": {
+            "logout": "Ausloggen",
+            "settings": "Einstellungen"
+        }
+    },
+    "navigation": {
+        "dashboard": "Dashboard",
+        "collaboration": "Zusammenarbeit",
+        "company": "Firma",
+        "crm": "CRM",
+        "tasks_projects": "Aufgaben und Projekte",
+        "inventory_management": "Bestandsverwaltung",
+        "marketing": "Marketing",
+        "automation": "Automatisierung",
+        "upgrade_plan": "Aktualisieren Sie Ihren Plan",
+        "settings": "Einstellungen"
+    },
+    "navWebsite": {
+        "home": "Hauptseite",
+        "about_us": "Über uns",
+        "our_services": "Unsere Dienstleistungen",
+        "blog": "Blog",
+        "contact": "Kontakt"
     }
 }

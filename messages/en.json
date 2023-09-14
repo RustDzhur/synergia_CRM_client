@@ -3,10 +3,33 @@
         "company": "Company",
         "switch": "Switch Company",
         "lang" : {
-            "uk-UA": "Ukrainian",
-            "de-DE": "Germany",
-            "en-US": "English"
+            "ua": "Ukrainian",
+            "de": "Germany",
+            "en": "English"
         },
-        "search": "Search"
+        "search": "Search",
+        "currentUser": {
+            "logout": "Logout",
+            "settings": "Settings"
+        }
+    },
+    "navigation": {
+        "dashboard": "Dashboard",
+        "collaboration": "Collaboration",
+        "company": "Company",
+        "crm": "CRM",
+        "tasks_projects": "Tasks and Projects",
+        "inventory_management": "Inventory Management",
+        "marketing": "Marketing",
+        "automation": "Automation",
+        "upgrade_plan": "Upgrade Your Plan",
+        "settings": "Settings"
+    },
+    "navWebsite": {
+        "home": "Home",
+        "about_us": "About Us",
+        "our_services": "Our Services",
+        "blog": "Blog",
+        "contact": "Contact"
     }
 }

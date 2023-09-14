@@ -12,28 +12,28 @@ interface Language {
     {
       id: "us",
       name: "en-US",
-      code: "en-US",
+      code: "en",
     },
     {
       id: "de",
       name: "de-DE",
-      code: "de-DE",
+      code: "de",
     },
     {
       id: "ua",
       name: "uk-UA",
-      code: "uk-UA",
+      code: "ua",
     },
   ];
 
   export const languageCodeToProperties = (
     code: string
   ): { flagUrl: string; width: number; height: number } => {
-    if (code === "en-US") {
+    if (code === "en") {
       return { flagUrl: usa, width: 40, height: 30 };
-    } else if (code === "de-DE") {
+    } else if (code === "de") {
       return { flagUrl: germany, width: 40, height: 30 };
-    } else if (code === "uk-UA") {
+    } else if (code === "ua") {
       return { flagUrl: ukraine, width: 40, height: 30 };
     }
     return { flagUrl: "", width: 0, height: 0 };

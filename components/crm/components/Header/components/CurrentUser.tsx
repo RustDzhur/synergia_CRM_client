@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import React, { useEffect } from "react";
+import {useTranslations} from 'next-intl';
 import { RiArrowDownSLine, RiArrowUpSLine } from "react-icons/ri";
 import { IconContext } from "react-icons";
 import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
@@ -11,7 +12,7 @@ import { MessageType } from "@/app/types/MessageType";
 export default function CurrentUser() {
 	const { user, isLoading, isDropDown, toggleDropDown, fetchUser } =
 		useCurrentUserStore();
-
+const t = useTranslations('navBar')
 	useEffect(() => {
 		fetchUser();
 	}, [fetchUser]);
@@ -44,13 +45,13 @@ export default function CurrentUser() {
 				{isDropDown ? <RiArrowDownSLine /> : <RiArrowUpSLine />}
 			</IconContext.Provider>
 			{isDropDown && (
-				<ul className="absolute right-0 top-full w-full bg-headerBackground border-b-switchCompany rounded-b-8">
+				<ul className="absolute right-0 top-full  bg-headerBackground border-b-switchCompany rounded-b-8">
 					<li className="  py-15 px-20 cursor-pointer">
-						<p className="font-medium text-16 leading-16 text-black">Log out</p>
+						<p className="font-medium text-16 leading-16 text-black">{t('currentUser.logout')}</p>
 					</li>
 					<li className="border-t-switchCompany py-15 px-20 cursor-pointer">
 						<p className="font-medium text-16 leading-16 text-black">
-							Settings
+						{t('currentUser.settings')}
 						</p>
 					</li>
 				</ul>

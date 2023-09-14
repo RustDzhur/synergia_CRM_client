@@ -3,10 +3,33 @@
         "company": "Компанія",
         "switch": "Переключити Компанію",
         "lang" : {
-            "uk-UA": "Українська",
-            "de-DE": "Німецька",
-            "en-US": "Англійська"
+            "ua": "Українська",
+            "de": "Німецька",
+            "en": "Англійська"
         },
-        "search": "Пошук"
+        "search": "Пошук",
+        "currentUser": {
+            "logout": "Вийти",
+            "settings": "Налаштування"
+        }
+    },
+    "navigation": {
+        "dashboard": "Інформаційна панель",
+        "collaboration": "Співпраця",
+        "company": "Компанія",
+        "crm": "CRM",
+        "tasks_projects": "Завдання та проекти",
+        "inventory_management": "Керування запасами",
+        "marketing": "Маркетинг",
+        "automation": "Автоматизація",
+        "upgrade_plan": "Оновіть свій план",
+        "settings": "Налаштування"
+    },
+    "navWebsite": {
+        "home": "Головна",
+        "about_us": "Про нас",
+        "our_services": "Наші послуги",
+        "blog": "Блог",
+        "contact": "Контакт"
     }
 }

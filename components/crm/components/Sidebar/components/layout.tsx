@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { useToggleMenuState } from "@/app/store/useToggleMenuState";
+import {useTranslations} from 'next-intl';
 import {
 	BsFillHouseFill,
 	BsFillPeopleFill,
@@ -16,26 +17,27 @@ import { FiSettings } from "react-icons/fi";
 import { IconContext } from "react-icons";
 import BurgerMenu from "./BurgerMenu";
 
-const menuItems = [
-	{ icon: BsFillHouseFill, text: "Dashboard" },
-	{ icon: BsFillPeopleFill, text: "Collaboration" },
-	{ icon: GiProgression, text: "Company" },
-	{ icon: BsBarChartSteps, text: "CRM" },
-	{ icon: BsCardChecklist, text: "Tasks and Projects" },
-	{ icon: SiIcinga, text: "Inventory Management" },
-	{ icon: BsFillHandbagFill, text: "Marketing" },
-	{ icon: BsDiagram3, text: "Automation" },
-	{ icon: BsRocketTakeoffFill, text: "Upgrade Your Plan" },
-	{ icon: FiSettings, text: "Settings" },
-];
-
 export default function Layout() {
 	const { menu } = useToggleMenuState();
 	const [activeIndex, setActiveIndex] = useState(0);
-
 	const handleItemClick = (index: number) => {
 		setActiveIndex(index);
 	};
+
+	const t = useTranslations('navigation')
+
+	const menuItems = [
+		{ icon: BsFillHouseFill, text: t("dashboard") },
+		{ icon: BsFillPeopleFill, text: t("collaboration") },
+		{ icon: GiProgression, text: t("company") },
+		{ icon: BsBarChartSteps, text: t("crm") },
+		{ icon: BsCardChecklist, text: t("tasks_projects") },
+		{ icon: SiIcinga, text: t("inventory_management") },
+		{ icon: BsFillHandbagFill, text: t("marketing") },
+		{ icon: BsDiagram3, text: t("automation") },
+		{ icon: BsRocketTakeoffFill, text: t("upgrade_plan") },
+		{ icon: FiSettings, text: t("settings") },
+	];
 
 	return (
 		<div
