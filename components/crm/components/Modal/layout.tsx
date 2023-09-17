@@ -1,6 +1,5 @@
 import React from "react";
 import ModalMenu from "./components/ModalMenu";
-import Modal from "./components/Modal";
 
 export default function layout() {
 	return (

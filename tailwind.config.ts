@@ -24,6 +24,7 @@ const config: Config = {
 			modalBG: "rgba(217, 217, 217, 0.80)",
 			menu: "#cccccc",
 			activeMenu: "#313D45",
+			authBtn: "#FF008A",
 		},
 		spacing: {
 			px: "1px",
@@ -36,6 +37,7 @@ const config: Config = {
 			14: "14px",
 			16: "16px",
 			15: "15px",
+			17: "17px",
 			18: "18px",
 			20: "20px",
 			24: "24px",
@@ -45,10 +47,13 @@ const config: Config = {
 			50: "50px",
 			52: "52px",
 			60: "60px",
+			74: "74px",
 			83: "83px",
 			100: "100px",
+			139: "139px",
 			270: "270px",
 			300: "300px",
+			320: "320px",
 			350: "350px",
 			800: "800px",
 		},
@@ -75,17 +80,26 @@ const config: Config = {
 			16: "16px",
 			18: "18px",
 			20: "20px",
+			24: "24px",
+			34: "34px",
 		},
 		borderWidth: {
 			switchCompany: "1px",
+			authForms: "2px",
+			authFormsUnFocus: "2px",
 		},
 		borderColor: {
 			switchCompany: "#E2F1F5",
 			activeLink: "#313D45",
+			authFormsFocus: "#5EA8F5",
+			authFormsUnFocus: "#cccccc",
+			authBtn: "#FF008A"
 		},
 		boxShadow: {
 			custom: "0px 1px 2px 0px rgba(0, 0, 0, 0.08)",
 			circleShadow: "0px 4px 8px 0px rgba(49, 61, 69, 0.24)",
+			authForms: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
+			authBtn: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
 		},
 		backgroundImage: {
 			"gradient-background":

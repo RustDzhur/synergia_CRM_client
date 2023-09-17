@@ -30,6 +30,10 @@
         "about_us": "Про нас",
         "our_services": "Наші послуги",
         "blog": "Блог",
-        "contact": "Контакт"
+        "contact": "Контакт",
+        "auth": {
+            "signin": "Логін",
+            "signup": "Реєстрація"
+        }
     }
 }

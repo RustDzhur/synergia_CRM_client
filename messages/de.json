@@ -30,6 +30,10 @@
         "about_us": "Über uns",
         "our_services": "Unsere Dienstleistungen",
         "blog": "Blog",
-        "contact": "Kontakt"
+        "contact": "Kontakt",
+        "auth": {
+            "signin": "Log in",
+            "signup": "Register"
+        }
     }
 }

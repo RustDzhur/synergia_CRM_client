@@ -1,9 +1,9 @@
-import Image from "next/image";
 import React from "react";
 import BurgerMenu from "./components/BurgerMenu";
 import NavLinks from "./components/NavLinks";
 import AuthLinks from "./components/AuthLinks";
 import Logo from "./components/Logo";
+import ModalMenu from "../Modal/components/ModalMenu";
 
 export default function Navigation() {
 	return (
@@ -20,6 +20,9 @@ export default function Navigation() {
 				</div>
 				<div className="hidden lg:flex">
 					<AuthLinks />
+				</div>
+				<div className="absolute">
+					<ModalMenu/>
 				</div>
 			</div>
 		</div>
