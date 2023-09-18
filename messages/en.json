@@ -60,5 +60,13 @@
         "personalemail": "Personal Email",
         "personaladdress": "Personal Address",
         "personalpassword": "Personal Password"
-	}
+	},
+    "hero": {
+        "title" : {
+            "span": "Synergia CRM",
+            "body": "for you and your Company"
+        },
+        "subtitle": "Synergia CRM is CRM system that helps your company to be more productive and effective",
+        "plan": "Choose Plan"
+    }
 }

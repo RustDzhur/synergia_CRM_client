@@ -7,7 +7,7 @@ import ModalMenu from "../Modal/components/ModalMenu";
 
 export default function Navigation() {
 	return (
-		<div className="relative sm:pr-12 sm:pl-12 sm:pt-20 sm:pb-20 md:pr-20 md:pl-20 lg:pr-100 lg:pl-100 lg:pt-30 lg:pb-30">
+		<div className="relative sm:pr-12 sm:pl-12 sm:pt-20 sm:pb-20 md:pr-20 md:pl-20 lg:pr-100 lg:pl-100 lg:pt-30 lg:pb-30 lg:mb-80 md:mb-10">
 			<div className="absolute bg-gradient-background sm:w-300 sm:h-300 md:w-800 md:h-800 sm:rounded-300 md:rounded-800 z-[-1] sm:top-[-142px] sm:right-[-116px] md:top-[-420px] md:right-[-437px] lg:right-[-400px] lg:top-[-149px]"></div>
 			<div className="flex justify-between items-center">
 				<Logo />

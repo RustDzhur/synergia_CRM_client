@@ -60,5 +60,13 @@
         "personalemail": "Persönliche E-Mail",
         "personaladdress": "Persönliche Adresse",
         "personalpassword": "Persönliches Passwort"
-	}
+	},
+    "hero": {
+        "title" : {
+            "span": "Synergia CRM",
+            "body": "für Sie und Ihre Firma"
+        },
+        "subtitle": "Synergie von CDM und CDM-Systemen, die glps und Unternehmen produktiver und effektiver macht",
+        "plan": "Wählen Plan"
+    }
 }
