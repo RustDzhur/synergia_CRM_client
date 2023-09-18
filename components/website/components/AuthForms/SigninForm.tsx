@@ -11,6 +11,7 @@ import {
 	SubmitHandler,
 	FieldValues,
 } from "react-hook-form";
+import { useTranslations } from "next-intl";
 
 interface SignInFormData {
 	username: string;
@@ -25,6 +26,8 @@ export default function SignInForm() {
 		toggleSignInForm,
 		toggleSignUpForm,
 	} = useAuthFormStore();
+
+    const t = useTranslations("authForms")
 
 	const { handleSubmit, control, watch } = useForm();
 	const password = watch("password", "");
@@ -44,8 +47,8 @@ export default function SignInForm() {
 
 	return (
 		<>
-			<p className="text-34 font-bold text-center leading-[61.2px] sm:mb-30">
-				Sign In
+			<p className="text-34 font-bold text-center leading-[61.2px] sm:mb-20">
+				{t("login")}
 			</p>
 			<form onSubmit={handleSubmit(onSubmit)} className="text-center">
 				<div>
@@ -57,7 +60,7 @@ export default function SignInForm() {
 							<div className="relative">
 								<input
 									{...field}
-									placeholder="Username"
+									placeholder={t("username")}
 									type="text"
 									id="username"
 									className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
@@ -82,7 +85,7 @@ export default function SignInForm() {
 							<div className="relative">
 								<input
 									{...field}
-									placeholder="Password"
+									placeholder={t("password")}
 									type={passwordVisible ? "text" : "password"}
 									id="password"
 									className="pl-50 pr-50 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
@@ -106,16 +109,16 @@ export default function SignInForm() {
 					/>
 				</div>
 				<div className="text-left text-16 text-menu sm:mb-30 mb-60">
-					Don’t have an account?{" "}
+					{t("haveaccount.no")}{" "}
 					<span
 						className="text-primaryColor cursor-pointer"
 						onClick={handleChangeForm}>
-						Sign up
+						{t("signup")}
 					</span>
 				</div>
 				<div className="">
 					<button type="submit" className="sm:px-139 md:px-74 py-15 rounded-4 hover:shadow-authForms bg-authBtn text-18 text-white font-medium">
-						Sign In
+						{t("login")}
 					</button>
 				</div>
 			</form>

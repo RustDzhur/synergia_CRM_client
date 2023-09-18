@@ -26,7 +26,7 @@ export default function ModalMenu() {
 	) => {
 		if (modalRef.current && event.target === modalRef.current) {
 			toggleMenu();
-            handleCloseAuthForm();
+			handleCloseAuthForm();
 		}
 	};
 
@@ -40,16 +40,20 @@ export default function ModalMenu() {
 
 	return (
 		<>
-			{menu && (
+			{(menu || isSignInFormOpen || isSignUpFormOpen )&& (
 				<div
 					ref={modalRef}
 					onClick={handleCloseModal}
-					className="fixed inset-0 flex items-center justify-start z-50 bg-modalBG">
-					<div className=" sm:bg-secondaryColor sm:p-20 h-[100vh] sm:w-[100vw] md:w-320 overflow-y-auto">
-						<div className="flex justify-between mb-60 items-center">
-							<Logo />
+					className="fixed inset-0 flex items-center justify-start lg:justify-center  z-50 bg-modalBG">
+					<div className=" sm:bg-secondaryColor sm:p-20 sm:h-[100vh] lg:h-auto lg:mb-40 lg:rounded-24 sm:w-[100vw] lg:w-auto md:w-auto overflow-y-auto">
+						<div className="flex justify-between mb-60 lg:mb-20 items-center">
+							<div className="lg:hidden">
+								<Logo />
+							</div>
 							{(isSignInFormOpen || isSignUpFormOpen) && (
-								<div onClick={handleCloseAuthForm} className="cursor-pointer">
+								<div
+									onClick={handleCloseAuthForm}
+									className="cursor-pointer lg:hidden">
 									<IconContext.Provider
 										value={{ size: "30px", color: "#cccccc" }}>
 										<RiArrowGoBackFill />

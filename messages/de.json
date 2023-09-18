@@ -1,39 +1,64 @@
 {
-    "navBar": {
-        "company": "Firma",
-        "switch": "Firma wechseln",
-        "lang" : {
-            "ua": "Ukrainisch",
-            "de": "Deutsch",
-            "en": "Englisch"
-        },
-        "search": "Suchen",
-        "currentUser": {
-            "logout": "Ausloggen",
-            "settings": "Einstellungen"
-        }
-    },
-    "navigation": {
-        "dashboard": "Dashboard",
-        "collaboration": "Zusammenarbeit",
-        "company": "Firma",
-        "crm": "CRM",
-        "tasks_projects": "Aufgaben und Projekte",
-        "inventory_management": "Bestandsverwaltung",
-        "marketing": "Marketing",
-        "automation": "Automatisierung",
-        "upgrade_plan": "Aktualisieren Sie Ihren Plan",
-        "settings": "Einstellungen"
-    },
-    "navWebsite": {
-        "home": "Hauptseite",
-        "about_us": "Über uns",
-        "our_services": "Unsere Dienstleistungen",
-        "blog": "Blog",
-        "contact": "Kontakt",
-        "auth": {
-            "signin": "Log in",
-            "signup": "Register"
-        }
-    }
+	"navBar": {
+		"company": "Firma",
+		"switch": "Firma wechseln",
+		"lang": {
+			"ua": "Ukrainisch",
+			"de": "Deutsch",
+			"en": "Englisch"
+		},
+		"search": "Suchen",
+		"currentUser": {
+			"logout": "Ausloggen",
+			"settings": "Einstellungen"
+		}
+	},
+	"navigation": {
+		"dashboard": "Dashboard",
+		"collaboration": "Zusammenarbeit",
+		"company": "Firma",
+		"crm": "CRM",
+		"tasks_projects": "Aufgaben und Projekte",
+		"inventory_management": "Bestandsverwaltung",
+		"marketing": "Marketing",
+		"automation": "Automatisierung",
+		"upgrade_plan": "Aktualisieren Sie Ihren Plan",
+		"settings": "Einstellungen"
+	},
+	"navWebsite": {
+		"home": "Hauptseite",
+		"about_us": "Über uns",
+		"our_services": "Unsere Dienstleistungen",
+		"blog": "Blog",
+		"contact": "Kontakt",
+		"auth": {
+			"signin": "Log in",
+			"signup": "Register"
+		}
+	},
+	"authForms": {
+		"login": "Log in",
+		"signup": "Register",
+		"username": "Benutzername",
+		"password": "Passwort",
+		"haveaccount": {
+			"yes": "Haben Sie ein Konto?",
+			"no": "Sie haben noch kein Konto?"
+		},
+        "agreement": "Zustimmung zur Datenschutzerklärung",
+		"companyTab": "Firma",
+		"personalTab": "Persönlich",
+        "companyname": "Firmenname",
+        "companyphone": "Firmentelefon",
+        "companyaddress": "Firmenadresse",
+        "taxnumber": "Steuernummer",
+        "companyemail": "Firmen-E-Mail",
+        "companypassword": "Firmenpasswort",
+        "firstname" : "Vorname",
+        "lastname" : "Nachname",
+        "personalphone": "Persönliches Telefon",
+        "personalemail": "Persönliche E-Mail",
+        "personaladdress": "Persönliche Adresse",
+        "personalpassword": "Persönliches Passwort"
+	}
 }

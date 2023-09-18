@@ -41,6 +41,7 @@ const config: Config = {
 			18: "18px",
 			20: "20px",
 			24: "24px",
+			25: "25px",
 			30: "30px",
 			32: "32px",
 			40: "40px",
@@ -50,11 +51,14 @@ const config: Config = {
 			74: "74px",
 			83: "83px",
 			100: "100px",
+			130: "130px",
 			139: "139px",
+			150: "150px",
 			270: "270px",
 			300: "300px",
 			320: "320px",
 			350: "350px",
+			490: "490px",
 			800: "800px",
 		},
 		opacity: {
@@ -93,13 +97,15 @@ const config: Config = {
 			activeLink: "#313D45",
 			authFormsFocus: "#5EA8F5",
 			authFormsUnFocus: "#cccccc",
-			authBtn: "#FF008A"
+			authBtn: "#FF008A",
+			authTabBtn: "#FF008A"
 		},
 		boxShadow: {
 			custom: "0px 1px 2px 0px rgba(0, 0, 0, 0.08)",
 			circleShadow: "0px 4px 8px 0px rgba(49, 61, 69, 0.24)",
 			authForms: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
 			authBtn: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
+			authTabBtn: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
 		},
 		backgroundImage: {
 			"gradient-background":
@@ -108,6 +114,7 @@ const config: Config = {
 		borderRadius: {
 			"4": "4px",
 			"8": "8px",
+			"24": "24px",
 			"300": "300px",
 			"800": "800px",
 		},

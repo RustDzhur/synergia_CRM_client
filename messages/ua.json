@@ -1,39 +1,64 @@
 {
-    "navBar": {
-        "company": "Компанія",
-        "switch": "Переключити Компанію",
-        "lang" : {
-            "ua": "Українська",
-            "de": "Німецька",
-            "en": "Англійська"
-        },
-        "search": "Пошук",
-        "currentUser": {
-            "logout": "Вийти",
-            "settings": "Налаштування"
-        }
-    },
-    "navigation": {
-        "dashboard": "Інформаційна панель",
-        "collaboration": "Співпраця",
-        "company": "Компанія",
-        "crm": "CRM",
-        "tasks_projects": "Завдання та проекти",
-        "inventory_management": "Керування запасами",
-        "marketing": "Маркетинг",
-        "automation": "Автоматизація",
-        "upgrade_plan": "Оновіть свій план",
-        "settings": "Налаштування"
-    },
-    "navWebsite": {
-        "home": "Головна",
-        "about_us": "Про нас",
-        "our_services": "Наші послуги",
-        "blog": "Блог",
-        "contact": "Контакт",
-        "auth": {
-            "signin": "Логін",
-            "signup": "Реєстрація"
-        }
-    }
+	"navBar": {
+		"company": "Компанія",
+		"switch": "Переключити Компанію",
+		"lang": {
+			"ua": "Українська",
+			"de": "Німецька",
+			"en": "Англійська"
+		},
+		"search": "Пошук",
+		"currentUser": {
+			"logout": "Вийти",
+			"settings": "Налаштування"
+		}
+	},
+	"navigation": {
+		"dashboard": "Інформаційна панель",
+		"collaboration": "Співпраця",
+		"company": "Компанія",
+		"crm": "CRM",
+		"tasks_projects": "Завдання та проекти",
+		"inventory_management": "Керування запасами",
+		"marketing": "Маркетинг",
+		"automation": "Автоматизація",
+		"upgrade_plan": "Оновіть свій план",
+		"settings": "Налаштування"
+	},
+	"navWebsite": {
+		"home": "Головна",
+		"about_us": "Про нас",
+		"our_services": "Наші послуги",
+		"blog": "Блог",
+		"contact": "Контакт",
+		"auth": {
+			"signin": "Вхід",
+			"signup": "Реєстрація"
+		}
+	},
+	"authForms": {
+		"login": "Вхід",
+		"signup": "Реєстрація",
+		"username": "Імʼя користувача",
+		"password": "Пароль",
+		"haveaccount": {
+			"yes": "Є обліковий запис?",
+			"no": "Немає облікового запису?"
+		},
+        "agreement": "Згода з політикою конфіденційності",
+		"companyTab": "Компанія",
+		"personalTab": "Персональний",
+        "companyname": "Назва Компанії",
+        "companyphone": "Телефон Компанії",
+        "companyaddress": "Адреса Компанії",
+        "taxnumber": "Податковий номер",
+        "companyemail": "Електронна Адреса Компанії",
+        "companypassword": "Пароль Компанії",
+        "firstname" : "Ім'я",
+        "lastname" : "Прізвище",
+        "personalphone": "Особистий телефон",
+        "personalemail": "Особиста електронна пошта",
+        "personaladdress": "Особиста адреса",
+        "personalpassword": "Особистий пароль"
+	}
 }

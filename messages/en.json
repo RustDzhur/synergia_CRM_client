@@ -1,39 +1,64 @@
 {
-    "navBar": {
-        "company": "Company",
-        "switch": "Switch Company",
-        "lang" : {
-            "ua": "Ukrainian",
-            "de": "Germany",
-            "en": "English"
-        },
-        "search": "Search",
-        "currentUser": {
-            "logout": "Logout",
-            "settings": "Settings"
-        }
-    },
-    "navigation": {
-        "dashboard": "Dashboard",
-        "collaboration": "Collaboration",
-        "company": "Company",
-        "crm": "CRM",
-        "tasks_projects": "Tasks and Projects",
-        "inventory_management": "Inventory Management",
-        "marketing": "Marketing",
-        "automation": "Automation",
-        "upgrade_plan": "Upgrade Your Plan",
-        "settings": "Settings"
-    },
-    "navWebsite": {
-        "home": "Home",
-        "about_us": "About Us",
-        "our_services": "Our Services",
-        "blog": "Blog",
-        "contact": "Contact",
-        "auth": {
-            "signin": "Sign In",
-            "signup": "Sign Up"
-        }
-    }
+	"navBar": {
+		"company": "Company",
+		"switch": "Switch Company",
+		"lang": {
+			"ua": "Ukrainian",
+			"de": "Germany",
+			"en": "English"
+		},
+		"search": "Search",
+		"currentUser": {
+			"logout": "Logout",
+			"settings": "Settings"
+		}
+	},
+	"navigation": {
+		"dashboard": "Dashboard",
+		"collaboration": "Collaboration",
+		"company": "Company",
+		"crm": "CRM",
+		"tasks_projects": "Tasks and Projects",
+		"inventory_management": "Inventory Management",
+		"marketing": "Marketing",
+		"automation": "Automation",
+		"upgrade_plan": "Upgrade Your Plan",
+		"settings": "Settings"
+	},
+	"navWebsite": {
+		"home": "Home",
+		"about_us": "About Us",
+		"our_services": "Our Services",
+		"blog": "Blog",
+		"contact": "Contact",
+		"auth": {
+			"signin": "Sign In",
+			"signup": "Sign Up"
+		}
+	},
+	"authForms": {
+		"login": "Sign In",
+		"signup": "Sign Up",
+		"username": "User name",
+		"password": "Password",
+		"haveaccount": {
+			"yes": "Have an account?",
+			"no": "Don't have an account?"
+		},
+        "agreement": "Agreement with privacy policy",
+		"companyTab": "Company",
+		"personalTab": "Personal",
+        "companyname": "Company Name",
+        "companyphone": "Company Phone",
+        "companyaddress": "Company Address",
+        "taxnumber": "Tax Number",
+        "companyemail": "Company Email",
+        "companypassword": "Company Password",
+        "firstname" : "First Name",
+        "lastname" : "Last Name",
+        "personalphone": "Personal Phone",
+        "personalemail": "Personal Email",
+        "personaladdress": "Personal Address",
+        "personalpassword": "Personal Password"
+	}
 }
