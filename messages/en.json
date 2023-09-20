@@ -45,38 +45,55 @@
 			"yes": "Have an account?",
 			"no": "Don't have an account?"
 		},
-        "agreement": "Agreement with privacy policy",
+		"agreement": "Agreement with privacy policy",
 		"companyTab": "Company",
 		"personalTab": "Personal",
-        "companyname": "Company Name",
-        "companyphone": "Company Phone",
-        "companyaddress": "Company Address",
-        "taxnumber": "Tax Number",
-        "companyemail": "Company Email",
-        "companypassword": "Company Password",
-        "firstname" : "First Name",
-        "lastname" : "Last Name",
-        "personalphone": "Personal Phone",
-        "personalemail": "Personal Email",
-        "personaladdress": "Personal Address",
-        "personalpassword": "Personal Password"
+		"companyname": "Company Name",
+		"companyphone": "Company Phone",
+		"companyaddress": "Company Address",
+		"taxnumber": "Tax Number",
+		"companyemail": "Company Email",
+		"companypassword": "Company Password",
+		"firstname": "First Name",
+		"lastname": "Last Name",
+		"personalphone": "Personal Phone",
+		"personalemail": "Personal Email",
+		"personaladdress": "Personal Address",
+		"personalpassword": "Personal Password"
 	},
-    "hero": {
-        "title" : {
-            "span": "Synergia CRM",
-            "body": "for you and your Company"
-        },
-        "subtitle": "Synergia CRM is CRM system that helps your company to be more productive and effective",
-        "plan": "Choose Plan"
-    },
-    "aboutUs": {
-        "title": "About Us",
-        "description": "All our members are absolutely professionals",
-        "link" : "Learn More"
-    },
-    "advantages" : {
-        "marketing": "Marketing",
-        "integration": "Integration",
-        "accesbility" : "Accesbility"
-    }
+	"hero": {
+		"title": {
+			"span": "Synergia CRM",
+			"body": "for you and your Company"
+		},
+		"subtitle": "Synergia CRM is CRM system that helps your company to be more productive and effective",
+		"plan": "Choose Plan"
+	},
+	"aboutUs": {
+		"title": "About Us",
+		"description": "All our members are absolutely professionals",
+		"link": "Learn More"
+	},
+	"advantages": {
+		"marketing": "Marketing",
+		"integration": "Integration",
+		"accesbility": "Accesbility"
+	},
+	"whatIsCrm": {
+		"stepContentFirst": {
+			"step1": "Click on the `Sign Up` or `Create Account` button on our homepage. Fill out the registration form with your details. Make sure to provide accurate information. Choose a unique username and a strong password. Your username will be your identity on our platform, so pick something memorable.",
+			"step2": "`Access the dashboard` is your gateway to a world of possibilities within our platform. Once you log in, you'll find yourself in a centralized hub where you can navigate, manage, and explore all the features, tools, and information at your fingertips. From tracking your progress, connecting with others, to accessing resources, the dashboard is your control center for a seamless and productive experience.",
+			"step3": "Tasks are a powerful tool for managing your to-do list and staying organized. To create a task, access your dashboard and locate the `Tasks` or `To-Do List` section. Click on the `Create Task` button. Fill in the task details, including a title, description, due date, and any relevant tags or categories. You can also set priority levels to help you prioritize your tasks. Once you've filled out the information, click `Save` or `Create` to add the task to your list. You can easily edit, mark as complete, or delete tasks as needed.",
+			"step4": "Dive into the world of possibilities and features our application offers and relish the convenience it brings to your digital life."
+		},
+		"stepContentSecond": {
+			"step1": "When you return to the platform in the future, simply click on the `Sign In` button. Enter your username and password. Click `Sign In` and you'll have access to your account",
+			"step2": "When you `Access the dashboard` you open the door to a personalized experience tailored to your needs. This dynamic interface serves as your command center, offering real-time insights, notifications, and easy access to essential functions. Whether you're monitoring your account, customizing settings, or diving into your latest projects, the dashboard provides a user-friendly, intuitive hub for all your interactions within our platform.",
+			"step3": "The feed is your source for the latest updates, news, and posts from other users or relevant information on our platform. To access the feed, click on the `Feed` or `News` section in your dashboard. Scroll through the feed to view posts, articles, and updates from your connections or relevant sources. You can like, comment, and share posts to engage with the community. Use filters or search options to narrow down the content you're interested in. Stay informed and connected by regularly checking the feed for valuable insights and updates.",
+			"step4": "We've crafted this application with your enjoyment in mind, so take full advantage of its offerings and make your experience unforgettable."
+		},
+		"whatIsCrm": "What is CRM?",
+		"defaultTextFirst": "Synergia CRM: Founded in 2010, the company emerged as a leader in the software industry. With a focus on cybersecurity and advanced analytics, they pioneered groundbreaking solutions that empowered businesses in an increasingly connected world.",
+		"defaultTextSecond": "Leveraging cutting-edge technologies, CyberSolutions helped clients navigate complex digital challenges, ensuring data integrity and privacy. Their commitment to innovation, coupled with a team of skilled professionals, propelled them to global recognition."
+	}
 }

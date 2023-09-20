@@ -45,38 +45,55 @@
 			"yes": "Haben Sie ein Konto?",
 			"no": "Sie haben noch kein Konto?"
 		},
-        "agreement": "Zustimmung zur Datenschutzerklärung",
+		"agreement": "Zustimmung zur Datenschutzerklärung",
 		"companyTab": "Firma",
 		"personalTab": "Persönlich",
-        "companyname": "Firmenname",
-        "companyphone": "Firmentelefon",
-        "companyaddress": "Firmenadresse",
-        "taxnumber": "Steuernummer",
-        "companyemail": "Firmen-E-Mail",
-        "companypassword": "Firmenpasswort",
-        "firstname" : "Vorname",
-        "lastname" : "Nachname",
-        "personalphone": "Persönliches Telefon",
-        "personalemail": "Persönliche E-Mail",
-        "personaladdress": "Persönliche Adresse",
-        "personalpassword": "Persönliches Passwort"
+		"companyname": "Firmenname",
+		"companyphone": "Firmentelefon",
+		"companyaddress": "Firmenadresse",
+		"taxnumber": "Steuernummer",
+		"companyemail": "Firmen-E-Mail",
+		"companypassword": "Firmenpasswort",
+		"firstname": "Vorname",
+		"lastname": "Nachname",
+		"personalphone": "Persönliches Telefon",
+		"personalemail": "Persönliche E-Mail",
+		"personaladdress": "Persönliche Adresse",
+		"personalpassword": "Persönliches Passwort"
 	},
-    "hero": {
-        "title" : {
-            "span": "Synergia CRM",
-            "body": "für Sie und Ihre Firma"
-        },
-        "subtitle": "Synergie von CDM und CDM-Systemen, die glps und Unternehmen produktiver und effektiver macht",
-        "plan": "Wählen Plan"
-    },
-    "aboutUs": {
-        "title": "Über Uns",
-        "description": "Alle unsere Mitglieder sind absolute Profis",
-        "link" : "Lern mehr"
-    },
-    "advantages" : {
-        "marketing": "Marketing",
-        "integration": "Integration",
-        "accesbility" : "Acsesbilit"
-    }
+	"hero": {
+		"title": {
+			"span": "Synergia CRM",
+			"body": "für Sie und Ihre Firma"
+		},
+		"subtitle": "Synergie von CDM und CDM-Systemen, die glps und Unternehmen produktiver und effektiver macht",
+		"plan": "Wählen Plan"
+	},
+	"aboutUs": {
+		"title": "Über Uns",
+		"description": "Alle unsere Mitglieder sind absolute Profis",
+		"link": "Lern mehr"
+	},
+	"advantages": {
+		"marketing": "Marketing",
+		"integration": "Integration",
+		"accesbility": "Acsesbilit"
+	},
+	"whatIsCrm": {
+		"stepContentFirst": {
+			"step1": "Klicken Sie auf unserer Homepage auf die Schaltfläche „Anmelden“ oder „Konto erstellen“. Füllen Sie das Registrierungsformular mit Ihren Daten aus. Stellen Sie sicher, dass Sie korrekte Informationen angeben. Wählen Sie einen eindeutigen Benutzernamen und ein sicheres Passwort. Ihr Benutzername wird es tun Seien Sie Ihre Identität auf unserer Plattform, also wählen Sie etwas Einprägsames aus.",
+			"step2": "Der Zugriff auf das Dashboard ist Ihr Tor zu einer Welt voller Möglichkeiten innerhalb unserer Plattform. Sobald Sie sich angemeldet haben, finden Sie sich in einem zentralen Hub wieder, wo Sie durch alle Funktionen und Tools navigieren, diese verwalten und erkunden können und Informationen immer zur Hand. Von der Verfolgung Ihres Fortschritts über die Verbindung mit anderen bis hin zum Zugriff auf Ressourcen ist das Dashboard Ihr Kontrollzentrum für ein nahtloses und produktives Erlebnis.",
+			"step3": "Aufgaben sind ein leistungsstarkes Tool zum Verwalten Ihrer To-Do-Liste und zum Organisieren. Um eine Aufgabe zu erstellen, greifen Sie auf Ihr Dashboard zu und suchen Sie den Abschnitt „Aufgaben“ oder „To-Do-Liste“. Klicken Sie auf „Aufgabe erstellen“. Klicken Sie auf die Schaltfläche „. Geben Sie die Aufgabendetails ein, einschließlich Titel, Beschreibung, Fälligkeitsdatum und alle relevanten Tags oder Kategorien. Sie können auch Prioritätsstufen festlegen, um Ihre Aufgaben zu priorisieren. Sobald Sie die Informationen ausgefüllt haben, klicken Sie auf „Speichern“. ` oder `Erstellen`, um die Aufgabe zu Ihrer Liste hinzuzufügen. Sie können Aufgaben nach Bedarf einfach bearbeiten, als erledigt markieren oder löschen.",
+			"step4": "Tauchen Sie ein in die Welt der Möglichkeiten und Funktionen unserer Anwendung und genießen Sie den Komfort, den sie Ihrem digitalen Leben bringt."
+		},
+		"stepContentSecond": {
+			"step1": "Wenn Sie in Zukunft zur Plattform zurückkehren, klicken Sie einfach auf die Schaltfläche „Anmelden“. Geben Sie Ihren Benutzernamen und Ihr Passwort ein. Klicken Sie auf „Anmelden“ und Sie erhalten Zugriff auf Ihr Konto“",
+			"step2": "Wenn Sie auf das Dashboard zugreifen, öffnen Sie die Tür zu einem personalisierten Erlebnis, das auf Ihre Bedürfnisse zugeschnitten ist. Diese dynamische Schnittstelle dient als Ihre Kommandozentrale und bietet Einblicke in Echtzeit, Benachrichtigungen und einfachen Zugriff auf wichtige Funktionen. Ob Ob Sie Ihr Konto überwachen, Einstellungen anpassen oder in Ihre neuesten Projekte eintauchen, das Dashboard bietet einen benutzerfreundlichen, intuitiven Hub für alle Ihre Interaktionen innerhalb unserer Plattform.",
+			"step3": "Der Feed ist Ihre Quelle für die neuesten Updates, Neuigkeiten und Beiträge anderer Benutzer oder relevante Informationen auf unserer Plattform. Um auf den Feed zuzugreifen, klicken Sie auf den Abschnitt „Feed“ oder „News“ in Ihrem Dashboard. Scrollen Sie Über den Feed können Sie Beiträge, Artikel und Updates von Ihren Kontakten oder relevanten Quellen anzeigen. Sie können Beiträge liken, kommentieren und teilen, um mit der Community in Kontakt zu treten. Verwenden Sie Filter oder Suchoptionen, um den Inhalt einzugrenzen, der Sie interessiert. Bleiben Sie informiert und verbunden, indem der Feed regelmäßig auf wertvolle Erkenntnisse und Aktualisierungen überprüft wird.",
+			"step4": "Wir haben diese Anwendung speziell für Ihr Vergnügen entwickelt. Nutzen Sie also das Angebot voll aus und machen Sie Ihr Erlebnis unvergesslich."
+		},
+        "whatIsCrm": "Was ist CRM?",
+        "defaultTextFirst": "Synergia CRM: Das 2010 gegründete Unternehmen hat sich zu einem führenden Unternehmen in der Softwarebranche entwickelt. Mit Schwerpunkt auf Cybersicherheit und fortschrittlichen Analysen leisteten sie Pionierarbeit bei bahnbrechenden Lösungen, die Unternehmen in einer zunehmend vernetzten Welt stärken.",
+        "defaultTextSecond": "Durch den Einsatz modernster Technologien unterstützte CyberSolutions seine Kunden bei der Bewältigung komplexer digitaler Herausforderungen und gewährleistete Datenintegrität und Datenschutz. Ihr Engagement für Innovation, gepaart mit einem Team aus qualifizierten Fachleuten, verschaffte ihnen weltweite Anerkennung."
+	}
 }
