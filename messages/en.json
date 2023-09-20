@@ -68,5 +68,15 @@
         },
         "subtitle": "Synergia CRM is CRM system that helps your company to be more productive and effective",
         "plan": "Choose Plan"
+    },
+    "aboutUs": {
+        "title": "About Us",
+        "description": "All our members are absolutely professionals",
+        "link" : "Learn More"
+    },
+    "advantages" : {
+        "marketing": "Marketing",
+        "integration": "Integration",
+        "accesbility" : "Accesbility"
     }
 }

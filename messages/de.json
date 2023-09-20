@@ -68,5 +68,15 @@
         },
         "subtitle": "Synergie von CDM und CDM-Systemen, die glps und Unternehmen produktiver und effektiver macht",
         "plan": "Wählen Plan"
+    },
+    "aboutUs": {
+        "title": "Über Uns",
+        "description": "Alle unsere Mitglieder sind absolute Profis",
+        "link" : "Lern mehr"
+    },
+    "advantages" : {
+        "marketing": "Marketing",
+        "integration": "Integration",
+        "accesbility" : "Acsesbilit"
     }
 }

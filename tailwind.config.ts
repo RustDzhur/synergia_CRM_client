@@ -15,7 +15,8 @@ const config: Config = {
 		},
 		colors: {
 			headerBackground: "#F5F7FC",
-			aboutUsBackground: "#313D45;",
+			aboutUsBackground: "#313D45",
+			advantages: "#313D45",
 			transparent: "transparent",
 			primaryColor: "#5EA8F5",
 			secondaryColor: "#F5F7FC",
@@ -47,8 +48,10 @@ const config: Config = {
 			30: "30px",
 			32: "32px",
 			40: "40px",
+			44: "44px",
 			50: "50px",
 			52: "52px",
+			55: "55px",
 			60: "60px",
 			74: "74px",
 			80: "80px",
@@ -61,16 +64,20 @@ const config: Config = {
 			230: "230px",
 			270: "270px",
 			300: "300px",
+			331: "331px",
 			303: "303px",
 			320: "320px",
 			350: "350px",
 			375: "375px",
 			475: "475px",
+			478: "478px",
 			490: "490px",
+			512: "512px",
 			525: "525px",
 			505: "505px",
 			610: "610px",
 			800: "800px",
+			895: "895px",
 		},
 		opacity: {
 			"0": "0",
@@ -102,6 +109,7 @@ const config: Config = {
 			24: "24px",
 			32: "32px",
 			34: "34px",
+			36: "36px",
 			50: "50px",
 		},
 		borderWidth: {
@@ -124,6 +132,7 @@ const config: Config = {
 			authBtn: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
 			authTabBtn: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
 			heroImage: "0px 2px 8px 0px rgba(0, 0, 0, 0.32)",
+			advantages: "0px 4px 8px 0px rgba(0, 0, 0, 0.25)"
 		},
 		backgroundImage: {
 			"gradient-background":
@@ -132,6 +141,7 @@ const config: Config = {
 		borderRadius: {
 			"4": "4px",
 			"8": "8px",
+			"10": "10px",
 			"16": "16px",
 			"24": "24px",
 			"300": "300px",
@@ -144,7 +154,7 @@ const config: Config = {
 			const newUtilities = {
 				".active-link": {
 					textDecoration: "underline",
-					"text-underline-offset": "10px", // Set the margin-bottom
+					"text-underline-offset": "10px",
 				},
 			};
 			addUtilities(newUtilities);
