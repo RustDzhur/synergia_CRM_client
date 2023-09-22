@@ -94,6 +94,13 @@
 		},
 		"whatIsCrm": "What is CRM?",
 		"defaultTextFirst": "Synergia CRM: Founded in 2010, the company emerged as a leader in the software industry. With a focus on cybersecurity and advanced analytics, they pioneered groundbreaking solutions that empowered businesses in an increasingly connected world.",
-		"defaultTextSecond": "Leveraging cutting-edge technologies, CyberSolutions helped clients navigate complex digital challenges, ensuring data integrity and privacy. Their commitment to innovation, coupled with a team of skilled professionals, propelled them to global recognition."
+		"defaultTextSecond": "Leveraging cutting-edge technologies, CyberSolutions helped clients navigate complex digital challenges, ensuring data integrity and privacy. Their commitment to innovation, coupled with a team of skilled professionals, propelled them to global recognition.",
+        "steps": {
+            "createaccount": "Create your account and sign in",
+            "access": "Access the dashboard",
+            "createtask": "Create tasks and read the feed",
+            "enjoy": "Enjoy the application!",
+            "step": "Step"
+        }
 	}
 }

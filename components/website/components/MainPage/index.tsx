@@ -3,6 +3,7 @@ import Hero from "./Hero/Hero";
 import AboutUs from "./AboutUs/AboutUs";
 import Advantages from "./Advantages/Advantages";
 import WhatIsCrm from "./WhatIsCrm/WhatIsCrm";
+import JoinUs from "./JoinUs/JoinUs";
 
 export default function MainPage() {
 	return (
@@ -19,6 +20,9 @@ export default function MainPage() {
       </div>
       <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto sm:px-12 sm:py-40 md:px-20 lg:px-100 lg:tp-60 lg:pb-20">
         <WhatIsCrm/>
+      </div>
+      <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto">
+        <JoinUs/>
       </div>
 		</div>
 	);

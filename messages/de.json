@@ -94,6 +94,13 @@
 		},
         "whatIsCrm": "Was ist CRM?",
         "defaultTextFirst": "Synergia CRM: Das 2010 gegründete Unternehmen hat sich zu einem führenden Unternehmen in der Softwarebranche entwickelt. Mit Schwerpunkt auf Cybersicherheit und fortschrittlichen Analysen leisteten sie Pionierarbeit bei bahnbrechenden Lösungen, die Unternehmen in einer zunehmend vernetzten Welt stärken.",
-        "defaultTextSecond": "Durch den Einsatz modernster Technologien unterstützte CyberSolutions seine Kunden bei der Bewältigung komplexer digitaler Herausforderungen und gewährleistete Datenintegrität und Datenschutz. Ihr Engagement für Innovation, gepaart mit einem Team aus qualifizierten Fachleuten, verschaffte ihnen weltweite Anerkennung."
+        "defaultTextSecond": "Durch den Einsatz modernster Technologien unterstützte CyberSolutions seine Kunden bei der Bewältigung komplexer digitaler Herausforderungen und gewährleistete Datenintegrität und Datenschutz. Ihr Engagement für Innovation, gepaart mit einem Team aus qualifizierten Fachleuten, verschaffte ihnen weltweite Anerkennung.",
+        "steps": {
+            "createaccount": "Erstellen Sie Ihr Konto und melden Sie sich an",
+            "access": "Auf das Dashboard zugreifen",
+            "createtask": "Aufgaben erstellen und den Feed lesen",
+            "enjoy": "Viel Spaß mit der Anwendung!",
+            "step": "Schritt"
+        }
 	}
 }

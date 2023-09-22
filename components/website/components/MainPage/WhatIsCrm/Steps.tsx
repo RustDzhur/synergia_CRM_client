@@ -1,14 +1,16 @@
 "use client";
 import useStepStore from "@/app/store/useStepStore";
+import { useTranslations } from "next-intl";
 import React from "react";
 
 export default function Steps() {
     const { clickedStep, setClickedStep } = useStepStore();
+	const t = useTranslations ("whatIsCrm.steps")
 	const steps = [
-		"Create your account and sign in",
-		"Access the dashboard",
-		"Create tasks and read the feed",
-		"Enjoy the application!",
+		t("createaccount"),
+		t("access"),
+		t("createtask"),
+		t("enjoy"),
 	];
 	return (
 		<div className="hidden lg:flex flex-col w-448">
@@ -25,7 +27,7 @@ export default function Steps() {
 					onClick={() => setClickedStep(index)}>
 					<div>
 						<p className="text-24 font-bold leading-[1.7] tracking-[0.48px]">
-							Step {index + 1}
+							{t("step")} {index + 1}
 						</p>
 						<p className="text-16 font-medium leading-[1.7] tracking-[0.32px]">
 							{step}
