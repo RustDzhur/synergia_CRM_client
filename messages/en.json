@@ -102,5 +102,20 @@
             "enjoy": "Enjoy the application!",
             "step": "Step"
         }
-	}
+	},
+    "joinUs": {
+        "whyJoinUs": "Why Join Us",
+        "comprehensiveData": {
+            "title": "Comprehensive Data",
+            "text": "Showcase the CRM dashboard's ability to provide comprehensive data insights and analytics."
+        },
+        "interface": {
+            "title": "User-Friendly Interface",
+            "text": "Emphasize that the CRM dashboard offers an intuitive and user-friendly interface with highlight features"
+        },
+        "integration": {
+            "title": "Seamless Integration",
+            "text": "Highlight the CRM dashboard's capability to seamlessly integrate with other tools and platforms that the users might be using."
+        }
+    }
 }

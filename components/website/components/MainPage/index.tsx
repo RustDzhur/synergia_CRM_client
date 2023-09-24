@@ -4,6 +4,7 @@ import AboutUs from "./AboutUs/AboutUs";
 import Advantages from "./Advantages/Advantages";
 import WhatIsCrm from "./WhatIsCrm/WhatIsCrm";
 import JoinUs from "./JoinUs/JoinUs";
+import DiscoverCrm from "./DiscoverCrm/DiscoverCrm";
 
 export default function MainPage() {
 	return (
@@ -23,6 +24,9 @@ export default function MainPage() {
       </div>
       <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto">
         <JoinUs/>
+      </div>
+      <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto sm:px-12 sm:py-40 md:px-20 lg:px-100 lg:py-60">
+        <DiscoverCrm/>
       </div>
 		</div>
 	);

@@ -20,6 +20,7 @@ const config: Config = {
 			whatIsCrm: "#E6E6E6",
 			joinUsPink: "#FF008A",
 			joinUsGrey: "#313D45",
+			discover: "#313D45",
 			advantages: "#313D45",
 			transparent: "transparent",
 			primaryColor: "#5EA8F5",

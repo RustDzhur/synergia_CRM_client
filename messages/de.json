@@ -102,5 +102,20 @@
             "enjoy": "Viel Spaß mit der Anwendung!",
             "step": "Schritt"
         }
-	}
+	},
+    "joinUs": {
+        "whyJoinUs": "Warum bei uns mitmachen",
+        "comprehensiveData": {
+            "title": "Umfassende Daten",
+            "text": "Demonstrieren Sie die Fähigkeit des CRM-Dashboards, umfassende Dateneinblicke und Analysen bereitzustellen."
+        },
+        "interface": {
+            "title": "Benutzerfreundliche Oberfläche",
+            "text": "Betonen Sie, dass das CRM-Dashboard eine intuitive und benutzerfreundliche Oberfläche mit Highlight-Funktionen bietet."
+        },
+        "integration": {
+            "title": "Nahtlose Integration",
+            "text": "Heben Sie die Fähigkeit des CRM-Dashboards hervor, sich nahtlos in andere Tools und Plattformen zu integrieren, die die Benutzer möglicherweise verwenden."
+        }
+    }
 }
