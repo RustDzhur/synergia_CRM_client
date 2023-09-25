@@ -15,6 +15,7 @@ import marketing from "@/public/images/slider/marketing.jpg";
 import onlineDocuments from "@/public/images/slider/onlineDocuments.jpg";
 import settingsAccount from "@/public/images/slider/settingsAccount.jpg";
 import settingsIntegration from "@/public/images/slider/settingsIntegrations.jpg";
+import { useTranslations } from "next-intl";
 
 const settings = {
 	dots: true,
@@ -28,11 +29,12 @@ const settings = {
 };
 
 export default function DiscoverCrm() {
+	const t = useTranslations("discoverCrm");
 	const lists = [
-		{ icon: AiFillCheckCircle, text: "Comprehensive and Centralized" },
-		{ icon: AiFillCheckCircle, text: "Efficiency at Your Fingertips" },
-		{ icon: AiFillCheckCircle, text: "Data-Driven Insights" },
-		{ icon: AiFillCheckCircle, text: "Seamless Integration" },
+		{ icon: AiFillCheckCircle, text: t("comprehensive") },
+		{ icon: AiFillCheckCircle, text: t("efficiency") },
+		{ icon: AiFillCheckCircle, text: t("insights") },
+		{ icon: AiFillCheckCircle, text: t("integration") },
 	];
 	const gallery = [
 		{ original: calendar },
@@ -49,15 +51,12 @@ export default function DiscoverCrm() {
 	return (
 		<div className="text-discover">
 			<h2 className="text-24 lg:text-36 font-bold leading-[1.4] tracking-[0.48px] lg:tracking-[0.72px] text-center mb-30">
-				Discover all the solutions in one CRM platform
+				{t("title")}
 			</h2>
 			<div className="lg:flex lg:justify-between">
 				<div className="lg:w-505">
 					<p className="text-16 md:text-18 leading-[1.7] tracking-[0.32px] sm:tracking-[0.36px] text-center md:text-left mb-40">
-						Welcome to a CRM platform that brings all your solutions under one
-						roof. Say goodbye to juggling multiple tools and embrace the power
-						of seamless integration. Our all-in-one CRM platform is designed to
-						streamline your workflows and empower your team to achieve more.
+						{t("description")}
 					</p>
 					<div className="sm:mb-50">
 						{lists.map((item, index) => (

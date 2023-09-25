@@ -117,5 +117,13 @@
             "title": "Nahtlose Integration",
             "text": "Heben Sie die Fähigkeit des CRM-Dashboards hervor, sich nahtlos in andere Tools und Plattformen zu integrieren, die die Benutzer möglicherweise verwenden."
         }
-    }
+    },
+	"discoverCrm": {
+		"title": "Entdecken Sie alle Lösungen in einer CRM-Plattform",
+		"description": "Willkommen bei einer CRM-Plattform, die alle Ihre Lösungen unter einem Dach vereint. Verabschieden Sie sich vom Jonglieren mit mehreren Tools und nutzen Sie die Kraft der nahtlosen Integration. Unsere All-in-one-CRM-Plattform wurde entwickelt, um Ihre Arbeitsabläufe zu rationalisieren und Ihre zu stärken Team, um mehr zu erreichen.",
+		"comprehensive": "Umfassend und zentralisiert",
+		"efficiency": "Effizienz zum Anfassen",
+		"insights": "Datengesteuerte Erkenntnisse",
+		"integration": "Nahtlose Integration"
+	}
 }

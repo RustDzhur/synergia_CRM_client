@@ -117,5 +117,13 @@
             "title": "Seamless Integration",
             "text": "Highlight the CRM dashboard's capability to seamlessly integrate with other tools and platforms that the users might be using."
         }
-    }
+    },
+	"discoverCrm": {
+		"title": "Discover all the solutions in one CRM platform",
+		"description": "Welcome to a CRM platform that brings all your solutions under one roof. Say goodbye to juggling multiple tools and embrace the power of seamless integration. Our all-in-one CRM platform is designed to streamline your workflows and empower your team to achieve more.",
+		"comprehensive": "Comprehensive and Centralized",
+		"efficiency": "Efficiency at Your Fingertips",
+		"insights": "Data-Driven Insights",
+		"integration": "Seamless Integration"
+	}
 }
