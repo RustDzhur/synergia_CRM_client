@@ -33,6 +33,9 @@ const config: Config = {
 			menu: "#cccccc",
 			activeMenu: "#313D45",
 			authBtn: "#FF008A",
+			tabChoosePlan: "#768FE5",
+			textChoosePlan: "#313D45",
+			cardPlanColor: "#F2F2F2"
 		},
 		spacing: {
 			px: "1px",
@@ -120,12 +123,14 @@ const config: Config = {
 			32: "32px",
 			34: "34px",
 			36: "36px",
+			40: "40px",
 			50: "50px",
 		},
 		borderWidth: {
 			switchCompany: "1px",
 			authForms: "2px",
 			authFormsUnFocus: "2px",
+			cardPlan: '2px',
 		},
 		borderColor: {
 			switchCompany: "#E2F1F5",
@@ -133,7 +138,8 @@ const config: Config = {
 			authFormsFocus: "#5EA8F5",
 			authFormsUnFocus: "#cccccc",
 			authBtn: "#FF008A",
-			authTabBtn: "#FF008A"
+			authTabBtn: "#FF008A",
+			cardPlan: "#768FE5",
 		},
 		boxShadow: {
 			custom: "0px 1px 2px 0px rgba(0, 0, 0, 0.08)",
@@ -142,7 +148,8 @@ const config: Config = {
 			authBtn: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
 			authTabBtn: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
 			heroImage: "0px 2px 8px 0px rgba(0, 0, 0, 0.32)",
-			advantages: "0px 4px 8px 0px rgba(0, 0, 0, 0.25)"
+			advantages: "0px 4px 8px 0px rgba(0, 0, 0, 0.25)",
+			choosePlan: "0px 2px 2px 0px rgba(0, 0, 0, 0.16)"
 		},
 		backgroundImage: {
 			"gradient-background":
