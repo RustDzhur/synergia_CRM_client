@@ -35,7 +35,8 @@ const config: Config = {
 			authBtn: "#FF008A",
 			tabChoosePlan: "#768FE5",
 			textChoosePlan: "#313D45",
-			cardPlanColor: "#F2F2F2"
+			cardPlanColor: "#F2F2F2",
+			basicPlan: "#313D45"
 		},
 		spacing: {
 			px: "1px",
