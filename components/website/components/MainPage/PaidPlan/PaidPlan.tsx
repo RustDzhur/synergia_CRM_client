@@ -95,13 +95,13 @@ export default function PaidPlan() {
 					</div>
 				</div>
 			</div>
-			<div className="overflow-x-scroll scroll-mb-30 flex space-x-4">
+			<div className="overflow-x-scroll scroll-hide-scrollbar lg:overflow-x-initial flex lg:justify-between">
 				{cardData.map((card, index) => (
 					<div
 						key={index}
 						className={`p-25 shadow-choosePlan rounded-16 inline-flex flex-shrink-0 flex-col mb-8 mt-8 ml-8 ${
 							index === cardData.length - 1 ? "mr-8" : "mr-20"
-						} ${card.title === "Basic" ? "bg-basicPlan" : "bg-white"}`}>
+						} ${card.title === "Basic" ? "bg-basicPlan" : "bg-white"} lg:m-0 lg:mt-2 lg:mb-2`}>
 						<div className="mb-40">
 							<Image
 								src={card.imageSrc}
