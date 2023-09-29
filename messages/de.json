@@ -125,5 +125,28 @@
 		"efficiency": "Effizienz zum Anfassen",
 		"insights": "Datengesteuerte Erkenntnisse",
 		"integration": "Nahtlose Integration"
-	}
+	},
+	"paidPlan" : {
+        "titleFree": "Kostenlos",
+        "priceFree": "Testversion 6 Monate",
+        "subTitleFree": "Unbegrenzte Benutzer",
+		"titleBasic": "Basic",
+        "subTitleBasic": "50 Benutzer",
+        "titleStandart": "Standart",
+        "subTitleStandart": "100 Benutzer",
+        "titleProfessional": "Prof",
+        "subTitleProfessional": "Unbegrenzte Benutze",
+        "features": {
+            "chat" : "Chat",
+            "calls": "HD-Videoanrufe",
+            "calendar": "Kalender",
+            "workspace" : "Firmenarbeitsbereich",
+            "feed" : "Feed",
+            "knowledge" : "Wissensdatenbank"
+        },
+        "choosePlan" : "Wählen Sie Ihren Plan",
+        "month" : "Monat",
+        "year" : "Jahr",
+        "button" : "Plan auswählen"
+    }
 }

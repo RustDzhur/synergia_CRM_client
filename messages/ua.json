@@ -125,5 +125,28 @@
 		"efficiency": "Ефективність у вас під рукою",
 		"insights": "Статистика на основі даних",
 		"integration": "Безшовна інтеграція"
-	}
+	},
+    "paidPlan" : {
+        "titleFree": "Даром",
+        "priceFree": "Пробна версія 6 місяців",
+        "subTitleFree": "Безліч користувачів",
+        "titleBasic": "Основний",
+        "subTitleBasic": "50 користувачів",
+        "titleStandart": "Стандарт",
+        "subTitleStandart": "100 Usкористувачівers",
+        "titleProfessional": "Проф",
+        "subTitleProfessional": "Безліч користувачів",
+        "features": {
+            "chat" : "Чат",
+            "calls": "Відеодзвінки HD",
+            "calendar": "Календар",
+            "workspace" : "Робоча область фірми",
+            "feed" : "Подача",
+            "knowledge" : "База знань"
+        },
+        "choosePlan" : "Виберіть свій план",
+        "month" : "Місяць",
+        "year" : "Рік",
+        "button" : "Вибрати план"
+    }
 }

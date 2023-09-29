@@ -117,7 +117,7 @@ export default function SignInForm() {
 					</span>
 				</div>
 				<div className="">
-					<button type="submit" className="sm:px-139 md:px-74 py-15 rounded-4 hover:shadow-authForms bg-authBtn text-18 text-white font-medium">
+					<button type="submit" className="sm:w-full lg:w-[50%] py-15 rounded-4 hover:shadow-authForms bg-authBtn text-18 text-white font-medium">
 						{t("login")}
 					</button>
 				</div>

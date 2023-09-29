@@ -427,7 +427,7 @@ function SignupForm() {
 				</div>
 				<button
 					type="submit"
-					className="sm:px-130 md:px-74 py-15 rounded-4 hover:shadow-authForms bg-authBtn text-18 text-white font-medium">
+					className="sm:w-full lg:w-[50%] py-15 rounded-4 hover:shadow-authForms bg-authBtn text-18 text-white font-medium">
 					{t('signup')}
 				</button>
 			</form>

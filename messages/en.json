@@ -125,5 +125,28 @@
 		"efficiency": "Efficiency at Your Fingertips",
 		"insights": "Data-Driven Insights",
 		"integration": "Seamless Integration"
-	}
+	},
+	"paidPlan" : {
+        "titleFree": "Free",
+        "priceFree": "Trial 6 months",
+        "subTitleFree": "Unlimited Users",
+		"titleBasic": "Basic",
+        "subTitleBasic": "50 Users",
+        "titleStandart": "Standart",
+        "subTitleStandart": "100 Users",
+        "titleProfessional": "Prof",
+        "subTitleProfessional": "Unlimited Users",
+        "features": {
+            "chat" : "Chat",
+            "calls": "HD Video Calls",
+            "calendar": "Calendar",
+            "workspace" : "Company Workspace",
+            "feed" : "Feed",
+            "knowledge" : "Knowledge Base"
+        },
+        "choosePlan" : "Choose Your Plan",
+        "month" : "Month",
+        "year" : "Year",
+        "button" : "Choose Plan"
+    }
 }
