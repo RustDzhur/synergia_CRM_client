@@ -7,6 +7,7 @@ import JoinUs from "./JoinUs/JoinUs";
 import DiscoverCrm from "./DiscoverCrm/DiscoverCrm";
 import PaidPlan from "./PaidPlan/PaidPlan";
 import RevolutionarySolution from "./RevolutionarySolution/RevolutionarySolution";
+import Testimonials from "./Testimonials/Testimonials";
 
 export default function MainPage() {
 	return (
@@ -35,6 +36,9 @@ export default function MainPage() {
       </div>
       <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto">
         <RevolutionarySolution/>
+      </div>
+      <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto sm:px-12 sm:py-40 md:px-20 md:py-40 lg:px-100 lg:py-50">
+        <Testimonials/>
       </div>
 		</div>
 	);

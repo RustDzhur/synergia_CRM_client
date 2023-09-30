@@ -148,5 +148,9 @@
         "month" : "Month",
         "year" : "Year",
         "button" : "Choose Plan"
-    }
+    },
+	"revolutionalySalotions" : {
+		"title" : "We offer a revolutionary solution for your business",
+		"button": "Contact With Us"
+	}
 }

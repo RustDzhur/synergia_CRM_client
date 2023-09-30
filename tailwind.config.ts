@@ -36,7 +36,9 @@ const config: Config = {
 			tabChoosePlan: "#768FE5",
 			textChoosePlan: "#313D45",
 			cardPlanColor: "#F2F2F2",
-			basicPlan: "#313D45"
+			basicPlan: "#313D45",
+			contactUs: "#FF008A",
+			testimonials: "#313D45",
 		},
 		spacing: {
 			px: "1px",
@@ -102,8 +104,8 @@ const config: Config = {
 			"100": "1",
 		},
 		fontFamily: {
-			inter: ['Inter', 'sans'],
-		  },
+			inter: ["Inter", "sans"],
+		},
 		fontWeight: {
 			normal: "400",
 			medium: "500",
@@ -133,7 +135,8 @@ const config: Config = {
 			switchCompany: "1px",
 			authForms: "2px",
 			authFormsUnFocus: "2px",
-			cardPlan: '2px',
+			cardPlan: "2px",
+			testimonials: "2px"
 		},
 		borderColor: {
 			switchCompany: "#E2F1F5",
@@ -143,6 +146,7 @@ const config: Config = {
 			authBtn: "#FF008A",
 			authTabBtn: "#FF008A",
 			cardPlan: "#768FE5",
+			testimonials: "#FF008A",
 		},
 		boxShadow: {
 			custom: "0px 1px 2px 0px rgba(0, 0, 0, 0.08)",
@@ -152,11 +156,13 @@ const config: Config = {
 			authTabBtn: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
 			heroImage: "0px 2px 8px 0px rgba(0, 0, 0, 0.32)",
 			advantages: "0px 4px 8px 0px rgba(0, 0, 0, 0.25)",
-			choosePlan: "0px 2px 2px 0px rgba(0, 0, 0, 0.16)"
+			choosePlan: "0px 2px 2px 0px rgba(0, 0, 0, 0.16)",
 		},
 		backgroundImage: {
 			"gradient-background":
 				"linear-gradient(49deg, #ff008a 15.09%, #768fe5 59.33%, rgba(255, 0, 138, 0) 87.2%)",
+			footerBackground:
+				"linear-gradient(to right, #313D45 100px, #313D45 505px)",
 		},
 		borderRadius: {
 			"4": "4px",
