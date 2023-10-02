@@ -24,7 +24,7 @@ export default function Testimonials() {
 		},
 		{
 			text: "Beautiful piece of furniture. A true asset to my audio and video system. We spend a lot of time finding just the right TV stand for the intended space, and it looks like we finally found it. i was a little afraid the high gloss might look tacky, but the clean lines just look understated, unobtrusive and quite beautiful.",
-			author: "Andrey L.",
+			author: "Sandra L.",
 		},
 	];
 	return (
@@ -51,8 +51,8 @@ export default function Testimonials() {
 					},
 				}}
 				mousewheel={{
-					forceToAxis: true, // Enable forceToAxis to scroll only horizontally
-					releaseOnEdges: true, // Allow releasing on edges to continue page scroll
+					forceToAxis: true,
+					releaseOnEdges: true,
 				}}
 				pagination={{
 					dynamicBullets: true,
@@ -63,7 +63,7 @@ export default function Testimonials() {
 					<SwiperSlide key={index}>
 						<div
 							key={index}
-							className="px-20 py-30 border-testimonials rounded-24 h-400 overflow-y-scroll scrollbar-hidden">
+							className="px-20 py-30 border-testimonials rounded-10 h-400 overflow-y-scroll scrollbar-hidden">
 							<IconContext.Provider value={{ size: "40px", color: "#FF008A" }}>
 								<div className="flex justify-start mb-20">
 									<BiSolidQuoteLeft />

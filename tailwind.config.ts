@@ -39,6 +39,7 @@ const config: Config = {
 			basicPlan: "#313D45",
 			contactUs: "#FF008A",
 			testimonials: "#313D45",
+			footer: "#313D45",
 		},
 		spacing: {
 			px: "1px",
@@ -59,6 +60,7 @@ const config: Config = {
 			25: "25px",
 			30: "30px",
 			32: "32px",
+			35: "35px",
 			40: "40px",
 			44: "44px",
 			50: "50px",
@@ -170,6 +172,7 @@ const config: Config = {
 			"10": "10px",
 			"16": "16px",
 			"24": "24px",
+			"35" : "35px",
 			"50": "50px",
 			"300": "300px",
 			"800": "800px",
