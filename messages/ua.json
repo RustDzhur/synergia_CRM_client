@@ -152,5 +152,16 @@
 	"revolutionalySalotions" : {
 		"title" : "Ми пропонуємо революційне рішення для вашого бізнесу",
 		"button": "Зв'язатися з нами"
+	},
+	"footer" : {
+		"careers" : "Кар'єра",
+		"privacyPolicy" : "Політика конфіденційності",
+		"documentation" : "Документація",
+		"aboutUs" : "Про нас",
+		"team" : "Команда",
+		"support" : "Підтримка / FAQ",
+		"features" : "Особливості",
+		"referral" : "Реферальна програма",
+		"contacts" : "Контакти"
 	}
 }

@@ -152,5 +152,16 @@
 	"revolutionalySalotions" : {
 		"title" : "We offer a revolutionary solution for your business",
 		"button": "Contact With Us"
+	},
+	"footer" : {
+		"careers" : "Careers",
+		"privacyPolicy" : "Privacy policy",
+		"documentation" : "Documentation",
+		"aboutUs" : "About Us",
+		"team" : "Team",
+		"support" : "Support / FAQ",
+		"features" : "Features",
+		"referral" : "Referral program",
+		"contacts" : "Contacts"
 	}
 }

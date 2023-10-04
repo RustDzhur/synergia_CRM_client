@@ -8,8 +8,10 @@ import { BsTwitter } from "react-icons/bs";
 import { AiOutlineInstagram } from "react-icons/ai";
 import { ImLinkedin2 } from "react-icons/im";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
+import { useTranslations } from "next-intl";
 
 export default function Footer() {
+	const t = useTranslations("footer");
 	const { selectedLanguage } = useLanguageStore();
 
 	const socialIcons = [
@@ -37,7 +39,7 @@ export default function Footer() {
 											? "/careers"
 											: `/${selectedLanguage.code}/careers`
 									}>
-									Careers
+									{t("careers")}
 								</Link>
 							</li>
 							<li className="mb-30">
@@ -47,7 +49,7 @@ export default function Footer() {
 											? "/privacypolicy"
 											: `/${selectedLanguage.code}/privacypolicy`
 									}>
-									Privacy policy
+									{t("privacyPolicy")}
 								</Link>
 							</li>
 							<li className="mb-30 lg:mb-0">
@@ -57,7 +59,7 @@ export default function Footer() {
 											? "/documentation"
 											: `/${selectedLanguage.code}/documentation`
 									}>
-									Documentation
+									{t("documentation")}
 								</Link>
 							</li>
 							<li className="mb-30 lg:hidden">
@@ -67,7 +69,7 @@ export default function Footer() {
 											? "/about"
 											: `/${selectedLanguage.code}/about`
 									}>
-									About Us
+									{t("aboutUs")}
 								</Link>
 							</li>
 							<li className="lg:hidden">
@@ -77,7 +79,7 @@ export default function Footer() {
 											? "/team"
 											: `/${selectedLanguage.code}/team`
 									}>
-									Team
+									{t("team")}
 								</Link>
 							</li>
 						</ul>
@@ -91,7 +93,7 @@ export default function Footer() {
 											? "/support"
 											: `/${selectedLanguage.code}/support`
 									}>
-									Support / FAQ
+									{t("support")}
 								</Link>
 							</li>
 							<li className="mb-30">
@@ -101,7 +103,7 @@ export default function Footer() {
 											? "/features"
 											: `/${selectedLanguage.code}/features`
 									}>
-									Features
+									{t("features")}
 								</Link>
 							</li>
 							<li className="mb-30 lg:mb-0">
@@ -111,7 +113,7 @@ export default function Footer() {
 											? "/referral"
 											: `/${selectedLanguage.code}/referral`
 									}>
-									Referral program
+									{t("referral")}
 								</Link>
 							</li>
 							<li className="lg:hidden">
@@ -121,7 +123,7 @@ export default function Footer() {
 											? "/contacts"
 											: `/${selectedLanguage.code}/contacts`
 									}>
-									Contacts
+									{t("contacts")}
 								</Link>
 							</li>
 						</ul>
@@ -135,7 +137,7 @@ export default function Footer() {
 											? "/about"
 											: `/${selectedLanguage.code}/about`
 									}>
-									About Us
+									{t("aboutUs")}
 								</Link>
 							</li>
 							<li className="md:block mb-30">
@@ -145,7 +147,7 @@ export default function Footer() {
 											? "/team"
 											: `/${selectedLanguage.code}/team`
 									}>
-									Team
+									{t("team")}
 								</Link>
 							</li>
 							<li className="md:block">
@@ -155,7 +157,7 @@ export default function Footer() {
 											? "/contacts"
 											: `/${selectedLanguage.code}/contacts`
 									}>
-									Contacts
+									{t("contacts")}
 								</Link>
 							</li>
 						</ul>
