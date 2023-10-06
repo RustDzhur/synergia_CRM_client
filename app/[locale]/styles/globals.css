@@ -1,6 +1,26 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+html {
+	overflow-x: hidden;
+}
 body {
-    overflow: hidden;
-  }
+	overflow-x: hidden;
+}
+.scroll-hide-scrollbar {
+	scrollbar-width: thin; /* "auto" on most browsers, "thin" on Firefox */
+	scrollbar-color: transparent transparent; /* scrollbar thumb and track color */
+	overflow-y: scroll; /* Always show a vertical scrollbar */
+}
+
+.scroll-hide-scrollbar::-webkit-scrollbar {
+	width: 0px; /* Adjust the width as needed */
+}
+
+.scroll-hide-scrollbar::-webkit-scrollbar-thumb {
+	background-color: transparent; /* Color of the thumb */
+}
+
+.scroll-hide-scrollbar:hover::-webkit-scrollbar-thumb {
+	background-color: #e90505; /* Color of the thumb on hover */
+}

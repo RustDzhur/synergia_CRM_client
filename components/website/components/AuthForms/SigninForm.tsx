@@ -12,13 +12,15 @@ import {
 	FieldValues,
 } from "react-hook-form";
 import { useTranslations } from "next-intl";
+import useAuthStore from "@/app/store/useAuthStore";
 
 interface SignInFormData {
-	username: string;
+	email: string;
 	password: string;
 }
 
 export default function SignInForm() {
+	const { isSigningIn, signIn } = useAuthStore();
 	const [passwordVisible, setPasswordVisible] = useState(false);
 	const {
 		isSignInFormOpen,
@@ -32,10 +34,11 @@ export default function SignInForm() {
 	const { handleSubmit, control, watch } = useForm();
 	const password = watch("password", "");
 
-	const onSubmit: SubmitHandler<FieldValues> = (data) => {
+	const onSubmit: SubmitHandler<FieldValues> = async (data) => {
 		const signInData = data as SignInFormData;
 		// Handle sign-in logic here
-		console.log(signInData);
+		const {email, password} = signInData
+		await signIn({email, password})
 	};
 
 	const handleChangeForm = () => {
@@ -53,7 +56,7 @@ export default function SignInForm() {
 			<form onSubmit={handleSubmit(onSubmit)} className="text-center">
 				<div>
 					<Controller
-						name="username"
+						name="email"
 						control={control}
 						defaultValue=""
 						render={({ field }) => (

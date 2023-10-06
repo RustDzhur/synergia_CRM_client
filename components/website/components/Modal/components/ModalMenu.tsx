@@ -39,18 +39,20 @@ export default function ModalMenu() {
 	};
 
 	const lockScroll = () => {
-		document.body.style.overflow = "hidden";
+		document.documentElement.style.overflow = 'hidden';
+		document.body.style.overflow = 'hidden';
 	  };
 	
 	  const unlockScroll = () => {
-		document.body.style.overflow = "";
+		document.documentElement.style.overflow = '';
+		document.body.style.overflow = '';
 	  };
 	
 	  React.useEffect(() => {
 		if (menu || isSignInFormOpen || isSignUpFormOpen) {
-		  lockScroll(); // Call function to lock scroll
+		  lockScroll();
 		} else {
-		  unlockScroll(); // Call function to unlock scroll
+		  unlockScroll();
 		}
 	  }, [menu, isSignInFormOpen, isSignUpFormOpen]);
 
@@ -61,7 +63,7 @@ export default function ModalMenu() {
 					ref={modalRef}
 					onClick={handleCloseModal}
 					className="fixed inset-0 flex justify-start lg:justify-center lg:items-center  z-50 bg-modalBG ">
-					<div className=" sm:bg-secondaryColor sm:p-20 w-full lg:h-auto lg:mb-40 lg:rounded-24 lg:w-auto md:w-375 overflow-y-auto">
+					<div className=" sm:bg-secondaryColor sm:p-20 w-full lg:h-auto lg:mb-40 lg:rounded-24 lg:w-auto md:w-375  overflow-y-auto scroll-hide-scrollbar">
 						<div className="flex justify-between mb-60 lg:mb-20 items-center">
 							<div className="lg:hidden">
 								<Logo />

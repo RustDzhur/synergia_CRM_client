@@ -21,13 +21,17 @@ import {
 import { IconContext } from "react-icons";
 import useAuthFormStore from "@/app/store/useAuthFormStore";
 import { useTranslations } from "next-intl";
+import useAuthStore from "@/app/store/useAuthStore";
 
 interface SignUpFormData {
-	username: string;
+	firstname: string;
+	lasttname: string;
+	email: string;
 	password: string;
 }
 
 function SignupForm() {
+	const { isSigningUp, signUp } = useAuthStore();
 	const [activeTab, setActiveTab] = useState("company");
 	const [passwordVisible, setPasswordVisible] = useState(false);
 	const { handleSubmit, control } = useForm();
@@ -45,11 +49,14 @@ function SignupForm() {
 		setActiveTab(tab);
 	};
 
-	const onSubmit: SubmitHandler<FieldValues> = (data) => {
+	const onSubmit: SubmitHandler<FieldValues> = async (data) => {
 		const signInData = data as SignUpFormData;
 		// Handle sign-in logic here
-		console.log(signInData);
+		const {firstname, lasttname, email, password} = signInData		
+		await signUp({firstname, lasttname, email, password})
 	};
+
+console.log(isSigningUp);
 
 	const handleChangeForm = () => {
 		if (isSignUpFormOpen && !isSignInFormOpen) {
@@ -262,7 +269,7 @@ function SignupForm() {
 				) : (
 					<div className="mb-15 lg:grid lg:grid-cols-2 lg:gap-6">
 						<Controller
-							name="firstName"
+							name="firstname"
 							control={control}
 							rules={{ required: true }}
 							render={({ field }) => (
@@ -284,7 +291,7 @@ function SignupForm() {
 						/>
 
 						<Controller
-							name="lastName"
+							name="lasttname"
 							control={control}
 							rules={{ required: true }}
 							render={({ field }) => (
@@ -306,7 +313,7 @@ function SignupForm() {
 						/>
 
 						<Controller
-							name="personalPhone"
+							name="phone"
 							control={control}
 							rules={{ required: true }}
 							render={({ field }) => (
@@ -328,7 +335,7 @@ function SignupForm() {
 						/>
 
 						<Controller
-							name="personalEmail"
+							name="email"
 							control={control}
 							rules={{ required: true }}
 							render={({ field }) => (
@@ -372,7 +379,7 @@ function SignupForm() {
 						/>
 
 						<Controller
-							name="personalPassword"
+							name="password"
 							control={control}
 							rules={{ required: true }}
 							render={({ field }) => (
