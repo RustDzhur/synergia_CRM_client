@@ -1,12 +1,14 @@
 import {create} from 'zustand';
 
 interface SignUpFormData {
-	username: string;
+	firstname: string;
+	lasttname: string;
+	email: string;
 	password: string;
 }
 
 interface SignInFormData {
-	username: string;
+	email: string;
 	password: string;
 }
 

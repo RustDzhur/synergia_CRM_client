@@ -51,7 +51,6 @@ function SignupForm() {
 
 	const onSubmit: SubmitHandler<FieldValues> = async (data) => {
 		const signInData = data as SignUpFormData;
-		// Handle sign-in logic here
 		const {firstname, lasttname, email, password} = signInData		
 		await signUp({firstname, lasttname, email, password})
 	};

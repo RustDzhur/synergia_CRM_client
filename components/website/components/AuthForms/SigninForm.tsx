@@ -29,16 +29,15 @@ export default function SignInForm() {
 		toggleSignUpForm,
 	} = useAuthFormStore();
 
-    const t = useTranslations("authForms")
+	const t = useTranslations("authForms");
 
 	const { handleSubmit, control, watch } = useForm();
 	const password = watch("password", "");
 
 	const onSubmit: SubmitHandler<FieldValues> = async (data) => {
 		const signInData = data as SignInFormData;
-		// Handle sign-in logic here
-		const {email, password} = signInData
-		await signIn({email, password})
+		const { email, password } = signInData;
+		await signIn({ email, password });
 	};
 
 	const handleChangeForm = () => {
@@ -64,8 +63,8 @@ export default function SignInForm() {
 								<input
 									{...field}
 									placeholder={t("username")}
-									type="text"
-									id="username"
+									type="email"
+									id="email"
 									className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
 								/>
 								<div className="absolute top-17 left-20">
@@ -120,7 +119,9 @@ export default function SignInForm() {
 					</span>
 				</div>
 				<div className="">
-					<button type="submit" className="sm:w-full lg:w-[50%] py-15 rounded-4 hover:shadow-authForms bg-authBtn text-18 text-white font-medium">
+					<button
+						type="submit"
+						className="sm:w-full lg:w-[50%] py-15 rounded-4 hover:shadow-authForms bg-authBtn text-18 text-white font-medium">
 						{t("login")}
 					</button>
 				</div>
