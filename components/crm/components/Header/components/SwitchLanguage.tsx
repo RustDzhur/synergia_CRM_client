@@ -23,10 +23,13 @@ export default function SwitchLanguage() {
 
 	useEffect(() => {
 		const savedLanguage = localStorage.getItem("selectedLanguage");
+		if (!savedLanguage) {
+			router.replace("/ua/crm")
+		}
 		if (savedLanguage) {
 			setSelectedLanguage(JSON.parse(savedLanguage));
 		}
-	}, [setSelectedLanguage]);
+	}, [router, setSelectedLanguage]);
 
 	const handleLanguageChange = (language: Language) => {
 		setSelectedLanguage(language);

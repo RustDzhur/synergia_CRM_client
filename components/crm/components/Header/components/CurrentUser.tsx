@@ -1,7 +1,6 @@
 "use client";
-import Image from "next/image";
 import React, { useEffect } from "react";
-import {useTranslations} from 'next-intl';
+import { useTranslations } from "next-intl";
 import { RiArrowDownSLine, RiArrowUpSLine } from "react-icons/ri";
 import { IconContext } from "react-icons";
 import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
@@ -12,7 +11,7 @@ import { MessageType } from "@/app/types/MessageType";
 export default function CurrentUser() {
 	const { user, isLoading, isDropDown, toggleDropDown, fetchUser } =
 		useCurrentUserStore();
-const t = useTranslations('navBar')
+	const t = useTranslations("navBar");
 	useEffect(() => {
 		fetchUser();
 	}, [fetchUser]);
@@ -29,16 +28,20 @@ const t = useTranslations('navBar')
 			/>
 		);
 	}
+
 	return (
 		<div
 			onClick={toggleDropDown}
 			className="flex items-center relative cursor-pointer">
 			<div className=" w-50 mr-8 sm:block md:hidden mp:block">
-				<Image src={user.imageUrl} alt="user" />
+				<img src={user.avatarUrl} alt="user" width={50} height={50} />
 			</div>
 			<div className="mr-8">
 				<p className="sm:text-14 md-text-16 lg:text-18 font-medium">
-					{user.name}
+					{user.firstname}
+				</p>
+				<p className="sm:text-14 md-text-16 lg:text-18 font-medium">
+					{user.lasttname}
 				</p>
 			</div>
 			<IconContext.Provider value={{ size: "18px" }}>
@@ -47,11 +50,13 @@ const t = useTranslations('navBar')
 			{isDropDown && (
 				<ul className="absolute right-0 top-full  bg-headerBackground border-b-switchCompany rounded-b-8">
 					<li className="  py-15 px-20 cursor-pointer">
-						<p className="font-medium text-16 leading-16 text-black">{t('currentUser.logout')}</p>
+						<p className="font-medium text-16 leading-16 text-black">
+							{t("currentUser.logout")}
+						</p>
 					</li>
 					<li className="border-t-switchCompany py-15 px-20 cursor-pointer">
 						<p className="font-medium text-16 leading-16 text-black">
-						{t('currentUser.settings')}
+							{t("currentUser.settings")}
 						</p>
 					</li>
 				</ul>

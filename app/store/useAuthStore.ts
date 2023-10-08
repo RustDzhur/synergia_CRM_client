@@ -1,4 +1,4 @@
-import {create} from 'zustand';
+import { create } from "zustand";
 
 interface SignUpFormData {
 	firstname: string;
@@ -13,77 +13,83 @@ interface SignInFormData {
 }
 
 interface AuthStore {
-  isSigningIn: boolean;
-  isSigningUp: boolean;
-  signIn: (data: SignInFormData) => Promise<void>;
-  signUp: (data: SignUpFormData) => Promise<void>;
+	isSigningIn: boolean;
+	isSigningUp: boolean;
+	timeoutId?: NodeJS.Timeout;
+	signIn: (data: SignInFormData) => Promise<void>;
+	signUp: (data: SignUpFormData) => Promise<void>;
 }
 
 const useAuthStore = create<AuthStore>((set) => ({
-  isSigningIn: false,
-  isSigningUp: false,
-  signIn: async (data: SignInFormData) => {
-    // Set loading state
-    set({ isSigningIn: true });
+	isSigningIn: false,
+	isSigningUp: false,
+	signIn: async (data: SignInFormData) => {
+		// Set loading state
+		set({ isSigningIn: true });
 
-    try {
-      // Make API call for signin
-      const response = await fetch('https://synergia-crm-server.onrender.com/api/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+		try {
+			// Make API call for signin
+			const response = await fetch(
+				"https://synergia-crm-server.onrender.com/api/signin",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(data),
+				}
+			);
 
-      // Handle response
-      if (!response.ok) {
-        throw new Error('Signin failed');
-      }
+			if (!response.ok) {
+				throw new Error("Signin failed");
+			}
 
-      // Handle successful signin, e.g., set user token in local storage, etc.
-      // ...
+			const responseData = await response.json();
 
-    } catch (error) {
-      // Handle error
-      console.error('Signin error:', error);
+			localStorage.setItem("token", responseData.user.token);
 
-    } finally {
-      // Reset loading state
-      set({ isSigningIn: false });
-    }
-  },
-  signUp: async (data: SignUpFormData) => {
-    // Set loading state
-    set({ isSigningUp: true });
+			const timeoutId = setTimeout(() => {
+				localStorage.setItem("token", "");
+				set({ isSigningIn: false });
+			}, 23 * 60 * 60 * 1000 + 59 * 60 * 1000 + 59 * 1000);
 
-    try {
-      // Make API call for signup
-      const response = await fetch('https://synergia-crm-server.onrender.com/api/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+			set({ timeoutId });
+		} catch (error) {
+			console.error("Signin error:", error);
+		}
+	},
+	signUp: async (data: SignUpFormData) => {
+		// Set loading state
+		set({ isSigningUp: true });
 
-      // Handle response
-      if (!response.ok) {
-        throw new Error('Signup failed');
-      }
+		try {
+			// Make API call for signup
+			const response = await fetch(
+				"https://synergia-crm-server.onrender.com/api/signup",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(data),
+				}
+			);
 
-      // Handle successful signup, e.g., set user token in local storage, etc.
-      // ...
+			// Handle response
+			if (!response.ok) {
+				throw new Error("Signup failed");
+			}
 
-    } catch (error) {
-      // Handle error
-      console.error('Signup error:', error);
-
-    } finally {
-      // Reset loading state
-      set({ isSigningUp: false });
-    }
-  },
+			// Handle successful signup, e.g., set user token in local storage, etc.
+			// ...
+		} catch (error) {
+			// Handle error
+			console.error("Signup error:", error);
+		} finally {
+			// Reset loading state
+			set({ isSigningUp: false });
+		}
+	},
 }));
 
 export default useAuthStore;

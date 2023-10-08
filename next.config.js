@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const nextConfig = {
+  images: {
+    domains: ['avataaars.io'],
+  },
+}
 
 const withNextIntl = require('next-intl/plugin')(
     './i18n.ts'

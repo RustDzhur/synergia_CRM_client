@@ -1,6 +1,6 @@
 "use client";
 import useAuthFormStore from "@/app/store/useAuthFormStore";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FaUser } from "react-icons/fa";
 import { IoIosLock, IoIosUnlock } from "react-icons/io";
 import { BsEyeSlash, BsEye } from "react-icons/bs";
@@ -13,6 +13,9 @@ import {
 } from "react-hook-form";
 import { useTranslations } from "next-intl";
 import useAuthStore from "@/app/store/useAuthStore";
+import { useToggleMenuState } from "@/app/store/useToggleMenuState";
+import { useRouter } from "next/navigation";
+import Loader from "@/app/utils/Loader";
 
 interface SignInFormData {
 	email: string;
@@ -20,6 +23,7 @@ interface SignInFormData {
 }
 
 export default function SignInForm() {
+	const router = useRouter();
 	const { isSigningIn, signIn } = useAuthStore();
 	const [passwordVisible, setPasswordVisible] = useState(false);
 	const {
@@ -28,16 +32,26 @@ export default function SignInForm() {
 		toggleSignInForm,
 		toggleSignUpForm,
 	} = useAuthFormStore();
+	const { menu, toggleMenu } = useToggleMenuState();
 
 	const t = useTranslations("authForms");
 
-	const { handleSubmit, control, watch } = useForm();
+	const { handleSubmit, control, watch, reset } = useForm();
 	const password = watch("password", "");
 
 	const onSubmit: SubmitHandler<FieldValues> = async (data) => {
 		const signInData = data as SignInFormData;
 		const { email, password } = signInData;
 		await signIn({ email, password });
+		reset();
+		toggleSignInForm();
+		toggleMenu();
+		const token = localStorage.getItem("token");
+		if (!token) {
+			return <Loader color="#5EA8F5" width="50" height="10" radius="9" />;
+		} else {
+			router.push("/crm");
+		}
 	};
 
 	const handleChangeForm = () => {
