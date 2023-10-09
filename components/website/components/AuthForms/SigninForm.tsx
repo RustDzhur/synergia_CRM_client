@@ -62,7 +62,12 @@ export default function SignInForm() {
 	};
 
 	return (
-		<>
+		<div className="relative">
+			<div className="flex items-center justify-center">
+				{isSigningIn && (
+					<Loader color="#5EA8F5" width="100" height="20" radius="18" />
+				)}
+			</div>
 			<p className="text-34 font-bold text-center leading-[61.2px] sm:mb-20">
 				{t("login")}
 			</p>
@@ -140,6 +145,6 @@ export default function SignInForm() {
 					</button>
 				</div>
 			</form>
-		</>
+		</div>
 	);
 }
