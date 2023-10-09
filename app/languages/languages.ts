@@ -10,7 +10,7 @@ interface Language {
 
  export const languages: Language[] = [
     {
-      id: "us",
+      id: "en",
       name: "en-US",
       code: "en",
     },

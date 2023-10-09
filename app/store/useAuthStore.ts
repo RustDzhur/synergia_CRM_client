@@ -21,7 +21,12 @@ interface AuthStore {
 }
 
 const useAuthStore = create<AuthStore>((set) => {
-  const tokenFromLocalStorage = localStorage.getItem("token");
+  const isClientSide = typeof window !== "undefined";
+
+  const tokenFromLocalStorage = isClientSide
+    ? localStorage.getItem("token")
+    : null;
+
   const initialIsSigningIn = tokenFromLocalStorage !== null && tokenFromLocalStorage !== undefined;
   
   set({
