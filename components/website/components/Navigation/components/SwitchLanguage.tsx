@@ -23,9 +23,9 @@ export default function SwitchLanguage() {
 
 	useEffect(() => {
 		const savedLanguage = localStorage.getItem("selectedLanguage");
-		if (!savedLanguage) {
-			router.replace("/ua")
-		}
+		// if (!savedLanguage) {
+		// 	router.replace("/ua")
+		// }
 		if (savedLanguage) {
 			setSelectedLanguage(JSON.parse(savedLanguage));
 		}
