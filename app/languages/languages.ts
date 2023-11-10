@@ -29,12 +29,12 @@ interface Language {
   export const languageCodeToProperties = (
     code: string
   ): { flagUrl: string; width: number; height: number } => {
-    if (code === "en") {
-      return { flagUrl: usa, width: 40, height: 30 };
+    if (code === "ua") {
+      return { flagUrl: ukraine, width: 40, height: 30 };
     } else if (code === "de") {
       return { flagUrl: germany, width: 40, height: 30 };
-    } else if (code === "ua") {
-      return { flagUrl: ukraine, width: 40, height: 30 };
+    } else if (code === "en") {
+      return { flagUrl: usa, width: 40, height: 30 };
     }
     return { flagUrl: "", width: 0, height: 0 };
   };
