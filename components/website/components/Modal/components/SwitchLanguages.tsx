@@ -86,7 +86,7 @@ export default function SwitchLanguage() {
 								<p className="text-24 text-menu font-medium hover:text-black hover:font-medium">{t(`lang.${lang.code}`)}</p>
 								<Image
 									src={languageCodeToProperties(lang.code).flagUrl}
-									alt={lang.name}
+									alt={lang.code}
 									width={languageCodeToProperties(lang.code).width}
 									height={languageCodeToProperties(lang.code).height}
 									className="w-40 cursor-pointer"
