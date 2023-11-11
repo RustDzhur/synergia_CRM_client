@@ -26,10 +26,17 @@ export default function SwitchLanguage() {
 
 		if (savedLanguage) {
 			setSelectedLanguage(JSON.parse(savedLanguage));
+			if (selectedLanguage.code === 'de') {
+				router.replace("/de")
+			} else if (selectedLanguage.code === 'en') {
+				router.replace("/en")
+			} else if (selectedLanguage.code === 'ua') {
+				router.replace("/ua")
+			}
 		} else {
 			router.replace("/ua");
 		}
-	}, [router, setSelectedLanguage]);
+	}, [router, selectedLanguage.code, setSelectedLanguage]);
 
 	const handleLanguageChange = (language: Language) => {
 		setSelectedLanguage(language);
