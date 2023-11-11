@@ -69,7 +69,7 @@ export default function SwitchLanguage() {
 								className="flex items-center mb-20">
 								<Image
 									src={languageCodeToProperties(lang.code).flagUrl}
-									alt={lang.name}
+									alt={lang.code}
 									width={languageCodeToProperties(lang.code).width}
 									height={languageCodeToProperties(lang.code).height}
 									className="w-40 cursor-pointer mr-20 rounded-4"
