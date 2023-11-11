@@ -1,8 +1,6 @@
 import {create} from 'zustand';
 
 interface Language {
-  id: string;
-  name: string;
   code: string;
 }
 
@@ -12,6 +10,6 @@ interface LanguageStore {
 }
 
 export const useLanguageStore = create<LanguageStore>((set) => ({
-  selectedLanguage: { id: 'ua', name: 'uk-UA', code: 'ua' },
+  selectedLanguage: { code: 'ua' },
   setSelectedLanguage: (language) => set({ selectedLanguage: language }),
 }));

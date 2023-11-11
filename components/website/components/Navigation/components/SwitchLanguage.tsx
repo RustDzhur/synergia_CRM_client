@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 export default function SwitchLanguage() {
 	const [isOpenDropDown, setIsOpenDropDown] = useState(false);
 	const { selectedLanguage, setSelectedLanguage } = useLanguageStore();
-  const router = useRouter();
+	const router = useRouter();
 	const t = useTranslations("navBar");
 
 	const handleOpenDropDown = () => {
@@ -23,11 +23,11 @@ export default function SwitchLanguage() {
 
 	useEffect(() => {
 		const savedLanguage = localStorage.getItem("selectedLanguage");
-		// if (!savedLanguage) {
-		// 	router.replace("/ua")
-		// }
+
 		if (savedLanguage) {
 			setSelectedLanguage(JSON.parse(savedLanguage));
+		} else {
+			router.replace("/ua");
 		}
 	}, [router, setSelectedLanguage]);
 
@@ -36,7 +36,7 @@ export default function SwitchLanguage() {
 		setIsOpenDropDown(false);
 		localStorage.setItem("selectedLanguage", JSON.stringify(language));
 		router.replace(`/${language.code}`);
-  	};
+	};
 
 	const selectedLanguageProperties = languageCodeToProperties(
 		selectedLanguage.code
@@ -71,7 +71,7 @@ export default function SwitchLanguage() {
 								className={`cursor-pointer flex items-center justify-between  mb-20`}>
 								<Image
 									src={languageCodeToProperties(lang.code).flagUrl}
-									alt={lang.name}
+									alt={lang.code}
 									width={languageCodeToProperties(lang.code).width}
 									height={languageCodeToProperties(lang.code).height}
 									className="w-40 cursor-pointer mr-20 rounded-4"
