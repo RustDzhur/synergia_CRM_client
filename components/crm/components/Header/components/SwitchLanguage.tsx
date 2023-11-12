@@ -22,14 +22,43 @@ export default function SwitchLanguage() {
 	};
 
 	useEffect(() => {
-		const savedLanguage = localStorage.getItem("selectedLanguage");
-		if (!savedLanguage) {
-			router.replace("/ua/crm")
-		}
+		const savedLanguage = localStorage.getItem('selectedLanguage');
+	
 		if (savedLanguage) {
-			setSelectedLanguage(JSON.parse(savedLanguage));
+		  const parsedLanguage = JSON.parse(savedLanguage);
+		  setSelectedLanguage(parsedLanguage);
+	
+		  const currentPath = window.location.pathname;
+		  currentPath.replace(/^\/[a-z]{2}/, `/${parsedLanguage.code}`);
+	
+		  const handleRouteChange = () => {
+			const url = window.location.pathname;
+			if (url.startsWith(`/${parsedLanguage.code}`)) {
+			  router.replace(url);
+			}
+		  };
+	
+		  const handlePopState = () => {
+			const url = window.location.pathname;
+			if (url.startsWith(`/${parsedLanguage.code}`)) {
+			  router.replace(url);
+			}
+		  };
+	
+		  // Подписываемся на события маршрута
+		  window.addEventListener('popstate', handlePopState);
+		  window.addEventListener('load', handleRouteChange);
+	
+		  return () => {
+			// Отписываемся от событий при размонтировании компонента
+			window.removeEventListener('popstate', handlePopState);
+			window.removeEventListener('load', handleRouteChange);
+		  };
+
+		} else {
+		  router.replace('/ua');
 		}
-	}, [router, setSelectedLanguage]);
+	  }, [router, selectedLanguage.code, setSelectedLanguage]);
 
 	const handleLanguageChange = (language: Language) => {
 		setSelectedLanguage(language);
