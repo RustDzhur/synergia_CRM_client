@@ -23,43 +23,25 @@ export default function SwitchLanguage() {
 	};
 
 	useEffect(() => {
-		const savedLanguage = localStorage.getItem('selectedLanguage');
-	
-		if (savedLanguage) {
-		  const parsedLanguage = JSON.parse(savedLanguage);
-		  setSelectedLanguage(parsedLanguage);
-	
-		  const currentPath = window.location.pathname;
-		  currentPath.replace(/^\/[a-z]{2}/, `/${parsedLanguage.code}`);
-	
-		  const handleRouteChange = () => {
-			const url = window.location.pathname;
-			if (url.startsWith(`/${parsedLanguage.code}`)) {
-			  router.replace(url);
-			}
-		  };
-	
-		  const handlePopState = () => {
-			const url = window.location.pathname;
-			if (url.startsWith(`/${parsedLanguage.code}`)) {
-			  router.replace(url);
-			}
-		  };
-	
-		  // Подписываемся на события маршрута
-		  window.addEventListener('popstate', handlePopState);
-		  window.addEventListener('load', handleRouteChange);
-	
-		  return () => {
-			// Отписываемся от событий при размонтировании компонента
-			window.removeEventListener('popstate', handlePopState);
-			window.removeEventListener('load', handleRouteChange);
-		  };
+		const savedLanguage = localStorage.getItem("selectedLanguage");
 
+		if (savedLanguage) {
+			try {
+				const parsedLanguage = JSON.parse(savedLanguage);
+				console.log("Parsed Language:", parsedLanguage);
+				setSelectedLanguage(parsedLanguage);
+			} catch (error) {
+				localStorage.setItem(
+					"selectedLanguage",
+					JSON.stringify({ code: "ua" })
+				);
+				router.replace("/ua")
+			}
 		} else {
-		  router.replace('/ua');
+			localStorage.setItem("selectedLanguage", JSON.stringify({ code: "ua" }));
+			router.replace("/ua")
 		}
-	  }, [router, selectedLanguage.code, setSelectedLanguage]);
+	}, [router, setSelectedLanguage]);
 
 	const handleLanguageChange = (language: Language) => {
 		setSelectedLanguage(language);

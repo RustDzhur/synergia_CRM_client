@@ -28,5 +28,5 @@ interface Language {
     } else if (code === "en") {
       return { flagUrl: usa, width: 40, height: 30 };
     }
-    return { flagUrl: "", width: 0, height: 0 };
+    return { flagUrl: "ua", width: 40, height: 30 };
   };
