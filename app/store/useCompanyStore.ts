@@ -17,6 +17,7 @@ export const useCompanyStore = create<CompanyStore>((set) => ({
   selectedCompany: null,
   fetchCompanies: async () => {
     try {
+      //Change address
       const response = await fetch('https://your-api-url/companies');
       const companies = await response.json();
       set({ companies });
