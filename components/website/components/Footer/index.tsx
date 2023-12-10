@@ -22,7 +22,7 @@ export default function Footer() {
 	];
 	return (
 		<div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto bg-footer">
-			<div className=" sm:px-12 sm:py-50 md:px-20 md:py-40 lg:px-100 lg:py-80">
+			<div className="sm:px-12 sm:py-50 md:px-20 md:py-40 lg:px-100 lg:py-80">
 				<div className="flex justify-center mb-40 md:mb-0 md:hidden">
 					<Logo />
 				</div>

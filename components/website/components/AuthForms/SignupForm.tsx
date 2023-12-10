@@ -55,7 +55,6 @@ function SignupForm() {
 		await signUp({firstname, lasttname, email, password})
 	};
 
-console.log(isSigningUp);
 
 	const handleChangeForm = () => {
 		if (isSignUpFormOpen && !isSignInFormOpen) {
