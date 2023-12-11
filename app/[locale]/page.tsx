@@ -5,7 +5,9 @@ export default function Home() {
 		<div className="lg:max-w-screen-lg m-auto">
 			<Navigation />
 			<MainPage />
-			<Footer />
+			<div className="overflow-hidden">
+				<Footer />
+			</div>
 		</div>
 	);
 }
