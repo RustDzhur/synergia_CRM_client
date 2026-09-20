@@ -1,4 +1,5 @@
-import { Schema, models, model } from "mongoose";
+import { Schema } from "mongoose";
+import { registerModel } from "@/lib/registerModel";
 
 const UserSchema = new Schema(
     {
@@ -17,4 +18,4 @@ const UserSchema = new Schema(
     { timestamps: true }
 );
 
-export default models.User || model("User", UserSchema);
+export default registerModel("User", UserSchema);

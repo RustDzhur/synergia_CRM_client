@@ -218,7 +218,7 @@ export default function ProfileModal() {
 					<button
 						type="submit"
 						disabled={saving}
-						className="h-50 rounded-8 bg-primaryColor px-30 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-90 disabled:opacity-60">
+						className="h-50 rounded-8 bg-primaryColor px-30 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80 disabled:opacity-60">
 						{saving ? t("saving") : t("save")}
 					</button>
 				</div>

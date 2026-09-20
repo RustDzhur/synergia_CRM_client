@@ -9,6 +9,8 @@ import Dropdown from "@/app/utils/Dropdown";
 import Collapse from "@/app/utils/Collapse";
 import { useClickOutside } from "@/app/utils/useClickOutside";
 import StageColumn from "./StageColumn";
+import DealsList from "./DealsList";
+import DealModal from "./DealModal";
 
 interface Props {
     search: string;
@@ -19,8 +21,11 @@ export default function DealsBoard({ search }: Props) {
     const { stages, deals, isLoading, fetchAll, addStage, moveDeal, reorderStages } = useCrmStore();
     const [isAddingStage, setIsAddingStage] = useState(false);
     const [newStageName, setNewStageName] = useState("");
+    // Внимание: в макете Figma под подписью «List» показана доска со стрелками. Здесь «Kanban» — доска,
+    // а «List» — таблица сделок; чтобы по умолчанию открывалась доска, стартуем с "kanban".
     const [view, setView] = useState<"list" | "kanban">("kanban");
     const [moreOpen, setMoreOpen] = useState(false);
+    const [openDealId, setOpenDealId] = useState<string | null>(null);
     const moreRef = useRef<HTMLDivElement>(null);
     const stageInputRef = useRef<HTMLInputElement>(null);
 
@@ -29,9 +34,10 @@ export default function DealsBoard({ search }: Props) {
     useClickOutside(moreRef, moreOpen, () => setMoreOpen(false));
 
     const sortedStages = [...stages].sort((a, b) => a.order - b.order);
-    const isSearching = search.trim() !== "";
+    const q = search.trim().toLowerCase();
+    const isSearching = q !== "";
     const filteredDeals = deals.filter((d) =>
-        d.clientName.toLowerCase().includes(search.toLowerCase())
+        !q || [d.clientName, d.contactName, d.companyName].some((v) => v?.toLowerCase().includes(q))
     );
 
     function dealsForStage(stageId: string) {
@@ -148,6 +154,7 @@ export default function DealsBoard({ search }: Props) {
                                                 dragProvided={dragProvided}
                                                 isDragging={dragSnapshot.isDragging}
                                                 dealsDragDisabled={isSearching}
+                                                onOpenDeal={setOpenDealId}
                                             />
                                         )}
                                     </Draggable>
@@ -185,8 +192,10 @@ export default function DealsBoard({ search }: Props) {
                     </Droppable>
                 </DragDropContext>
             ) : (
-                <p className="text-menu text-14">List view — сделаем отдельным шагом.</p>
+                <DealsList deals={filteredDeals} stages={sortedStages} onOpen={setOpenDealId} />
             )}
+
+            <DealModal dealId={openDealId} onClose={() => setOpenDealId(null)} />
         </div>
     );
 }

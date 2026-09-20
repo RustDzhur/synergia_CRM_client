@@ -15,6 +15,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     for (const key of ["name", "order"]) {
         if (key in body) data[key] = body[key];
     }
+    if (typeof body.color === "string") {
+        // цвет — только "#RRGGBB" (или пустая строка = цвет по умолчанию)
+        if (body.color !== "" && !/^#[0-9a-fA-F]{6}$/.test(body.color)) {
+            return NextResponse.json({ message: "Invalid color" }, { status: 400 });
+        }
+        data.color = body.color;
+    }
 
     await connectDB();
     const stage = await Stage.findOneAndUpdate(

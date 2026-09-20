@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
+import { pickStrings } from "@/lib/activities";
+import { CONTACT_FIELDS, contactFullName } from "@/lib/crmFields";
 import Contact from "@/models/Contact";
 
 // GET /api/contacts — список всех контактов текущего пользователя
@@ -18,12 +20,12 @@ export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    const data = await req.json();
-    if (!data.name) {
-        return NextResponse.json({ message: "Name is required" }, { status: 400 });
-    }
+    const body = await req.json();
+    const fields = pickStrings(body, CONTACT_FIELDS);
+    const name = contactFullName(fields, body.name);
+    if (!name) return NextResponse.json({ message: "Name is required" }, { status: 400 });
 
     await connectDB();
-    const contact = await Contact.create({ ...data, owner: user.id });
+    const contact = await Contact.create({ ...fields, name, owner: user.id });
     return NextResponse.json(contact, { status: 201 });
 }

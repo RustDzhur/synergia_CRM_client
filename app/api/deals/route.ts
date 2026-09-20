@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
+import { pickStrings } from "@/lib/activities";
+import { DEAL_TEXT_FIELDS } from "@/lib/crmFields";
 import Deal from "@/models/Deal";
+import Stage from "@/models/Stage";
 
 // GET /api/deals — все сделки текущего пользователя
 export async function GET(req: Request) {
@@ -13,19 +17,31 @@ export async function GET(req: Request) {
     return NextResponse.json(deals);
 }
 
-// POST /api/deals — добавить карточку в колонку (кнопка "+ Add" в макете)
+// POST /api/deals — добавить сделку в колонку (кнопка "Add" в макете)
 export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    const { stage, clientName } = await req.json();
-    if (!stage || !clientName) {
+    const body = await req.json();
+    const clientName = typeof body.clientName === "string" ? body.clientName.trim().slice(0, 200) : "";
+    if (!body.stage || !clientName) {
         return NextResponse.json({ message: "stage and clientName are required" }, { status: 400 });
     }
+    if (!isValidObjectId(body.stage)) return NextResponse.json({ message: "Invalid stage" }, { status: 400 });
 
     await connectDB();
-    const count = await Deal.countDocuments({ owner: user.id, stage });
-    const deal = await Deal.create({ owner: user.id, stage, clientName, order: count });
+    const stage = await Stage.findOne({ _id: body.stage, owner: user.id });
+    if (!stage) return NextResponse.json({ message: "Stage not found" }, { status: 404 });
+
+    const count = await Deal.countDocuments({ owner: user.id, stage: stage._id });
+    const deal = await Deal.create({
+        ...pickStrings(body, DEAL_TEXT_FIELDS),
+        owner: user.id,
+        stage: stage._id,
+        clientName,
+        order: count,
+        activities: [{ type: "created", text: clientName }],
+    });
 
     return NextResponse.json(deal, { status: 201 });
 }

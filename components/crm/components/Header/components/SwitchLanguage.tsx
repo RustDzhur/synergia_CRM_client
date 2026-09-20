@@ -66,7 +66,7 @@ export default function SwitchLanguage() {
 								type="button"
 								aria-label={t(`lang.${lang.code}`)}
 								onClick={() => handleLanguageChange(lang)}
-								className="flex rounded-4 p-2 transition-opacity duration-150 hover:opacity-70">
+								className="flex rounded-4 p-2 transition-opacity duration-150 hover:opacity-60">
 								<Image
 									src={crmFlagUrl(lang.code)}
 									alt=""
