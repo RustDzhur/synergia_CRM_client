@@ -1,5 +1,6 @@
 "use client";
 import { useToggleMenuState } from "@/app/store/useToggleMenuState";
+import { useScrollLock } from "@/app/utils/useScrollLock";
 import React, { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import ModalMobNav from "./ModalMobNav";
@@ -26,12 +27,7 @@ export default function ModalMenu() {
 		}
 	};
 
-	useEffect(() => {
-		document.body.style.overflow = mobileMenu ? "hidden" : "auto";
-		return () => {
-			document.body.style.overflow = "auto";
-		};
-	}, [mobileMenu]);
+	useScrollLock(mobileMenu);
 
 	useEffect(() => {
 		if (mobileMenu && menu) {

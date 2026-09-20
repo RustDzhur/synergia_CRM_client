@@ -29,7 +29,7 @@ export default function WeekProgress({ tasks, selected, onSelect }: Props) {
 	const month = day.toLocaleDateString(tag, { month: "long" });
 
 	return (
-		<section className="rounded-16 border border-[#F0F0F0] bg-white p-20 shadow-[0_2px_8px_rgba(0,0,0,0.16)] md:p-30">
+		<section className="md:rounded-16 md:border md:border-[#F0F0F0] md:bg-white md:p-30 md:shadow-[0_2px_8px_rgba(0,0,0,0.16)]">
 			<div className="flex flex-wrap items-center justify-between gap-12 text-16 text-[#999999] md:text-18">
 				<p>
 					{t.rich("progress", {
@@ -74,7 +74,7 @@ export default function WeekProgress({ tasks, selected, onSelect }: Props) {
 				<span className="font-medium capitalize text-primaryColor">{month}</span>, {day.getFullYear()}
 			</p>
 
-			<div className="mt-16 flex gap-8 overflow-x-auto pb-6 md:gap-10">
+			<div className="mt-16 flex gap-8 overflow-x-auto pb-6 [scrollbar-width:none] md:gap-10 [&::-webkit-scrollbar]:hidden">
 				{week.map((d) => {
 					const key = dayKey(d);
 					const active = key === selected;

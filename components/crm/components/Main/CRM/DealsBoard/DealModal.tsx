@@ -50,8 +50,8 @@ function Row({ label, children, accent }: { label: string; children: React.React
 function SectionFooter({ onDelete }: { onDelete: () => void }) {
 	const t = useTranslations("crm");
 	return (
-		<footer className="flex items-center justify-between border-t border-[#EFEFEF] px-20 py-14 text-16">
-			<div className="flex gap-16 text-[#999999]">
+		<footer className="flex flex-wrap items-center justify-between gap-x-16 gap-y-6 border-t border-[#EFEFEF] px-20 py-14 text-14 md:text-16">
+			<div className="flex gap-16 whitespace-nowrap text-[#999999]">
 				<button type="button" disabled title={t("soon")} className="cursor-not-allowed opacity-60">{t("selectField")}</button>
 				<button type="button" disabled title={t("soon")} className="cursor-not-allowed opacity-60">{t("createField")}</button>
 			</div>
@@ -239,11 +239,11 @@ export default function DealModal({ dealId, onClose }: Props) {
 									}
 								}}
 								maxLength={200}
-								className="min-w-0 rounded-8 border border-[#5EA8F5] bg-white px-10 py-4 text-32 text-black outline-none"
+								className="min-w-0 rounded-8 border border-[#5EA8F5] bg-white px-10 py-4 text-24 text-black outline-none md:text-32"
 							/>
 						) : (
 							<>
-								<h2 className="truncate text-32 font-medium text-black">{deal.clientName}</h2>
+								<h2 className="truncate text-24 font-medium text-black md:text-32">{deal.clientName}</h2>
 								<button
 									type="button"
 									aria-label={t("edit")}
@@ -273,7 +273,7 @@ export default function DealModal({ dealId, onClose }: Props) {
 									backgroundColor: stageColor(stage.color, index),
 									clipPath: "polygon(0 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 0 100%)",
 								}}
-								className={`h-[54px] w-[222px] shrink-0 px-24 text-16 font-semibold text-white transition-opacity duration-200 ${
+								className={`h-[54px] w-[170px] shrink-0 px-16 text-14 font-semibold md:w-[222px] md:px-24 md:text-16 text-white transition-opacity duration-200 ${
 									active ? "opacity-100" : "opacity-60 hover:opacity-80"
 								}`}>
 								<span className="block truncate">{stage.name}</span>

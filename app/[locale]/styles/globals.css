@@ -5,7 +5,8 @@ html {
 	overflow-x: hidden;
 }
 body {
-	overflow-x: hidden;
+	/* clip, а не hidden: hidden на body вместе с html создаёт второй контейнер прокрутки (двойной скроллбар) */
+	overflow-x: clip;
 }
 .scroll-hide-scrollbar {
 	scrollbar-width: thin; /* "auto" on most browsers, "thin" on Firefox */

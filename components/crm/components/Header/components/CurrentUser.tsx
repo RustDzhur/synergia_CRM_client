@@ -9,6 +9,7 @@ import useAuthStore from "@/app/store/useAuthStore";
 import Loader from "@/app/utils/Loader";
 import Dropdown from "@/app/utils/Dropdown";
 import { useClickOutside } from "@/app/utils/useClickOutside";
+import Avatar from "@/components/crm/components/Main/shared/Avatar";
 
 interface Props {
 	// В мобильном меню аватар показывается всегда, в шапке — только с 900px.
@@ -55,22 +56,12 @@ export default function CurrentUser({ showAvatar = false }: Props) {
 				onClick={toggleDropDown}
 				className="flex items-center cursor-pointer">
 				{/* Аватар: серый круг 50px (#D9D9D9); на 768px в Figma его нет */}
-				<div
-					className={`${
-						showAvatar ? "flex" : "hidden mp:flex"
-					} shrink-0 w-50 h-50 mr-10 items-center justify-center overflow-hidden rounded-50 bg-[#D9D9D9] text-16 font-medium text-white shadow-circleShadow`}>
-					{user.avatarUrl ? (
-						<img
-							src={user.avatarUrl}
-							alt="user"
-							width={50}
-							height={50}
-							className="w-50 h-50 object-cover"
-						/>
-					) : (
-						initials
-					)}
-				</div>
+				<Avatar
+					src={user.avatarUrl}
+					initials={initials}
+					size={50}
+					className={`${showAvatar ? "flex" : "hidden mp:flex"} mr-10 text-16 shadow-circleShadow`}
+				/>
 				<p className="max-w-[100px] lg:max-w-[130px] truncate text-16 lg:text-18 font-medium text-black whitespace-nowrap">
 					{user.firstname} {user.lastname}
 				</p>

@@ -1,6 +1,14 @@
 import { create } from "zustand";
 import useAuthStore from "./useAuthStore";
 
+export interface NotificationPrefs {
+  browser: boolean;
+  email: boolean;
+  muteEmail: boolean;
+  muteFrom: string; // "HH:MM"
+  muteTo: string;
+}
+
 export interface User {
   id: string;
   firstname: string;
@@ -11,9 +19,21 @@ export interface User {
   position: string;
   city: string;
   country: string;
+  role: string;
+  department: string;
+  postCode: string;
+  languages: string;
+  timezone: string;
+  state: string;
+  company: string;
+  notifications: NotificationPrefs;
 }
 
-export type UserUpdate = Partial<Omit<User, "id" | "email">>;
+export type UserUpdate = Partial<Omit<User, "id" | "email" | "notifications">> & {
+  notifications?: Partial<NotificationPrefs>;
+};
+
+export type PasswordResult = "ok" | "wrong" | "weak" | "error";
 
 interface CurrentUserStore {
   user: User | null;
@@ -26,6 +46,7 @@ interface CurrentUserStore {
   closeProfile: () => void;
   fetchUser: () => Promise<void>;
   updateUser: (data: UserUpdate) => Promise<boolean>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<PasswordResult>;
 }
 
 // Компонент CurrentUser рендерится в шапке и в мобильном меню одновременно —
@@ -85,6 +106,24 @@ export const useCurrentUserStore = create<CurrentUserStore>((set) => ({
     } catch (error) {
       console.error("Error updating user:", error);
       return false;
+    }
+  },
+  changePassword: async (currentPassword, newPassword) => {
+    try {
+      const response = await fetch("/api/auth/password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      if (response.ok) return "ok";
+      if (response.status === 403) return "wrong";
+      if (response.status === 400) return "weak";
+      return "error";
+    } catch {
+      return "error";
     }
   },
 }));

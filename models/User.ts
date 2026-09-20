@@ -14,6 +14,22 @@ const UserSchema = new Schema(
         position: { type: String, default: "", trim: true },
         city: { type: String, default: "", trim: true },
         country: { type: String, default: "", trim: true },
+        // страница Settings → Account
+        role: { type: String, default: "", trim: true },
+        department: { type: String, default: "", trim: true },
+        postCode: { type: String, default: "", trim: true },
+        languages: { type: String, default: "", trim: true },
+        timezone: { type: String, default: "", trim: true },
+        state: { type: String, default: "", trim: true },
+        company: { type: String, default: "", trim: true },
+        // страница Settings → Notifications
+        notifications: {
+            browser: { type: Boolean, default: false },
+            email: { type: Boolean, default: false },
+            muteEmail: { type: Boolean, default: false },
+            muteFrom: { type: String, default: "10:00" },
+            muteTo: { type: String, default: "10:00" },
+        },
     },
     { timestamps: true }
 );

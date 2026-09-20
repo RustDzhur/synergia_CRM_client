@@ -102,9 +102,9 @@ export default function DealsChart({ deals, stages }: Props) {
 	const shown = hover ?? peak;
 
 	return (
-		<section className="rounded-16 border border-[#F0F0F0] bg-white p-20 shadow-[0_2px_8px_rgba(0,0,0,0.16)] md:p-25">
+		<section className="rounded-16 border border-[#F0F0F0] bg-white p-20 shadow-[0_2px_8px_rgba(0,0,0,0.16)] lg:p-25">
 			<header className="flex items-center justify-between gap-12">
-				<h2 className="text-20 font-medium text-[#4D4D4D] md:text-24">{t("dealsTitle")}</h2>
+				<h2 className="shrink-0 text-20 font-medium text-[#4D4D4D] lg:text-24">{t("dealsTitle")}</h2>
 				<PeriodSelect<Period>
 					value={period}
 					onChange={setPeriod}

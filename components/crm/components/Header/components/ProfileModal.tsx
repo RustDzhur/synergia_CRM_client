@@ -5,9 +5,9 @@ import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdClose, MdPhotoCamera } from "react-icons/md";
 import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
-
-const AVATAR_SIZE = 256;
-const MAX_FILE_BYTES = 5 * 1024 * 1024;
+import { useScrollLock } from "@/app/utils/useScrollLock";
+import { fileToAvatar, MAX_AVATAR_FILE_BYTES } from "@/app/utils/avatar";
+import Avatar from "@/components/crm/components/Main/shared/Avatar";
 
 interface FormState {
 	firstname: string;
@@ -19,31 +19,6 @@ interface FormState {
 }
 
 const EMPTY_FORM: FormState = { firstname: "", lastname: "", phone: "", position: "", city: "", country: "" };
-
-// Обрезает картинку по центру до квадрата 256×256 и сжимает в JPEG — в базу уходит ~20–40 КБ.
-async function fileToAvatar(file: File): Promise<string> {
-	const url = URL.createObjectURL(file);
-	try {
-		const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-			const image = new Image();
-			image.onload = () => resolve(image);
-			image.onerror = reject;
-			image.src = url;
-		});
-		const canvas = document.createElement("canvas");
-		canvas.width = AVATAR_SIZE;
-		canvas.height = AVATAR_SIZE;
-		const ctx = canvas.getContext("2d");
-		if (!ctx) throw new Error("canvas");
-		ctx.fillStyle = "#ffffff"; // у PNG с прозрачностью фон иначе станет чёрным
-		ctx.fillRect(0, 0, AVATAR_SIZE, AVATAR_SIZE);
-		const side = Math.min(img.width, img.height);
-		ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
-		return canvas.toDataURL("image/jpeg", 0.85);
-	} finally {
-		URL.revokeObjectURL(url);
-	}
-}
 
 // Окно «Settings» из меню пользователя: личные данные и аватарка.
 // Рендерится один раз в crm/layout.tsx, открывается через useCurrentUserStore.
@@ -57,6 +32,7 @@ export default function ProfileModal() {
 	const fileRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => setMounted(true), []);
+	useScrollLock(isProfileOpen);
 
 	// при каждом открытии подставляем актуальные данные пользователя
 	useEffect(() => {
@@ -89,7 +65,7 @@ export default function ProfileModal() {
 		e.target.value = ""; // чтобы можно было выбрать тот же файл повторно
 		if (!file) return;
 		if (!file.type.startsWith("image/")) return void toast.error(t("notImage"));
-		if (file.size > MAX_FILE_BYTES) return void toast.error(t("tooBig"));
+		if (file.size > MAX_AVATAR_FILE_BYTES) return void toast.error(t("tooBig"));
 		try {
 			setAvatar(await fileToAvatar(file));
 		} catch {
@@ -143,13 +119,7 @@ export default function ProfileModal() {
 
 				<div className="mb-24 flex items-center gap-20">
 					<div className="relative h-[84px] w-[84px] shrink-0">
-						<div className="flex h-full w-full items-center justify-center overflow-hidden rounded-50 bg-[#D9D9D9] text-24 font-medium text-white shadow-circleShadow">
-							{avatar ? (
-								<img src={avatar} alt="" className="h-full w-full object-cover" />
-							) : (
-								initials
-							)}
-						</div>
+						<Avatar src={avatar} initials={initials} size={84} className="flex text-24 shadow-circleShadow" />
 						<button
 							type="button"
 							onClick={() => fileRef.current?.click()}

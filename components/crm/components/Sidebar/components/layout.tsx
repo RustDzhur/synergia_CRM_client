@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -17,11 +17,17 @@ const ROW = "flex items-center w-full h-[50px] lg:h-[54px] px-16 text-left trans
 const LABEL = "ml-6 lg:ml-10 text-15 lg:text-18 font-medium tracking-[0.3px] whitespace-nowrap transition-[opacity,color] duration-200";
 
 export default function Layout() {
-	const { menu } = useToggleMenuState();
+	const { menu, setMenu } = useToggleMenuState();
 	const t = useTranslations("navigation");
 	const locale = useLocale();
 	const path = stripLocale(usePathname());
 	const [collabOpen, setCollabOpen] = useState(path.startsWith("/crm/collaboration"));
+
+	// В макете desktop открывается с развёрнутым меню, а планшет — со свёрнутым (54px), чтобы контенту хватало места.
+	// Применяем один раз при первом показе; дальше меню переключает пользователь.
+	useEffect(() => {
+		if (window.matchMedia("(max-width: 1439px)").matches) setMenu(false);
+	}, [setMenu]);
 
 	return (
 		<nav

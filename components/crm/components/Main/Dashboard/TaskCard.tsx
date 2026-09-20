@@ -7,17 +7,14 @@ import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
 import { localeTag } from "@/app/utils/dateHelpers";
 import Dropdown from "@/app/utils/Dropdown";
 import { useClickOutside } from "@/app/utils/useClickOutside";
+import UserAvatar from "../shared/Avatar";
 
 const initials = (name: string) =>
 	name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
 function Avatar({ name, src, size }: { name: string; src?: string; size: number }) {
 	return (
-		<span
-			style={{ width: size, height: size }}
-			className="flex shrink-0 items-center justify-center overflow-hidden rounded-50 bg-[#D9D9D9] text-16 font-medium text-white">
-			{src ? <img src={src} alt="" className="h-full w-full object-cover" /> : initials(name)}
-		</span>
+		<UserAvatar src={src} initials={initials(name)} size={size} />
 	);
 }
 

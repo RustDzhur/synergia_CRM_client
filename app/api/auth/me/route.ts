@@ -15,6 +15,20 @@ function toPublic(user: any) {
         position: user.position ?? "",
         city: user.city ?? "",
         country: user.country ?? "",
+        role: user.role ?? "",
+        department: user.department ?? "",
+        postCode: user.postCode ?? "",
+        languages: user.languages ?? "",
+        timezone: user.timezone ?? "",
+        state: user.state ?? "",
+        company: user.company ?? "",
+        notifications: {
+            browser: Boolean(user.notifications?.browser),
+            email: Boolean(user.notifications?.email),
+            muteEmail: Boolean(user.notifications?.muteEmail),
+            muteFrom: user.notifications?.muteFrom || "10:00",
+            muteTo: user.notifications?.muteTo || "10:00",
+        },
     };
 }
 
@@ -34,7 +48,11 @@ export async function GET(req: Request) {
     }
 }
 
-const TEXT_FIELDS = ["firstname", "lastname", "phone", "position", "city", "country"] as const;
+const TEXT_FIELDS = [
+    "firstname", "lastname", "phone", "position", "city", "country",
+    "role", "department", "postCode", "languages", "timezone", "state", "company",
+] as const;
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 const REQUIRED_FIELDS = ["firstname", "lastname"];
 const MAX_TEXT_LENGTH = 100;
 const MAX_AVATAR_LENGTH = 300_000; // ~220 КБ картинки в base64; клиент сжимает до 256×256 (~30 КБ)
@@ -53,7 +71,7 @@ export async function PATCH(req: Request) {
         return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
     }
 
-    const update: Record<string, string> = {};
+    const update: Record<string, string | boolean> = {};
 
     for (const key of TEXT_FIELDS) {
         if (typeof body[key] !== "string") continue;
@@ -69,6 +87,20 @@ export async function PATCH(req: Request) {
         const valid = avatar === "" || (avatar.length <= MAX_AVATAR_LENGTH && AVATAR_PATTERN.test(avatar));
         if (!valid) return NextResponse.json({ message: "Invalid avatar" }, { status: 400 });
         update.avatarUrl = avatar;
+    }
+
+    // настройки уведомлений: только известные поля и только нужных типов
+    const prefs = body.notifications;
+    if (prefs && typeof prefs === "object") {
+        const p = prefs as Record<string, unknown>;
+        for (const key of ["browser", "email", "muteEmail"] as const) {
+            if (typeof p[key] === "boolean") update[`notifications.${key}`] = p[key] as boolean;
+        }
+        for (const key of ["muteFrom", "muteTo"] as const) {
+            if (typeof p[key] !== "string") continue;
+            if (!TIME_PATTERN.test(p[key] as string)) return NextResponse.json({ message: `${key} must be HH:MM` }, { status: 400 });
+            update[`notifications.${key}`] = p[key] as string;
+        }
     }
 
     await connectDB();

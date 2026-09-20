@@ -30,7 +30,7 @@ export default function PeriodSelect<T extends string>({ value, options, onChang
 				type="button"
 				aria-expanded={open}
 				onClick={() => setOpen(!open)}
-				className="flex items-center gap-6 text-16 md:text-18">
+				className="flex items-center gap-6 whitespace-nowrap text-16 md:text-18">
 				<span className="font-medium text-primaryColor">{t("show")}:</span>
 				<span className="text-[#4D4D4D]">{current?.label}</span>
 				<RiArrowDownSLine size={22} className={`text-[#4D4D4D] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />

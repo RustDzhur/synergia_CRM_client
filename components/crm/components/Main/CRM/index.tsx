@@ -6,6 +6,7 @@ import { MdSearch, MdTune } from "react-icons/md";
 import DealsBoard from "./DealsBoard";
 import Contacts from "../Contacts";
 import Companies from "../Companies";
+import { TAB_BAR } from "../shared/tabBar";
 
 type Tab = "deals" | "contacts" | "companies";
 const TABS: Tab[] = ["deals", "contacts", "companies"];
@@ -29,7 +30,7 @@ function CrmContent() {
         <div className="p-16 md:p-30">
             {/* Head Row: вкладки + поиск, одной строкой, как в макете */}
             <div className="mb-20 flex flex-wrap items-center justify-between gap-16">
-                <div className="flex items-center rounded-8 bg-[#F2F2F2] p-10 shadow-custom">
+                <div className={TAB_BAR}>
                     {TABS.map((key) => (
                         <button
                             key={key}
@@ -43,7 +44,7 @@ function CrmContent() {
                     ))}
                 </div>
 
-                <div className="flex h-[50px] w-full items-center justify-between rounded-8 border-2 border-[#E6E6E6] bg-white px-20 shadow-custom transition-colors focus-within:border-[#5EA8F5] md:w-[350px]">
+                <div className="flex h-[50px] w-full items-center justify-between rounded-8 border-2 border-[#E6E6E6] bg-white px-20 shadow-custom transition-colors focus-within:border-[#5EA8F5] md:w-[220px] lg:w-[350px]">
                     <input
                         className="w-full text-18 tracking-[0.36px] outline-none placeholder:text-[#CCCCCC]"
                         placeholder={t("search")}

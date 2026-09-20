@@ -11,6 +11,7 @@ import { useClickOutside } from "@/app/utils/useClickOutside";
 import Checkbox from "../shared/Checkbox";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import TaskModal from "./TaskModal";
+import { TAB_BAR } from "../shared/tabBar";
 
 type View = "list" | "deadline" | "planner";
 type Action = "" | "done" | "active" | "delete";
@@ -141,7 +142,7 @@ export default function Tasks() {
     return (
         <div className="p-16 md:p-30">
             <div className="mb-20 flex flex-wrap items-center justify-between gap-16">
-                <div className="flex items-center rounded-8 bg-[#F2F2F2] p-10 shadow-custom">
+                <div className={TAB_BAR}>
                     {(["tasks", "projects"] as const).map((key) => (
                         <button
                             key={key}
@@ -153,7 +154,7 @@ export default function Tasks() {
                         </button>
                     ))}
                 </div>
-                <div className="flex h-[50px] w-full items-center justify-between rounded-8 border-2 border-[#E6E6E6] bg-white px-16 shadow-custom transition-colors focus-within:border-[#5EA8F5] md:w-[350px]">
+                <div className="flex h-[50px] w-full items-center justify-between rounded-8 border-2 border-[#E6E6E6] bg-white px-16 shadow-custom transition-colors focus-within:border-[#5EA8F5] md:w-[220px] lg:w-[350px]">
                     <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("search")} className="w-full text-18 outline-none placeholder:text-[#CCCCCC]" />
                     <div className="flex shrink-0 items-center gap-10 text-[#CCCCCC]"><MdSearch size={20} /><MdTune size={20} /></div>
                 </div>

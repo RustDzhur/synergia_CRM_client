@@ -7,6 +7,8 @@ import Dropdown from "@/app/utils/Dropdown";
 import { useClickOutside } from "@/app/utils/useClickOutside";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import EmployeeModal from "./EmployeeModal";
+import { TAB_BAR } from "../shared/tabBar";
+import Avatar from "../shared/Avatar";
 
 const initials = (e: Employee) => `${e.firstname[0] ?? ""}${e.lastname[0] ?? ""}`.toUpperCase();
 
@@ -58,7 +60,7 @@ export default function Company() {
     return (
         <div className="p-16 md:p-30">
             <div className="mb-30 flex flex-wrap items-center justify-between gap-16">
-                <div className="flex items-center rounded-8 bg-[#F2F2F2] p-10 shadow-custom">
+                <div className={TAB_BAR}>
                     {(["employees", "knowledge"] as const).map((key) => (
                         <button
                             key={key}
@@ -74,7 +76,7 @@ export default function Company() {
 
                 {tab === "employees" && (
                     <>
-                        <div className="flex h-[50px] w-full items-center justify-between rounded-8 border-2 border-[#E6E6E6] bg-white px-16 shadow-custom transition-colors focus-within:border-[#5EA8F5] md:w-[350px]">
+                        <div className="flex h-[50px] w-full items-center justify-between rounded-8 border-2 border-[#E6E6E6] bg-white px-16 shadow-custom transition-colors focus-within:border-[#5EA8F5] md:w-[220px] lg:w-[350px]">
                             <input
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
@@ -119,9 +121,7 @@ export default function Company() {
                                 <tr key={e._id} className="h-[84px] animate-fade-in border-b border-[#F0F0F0] transition-colors duration-150 hover:bg-[#F7F9FF]">
                                     <td className="text-center"><RowMenu onEdit={() => { setEditing(e); setModalOpen(true); }} onDelete={() => setToDelete(e)} /></td>
                                     <td className="text-center">
-                                        <span className="mx-auto flex h-50 w-50 items-center justify-center overflow-hidden rounded-50 bg-[#D9D9D9] text-16 font-medium text-white">
-                                            {e.avatarUrl ? <img src={e.avatarUrl} alt="" className="h-full w-full object-cover" /> : initials(e)}
-                                        </span>
+                                        <Avatar src={e.avatarUrl} initials={initials(e)} size={50} className="mx-auto flex text-16" />
                                     </td>
                                     <td className={`${td} text-[#666666]`}>{e.firstname} {e.lastname}</td>
                                     <td className={td}>{e.email}</td>
