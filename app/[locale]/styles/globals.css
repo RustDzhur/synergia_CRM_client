@@ -5,7 +5,8 @@ html {
 	overflow-x: hidden;
 }
 body {
-	overflow-x: hidden;
+	/* clip, а не hidden: hidden на body вместе с html создаёт второй контейнер прокрутки (двойной скроллбар) */
+	overflow-x: clip;
 }
 .scroll-hide-scrollbar {
 	scrollbar-width: thin; /* "auto" on most browsers, "thin" on Firefox */
@@ -23,4 +24,26 @@ body {
 
 .scroll-hide-scrollbar:hover::-webkit-scrollbar-thumb {
 	background-color: #e90505; /* Color of the thumb on hover */
+}
+
+/* ---------- Анимации (общие для сайта и CRM) ---------- */
+@keyframes fade-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+@keyframes fade-in-up {
+	from { opacity: 0; transform: translateY(6px); }
+	to { opacity: 1; transform: none; }
+}
+.animate-fade-in { animation: fade-in 0.2s ease-out both; }
+.animate-fade-in-up { animation: fade-in-up 0.2s ease-out both; }
+
+/* Пользователям с включённым «уменьшить движение» анимации не показываем */
+@media (prefers-reduced-motion: reduce) {
+	*, *::before, *::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
 }

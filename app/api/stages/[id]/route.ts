@@ -9,8 +9,19 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const user = await requireUser(req);
     if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    const data = await req.json();
-    delete data.owner;
+    const body = await req.json();
+    // только разрешённые поля: иначе через PATCH можно было записать в документ что угодно
+    const data: Record<string, unknown> = {};
+    for (const key of ["name", "order"]) {
+        if (key in body) data[key] = body[key];
+    }
+    if (typeof body.color === "string") {
+        // цвет — только "#RRGGBB" (или пустая строка = цвет по умолчанию)
+        if (body.color !== "" && !/^#[0-9a-fA-F]{6}$/.test(body.color)) {
+            return NextResponse.json({ message: "Invalid color" }, { status: 400 });
+        }
+        data.color = body.color;
+    }
 
     await connectDB();
     const stage = await Stage.findOneAndUpdate(

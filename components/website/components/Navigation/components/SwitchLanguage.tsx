@@ -1,20 +1,23 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { v4 as uuidv4 } from "uuid";
-import { RiArrowDownSLine, RiArrowUpSLine } from "react-icons/ri";
-import { IconContext } from "react-icons";
+import { RiArrowDownSLine } from "react-icons/ri";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { languages } from "@/app/languages/languages";
 import { languageCodeToProperties } from "@/app/languages/languages";
 import { Language } from "@/app/types/languageType";
+import { stripLocale } from "@/app/utils/locale";
+import Dropdown from "@/app/utils/Dropdown";
+import { useClickOutside } from "@/app/utils/useClickOutside";
 import { useTranslations, useLocale } from "next-intl";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function SwitchLanguage() {
 	const [isOpenDropDown, setIsOpenDropDown] = useState(false);
 	const { selectedLanguage, setSelectedLanguage } = useLanguageStore();
 	const router = useRouter();
+	const pathname = usePathname();
+	const rootRef = useRef<HTMLDivElement>(null);
 
 	const t = useTranslations("navBar");
 
@@ -27,11 +30,14 @@ export default function SwitchLanguage() {
 		setSelectedLanguage({ code: locale });
 	}, [locale, setSelectedLanguage]);
 
+	useClickOutside(rootRef, isOpenDropDown, () => setIsOpenDropDown(false));
+
 	const handleLanguageChange = (language: Language) => {
 		setSelectedLanguage(language);
 		setIsOpenDropDown(false);
 		localStorage.setItem("selectedLanguage", JSON.stringify(language));
-		router.replace(`/${language.code}`);
+		// остаёмся на той же странице сайта, меняется только язык
+		router.replace(`/${language.code}${stripLocale(pathname) === "/" ? "" : stripLocale(pathname)}`);
 	};
 
 	const selectedLanguageProperties = languageCodeToProperties(
@@ -39,47 +45,49 @@ export default function SwitchLanguage() {
 	);
 
 	return (
-		<div>
-			<div onClick={handleOpenDropDown} className="relative">
-				<div className="">
-					<div className="flex items-center">
-						<Image
-							src={selectedLanguageProperties.flagUrl}
-							alt="selected-flag"
-							width={selectedLanguageProperties.width}
-							height={selectedLanguageProperties.height}
-							className="w-40 cursor-pointer rounded-4"
-						/>
-						<div>
-							<IconContext.Provider value={{ size: "18px", color: "#999999" }}>
-								{isOpenDropDown ? <RiArrowDownSLine /> : <RiArrowUpSLine />}
-							</IconContext.Provider>
-						</div>
-					</div>
-				</div>
+		<div ref={rootRef} className="relative">
+			<button
+				type="button"
+				aria-expanded={isOpenDropDown}
+				onClick={handleOpenDropDown}
+				className="flex items-center cursor-pointer">
+				<Image
+					src={selectedLanguageProperties.flagUrl}
+					alt="selected-flag"
+					width={selectedLanguageProperties.width}
+					height={selectedLanguageProperties.height}
+					className="w-40 rounded-4"
+				/>
+				<RiArrowDownSLine
+					size={18}
+					color="#999999"
+					className={`transition-transform duration-200 ${isOpenDropDown ? "rotate-180" : ""}`}
+				/>
+			</button>
 
-				{isOpenDropDown ? (
-					<ul className={`absolute ${isOpenDropDown ? "mt-24" : ""}`}>
-						{languages.map((lang) => (
-							<li
-								onClick={() => handleLanguageChange(lang)}
-								key={uuidv4()}
-								className={`cursor-pointer flex items-center justify-between  mb-20`}>
-								<Image
-									src={languageCodeToProperties(lang.code).flagUrl}
-									alt={lang.code}
-									width={languageCodeToProperties(lang.code).width}
-									height={languageCodeToProperties(lang.code).height}
-									className="w-40 cursor-pointer mr-20 rounded-4"
-								/>
-								<p className="font-medium lg:text-18 text-menu hover:text-activeMenu">
-									{t(`lang.${lang.code}`)}
-								</p>
-							</li>
-						))}
-					</ul>
-				) : null}
-			</div>
+			<Dropdown open={isOpenDropDown} className="left-0 top-full mt-[12px]">
+				<ul className="rounded-8 border border-[#E2F1F5] bg-white p-12 shadow-custom">
+					{languages.map((lang, index) => (
+						<li
+							onClick={() => handleLanguageChange(lang)}
+							key={lang.code}
+							className={`cursor-pointer flex items-center justify-between ${
+								index !== languages.length - 1 ? "mb-20" : ""
+							}`}>
+							<Image
+								src={languageCodeToProperties(lang.code).flagUrl}
+								alt={lang.code}
+								width={languageCodeToProperties(lang.code).width}
+								height={languageCodeToProperties(lang.code).height}
+								className="w-40 mr-20 rounded-4"
+							/>
+							<p className="font-medium lg:text-18 text-menu whitespace-nowrap transition-colors duration-150 hover:text-activeMenu">
+								{t(`lang.${lang.code}`)}
+							</p>
+						</li>
+					))}
+				</ul>
+			</Dropdown>
 		</div>
 	);
 }

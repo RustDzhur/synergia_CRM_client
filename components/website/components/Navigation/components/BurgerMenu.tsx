@@ -27,7 +27,9 @@ export default function BurgerMenu() {
 		}
 	};
 	return (
-		<div onClick={handleCloseModal}>
+		<div
+			onClick={handleCloseModal}
+			className={`cursor-pointer transition-transform duration-300 ${menu ? "rotate-90" : ""}`}>
 			<IconContext.Provider
 				value={{
 					size: "30px",

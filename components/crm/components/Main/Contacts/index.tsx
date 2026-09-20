@@ -1,123 +1,89 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useEffect, useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useContactStore, Contact } from "@/app/store/useContactStore";
+import { completeness, relativeTime } from "@/app/utils/crmFormat";
+import EntityTable, { Column } from "../shared/EntityTable";
+import ListToolbar from "../shared/ListToolbar";
+import ConfirmDialog from "../shared/ConfirmDialog";
 
-export default function Contacts() {
-    const t = useTranslations("contacts");
-    const { contacts, isLoading, fetchContacts, addContact, updateContact, deleteContact } = useContactStore();
-    const [search, setSearch] = useState("");
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [form, setForm] = useState<Partial<Contact>>({});
-    const [showAddRow, setShowAddRow] = useState(false);
+const initials = (name: string) =>
+    name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+
+// Вкладка Contacts: таблица контактов. Изменение и создание — на отдельной странице (см. ContactEdit).
+export default function Contacts({ search }: { search: string }) {
+    const t = useTranslations("crm");
+    const locale = useLocale();
+    const router = useRouter();
+    const { contacts, isLoading, fetchContacts, deleteContacts } = useContactStore();
+    const [selected, setSelected] = useState<string[]>([]);
+    const [confirmDelete, setConfirmDelete] = useState(false);
 
     useEffect(() => { fetchContacts(); }, [fetchContacts]);
 
-    const filtered = contacts.filter((c) =>
-        c.name.toLowerCase().includes(search.toLowerCase())
+    const q = search.trim().toLowerCase();
+    const rows = useMemo(
+        () => contacts.filter((c) => !q || [c.name, c.email, c.company, c.position].some((v) => v?.toLowerCase().includes(q))),
+        [contacts, q]
     );
 
-    function startEdit(c: Contact) {
-        setEditingId(c._id);
-        setForm(c);
-    }
+    const base = `/${locale}/crm/crm/contacts`;
+    const columns: Column<Contact>[] = [
+        {
+            key: "name", header: t("name"), align: "left", width: "24%",
+            render: (c) => (
+                <span className="flex items-center gap-12">
+                    <span className="flex h-40 w-40 shrink-0 items-center justify-center rounded-50 bg-[#D9D9D9] text-14 font-medium text-white">
+                        {initials(c.name)}
+                    </span>
+                    <span className="truncate text-20 font-medium text-[#666666]">{c.name}</span>
+                </span>
+            ),
+        },
+        { key: "email", header: t("email"), render: (c) => c.email, width: "22%" },
+        { key: "company", header: t("company"), render: (c) => c.company, width: "16%" },
+        { key: "position", header: t("position"), render: (c) => c.position, width: "14%" },
+        { key: "lastSeen", header: t("lastSeen"), render: (c) => <span className="capitalize">{relativeTime(c.updatedAt ?? c.createdAt, locale, t("justNow"))}</span>, width: "14%" },
+        {
+            key: "percent", header: t("percent"), width: "10%",
+            render: (c) => `${completeness([c.email, c.phone, c.company, c.position, c.website, c.twitter, c.facebook])} %`,
+        },
+    ];
 
-    async function saveEdit() {
-        if (!editingId) return;
-        await updateContact(editingId, form);
-        setEditingId(null);
-        setForm({});
-    }
-
-    async function saveNew() {
-        if (!form.name) return;
-        await addContact(form);
-        setForm({});
-        setShowAddRow(false);
-    }
-
-    async function handleDelete(id: string) {
-        if (confirm(t("confirmDelete"))) await deleteContact(id);
+    async function removeSelected() {
+        setConfirmDelete(false);
+        await deleteContacts(selected);
+        setSelected([]);
     }
 
     return (
-        <div className="p-30">
-            <div className="flex items-center justify-between mb-20">
-                <h1 className="text-24 font-bold">{t("title")}</h1>
-                <button
-                    className="bg-primaryColor text-white px-20 py-10 rounded-8"
-                    onClick={() => setShowAddRow(true)}
-                >
-                    {t("add")}
-                </button>
-            </div>
-
-            <input
-                className="border border-switchCompany rounded-8 px-14 py-10 mb-20 w-full max-w-[320px]"
-                placeholder={t("search")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+        <div>
+            <ListToolbar
+                editLabel={t("editContact")}
+                addLabel={t("addContact")}
+                selectedCount={selected.length}
+                onEdit={() => selected.length === 1 && router.push(`${base}/${selected[0]}`)}
+                onAdd={() => router.push(`${base}/new`)}
+                onDelete={() => setConfirmDelete(true)}
             />
-
-            {isLoading ? (
-                <p>Loading…</p>
-            ) : (
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                    <tr className="text-14 text-menu border-b-switchCompany">
-                        <th className="py-10">{t("name")}</th>
-                        <th className="py-10">{t("email")}</th>
-                        <th className="py-10">{t("phone")}</th>
-                        <th className="py-10">{t("company")}</th>
-                        <th className="py-10">{t("position")}</th>
-                        <th className="py-10"></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {showAddRow && (
-                        <tr className="border-b-switchCompany">
-                            <td><input className="border rounded-6 px-8 py-6 w-full" value={form.name || ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></td>
-                            <td><input className="border rounded-6 px-8 py-6 w-full" value={form.email || ""} onChange={(e) => setForm({ ...form, email: e.target.value })} /></td>
-                            <td><input className="border rounded-6 px-8 py-6 w-full" value={form.phone || ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></td>
-                            <td><input className="border rounded-6 px-8 py-6 w-full" value={form.company || ""} onChange={(e) => setForm({ ...form, company: e.target.value })} /></td>
-                            <td><input className="border rounded-6 px-8 py-6 w-full" value={form.position || ""} onChange={(e) => setForm({ ...form, position: e.target.value })} /></td>
-                            <td className="flex gap-8">
-                                <button className="text-primaryColor text-14" onClick={saveNew}>{t("save")}</button>
-                                <button className="text-menu text-14" onClick={() => { setShowAddRow(false); setForm({}); }}>{t("cancel")}</button>
-                            </td>
-                        </tr>
-                    )}
-
-                    {filtered.map((c) =>
-                        editingId === c._id ? (
-                            <tr key={c._id} className="border-b-switchCompany">
-                                <td><input className="border rounded-6 px-8 py-6 w-full" value={form.name || ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></td>
-                                <td><input className="border rounded-6 px-8 py-6 w-full" value={form.email || ""} onChange={(e) => setForm({ ...form, email: e.target.value })} /></td>
-                                <td><input className="border rounded-6 px-8 py-6 w-full" value={form.phone || ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></td>
-                                <td><input className="border rounded-6 px-8 py-6 w-full" value={form.company || ""} onChange={(e) => setForm({ ...form, company: e.target.value })} /></td>
-                                <td><input className="border rounded-6 px-8 py-6 w-full" value={form.position || ""} onChange={(e) => setForm({ ...form, position: e.target.value })} /></td>
-                                <td className="flex gap-8">
-                                    <button className="text-primaryColor text-14" onClick={saveEdit}>{t("save")}</button>
-                                    <button className="text-menu text-14" onClick={() => setEditingId(null)}>{t("cancel")}</button>
-                                </td>
-                            </tr>
-                        ) : (
-                            <tr key={c._id} className="border-b-switchCompany">
-                                <td className="py-10">{c.name}</td>
-                                <td className="py-10">{c.email}</td>
-                                <td className="py-10">{c.phone}</td>
-                                <td className="py-10">{c.company}</td>
-                                <td className="py-10">{c.position}</td>
-                                <td className="py-10 flex gap-14">
-                                    <button className="text-primaryColor text-14" onClick={() => startEdit(c)}>{t("edit")}</button>
-                                    <button className="text-red text-14" onClick={() => handleDelete(c._id)}>{t("delete")}</button>
-                                </td>
-                            </tr>
-                        )
-                    )}
-                    </tbody>
-                </table>
-            )}
+            <EntityTable
+                rows={rows}
+                columns={columns}
+                getId={(c) => c._id}
+                selected={selected}
+                onToggle={(id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))}
+                onToggleAll={(checked) => setSelected(checked ? rows.map((r) => r._id) : [])}
+                isLoading={isLoading}
+                emptyText={t("emptyContacts")}
+            />
+            <ConfirmDialog
+                open={confirmDelete}
+                title={t("deleteSelected")}
+                text={t("confirmDeleteContacts")}
+                onCancel={() => setConfirmDelete(false)}
+                onConfirm={removeSelected}
+            />
         </div>
     );
 }
