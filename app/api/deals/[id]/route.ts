@@ -7,8 +7,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const user = await requireUser(req);
     if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    const data = await req.json(); // { stage, order, clientName } — любое из этого
-    delete data.owner;
+    const body = await req.json(); // { stage, order, clientName } — любое из этого
+    // только разрешённые поля: иначе через PATCH можно было записать в документ что угодно
+    const data: Record<string, unknown> = {};
+    for (const key of ["stage", "order", "clientName"]) {
+        if (key in body) data[key] = body[key];
+    }
 
     await connectDB();
     const deal = await Deal.findOneAndUpdate(

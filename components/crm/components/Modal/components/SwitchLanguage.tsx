@@ -1,91 +1,81 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useTranslations , useLocale} from "next-intl";
+import { usePathname, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
-import { v4 as uuidv4 } from "uuid";
-import { RiArrowDownSLine, RiArrowUpSLine } from "react-icons/ri";
-import { IconContext } from "react-icons";
+import { RiArrowDownSLine } from "react-icons/ri";
+import Collapse from "@/app/utils/Collapse";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
-import { languages } from "@/app/languages/languages";
-import { languageCodeToProperties } from "@/app/languages/languages";
+import { languages, crmFlagUrl } from "@/app/languages/languages";
 import { Language } from "@/app/types/languageType";
-import { useRouter } from "next/navigation";
+import { stripLocale } from "@/app/utils/locale";
 
+// Строка «Language  🇬🇧 ⌄» из мобильного меню (Figma 375px).
 export default function SwitchLanguage() {
 	const [isOpenDropDown, setIsOpenDropDown] = useState(false);
 	const { selectedLanguage, setSelectedLanguage } = useLanguageStore();
 	const router = useRouter();
+	const pathname = usePathname();
+	const locale = useLocale();
 	const t = useTranslations("navBar");
 
 	const availableLanguages = languages.filter(
 		(flag) => flag.code !== selectedLanguage.code
 	);
 
-	const locale = useLocale();
 	useEffect(() => {
 		setSelectedLanguage({ code: locale });
 	}, [locale, setSelectedLanguage]);
-
-	const handleOpenDropDown = () => {
-		setIsOpenDropDown(!isOpenDropDown);
-	};
 
 	const handleLanguageChange = (language: Language) => {
 		setSelectedLanguage(language);
 		setIsOpenDropDown(false);
 		localStorage.setItem("selectedLanguage", JSON.stringify(language));
-		router.replace(`/${language.code}/crm`);
+		// остаёмся на текущей странице, меняется только префикс языка
+		router.replace(`/${language.code}${stripLocale(pathname)}`);
 	};
-
-	const selectedLanguageProperties = languageCodeToProperties(
-		selectedLanguage.code
-	);
 
 	return (
 		<div>
-			<div onClick={handleOpenDropDown} className="mb-30 sm:p-20 md:p-0 ">
-				<div className="flex items-center justify-between pl-12 pr-12 mb-24">
-					<p>{t(`lang.${selectedLanguage.code}`)}</p>
-					<div className="flex items-center">
-						<Image
-							src={selectedLanguageProperties.flagUrl}
-							alt="selected-flag"
-							width={selectedLanguageProperties.width}
-							height={selectedLanguageProperties.height}
-							className="w-40 cursor-pointer"
-						/>
-						<div>
-							<IconContext.Provider value={{ size: "18px", color: "#999999" }}>
-								{isOpenDropDown ? <RiArrowDownSLine /> : <RiArrowUpSLine />}
-							</IconContext.Provider>
-						</div>
-					</div>
+			<button
+				type="button"
+				onClick={() => setIsOpenDropDown(!isOpenDropDown)}
+				className="flex items-center justify-between w-full h-[55px] px-12 cursor-pointer">
+				<p className="text-18 font-medium text-iconColor">{t("language")}</p>
+				<div className="flex items-center">
+					<Image
+						src={crmFlagUrl(selectedLanguage.code)}
+						alt={t(`lang.${selectedLanguage.code}`)}
+						width={37}
+						height={25}
+						className="w-[37px] h-[25px] object-cover"
+					/>
+					<RiArrowDownSLine
+						size={24}
+						color="#999999"
+						className={`ml-4 transition-transform duration-200 ${isOpenDropDown ? "rotate-180" : ""}`}
+					/>
 				</div>
-
-				{isOpenDropDown ? (
-					<ul className="">
-						{availableLanguages.map((lang, index) => (
-							<li
-								onClick={() => handleLanguageChange(lang)}
-								key={uuidv4()}
-								className={`${
-									isOpenDropDown ? "lg:mt-6" : ""
-								} cursor-pointer flex items-center justify-between ${
-									index !== availableLanguages.length - 1 ? "mb-20" : ""
-								}`}>
-								<p>{t(`lang.${lang.code}`)}</p>
-								<Image
-									src={languageCodeToProperties(lang.code).flagUrl}
-									alt={lang.code}
-									width={languageCodeToProperties(lang.code).width}
-									height={languageCodeToProperties(lang.code).height}
-									className="w-40 cursor-pointer"
-								/>
-							</li>
-						))}
-					</ul>
-				) : null}
-			</div>
+			</button>
+			<Collapse open={isOpenDropDown}>
+				<ul>
+					{availableLanguages.map((lang) => (
+						<li
+							key={lang.code}
+							onClick={() => handleLanguageChange(lang)}
+							className="flex items-center justify-between h-[55px] px-12 cursor-pointer transition-colors duration-150 hover:bg-gray">
+							<p className="text-18 font-medium text-iconColor">{t(`lang.${lang.code}`)}</p>
+							<Image
+								src={crmFlagUrl(lang.code)}
+								alt={lang.code}
+								width={37}
+								height={25}
+								className="w-[37px] h-[25px] object-cover"
+							/>
+						</li>
+					))}
+				</ul>
+			</Collapse>
 		</div>
 	);
 }

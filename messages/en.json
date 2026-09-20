@@ -8,8 +8,10 @@
       "en": "English"
     },
     "search": "Search",
+    "language": "Language",
+    "notifications": "Notifications",
     "currentUser": {
-      "logout": "Logout",
+      "logout": "Log Out",
       "settings": "Settings"
     }
   },
@@ -24,7 +26,32 @@
     "marketing": "Marketing",
     "automation": "Automation",
     "upgrade_plan": "Upgrade Your Plan",
-    "settings": "Settings"
+    "settings": "Settings",
+    "feed": "Feed",
+    "chat_and_calls": "Chat And Calls",
+    "calendar": "Calendar",
+    "online_documents": "Online Documents",
+    "web_mails": "Web Mails"
+  },
+  "profile": {
+    "title": "My profile",
+    "firstname": "First Name",
+    "lastname": "Last Name",
+    "email": "E-Mail",
+    "phone": "Phone",
+    "position": "Position",
+    "city": "City",
+    "country": "Country",
+    "uploadPhoto": "Upload photo",
+    "removePhoto": "Remove photo",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "saved": "Profile saved",
+    "error": "Could not save the profile. Please try again.",
+    "tooBig": "The image is too large (max 5 MB)",
+    "notImage": "Please choose an image file",
+    "nameRequired": "First name and last name are required"
   },
   "navWebsite": {
     "home": "Home",

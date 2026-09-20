@@ -8,6 +8,8 @@
       "en": "Englisch"
     },
     "search": "Suchen",
+    "language": "Sprache",
+    "notifications": "Benachrichtigungen",
     "currentUser": {
       "logout": "Ausloggen",
       "settings": "Einstellungen"
@@ -24,7 +26,32 @@
     "marketing": "Marketing",
     "automation": "Automatisierung",
     "upgrade_plan": "Aktualisieren Sie Ihren Plan",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "feed": "Feed",
+    "chat_and_calls": "Chat und Anrufe",
+    "calendar": "Kalender",
+    "online_documents": "Online-Dokumente",
+    "web_mails": "Web-Mails"
+  },
+  "profile": {
+    "title": "Mein Profil",
+    "firstname": "Vorname",
+    "lastname": "Nachname",
+    "email": "E-Mail",
+    "phone": "Telefon",
+    "position": "Position",
+    "city": "Stadt",
+    "country": "Land",
+    "uploadPhoto": "Foto hochladen",
+    "removePhoto": "Foto entfernen",
+    "save": "Speichern",
+    "saving": "Wird gespeichert...",
+    "cancel": "Abbrechen",
+    "saved": "Profil gespeichert",
+    "error": "Das Profil konnte nicht gespeichert werden. Bitte erneut versuchen.",
+    "tooBig": "Das Bild ist zu groß (max. 5 MB)",
+    "notImage": "Bitte eine Bilddatei auswählen",
+    "nameRequired": "Vor- und Nachname sind erforderlich"
   },
   "navWebsite": {
     "home": "Hauptseite",

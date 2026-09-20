@@ -1,6 +1,7 @@
 import ukraine from "@/app/assets/svgs/ukraine-flag-icon.svg";
 import usa from "@/app/assets/svgs/united-states-flag-icon.svg";
 import germany from "@/app/assets/svgs/germany-flag-icon.svg";
+import unitedKingdom from "@/app/assets/svgs/united-kingdom-flag-icon.svg";
 
 interface Language {
     code: string;
@@ -30,3 +31,8 @@ interface Language {
     }
     return { flagUrl: "ua", width: 40, height: 30 };
   };
+
+  // В CRM по дизайну английский язык показывается флагом Великобритании,
+  // на публичном сайте остаётся флаг США (languageCodeToProperties).
+  export const crmFlagUrl = (code: string): string =>
+    code === "en" ? unitedKingdom : languageCodeToProperties(code).flagUrl;

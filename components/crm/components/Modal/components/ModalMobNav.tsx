@@ -1,79 +1,82 @@
 "use client";
 import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { MdKeyboardArrowDown } from "react-icons/md";
 import { useToggleMenuState } from "@/app/store/useToggleMenuState";
-import {useTranslations} from 'next-intl';
-import {
-	BsFillHouseFill,
-	BsFillPeopleFill,
-	BsBarChartSteps,
-	BsCardChecklist,
-	BsFillHandbagFill,
-	BsDiagram3,
-	BsRocketTakeoffFill,
-} from "react-icons/bs";
-import { GiProgression } from "react-icons/gi";
-import { SiIcinga } from "react-icons/si";
-import { FiSettings } from "react-icons/fi";
-import { IconContext } from "react-icons";
+import { stripLocale } from "@/app/utils/locale";
+import Collapse from "@/app/utils/Collapse";
+import { menuItems, isActivePath } from "../../Sidebar/menuItems";
+
+// Мобильное меню (Figma 375px): пункт 55px, шаг 66px, текст 20px, активный — синяя полоса.
+const ROW = "flex items-center w-full h-[55px] px-12 text-left transition-colors duration-200";
 
 export default function ModalMobNav() {
-	const { mobileMenu } = useToggleMenuState();
-	const [activeIndex, setActiveIndex] = useState(0);
-
-	const handleItemClick = (index: number) => {
-		setActiveIndex(index);
-	};
-
-	const t = useTranslations('navigation')
-
-	const menuItems = [
-		{ icon: BsFillHouseFill, text: t("dashboard") },
-		{ icon: BsFillPeopleFill, text: t("collaboration") },
-		{ icon: GiProgression, text: t("company") },
-		{ icon: BsBarChartSteps, text: t("crm") },
-		{ icon: BsCardChecklist, text: t("tasks_projects") },
-		{ icon: SiIcinga, text: t("inventory_management") },
-		{ icon: BsFillHandbagFill, text: t("marketing") },
-		{ icon: BsDiagram3, text: t("automation") },
-		{ icon: BsRocketTakeoffFill, text: t("upgrade_plan") },
-		{ icon: FiSettings, text: t("settings") },
-	];
+	const toggleMobileMenu = useToggleMenuState((state) => state.toggleMobileMenu);
+	const t = useTranslations("navigation");
+	const locale = useLocale();
+	const path = stripLocale(usePathname());
+	const [collabOpen, setCollabOpen] = useState(path.startsWith("/crm/collaboration"));
 
 	return (
-		<div
-			className={`${
-				!mobileMenu && "flex-col items-left inline-block"
-			}  bg-secondaryColor  sm:w-[100vw] md:w-auto inline-block`}>
-			<IconContext.Provider value={{ color: "#B3B3B3" }}>
-				<ul>
-					{menuItems.map((item, index) => (
-						<li
-							key={index}
-							onClick={() => handleItemClick(index)}
-							className={`p-16 ${
-								activeIndex === index ? "bg-primaryColor" : ""
-							} flex items-center cursor-pointer`}>
-							<item.icon
-								style={{
-									color: activeIndex === index ? "white" : "#B3B3B3",
-									marginRight: mobileMenu ? "10px" : "",
-									width: "20px",
-									height: "27px",
-								}}
-							/>
+		<ul className="pt-0">
+			{menuItems.map((item) => {
+				const active = isActivePath(path, item.href);
+				const Icon = item.icon;
+				const color = active ? "text-white" : "text-iconColor";
+				const rowClass = `${ROW} ${active ? "bg-primaryColor" : ""}`;
+				const content = (
+					<>
+						<Icon size={20} className={`shrink-0 ${color}`} />
+						<span className={`ml-10 text-20 font-medium tracking-[0.4px] ${color}`}>{t(item.key)}</span>
+					</>
+				);
 
-							{mobileMenu && (
-								<p
-									className={`text-14 mp:text-18 ${
-										activeIndex === index ? "text-white" : "text-iconColor"
-									} font-medium `}>
-									{item.text}
-								</p>
-							)}
+				if (item.children) {
+					return (
+						<li key={item.key} className="mb-[11px]">
+							<button
+								type="button"
+								aria-expanded={collabOpen}
+								onClick={() => setCollabOpen(!collabOpen)}
+								className={rowClass}>
+								{content}
+								<MdKeyboardArrowDown
+									size={24}
+									className={`ml-16 transition-[transform,color] duration-300 ${color} ${
+										collabOpen ? "rotate-180" : ""
+									}`}
+								/>
+							</button>
+							<Collapse open={collabOpen}>
+								<ul className="pt-[11px]">
+									{item.children.map((child) => (
+										<li key={child.key} className="mb-[11px]">
+											<Link
+												href={`/${locale}${child.href}`}
+												onClick={toggleMobileMenu}
+												className={`${ROW} text-20 font-medium tracking-[0.4px] ${
+													isActivePath(path, child.href) ? "text-primaryColor" : "text-[#999999]"
+												}`}>
+												{t(child.key)}
+											</Link>
+										</li>
+									))}
+								</ul>
+							</Collapse>
 						</li>
-					))}
-				</ul>
-			</IconContext.Provider>
-		</div>
+					);
+				}
+
+				return (
+					<li key={item.key} className="mb-[11px]">
+						<Link href={`/${locale}${item.href}`} onClick={toggleMobileMenu} className={rowClass}>
+							{content}
+						</Link>
+					</li>
+				);
+			})}
+		</ul>
 	);
 }

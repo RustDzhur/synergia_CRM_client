@@ -22,6 +22,7 @@ interface CrmStore {
     addStage: (name: string) => Promise<void>;
     renameStage: (id: string, name: string) => Promise<void>;
     deleteStage: (id: string) => Promise<void>;
+    reorderStages: (fromIndex: number, toIndex: number) => Promise<void>;
 
     addDeal: (stageId: string, clientName: string) => Promise<void>;
     moveDeal: (dealId: string, toStageId: string, toOrder: number) => Promise<void>;
@@ -85,6 +86,24 @@ export const useCrmStore = create<CrmStore>((set, get) => ({
         }
     },
 
+    // перенос целого столбца влево/вправо: сразу меняем порядок локально (анимацию рисует dnd),
+    // затем сохраняем на сервере; при ошибке перезагружаем данные
+    reorderStages: async (fromIndex, toIndex) => {
+        const sorted = [...get().stages].sort((a, b) => a.order - b.order);
+        const [moved] = sorted.splice(fromIndex, 1);
+        if (!moved) return;
+        sorted.splice(toIndex, 0, moved);
+        const reordered = sorted.map((s, i) => ({ ...s, order: i }));
+        set({ stages: reordered });
+
+        const res = await fetch("/api/stages/reorder", {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify({ ids: reordered.map((s) => s._id) }),
+        });
+        if (!res.ok) await get().fetchAll();
+    },
+
     addDeal: async (stageId, clientName) => {
         const res = await fetch("/api/deals", {
             method: "POST",
@@ -97,19 +116,43 @@ export const useCrmStore = create<CrmStore>((set, get) => ({
         }
     },
 
-    // вызывается при завершении drag&drop — сразу обновляем локально (для плавности UI),
-    // и отправляем PATCH на сервер, чтобы сохранить новую стадию/порядок
-    moveDeal: async (dealId, toStageId, toOrder) => {
-        set({
-            deals: get().deals.map((d) =>
-                d._id === dealId ? { ...d, stage: toStageId, order: toOrder } : d
-            ),
-        });
-        await fetch(`/api/deals/${dealId}`, {
-            method: "PATCH",
-            headers: authHeaders(),
-            body: JSON.stringify({ stage: toStageId, order: toOrder }),
-        });
+    // Вызывается при завершении drag&drop карточки. Раньше менялся order только у самой карточки,
+    // а у соседей оставался прежним — порядок «ломался» (одинаковые order). Теперь order
+    // пересчитывается 0..n-1 в столбце-приёмнике и (если столбец сменился) в столбце-источнике.
+    // Локально обновляем сразу (плавность), на сервер отправляем только изменившиеся карточки.
+    moveDeal: async (dealId, toStageId, toIndex) => {
+        const before = get().deals;
+        const moving = before.find((d) => d._id === dealId);
+        if (!moving) return;
+
+        const lane = (stageId: string) =>
+            before
+                .filter((d) => d.stage === stageId && d._id !== dealId)
+                .sort((a, b) => a.order - b.order);
+
+        const target = lane(toStageId);
+        target.splice(toIndex, 0, { ...moving, stage: toStageId });
+
+        const changes = new Map<string, { stage: string; order: number }>();
+        target.forEach((d, i) => changes.set(d._id, { stage: toStageId, order: i }));
+        if (moving.stage !== toStageId) {
+            lane(moving.stage).forEach((d, i) => changes.set(d._id, { stage: moving.stage, order: i }));
+        }
+
+        set({ deals: before.map((d) => (changes.has(d._id) ? { ...d, ...changes.get(d._id)! } : d)) });
+
+        const original = new Map(before.map((d) => [d._id, d]));
+        await Promise.all(
+            Array.from(changes.entries())
+                .filter(([id, c]) => original.get(id)!.stage !== c.stage || original.get(id)!.order !== c.order)
+                .map(([id, c]) =>
+                    fetch(`/api/deals/${id}`, {
+                        method: "PATCH",
+                        headers: authHeaders(),
+                        body: JSON.stringify(c),
+                    })
+                )
+        );
     },
 
     deleteDeal: async (id) => {

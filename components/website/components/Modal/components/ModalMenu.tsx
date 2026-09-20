@@ -10,6 +10,7 @@ import useAuthFormStore from "@/app/store/useAuthFormStore";
 import { RiArrowGoBackFill } from "react-icons/ri";
 import { IconContext } from "react-icons";
 import { SigninForm, SignupForm } from "../../AuthForms";
+import { usePresence } from "@/app/utils/usePresence";
 
 export default function ModalMenu() {
 	const { menu, toggleMenu } = useToggleMenuState();
@@ -56,14 +57,31 @@ export default function ModalMenu() {
 		}
 	  }, [menu, isSignInFormOpen, isSignUpFormOpen]);
 
+	const open = menu || isSignInFormOpen || isSignUpFormOpen;
+	// панель остаётся в DOM на время анимации закрытия
+	const { rendered, visible } = usePresence(open, 300);
+	// запоминаем, что показывали, пока модалка открыта — иначе при закрытии
+	// содержимое на секунду «переключается» на меню, пока панель гаснет
+	const viewRef = useRef<"nav" | "signin" | "signup">("nav");
+	if (open) {
+		viewRef.current =
+			isSignInFormOpen && !isSignUpFormOpen ? "signin" : isSignUpFormOpen && !isSignInFormOpen ? "signup" : "nav";
+	}
+	const view = viewRef.current;
+
 	return (
 		<>
-			{(menu || isSignInFormOpen || isSignUpFormOpen )&& (
+			{rendered && (
 				<div
 					ref={modalRef}
 					onClick={handleCloseModal}
-					className="fixed inset-0 flex justify-start lg:justify-center lg:items-center  z-50 bg-modalBG ">
-					<div className=" sm:bg-secondaryColor sm:p-20 w-full lg:h-auto lg:mb-40 lg:rounded-24 lg:w-auto md:w-375  overflow-y-auto scroll-hide-scrollbar">
+					className={`fixed inset-0 flex justify-start lg:justify-center lg:items-center  z-50 bg-modalBG transition-opacity duration-300 motion-reduce:transition-none ${
+						visible ? "opacity-100" : "opacity-0"
+					}`}>
+					<div
+						className={` sm:bg-secondaryColor sm:p-20 w-full lg:h-auto lg:mb-40 lg:rounded-24 lg:w-auto md:w-375  overflow-y-auto scroll-hide-scrollbar transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none ${
+							visible ? "translate-y-0 opacity-100" : "-translate-y-[16px] opacity-0"
+						}`}>
 						<div className="flex justify-between mb-60 lg:mb-20 items-center">
 							<div className="lg:hidden">
 								<Logo />
@@ -81,18 +99,18 @@ export default function ModalMenu() {
 
 							<BurgerMenu />
 						</div>
-						{isSignInFormOpen && !isSignUpFormOpen && (
-							<div className="mb-30">
+						{view === "signin" && (
+							<div key="signin" className="mb-30 animate-fade-in">
 								<SigninForm />
 							</div>
 						)}
-						{isSignUpFormOpen && !isSignInFormOpen && (
-							<div className="mb-30">
+						{view === "signup" && (
+							<div key="signup" className="mb-30 animate-fade-in">
 								<SignupForm />
 							</div>
 						)}
-						{!isSignInFormOpen && !isSignUpFormOpen && (
-							<>
+						{view === "nav" && (
+							<div key="nav" className="animate-fade-in">
 								<div className="mb-30">
 									<ModalNav />
 								</div>
@@ -100,7 +118,7 @@ export default function ModalMenu() {
 									<SwitchLanguage />
 								</div>
 								<AuthLinks />
-							</>
+							</div>
 						)}
 					</div>
 				</div>

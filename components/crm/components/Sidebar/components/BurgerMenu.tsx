@@ -1,21 +1,19 @@
 "use client";
 import React from "react";
-import { RiMenuFoldFill, RiMenuUnfoldFill } from "react-icons/ri";
-import { IconContext } from "react-icons";
+import { MdMenu } from "react-icons/md";
 import { useToggleMenuState } from "@/app/store/useToggleMenuState";
 
-export default function BurgerMenu() {
-	const { menu, toggleMenu } = useToggleMenuState();
+interface Props {
+	size?: number;
+}
+
+// Кнопка сворачивания/разворачивания сайдбара. В Figma это серый значок «≡» 40×40 слева в шапке.
+export default function BurgerMenu({ size = 40 }: Props) {
+	const toggleMenu = useToggleMenuState((state) => state.toggleMenu);
 
 	return (
-		<div onClick={toggleMenu}>
-			<IconContext.Provider
-				value={{
-					size: "20px",
-					color: menu ? "#5EA8F5" : "#B3B3B3",
-				}}>
-				{!menu ? <RiMenuUnfoldFill /> : <RiMenuFoldFill />}
-			</IconContext.Provider>
-		</div>
+		<button type="button" aria-label="Toggle menu" onClick={toggleMenu} className="flex">
+			<MdMenu size={size} color="#B3B3B3" />
+		</button>
 	);
 }

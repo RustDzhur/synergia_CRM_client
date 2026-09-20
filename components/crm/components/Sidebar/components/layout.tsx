@@ -1,56 +1,105 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { MdKeyboardArrowDown } from "react-icons/md";
 import { useToggleMenuState } from "@/app/store/useToggleMenuState";
-import {
-	BsFillHouseFill, BsFillPeopleFill, BsBarChartSteps, BsCardChecklist,
-	BsFillHandbagFill, BsDiagram3, BsRocketTakeoffFill, BsPersonLinesFill,
-} from "react-icons/bs";
-import { GiProgression } from "react-icons/gi";
-import { SiIcinga } from "react-icons/si";
-import { FiSettings } from "react-icons/fi";
-import { IconContext } from "react-icons";
+import { stripLocale } from "@/app/utils/locale";
+import Collapse from "@/app/utils/Collapse";
+import { menuItems, isActivePath } from "../menuItems";
 import BurgerMenu from "./BurgerMenu";
+
+// Размеры из Figma:
+//  desktop (lg):  развёрнут 270px / свёрнут 52px, пункт 54px, шаг 60px, текст 18px
+//  tablet  (md):  развёрнут 220px / свёрнут 54px, пункт 50px, шаг 56px, текст 15px
+const ROW = "flex items-center w-full h-[50px] lg:h-[54px] px-16 text-left transition-colors duration-200";
+const LABEL = "ml-6 lg:ml-10 text-15 lg:text-18 font-medium tracking-[0.3px] whitespace-nowrap transition-[opacity,color] duration-200";
 
 export default function Layout() {
 	const { menu } = useToggleMenuState();
 	const t = useTranslations("navigation");
 	const locale = useLocale();
-	const pathname = usePathname();
-
-	const menuItems = [
-		{ icon: BsFillHouseFill, text: t("dashboard"), href: `/${locale}/crm` },
-		{ icon: BsFillPeopleFill, text: t("collaboration"), href: `/${locale}/crm/collaboration` },
-		{ icon: GiProgression, text: t("company"), href: `/${locale}/crm/company` },
-		{ icon: BsBarChartSteps, text: t("crm"), href: `/${locale}/crm/crm` },
-		{ icon: BsPersonLinesFill, text: t("contacts"), href: `/${locale}/crm/contacts` },
-		{ icon: BsCardChecklist, text: t("tasks_projects"), href: `/${locale}/crm/tasks` },
-		{ icon: SiIcinga, text: t("inventory_management"), href: `/${locale}/crm/inventory` },
-		{ icon: BsFillHandbagFill, text: t("marketing"), href: `/${locale}/crm/marketing` },
-		{ icon: BsDiagram3, text: t("automation"), href: `/${locale}/crm/automation` },
-		{ icon: BsRocketTakeoffFill, text: t("upgrade_plan"), href: `/${locale}/crm/upgrade` },
-		{ icon: FiSettings, text: t("settings"), href: `/${locale}/crm/settings` },
-	];
+	const path = stripLocale(usePathname());
+	const [collabOpen, setCollabOpen] = useState(path.startsWith("/crm/collaboration"));
 
 	return (
-		<div className={`${!menu && "flex-col items-left inline-block"} bg-secondaryColor h-[100vh] inline-block`}>
-			<IconContext.Provider value={{ color: "#B3B3B3" }}>
-				<ul>
-					{menuItems.map((item) => {
-						const active = item.href === `/${locale}/crm` ? pathname === item.href : pathname.startsWith(item.href);
+		<nav
+			className={`bg-secondaryColor shrink-0 h-full overflow-hidden transition-[width] duration-300 ease-in-out motion-reduce:transition-none ${
+				menu ? "md:w-[220px] lg:w-270" : "md:w-[54px] lg:w-52"
+			}`}>
+			<ul>
+				{menuItems.map((item) => {
+					const active = isActivePath(path, item.href);
+					const Icon = item.icon;
+					const color = active ? "text-white" : "text-iconColor";
+					const rowClass = `${ROW} ${active ? "bg-primaryColor" : "hover:bg-gray"}`;
+					const icon = <Icon size={20} className={`shrink-0 transition-colors duration-200 ${color}`} />;
+					// подпись всегда в DOM: при сворачивании плавно гаснет, а обрезает её сужающийся сайдбар
+					const label = (
+						<span className={`${LABEL} ${color} ${menu ? "opacity-100" : "opacity-0"}`}>{t(item.key)}</span>
+					);
+
+					// Пункт с подменю (Collaboration): в развёрнутом меню раскрывает список,
+					// в свёрнутом (только иконки) ведёт на первую страницу раздела.
+					if (item.children) {
 						return (
-							<li key={item.href} className={`${active ? "bg-primaryColor" : ""} p-16 flex items-center cursor-pointer`}>
-								<Link href={item.href} className="flex items-center w-full">
-									<item.icon style={{ color: active ? "white" : "#B3B3B3", marginRight: menu ? "10px" : "", width: 20, height: 27 }} />
-									{menu && <p className={`text-14 mp:text-18 ${active ? "text-white" : "text-iconColor"} font-medium`}>{item.text}</p>}
-								</Link>
+							<li key={item.key} className="mb-6">
+								{menu ? (
+									<button
+										type="button"
+										aria-expanded={collabOpen}
+										onClick={() => setCollabOpen(!collabOpen)}
+										className={rowClass}>
+										{icon}
+										{label}
+										<MdKeyboardArrowDown
+											size={24}
+											className={`ml-16 shrink-0 transition-[transform,color] duration-300 ${color} ${
+												collabOpen ? "rotate-180" : ""
+											}`}
+										/>
+									</button>
+								) : (
+									<Link href={`/${locale}${item.children[0].href}`} className={rowClass}>
+										{icon}
+									</Link>
+								)}
+								<Collapse open={menu && collabOpen}>
+									<ul className="pt-6">
+										{item.children.map((child) => (
+											<li key={child.key} className="mb-6">
+												<Link
+													href={`/${locale}${child.href}`}
+													className={`${ROW} text-15 lg:text-18 font-medium tracking-[0.3px] whitespace-nowrap hover:bg-gray ${
+														isActivePath(path, child.href)
+															? "text-primaryColor"
+															: "text-[#999999]"
+													}`}>
+													{t(child.key)}
+												</Link>
+											</li>
+										))}
+									</ul>
+								</Collapse>
 							</li>
 						);
-					})}
-					<li className="hidden p-16 md:block"><BurgerMenu /></li>
-				</ul>
-			</IconContext.Provider>
-		</div>
+					}
+
+					return (
+						<li key={item.key} className="mb-6">
+							<Link href={`/${locale}${item.href}`} className={rowClass}>
+								{icon}
+								{label}
+							</Link>
+						</li>
+					);
+				})}
+				{/* На desktop бургер в шапке (см. Header), на tablet его нет в шапке — оставляем здесь */}
+				<li className="hidden md:block lg:hidden px-16 py-16">
+					<BurgerMenu size={20} />
+				</li>
+			</ul>
+		</nav>
 	);
 }

@@ -33,7 +33,7 @@ export default function Search() {
 				<input
 					{...register("search")}
 					placeholder={t('search')}
-					className="py-15 px-20 pr-40 focus:outline-none font-normal lg:text-18 md:text-16 lg:w-350 md:w-300"
+					className="h-50 px-20 pr-40 focus:outline-none font-normal lg:text-18 md:text-16 lg:w-350 md:w-300"
 					style={{
 						background: "#FBFBFB",
 						color: "#B3B3B3",
