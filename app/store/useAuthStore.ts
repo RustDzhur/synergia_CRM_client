@@ -1,8 +1,9 @@
 import { create } from "zustand";
+import toast from "react-hot-toast";
 
 interface SignUpFormData {
 	firstname: string;
-	lasttname: string;
+	lastname: string;
 	email: string;
 	password: string;
 }
@@ -13,91 +14,71 @@ interface SignInFormData {
 }
 
 interface AuthStore {
-	isSigningIn: boolean;
-	isSigningUp: boolean;
-	timeoutId?: NodeJS.Timeout;
-	signIn: (data: SignInFormData) => Promise<void>;
-	signUp: (data: SignUpFormData) => Promise<void>;
+	isAuthenticated: boolean;
+	authChecked: boolean;
+	isLoading: boolean;
+	checkAuth: () => void;
+	signIn: (data: SignInFormData) => Promise<boolean>;
+	signUp: (data: SignUpFormData) => Promise<boolean>;
+	logout: () => void;
 }
 
-const useAuthStore = create<AuthStore>((set) => {
-	const isClientSide = typeof window !== "undefined";
+const useAuthStore = create<AuthStore>((set) => ({
+	isAuthenticated: false,
+	authChecked: false,
+	isLoading: false,
 
-	const tokenFromLocalStorage = isClientSide
-		? localStorage.getItem("token")
-		: null;
+	checkAuth: () => {
+		const token = localStorage.getItem("token");
+		set({ isAuthenticated: Boolean(token), authChecked: true });
+	},
 
-	const initialIsSigningIn =
-		tokenFromLocalStorage !== null && tokenFromLocalStorage !== undefined;
+	signIn: async (data) => {
+		set({ isLoading: true });
+		try {
+			const response = await fetch("/api/auth/signin", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(data),
+			});
+			if (!response.ok) throw new Error("Signin failed");
+			const responseData = await response.json();
+			localStorage.setItem("token", responseData.token);
+			set({ isAuthenticated: true, authChecked: true });
+			return true;
+		} catch (error) {
+			console.error("Signin error:", error);
+			toast.error("Не удалось войти. Проверьте email и пароль.");
+			return false;
+		} finally {
+			set({ isLoading: false });
+		}
+	},
 
-	set({
-		isSigningIn: initialIsSigningIn,
-		isSigningUp: false,
-		timeoutId: undefined,
-	});
+	signUp: async (data) => {
+		set({ isLoading: true });
+		try {
+			const response = await fetch("/api/auth/signup", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(data),
+			});
+			if (!response.ok) throw new Error("Signup failed");
+			toast.success("Регистрация прошла успешно. Теперь войдите.");
+			return true;
+		} catch (error) {
+			console.error("Signup error:", error);
+			toast.error("Не удалось зарегистрироваться.");
+			return false;
+		} finally {
+			set({ isLoading: false });
+		}
+	},
 
-	return {
-		isSigningIn: initialIsSigningIn,
-		isSigningUp: false,
-		timeoutId: undefined,
-		signIn: async (data: SignInFormData) => {
-			set({ isSigningIn: true });
-
-			try {
-				const response = await fetch(
-					"https://synergia-crm-server.onrender.com/api/signin",
-					{
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify(data),
-					}
-				);
-
-				if (!response.ok) {
-					throw new Error("Signin failed");
-				}
-
-				const responseData = await response.json();
-
-				localStorage.setItem("token", responseData.user.token);
-
-				const timeoutId = setTimeout(() => {
-					localStorage.setItem("token", "");
-					set({ isSigningIn: false });
-				}, 23 * 60 * 60 * 1000 + 59 * 60 * 1000 + 59 * 1000);
-
-				set({ timeoutId });
-			} catch (error) {
-				console.error("Signin error:", error);
-			}
-		},
-		signUp: async (data: SignUpFormData) => {
-			set({ isSigningUp: true });
-
-			try {
-				const response = await fetch(
-					"https://synergia-crm-server.onrender.com/api/signup",
-					{
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify(data),
-					}
-				);
-
-				if (!response.ok) {
-					throw new Error("Signup failed");
-				}
-			} catch (error) {
-				console.error("Signup error:", error);
-			} finally {
-				set({ isSigningUp: false });
-			}
-		},
-	};
-});
+	logout: () => {
+		localStorage.removeItem("token");
+		set({ isAuthenticated: false });
+	},
+}));
 
 export default useAuthStore;

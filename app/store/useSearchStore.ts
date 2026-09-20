@@ -11,15 +11,8 @@ export const useSearchStore = create<SearchStore>((set) => ({
   query: '',
   setQuery: (query) => set({ query }),
   searchData: [],
-  
+
   fetchSearchData: async () => {
-    try {
-      const state = useSearchStore.getState(); // Access the current state
-      const response = await fetch(`https://www.solar.com?q=${state.query}`);
-      const data = await response.json();
-      set({ searchData: data }); // Update the state with new data
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
+    // TODO: подключить, когда на сервере появится маршрут поиска
   },
 }));

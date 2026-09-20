@@ -12,8 +12,6 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
   numberNotification: 0,
   toggleNotifications: () => set((state) => ({ hasNotifications: !state.hasNotifications })),
   fetchNotifications: async () => {
-    const response = await fetch('/api/notifications'); // Replace with your actual API endpoint
-    const data = await response.json();
-    set({ numberNotification: data.number }); 
+    // TODO: подключить, когда на сервере появится маршрут уведомлений
   },
 }));

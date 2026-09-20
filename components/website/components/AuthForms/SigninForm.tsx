@@ -1,6 +1,6 @@
 "use client";
 import useAuthFormStore from "@/app/store/useAuthFormStore";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FaUser } from "react-icons/fa";
 import { IoIosLock, IoIosUnlock } from "react-icons/io";
 import { BsEyeSlash, BsEye } from "react-icons/bs";
@@ -11,7 +11,7 @@ import {
 	SubmitHandler,
 	FieldValues,
 } from "react-hook-form";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import useAuthStore from "@/app/store/useAuthStore";
 import { useToggleMenuState } from "@/app/store/useToggleMenuState";
 import { useRouter } from "next/navigation";
@@ -24,7 +24,8 @@ interface SignInFormData {
 
 export default function SignInForm() {
 	const router = useRouter();
-	const { isSigningIn, signIn } = useAuthStore();
+	const { isLoading, signIn } = useAuthStore();
+	const locale = useLocale();
 	const [passwordVisible, setPasswordVisible] = useState(false);
 	const {
 		isSignInFormOpen,
@@ -36,22 +37,16 @@ export default function SignInForm() {
 
 	const t = useTranslations("authForms");
 
-	const { handleSubmit, control, watch, reset } = useForm();
-	const password = watch("password", "");
+	const { handleSubmit, control, reset } = useForm();
 
 	const onSubmit: SubmitHandler<FieldValues> = async (data) => {
-		const signInData = data as SignInFormData;
-		const { email, password } = signInData;
-		await signIn({ email, password });
+		const { email, password } = data as SignInFormData;
+		const success = await signIn({ email, password });
+		if (!success) return; // ошибка уже показана уведомлением, форма остаётся
 		reset();
 		toggleSignInForm();
 		toggleMenu();
-		const token = localStorage.getItem("token");
-		if (!token) {
-			return <Loader color="#5EA8F5" width="50" height="10" radius="9" />;
-		} else {
-			router.push("/crm");
-		}
+		router.push(`/${locale}/crm`);
 	};
 
 	const handleChangeForm = () => {
@@ -64,7 +59,7 @@ export default function SignInForm() {
 	return (
 		<div className="relative">
 			<div className="flex items-center justify-center">
-				{isSigningIn && (
+				{isLoading && (
 					<Loader color="#5EA8F5" width="100" height="20" radius="18" />
 				)}
 			</div>
@@ -77,6 +72,7 @@ export default function SignInForm() {
 						name="email"
 						control={control}
 						defaultValue=""
+						rules={{ required: true }}
 						render={({ field }) => (
 							<div className="relative">
 								<input
@@ -102,6 +98,7 @@ export default function SignInForm() {
 						name="password"
 						control={control}
 						defaultValue=""
+						rules={{ required: true }}
 						render={({ field }) => (
 							<div className="relative">
 								<input
@@ -140,6 +137,7 @@ export default function SignInForm() {
 				<div className="">
 					<button
 						type="submit"
+						disabled={isLoading}
 						className="sm:w-full lg:w-[50%] py-15 rounded-4 hover:shadow-authForms bg-authBtn text-18 text-white font-medium">
 						{t("login")}
 					</button>

@@ -10,6 +10,6 @@ interface LanguageStore {
 }
 
 export const useLanguageStore = create<LanguageStore>((set) => ({
-  selectedLanguage: { code: 'ua' },
+  selectedLanguage: { code: 'de' },
   setSelectedLanguage: (language) => set({ selectedLanguage: language }),
 }));
