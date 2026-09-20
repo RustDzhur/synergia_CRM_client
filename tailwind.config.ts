@@ -40,6 +40,9 @@ const config: Config = {
 			contactUs: "#FF008A",
 			testimonials: "#313D45",
 			footer: "#313D45",
+			// добавил под реальный дизайн CRM:
+			searchBorder: "#E6E6E6", // рамка поля поиска в CRM (отличается от switchCompany)
+			danger: "#EB5757",       // для кнопок удаления/ошибок — своего "красного" в проекте не было
 		},
 		spacing: {
 			px: "1px",
@@ -61,6 +64,7 @@ const config: Config = {
 			30: "30px",
 			32: "32px",
 			35: "35px",
+			36: "36px", // добавил — нужен для кнопки "+ Add" в CRM (px-36 по макету)
 			40: "40px",
 			44: "44px",
 			50: "50px",
@@ -108,11 +112,6 @@ const config: Config = {
 		fontFamily: {
 			inter: ["Inter", "sans"],
 		},
-		fontWeight: {
-			normal: "400",
-			medium: "500",
-			bold: "700",
-		},
 		fontSize: {
 			4: "4px",
 			6: "6px",
@@ -133,13 +132,6 @@ const config: Config = {
 			40: "40px",
 			50: "50px",
 		},
-		borderWidth: {
-			switchCompany: "1px",
-			authForms: "2px",
-			authFormsUnFocus: "2px",
-			cardPlan: "2px",
-			testimonials: "2px"
-		},
 		borderColor: {
 			switchCompany: "#E2F1F5",
 			activeLink: "#313D45",
@@ -150,16 +142,6 @@ const config: Config = {
 			cardPlan: "#768FE5",
 			testimonials: "#FF008A",
 		},
-		boxShadow: {
-			custom: "0px 1px 2px 0px rgba(0, 0, 0, 0.08)",
-			circleShadow: "0px 4px 8px 0px rgba(49, 61, 69, 0.24)",
-			authForms: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
-			authBtn: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
-			authTabBtn: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
-			heroImage: "0px 2px 8px 0px rgba(0, 0, 0, 0.32)",
-			advantages: "0px 4px 8px 0px rgba(0, 0, 0, 0.25)",
-			choosePlan: "0px 2px 2px 0px rgba(0, 0, 0, 0.16)",
-		},
 		backgroundImage: {
 			"gradient-background":
 				"linear-gradient(49deg, #ff008a 15.09%, #768fe5 59.33%, rgba(255, 0, 138, 0) 87.2%)",
@@ -168,6 +150,7 @@ const config: Config = {
 		},
 		borderRadius: {
 			"4": "4px",
+			"6": "6px", // добавил — нужен для мелких инпутов в CRM
 			"8": "8px",
 			"10": "10px",
 			"16": "16px",
@@ -177,7 +160,34 @@ const config: Config = {
 			"300": "300px",
 			"800": "800px",
 		},
-		extend: {},
+		extend: {
+			// эти три раньше были в theme напрямую и полностью убивали
+			// стандартные классы Tailwind (border-2, shadow-sm, font-semibold и т.д.) —
+			// перенёс в extend, чтобы твои именованные значения ДОБАВЛЯЛИСЬ, а не заменяли
+			borderWidth: {
+				switchCompany: "1px",
+				authForms: "2px",
+				authFormsUnFocus: "2px",
+				cardPlan: "2px",
+				testimonials: "2px",
+			},
+			boxShadow: {
+				custom: "0px 1px 2px 0px rgba(0, 0, 0, 0.08)",
+				circleShadow: "0px 4px 8px 0px rgba(49, 61, 69, 0.24)",
+				authForms: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
+				authBtn: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
+				authTabBtn: "0px 2px 2px 0px rgba(0, 0, 0, 0.12)",
+				heroImage: "0px 2px 8px 0px rgba(0, 0, 0, 0.32)",
+				advantages: "0px 4px 8px 0px rgba(0, 0, 0, 0.25)",
+				choosePlan: "0px 2px 2px 0px rgba(0, 0, 0, 0.16)",
+			},
+			fontWeight: {
+				normal: "400",
+				medium: "500",
+				semibold: "600", // добавил — используется в заголовках колонок CRM
+				bold: "700",
+			},
+		},
 	},
 	plugins: [
 		function ({ addUtilities }: any) {

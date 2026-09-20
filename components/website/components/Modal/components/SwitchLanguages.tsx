@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import Image from "next/image";
 import { v4 as uuidv4 } from "uuid";
 import { RiArrowDownSLine, RiArrowUpSLine } from "react-icons/ri";
@@ -21,26 +21,10 @@ export default function SwitchLanguage() {
 		(flag) => flag.code !== selectedLanguage.code
 	);
 
+	const locale = useLocale();
 	useEffect(() => {
-		const savedLanguage = localStorage.getItem("selectedLanguage");
-
-		if (savedLanguage) {
-			try {
-				const parsedLanguage = JSON.parse(savedLanguage);
-				console.log("Parsed Language:", parsedLanguage);
-				setSelectedLanguage(parsedLanguage);
-			} catch (error) {
-				localStorage.setItem(
-					"selectedLanguage",
-					JSON.stringify({ code: "ua" })
-				);
-				router.replace("/ua")
-			}
-		} else {
-			localStorage.setItem("selectedLanguage", JSON.stringify({ code: "ua" }));
-			router.replace("/ua")
-		}
-	}, [router, setSelectedLanguage]);
+		setSelectedLanguage({ code: locale });
+	}, [locale, setSelectedLanguage]);
 
 	const handleOpenDropDown = () => {
 		setIsOpenDropDown(!isOpenDropDown);

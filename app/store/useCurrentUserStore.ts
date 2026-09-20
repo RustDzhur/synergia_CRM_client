@@ -1,9 +1,9 @@
 import { create } from "zustand";
-
+import useAuthStore from "./useAuthStore";
 interface User {
-  id: number;
+  id: string;
   firstname: string;
-  lasttname: string;
+  lastname: string;
   avatarUrl: string;
 }
 
@@ -21,32 +21,25 @@ export const useCurrentUserStore = create<CurrentUserStore>((set) => ({
   isDropDown: false,
   toggleDropDown: () => set((state) => ({ isDropDown: !state.isDropDown })),
   fetchUser: async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      set({ user: null, isLoading: false });
+      return;
+    }
     try {
-      // Retrieve the user's token from wherever you have stored it (e.g., localStorage)
-      const userToken = localStorage.getItem("token");
-
-      if (!userToken) {
-        // Handle the case where the token is not available
-        console.error("User token not found.");
-        return;
-      }
-
-      const response = await fetch("https://synergia-crm-server.onrender.com/api/currentUser", {
-        headers: {
-          Authorization: `Bearer ${userToken}`, // Include the token in the Authorization header
-        },
+      const response = await fetch("/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!response.ok) {
-        // Handle server error or unauthorized access
-        console.error("Error fetching user data:", response.status, response.statusText);
+      if (response.status === 401) {
+        useAuthStore.getState().logout(); // токен просрочен
+        set({ user: null, isLoading: false });
         return;
       }
-
-      const userData: User = await response.json();
-      set({ user: userData, isLoading: false });
+      if (!response.ok) throw new Error(String(response.status));
+      set({ user: await response.json(), isLoading: false });
     } catch (error) {
       console.error("Error fetching user data:", error);
+      set({ user: null, isLoading: false });
     }
   },
 }));

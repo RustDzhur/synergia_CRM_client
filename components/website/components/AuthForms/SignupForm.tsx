@@ -25,13 +25,13 @@ import useAuthStore from "@/app/store/useAuthStore";
 
 interface SignUpFormData {
 	firstname: string;
-	lasttname: string;
+	lastname: string;
 	email: string;
 	password: string;
 }
 
 function SignupForm() {
-	const { isSigningUp, signUp } = useAuthStore();
+	const { isLoading, signUp } = useAuthStore();
 	const [activeTab, setActiveTab] = useState("company");
 	const [passwordVisible, setPasswordVisible] = useState(false);
 	const { handleSubmit, control } = useForm();
@@ -50,9 +50,12 @@ function SignupForm() {
 	};
 
 	const onSubmit: SubmitHandler<FieldValues> = async (data) => {
-		const signInData = data as SignUpFormData;
-		const {firstname, lasttname, email, password} = signInData		
-		await signUp({firstname, lasttname, email, password})
+		const { firstname, lastname, email, password } = data as SignUpFormData;
+		const success = await signUp({ firstname, lastname, email, password });
+		if (success) {
+			toggleSignUpForm();
+			toggleSignInForm(); // открыть форму входа
+		}
 	};
 
 
@@ -289,7 +292,7 @@ function SignupForm() {
 						/>
 
 						<Controller
-							name="lasttname"
+							name="lastname"
 							control={control}
 							rules={{ required: true }}
 							render={({ field }) => (
@@ -432,6 +435,7 @@ function SignupForm() {
 				</div>
 				<button
 					type="submit"
+					disabled={isLoading}
 					className="sm:w-full lg:w-[50%] py-15 rounded-4 hover:shadow-authForms bg-authBtn text-18 text-white font-medium">
 					{t('signup')}
 				</button>

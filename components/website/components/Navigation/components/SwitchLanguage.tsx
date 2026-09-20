@@ -8,7 +8,7 @@ import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { languages } from "@/app/languages/languages";
 import { languageCodeToProperties } from "@/app/languages/languages";
 import { Language } from "@/app/types/languageType";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 
 export default function SwitchLanguage() {
@@ -22,26 +22,10 @@ export default function SwitchLanguage() {
 		setIsOpenDropDown(!isOpenDropDown);
 	};
 
+	const locale = useLocale();
 	useEffect(() => {
-		const savedLanguage = localStorage.getItem("selectedLanguage");
-
-		if (savedLanguage) {
-			try {
-				const parsedLanguage = JSON.parse(savedLanguage);
-				console.log("Parsed Language:", parsedLanguage);
-				setSelectedLanguage(parsedLanguage);
-			} catch (error) {
-				localStorage.setItem(
-					"selectedLanguage",
-					JSON.stringify({ code: "ua" })
-				);
-				router.replace("/ua")
-			}
-		} else {
-			localStorage.setItem("selectedLanguage", JSON.stringify({ code: "ua" }));
-			router.replace("/ua")
-		}
-	}, [router, setSelectedLanguage]);
+		setSelectedLanguage({ code: locale });
+	}, [locale, setSelectedLanguage]);
 
 	const handleLanguageChange = (language: Language) => {
 		setSelectedLanguage(language);
