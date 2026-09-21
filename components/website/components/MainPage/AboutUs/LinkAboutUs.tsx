@@ -2,6 +2,7 @@
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { withLocale } from "@/app/utils/locale";
 import React from "react";
 
 export default function LinkAboutUs() {
@@ -10,11 +11,9 @@ export default function LinkAboutUs() {
 
 	return (
 		<Link
-			className="text-white sm:text-18 sm:font-bold hover:text-authBtn md:text-16 lg:text-18"
+			className="text-white sm:text-18 font-medium hover:text-authBtn md:text-16 lg:text-18 lg:tracking-[0.4px]"
 			href={
-				selectedLanguage.code === "ua"
-					? "/about"
-					: `/${selectedLanguage.code}/about`
+				withLocale(selectedLanguage.code, "/about")
 			}>
 			{t('link')}
 		</Link>

@@ -13,3 +13,10 @@ export function failure(e: unknown) {
     console.error(e);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
 }
+
+// Сбой сервера при входе/регистрации (нет переменных окружения, база недоступна): 503 с пометкой «server»,
+// чтобы форма не выдавала это за неверный пароль. Подробности — только в логах и на /api/health.
+export function serverError(e: unknown) {
+    console.error(e);
+    return NextResponse.json({ message: "Server is not available or not configured", code: "server" }, { status: 503 });
+}

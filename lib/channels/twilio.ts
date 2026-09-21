@@ -34,11 +34,11 @@ export async function connectTwilio(accountSid: string, authToken: string, phone
     if (!number) throw new ProviderError(`Number ${phone} was not found in this Twilio account`);
 
     const app = await call<{ sid: string }>(accountSid, authToken, "/Applications.json", {
-        FriendlyName: "Synergia CRM",
+        FriendlyName: "Firmspace CRM",
         VoiceUrl: `${hookBase}/voice`,
         VoiceMethod: "POST",
     });
-    const key = await call<{ sid: string; secret: string }>(accountSid, authToken, "/Keys.json", { FriendlyName: "Synergia CRM" });
+    const key = await call<{ sid: string; secret: string }>(accountSid, authToken, "/Keys.json", { FriendlyName: "Firmspace CRM" });
     await call(accountSid, authToken, `/IncomingPhoneNumbers/${number.sid}.json`, {
         SmsUrl: `${hookBase}/sms`,
         SmsMethod: "POST",

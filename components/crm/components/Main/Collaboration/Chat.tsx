@@ -1,11 +1,8 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import type { IconType } from "react-icons";
-import { FaFacebookMessenger, FaTelegram, FaViber } from "react-icons/fa";
-import { MdArrowBack, MdAttachFile, MdCall, MdCallMade, MdCallMissed, MdCallReceived, MdForum, MdMoreHoriz, MdSensors, MdSms } from "react-icons/md";
+import { MdArrowBack, MdAttachFile, MdCall, MdCallMade, MdCallMissed, MdCallReceived, MdForum, MdMoreHoriz } from "react-icons/md";
 import { apiCall } from "@/app/store/crmApi";
 import { useCallStore } from "@/app/store/useCallStore";
 import type { ConversationDTO, MessageDTO, MessagingChannel } from "@/app/types/integrations";
@@ -15,22 +12,9 @@ import { usePolling } from "@/app/utils/usePolling";
 import { useScrollLock } from "@/app/utils/useScrollLock";
 import Avatar from "../shared/Avatar";
 import ConfirmDialog from "../shared/ConfirmDialog";
+import { CHANNEL_COLOR, CHANNEL_ICON } from "./channelMeta";
+import ChatEmpty from "./ChatEmpty";
 import { formatChatDate, hhmm, initialsOf } from "./format";
-
-const CHANNEL_ICON: Record<MessagingChannel, IconType> = {
-	telegram: FaTelegram,
-	viber: FaViber,
-	messenger: FaFacebookMessenger,
-	twilio: MdSms,
-	webchat: MdSensors,
-};
-const CHANNEL_COLOR: Record<MessagingChannel, string> = {
-	telegram: "#229ED9",
-	viber: "#7360F2",
-	messenger: "#0084FF",
-	twilio: "#F22F46",
-	webchat: "#5EA8F5",
-};
 
 const mmss = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 
@@ -192,18 +176,7 @@ export default function Chat() {
 
 	const iconButton = "text-[#666666] transition-colors hover:text-primaryColor";
 
-	if (loaded && chats.length === 0) {
-		return (
-			<div className="flex h-[calc(100vh-137px)] flex-col items-center justify-center gap-16 p-30 text-center md:h-[calc(100vh-110px)]">
-				<MdForum size={56} className="text-[#D9D9D9]" />
-				<p className="text-18 text-[#666666]">{t("chatsEmpty")}</p>
-				<p className="max-w-[420px] text-14 text-[#999999]">{t("chatsEmptyHint")}</p>
-				<Link href={`/${locale}/crm/settings/integration`} className="rounded-4 bg-primaryColor px-24 py-12 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80">
-					{t("goIntegration")}
-				</Link>
-			</div>
-		);
-	}
+	if (loaded && chats.length === 0) return <ChatEmpty />;
 
 	return (
 		<div className="flex h-[calc(100vh-137px)] md:h-[calc(100vh-110px)] md:p-30">

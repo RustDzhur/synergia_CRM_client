@@ -1,4 +1,5 @@
 "use client";
+import { withLocale } from "@/app/utils/locale";
 import React from "react";
 import Link from "next/link";
 import { IconContext } from "react-icons";
@@ -10,7 +11,8 @@ import { ImLinkedin2 } from "react-icons/im";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { useTranslations } from "next-intl";
 
-export default function Footer() {
+// slanted — скошенный верх футера (по макету только на главной странице)
+export default function Footer({ slanted = false }: { slanted?: boolean }) {
 	const t = useTranslations("footer");
 	const { selectedLanguage } = useLanguageStore();
 
@@ -21,23 +23,21 @@ export default function Footer() {
 		{ icon: <ImLinkedin2 />, key: "linkedin" },
 	];
 	return (
-		<div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto bg-footer">
-			<div className="sm:px-12 sm:py-50 md:px-20 md:py-40 lg:px-100 lg:py-80">
-				<div className="flex justify-center mb-40 md:mb-0 md:hidden">
-					<Logo />
+		<div className={`sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto bg-footer ${slanted ? "lg:[clip-path:polygon(0_105px,100%_0,100%_100%,0_100%)]" : ""}`}>
+			<div className={`sm:px-12 sm:py-50 md:px-20 md:py-40 lg:px-100 ${slanted ? "lg:pt-[187px]" : "lg:pt-[82px]"} lg:pb-[73px]`}>
+				<div className="flex justify-start mb-40 md:mb-0 md:hidden">
+					<Logo light />
 				</div>
-				<div className="flex justify-between sm:mb-30 md:mb-40 lg:mb-0">
-					<div className="sm:hidden md:block">
-						<Logo />
+				<div className="flex justify-between sm:mb-[39px] md:mb-[48px] lg:mb-0 lg:grid lg:grid-cols-[283px_281px_293px_1fr_auto]">
+					<div className="sm:hidden md:block lg:-translate-y-[4px]">
+						<Logo light />
 					</div>
 					<div className="">
-						<ul className="text-14 md:text-18 leading-[1.7] tracking-[0.28px] md:tracking-[0.36px] text-white">
+						<ul className="text-14 md:text-18 leading-[1.7] lg:leading-[29.5px] tracking-[0.28px] md:tracking-[0.36px] lg:tracking-[0.4px] font-medium text-[#E6E6E6]">
 							<li className="mb-30">
 								<Link
 									href={
-										selectedLanguage.code === "ua"
-											? "/careers"
-											: `/${selectedLanguage.code}/careers`
+										withLocale(selectedLanguage.code, "/careers")
 									}>
 									{t("careers")}
 								</Link>
@@ -45,9 +45,7 @@ export default function Footer() {
 							<li className="mb-30">
 								<Link
 									href={
-										selectedLanguage.code === "ua"
-											? "/privacypolicy"
-											: `/${selectedLanguage.code}/privacypolicy`
+										withLocale(selectedLanguage.code, "/privacypolicy")
 									}>
 									{t("privacyPolicy")}
 								</Link>
@@ -55,9 +53,7 @@ export default function Footer() {
 							<li className="mb-30 lg:mb-0">
 								<Link
 									href={
-										selectedLanguage.code === "ua"
-											? "/documentation"
-											: `/${selectedLanguage.code}/documentation`
+										withLocale(selectedLanguage.code, "/documentation")
 									}>
 									{t("documentation")}
 								</Link>
@@ -65,9 +61,7 @@ export default function Footer() {
 							<li className="mb-30 lg:hidden">
 								<Link
 									href={
-										selectedLanguage.code === "ua"
-											? "/about"
-											: `/${selectedLanguage.code}/about`
+										withLocale(selectedLanguage.code, "/about")
 									}>
 									{t("aboutUs")}
 								</Link>
@@ -75,9 +69,7 @@ export default function Footer() {
 							<li className="lg:hidden">
 								<Link
 									href={
-										selectedLanguage.code === "ua"
-											? "/team"
-											: `/${selectedLanguage.code}/team`
+										withLocale(selectedLanguage.code, "/team")
 									}>
 									{t("team")}
 								</Link>
@@ -85,13 +77,11 @@ export default function Footer() {
 						</ul>
 					</div>
 					<div>
-						<ul className="text-14 md:text-18 leading-[1.7] tracking-[0.28px] md:tracking-[0.36px] text-white">
+						<ul className="text-14 md:text-18 leading-[1.7] lg:leading-[29.5px] tracking-[0.28px] md:tracking-[0.36px] lg:tracking-[0.4px] font-medium text-[#E6E6E6]">
 							<li className="mb-30">
 								<Link
 									href={
-										selectedLanguage.code === "ua"
-											? "/support"
-											: `/${selectedLanguage.code}/support`
+										withLocale(selectedLanguage.code, "/support")
 									}>
 									{t("support")}
 								</Link>
@@ -99,9 +89,7 @@ export default function Footer() {
 							<li className="mb-30">
 								<Link
 									href={
-										selectedLanguage.code === "ua"
-											? "/features"
-											: `/${selectedLanguage.code}/features`
+										withLocale(selectedLanguage.code, "/features")
 									}>
 									{t("features")}
 								</Link>
@@ -109,9 +97,7 @@ export default function Footer() {
 							<li className="mb-30 lg:mb-0">
 								<Link
 									href={
-										selectedLanguage.code === "ua"
-											? "/referral"
-											: `/${selectedLanguage.code}/referral`
+										withLocale(selectedLanguage.code, "/referral")
 									}>
 									{t("referral")}
 								</Link>
@@ -119,9 +105,7 @@ export default function Footer() {
 							<li className="lg:hidden">
 								<Link
 									href={
-										selectedLanguage.code === "ua"
-											? "/contacts"
-											: `/${selectedLanguage.code}/contacts`
+										withLocale(selectedLanguage.code, "/contacts")
 									}>
 									{t("contacts")}
 								</Link>
@@ -129,13 +113,11 @@ export default function Footer() {
 						</ul>
 					</div>
 					<div className="sm:hidden lg:block">
-						<ul className="text-14 md:text-18 leading-[1.7] tracking-[0.28px] md:tracking-[0.36px] text-white">
+						<ul className="text-14 md:text-18 leading-[1.7] lg:leading-[29.5px] tracking-[0.28px] md:tracking-[0.36px] lg:tracking-[0.4px] font-medium text-[#E6E6E6]">
 							<li className="md:block mb-30">
 								<Link
 									href={
-										selectedLanguage.code === "ua"
-											? "/about"
-											: `/${selectedLanguage.code}/about`
+										withLocale(selectedLanguage.code, "/about")
 									}>
 									{t("aboutUs")}
 								</Link>
@@ -143,9 +125,7 @@ export default function Footer() {
 							<li className="md:block mb-30">
 								<Link
 									href={
-										selectedLanguage.code === "ua"
-											? "/team"
-											: `/${selectedLanguage.code}/team`
+										withLocale(selectedLanguage.code, "/team")
 									}>
 									{t("team")}
 								</Link>
@@ -153,9 +133,7 @@ export default function Footer() {
 							<li className="md:block">
 								<Link
 									href={
-										selectedLanguage.code === "ua"
-											? "/contacts"
-											: `/${selectedLanguage.code}/contacts`
+										withLocale(selectedLanguage.code, "/contacts")
 									}>
 									{t("contacts")}
 								</Link>
@@ -168,7 +146,7 @@ export default function Footer() {
 								{socialIcons.map((social, index) => (
 									<li
 										key={index}
-										className="flex items-center justify-center w-35 h-35 rounded-35 hover:bg-[#FF008A] bg-primaryColor mr-6">
+										className="flex items-center justify-center w-35 h-35 rounded-35 hover:bg-[#FF008A] bg-primaryColor mr-6 last:mr-0">
 										{social.icon}
 									</li>
 								))}
@@ -179,11 +157,11 @@ export default function Footer() {
 
 				<div className="lg:hidden">
 					<IconContext.Provider value={{ size: "17px", color: "#fff" }}>
-						<ul className="flex items-center justify-center md:justify-end">
+						<ul className="flex items-center justify-start md:justify-end">
 							{socialIcons.map((social, index) => (
 								<li
 									key={index}
-									className="flex items-center justify-center w-35 h-35 rounded-35 hover:bg-[#FF008A] bg-primaryColor mr-6">
+									className="flex items-center justify-center w-35 h-35 rounded-35 hover:bg-[#FF008A] bg-primaryColor mr-6 last:mr-0">
 									{social.icon}
 								</li>
 							))}

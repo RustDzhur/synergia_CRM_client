@@ -6,7 +6,7 @@ export default function Home() {
 			<Navigation />
 			<MainPage />
 			<div className="overflow-hidden">
-				<Footer />
+				<Footer slanted />
 			</div>
 		</div>
 	);

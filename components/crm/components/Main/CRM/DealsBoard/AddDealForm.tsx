@@ -114,14 +114,16 @@ export default function AddDealForm({ onSubmit, onCancel, autoFocus }: Props) {
 				wrapperClassName="mb-12"
 				className="!bg-white"
 			/>
-			<div className="flex items-center justify-end gap-12">
-				<button type="button" onClick={onCancel} className="px-12 py-8 text-16 font-medium text-[#999999] transition-colors hover:text-black">
+			{/* Колонка узкая (222px, на планшете 180px), а подписи в ua/de длинные («Скасувати», «Abbrechen»):
+			    кнопки делят ширину поровну, а если не помещаются в ряд — переносятся друг под друга, но не выходят за карточку */}
+			<div className="flex flex-wrap gap-8">
+				<button type="button" onClick={onCancel} className="min-w-[88px] flex-1 whitespace-nowrap rounded-4 px-8 py-8 text-center text-16 font-medium text-[#999999] transition-colors hover:text-black">
 					{t("cancel")}
 				</button>
 				<button
 					type="submit"
 					disabled={busy || !form.clientName.trim()}
-					className="rounded-4 bg-primaryColor px-20 py-8 text-16 font-medium text-white shadow-custom transition-opacity disabled:opacity-60">
+					className="min-w-[88px] flex-1 whitespace-nowrap rounded-4 bg-primaryColor px-8 py-8 text-center text-16 font-medium text-white shadow-custom transition-opacity disabled:opacity-60">
 					{t("save")}
 				</button>
 			</div>

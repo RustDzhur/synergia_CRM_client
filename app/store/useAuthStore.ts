@@ -41,7 +41,16 @@ const useAuthStore = create<AuthStore>((set) => ({
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(data),
 			});
-			if (!response.ok) throw new Error("Signin failed");
+			if (!response.ok) {
+				// 401 — неверные данные; 5xx — проблема сервера (не заданы переменные окружения, база недоступна): пароль тут ни при чём
+				const serverProblem = response.status >= 500;
+				toast.error(
+					serverProblem
+						? "Сервер недоступен или не настроен. Откройте /api/health, чтобы увидеть причину."
+						: "Не удалось войти. Проверьте email и пароль."
+				);
+				return false;
+			}
 			const responseData = await response.json();
 			localStorage.setItem("token", responseData.token);
 			set({ isAuthenticated: true, authChecked: true });

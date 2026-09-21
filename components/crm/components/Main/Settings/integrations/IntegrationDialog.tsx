@@ -153,7 +153,8 @@ export default function IntegrationDialog({ type, title, onClose }: Props) {
 								{current.status === "connected" ? t("intStatusOn", { name: current.name }) : t("intStatusWarn", { name: current.name })}
 							</p>
 						)}
-						{current?.status === "error" && current.error && <p className="rounded-8 bg-[#FFF6EA] p-12 text-14 text-[#8A5A1F]">{current.error}</p>}
+						{current?.type === "telegram" && current.config.polling === "1" && <p className="text-14 text-[#666666]">{t("intPollingInfo")}</p>}
+						{current?.status === "error" && current.error && <p className="rounded-8 bg-[#FFF6EA] p-12 text-14 text-[#8A5A1F]">{current.error.startsWith("Webhooks need a public https address") ? t("intErrNeedHttps") : current.error}</p>}
 
 						{editable &&
 							fields.map((f) =>
