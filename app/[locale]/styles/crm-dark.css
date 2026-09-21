@@ -24,6 +24,7 @@ html.dark .dark-surface { background-color: #161b22; }
 .dark .bg-\[\#FBFBFB\] { background-color: #1a1a1a; }
 .dark .bg-\[\#FBFCFF\] { background-color: #12151e; }
 .dark .bg-\[\#FFF1F1\] { background-color: #251616; }
+.dark .bg-\[\#FFF3F3\] { background-color: #241515; }
 .dark .bg-\[\#FFF4D6\] { background-color: #393222; }
 .dark .bg-\[\#FFF6EA\] { background-color: #2a2319; }
 .dark .bg-gray { background-color: #1c202f; }
@@ -33,7 +34,6 @@ html.dark .dark-surface { background-color: #161b22; }
 .dark .bg-white { background-color: #161616; }
 .dark .border-\[\#4D4D4D\] { border-color: #666666; }
 .dark .border-\[\#999999\] { border-color: #8a8a8a; }
-.dark .border-\[\#B3B3B3\] { border-color: #717171; }
 .dark .border-\[\#CCCCCC\] { border-color: #595959; }
 .dark .border-\[\#D9D9D9\] { border-color: #4d4d4d; }
 .dark .border-\[\#E2F1F5\] { border-color: #2f4247; }

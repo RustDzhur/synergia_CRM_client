@@ -27,7 +27,7 @@ export function moduleForPath(pathname: string, method: string): Module | null {
         case "employees": return "company";
         case "feed": case "conversations": case "twilio": case "calls": case "sip": case "documents": case "drive": return "collab";
         case "mail": return "mail";
-        case "marketing": return "marketing";
+        case "marketing": case "ads": return "marketing";
         case "automation": return "automation";
         case "billing": return "billing";
         case "notifications": return null; // свои уведомления видит любой участник
