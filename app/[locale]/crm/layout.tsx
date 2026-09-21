@@ -8,7 +8,9 @@ import MobilePageBar from "@/components/crm/components/Header/components/MobileP
 import ProfileModal from "@/components/crm/components/Header/components/ProfileModal";
 import NotificationCenter from "@/components/crm/components/shared/NotificationCenter";
 import Softphone from "@/components/crm/components/Main/shared/Softphone";
+import "@/app/[locale]/styles/crm-dark.css";
 import useAuthStore from "@/app/store/useAuthStore";
+import { useThemeStore } from "@/app/store/useThemeStore";
 import { useActiveOrg } from "@/app/store/useOrgStore";
 import Loader from "@/app/utils/Loader";
 
@@ -19,6 +21,10 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
     const activeOrg = useActiveOrg();
 
     useEffect(() => { checkAuth(); }, [checkAuth]);
+    useEffect(() => {
+        useThemeStore.getState().init();
+        return () => useThemeStore.getState().release();
+    }, []);
     useEffect(() => {
         if (authChecked && !isAuthenticated) router.replace(`/${locale}`);
     }, [authChecked, isAuthenticated, router, locale]);

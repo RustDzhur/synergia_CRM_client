@@ -3,6 +3,8 @@
     "company": "Company",
     "switch": "Switch Company",
     "newFirm": "New firm",
+    "themeDark": "Dark theme",
+    "themeLight": "Light theme",
     "adminCabinet": "Admin cabinet",
     "renameFirm": "Rename firm",
     "firmName": "Firm name",
