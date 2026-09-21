@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
+import { storageProblem } from "@/lib/storage/firebase";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,15 @@ export async function GET() {
                   : "Database error";
         }
     }
+    // Необязательные возможности: только «настроено или что не так», значения не раскрываются
+    const features = {
+        storage: storageProblem() || "ok",
+        stripe: !!process.env.STRIPE_SECRET_KEY,
+        stripeWebhook: (process.env.STRIPE_WEBHOOK_SECRET ?? "").startsWith("whsec_"),
+        googleSignIn: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+        admin: !!process.env.ADMIN_EMAILS,
+        cron: !!process.env.CRON_SECRET,
+    };
     const ok = env.MONGODB_URI && env.JWT_SECRET && db === "ok";
-    return NextResponse.json({ ok, env, db }, { status: ok ? 200 : 503 });
+    return NextResponse.json({ ok, env, db, features }, { status: ok ? 200 : 503 });
 }

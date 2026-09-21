@@ -3,7 +3,7 @@ import { isPublicHttps } from "@/lib/appUrl";
 import { adminEmails } from "@/lib/admin";
 import { ProviderError } from "@/lib/http";
 import { stripe, stripeConfigured } from "@/lib/stripe";
-import { checkBucket, storageConfigured } from "@/lib/storage/firebase";
+import { checkBucket, storageProblem } from "@/lib/storage/firebase";
 
 export interface Check { id: string; ok: boolean; message: string }
 
@@ -35,7 +35,8 @@ export async function systemCheck(): Promise<Check[]> {
             return "Webhook secret is set (Stripe events are verified by signature)";
         }),
         attempt("firebase", async () => {
-            if (!storageConfigured()) throw new Error("FIREBASE_SERVICE_ACCOUNT / FIREBASE_STORAGE_BUCKET are missing or unreadable");
+            const problem = storageProblem();
+            if (problem) throw new Error(problem);
             await checkBucket();
             return `Bucket ${process.env.FIREBASE_STORAGE_BUCKET} is reachable`;
         }),

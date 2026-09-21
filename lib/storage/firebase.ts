@@ -9,19 +9,34 @@ import { ProviderError, fetchProvider } from "@/lib/http";
 // Адреса можно переопределить (GCS_API_URL, GCS_TOKEN_URL) — для проверки без настоящего проекта.
 interface ServiceAccount { client_email: string; private_key: string; token_uri?: string }
 
-function account(): ServiceAccount | null {
-    const raw = process.env.FIREBASE_SERVICE_ACCOUNT?.trim();
-    if (!raw) return null;
+// Значение переменной с типичными огрехами при вставке: пробелы, обрамляющие кавычки, «gs://» в имени бакета
+const unquote = (v: string) => v.trim().replace(/^(["'])([\s\S]*)\1$/, "$2").trim();
+
+function parseAccount(): { account: ServiceAccount | null; problem: string } {
+    const raw = unquote(process.env.FIREBASE_SERVICE_ACCOUNT ?? "");
+    if (!raw) return { account: null, problem: "FIREBASE_SERVICE_ACCOUNT is not set" };
+    let sa: Partial<ServiceAccount>;
     try {
-        const text = raw.startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8");
-        const sa = JSON.parse(text) as ServiceAccount;
-        return sa.client_email && sa.private_key ? { ...sa, private_key: sa.private_key.replace(/\\n/g, "\n") } : null;
+        // JSON целиком или он же в base64 (в том числе base64url)
+        sa = JSON.parse(raw.startsWith("{") ? raw : Buffer.from(raw.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
     } catch {
-        return null;
+        return { account: null, problem: "FIREBASE_SERVICE_ACCOUNT is not valid: it must be the whole service-account JSON file, or that file in base64" };
     }
+    if (!sa.client_email || !sa.private_key) return { account: null, problem: "FIREBASE_SERVICE_ACCOUNT has no client_email/private_key: use the key file from Project settings → Service accounts → Generate new private key" };
+    return { account: { ...(sa as ServiceAccount), private_key: sa.private_key.replace(/\\n/g, "\n") }, problem: "" };
 }
 
-const bucket = () => process.env.FIREBASE_STORAGE_BUCKET?.trim() ?? "";
+const account = () => parseAccount().account;
+const bucket = () => unquote(process.env.FIREBASE_STORAGE_BUCKET ?? "").replace(/^gs:\/\//, "").replace(/\/+$/, "");
+
+// Что не так с настройкой хранилища (для проверки системы); пустая строка — всё в порядке. Значения секретов не раскрываются.
+export function storageProblem() {
+    const { problem } = parseAccount();
+    if (problem) return problem;
+    if (!bucket()) return "FIREBASE_STORAGE_BUCKET is not set: use the bucket name from Firebase → Storage, e.g. my-project.firebasestorage.app";
+    return "";
+}
+
 const api = () => (process.env.GCS_API_URL || "https://storage.googleapis.com").replace(/\/+$/, "");
 export const storageConfigured = () => !!(account() && bucket());
 
