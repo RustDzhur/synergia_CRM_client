@@ -15,6 +15,7 @@ export interface User {
   lastname: string;
   email: string;
   avatarUrl: string;
+  isAdmin?: boolean; // администратор платформы (ADMIN_EMAILS)
   phone: string;
   position: string;
   city: string;

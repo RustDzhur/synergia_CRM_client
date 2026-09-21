@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
+import { isPlatformAdmin } from "@/lib/admin";
 import User from "@/models/User";
 
 function toPublic(user: any) {
@@ -23,6 +24,7 @@ function toPublic(user: any) {
         timezone: user.timezone ?? "",
         state: user.state ?? "",
         company: user.company ?? "",
+        isAdmin: isPlatformAdmin(user.email),
         notifications: {
             browser: Boolean(user.notifications?.browser),
             email: Boolean(user.notifications?.email),

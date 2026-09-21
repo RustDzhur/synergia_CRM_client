@@ -49,11 +49,13 @@ export async function requireUser(req: Request): Promise<AuthContext | null> {
             membership = await Membership.findOne({ org: wanted, user: user._id });
             if (membership) org = await Organization.findById(wanted);
         }
-        if (!org || !membership) ({ org, membership } = await ensurePersonalOrg(user)); // нет такой фирмы или доступа — личная фирма
+        // нет такой фирмы, нет доступа или её заблокировал администратор платформы — работаем в личной фирме
+        if (!org || !membership || org.blocked) ({ org, membership } = await ensurePersonalOrg(user));
         if (!org || !membership) return null;
-        if (org.blocked) { denied.add(req); return null; }
 
         const url = new URL(req.url);
+        // личная фирма заблокирована: остаётся только список фирм (чтобы интерфейс показал причину и дал переключиться)
+        if (org.blocked && !(req.method === "GET" && url.pathname === "/api/orgs")) { denied.add(req); return null; }
         if (!canAccess(membership.role, membership.modules ?? [], moduleForPath(url.pathname, req.method), req.method)) {
             denied.add(req);
             return null;

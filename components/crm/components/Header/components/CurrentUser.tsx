@@ -3,7 +3,8 @@ import React, { useEffect, useRef } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { RiArrowDownSLine } from "react-icons/ri";
-import { MdLogout, MdSettings } from "react-icons/md";
+import Link from "next/link";
+import { MdAdminPanelSettings, MdLogout, MdSettings } from "react-icons/md";
 import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
 import useAuthStore from "@/app/store/useAuthStore";
 import Loader from "@/app/utils/Loader";
@@ -82,6 +83,15 @@ export default function CurrentUser({ showAvatar = false }: Props) {
 						<MdSettings size={20} className="text-iconColor" />
 						{t("currentUser.settings")}
 					</button>
+					{user.isAdmin && (
+						<>
+							<div className="border-t border-[#E2F1F5]" />
+							<Link href={`/${locale}/crm/admin`} onClick={closeDropDown} className={menuItem}>
+								<MdAdminPanelSettings size={20} className="text-iconColor" />
+								{t("adminCabinet")}
+							</Link>
+						</>
+					)}
 					<div className="border-t border-[#E2F1F5]" />
 					<button type="button" onClick={handleLogout} className={menuItem}>
 						<MdLogout size={20} className="text-iconColor" />

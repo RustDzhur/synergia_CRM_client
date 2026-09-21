@@ -4,8 +4,10 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
 import { MdCheckBox, MdCheckBoxOutlineBlank, MdInfo, MdArticle, MdLock, MdSignalCellularAlt } from "react-icons/md";
+import { SiApplepay, SiGooglepay, SiKlarna, SiMastercard, SiPaypal, SiVisa } from "react-icons/si";
 import { FEATURE_KEYS, PLANS, PlanId, YEAR_MONTHS } from "@/app/config/plans";
 import { apiCall } from "@/app/store/crmApi";
+import Modal from "../shared/Modal";
 
 const ICONS: Record<PlanId, IconType> = { free: MdSignalCellularAlt, standard: MdInfo, professional: MdArticle };
 // ключи функций в namespace "upgrade"
@@ -30,6 +32,8 @@ export default function Upgrade() {
 	const [billing, setBilling] = useState<Billing | null>(null);
 	const [interval, setInterval] = useState<"month" | "year">("month");
 	const [busy, setBusy] = useState<string | null>(null);
+	const [invoiceOpen, setInvoiceOpen] = useState(false);
+	const [inv, setInv] = useState({ plan: "standard", company: "", vatId: "", note: "" });
 
 	const load = useCallback(async () => {
 		const res = await apiCall<Billing>("/api/billing");
@@ -68,6 +72,17 @@ export default function Upgrade() {
 		if (res.ok && res.data?.url) return void (window.location.href = res.data.url);
 		setBusy(null);
 		toast.error(res.status === 503 ? t("paymentsNotConfigured") : res.message || t("checkoutFailed"));
+	}
+
+	async function sendInvoice(e: React.FormEvent) {
+		e.preventDefault();
+		if (busy) return;
+		setBusy("invoice");
+		const res = await apiCall("/api/billing/invoice-request", "POST", { ...inv, interval });
+		setBusy(null);
+		if (!res.ok) return void toast.error(res.status === 409 ? t("invoiceOpen") : res.message);
+		setInvoiceOpen(false);
+		toast.success(t("invoiceSent"));
 	}
 
 	const current = billing?.plan ?? "free";
@@ -165,9 +180,36 @@ export default function Upgrade() {
 				})}
 			</ul>
 
-			<p className="mx-auto mt-30 flex max-w-[1140px] items-center justify-center gap-6 text-center text-14 text-[#999999]">
-				<MdLock size={16} aria-hidden /> {t("securePayment")}
-			</p>
+			<div className="mx-auto mt-30 flex max-w-[1140px] flex-col items-center gap-10">
+				<div className="flex flex-wrap items-center justify-center gap-x-16 gap-y-8 text-[#999999]" aria-label={t("methods")}>
+					<SiVisa size={34} aria-label="Visa" /><SiMastercard size={28} aria-label="Mastercard" /><SiApplepay size={38} aria-label="Apple Pay" /><SiGooglepay size={38} aria-label="Google Pay" />
+					<SiPaypal size={22} aria-label="PayPal" /><SiKlarna size={40} aria-label="Klarna" />
+					<span className="text-14 font-medium">SEPA</span>
+				</div>
+				<p className="max-w-[640px] text-center text-12 text-[#B3B3B3]">{t("methodsNote")}</p>
+				<button type="button" onClick={() => setInvoiceOpen(true)} className="text-14 font-medium text-primaryColor transition-opacity hover:opacity-80">{t("invoiceButton")}</button>
+				<p className="flex items-center justify-center gap-6 text-center text-14 text-[#999999]">
+					<MdLock size={16} aria-hidden /> {t("securePayment")}
+				</p>
+			</div>
+
+			<Modal open={invoiceOpen} onClose={() => setInvoiceOpen(false)} label={t("invoiceButton")} className="w-full max-w-[460px]">
+				<form onSubmit={sendInvoice} className="rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
+					<h2 className="mb-6 text-24 font-medium text-black">{t("invoiceButton")}</h2>
+					<p className="mb-16 text-14 text-[#666666]">{t("invoiceText")}</p>
+					<div className="flex flex-col gap-12">
+						<select value={inv.plan} onChange={(e) => setInv({ ...inv, plan: e.target.value })} aria-label={t("planLabel")} className="h-[44px] rounded-8 border border-[#E6E6E6] bg-white px-10 text-16 text-[#666666]">
+							{PLANS.filter((p) => p.priceMonth > 0).map((p) => <option key={p.id} value={p.id}>{t(p.id)} · {interval === "year" ? p.priceMonth * YEAR_MONTHS : p.priceMonth}€/{interval === "year" ? t("perYear") : t("perMonth")}</option>)}
+						</select>
+						<textarea required value={inv.company} onChange={(e) => setInv({ ...inv, company: e.target.value })} maxLength={200} rows={3} placeholder={t("invoiceCompany")} aria-label={t("invoiceCompany")} className="rounded-8 border border-[#E6E6E6] p-10 text-16 outline-none focus:border-[#5EA8F5]" />
+						<input value={inv.vatId} onChange={(e) => setInv({ ...inv, vatId: e.target.value })} maxLength={40} placeholder={t("invoiceVat")} aria-label={t("invoiceVat")} className="h-[44px] rounded-8 border border-[#E6E6E6] px-10 text-16 outline-none focus:border-[#5EA8F5]" />
+					</div>
+					<div className="mt-20 flex justify-end gap-12">
+						<button type="button" onClick={() => setInvoiceOpen(false)} className="h-[44px] rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] hover:bg-gray">{t("cancel")}</button>
+						<button type="submit" disabled={busy === "invoice"} className="h-[44px] rounded-8 bg-primaryColor px-24 text-16 font-medium text-white shadow-custom hover:opacity-80 disabled:opacity-60">{busy === "invoice" ? "…" : t("invoiceSend")}</button>
+					</div>
+				</form>
+			</Modal>
 		</div>
 	);
 }

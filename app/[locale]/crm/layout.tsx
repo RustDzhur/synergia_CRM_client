@@ -9,12 +9,14 @@ import ProfileModal from "@/components/crm/components/Header/components/ProfileM
 import NotificationCenter from "@/components/crm/components/shared/NotificationCenter";
 import Softphone from "@/components/crm/components/Main/shared/Softphone";
 import useAuthStore from "@/app/store/useAuthStore";
+import { useActiveOrg } from "@/app/store/useOrgStore";
 import Loader from "@/app/utils/Loader";
 
 export default function CrmLayout({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, authChecked, checkAuth } = useAuthStore();
     const router = useRouter();
     const locale = useLocale();
+    const activeOrg = useActiveOrg();
 
     useEffect(() => { checkAuth(); }, [checkAuth]);
     useEffect(() => {
@@ -25,6 +27,18 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <Loader color="#5EA8F5" width="50" height="10" radius="9" />
+            </div>
+        );
+    }
+
+    // личную фирму заблокировал администратор платформы — работать нельзя, пока он не снимет блокировку
+    if (activeOrg?.blocked) {
+        return (
+            <div className="flex min-h-screen items-center justify-center p-24 text-center">
+                <div className="max-w-[420px] rounded-16 bg-white p-30 shadow-heroImage">
+                    <h1 className="mb-10 text-24 font-semibold text-[#333333]">Firmspace CRM</h1>
+                    <p className="text-16 text-[#666666]">{locale === "de" ? "Dieses Konto wurde gesperrt. Bitte wenden Sie sich an den Support." : locale === "ua" ? "Цей акаунт заблоковано. Зверніться до підтримки." : "This account has been blocked. Please contact support."}</p>
+                </div>
             </div>
         );
     }
