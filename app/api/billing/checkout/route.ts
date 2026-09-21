@@ -65,12 +65,15 @@ export async function POST(req: Request) {
                         currency: "eur",
                         unit_amount: amountCents(plan, interval),
                         recurring: { interval },
-                        product_data: { name: `Firmspace CRM ${label}` },
+                        // облачное ПО для бизнеса: этот налоговый код нужен Stripe Managed Payments (Stripe как продавец считает НДС)
+                        product_data: { name: `Firmspace CRM ${label}`, tax_code: "txcd_10103001" },
                     },
                 },
             ],
             metadata: meta,
             subscription_data: { metadata: meta },
+            // аварийный выключатель: STRIPE_MANAGED_PAYMENTS=0 отключает Managed Payments для этих сессий (продавец — вы, налоги — ваши)
+            ...(process.env.STRIPE_MANAGED_PAYMENTS === "0" ? { managed_payments: { enabled: false } } : {}),
         });
         return NextResponse.json({ url: session.url });
     } catch (e) {
