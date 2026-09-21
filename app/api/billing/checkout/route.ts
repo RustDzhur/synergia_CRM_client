@@ -12,7 +12,8 @@ import User from "@/models/User";
 export const dynamic = "force-dynamic";
 
 const LOCALES = ["en", "de", "ua"];
-const STRIPE_LOCALE: Record<string, string> = { en: "en", de: "de", ua: "uk" };
+// Stripe не поддерживает украинский язык страницы оплаты — для него он подбирает язык по браузеру ("auto")
+const STRIPE_LOCALE: Record<string, string> = { en: "en", de: "de", ua: "auto" };
 const ACTIVE = ["active", "trialing", "past_due"];
 
 // POST /api/billing/checkout — { plan: "standard" | "professional", interval: "month" | "year", locale }
