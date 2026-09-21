@@ -2,13 +2,14 @@
 import React, { useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { MdChecklist, MdMoreHoriz, MdPushPin } from "react-icons/md";
-import { FeedPost, useCollabHydration, useCollabStore } from "@/app/store/useCollabStore";
+import toast from "react-hot-toast";
+import { FeedPost, useFeedStore } from "@/app/store/useFeedStore";
 import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
 import Dropdown from "@/app/utils/Dropdown";
 import { useClickOutside } from "@/app/utils/useClickOutside";
+import { usePolling } from "@/app/utils/usePolling";
 import Avatar from "../shared/Avatar";
 import SearchBox from "../shared/SearchBox";
-import CodeArt from "./CodeArt";
 import { formatPostDate, initialsOf } from "./format";
 
 const NAVY = "text-[#334A74]";
@@ -16,7 +17,7 @@ const NAVY = "text-[#334A74]";
 function Post({ post }: { post: FeedPost }) {
 	const t = useTranslations("collab");
 	const locale = useLocale();
-	const { togglePin, toggleFollow, deletePost, addComment } = useCollabStore();
+	const { togglePin, toggleFollow, remove, comment } = useFeedStore();
 	const user = useCurrentUserStore((s) => s.user);
 	const [text, setText] = useState("");
 	const [menuOpen, setMenuOpen] = useState(false);
@@ -30,7 +31,7 @@ function Post({ post }: { post: FeedPost }) {
 	function submit() {
 		const value = text.trim();
 		if (!value) return;
-		addComment(post.id, me || post.author, value);
+		comment(post.id, value);
 		setText("");
 	}
 
@@ -58,7 +59,7 @@ function Post({ post }: { post: FeedPost }) {
 						<div className="overflow-hidden rounded-8 border border-[#E2F1F5] bg-white shadow-custom">
 							<button
 								type="button"
-								onClick={() => { setMenuOpen(false); deletePost(post.id); }}
+								onClick={() => { setMenuOpen(false); remove(post.id); }}
 								className="block w-full px-16 py-10 text-left text-16 text-danger transition-colors hover:bg-gray">
 								{t("deletePost")}
 							</button>
@@ -67,24 +68,28 @@ function Post({ post }: { post: FeedPost }) {
 				</div>
 			</header>
 
-			<div className="mt-12 flex items-center gap-x-12 md:gap-x-20">
-				<span className="flex h-[36px] shrink-0 items-center gap-10 rounded-4 bg-[#E7EDF3] px-16 text-14 text-[#666666]">
-					<MdChecklist size={18} aria-hidden />
-					{t("task")}
-				</span>
-				<div className="min-w-0">
-					<p className="text-16 text-[#666666] md:text-20">
-						<span className="max-md:hidden">{t("taskLabel")} </span>
-						<span className={`font-semibold ${NAVY}`}>{post.taskTitle}</span>
+			{post.kind === "task" ? (
+				<>
+					<div className="mt-12 flex items-center gap-x-12 md:gap-x-20">
+						<span className="flex h-[36px] shrink-0 items-center gap-10 rounded-4 bg-[#E7EDF3] px-16 text-14 text-[#666666]">
+							<MdChecklist size={18} aria-hidden />
+							{t("task")}
+						</span>
+						<div className="min-w-0">
+							<p className="text-16 text-[#666666] md:text-20">
+								<span className="max-md:hidden">{t("taskLabel")} </span>
+								<span className={`font-semibold ${NAVY}`}>{post.taskTitle}</span>
+							</p>
+						</div>
+					</div>
+					<p className="mt-6 text-14 text-[#666666] md:text-16 md:pl-[100px]">
+						{t("responsible")} <span className={NAVY}>{post.responsible}</span>
 					</p>
-				</div>
-			</div>
-			<p className="mt-6 text-14 text-[#666666] md:text-16 md:pl-[100px]">
-				{t("responsible")} <span className={NAVY}>{post.responsible}</span>
-			</p>
+				</>
+			) : (
+				<p className="mt-12 whitespace-pre-wrap break-words text-16 text-[#4D4D4D] md:text-18">{post.text}</p>
+			)}
 			<hr className="my-16 border-[#D9D9D9]" />
-
-			{post.withImage && <CodeArt className="-mx-16 h-[350px] w-[calc(100%+32px)] max-w-none md:mx-0 md:h-[200px] md:w-[400px]" />}
 
 			<div className="mt-12 flex flex-wrap gap-x-12 gap-y-6">
 				<span className="text-16 text-[#999999]">{t("news")}</span>
@@ -126,19 +131,33 @@ function Post({ post }: { post: FeedPost }) {
 	);
 }
 
-// Feed (/crm/collaboration/feed): лента записей — карточка автора, задача, картинка, «Comment / Follow / More», комментарии.
+// Feed (/crm/collaboration/feed): лента фирмы — посты коллег и карточки задач, «Comment / Follow / More», комментарии.
+// Данные на сервере; страница опрашивает его раз в 20 секунд, поэтому записи коллег появляются без перезагрузки.
 export default function Feed() {
 	const t = useTranslations("collab");
-	useCollabHydration();
-	const posts = useCollabStore((s) => s.posts);
+	const { posts, loaded, load, publish } = useFeedStore();
+	usePolling(load, 20_000);
 	const [query, setQuery] = useState("");
+	const [draft, setDraft] = useState("");
+	const [busy, setBusy] = useState(false);
+
+	async function submitPost(e: React.FormEvent) {
+		e.preventDefault();
+		const value = draft.trim();
+		if (!value || busy) return;
+		setBusy(true);
+		const error = await publish(value);
+		setBusy(false);
+		if (error) return void toast.error(error);
+		setDraft("");
+	}
 
 	// закреплённые записи всегда сверху; порядок остальных сохраняется
 	const visible = useMemo(() => {
 		const q = query.trim().toLowerCase();
 		const match = (p: FeedPost) =>
 			!q ||
-			[p.author, p.taskTitle, p.responsible, ...p.comments.map((c) => c.text)].some((v) => v.toLowerCase().includes(q));
+			[p.author, p.text, p.taskTitle, p.responsible, ...p.comments.map((c) => c.text)].some((v) => v.toLowerCase().includes(q));
 		const list = posts.filter(match);
 		return [...list.filter((p) => p.pinned), ...list.filter((p) => !p.pinned)];
 	}, [posts, query]);
@@ -149,7 +168,21 @@ export default function Feed() {
 				<h1 className="text-32 font-medium text-[#4D4D4D] md:text-34">{t("feedTitle")}</h1>
 				<SearchBox value={query} onChange={setQuery} placeholder={t("filterSearch")} className="w-full md:w-[250px] lg:w-[350px]" />
 			</div>
-			{visible.length === 0 ? (
+			<form onSubmit={submitPost} className="mb-30 flex flex-col gap-10 rounded-24 bg-white p-16 shadow-heroImage md:p-18">
+				<textarea
+					value={draft}
+					onChange={(e) => setDraft(e.target.value)}
+					maxLength={2000}
+					rows={3}
+					placeholder={t("feedPostPlaceholder")}
+					aria-label={t("feedPostPlaceholder")}
+					className="w-full resize-none rounded-16 border border-[#E6E6E6] px-20 py-12 text-16 text-[#666666] outline-none transition-colors placeholder:text-[#CCCCCC] focus:border-[#5EA8F5] md:text-18"
+				/>
+				<button type="submit" disabled={!draft.trim() || busy} className="self-end rounded-8 bg-primaryColor px-24 py-10 text-16 font-medium text-white transition-opacity hover:opacity-80 disabled:cursor-default disabled:opacity-[0.5]">
+					{t("feedPublish")}
+				</button>
+			</form>
+			{!loaded ? null : visible.length === 0 ? (
 				<p className="rounded-16 bg-[#F5F7FC] p-30 text-center text-16 text-[#999999]">{t("feedEmpty")}</p>
 			) : (
 				<div className="flex flex-col gap-30">

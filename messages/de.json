@@ -704,6 +704,8 @@
     "fullAccess": "Voller Zugriff"
   },
   "collab": {
+    "feedPostPlaceholder": "Schreiben Sie etwas für Ihr Team…",
+    "feedPublish": "Veröffentlichen",
     "active": "Aktiv",
     "add": "Hinzufügen",
     "addComment": "Kommentar hinzufügen",

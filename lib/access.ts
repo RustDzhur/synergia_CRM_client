@@ -25,7 +25,7 @@ export function moduleForPath(pathname: string, method: string): Module | null {
         case "deals": case "stages": case "contacts": case "companies": return "crm";
         case "tasks": return "tasks";
         case "employees": return "company";
-        case "conversations": case "twilio": case "calls": case "sip": case "documents": case "drive": return "collab";
+        case "feed": case "conversations": case "twilio": case "calls": case "sip": case "documents": case "drive": return "collab";
         case "mail": return "mail";
         case "marketing": return "marketing";
         case "automation": return "automation";

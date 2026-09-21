@@ -704,6 +704,8 @@
     "fullAccess": "Повний доступ"
   },
   "collab": {
+    "feedPostPlaceholder": "Напишіть щось для вашої команди…",
+    "feedPublish": "Опублікувати",
     "active": "Активні",
     "add": "Додати",
     "addComment": "Додати коментар",
