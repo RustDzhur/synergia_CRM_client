@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 // PATCH /api/integrations/:id — { action: "webhook" } перерегистрирует вебхук; для онлайн-чата — новые настройки оформления
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     const body = await req.json().catch(() => null);
     if (!body) return badRequest("Invalid body");
@@ -40,7 +40,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 // DELETE /api/integrations/:id — отключить канал (вместе с его беседами)
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     try {
         await connectDB();

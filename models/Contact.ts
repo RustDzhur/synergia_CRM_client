@@ -16,6 +16,7 @@ const ContactSchema = new Schema(
         twitter: { type: String, default: "" },
         facebook: { type: String, default: "" },
         notes: String,
+        source: { type: String, default: "" }, // откуда появился контакт: "email" — создан автоматически из входящего письма
         activities: { type: [ActivitySchema], default: [] },
     },
     { timestamps: true }

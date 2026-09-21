@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
+import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import { EMPLOYEE_FIELDS, escapeRegex } from "@/lib/crmFields";
 import Employee from "@/models/Employee";
 
 export async function GET(req: Request) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
     await connectDB();
     const { searchParams } = new URL(req.url);
     const q = escapeRegex((searchParams.get("q") ?? "").slice(0, 100)); // поиск — это текст, а не шаблон регулярного выражения
@@ -28,7 +29,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
     const data = pickStrings(await req.json(), EMPLOYEE_FIELDS);
     if (!data.firstname || !data.lastname || !data.email) {
         return NextResponse.json({ message: "Invalid data" }, { status: 400 });

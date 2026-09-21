@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { MdNotificationAdd, MdOutlineAccountCircle, MdOutlineHexagon, MdPeopleAlt } from "react-icons/md";
+import { MdNotificationAdd, MdOutlineAccountCircle, MdOutlineHexagon, MdGroups, MdPeopleAlt } from "react-icons/md";
 import { stripLocale } from "@/app/utils/locale";
 
 export const SETTINGS_TABS = [
@@ -10,6 +10,7 @@ export const SETTINGS_TABS = [
 	{ key: "tabNotifications", href: "/crm/settings/notifications", icon: MdNotificationAdd },
 	{ key: "tabIntegration", href: "/crm/settings/integration", icon: MdOutlineHexagon },
 	{ key: "tabColleagues", href: "/crm/settings/colleagues", icon: MdPeopleAlt },
+	{ key: "tabTeam", href: "/crm/settings/team", icon: MdGroups },
 ] as const;
 
 // Карточка со вкладками Settings: Account / Notifications / Integration / Colleagues.

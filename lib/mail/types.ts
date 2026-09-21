@@ -9,4 +9,5 @@ export interface Fetched {
     at: Date;
     read: boolean;
     starred: boolean;
+    bulk?: boolean; // рассылка/автописьмо (List-Unsubscribe, Precedence: bulk, категория «Промоакции» и т.п.) — лидом не считается
 }

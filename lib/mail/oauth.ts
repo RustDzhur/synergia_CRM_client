@@ -29,21 +29,23 @@ export const oauthAvailable = () => ({ google: !!(CONFIG.google.id() && CONFIG.g
 export const redirectUri = (origin: string) => `${origin}/api/mail/oauth/callback`;
 
 // state защищает от подделки запроса: подписан, живёт 10 минут и содержит пользователя, провайдера и язык страницы
-export function makeState(userId: string, vendor: Vendor, locale: string) {
-    return jwt.sign({ sub: userId, v: vendor, l: locale }, process.env.JWT_SECRET as string, { expiresIn: "10m" });
+export type OAuthPurpose = "mail" | "drive";
+export function makeState(userId: string, vendor: Vendor, locale: string, purpose: OAuthPurpose = "mail") {
+    return jwt.sign({ sub: userId, v: vendor, l: locale, p: purpose }, process.env.JWT_SECRET as string, { expiresIn: "10m" });
 }
 export function readState(state: string) {
     try {
-        const s = jwt.verify(state, process.env.JWT_SECRET as string) as { sub: string; v: Vendor; l: string };
-        return CONFIG[s.v] ? s : null;
+        const s = jwt.verify(state, process.env.JWT_SECRET as string) as { sub: string; v: Vendor; l: string; p?: OAuthPurpose };
+        return CONFIG[s.v] ? { ...s, p: (s.p === "drive" ? "drive" : "mail") as OAuthPurpose } : null;
     } catch {
         return null;
     }
 }
 
-export function authorizeUrl(vendor: Vendor, origin: string, state: string) {
+// scope — если нужен не тот, что у почты (Google Drive)
+export function authorizeUrl(vendor: Vendor, origin: string, state: string, scope?: string) {
     const c = CONFIG[vendor];
-    const q = new URLSearchParams({ client_id: c.id() ?? "", redirect_uri: redirectUri(origin), response_type: "code", scope: c.scope, state, ...c.extra });
+    const q = new URLSearchParams({ client_id: c.id() ?? "", redirect_uri: redirectUri(origin), response_type: "code", scope: scope ?? c.scope, state, ...c.extra });
     return `${c.authUrl()}?${q}`;
 }
 

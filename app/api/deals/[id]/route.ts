@@ -2,14 +2,16 @@ import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
+import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
+import { emitDeal } from "@/lib/automation/emit";
 import Deal from "@/models/Deal";
 import Stage from "@/models/Stage";
 import { DEAL_TEXT_FIELDS } from "@/lib/crmFields";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
     if (!isValidObjectId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
     const body = await req.json(); // любое из: stage, order, clientName, contactName, ..., availableToAll
@@ -41,12 +43,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     const deal = await Deal.findOneAndUpdate({ _id: params.id, owner: user.id }, update, { new: true });
     if (!deal) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    if (String(existing.stage) !== String(deal.stage)) await emitDeal(user.id, deal, "deal_stage"); // перенос на другой этап запускает правила этого этапа
     return NextResponse.json(deal);
 }
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
 
     await connectDB();
     const deal = await Deal.findOneAndDelete({ _id: params.id, owner: user.id });

@@ -104,7 +104,7 @@ export const useCallStore = create<CallStore>()((set, get) => {
         if (!res.ok || !res.data) return [];
         return res.data
             .filter((i) => (i.type === "twilio" || i.type === "sip") && i.status === "connected")
-            .map((i) => ({ integrationId: i.id, type: i.type as "twilio" | "sip", name: i.name }));
+            .map((i) => ({ integrationId: i.id, type: i.type as "twilio" | "sip", name: i.name, brand: i.config.provider ?? "" }));
     }
 
     async function launch(provider: PhoneProvider) {

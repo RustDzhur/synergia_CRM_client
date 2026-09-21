@@ -127,18 +127,30 @@ export default function WebMails() {
 		if (!accountId || syncingRef.current) return;
 		syncingRef.current = true;
 		setSyncing(true);
-		const res = await apiCall<{ added: number; account: MailAccountDTO }>(`/api/mail/accounts/${accountId}/sync`, "POST");
+		const res = await apiCall<{ added: number; leads?: number; account: MailAccountDTO }>(`/api/mail/accounts/${accountId}/sync`, "POST");
 		syncingRef.current = false;
 		setSyncing(false);
 		if (res.ok && res.data) {
 			setAccounts((list) => list.map((a) => (a.id === accountId ? res.data!.account : a)));
 			if (res.data.added > 0 || manual) loadMails();
+			if (res.data.leads) toast.success(t("mailLeadsCreated", { count: res.data.leads }));
 		} else {
 			setAccounts((list) => list.map((a) => (a.id === accountId ? { ...a, status: "error", error: res.message } : a)));
 			if (manual) toast.error(res.message);
 		}
-	}, [accountId, loadMails]);
+	}, [accountId, loadMails, t]);
 	usePolling(() => sync(false), 60_000, accountId !== null);
+
+	// «Создавать лиды из новых писем» — настройка ящика
+	async function toggleAutoLeads(value: boolean) {
+		if (!active) return;
+		setAccounts((list) => list.map((a) => (a.id === active.id ? { ...a, autoLeads: value } : a)));
+		const res = await apiCall(`/api/mail/accounts/${active.id}`, "PATCH", { autoLeads: value });
+		if (!res.ok) {
+			setAccounts((list) => list.map((a) => (a.id === active.id ? { ...a, autoLeads: !value } : a)));
+			toast.error(res.message);
+		}
+	}
 
 	const rows = mails.filter((m) => inView(m, view));
 	const allChecked = rows.length > 0 && rows.every((m) => selected.includes(m.id));
@@ -270,6 +282,10 @@ export default function WebMails() {
 						<button type="button" onClick={() => setConfirmDisconnect(true)} className="flex items-center gap-2 text-primaryColor transition-opacity hover:opacity-80">
 							<MdClose size={16} /> {t("mailDisconnect")}
 						</button>
+						<label className="flex cursor-pointer items-center gap-6" title={t("mailAutoLeadsHint")}>
+							<input type="checkbox" checked={active.autoLeads} onChange={(e) => toggleAutoLeads(e.target.checked)} className="h-[16px] w-[16px] cursor-pointer accent-[#5EA8F5]" />
+							{t("mailAutoLeads")}
+						</label>
 					</div>
 					{active.status === "error" && (
 						<p role="alert" className="mb-16 rounded-8 bg-[#FFF1F1] p-12 text-14 text-danger">{t("mailAccountError", { message: active.error })}</p>

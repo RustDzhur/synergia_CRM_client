@@ -19,6 +19,7 @@ export interface SubMenuItem {
 
 export interface MenuItem {
 	key: string;
+	module?: string; // раздел доступа (lib/access.ts); без него пункт виден всем
 	icon: IconType;
 	href: string;
 	children?: SubMenuItem[];
@@ -30,6 +31,7 @@ export const menuItems: MenuItem[] = [
 	{ key: "dashboard", icon: MdHome, href: "/crm" },
 	{
 		key: "collaboration",
+		module: "collab",
 		icon: MdTask,
 		href: "/crm/collaboration",
 		children: [
@@ -40,14 +42,14 @@ export const menuItems: MenuItem[] = [
 			{ key: "web_mails", href: "/crm/collaboration/web-mails" },
 		],
 	},
-	{ key: "company", icon: MdMail, href: "/crm/company" },
-	{ key: "crm", icon: MdAccountBox, href: "/crm/crm" },
-	{ key: "tasks_projects", icon: MdChat, href: "/crm/tasks" },
-	{ key: "inventory_management", icon: MdViewHeadline, href: "/crm/inventory" },
-	{ key: "marketing", icon: MdOutlineShoppingBag, href: "/crm/marketing" },
-	{ key: "automation", icon: MdAssessment, href: "/crm/automation" },
-	{ key: "upgrade_plan", icon: MdKeyboardDoubleArrowUp, href: "/crm/upgrade" },
-	{ key: "settings", icon: MdSettingsSuggest, href: "/crm/settings" },
+	{ key: "company", icon: MdMail, href: "/crm/company", module: "company" },
+	{ key: "crm", icon: MdAccountBox, href: "/crm/crm", module: "crm" },
+	{ key: "tasks_projects", icon: MdChat, href: "/crm/tasks", module: "tasks" },
+	{ key: "inventory_management", icon: MdViewHeadline, href: "/crm/inventory", module: "inventory" },
+	{ key: "marketing", icon: MdOutlineShoppingBag, href: "/crm/marketing", module: "marketing" },
+	{ key: "automation", icon: MdAssessment, href: "/crm/automation", module: "automation" },
+	{ key: "upgrade_plan", icon: MdKeyboardDoubleArrowUp, href: "/crm/upgrade", module: "billing" },
+	{ key: "settings", icon: MdSettingsSuggest, href: "/crm/settings", module: "settings" },
 ];
 
 // `path` — уже без префикса языка (см. stripLocale).

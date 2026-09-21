@@ -41,6 +41,8 @@ async function registerWebhook(doc: Doc, origin: string) {
     try {
         if (doc.type === "telegram") await setWebhook(secretsOf(doc).botToken, url, secretsOf(doc).webhookSecret);
         if (doc.type === "viber") await setViberWebhook(secretsOf(doc).authToken, url);
+        doc.set("config.webhookOrigin", origin); // по нему видно, что вебхук смотрит на нынешний адрес сайта
+        doc.markModified("config");
         return undefined;
     } catch (e) {
         return e instanceof ProviderError ? e.message : "Webhook was not registered";
@@ -144,6 +146,19 @@ export async function checkIntegration(doc: Doc, origin: string) {
     doc.status = message ? "error" : "connected";
     doc.error = message;
     await doc.save();
+}
+
+// Самолечение: бота подключили с локального адреса (Telegram там работает опросом, Viber не регистрируется), с ошибкой или
+// сайт переехал на другой домен — на боевом адресе перерегистрируем вебхук сами, когда пользователь открывает настройки или чат.
+// Не чаще раза в минуту на канал, чтобы не бить по провайдерам при повторной ошибке.
+export async function healWebhooks(owner: string, origin: string) {
+    if (!isPublicHttps(origin)) return;
+    const docs = await Integration.find({ owner, type: { $in: ["telegram", "viber"] } });
+    for (const d of docs) {
+        const stale = d.status === "error" || (d.type === "telegram" && d.config.polling === "1") || d.config.webhookOrigin !== origin;
+        const recent = Date.now() - ((d as { updatedAt?: Date }).updatedAt?.getTime() ?? 0) < 60_000;
+        if (stale && !recent) await reRegisterWebhook(d, origin).catch(() => undefined);
+    }
 }
 
 export async function reRegisterWebhook(doc: Doc, origin: string) {

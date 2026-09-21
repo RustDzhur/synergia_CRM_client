@@ -4,6 +4,7 @@ import Search from "./components/Search";
 import SwitchCompany from "./components/SwitchCompany";
 import SwitchLanguage from "./components/SwitchLanguage";
 import Notification from "./components/Notification";
+import ThemeToggle from "./components/ThemeToggle";
 import CurrentUser from "./components/CurrentUser";
 import MobileMenu from "./components/MobileMenu";
 import BurgerMenu from "../Sidebar/components/BurgerMenu";
@@ -32,6 +33,7 @@ function Layout() {
 					<SwitchLanguage />
 				</div>
 				<div className="hidden md:flex items-center gap-25 md:flex-row-reverse lg:flex-row">
+					<ThemeToggle />
 					<Notification />
 					<CurrentUser />
 				</div>

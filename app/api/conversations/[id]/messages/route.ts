@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // POST /api/conversations/:id/messages — { text }: отправить ответ через канал беседы
 export async function POST(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     const body = await req.json().catch(() => null);
     const text = typeof body?.text === "string" ? body.text.trim() : "";

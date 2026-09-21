@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useCrmStore } from "@/app/store/useCrmStore";
 import RecordsPage from "../shared/records/RecordsPage";
 import { AUTOMATION } from "./config";
-import RulesTab from "./RulesTab";
+import AutomationRules from "./AutomationRules";
 
 // Automation (/crm/automation): Automation Rules (правила и триггеры по этапам сделок), Variables, Constants, Test Logs.
 // Этапы берутся из CRM (те же, что на доске сделок); таблицы общие — см. shared/records.
@@ -26,7 +26,7 @@ export default function Automation() {
 		<RecordsPage
 			config={AUTOMATION}
 			fieldOptions={(_tab, key) => (key === "stage" ? stageOptions : undefined)}
-			renderCustom={(_tab, api) => <RulesTab {...api} stages={stages} />}
+			renderCustom={(_tab, api) => <AutomationRules {...api} stages={stages} />}
 		/>
 	);
 }

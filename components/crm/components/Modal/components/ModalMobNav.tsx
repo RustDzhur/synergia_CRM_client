@@ -7,21 +7,23 @@ import { MdKeyboardArrowDown } from "react-icons/md";
 import { useToggleMenuState } from "@/app/store/useToggleMenuState";
 import { stripLocale } from "@/app/utils/locale";
 import Collapse from "@/app/utils/Collapse";
-import { menuItems, isActivePath } from "../../Sidebar/menuItems";
+import { isActivePath } from "../../Sidebar/menuItems";
+import { useVisibleMenu } from "../../Sidebar/useVisibleMenu";
 
 // Мобильное меню (Figma 375px): пункт 55px, шаг 66px, текст 20px, активный — синяя полоса.
 const ROW = "flex items-center w-full h-[55px] px-12 text-left transition-colors duration-200";
 
 export default function ModalMobNav() {
 	const toggleMobileMenu = useToggleMenuState((state) => state.toggleMobileMenu);
+	const items = useVisibleMenu();
 	const t = useTranslations("navigation");
 	const locale = useLocale();
 	const path = stripLocale(usePathname());
 	const [collabOpen, setCollabOpen] = useState(path.startsWith("/crm/collaboration"));
 
 	return (
-		<ul className="pt-0">
-			{menuItems.map((item) => {
+		<ul className="pb-[40px] pt-0">
+			{items.map((item) => {
 				const active = isActivePath(path, item.href);
 				const Icon = item.icon;
 				const color = active ? "text-white" : "text-iconColor";

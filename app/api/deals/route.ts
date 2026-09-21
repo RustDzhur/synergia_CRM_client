@@ -2,15 +2,17 @@ import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
+import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import { DEAL_TEXT_FIELDS } from "@/lib/crmFields";
+import { emitDeal } from "@/lib/automation/emit";
 import Deal from "@/models/Deal";
 import Stage from "@/models/Stage";
 
 // GET /api/deals — все сделки текущего пользователя
 export async function GET(req: Request) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
 
     await connectDB();
     const deals = await Deal.find({ owner: user.id }).sort({ order: 1 });
@@ -20,7 +22,7 @@ export async function GET(req: Request) {
 // POST /api/deals — добавить сделку в колонку (кнопка "Add" в макете)
 export async function POST(req: Request) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
 
     const body = await req.json();
     const clientName = typeof body.clientName === "string" ? body.clientName.trim().slice(0, 200) : "";
@@ -43,5 +45,6 @@ export async function POST(req: Request) {
         activities: [{ type: "created", text: clientName }],
     });
 
+    await emitDeal(user.id, deal, "deal_created");
     return NextResponse.json(deal, { status: 201 });
 }

@@ -4,6 +4,8 @@ import { ProviderError } from "@/lib/http";
 import { packSecrets, secretsOf } from "@/lib/integrations";
 import { randomToken } from "@/lib/crypto";
 import Integration from "@/models/Integration";
+import { createLeadsFromMail } from "@/lib/leads";
+import { notify } from "@/lib/notify";
 import MailMessage from "@/models/MailMessage";
 import { fetchGmail, gmailEmail, sendGmail } from "./gmail";
 import { ImapSmtpConfig, fetchImap, sendSmtp, verifyImapSmtp } from "./imap";
@@ -21,6 +23,7 @@ export const toMailAccountDTO = (d: Doc): MailAccountDTO => ({
     status: d.status,
     error: d.error,
     lastSyncAt: d.lastSyncAt ? (d.lastSyncAt as Date).toISOString() : "",
+    autoLeads: d.config.autoLeads !== false,
 });
 
 export const toMailDTO = (m: Doc, withBody: boolean): MailDTO => ({
@@ -60,6 +63,8 @@ async function fetchAll(d: Doc, known: Set<string>): Promise<Fetched[]> {
 }
 
 // Загружает новые письма в базу. Уже известные письма не перезаписываются: прочитано/звезда/«отложено» меняются в CRM.
+// Из новых входящих писем создаются лиды (см. lib/leads.ts) — но только из тех, что пришли ПОСЛЕ подключения:
+// первая синхронизация ящика лишь запоминает момент leadsSince, чтобы старая переписка не превратилась в сотни лидов.
 export async function syncAccount(d: Doc) {
     const owner = d.owner.toString();
     try {
@@ -72,12 +77,32 @@ export async function syncAccount(d: Doc) {
                 upsert: true,
             },
         }));
-        if (ops.length) await MailMessage.bulkWrite(ops, { ordered: false });
+
+        const firstRun = !d.config.leadsSince;
+        let inserted: Fetched[] = fetched; // письма, которые эта синхронизация действительно добавила (параллельная — уже не увидит их новыми)
+        if (ops.length) {
+            const res = await MailMessage.bulkWrite(ops, { ordered: false });
+            inserted = Object.keys(res.upsertedIds ?? {}).map((i) => fetched[Number(i)]);
+        }
+        let leads = 0;
+        if (!firstRun && d.config.autoLeads !== false) {
+            const since = new Date(d.config.leadsSince);
+            const fresh = inserted.filter((m) => m.at >= since);
+            leads = await createLeadsFromMail(owner, d.config.email, fresh);
+            // уведомление о каждом новом входящем письме (не больше 5 за раз — дальше одно общее)
+            const incoming = fresh.filter((m) => m.folder === "inbox");
+            for (const m of incoming.slice(0, 5)) await notify(owner, { type: "mail", params: { from: m.from.replace(/<.*>/, "").trim() || m.from, subject: m.subject || "" }, link: "/crm/collaboration/web-mails", key: `mail:${d._id}:${m.externalId}` });
+            if (incoming.length > 5) await notify(owner, { type: "mail_many", params: { count: incoming.length }, link: "/crm/collaboration/web-mails", key: `mail-many:${d._id}:${incoming[0].externalId}` });
+        }
+        if (firstRun) {
+            d.set("config", { ...d.config, leadsSince: new Date().toISOString() });
+            d.markModified("config");
+        }
         d.status = "connected";
         d.error = "";
         d.lastSyncAt = new Date();
         await d.save();
-        return ops.length;
+        return { added: ops.length, leads };
     } catch (e) {
         const err = e instanceof ProviderError ? e : new ProviderError("Could not load the mailbox");
         d.status = "error";
@@ -115,7 +140,9 @@ const port = (v: unknown, fallback: number) => {
 
 async function upsertAccount(owner: string, email: string, config: Record<string, unknown>, secrets: unknown) {
     const doc = (await Integration.findOne({ owner, type: "mail", "config.email": email })) ?? new Integration({ owner, type: "mail", token: randomToken() });
-    doc.set({ name: email, config: { ...config, email }, secrets: packSecrets(secrets), status: "connected", error: "" });
+    // при повторном входе в тот же ящик сохраняем настройки лидов, чтобы старая переписка не стала лидами заново
+    const keep = { leadsSince: doc.config?.leadsSince, autoLeads: doc.config?.autoLeads };
+    doc.set({ name: email, config: { ...config, email, ...Object.fromEntries(Object.entries(keep).filter(([, v]) => v !== undefined)) }, secrets: packSecrets(secrets), status: "connected", error: "" });
     await doc.save();
     return doc;
 }

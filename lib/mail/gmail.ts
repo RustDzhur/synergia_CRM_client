@@ -32,6 +32,12 @@ function findPart(p: Part | undefined, type: string): string {
 function toFetched(m: GMessage, folder: "inbox" | "sent"): Fetched {
     const h = (name: string) => (m.payload?.headers?.find((x) => x.name.toLowerCase() === name)?.value ?? "").replace(/"([^"]*)"\s*</g, "$1 <");
     const text = findPart(m.payload, "text/plain") || stripHtml(findPart(m.payload, "text/html"));
+    const precedence = h("precedence").toLowerCase();
+    const bulk =
+        !!h("list-unsubscribe") ||
+        ["bulk", "list", "junk"].includes(precedence) ||
+        (!!h("auto-submitted") && h("auto-submitted").toLowerCase() !== "no") ||
+        !!m.labelIds?.some((l) => ["CATEGORY_PROMOTIONS", "CATEGORY_SOCIAL", "CATEGORY_UPDATES", "CATEGORY_FORUMS"].includes(l));
     return {
         externalId: m.id,
         folder,
@@ -42,6 +48,7 @@ function toFetched(m: GMessage, folder: "inbox" | "sent"): Fetched {
         at: new Date(Number(m.internalDate) || Date.now()),
         read: !m.labelIds?.includes("UNREAD"),
         starred: !!m.labelIds?.includes("STARRED"),
+        bulk,
     };
 }
 

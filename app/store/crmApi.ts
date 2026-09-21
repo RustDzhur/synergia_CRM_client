@@ -1,9 +1,15 @@
 import type { Activity, ActivityType } from "@/app/types/crm";
 
-export function authHeaders() {
+// Фирма, в рамках которой работает пользователь: сервер по этому заголовку выбирает данные (если фирма не подходит — личная)
+export const ORG_KEY = "crm.org";
+export const activeOrgId = () => { try { return localStorage.getItem(ORG_KEY) ?? ""; } catch { return ""; } };
+
+export function authHeaders(json = true): Record<string, string> {
+    const org = activeOrgId();
     return {
-        "Content-Type": "application/json",
+        ...(json ? { "Content-Type": "application/json" } : {}),
         Authorization: `Bearer ${localStorage.getItem("token")}`,
+        ...(org ? { "X-Org-Id": org } : {}),
     };
 }
 
@@ -23,7 +29,7 @@ export async function api<T>(url: string, method = "GET", body?: unknown): Promi
 }
 
 // То же, но с текстом ошибки сервера (для форм подключения, где пользователю нужно знать, что именно не так)
-export async function apiCall<T>(url: string, method = "GET", body?: unknown): Promise<{ ok: boolean; data: T | null; message: string }> {
+export async function apiCall<T>(url: string, method = "GET", body?: unknown): Promise<{ ok: boolean; data: T | null; message: string; status: number }> {
     try {
         const res = await fetch(url, {
             method,
@@ -31,10 +37,10 @@ export async function apiCall<T>(url: string, method = "GET", body?: unknown): P
             body: body === undefined ? undefined : JSON.stringify(body),
         });
         const json = res.status === 204 ? null : await res.json().catch(() => null);
-        if (!res.ok) return { ok: false, data: null, message: json?.message ?? `Error ${res.status}` };
-        return { ok: true, data: json as T, message: "" };
+        if (!res.ok) return { ok: false, data: null, message: json?.message ?? `Error ${res.status}`, status: res.status };
+        return { ok: true, data: json as T, message: "", status: res.status };
     } catch {
-        return { ok: false, data: null, message: "Network error" };
+        return { ok: false, data: null, message: "Network error", status: 0 };
     }
 }
 

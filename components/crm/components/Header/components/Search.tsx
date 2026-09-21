@@ -33,12 +33,7 @@ export default function Search() {
 				<input
 					{...register("search")}
 					placeholder={t('search')}
-					className="h-50 px-20 pr-40 focus:outline-none font-normal lg:text-18 md:text-16 lg:w-350 md:w-300"
-					style={{
-						background: "#FBFBFB",
-						color: "#B3B3B3",
-						borderRadius: "8px",
-					}}
+					className="h-50 px-20 pr-40 focus:outline-none font-normal lg:text-18 md:text-16 lg:w-350 md:w-300 bg-[#FBFBFB] text-[#B3B3B3] rounded-8"
 				/>
 				<div className="absolute inset-y-0 right-15 flex items-center pointer-events-none">
 					<IconContext.Provider value={{ color: "#B3B3B3", size: "20px" }}>

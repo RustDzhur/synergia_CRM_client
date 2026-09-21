@@ -12,14 +12,14 @@ export const maxDuration = 60;
 // POST /api/mail/accounts/:id/sync — забрать новые письма с почтового сервера
 export async function POST(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     try {
         await connectDB();
         const doc = await Integration.findOne({ _id: params.id, owner: user.id, type: "mail" });
         if (!doc) return notFound();
-        const added = await syncAccount(doc);
-        return NextResponse.json({ added, account: toMailAccountDTO(doc) });
+        const { added, leads } = await syncAccount(doc);
+        return NextResponse.json({ added, leads, account: toMailAccountDTO(doc) });
     } catch (e) {
         return failure(e);
     }
