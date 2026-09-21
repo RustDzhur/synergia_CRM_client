@@ -28,10 +28,10 @@ async function call<T>(accountSid: string, authToken: string, path: string, form
 }
 
 // Подключение: проверяем ключи, находим номер и настраиваем его вебхуки, создаём API-ключ и TwiML-приложение для звонков из браузера
-export async function connectTwilio(accountSid: string, authToken: string, phone: string, hookBase: string): Promise<TwilioSecrets> {
-    const found = await call<{ incoming_phone_numbers: { sid: string }[] }>(accountSid, authToken, `/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(phone)}`);
+export async function connectTwilio(accountSid: string, authToken: string, phone: string, hookBase: string): Promise<{ secrets: TwilioSecrets; phone: string }> {
+    const found = await call<{ incoming_phone_numbers: { sid: string; phone_number: string }[] }>(accountSid, authToken, `/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(phone)}`);
     const number = found.incoming_phone_numbers[0];
-    if (!number) throw new ProviderError(`Number ${phone} was not found in this Twilio account`);
+    if (!number) throw new ProviderError(await notFoundMessage(accountSid, authToken, phone));
 
     const app = await call<{ sid: string }>(accountSid, authToken, "/Applications.json", {
         FriendlyName: "Firmspace CRM",
@@ -45,7 +45,24 @@ export async function connectTwilio(accountSid: string, authToken: string, phone
         VoiceUrl: `${hookBase}/voice`,
         VoiceMethod: "POST",
     });
-    return { accountSid, authToken, apiKeySid: key.sid, apiKeySecret: key.secret, appSid: app.sid };
+    return { secrets: { accountSid, authToken, apiKeySid: key.sid, apiKeySecret: key.secret, appSid: app.sid }, phone: number.phone_number };
+}
+
+// Понятное сообщение, когда номера нет среди купленных: показываем, какие номера в аккаунте есть, и отличаем «подтверждённый Caller ID»
+async function notFoundMessage(accountSid: string, authToken: string, phone: string) {
+    let msg = `Number ${phone} was not found among the phone numbers of this Twilio account.`;
+    try {
+        const list = await call<{ incoming_phone_numbers: { phone_number: string }[] }>(accountSid, authToken, "/IncomingPhoneNumbers.json?PageSize=20");
+        const owned = list.incoming_phone_numbers.map((n) => n.phone_number);
+        msg += owned.length
+            ? ` Numbers in this account: ${owned.join(", ")}.`
+            : " This account has no phone numbers yet: buy one in Twilio Console → Phone Numbers → Buy a number.";
+        if (!owned.length || !owned.includes(phone)) {
+            const ids = await call<{ outgoing_caller_ids: unknown[] }>(accountSid, authToken, `/OutgoingCallerIds.json?PhoneNumber=${encodeURIComponent(phone)}`);
+            if (ids.outgoing_caller_ids.length) msg += " This number is only a verified caller ID (e.g. your own mobile): Twilio cannot receive calls or SMS on it, you need a number bought in Twilio.";
+        }
+    } catch { /* подсказки — необязательные: показываем основное сообщение */ }
+    return msg + " Also make sure the Account SID belongs to the account that owns the number.";
 }
 
 export async function sendSms(s: TwilioSecrets, from: string, to: string, body: string) {
@@ -83,10 +100,16 @@ export function verifyTwilioSignature(url: string, params: Record<string, string
 export const xmlEscape = (s: string) => s.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c] as string);
 export const twiml = (inner = "") => new Response(`<?xml version="1.0" encoding="UTF-8"?><Response>${inner}</Response>`, { headers: { "Content-Type": "text/xml" } });
 
-// «+49 (151) 234-56» → «+4915123456»; null, если это не похоже на номер
+// В этих странах национальный номер пишут с нулём («0177…»), а в международном формате его нет: +49 177…, а не +49 0177…
+const TRUNK_ZERO = ["380", "358", "353", "49", "46", "44", "43", "41", "33", "32", "31"];
+
+// «+49 (151) 234-56» → «+4915123456»; «+49 0177 …» и «0049 177 …» → «+49177…»; null, если это не похоже на номер
 export function normalizePhone(raw: string) {
-    const v = raw.trim();
+    let v = raw.trim();
+    if (/^00[1-9]/.test(v)) v = `+${v.slice(2)}`;
     if (!/^\+?[0-9 ()./-]{5,25}$/.test(v)) return null;
-    const digits = v.replace(/\D/g, "");
+    let digits = v.replace(/\D/g, "");
+    const cc = TRUNK_ZERO.find((c) => digits.startsWith(`${c}0`));
+    if (cc) digits = cc + digits.slice(cc.length + 1);
     return digits.length >= 5 ? `+${digits}` : null;
 }

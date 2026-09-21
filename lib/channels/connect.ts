@@ -83,10 +83,10 @@ export async function connectIntegration(owner: string, type: string, input: Inp
             const authToken = need(str(input.authToken, 64), "Auth token");
             const phone = normalizePhone(str(input.phone, 30));
             if (!phone) throw new ProviderError("Enter the phone number in international format, e.g. +4915123456789");
-            const twilioSecrets = await connectTwilio(accountSid, authToken, phone, `${origin}${webhookPath("twilio", token)}`);
-            name = phone;
-            config = { phone };
-            secrets = { ...twilioSecrets };
+            const linked = await connectTwilio(accountSid, authToken, phone, `${origin}${webhookPath("twilio", token)}`);
+            name = linked.phone; // номер в том виде, как его хранит Twilio
+            config = { phone: linked.phone };
+            secrets = { ...linked.secrets };
             break;
         }
         case "webchat":
