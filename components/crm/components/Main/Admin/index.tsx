@@ -6,6 +6,7 @@ import { apiCall } from "@/app/store/crmApi";
 
 interface Summary { orgs: number; users: number; byPlan: Record<string, number>; mrr: number; blocked: number; newRequests: number }
 interface OrgRow { id: string; name: string; ownerEmail: string; ownerName: string; plan: string; stripePlan: string; override: string; overrideUntil: string; status: string; interval: string; periodEnd: string; cancelAtPeriodEnd: boolean; hasSubscription: boolean; members: number; blocked: boolean; createdAt: string }
+interface Check { id: string; ok: boolean; message: string }
 interface Req { id: string; orgId: string; orgName: string; email: string; plan: string; interval: string; company: string; vatId: string; note: string; status: "new" | "done"; createdAt: string }
 
 const PLANS = ["free", "standard", "professional"];
@@ -21,6 +22,15 @@ export default function AdminPanel() {
 	const [orgs, setOrgs] = useState<OrgRow[]>([]);
 	const [reqs, setReqs] = useState<Req[]>([]);
 	const [q, setQ] = useState("");
+	const [checks, setChecks] = useState<Check[] | null>(null);
+	const [checking, setChecking] = useState(false);
+	async function runCheck() {
+		setChecking(true);
+		const res = await apiCall<Check[]>("/api/admin/system");
+		setChecking(false);
+		if (res.data) setChecks(res.data);
+		else toast.error(res.message);
+	}
 
 	const load = useCallback(async () => {
 		const [s, o, r] = await Promise.all([apiCall<Summary>("/api/admin/summary"), apiCall<OrgRow[]>(`/api/admin/orgs?q=${encodeURIComponent(q)}`), apiCall<Req[]>("/api/admin/requests")]);
@@ -57,6 +67,22 @@ export default function AdminPanel() {
 	return (
 		<div className="p-16 md:p-30">
 			<h1 className="mb-16 text-24 font-semibold text-[#333333]">{t("title")}</h1>
+			<div className="mb-24 rounded-16 bg-white p-16 shadow-heroImage">
+				<div className="flex flex-wrap items-center justify-between gap-12">
+					<div><p className="text-16 font-medium text-[#333333]">{t("sysTitle")}</p><p className="text-14 text-[#999999]">{t("sysHelp")}</p></div>
+					<button type="button" onClick={runCheck} disabled={checking} className="h-[40px] rounded-8 bg-primaryColor px-20 text-14 font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-60">{checking ? "…" : t("sysRun")}</button>
+				</div>
+				{checks && (
+					<ul className="mt-12 flex flex-col gap-6">
+						{checks.map((c) => (
+							<li key={c.id} className="flex items-start gap-8 text-14">
+								<span className={`mt-2 shrink-0 font-semibold ${c.ok ? "text-[#009A2B]" : "text-danger"}`}>{c.ok ? "✓" : "✗"}</span>
+								<span><span className="font-medium text-[#333333]">{t(`sys_${c.id}`)}</span> <span className="text-[#666666]">{c.message}</span></span>
+							</li>
+						))}
+					</ul>
+				)}
+			</div>
 			{summary && (
 				<div className="mb-24 grid grid-cols-2 gap-12 md:grid-cols-5">
 					{[
