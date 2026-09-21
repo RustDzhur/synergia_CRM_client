@@ -94,7 +94,7 @@ export default function Documents() {
 		load(true);
 	}, [load, t]);
 
-	const folders = state?.folders ?? [];
+	const folders = useMemo(() => state?.folders ?? [], [state]);
 	const byId = useMemo(() => new Map(folders.map((f) => [f.id, f])), [folders]);
 	const collator = useMemo(() => new Intl.Collator(locale === "ua" ? "uk" : locale), [locale]);
 
