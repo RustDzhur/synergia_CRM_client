@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { toIntegrationDTO } from "@/lib/integrations";
-import { connectIntegration } from "@/lib/channels/connect";
+import { connectIntegration, healWebhooks } from "@/lib/channels/connect";
 import Integration from "@/models/Integration";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +14,7 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized();
     await connectDB();
+    await healWebhooks(user.id, appOrigin(req)).catch(() => undefined);
     const list = await Integration.find({ owner: user.id, type: { $nin: ["mail", "gdrive"] } }).sort({ createdAt: 1 });
     const origin = appOrigin(req);
     return NextResponse.json(list.map((d) => toIntegrationDTO(d, origin)));
