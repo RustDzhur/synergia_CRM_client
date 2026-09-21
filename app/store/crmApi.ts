@@ -1,9 +1,15 @@
 import type { Activity, ActivityType } from "@/app/types/crm";
 
-export function authHeaders() {
+// Фирма, в рамках которой работает пользователь: сервер по этому заголовку выбирает данные (если фирма не подходит — личная)
+export const ORG_KEY = "crm.org";
+export const activeOrgId = () => { try { return localStorage.getItem(ORG_KEY) ?? ""; } catch { return ""; } };
+
+export function authHeaders(json = true): Record<string, string> {
+    const org = activeOrgId();
     return {
-        "Content-Type": "application/json",
+        ...(json ? { "Content-Type": "application/json" } : {}),
         Authorization: `Bearer ${localStorage.getItem("token")}`,
+        ...(org ? { "X-Org-Id": org } : {}),
     };
 }
 

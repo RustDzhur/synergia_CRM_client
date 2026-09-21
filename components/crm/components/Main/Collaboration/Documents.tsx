@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdCloudUpload, MdFolder, MdImage, MdInsertDriveFile, MdKeyboardArrowDown, MdMoreHoriz, MdRefresh } from "react-icons/md";
 import type { DocItemDTO, DocKind, FolderDTO } from "@/app/types/documents";
+import { authHeaders } from "@/app/store/crmApi";
 import { useDocsStore } from "@/app/store/useDocsStore";
 import Dropdown from "@/app/utils/Dropdown";
 import { shrinkImage } from "@/app/utils/imageResize";
@@ -159,7 +160,7 @@ export default function Documents() {
 		const inline = INLINE_TYPES.includes(d.mime);
 		const tab = inline ? window.open("", "_blank") : null;
 		try {
-			const res = await fetch(`/api/documents/${d.id}/content`, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
+			const res = await fetch(`/api/documents/${d.id}/content`, { headers: authHeaders(false) });
 			if (!res.ok) throw new Error();
 			const url = URL.createObjectURL(await res.blob());
 			if (tab) tab.location.href = url;

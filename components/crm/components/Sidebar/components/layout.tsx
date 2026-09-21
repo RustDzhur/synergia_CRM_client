@@ -7,7 +7,8 @@ import { MdKeyboardArrowDown } from "react-icons/md";
 import { useToggleMenuState } from "@/app/store/useToggleMenuState";
 import { stripLocale } from "@/app/utils/locale";
 import Collapse from "@/app/utils/Collapse";
-import { menuItems, isActivePath } from "../menuItems";
+import { isActivePath } from "../menuItems";
+import { useVisibleMenu } from "../useVisibleMenu";
 import BurgerMenu from "./BurgerMenu";
 
 // Размеры из Figma:
@@ -18,6 +19,7 @@ const LABEL = "ml-6 lg:ml-10 text-15 lg:text-18 font-medium tracking-[0.3px] whi
 
 export default function Layout() {
 	const { menu, setMenu } = useToggleMenuState();
+	const items = useVisibleMenu();
 	const t = useTranslations("navigation");
 	const locale = useLocale();
 	const path = stripLocale(usePathname());
@@ -31,11 +33,11 @@ export default function Layout() {
 
 	return (
 		<nav
-			className={`bg-secondaryColor shrink-0 h-full overflow-hidden transition-[width] duration-300 ease-in-out motion-reduce:transition-none ${
+			className={`bg-secondaryColor shrink-0 h-full overflow-hidden pb-[60px] transition-[width] duration-300 ease-in-out motion-reduce:transition-none ${
 				menu ? "md:w-[220px] lg:w-270" : "md:w-[54px] lg:w-52"
 			}`}>
 			<ul>
-				{menuItems.map((item) => {
+				{items.map((item) => {
 					const active = isActivePath(path, item.href);
 					const Icon = item.icon;
 					const color = active ? "text-white" : "text-iconColor";

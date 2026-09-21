@@ -1,3 +1,4 @@
+import { notify } from "@/lib/notify";
 import type { Fetched } from "@/lib/mail/types";
 import { ensureStages } from "@/lib/stages";
 import Contact from "@/models/Contact";
@@ -76,6 +77,7 @@ export async function createLeadsFromMail(owner: string, ownEmail: string, mails
             activities: [{ type: "created", text: subject }, { type: "email", text: `Email from ${sender.name} <${sender.email}>` }],
         });
         created += 1;
+        await notify(owner, { type: "lead", params: { name: sender.name, subject }, link: "/crm/crm", key: `lead:${sender.email}:${new Date().toISOString().slice(0, 10)}` });
     }
     return created;
 }

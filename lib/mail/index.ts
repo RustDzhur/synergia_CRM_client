@@ -5,6 +5,7 @@ import { packSecrets, secretsOf } from "@/lib/integrations";
 import { randomToken } from "@/lib/crypto";
 import Integration from "@/models/Integration";
 import { createLeadsFromMail } from "@/lib/leads";
+import { notify } from "@/lib/notify";
 import MailMessage from "@/models/MailMessage";
 import { fetchGmail, gmailEmail, sendGmail } from "./gmail";
 import { ImapSmtpConfig, fetchImap, sendSmtp, verifyImapSmtp } from "./imap";
@@ -86,7 +87,12 @@ export async function syncAccount(d: Doc) {
         let leads = 0;
         if (!firstRun && d.config.autoLeads !== false) {
             const since = new Date(d.config.leadsSince);
-            leads = await createLeadsFromMail(owner, d.config.email, inserted.filter((m) => m.at >= since));
+            const fresh = inserted.filter((m) => m.at >= since);
+            leads = await createLeadsFromMail(owner, d.config.email, fresh);
+            // уведомление о каждом новом входящем письме (не больше 5 за раз — дальше одно общее)
+            const incoming = fresh.filter((m) => m.folder === "inbox");
+            for (const m of incoming.slice(0, 5)) await notify(owner, { type: "mail", params: { from: m.from.replace(/<.*>/, "").trim() || m.from, subject: m.subject || "" }, link: "/crm/collaboration/web-mails", key: `mail:${d._id}:${m.externalId}` });
+            if (incoming.length > 5) await notify(owner, { type: "mail_many", params: { count: incoming.length }, link: "/crm/collaboration/web-mails", key: `mail-many:${d._id}:${incoming[0].externalId}` });
         }
         if (firstRun) {
             d.set("config", { ...d.config, leadsSince: new Date().toISOString() });

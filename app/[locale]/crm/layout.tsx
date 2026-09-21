@@ -6,6 +6,7 @@ import { Toaster } from "react-hot-toast";
 import { Header, ModalNavigation, Sidebar } from "@/components/crm";
 import MobilePageBar from "@/components/crm/components/Header/components/MobilePageBar";
 import ProfileModal from "@/components/crm/components/Header/components/ProfileModal";
+import NotificationCenter from "@/components/crm/components/shared/NotificationCenter";
 import Softphone from "@/components/crm/components/Main/shared/Softphone";
 import useAuthStore from "@/app/store/useAuthStore";
 import Loader from "@/app/utils/Loader";
@@ -39,11 +40,12 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
             <MobilePageBar />
             <div className="flex lg:max-w-screen-lg m-auto min-h-[calc(100vh-82px)] md:min-h-[calc(100vh-110px)]">
                 <Sidebar />
-                <main className="flex-1 min-w-0 bg-white">{children}</main>
+                <main className="flex-1 min-w-0 bg-white pb-[80px]">{children}</main>
             </div>
             <ModalNavigation />
             <ProfileModal />
             <Softphone />
+            <NotificationCenter />
             <Toaster />
         </>
     );

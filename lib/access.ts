@@ -30,6 +30,7 @@ export function moduleForPath(pathname: string, method: string): Module | null {
         case "marketing": return "marketing";
         case "automation": return "automation";
         case "billing": return "billing";
+        case "notifications": return null; // свои уведомления видит любой участник
         case "integrations": return method === "GET" ? "collab" : "settings"; // список каналов нужен звонилке всем; менять — только с доступом к настройкам
         case "orgs": return p.startsWith("orgs/members") || p.startsWith("orgs/invitations") ? "members" : null;
         default: return null;

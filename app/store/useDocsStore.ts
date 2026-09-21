@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { DocItemDTO, DocKind, DocsState, FolderDTO } from "@/app/types/documents";
-import { apiCall } from "./crmApi";
+import { apiCall, authHeaders } from "./crmApi";
 
 interface Result { ok: boolean; message: string }
 
@@ -75,7 +75,7 @@ export const useDocsStore = create<DocsStore>()((set, get) => {
             body.append("file", file);
             if (folder) body.append("folder", folder);
             try {
-                const res = await fetch("/api/documents/upload", { method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, body });
+                const res = await fetch("/api/documents/upload", { method: "POST", headers: authHeaders(false), body });
                 const json = await res.json().catch(() => null);
                 if (!res.ok) return { ok: false, message: json?.message ?? `Error ${res.status}` };
                 replaceDoc(json as DocItemDTO);
