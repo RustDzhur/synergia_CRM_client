@@ -5,6 +5,7 @@ import SwitchCompany from "./components/SwitchCompany";
 import SwitchLanguage from "./components/SwitchLanguage";
 import Notification from "./components/Notification";
 import ThemeToggle from "./components/ThemeToggle";
+import AiButton from "./components/AiButton";
 import CurrentUser from "./components/CurrentUser";
 import MobileMenu from "./components/MobileMenu";
 import BurgerMenu from "../Sidebar/components/BurgerMenu";
@@ -12,7 +13,7 @@ import BurgerMenu from "../Sidebar/components/BurgerMenu";
 // Раскладка из Figma (шапка 110px, отступы по краям 32px на desktop, 24px на tablet):
 //  desktop: [≡ 40] 35 [Logo] 36 [Search 350] 30 [Switch Company 387] ...вправо... [Язык] 30 [🔔 25 Аватар Имя]
 //  tablet:  [Logo] 54 [Search 300] ...вправо... [Имя ⌄] [🔔] [⋯]
-//  mobile:  [Logo] ...вправо... [≡]   (всё остальное — внутри мобильного меню)
+//  mobile:  [Logo] ...вправо... [✨] [≡]   (всё остальное — внутри мобильного меню)
 function Layout() {
 	return (
 		<div className="flex items-center w-full">
@@ -34,11 +35,15 @@ function Layout() {
 					<SwitchLanguage />
 				</div>
 				<div className="hidden md:flex items-center gap-25 md:flex-row-reverse lg:flex-row">
+					<AiButton />
 					<ThemeToggle />
 					<Notification />
 					<CurrentUser />
 				</div>
-				<div className="lg:hidden">
+				<div className="flex items-center gap-20 lg:hidden">
+					<div className="md:hidden">
+						<AiButton />
+					</div>
 					<MobileMenu />
 				</div>
 			</div>

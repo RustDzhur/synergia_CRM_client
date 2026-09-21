@@ -9,6 +9,7 @@ import Loader from "@/app/utils/Loader";
 import FormField from "./FormField";
 import ActivityComposer, { ComposerTab } from "./ActivityComposer";
 import ActivityTimeline from "./ActivityTimeline";
+import AiSummaryButton from "../../AiAssistant/AiSummaryButton";
 
 export interface FieldDef {
 	key: string;
@@ -120,7 +121,10 @@ export default function EntityEditPage<T extends Entity>({
 					e.preventDefault();
 					save();
 				}}>
-				<h1 className="mb-16 text-24 font-medium text-black">{isNew ? titleNew : titleEdit}</h1>
+				<div className="mb-16 flex flex-wrap items-center justify-between gap-12">
+					<h1 className="text-24 font-medium text-black">{isNew ? titleNew : titleEdit}</h1>
+					{!isNew && entity && <AiSummaryButton kind={tab === "contacts" ? "contact" : "company"} name={String(entity.name ?? "")} />}
+				</div>
 				<div className="flex flex-col gap-16">
 					{fields.map((f) => (
 						<FormField

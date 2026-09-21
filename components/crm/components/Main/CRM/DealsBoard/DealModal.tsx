@@ -14,6 +14,7 @@ import FormField, { fieldClass } from "../../shared/FormField";
 import SuggestInput, { SuggestOption } from "../../shared/SuggestInput";
 import ActivityComposer, { ComposerTab } from "../../shared/ActivityComposer";
 import ActivityTimeline from "../../shared/ActivityTimeline";
+import AiSummaryButton from "../../../AiAssistant/AiSummaryButton";
 
 interface Props {
 	dealId: string | null;
@@ -254,9 +255,12 @@ export default function DealModal({ dealId, onClose }: Props) {
 							</>
 						)}
 					</div>
-					<button type="button" onClick={onClose} aria-label={t("close")} className="shrink-0 text-[#4D4D4D] transition-colors hover:text-black">
-						<MdClose size={32} />
-					</button>
+					<div className="flex shrink-0 items-center gap-16">
+						<AiSummaryButton kind="deal" name={deal.clientName} />
+						<button type="button" onClick={onClose} aria-label={t("close")} className="shrink-0 text-[#4D4D4D] transition-colors hover:text-black">
+							<MdClose size={32} />
+						</button>
+					</div>
 				</div>
 
 				{/* стрелки стадий: клик переносит сделку в стадию */}
