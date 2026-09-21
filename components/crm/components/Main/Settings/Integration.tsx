@@ -16,11 +16,12 @@ interface Integration {
 	icon: IconType;
 	// настоящее подключение (Twilio, Telegram…); у карточек без него включатель остаётся демонстрационным
 	real?: Exclude<IntegrationType, "mail">;
+	alt?: Exclude<IntegrationType, "mail">; // второй возможный провайдер той же карточки: у «Call Provider» — SIP
 }
 
 // Порядок как на десктопе в Figma: три колонки по три карточки.
 const INTEGRATIONS: Integration[] = [
-	{ id: "call", key: "intCall", icon: MdCall, real: "twilio" }, // звонки и SMS — один и тот же аккаунт Twilio
+	{ id: "call", key: "intCall", icon: MdCall, real: "twilio", alt: "sip" }, // звонки: Twilio или любой SIP-провайдер; SMS — только Twilio
 	{ id: "sms", key: "intSms", icon: MdSms, real: "twilio" },
 	{ id: "viber", key: "intViber", icon: FaViber, real: "viber" },
 	{ id: "telegram", key: "intTelegram", icon: FaTelegram, real: "telegram" },
@@ -51,7 +52,11 @@ export default function IntegrationSettings() {
 	}, []);
 
 	function press(item: Integration) {
-		if (item.real) return setDialog(item);
+		if (item.real) {
+			// у «Call Provider» открываем ту вкладку, где провайдер уже подключён (иначе — Twilio)
+			const sipOnly = item.alt && items.some((i) => i.type === item.alt && i.status === "connected") && !items.some((i) => i.type === item.real);
+			return setDialog(sipOnly ? { ...item, real: item.alt } : item);
+		}
 		const on = !enabled.includes(item.id);
 		const next = on ? [...enabled, item.id] : enabled.filter((id) => id !== item.id);
 		setEnabled(next);
@@ -65,9 +70,9 @@ export default function IntegrationSettings() {
 				<SettingsTabs className="shrink-0 md:self-start" />
 				<ul className="grid min-w-0 flex-1 grid-cols-2 gap-15 md:gap-20 lg:grid-cols-3 lg:gap-20">
 					{INTEGRATIONS.map((item) => {
-						const linked = item.real ? items.find((i) => i.type === item.real) : undefined;
-						const on = item.real ? linked?.status === "connected" : enabled.includes(item.id);
-						const warn = linked?.status === "error";
+						const linkedAll = item.real ? items.filter((i) => i.type === item.real || i.type === item.alt) : [];
+						const on = item.real ? linkedAll.some((i) => i.status === "connected") : enabled.includes(item.id);
+						const warn = !on && linkedAll.some((i) => i.status === "error");
 						const color = warn ? "text-[#F4A100]" : on ? "text-[#A5FFC9]" : "text-[#666666]";
 						const Icon = item.icon;
 						return (
@@ -88,7 +93,7 @@ export default function IntegrationSettings() {
 					})}
 				</ul>
 			</div>
-			<IntegrationDialog type={dialog?.real ?? null} title={dialog ? t(dialog.key) : ""} onClose={() => setDialog(null)} />
+			<IntegrationDialog type={dialog?.real ?? null} title={dialog ? t(dialog.key) : ""} providerSwitch={dialog?.id === "call"} onClose={() => setDialog(null)} />
 		</div>
 	);
 }

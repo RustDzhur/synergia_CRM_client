@@ -7,6 +7,7 @@ import Conversation from "@/models/Conversation";
 import Integration from "@/models/Integration";
 import Message from "@/models/Message";
 import { getPage } from "./messenger";
+import { parseSip } from "./sip";
 import { connectTwilio, normalizePhone } from "./twilio";
 import { deleteWebhook, getMe, getWebhookInfo, setWebhook } from "./telegram";
 import { getAccount, removeViberWebhook, setViberWebhook } from "./viber";
@@ -87,6 +88,14 @@ export async function connectIntegration(owner: string, type: string, input: Inp
             name = linked.phone; // номер в том виде, как его хранит Twilio
             config = { phone: linked.phone };
             secrets = { ...linked.secrets };
+            break;
+        }
+        case "sip": {
+            // Пароль проверяет браузер до сохранения (регистрация на сервере провайдера), здесь — только разбор и хранение
+            const sip = parseSip(input);
+            name = `${sip.config.username}@${sip.config.domain}`;
+            config = { ...sip.config };
+            secrets = sip.secrets;
             break;
         }
         case "webchat":

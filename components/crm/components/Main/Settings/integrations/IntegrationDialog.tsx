@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdClose, MdContentCopy } from "react-icons/md";
 import { useCallStore } from "@/app/store/useCallStore";
+import { testSipRegistration } from "@/app/store/phone/sipEngine";
 import { useIntegrationsStore } from "@/app/store/useIntegrationsStore";
 import type { IntegrationType } from "@/app/types/integrations";
 import ConfirmDialog from "../../shared/ConfirmDialog";
@@ -11,7 +12,7 @@ import FormField from "../../shared/FormField";
 import Modal from "../../shared/Modal";
 
 type Real = Exclude<IntegrationType, "mail">;
-interface FieldDef { key: string; label: string; secret?: boolean; placeholder?: string; type?: "color" }
+interface FieldDef { key: string; label: string; secret?: boolean; optional?: boolean; placeholder?: string; type?: "color" }
 
 // Реквизиты каждого канала. Секретные поля после подключения не показываются — сервер хранит их зашифрованными.
 const FIELDS: Record<Real, FieldDef[]> = {
@@ -19,6 +20,14 @@ const FIELDS: Record<Real, FieldDef[]> = {
 		{ key: "accountSid", label: "intfAccountSid", placeholder: "AC…" },
 		{ key: "authToken", label: "intfAuthToken", secret: true },
 		{ key: "phone", label: "intfPhone", placeholder: "+4915123456789" },
+	],
+	sip: [
+		{ key: "server", label: "intfSipServer", placeholder: "wss://sip.example.com:7443" },
+		{ key: "domain", label: "intfSipDomain", placeholder: "sip.example.com" },
+		{ key: "username", label: "intfSipUser", placeholder: "1001" },
+		{ key: "authUser", label: "intfSipAuthUser", optional: true },
+		{ key: "password", label: "intfSipPassword", secret: true },
+		{ key: "displayName", label: "intfSipName", optional: true, placeholder: "Firmspace CRM" },
 	],
 	telegram: [{ key: "botToken", label: "intfBotToken", secret: true, placeholder: "123456:ABC…" }],
 	viber: [{ key: "authToken", label: "intfViberToken", secret: true }],
@@ -56,16 +65,20 @@ function CopyField({ label, value }: { label: string; value: string }) {
 	);
 }
 
-interface Props { type: Real | null; title: string; onClose: () => void }
+// «Call Provider» — провайдер звонков на выбор: Twilio или любой SIP-оператор (переключатель вверху окна)
+const PHONE: Real[] = ["twilio", "sip"];
+
+interface Props { type: Real | null; title: string; onClose: () => void; providerSwitch?: boolean }
 
 // Окно подключения канала (Settings → Integration): форма реквизитов, а у подключённого канала — статус, адреса и «Отключить».
-export default function IntegrationDialog({ type, title, onClose }: Props) {
+export default function IntegrationDialog({ type, title, onClose, providerSwitch }: Props) {
 	const t = useTranslations("settings");
 	const { items, connect, patch, remove } = useIntegrationsStore();
 	const [values, setValues] = useState<Record<string, string>>({});
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
 	const [confirm, setConfirm] = useState(false);
+	const [testing, setTesting] = useState(false);
 	// пока окно закрывается, type уже null — держим последний, чтобы содержимое не пропадало посреди анимации
 	const [shown, setShown] = useState<Real | null>(type);
 	useEffect(() => { if (type) setShown(type); }, [type]);
@@ -81,6 +94,12 @@ export default function IntegrationDialog({ type, title, onClose }: Props) {
 	}, [type]);
 
 	if (!shown) return null;
+	function pickProvider(next: Real) {
+		if (next === shown || busy) return;
+		setShown(next);
+		setValues({});
+		setError("");
+	}
 	const fields = FIELDS[shown];
 	const isWebchat = shown === "webchat";
 	const editable = isWebchat || !current;
@@ -90,10 +109,24 @@ export default function IntegrationDialog({ type, title, onClose }: Props) {
 		if (busy || !shown) return;
 		setBusy(true);
 		setError("");
+		// SIP: пароль проверяет браузер — регистрируется у провайдера и только при успехе реквизиты сохраняются
+		if (shown === "sip" && !current) {
+			setTesting(true);
+			const test = await testSipRegistration({
+				server: (values.server ?? "").trim(),
+				domain: (values.domain ?? "").trim().replace(/^sips?:/i, ""),
+				username: (values.username ?? "").trim(),
+				authUser: (values.authUser ?? "").trim(),
+				displayName: (values.displayName ?? "").trim(),
+				password: values.password ?? "",
+			});
+			setTesting(false);
+			if (!test.ok) { setBusy(false); return setError(test.message); }
+		}
 		const res = current && isWebchat ? await patch(current.id, values) : await connect(shown, values);
 		setBusy(false);
 		if (!res.ok) return setError(res.message);
-		if (shown === "twilio") { // ключи новые — переподключаем софтфон
+		if (shown === "twilio" || shown === "sip") { // реквизиты новые — переподключаем софтфон
 			useCallStore.getState().destroy();
 			useCallStore.getState().init();
 		}
@@ -119,7 +152,10 @@ export default function IntegrationDialog({ type, title, onClose }: Props) {
 		const ok = await remove(current.id);
 		setBusy(false);
 		if (ok) {
-			if (shown === "twilio") useCallStore.getState().destroy();
+			if (shown === "twilio" || shown === "sip") { // остался другой провайдер — звонилка переключится на него
+				useCallStore.getState().destroy();
+				useCallStore.getState().init();
+			}
 			toast(t("intDisconnectedToast", { name: title }));
 			onClose();
 		} else toast.error(t("intFailed"));
@@ -146,6 +182,15 @@ export default function IntegrationDialog({ type, title, onClose }: Props) {
 					</div>
 
 					<form onSubmit={submit} className="flex flex-col gap-16 p-20 md:p-24">
+						{providerSwitch && PHONE.includes(shown) && (
+							<div className="flex rounded-8 bg-[#F5F8FA] p-2" role="tablist">
+								{PHONE.map((p) => (
+									<button key={p} type="button" role="tab" aria-selected={shown === p} onClick={() => pickProvider(p)} className={`h-[34px] flex-1 rounded-6 text-14 font-medium transition-colors ${shown === p ? "bg-white text-primaryColor shadow-custom" : "text-[#999999]"}`}>
+										{p === "twilio" ? "Twilio" : t("intProviderSip")}
+									</button>
+								))}
+							</div>
+						)}
 						<p className="text-14 text-[#666666]">{t(`intHelp_${shown}`)}</p>
 
 						{current && (
@@ -173,7 +218,7 @@ export default function IntegrationDialog({ type, title, onClose }: Props) {
 										autoComplete="off"
 										placeholder={f.placeholder}
 										maxLength={500}
-										required={!isWebchat}
+										required={!isWebchat && !f.optional}
 									/>
 								)
 							)}
@@ -185,6 +230,7 @@ export default function IntegrationDialog({ type, title, onClose }: Props) {
 							</>
 						)}
 						{current && shown === "twilio" && <p className="text-14 text-[#666666]">{t("intTwilioAuto")}</p>}
+						{current && shown === "sip" && <p className="text-14 text-[#666666]">{t("intSipConnected")}</p>}
 						{current && isWebchat && (
 							<div>
 								<CopyField label={t("intEmbedCode")} value={snippet} />
@@ -207,7 +253,7 @@ export default function IntegrationDialog({ type, title, onClose }: Props) {
 							)}
 							{editable && (
 								<button type="submit" disabled={busy} className={`${buttonBase} bg-primaryColor text-white shadow-custom hover:opacity-80`}>
-									{busy ? "…" : isWebchat && current ? t("intSave") : t("intConnect")}
+									{testing ? t("intSipTesting") : busy ? "…" : isWebchat && current ? t("intSave") : t("intConnect")}
 								</button>
 							)}
 						</div>

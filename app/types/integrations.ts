@@ -1,7 +1,7 @@
 // Типы, общие для сервера (API) и клиента (Settings → Integration, Chat and Calls, Web Mails)
 
-export type IntegrationType = "twilio" | "telegram" | "viber" | "messenger" | "webchat" | "mail";
-export type MessagingChannel = "twilio" | "telegram" | "viber" | "messenger" | "webchat";
+export type IntegrationType = "twilio" | "sip" | "telegram" | "viber" | "messenger" | "webchat" | "mail";
+export type MessagingChannel = "twilio" | "sip" | "telegram" | "viber" | "messenger" | "webchat";
 
 export interface IntegrationDTO {
     id: string;
@@ -26,6 +26,20 @@ export interface ConversationDTO {
     lastText: string;
     lastAt: string;
     contactId: string;
+}
+
+// Запись журнала звонков (все провайдеры): для списка «Недавние» в звонилке
+export interface CallDTO {
+    id: string;
+    direction: "in" | "out";
+    peer: string;
+    name: string;
+    // completed | missed | no-answer | busy | failed
+    status: string;
+    duration: number;
+    at: string;
+    integrationId: string;
+    channel: MessagingChannel;
 }
 
 export interface MessageDTO {
