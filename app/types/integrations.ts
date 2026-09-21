@@ -60,6 +60,7 @@ export interface MailAccountDTO {
     status: "connected" | "error";
     error: string;
     lastSyncAt: string;
+    autoLeads: boolean; // создавать контакты и лиды из новых входящих писем
 }
 
 export type MailProviderId = "gmail" | "outlook" | "yahoo" | "icloud" | "office365" | "imap";

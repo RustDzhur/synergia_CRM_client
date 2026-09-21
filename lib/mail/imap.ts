@@ -76,6 +76,13 @@ export async function verifyImapSmtp(c: ImapSmtpConfig) {
     }
 }
 
+// Рассылки и автоответы: у них есть List-Unsubscribe, Precedence: bulk/list/junk или Auto-Submitted
+const isBulk = (h: Map<string, unknown>) => {
+    const precedence = String(h.get("precedence") ?? "").toLowerCase();
+    const auto = String(h.get("auto-submitted") ?? "").toLowerCase();
+    return h.has("list-unsubscribe") || ["bulk", "list", "junk"].includes(precedence) || (!!auto && auto !== "no");
+};
+
 // «Имя <адрес>» без кавычек вокруг имени (mailparser.text оставляет их)
 const addressText = (a?: AddressObject | AddressObject[]) =>
     (Array.isArray(a) ? a : a ? [a] : [])
@@ -132,6 +139,7 @@ export async function fetchImap(c: ImapSmtpConfig, limit = 40): Promise<Fetched[
                         at: p.date ?? (meta.internalDate ? new Date(meta.internalDate) : new Date()),
                         read: meta.flags?.has("\\Seen") ?? false,
                         starred: meta.flags?.has("\\Flagged") ?? false,
+                        bulk: isBulk(p.headers),
                     });
                 }
             } finally {

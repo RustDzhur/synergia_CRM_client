@@ -22,6 +22,16 @@ const UserSchema = new Schema(
         timezone: { type: String, default: "", trim: true },
         state: { type: String, default: "", trim: true },
         company: { type: String, default: "", trim: true },
+        // тариф и подписка (Stripe): plan меняют только вебхук/подтверждение оплаты, см. lib/billing.ts
+        plan: { type: String, enum: ["free", "standard", "professional"], default: "free" },
+        billing: {
+            customerId: { type: String, default: "" },
+            subscriptionId: { type: String, default: "" },
+            status: { type: String, default: "" }, // статус подписки в Stripe: active | trialing | past_due | canceled …
+            interval: { type: String, default: "" }, // month | year
+            currentPeriodEnd: { type: Date },
+            cancelAtPeriodEnd: { type: Boolean, default: false },
+        },
         // страница Settings → Notifications
         notifications: {
             browser: { type: Boolean, default: false },

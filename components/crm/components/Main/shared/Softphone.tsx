@@ -1,8 +1,10 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdBackspace, MdCall, MdCallEnd, MdCallMade, MdCallMissed, MdCallReceived, MdClose, MdDialpad, MdMic, MdMicOff } from "react-icons/md";
+import { providerLabel } from "@/app/config/callProviders";
 import { useCallStore } from "@/app/store/useCallStore";
 
 const mmss = (ms: number) => {
@@ -63,6 +65,7 @@ const shortTime = (iso: string) => {
 // завершить). Подключается один раз в layout CRM, поэтому звонок не прерывается при переходе между страницами.
 export default function Softphone() {
 	const t = useTranslations("collab");
+	const locale = useLocale();
 	const {
 		state, peer, muted, startedAt, error, link, providers, provider, dialerOpen, number, history,
 		init, answer, decline, hangup, toggleMute, sendDigit, openDialer, closeDialer, setNumber, startCall, selectProvider,
@@ -92,8 +95,6 @@ export default function Softphone() {
 			useCallStore.setState({ error: "" });
 		}
 	}, [error, t]);
-
-	if (state === "off" && providers.length === 0) return null;
 
 	const inCall = state === "dialing" || state === "incoming" || state === "active";
 	const open = dialerOpen || inCall;
@@ -148,10 +149,10 @@ export default function Softphone() {
 						onChange={(e) => selectProvider(e.target.value)}
 						aria-label={t("dialerProvider")}
 						className="min-w-0 flex-1 truncate bg-transparent text-14 font-medium text-[#333333] outline-none disabled:opacity-60">
-						{providers.map((p) => <option key={p.integrationId} value={p.integrationId}>{p.type === "twilio" ? "Twilio" : "SIP"} · {p.name}</option>)}
+						{providers.map((p) => <option key={p.integrationId} value={p.integrationId}>{providerLabel(p.type, p.brand)} · {p.name}</option>)}
 					</select>
 				) : (
-					<span className="min-w-0 flex-1 truncate text-14 font-medium text-[#333333]">{provider ? `${provider.type === "twilio" ? "Twilio" : "SIP"} · ${provider.name}` : t("dialerTitle")}</span>
+					<span className="min-w-0 flex-1 truncate text-14 font-medium text-[#333333]">{provider ? `${providerLabel(provider.type, provider.brand)} · ${provider.name}` : t("dialerTitle")}</span>
 				)}
 				{!inCall && (
 					<button type="button" onClick={closeDialer} aria-label={t("dialerClose")} className="text-[#999999] transition-colors hover:text-[#333333]">
@@ -190,7 +191,14 @@ export default function Softphone() {
 								</button>
 							</div>
 							{keypad}
-							{state === "off" && <p className="mt-12 text-center text-12 text-[#EB5757]">{t("linkOffline")}</p>}
+							{providers.length === 0 ? (
+								<div className="mt-12 text-center">
+									<p className="text-14 text-[#666666]">{t("dialerNoProvider")}</p>
+									<Link href={`/${locale}/crm/settings/integration`} onClick={closeDialer} className="mt-6 inline-block text-14 font-medium text-primaryColor hover:underline">{t("dialerConnect")}</Link>
+								</div>
+							) : state === "off" ? (
+								<p className="mt-12 text-center text-12 text-[#EB5757]">{t("linkOffline")}</p>
+							) : null}
 							<div className="mt-12 flex justify-center">
 								<button type="button" onClick={() => startCall()} disabled={!number || state === "off"} aria-label={t("dialerCall")} className={`${round} bg-[#009A2B] disabled:opacity-40`}>
 									<MdCall size={26} />

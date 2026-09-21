@@ -4,12 +4,14 @@ import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdClose, MdContentCopy } from "react-icons/md";
 import { useCallStore } from "@/app/store/useCallStore";
+import { CALL_PROVIDERS, type CallProviderId } from "@/app/config/callProviders";
 import { testSipRegistration } from "@/app/store/phone/sipEngine";
 import { useIntegrationsStore } from "@/app/store/useIntegrationsStore";
 import type { IntegrationType } from "@/app/types/integrations";
 import ConfirmDialog from "../../shared/ConfirmDialog";
 import FormField from "../../shared/FormField";
 import Modal from "../../shared/Modal";
+import ProviderLogo from "./ProviderLogo";
 
 type Real = Exclude<IntegrationType, "mail">;
 interface FieldDef { key: string; label: string; secret?: boolean; optional?: boolean; placeholder?: string; type?: "color" }
@@ -65,8 +67,8 @@ function CopyField({ label, value }: { label: string; value: string }) {
 	);
 }
 
-// «Call Provider» — провайдер звонков на выбор: Twilio или любой SIP-оператор (переключатель вверху окна)
-const PHONE: Real[] = ["twilio", "sip"];
+// «Call Provider» — провайдер звонков выбирается плитками с логотипами (app/config/callProviders.ts); одно SIP-подключение на пользователя
+const sipBrand = (cfg?: Record<string, string>) => (cfg?.provider || "custom") as CallProviderId;
 
 interface Props { type: Real | null; title: string; onClose: () => void; providerSwitch?: boolean }
 
@@ -79,27 +81,44 @@ export default function IntegrationDialog({ type, title, onClose, providerSwitch
 	const [error, setError] = useState("");
 	const [confirm, setConfirm] = useState(false);
 	const [testing, setTesting] = useState(false);
+	const [preset, setPreset] = useState<CallProviderId | null>(null); // выбранная плитка провайдера (только у Call Provider)
 	// пока окно закрывается, type уже null — держим последний, чтобы содержимое не пропадало посреди анимации
 	const [shown, setShown] = useState<Real | null>(type);
 	useEffect(() => { if (type) setShown(type); }, [type]);
 
-	const current = shown ? items.find((i) => i.type === shown) : undefined;
+	const sipItem = items.find((i) => i.type === "sip");
+	// SIP один на пользователя: подключённым считаем его только на плитке своего провайдера, на другой плитке подключение заменяется
+	const current = !shown ? undefined : providerSwitch && shown === "sip" ? (sipItem && sipBrand(sipItem.config) === preset ? sipItem : undefined) : items.find((i) => i.type === shown);
+	const replacing = providerSwitch && shown === "sip" && sipItem && !current ? sipItem : undefined;
+	const presetValues = (id: CallProviderId): Record<string, string> => {
+		const d = CALL_PROVIDERS.find((p) => p.id === id);
+		return d?.type === "sip" ? { server: d.server ?? "", domain: d.domain ?? "" } : {};
+	};
 
 	useEffect(() => {
 		if (!type) return;
 		setError("");
 		const cfg = items.find((i) => i.type === type)?.config;
 		setValues(type === "webchat" ? { title: cfg?.title ?? "", greeting: cfg?.greeting ?? "", color: cfg?.color ?? "#5EA8F5" } : {});
+		// у Call Provider открываем плитку уже подключённого провайдера, а если ничего нет — показываем выбор
+		if (providerSwitch) setPreset(type === "sip" ? sipBrand(cfg) : items.some((i) => i.type === "twilio") ? "twilio" : null);
+		else setPreset(null);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [type]);
 
 	if (!shown) return null;
-	function pickProvider(next: Real) {
-		if (next === shown || busy) return;
-		setShown(next);
-		setValues({});
+	function pickProvider(id: CallProviderId) {
+		if (busy || id === preset) return;
+		const def = CALL_PROVIDERS.find((p) => p.id === id)!;
+		setShown(def.type);
+		setPreset(id);
+		setValues(presetValues(id));
 		setError("");
 	}
+	const chooserOnly = !!providerSwitch && preset === null;
+	const sipDef = CALL_PROVIDERS.find((p) => p.id === preset);
+	const tileConnected = (id: CallProviderId) =>
+		id === "twilio" ? items.some((i) => i.type === "twilio" && i.status === "connected") : !!sipItem && sipItem.status === "connected" && sipBrand(sipItem.config) === id;
 	const fields = FIELDS[shown];
 	const isWebchat = shown === "webchat";
 	const editable = isWebchat || !current;
@@ -123,7 +142,7 @@ export default function IntegrationDialog({ type, title, onClose, providerSwitch
 			setTesting(false);
 			if (!test.ok) { setBusy(false); return setError(test.message); }
 		}
-		const res = current && isWebchat ? await patch(current.id, values) : await connect(shown, values);
+		const res = current && isWebchat ? await patch(current.id, values) : await connect(shown, shown === "sip" ? { ...values, provider: preset ?? "custom" } : values);
 		setBusy(false);
 		if (!res.ok) return setError(res.message);
 		if (shown === "twilio" || shown === "sip") { // реквизиты новые — переподключаем софтфон
@@ -182,16 +201,26 @@ export default function IntegrationDialog({ type, title, onClose, providerSwitch
 					</div>
 
 					<form onSubmit={submit} className="flex flex-col gap-16 p-20 md:p-24">
-						{providerSwitch && PHONE.includes(shown) && (
-							<div className="flex rounded-8 bg-[#F5F8FA] p-2" role="tablist">
-								{PHONE.map((p) => (
-									<button key={p} type="button" role="tab" aria-selected={shown === p} onClick={() => pickProvider(p)} className={`h-[34px] flex-1 rounded-6 text-14 font-medium transition-colors ${shown === p ? "bg-white text-primaryColor shadow-custom" : "text-[#999999]"}`}>
-										{p === "twilio" ? "Twilio" : t("intProviderSip")}
-									</button>
+						{providerSwitch && (
+							<ul className="grid grid-cols-2 gap-10 sm:grid-cols-3" aria-label={t("intProviders")}>
+								{CALL_PROVIDERS.map((p) => (
+									<li key={p.id}>
+										<button
+											type="button"
+											onClick={() => pickProvider(p.id)}
+											aria-pressed={preset === p.id}
+											className={`relative flex h-[92px] w-full flex-col items-center justify-center gap-6 rounded-10 border-2 px-6 text-center text-14 font-medium transition-colors ${preset === p.id ? "border-[#5EA8F5] bg-[#EEF5FF] text-primaryColor" : "border-[#EFEFEF] bg-white text-[#666666] hover:border-[#CFE3FA]"}`}>
+											<ProviderLogo id={p.id} size={34} />
+											<span className="leading-[1.15]">{p.id === "custom" ? t("provCustom") : p.name}</span>
+											{tileConnected(p.id) && <span className="absolute right-6 top-6 h-[10px] w-[10px] rounded-[50%] bg-[#009A2B]" title={t("intStatusShort")} />}
+										</button>
+									</li>
 								))}
-							</div>
+							</ul>
 						)}
-						<p className="text-14 text-[#666666]">{t(`intHelp_${shown}`)}</p>
+						{chooserOnly && <p className="text-14 text-[#666666]">{t("intChooseProvider")}</p>}
+						{!chooserOnly && <p className="text-14 text-[#666666]">{providerSwitch && shown === "sip" && preset && preset !== "custom" ? t(`provHelp_${preset}`) : t(`intHelp_${shown}`)}</p>}
+						{replacing && <p className="rounded-8 bg-[#FFF6EA] p-12 text-14 text-[#8A5A1F]">{t("intSipReplaces", { name: replacing.name })}</p>}
 
 						{current && (
 							<p className={`text-16 font-medium ${current.status === "connected" ? "text-[#009A2B]" : "text-[#D9822B]"}`}>
@@ -201,7 +230,7 @@ export default function IntegrationDialog({ type, title, onClose, providerSwitch
 						{current?.type === "telegram" && current.config.polling === "1" && <p className="text-14 text-[#666666]">{t("intPollingInfo")}</p>}
 						{current?.status === "error" && current.error && <p className="rounded-8 bg-[#FFF6EA] p-12 text-14 text-[#8A5A1F]">{current.error.startsWith("Webhooks need a public https address") ? t("intErrNeedHttps") : current.error}</p>}
 
-						{editable &&
+						{editable && !chooserOnly &&
 							fields.map((f) =>
 								f.type === "color" ? (
 									<label key={f.key} className="block">
@@ -216,7 +245,7 @@ export default function IntegrationDialog({ type, title, onClose, providerSwitch
 										onChange={(e) => setValues({ ...values, [f.key]: e.target.value })}
 										type={f.secret ? "password" : "text"}
 										autoComplete="off"
-										placeholder={f.placeholder}
+										placeholder={shown === "sip" && f.key === "server" ? sipDef?.serverPlaceholder ?? f.placeholder : shown === "sip" && f.key === "domain" ? sipDef?.domainPlaceholder ?? f.placeholder : f.placeholder}
 										maxLength={500}
 										required={!isWebchat && !f.optional}
 									/>
@@ -251,7 +280,7 @@ export default function IntegrationDialog({ type, title, onClose, providerSwitch
 									{t("intRegisterWebhook")}
 								</button>
 							)}
-							{editable && (
+							{editable && !chooserOnly && (
 								<button type="submit" disabled={busy} className={`${buttonBase} bg-primaryColor text-white shadow-custom hover:opacity-80`}>
 									{testing ? t("intSipTesting") : busy ? "…" : isWebchat && current ? t("intSave") : t("intConnect")}
 								</button>

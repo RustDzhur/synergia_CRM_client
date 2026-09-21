@@ -9,8 +9,10 @@ export interface SipConfig {
     username: string;
     authUser: string; // логин для авторизации, если отличается от username
     displayName: string;
+    provider: string; // из каталога app/config/callProviders.ts: telnyx | asterisk | freeswitch | custom
 }
 
+const SIP_PROVIDERS = ["telnyx", "asterisk", "freeswitch", "custom"];
 const LOCAL = new Set(["localhost", "127.0.0.1", "[::1]"]);
 const DOMAIN = /^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?(:\d{1,5})?$/i;
 const USER = /^[A-Za-z0-9._+*#%@=-]{1,64}$/;
@@ -44,6 +46,7 @@ export function parseSip(input: Record<string, unknown>) {
     const password = clean(input.password, 200);
     if (!password) throw new ProviderError("SIP password is required");
     const displayName = clean(input.displayName, 40).replace(/["<>\\]/g, "");
-    const config: SipConfig = { server, domain, username, authUser, displayName };
+    const provider = SIP_PROVIDERS.includes(clean(input.provider, 20)) ? clean(input.provider, 20) : "custom";
+    const config: SipConfig = { server, domain, username, authUser, displayName, provider };
     return { config, secrets: { password } };
 }

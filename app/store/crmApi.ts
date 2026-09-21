@@ -23,7 +23,7 @@ export async function api<T>(url: string, method = "GET", body?: unknown): Promi
 }
 
 // То же, но с текстом ошибки сервера (для форм подключения, где пользователю нужно знать, что именно не так)
-export async function apiCall<T>(url: string, method = "GET", body?: unknown): Promise<{ ok: boolean; data: T | null; message: string }> {
+export async function apiCall<T>(url: string, method = "GET", body?: unknown): Promise<{ ok: boolean; data: T | null; message: string; status: number }> {
     try {
         const res = await fetch(url, {
             method,
@@ -31,10 +31,10 @@ export async function apiCall<T>(url: string, method = "GET", body?: unknown): P
             body: body === undefined ? undefined : JSON.stringify(body),
         });
         const json = res.status === 204 ? null : await res.json().catch(() => null);
-        if (!res.ok) return { ok: false, data: null, message: json?.message ?? `Error ${res.status}` };
-        return { ok: true, data: json as T, message: "" };
+        if (!res.ok) return { ok: false, data: null, message: json?.message ?? `Error ${res.status}`, status: res.status };
+        return { ok: true, data: json as T, message: "", status: res.status };
     } catch {
-        return { ok: false, data: null, message: "Network error" };
+        return { ok: false, data: null, message: "Network error", status: 0 };
     }
 }
 

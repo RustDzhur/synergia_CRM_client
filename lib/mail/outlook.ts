@@ -30,13 +30,14 @@ interface OMessage {
     sentDateTime?: string;
     isRead?: boolean;
     flag?: { flagStatus?: string };
+    inferenceClassification?: string;
 }
 const addr = (a?: Addr) => (a?.emailAddress?.name && a.emailAddress.name !== a.emailAddress.address ? `${a.emailAddress.name} <${a.emailAddress.address}>` : a?.emailAddress?.address ?? "");
 
 export async function fetchOutlook(token: string, limit = 30): Promise<Fetched[]> {
     const out: Fetched[] = [];
     for (const [folder, path] of [["inbox", "inbox"], ["sent", "sentitems"]] as const) {
-        const q = `$top=${limit}&$orderby=receivedDateTime desc&$select=id,subject,from,toRecipients,body,receivedDateTime,sentDateTime,isRead,flag`;
+        const q = `$top=${limit}&$orderby=receivedDateTime desc&$select=id,subject,from,toRecipients,body,receivedDateTime,sentDateTime,isRead,flag,inferenceClassification`;
         const res = await graph<{ value: OMessage[] }>(token, `/me/mailFolders/${path}/messages?${q}`);
         for (const m of res?.value ?? []) {
             out.push({
@@ -49,6 +50,7 @@ export async function fetchOutlook(token: string, limit = 30): Promise<Fetched[]
                 at: new Date(m.receivedDateTime || m.sentDateTime || Date.now()),
                 read: !!m.isRead,
                 starred: m.flag?.flagStatus === "flagged",
+                bulk: m.inferenceClassification === "other", // «Другие» в Outlook — рассылки и уведомления
             });
         }
     }

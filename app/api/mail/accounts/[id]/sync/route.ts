@@ -18,8 +18,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         await connectDB();
         const doc = await Integration.findOne({ _id: params.id, owner: user.id, type: "mail" });
         if (!doc) return notFound();
-        const added = await syncAccount(doc);
-        return NextResponse.json({ added, account: toMailAccountDTO(doc) });
+        const { added, leads } = await syncAccount(doc);
+        return NextResponse.json({ added, leads, account: toMailAccountDTO(doc) });
     } catch (e) {
         return failure(e);
     }

@@ -31,4 +31,5 @@ export interface PhoneProvider {
     integrationId: string;
     type: "twilio" | "sip";
     name: string;
+    brand: string; // id из каталога (telnyx, asterisk, …) или ""
 }
