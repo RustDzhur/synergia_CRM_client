@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { stripeConfigured } from "@/lib/stripe";
 import { effectivePlan } from "@/lib/billing";
+import { cryptoConfigured } from "@/lib/nowpayments";
 import Organization from "@/models/Organization";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,9 @@ export async function GET(req: Request) {
     const b = doc?.billing;
     return NextResponse.json({
         configured: stripeConfigured(),
+        crypto: cryptoConfigured(),
+        // оплачено вперёд (криптой или назначено администратором): тариф действует до этой даты
+        prepaidUntil: doc?.planOverride && doc.planOverrideUntil && doc.planOverrideUntil.getTime() > Date.now() ? doc.planOverrideUntil.toISOString() : "",
         plan: doc ? effectivePlan(doc) : "free",
         status: b?.status ?? "",
         interval: b?.interval ?? "",
