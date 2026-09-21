@@ -30,6 +30,7 @@ export async function GET() {
     const features = {
         storage: storageProblem() || "ok",
         stripe: !!process.env.STRIPE_SECRET_KEY,
+        crypto: !!(process.env.NOWPAYMENTS_API_KEY && process.env.NOWPAYMENTS_IPN_SECRET),
         stripeWebhook: (process.env.STRIPE_WEBHOOK_SECRET ?? "").startsWith("whsec_"),
         googleSignIn: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
         admin: !!process.env.ADMIN_EMAILS,

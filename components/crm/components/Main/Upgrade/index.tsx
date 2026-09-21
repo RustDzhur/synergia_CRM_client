@@ -15,6 +15,8 @@ const FEATURE_LABEL = { chat: "chat", calls: "hdCalls", calendar: "calendar", wo
 
 interface Billing {
 	configured: boolean;
+	crypto?: boolean;
+	prepaidUntil?: string;
 	plan: PlanId;
 	status: string;
 	interval: "month" | "year" | "";
@@ -45,13 +47,15 @@ export default function Upgrade() {
 		const q = new URLSearchParams(window.location.search);
 		const result = q.get("checkout");
 		const sessionId = q.get("session_id");
-		if (result) window.history.replaceState(null, "", window.location.pathname);
+		if (result || q.get("crypto")) window.history.replaceState(null, "", window.location.pathname);
 		(async () => {
 			if (result === "success" && sessionId) {
 				const res = await apiCall<{ confirmed: boolean }>("/api/billing/confirm", "POST", { sessionId });
 				if (res.ok && res.data?.confirmed) toast.success(t("checkoutSuccess"));
 				else toast(t("checkoutPending"), { duration: 7000 });
 			} else if (result === "cancel") toast(t("checkoutCancel"));
+			else if (q.get("crypto") === "success") toast.success(t("cryptoPending"), { duration: 9000 });
+			else if (q.get("crypto") === "cancel") toast(t("checkoutCancel"));
 			await load();
 		})();
 	}, [load, t]);
@@ -63,6 +67,15 @@ export default function Upgrade() {
 		if (res.ok && res.data?.url) return void (window.location.href = res.data.url);
 		setBusy(null);
 		toast.error(res.status === 503 ? t("paymentsNotConfigured") : res.status === 409 ? t("alreadySubscribed") : res.message || t("checkoutFailed"));
+	}
+
+	async function payCrypto(plan: PlanId) {
+		if (busy) return;
+		setBusy(`crypto-${plan}`);
+		const res = await apiCall<{ url: string }>("/api/billing/crypto", "POST", { plan, interval, locale });
+		if (res.ok && res.data?.url) return void (window.location.href = res.data.url);
+		setBusy(null);
+		toast.error(res.status === 503 ? t("cryptoNotConfigured") : res.status === 409 ? t("alreadySubscribed") : res.message || t("checkoutFailed"));
 	}
 
 	async function portal() {
@@ -146,6 +159,9 @@ export default function Upgrade() {
 							</ul>
 							{plan.id === "professional" && <p className="mb-16 text-14 font-medium text-[#009A2B]">{t("fullAccess")}</p>}
 
+							{isCurrent && !subscribed && billing?.prepaidUntil && plan.priceMonth > 0 && (
+								<p className="mb-12 text-center text-14 text-[#999999]">{t("paidUntil", { date: new Date(billing.prepaidUntil).toLocaleDateString(locale === "ua" ? "uk" : locale) })}</p>
+							)}
 							{isCurrent && subscribed && billing?.currentPeriodEnd && plan.priceMonth > 0 && (
 								<p className="mb-12 text-center text-14 text-[#999999]">{billing.cancelAtPeriodEnd ? t("endsOn", { date }) : t("renewsOn", { date })}</p>
 							)}
@@ -173,6 +189,11 @@ export default function Upgrade() {
 									disabled={busy !== null || !billing || !billing.configured}
 									className="mt-auto h-[50px] w-[165px] rounded-4 bg-primaryColor text-18 font-semibold text-white shadow-custom transition-opacity hover:opacity-80 disabled:opacity-60">
 									{busy === plan.id ? "…" : t("buy")}
+								</button>
+							)}
+							{plan.priceMonth > 0 && !subscribed && billing?.crypto && (
+								<button type="button" onClick={() => payCrypto(plan.id)} disabled={busy !== null} className="mt-10 text-14 font-medium text-primaryColor transition-opacity hover:opacity-80 disabled:opacity-60">
+									{busy === `crypto-${plan.id}` ? "…" : t("payCrypto")}
 								</button>
 							)}
 						</li>
