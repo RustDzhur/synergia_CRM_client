@@ -91,10 +91,10 @@
   },
   "hero": {
     "title": {
-      "span": "Synergia CRM",
+      "span": "Firmspace CRM",
       "body": "for you and your Company"
     },
-    "subtitle": "Synergia CRM is CRM system that helps your company to be more productive and effective",
+    "subtitle": "Firmspace CRM is CRM system that helps your company to be more productive and effective",
     "plan": "Choose Plan"
   },
   "aboutUs": {
@@ -121,7 +121,7 @@
       "step4": "We've crafted this application with your enjoyment in mind, so take full advantage of its offerings and make your experience unforgettable."
     },
     "whatIsCrm": "What is CRM?",
-    "defaultTextFirst": "Synergia CRM: Founded in 2010, the company emerged as a leader in the software industry. With a focus on cybersecurity and advanced analytics, they pioneered groundbreaking solutions that empowered businesses in an increasingly connected world.",
+    "defaultTextFirst": "Firmspace CRM: Founded in 2010, the company emerged as a leader in the software industry. With a focus on cybersecurity and advanced analytics, they pioneered groundbreaking solutions that empowered businesses in an increasingly connected world.",
     "defaultTextSecond": "Leveraging cutting-edge technologies, CyberSolutions helped clients navigate complex digital challenges, ensuring data integrity and privacy. Their commitment to innovation, coupled with a team of skilled professionals, propelled them to global recognition.",
     "steps": {
       "createaccount": "Create your account and sign in",
@@ -156,14 +156,11 @@
   },
   "paidPlan": {
     "titleFree": "Free",
-    "priceFree": "Trial 6 months",
-    "subTitleFree": "Unlimited Users",
-    "titleBasic": "Basic",
-    "subTitleBasic": "50 Users",
-    "titleStandart": "Standart",
-    "subTitleStandart": "100 Users",
-    "titleProfessional": "Prof",
-    "subTitleProfessional": "Unlimited Users",
+    "subTitleFree": "Up to 5 users",
+    "titleStandart": "Standard",
+    "subTitleStandart": "Up to 50 users",
+    "titleProfessional": "Professional",
+    "subTitleProfessional": "Unlimited users",
     "features": {
       "chat": "Chat",
       "calls": "HD Video Calls",
@@ -175,11 +172,12 @@
     "choosePlan": "Choose Your Plan",
     "month": "Month",
     "year": "Year",
-    "button": "Choose Plan"
+    "button": "Choose Plan",
+    "fullAccess": "Full access"
   },
   "revolutionalySalotions": {
-    "title": "We offer a revolutionary solution for your business",
-    "button": "Contact With Us"
+    "title": "We Offer A Revolutionary Solution For Your Business",
+    "button": "Connect With Us"
   },
   "footer": {
     "careers": "Careers",
@@ -190,7 +188,7 @@
     "support": "Support / FAQ",
     "features": "Features",
     "referral": "Referral program",
-    "contacts": "Contacts"
+    "contacts": "Contact"
   },
   "contacts": {
     "title": "Contacts",
@@ -590,17 +588,18 @@
     "intHelp_telegram": "Create a bot with @BotFather in Telegram and paste its token. People write to the bot, and the messages appear in Chat and Calls.",
     "intHelp_viber": "Create a bot account at partners.viber.com and paste its authentication token. The webhook is registered automatically.",
     "intHelp_messenger": "In Meta for Developers create an app with the Messenger product, paste the Page access token and the App secret, then enter Callback URL and Verify token (shown after connecting) into the app's Webhooks settings and subscribe to «messages».",
-    "intHelp_webchat": "A chat bubble for your website. Visitors write from the site, and you answer in Chat and Calls."
+    "intHelp_webchat": "A chat bubble for your website. Visitors write from the site, and you answer in Chat and Calls.",
+    "intPollingInfo": "Local mode: new messages are fetched while Chat and Calls is open. On a public https address the site switches to webhooks.",
+    "intErrNeedHttps": "Webhooks need a public https address. Set APP_URL (or open the site on its public domain), then press «Register webhook»."
   },
   "upgrade": {
     "free": "Free",
-    "basic": "Basic",
     "standard": "Standard",
     "professional": "Professional",
     "freePrice": "Free",
     "perMonth": "mo",
-    "unlimitedUsers": "Unlimited Users",
-    "users": "{count} Users",
+    "unlimitedUsers": "Unlimited users",
+    "users": "Up to {count} users",
     "chat": "Chat",
     "hdCalls": "HD Video Calls",
     "calendar": "Calendar",
@@ -610,7 +609,8 @@
     "tryFree": "Try It Free",
     "buy": "Buy",
     "soonText": "Online payment isn't connected yet. Plan changes will be available soon.",
-    "ok": "OK"
+    "ok": "OK",
+    "fullAccess": "Full access"
   },
   "collab": {
     "active": "Active",
@@ -772,10 +772,22 @@
     "mailHelp_outlook": "Sign in with Microsoft, or enter an app password if your account allows it.",
     "mailHelp_office365": "Sign in with Microsoft, or enter an app password if your organisation allows it.",
     "mailHelp_yahoo": "Create an app password in Yahoo Account Security and enter it here.",
-    "mailHelp_icloud": "Create an app-specific password at appleid.apple.com and enter it here.",
+    "mailHelp_icloud": "Use your @icloud.com address and an app-specific password created at appleid.apple.com (your Apple ID password will not work).",
     "mailHelp_imap": "Enter your email, password and the IMAP and SMTP servers of your mail provider (usually port 993 for IMAP and 465 or 587 for SMTP).",
     "phoneAuthError": "Twilio rejected the connection. Check the Twilio keys in Settings → Integration.",
-    "phoneMicError": "Allow access to the microphone in the browser to make and receive calls."
+    "phoneMicError": "Allow access to the microphone in the browser to make and receive calls.",
+    "chatsWaitingHint": "Your channels are connected. As soon as someone writes, the conversation appears here.",
+    "goIntegrationFix": "Open Integration settings",
+    "chStatusOn": "Connected",
+    "chStatusWarn": "Needs attention",
+    "chPollingInfo": "Local mode: new messages are fetched while this page is open. On a public https address the site switches to webhooks.",
+    "hint_telegram": "Write any message to {name} in Telegram — the conversation will appear here.",
+    "hint_viber": "Send a message to your Viber bot ({name}) — the conversation will appear here.",
+    "hint_messenger": "Send a message to your Facebook page {name} in Messenger — the conversation will appear here.",
+    "hint_twilio": "Send an SMS to {name} or call this number — the conversation will appear here.",
+    "hint_webchat": "Add the code from Settings → Integration → Online Chat to your website and send a test message from the chat bubble.",
+    "mailCreateAppPassword": "Create an app password",
+    "chErrNeedHttps": "Webhooks need a public https address. Set APP_URL (or open the site on its public domain), then press «Register webhook»."
   },
   "inventory": {
     "tab_inventory": "Inventory",

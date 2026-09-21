@@ -91,10 +91,10 @@
   },
   "hero": {
     "title": {
-      "span": "Synergia CRM",
+      "span": "Firmspace CRM",
       "body": "für Sie und Ihre Firma"
     },
-    "subtitle": "Synergie von CDM und CDM-Systemen, die glps und Unternehmen produktiver und effektiver macht",
+    "subtitle": "Firmspace CRM ist ein CRM-System, das Ihrem Unternehmen hilft, produktiver und effektiver zu sein",
     "plan": "Wählen Plan"
   },
   "aboutUs": {
@@ -121,7 +121,7 @@
       "step4": "Wir haben diese Anwendung speziell für Ihr Vergnügen entwickelt. Nutzen Sie also das Angebot voll aus und machen Sie Ihr Erlebnis unvergesslich."
     },
     "whatIsCrm": "Was ist CRM?",
-    "defaultTextFirst": "Synergia CRM: Das 2010 gegründete Unternehmen hat sich zu einem führenden Unternehmen in der Softwarebranche entwickelt. Mit Schwerpunkt auf Cybersicherheit und fortschrittlichen Analysen leisteten sie Pionierarbeit bei bahnbrechenden Lösungen, die Unternehmen in einer zunehmend vernetzten Welt stärken.",
+    "defaultTextFirst": "Firmspace CRM: Das 2010 gegründete Unternehmen hat sich zu einem führenden Unternehmen in der Softwarebranche entwickelt. Mit Schwerpunkt auf Cybersicherheit und fortschrittlichen Analysen leisteten sie Pionierarbeit bei bahnbrechenden Lösungen, die Unternehmen in einer zunehmend vernetzten Welt stärken.",
     "defaultTextSecond": "Durch den Einsatz modernster Technologien unterstützte CyberSolutions seine Kunden bei der Bewältigung komplexer digitaler Herausforderungen und gewährleistete Datenintegrität und Datenschutz. Ihr Engagement für Innovation, gepaart mit einem Team aus qualifizierten Fachleuten, verschaffte ihnen weltweite Anerkennung.",
     "steps": {
       "createaccount": "Erstellen Sie Ihr Konto und melden Sie sich an",
@@ -156,14 +156,11 @@
   },
   "paidPlan": {
     "titleFree": "Kostenlos",
-    "priceFree": "Testversion 6 Monate",
-    "subTitleFree": "Unbegrenzte Benutzer",
-    "titleBasic": "Basic",
-    "subTitleBasic": "50 Benutzer",
-    "titleStandart": "Standart",
-    "subTitleStandart": "100 Benutzer",
-    "titleProfessional": "Prof",
-    "subTitleProfessional": "Unbegrenzte Benutze",
+    "subTitleFree": "Bis zu 5 Benutzer",
+    "titleStandart": "Standard",
+    "subTitleStandart": "Bis zu 50 Benutzer",
+    "titleProfessional": "Professional",
+    "subTitleProfessional": "Unbegrenzte Benutzer",
     "features": {
       "chat": "Chat",
       "calls": "HD-Videoanrufe",
@@ -175,7 +172,8 @@
     "choosePlan": "Wählen Sie Ihren Plan",
     "month": "Monat",
     "year": "Jahr",
-    "button": "Plan auswählen"
+    "button": "Plan auswählen",
+    "fullAccess": "Voller Zugriff"
   },
   "revolutionalySalotions": {
     "title": "Wir bieten eine revolutionäre Lösung für Ihr Unternehmen",
@@ -190,7 +188,7 @@
     "support": "Support / FAQ",
     "features": "Features",
     "referral": "Empfehlungsprogramm",
-    "contacts": "Kontakte"
+    "contacts": "Kontakt"
   },
   "contacts": {
     "title": "Kontakte",
@@ -590,17 +588,18 @@
     "intHelp_telegram": "Erstellen Sie in Telegram mit @BotFather einen Bot und fügen Sie dessen Token ein. Nachrichten an den Bot erscheinen unter Chat and Calls.",
     "intHelp_viber": "Erstellen Sie unter partners.viber.com einen Bot-Account und fügen Sie dessen Authentifizierungs-Token ein. Der Webhook wird automatisch registriert.",
     "intHelp_messenger": "Erstellen Sie in Meta for Developers eine App mit dem Produkt Messenger, fügen Sie Page Access Token und App Secret ein und tragen Sie danach Callback-URL und Verify-Token (nach dem Verbinden sichtbar) in den Webhook-Einstellungen der App ein. Abonnieren Sie «messages».",
-    "intHelp_webchat": "Eine Chat-Blase für Ihre Website. Besucher schreiben von der Seite, Sie antworten unter Chat and Calls."
+    "intHelp_webchat": "Eine Chat-Blase für Ihre Website. Besucher schreiben von der Seite, Sie antworten unter Chat and Calls.",
+    "intPollingInfo": "Lokaler Modus: Neue Nachrichten werden abgerufen, solange Chat and Calls geöffnet ist. Unter einer öffentlichen https-Adresse wechselt die Seite zu Webhooks.",
+    "intErrNeedHttps": "Webhooks benötigen eine öffentliche https-Adresse. Setzen Sie APP_URL (oder öffnen Sie die Seite über die öffentliche Domain) und drücken Sie dann «Webhook registrieren»."
   },
   "upgrade": {
     "free": "Kostenlos",
-    "basic": "Basic",
     "standard": "Standard",
     "professional": "Professional",
     "freePrice": "Gratis",
     "perMonth": "Mon.",
-    "unlimitedUsers": "Unbegrenzte Nutzer",
-    "users": "{count} Nutzer",
+    "unlimitedUsers": "Unbegrenzte Benutzer",
+    "users": "Bis zu {count} Benutzer",
     "chat": "Chat",
     "hdCalls": "HD-Videoanrufe",
     "calendar": "Kalender",
@@ -610,7 +609,8 @@
     "tryFree": "Kostenlos testen",
     "buy": "Kaufen",
     "soonText": "Die Online-Zahlung ist noch nicht verbunden. Planwechsel sind bald verfügbar.",
-    "ok": "OK"
+    "ok": "OK",
+    "fullAccess": "Voller Zugriff"
   },
   "collab": {
     "active": "Aktiv",
@@ -772,10 +772,22 @@
     "mailHelp_outlook": "Mit Microsoft anmelden oder ein App-Passwort eingeben, sofern Ihr Konto das erlaubt.",
     "mailHelp_office365": "Mit Microsoft anmelden oder ein App-Passwort eingeben, sofern Ihre Organisation das erlaubt.",
     "mailHelp_yahoo": "Erstellen Sie in den Yahoo-Kontosicherheitseinstellungen ein App-Passwort und geben Sie es hier ein.",
-    "mailHelp_icloud": "Erstellen Sie auf appleid.apple.com ein app-spezifisches Passwort und geben Sie es hier ein.",
+    "mailHelp_icloud": "Verwenden Sie Ihre @icloud.com-Adresse und ein auf appleid.apple.com erstelltes app-spezifisches Passwort (das Apple-ID-Passwort funktioniert nicht).",
     "mailHelp_imap": "Geben Sie E-Mail, Passwort sowie IMAP- und SMTP-Server Ihres Anbieters ein (meist Port 993 für IMAP und 465 oder 587 für SMTP).",
     "phoneAuthError": "Twilio hat die Verbindung abgelehnt. Prüfen Sie die Twilio-Schlüssel unter Settings → Integration.",
-    "phoneMicError": "Erlauben Sie im Browser den Zugriff auf das Mikrofon, um Anrufe zu führen."
+    "phoneMicError": "Erlauben Sie im Browser den Zugriff auf das Mikrofon, um Anrufe zu führen.",
+    "chatsWaitingHint": "Ihre Kanäle sind verbunden. Sobald jemand schreibt, erscheint das Gespräch hier.",
+    "goIntegrationFix": "Integrationseinstellungen öffnen",
+    "chStatusOn": "Verbunden",
+    "chStatusWarn": "Achtung erforderlich",
+    "chPollingInfo": "Lokaler Modus: Neue Nachrichten werden abgerufen, solange diese Seite geöffnet ist. Unter einer öffentlichen https-Adresse wechselt die Seite zu Webhooks.",
+    "hint_telegram": "Schreiben Sie {name} in Telegram eine Nachricht – das Gespräch erscheint hier.",
+    "hint_viber": "Senden Sie Ihrem Viber-Bot ({name}) eine Nachricht – das Gespräch erscheint hier.",
+    "hint_messenger": "Senden Sie Ihrer Facebook-Seite {name} eine Nachricht im Messenger – das Gespräch erscheint hier.",
+    "hint_twilio": "Senden Sie eine SMS an {name} oder rufen Sie die Nummer an – das Gespräch erscheint hier.",
+    "hint_webchat": "Fügen Sie den Code aus Settings → Integration → Online Chat in Ihre Website ein und senden Sie eine Testnachricht über die Chat-Blase.",
+    "mailCreateAppPassword": "App-Passwort erstellen",
+    "chErrNeedHttps": "Webhooks benötigen eine öffentliche https-Adresse. Setzen Sie APP_URL (oder öffnen Sie die Seite über die öffentliche Domain) und drücken Sie dann «Webhook registrieren»."
   },
   "inventory": {
     "tab_inventory": "Inventur",

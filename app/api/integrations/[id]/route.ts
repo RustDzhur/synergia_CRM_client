@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { toIntegrationDTO } from "@/lib/integrations";
-import { reRegisterWebhook, removeIntegration, webchatConfig } from "@/lib/channels/connect";
+import { checkIntegration, reRegisterWebhook, removeIntegration, webchatConfig } from "@/lib/channels/connect";
 import Integration from "@/models/Integration";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +23,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         const origin = appOrigin(req);
         if (body.action === "webhook") {
             await reRegisterWebhook(doc, origin);
+        } else if (body.action === "check") {
+            await checkIntegration(doc, origin);
         } else if (doc.type === "webchat") {
             doc.config = webchatConfig(body);
             await doc.save();

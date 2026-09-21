@@ -8,7 +8,7 @@ import Integration from "@/models/Integration";
 import Message from "@/models/Message";
 import { getPage } from "./messenger";
 import { connectTwilio, normalizePhone } from "./twilio";
-import { deleteWebhook, getMe, setWebhook } from "./telegram";
+import { deleteWebhook, getMe, getWebhookInfo, setWebhook } from "./telegram";
 import { getAccount, removeViberWebhook, setViberWebhook } from "./viber";
 
 type Doc = HydratedDocument<any>;
@@ -25,6 +25,17 @@ export interface ConnectResult { doc: Doc; warning?: string }
 // сохраняется, а вместо ошибки возвращается предупреждение (адрес можно перерегистрировать позже).
 async function registerWebhook(doc: Doc, origin: string) {
     const url = `${origin}${webhookPath(doc.type, doc.token)}`;
+    // Telegram без публичного адреса работает в режиме опроса (см. telegramPoll.ts): вебхук не нужен
+    if (doc.type === "telegram" && !isPublicHttps(origin)) {
+        try { await deleteWebhook(secretsOf(doc).botToken); } catch { /* вебхука и не было */ }
+        doc.set("config.polling", "1");
+        doc.markModified("config");
+        return undefined;
+    }
+    if (doc.type === "telegram") {
+        doc.set("config.polling", "");
+        doc.markModified("config");
+    }
     if (!isPublicHttps(origin)) return "Webhooks need a public https address. Set APP_URL or deploy the site, then press «Register webhook».";
     try {
         if (doc.type === "telegram") await setWebhook(secretsOf(doc).botToken, url, secretsOf(doc).webhookSecret);
@@ -94,8 +105,8 @@ export async function connectIntegration(owner: string, type: string, input: Inp
     if (warning) {
         doc.status = "error";
         doc.error = warning;
-        await doc.save();
     }
+    await doc.save(); // registerWebhook мог изменить config (режим опроса Telegram)
     return { doc, warning };
 }
 
@@ -106,6 +117,24 @@ export function webchatConfig(input: Input) {
         greeting: str(input.greeting, 200) || "Hello! How can we help?",
         color: /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#5EA8F5",
     };
+}
+
+// Проверка канала: у Telegram спрашиваем, дошёл ли до нас вебхук и почему нет (например, сайт закрыт паролем Vercel)
+export async function checkIntegration(doc: Doc, origin: string) {
+    if (doc.type !== "telegram" || doc.config.polling === "1") return;
+    let message = "";
+    try {
+        const info = await getWebhookInfo(secretsOf(doc).botToken);
+        const expected = `${origin}${webhookPath("telegram", doc.token)}`;
+        if (!info.url) message = "Telegram has no webhook for this bot. Press «Register webhook».";
+        else if (info.url !== expected) message = `The webhook points to another address (${new URL(info.url).host}). Press «Register webhook».`;
+        else if (info.last_error_message) message = `Telegram cannot deliver messages to the site: ${info.last_error_message}`;
+    } catch (e) {
+        message = e instanceof ProviderError ? e.message : "Could not check the webhook";
+    }
+    doc.status = message ? "error" : "connected";
+    doc.error = message;
+    await doc.save();
 }
 
 export async function reRegisterWebhook(doc: Doc, origin: string) {

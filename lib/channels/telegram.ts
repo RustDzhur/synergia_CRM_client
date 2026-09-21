@@ -21,6 +21,18 @@ export const setWebhook = (botToken: string, url: string, secret: string) =>
 
 export const deleteWebhook = (botToken: string) => call<boolean>(botToken, "deleteWebhook");
 
+export const getWebhookInfo = (botToken: string) =>
+    call<{ url: string; pending_update_count: number; last_error_message?: string }>(botToken, "getWebhookInfo");
+
+// Режим без вебхука (сайт на localhost или без публичного https): CRM сама забирает новые сообщения бота
+export const getUpdates = (botToken: string, offset: number) =>
+    call<{ update_id: number; message?: Parameters<typeof parseTelegramUpdate>[0]["message"] }[]>(botToken, "getUpdates", {
+        offset,
+        limit: 50,
+        timeout: 0,
+        allowed_updates: ["message"],
+    });
+
 export async function sendTelegram(botToken: string, chatId: string, text: string) {
     const msg = await call<{ message_id: number }>(botToken, "sendMessage", { chat_id: chatId, text });
     return String(msg.message_id);

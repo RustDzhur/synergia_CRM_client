@@ -56,8 +56,8 @@ export const AUTOMATION: SectionConfig = {
 			rec("va-2", { name: "deal_amount", value: "0", type: "number", description: "Deal amount" }),
 		],
 		constants: [
-			rec("co-1", { name: "COMPANY_NAME", value: "Synergia", description: "Shown in e-mail signatures" }),
-			rec("co-2", { name: "SUPPORT_EMAIL", value: "support@synergia.example", description: "Support address" }),
+			rec("co-1", { name: "COMPANY_NAME", value: "Firmspace", description: "Shown in e-mail signatures" }),
+			rec("co-2", { name: "SUPPORT_EMAIL", value: "support@firmspace.example", description: "Support address" }),
 		],
 		logs: [
 			rec("lo-1", { name: "Notify the manager", date: "2023-06-21", status: "success", message: "Message delivered" }),

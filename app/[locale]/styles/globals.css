@@ -47,3 +47,62 @@ body {
 		scroll-behavior: auto !important;
 	}
 }
+
+/* ---------- Слайдеры лендинга (по макету) ---------- */
+/* Discover: четыре пустых кружка, активный залит тёмным */
+.discover-slider .slick-dots.discover-dots {
+	position: static;
+	display: flex !important;
+	justify-content: center;
+	gap: 8px;
+	margin-top: 47px;
+	padding: 0;
+	width: 100%;
+	bottom: auto;
+}
+.discover-slider .discover-dots li {
+	margin: 0;
+	width: 12px;
+	height: 12px;
+}
+.discover-slider .discover-dots li span {
+	display: block;
+	box-sizing: border-box;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	border: 2px solid #b3b3b3;
+	background: transparent;
+	transition: background-color 0.3s, border-color 0.3s;
+}
+.discover-slider .discover-dots li.slick-active span {
+	background: #313d45;
+	border-color: #313d45;
+}
+.discover-slider .discover-dots li button {
+	display: none;
+}
+.discover-slider .slick-slider {
+	margin-bottom: 0;
+}
+
+/* Testimonials: розовая активная точка и серые пустые */
+.testimonials-slider .swiper {
+	padding-bottom: 48px;
+}
+.testimonials-slider .swiper-pagination {
+	bottom: 0;
+}
+.testimonials-slider .swiper-pagination-bullet {
+	width: 14px;
+	height: 14px;
+	box-sizing: border-box;
+	margin: 0 4px !important;
+	background: transparent;
+	border: 2px solid #cccccc;
+	opacity: 1;
+}
+.testimonials-slider .swiper-pagination-bullet-active {
+	background: #ff008a;
+	border-color: #ff008a;
+}

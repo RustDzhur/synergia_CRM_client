@@ -1,4 +1,5 @@
 "use client";
+import { withLocale } from "@/app/utils/locale";
 import React from "react";
 import NavLink from "./NavLink";
 import SwitchLanguage from "./SwitchLanguage";
@@ -11,35 +12,27 @@ export default function Links() {
 
 	const commonLinks = [
 		{
-			path: selectedLanguage.code === "ua" ? "/" : `/${selectedLanguage.code}`,
+			path: withLocale(selectedLanguage.code, "/"),
 			label: t("home"),
 		},
 		{
 			path:
-				selectedLanguage.code === "ua"
-					? "/about"
-					: `/${selectedLanguage.code}/about`,
+				withLocale(selectedLanguage.code, "/about"),
 			label: t("about_us"),
 		},
 		{
 			path:
-				selectedLanguage.code === "ua"
-					? "/services"
-					: `/${selectedLanguage.code}/services`,
+				withLocale(selectedLanguage.code, "/services"),
 			label: t("our_services"),
 		},
 		{
 			path:
-				selectedLanguage.code === "ua"
-					? "/blog"
-					: `/${selectedLanguage.code}/blog`,
+				withLocale(selectedLanguage.code, "/blog"),
 			label: t("blog"),
 		},
 		{
 			path:
-				selectedLanguage.code === "ua"
-					? "/contacts"
-					: `/${selectedLanguage.code}/contacts`,
+				withLocale(selectedLanguage.code, "/contacts"),
 			label: t("contact"),
 		},
 	];
@@ -47,7 +40,7 @@ export default function Links() {
 	return (
 		<ul className="flex items-center">
 			{commonLinks.map((link) => (
-				<li className="lg:mr-40 font-medium lg:text-18" key={link.path}>
+				<li className="lg:mr-40 font-medium lg:text-18 lg:tracking-[0.4px]" key={link.path}>
 					<NavLink href={link.path}>{link.label}</NavLink>
 				</li>
 			))}

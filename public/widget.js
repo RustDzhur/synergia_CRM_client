@@ -1,11 +1,11 @@
-/*! Synergia CRM — онлайн-чат для сайта.
+/*! Firmspace CRM — онлайн-чат для сайта.
  *  Подключение: <script src="https://ВАШ-САЙТ/widget.js" data-token="ТОКЕН" async></script>
  *  Токен и готовый код — в CRM: Settings → Integration → Online Chat. */
 (function () {
   var script = document.currentScript;
   if (!script || window.__synergiaChat) return;
   var token = script.getAttribute("data-token");
-  if (!token) return console.warn("[Synergia chat] data-token is missing");
+  if (!token) return console.warn("[Firmspace chat] data-token is missing");
   window.__synergiaChat = true;
 
   var api = new URL(script.src).origin + "/api/webchat/" + encodeURIComponent(token);

@@ -1,13 +1,14 @@
 "use client";
+import { withLocale } from "@/app/utils/locale";
 import React from "react";
-import { useToggleMenuState } from "@/app/store/useToggleMenuState";
+import { useSiteMenuState } from "@/app/store/useSiteMenuState";
 import { IconContext } from "react-icons";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { useTranslations } from "next-intl";
 import NavLink from "./NavLinkStyle";
 
 export default function ModalMobNav() {
-	const { menu, toggleMenu } = useToggleMenuState();
+	const { menu, toggleMenu } = useSiteMenuState();
 	const { selectedLanguage } = useLanguageStore();
 
 	const t = useTranslations("navWebsite");
@@ -18,35 +19,27 @@ export default function ModalMobNav() {
 
 	const commonLinks = [
 		{
-			path: selectedLanguage.code === "ua" ? "/" : `/${selectedLanguage.code}`,
+			path: withLocale(selectedLanguage.code, "/"),
 			label: t("home"),
 		},
 		{
 			path:
-				selectedLanguage.code === "ua"
-					? "/about"
-					: `/${selectedLanguage.code}/about`,
+				withLocale(selectedLanguage.code, "/about"),
 			label: t("about_us"),
 		},
 		{
 			path:
-				selectedLanguage.code === "ua"
-					? "/services"
-					: `/${selectedLanguage.code}/services`,
+				withLocale(selectedLanguage.code, "/services"),
 			label: t("our_services"),
 		},
 		{
 			path:
-				selectedLanguage.code === "ua"
-					? "/blog"
-					: `/${selectedLanguage.code}/blog`,
+				withLocale(selectedLanguage.code, "/blog"),
 			label: t("blog"),
 		},
 		{
 			path:
-				selectedLanguage.code === "ua"
-					? "/contacts"
-					: `/${selectedLanguage.code}/contacts`,
+				withLocale(selectedLanguage.code, "/contacts"),
 			label: t("contact"),
 		},
 	];

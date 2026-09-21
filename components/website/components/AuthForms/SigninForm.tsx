@@ -13,7 +13,7 @@ import {
 } from "react-hook-form";
 import { useTranslations, useLocale } from "next-intl";
 import useAuthStore from "@/app/store/useAuthStore";
-import { useToggleMenuState } from "@/app/store/useToggleMenuState";
+import { useSiteMenuState } from "@/app/store/useSiteMenuState";
 import { useRouter } from "next/navigation";
 import Loader from "@/app/utils/Loader";
 
@@ -33,7 +33,7 @@ export default function SignInForm() {
 		toggleSignInForm,
 		toggleSignUpForm,
 	} = useAuthFormStore();
-	const { menu, toggleMenu } = useToggleMenuState();
+	const { menu, toggleMenu } = useSiteMenuState();
 
 	const t = useTranslations("authForms");
 

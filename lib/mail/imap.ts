@@ -15,14 +15,20 @@ export interface ImapSmtpConfig {
     smtpPort: number;
 }
 
-// Понятное сообщение вместо технической ошибки библиотеки
-export function mailError(e: unknown): ProviderError {
+// Понятное сообщение вместо технической ошибки библиотеки. Ответ самого сервера (например, у Gmail
+// «Application-specific password required») добавляем в конец: по нему видно, что именно отклонено.
+export function mailError(e: unknown, stage?: "IMAP" | "SMTP"): ProviderError {
     if (e instanceof ProviderError) return e;
     const err = e as { authenticationFailed?: boolean; responseText?: string; code?: string; message?: string; response?: string };
-    if (err.authenticationFailed || err.code === "EAUTH") return new ProviderError("Invalid email or password. Gmail, iCloud and Yahoo need an app password, not the account password.");
+    const server = (err.responseText || err.response || "").replace(/\s+/g, " ").trim().slice(0, 200);
+    const detail = server ? ` Server said: ${server}` : "";
+    if (err.authenticationFailed || err.code === "EAUTH") {
+        const where = stage ? ` (${stage} login was rejected)` : "";
+        return new ProviderError(`Invalid email or password${where}. Gmail, iCloud and Yahoo need an app password, not the account password.${detail}`);
+    }
     if (err.code === "ENOTFOUND" || err.code === "EDNS") return new ProviderError("Mail server was not found. Check the server address.");
     if (err.code === "ECONNREFUSED" || err.code === "ETIMEDOUT" || err.code === "ESOCKET" || err.code === "ECONNECTION") return new ProviderError("Could not connect to the mail server. Check the address and port.");
-    return new ProviderError(err.responseText || err.response || err.message || "Mail server error");
+    return new ProviderError(server || err.message || "Mail server error");
 }
 
 function client(c: ImapSmtpConfig) {
@@ -61,12 +67,12 @@ export async function verifyImapSmtp(c: ImapSmtpConfig) {
         await imap.logout();
     } catch (e) {
         imap.close();
-        throw mailError(e);
+        throw mailError(e, "IMAP");
     }
     try {
         await smtp(c).verify();
     } catch (e) {
-        throw mailError(e);
+        throw mailError(e, "SMTP");
     }
 }
 
@@ -85,7 +91,7 @@ export async function sendSmtp(c: ImapSmtpConfig, msg: { to: string; subject: st
     try {
         await smtp(c).sendMail({ from: c.email, to: msg.to, subject: msg.subject, text: msg.text, messageId });
     } catch (e) {
-        throw mailError(e);
+        throw mailError(e, "SMTP");
     }
     return messageId; // по нему письмо из папки Sent при синхронизации опознаётся как уже сохранённое
 }
@@ -135,7 +141,7 @@ export async function fetchImap(c: ImapSmtpConfig, limit = 40): Promise<Fetched[
         await imap.logout();
     } catch (e) {
         imap.close();
-        throw mailError(e);
+        throw mailError(e, "IMAP");
     }
     return out;
 }

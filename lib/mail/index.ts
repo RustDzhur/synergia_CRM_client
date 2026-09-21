@@ -125,7 +125,8 @@ export async function connectPasswordAccount(owner: string, input: Record<string
     const provider = str(input.provider, 20) as MailProviderId;
     if (!MAIL_PROVIDERS.includes(provider)) throw new ProviderError("Unknown mail provider");
     const email = str(input.email).toLowerCase();
-    const password = str(input.password);
+    // пароли приложений не содержат пробелов, а Google показывает их группами «abcd efgh ijkl mnop» — пробелы убираем
+    const password = provider === "imap" ? str(input.password) : str(input.password).replace(/\s+/g, "");
     if (!/^\S+@\S+\.\S+$/.test(email)) throw new ProviderError("Enter a valid email address");
     if (!password) throw new ProviderError("Password is required");
 

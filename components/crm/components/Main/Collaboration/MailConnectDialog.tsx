@@ -14,6 +14,13 @@ interface Props {
 	onConnected: (account: MailAccountDTO) => void;
 }
 
+// Где пользователь создаёт пароль приложения
+const APP_PASSWORD_URL: Partial<Record<MailProviderId, string>> = {
+	gmail: "https://myaccount.google.com/apppasswords",
+	yahoo: "https://login.yahoo.com/account/security",
+	icloud: "https://appleid.apple.com/account/manage",
+};
+
 const LABEL: Record<MailProviderId, string> = { gmail: "Google Mail", outlook: "Outlook", yahoo: "Yahoo", icloud: "iCloud", office365: "Office 365", imap: "IMAP" };
 
 // Окно подключения почтового ящика. Gmail и Outlook/Office 365 — по кнопке «Войти через …» (если на сервере заданы ключи OAuth)
@@ -71,6 +78,11 @@ export default function MailConnectDialog({ provider, oauth, onClose, onConnecte
 				</div>
 				<div className="flex flex-col gap-16 p-20 md:p-24">
 					<p className="text-14 text-[#666666]">{t(`mailHelp_${shown}`)}</p>
+					{APP_PASSWORD_URL[shown] && (
+						<a href={APP_PASSWORD_URL[shown]} target="_blank" rel="noopener noreferrer" className="-mt-8 text-14 text-primaryColor underline transition-opacity hover:opacity-80">
+							{t("mailCreateAppPassword")}
+						</a>
+					)}
 
 					{canOAuth && (
 						<>

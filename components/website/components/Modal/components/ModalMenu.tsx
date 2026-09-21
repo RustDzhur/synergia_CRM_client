@@ -1,5 +1,5 @@
 "use client";
-import { useToggleMenuState } from "@/app/store/useToggleMenuState";
+import { useSiteMenuState } from "@/app/store/useSiteMenuState";
 import React, { useRef } from "react";
 import ModalNav from "./ModalNav";
 import SwitchLanguage from "./SwitchLanguages";
@@ -13,7 +13,7 @@ import { SigninForm, SignupForm } from "../../AuthForms";
 import { usePresence } from "@/app/utils/usePresence";
 
 export default function ModalMenu() {
-	const { menu, toggleMenu } = useToggleMenuState();
+	const { menu, toggleMenu } = useSiteMenuState();
 	const modalRef = useRef<HTMLDivElement | null>(null);
 	const {
 		isSignInFormOpen,

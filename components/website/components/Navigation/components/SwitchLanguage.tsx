@@ -58,10 +58,14 @@ export default function SwitchLanguage() {
 					height={selectedLanguageProperties.height}
 					className="w-40 rounded-4"
 				/>
+				{/* подпись языка есть только на десктопе (Figma: флаг · English · шеврон) */}
+				<span className="hidden lg:block ml-10 text-18 font-medium tracking-[0.4px] text-[#E6E6E6]">
+					{t(`lang.${selectedLanguage.code}`)}
+				</span>
 				<RiArrowDownSLine
-					size={18}
-					color="#999999"
-					className={`transition-transform duration-200 ${isOpenDropDown ? "rotate-180" : ""}`}
+					size={24}
+					color="#E6E6E6"
+					className={`transition-transform duration-200 lg:ml-6 ${isOpenDropDown ? "rotate-180" : ""}`}
 				/>
 			</button>
 
