@@ -25,10 +25,10 @@ export default function Footer({ slanted = false }: { slanted?: boolean }) {
 	return (
 		<div className={`sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto bg-footer ${slanted ? "lg:[clip-path:polygon(0_105px,100%_0,100%_100%,0_100%)]" : ""}`}>
 			<div className={`sm:px-12 sm:py-50 md:px-20 md:py-40 lg:px-100 ${slanted ? "lg:pt-[187px]" : "lg:pt-[82px]"} lg:pb-[73px]`}>
-				<div className="flex justify-center mb-40 md:mb-0 md:hidden">
+				<div className="flex justify-start mb-40 md:mb-0 md:hidden">
 					<Logo light />
 				</div>
-				<div className="flex justify-between sm:mb-30 md:mb-40 lg:mb-0 lg:grid lg:grid-cols-[283px_281px_293px_1fr_auto]">
+				<div className="flex justify-between sm:mb-[39px] md:mb-[48px] lg:mb-0 lg:grid lg:grid-cols-[283px_281px_293px_1fr_auto]">
 					<div className="sm:hidden md:block lg:-translate-y-[4px]">
 						<Logo light />
 					</div>
@@ -157,7 +157,7 @@ export default function Footer({ slanted = false }: { slanted?: boolean }) {
 
 				<div className="lg:hidden">
 					<IconContext.Provider value={{ size: "17px", color: "#fff" }}>
-						<ul className="flex items-center justify-center md:justify-end">
+						<ul className="flex items-center justify-start md:justify-end">
 							{socialIcons.map((social, index) => (
 								<li
 									key={index}

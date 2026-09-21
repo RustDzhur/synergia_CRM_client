@@ -42,7 +42,7 @@ export default function WhatIsCrm() {
 				<h2 className="sm:text-24 sm:mb-20 lg:mb-[41px] lg:text-36 font-medium leading-[1.4] sm:tracking-[0.48px] lg:tracking-[1px]">
 					{t('whatIsCrm')}
 				</h2>
-				<div className="sm:text-16 lg:text-18 leading-[1.7] lg:leading-[31px] tracking-[0.4px] sm:mb-40 md:mb-[27px] lg:mb-[31px]">
+				<div className="sm:text-16 lg:text-18 leading-[1.7] lg:leading-[31px] tracking-[0.4px] sm:mb-[27px] lg:mb-[31px]">
 					{clickedStep === 10 &&
 						t("defaultTextFirst")}
 					{stepContentFirst.map(

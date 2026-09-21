@@ -60,6 +60,13 @@ body {
 	width: 100%;
 	bottom: auto;
 }
+/* телефон: точки лежат поверх нижнего края картинки (макет), планшет: под картинкой */
+@media (max-width: 767px) {
+	.discover-slider .slick-dots.discover-dots { margin-top: -32px; position: relative; z-index: 2; }
+}
+@media (min-width: 768px) and (max-width: 1439px) {
+	.discover-slider .slick-dots.discover-dots { margin-top: 64px; }
+}
 .discover-slider .discover-dots li {
 	margin: 0;
 	width: 12px;

@@ -33,7 +33,7 @@ export default function PaidPlan() {
 
 	const tab = (label: string) => (
 		<div
-			className={`w-[150px] h-[55px] text-center flex items-center justify-center rounded-50 cursor-pointer transition-colors duration-300 ${
+			className={`sm:flex-1 md:flex-none md:w-[150px] h-[55px] text-center flex items-center justify-center rounded-50 cursor-pointer transition-colors duration-300 ${
 				active === label ? "bg-tabChoosePlan text-white" : "bg-white text-[#CCCCCC]"
 			} font-medium text-20 tracking-[0.4px]`}
 			onClick={() => setActive(label)}>
@@ -43,11 +43,11 @@ export default function PaidPlan() {
 
 	return (
 		<div>
-			<h2 className="text-24 lg:text-36 font-medium text-center sm:mb-20 lg:mb-[59px] text-textChoosePlan leading-[1.4] tracking-[0.48px] lg:tracking-[1px]">
+			<h2 className="text-24 lg:text-36 font-medium text-center sm:mb-[29px] md:mb-30 lg:mb-[59px] text-textChoosePlan leading-[1.4] tracking-[0.48px] lg:tracking-[1px]">
 				{t("choosePlan")}
 			</h2>
-			<div className="flex justify-center mb-[39px]">
-				<div className="shadow-choosePlan rounded-50 inline-flex items-center justify-center">
+			<div className="flex justify-center md:mb-[32px] lg:mb-[39px] sm:mb-[32px]">
+				<div className="shadow-choosePlan rounded-50 flex w-full md:w-auto items-center justify-center">
 					{tab(t("month"))}
 					{tab(t("year"))}
 				</div>

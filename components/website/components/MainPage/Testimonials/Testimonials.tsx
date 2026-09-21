@@ -33,7 +33,7 @@ export default function Testimonials() {
 	const arrow = "hidden lg:flex absolute top-[200px] z-10 h-[60px] w-[60px] -translate-y-1/2 items-center justify-center rounded-[50%] border-[3px] bg-white transition-colors duration-200 disabled:cursor-default";
 	return (
 		<div>
-			<h2 className="text-24 lg:text-36 font-medium text-testimonials text-center tracking-[0.48px] lg:tracking-[1px] mb-30 lg:mb-[45px]">
+			<h2 className="text-24 lg:text-36 font-medium text-testimonials text-center tracking-[0.48px] lg:tracking-[1px] sm:mb-[26px] lg:mb-[45px]">
 				Testimonials
 			</h2>
 			<div className="relative testimonials-slider">
@@ -81,7 +81,7 @@ export default function Testimonials() {
 					<SwiperSlide key={index}>
 						<div
 							key={index}
-							className="px-[18px] pt-[36px] pb-30 border-[3px] border-authBtn rounded-[30px] h-400 overflow-y-scroll scrollbar-hidden shadow-[0_4px_10px_rgba(255,0,138,0.18)]">
+							className="px-[18px] pt-[36px] pb-30 border-[3px] border-authBtn rounded-[30px] sm:h-[412px] md:h-400 overflow-y-scroll scrollbar-hidden shadow-[0_4px_10px_rgba(255,0,138,0.18)]">
 							<IconContext.Provider value={{ size: "52px", color: "#FF008A" }}>
 								<div className="flex justify-start mb-[20px] ml-[3px]">
 									<BiSolidQuoteLeft />

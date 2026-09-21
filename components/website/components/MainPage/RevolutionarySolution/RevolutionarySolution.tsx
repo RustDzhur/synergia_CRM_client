@@ -26,7 +26,7 @@ export default function RevolutionarySolution() {
 					{t("title")}
 				</p>
 				<Link
-					className="bg-contactUs px-30 lg:px-[31px] py-15 lg:h-[54px] lg:flex lg:items-center lg:py-0 rounded-4 cursor-pointer text-18 font-medium lg:tracking-[0.4px] text-white shadow-custom"
+					className="bg-contactUs px-30 lg:px-[31px] py-[14px] md:h-[54px] md:flex md:items-center md:py-0 rounded-4 cursor-pointer text-18 font-medium lg:tracking-[0.4px] text-white shadow-custom"
 					href={
 						withLocale(selectedLanguage.code, "/contacts")
 					}>

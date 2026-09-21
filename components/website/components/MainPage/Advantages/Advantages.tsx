@@ -24,13 +24,13 @@ export default function Advantages() {
 		{ icon: TbLockAccess, label: t('accesbility') },
 	];
 	return (
-		<div className="text-center md:grid md:grid-cols-3 sm:space-y-20 md:space-y-0 lg:gap-x-20">
+		<div className="text-center md:grid md:grid-cols-3 lg:gap-x-20">
 			{items.map((item, i) => (
 				<div
 					key={i}
 					onMouseEnter={() => setActive(i)}
 					onClick={() => setActive(i)}
-					className={`cursor-pointer rounded-16 text-white sm:text-20 lg:text-24 font-medium tracking-[0.5px] lg:tracking-[1px] transition-[background-color,box-shadow] duration-300 flex flex-col items-center justify-center sm:h-[160px] lg:h-[186px] ${
+					className={`cursor-pointer rounded-16 text-white sm:text-20 lg:text-24 font-medium tracking-[0.5px] lg:tracking-[1px] transition-[background-color,box-shadow] duration-300 flex flex-col items-center justify-center sm:h-[161px] md:h-[160px] lg:h-[186px] ${
 						active === i ? "bg-authBtn shadow-advantages" : ""
 					}`}>
 					<div className="text-[40px] lg:text-[50px] leading-none sm:mb-16 lg:mb-[27px] flex justify-center">

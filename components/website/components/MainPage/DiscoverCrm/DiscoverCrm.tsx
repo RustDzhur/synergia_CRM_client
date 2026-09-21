@@ -14,6 +14,7 @@ import { useTranslations } from "next-intl";
 const settings = {
 	dots: true,
 	dotsClass: "slick-dots discover-dots",
+	initialSlide: 1, // в макете активен второй слайд (Feed)
 	customPaging: () => <span />,
 	infinite: true,
 	speed: 500,
@@ -41,10 +42,10 @@ export default function DiscoverCrm() {
 			</h2>
 			<div className="lg:flex lg:justify-between">
 				<div className="lg:w-[495px]">
-					<p className="text-16 lg:text-18 leading-[27px] lg:leading-[31px] tracking-[0.4px] mb-[35px] lg:mb-[39px]">
+					<p className="text-18 md:text-16 lg:text-18 leading-[27px] lg:leading-[31px] tracking-[0.4px] mb-[22px] md:mb-[27px] lg:mb-[39px]">
 						{t("description")}
 					</p>
-					<div className="sm:mb-50 lg:mb-0">
+					<div className="sm:mb-[46px] md:mb-[68px] lg:mb-0">
 						{lists.map((item, index) => (
 							<div
 								key={index}
@@ -62,11 +63,11 @@ export default function DiscoverCrm() {
 					</div>
 				</div>
 
-				<div className="md:w-525 md:mx-auto lg:m-0 lg:pt-[27px] discover-slider">
+				<div className="sm:-mx-12 md:mx-auto md:w-525 lg:m-0 lg:pt-[27px] discover-slider">
 					<Slider {...settings}>
 						{gallery.map((item, index) => (
 							<div key={index}>
-								<Image src={item.original} alt={`Image ${index}`} />
+								<Image src={item.original} alt={`Image ${index}`} className="sm:h-[248px] sm:w-full sm:object-cover sm:object-top md:h-auto md:object-fill" />
 							</div>
 						))}
 					</Slider>

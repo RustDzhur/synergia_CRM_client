@@ -22,7 +22,7 @@ export default function MainPage() {
       <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto bg-advantages sm:px-12 sm:py-40 md:px-20 md:py-20 lg:px-100 lg:py-50">
         <Advantages/>
       </div>
-      <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto sm:px-12 sm:py-40 md:px-20 lg:px-100 lg:pt-[60px] lg:pb-[44px]">
+      <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto sm:px-12 sm:pt-40 sm:pb-[56px] md:pb-40 md:px-20 lg:px-100 lg:pt-[60px] lg:pb-[44px]">
         <WhatIsCrm/>
       </div>
       <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto">
@@ -31,13 +31,13 @@ export default function MainPage() {
       <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto sm:px-12 sm:py-40 md:px-20 lg:px-100 lg:pt-[120px] lg:pb-60">
         <DiscoverCrm/>
       </div>
-      <div className="lg:max-w-screen-lg m-auto sm:px-12 sm:py-40 md:px-20 lg:px-100 lg:pt-[48px] lg:pb-[80px]">
+      <div className="lg:max-w-screen-lg m-auto sm:px-12 sm:pt-[58px] sm:pb-[52px] md:px-20 md:pt-[32px] md:pb-[51px] lg:px-100 lg:pt-[48px] lg:pb-[80px]">
         <PaidPlan/>
       </div>
       <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto">
         <RevolutionarySolution/>
       </div>
-      <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto sm:px-12 sm:py-40 md:px-20 md:py-40 lg:px-100 lg:pt-[45px] lg:pb-[37px]">
+      <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto sm:px-12 sm:pt-[37px] sm:pb-[22px] md:px-20 md:pt-[27px] md:pb-[12px] lg:px-100 lg:pt-[45px] lg:pb-[37px]">
         <Testimonials/>
       </div>
 		</div>
