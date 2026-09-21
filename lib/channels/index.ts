@@ -36,12 +36,29 @@ export const toMessageDTO = (m: Doc): MessageDTO => ({
 
 const digits = (s?: string) => (s ?? "").replace(/\D/g, "");
 
+// Номера считаем одинаковыми, если совпали цифры целиком или последние 9 (так «0177 5519322» и «+49 177 5519322» — один номер)
+export const samePhone = (a?: string, b?: string) => {
+    const x = digits(a);
+    const y = digits(b);
+    if (!x || !y) return false;
+    return x === y || (x.length >= 9 && y.length >= 9 && x.slice(-9) === y.slice(-9));
+};
+
 // Если номер собеседника совпал с телефоном контакта из CRM — беседа подписывается именем контакта
 async function matchContact(owner: string, channel: string, externalId: string) {
-    if (channel !== "twilio") return null;
-    const d = digits(externalId);
+    if (channel !== "twilio" && channel !== "sip") return null;
     const contacts = await Contact.find({ owner, phone: { $exists: true, $ne: "" } }).select("name phone").lean();
-    return contacts.find((c: { phone?: string }) => digits(c.phone) === d) ?? null;
+    return contacts.find((c: { phone?: string }) => samePhone(c.phone, externalId)) ?? null;
+}
+
+const mmss = (sec: number) => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
+
+// Текст записи о звонке в ленте активности контакта
+export function callActivityText(direction: "in" | "out", status: string, duration: number) {
+    const dir = direction === "in" ? "Incoming call" : "Outgoing call";
+    if (status === "completed") return `${dir}, ${mmss(duration)}`;
+    if (direction === "in") return "Missed call";
+    return status === "busy" ? `${dir}, busy` : status === "failed" ? `${dir}, failed` : `${dir}, no answer`;
 }
 
 interface MessageInput {
@@ -78,6 +95,14 @@ export async function recordMessage(integration: Doc, input: MessageInput) {
         }
     }
     if (!conversation) throw new Error("Conversation was not created");
+    // звонок от номера, который добавили в контакты уже после первой беседы, тоже привязываем к контакту
+    if (input.kind === "call" && !conversation.contact) {
+        const contact = await matchContact(owner, channel, input.externalId);
+        if (contact) {
+            conversation.contact = contact._id;
+            conversation.name = contact.name || conversation.name;
+        }
+    }
 
     let message;
     try {
@@ -104,6 +129,13 @@ export async function recordMessage(integration: Doc, input: MessageInput) {
     // имя из Telegram/Viber могло смениться, а вот вручную выбранное имя контакта не трогаем
     if (direction === "in" && input.name && !conversation.contact) conversation.name = input.name;
     await conversation.save();
+    // каждый звонок фиксируется и в ленте активности контакта (карточка контакта → «Activity»)
+    if (input.kind === "call" && conversation.contact) {
+        await Contact.updateOne(
+            { _id: conversation.contact, owner },
+            { $push: { activities: { type: "call", text: callActivityText(direction, String(input.meta?.status ?? ""), Number(input.meta?.duration) || 0), meta: "" } } }
+        );
+    }
     return { conversation, message, duplicate: false };
 }
 
@@ -123,6 +155,8 @@ export async function sendToConversation(integration: Doc, conversation: Doc, te
         case "twilio":
             externalId = await sendSms(secretsOf<TwilioSecrets>(integration), integration.config.phone, conversation.externalId, text);
             break;
+        case "sip":
+            throw new ProviderError("SIP provider has calls only — text messages are not supported");
         case "webchat":
             break; // посетитель сам заберёт сообщение при следующем опросе
         default:

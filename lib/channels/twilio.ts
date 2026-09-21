@@ -45,7 +45,7 @@ export async function connectTwilio(accountSid: string, authToken: string, phone
         VoiceUrl: `${hookBase}/voice`,
         VoiceMethod: "POST",
     });
-    return { secrets: { accountSid, authToken, apiKeySid: key.sid, apiKeySecret: key.secret, appSid: app.sid }, phone: number.phone_number };
+    return { secrets: { accountSid, authToken, apiKeySid: key.sid, apiKeySecret: key.secret, appSid: app.sid }, phone: number.phone_number || phone };
 }
 
 // Понятное сообщение, когда номера нет среди купленных: показываем, какие номера в аккаунте есть, и отличаем «подтверждённый Caller ID»

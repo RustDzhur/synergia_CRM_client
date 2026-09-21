@@ -167,10 +167,16 @@ export default function Chat() {
 		setView("list");
 	}
 
-	function call() {
+	async function call() {
 		if (!active) return;
 		if (callState === "off") return void toast.error(t("phoneNotReady"));
 		if (callState !== "idle") return;
+		const phone = useCallStore.getState();
+		// беседа принадлежит другому провайдеру, чем выбран в звонилке (Twilio ↔ SIP) — звоним через её провайдера
+		if (phone.provider?.integrationId !== active.integrationId && phone.providers.some((p) => p.integrationId === active.integrationId)) {
+			await phone.selectProvider(active.integrationId);
+			if (useCallStore.getState().state !== "idle") return;
+		}
 		useCallStore.getState().startCall(active.externalId);
 	}
 
@@ -204,7 +210,7 @@ export default function Chat() {
 								<button type="button" onClick={() => setDrawer(true)} aria-label={t("conversations")} className={`${iconButton} hidden md:block lg:hidden`}>
 									<MdForum size={24} />
 								</button>
-								{active.channel === "twilio" && (
+								{(active.channel === "twilio" || active.channel === "sip") && (
 									<button type="button" onClick={call} aria-label={t("call")} className={iconButton}>
 										<MdCall size={24} />
 									</button>
@@ -249,6 +255,9 @@ export default function Chat() {
 							</div>
 						</div>
 
+						{active.channel === "sip" ? (
+							<footer className="flex h-[64px] items-center border-t border-[#E6E6E6] px-16 text-14 text-[#999999] md:px-30">{t("callsOnly")}</footer>
+						) : (
 						<footer className="flex items-center gap-12 border-t border-[#E6E6E6] px-16 md:px-30">
 							<input
 								value={text}
@@ -263,6 +272,7 @@ export default function Chat() {
 								<MdAttachFile size={24} />
 							</button>
 						</footer>
+						)}
 					</>
 				)}
 			</section>
