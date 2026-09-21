@@ -22,6 +22,22 @@ export async function api<T>(url: string, method = "GET", body?: unknown): Promi
     }
 }
 
+// То же, но с текстом ошибки сервера (для форм подключения, где пользователю нужно знать, что именно не так)
+export async function apiCall<T>(url: string, method = "GET", body?: unknown): Promise<{ ok: boolean; data: T | null; message: string }> {
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: authHeaders(),
+            body: body === undefined ? undefined : JSON.stringify(body),
+        });
+        const json = res.status === 204 ? null : await res.json().catch(() => null);
+        if (!res.ok) return { ok: false, data: null, message: json?.message ?? `Error ${res.status}` };
+        return { ok: true, data: json as T, message: "" };
+    } catch {
+        return { ok: false, data: null, message: "Network error" };
+    }
+}
+
 export type ActivityEntity = "deals" | "contacts" | "companies" | "tasks";
 export interface NewActivity {
     type: Exclude<ActivityType, "stage" | "created">;
