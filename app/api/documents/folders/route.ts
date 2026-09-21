@@ -12,7 +12,7 @@ const MAX_FOLDERS = 500;
 // POST /api/documents/folders — { name, parent? }: новая папка. В Google Drive одноимённая папка создаётся при первом документе в ней.
 export async function POST(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     const body = await req.json().catch(() => null);
     const name = cleanName(body?.name, 80);
     if (!name) return badRequest("Folder name is required");

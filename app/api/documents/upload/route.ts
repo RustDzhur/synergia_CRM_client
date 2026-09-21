@@ -17,7 +17,7 @@ const BLOCKED = /\.(exe|msi|bat|cmd|com|scr|vbs|ps1|sh|jar|dll|apk|app)$/i;
 // POST /api/documents/upload — multipart: file, folder? — загрузка файла или фото в Firebase Storage
 export async function POST(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     if (!storageConfigured()) return NextResponse.json({ message: "File storage is not configured yet" }, { status: 503 });
     const form = await req.formData().catch(() => null);
     const file = form?.get("file");
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         const used = await DocItem.aggregate([{ $match: { owner: new Types.ObjectId(user.id), kind: "file" } }, { $group: { _id: null, total: { $sum: "$size" } } }]);
         if ((used[0]?.total ?? 0) + file.size > QUOTA_BYTES) return NextResponse.json({ message: "Your file storage is full" }, { status: 413 });
 
-        const me = await User.findById(user.id).select("firstname lastname");
+        const me = await User.findById(user.userId).select("firstname lastname");
         const doc = await DocItem.create({
             owner: user.id,
             kind: "file",

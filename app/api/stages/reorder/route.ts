@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
+import { unauthorized } from "@/lib/api";
 import Stage from "@/models/Stage";
 
 // POST /api/stages/reorder  { ids: ["<id первой колонки>", "<id второй>", ...] }
 // Записывает order = позиция в массиве. Чужие и несуществующие id просто не обновятся.
 export async function POST(req: Request) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
 
     let ids: unknown;
     try {

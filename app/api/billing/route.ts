@@ -3,20 +3,21 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { stripeConfigured } from "@/lib/stripe";
-import User from "@/models/User";
+import { effectivePlan } from "@/lib/billing";
+import Organization from "@/models/Organization";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/billing — текущий тариф и подписка пользователя, и настроены ли платежи на сервере
 export async function GET(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     await connectDB();
-    const doc = await User.findById(user.id).select("plan billing");
+    const doc = await Organization.findById(user.id).select("plan planOverride planOverrideUntil billing");
     const b = doc?.billing;
     return NextResponse.json({
         configured: stripeConfigured(),
-        plan: doc?.plan ?? "free",
+        plan: doc ? effectivePlan(doc) : "free",
         status: b?.status ?? "",
         interval: b?.interval ?? "",
         currentPeriodEnd: b?.currentPeriodEnd ? b.currentPeriodEnd.toISOString() : "",

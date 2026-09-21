@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // GET /api/twilio/token — токен Voice SDK для звонков из браузера (живёт час). 204, если Twilio не подключён.
 export async function GET(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     try {
         await connectDB();
         const integration = await Integration.findOne({ owner: user.id, type: "twilio", status: "connected" });

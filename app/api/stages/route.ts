@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
+import { unauthorized } from "@/lib/api";
 import { ensureStages } from "@/lib/stages";
 import Stage from "@/models/Stage";
 
 // GET /api/stages — список стадий текущего пользователя (создаёт дефолтные, если их ещё нет)
 export async function GET(req: Request) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
 
     await connectDB();
     const stages = await ensureStages(user.id);
@@ -18,7 +19,7 @@ export async function GET(req: Request) {
 // POST /api/stages — добавить новую колонку (кнопка "+" в конце доски, если есть в макете)
 export async function POST(req: Request) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
 
     const { name } = await req.json();
     await connectDB();

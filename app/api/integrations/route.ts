@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 // GET /api/integrations — подключённые каналы текущего пользователя (без секретов)
 export async function GET(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     await connectDB();
     await healWebhooks(user.id, appOrigin(req)).catch(() => undefined);
     const list = await Integration.find({ owner: user.id, type: { $nin: ["mail", "gdrive"] } }).sort({ createdAt: 1 });
@@ -23,7 +23,7 @@ export async function GET(req: Request) {
 // POST /api/integrations — { type: "telegram" | "viber" | "messenger" | "twilio" | "webchat", ...реквизиты }
 export async function POST(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     const body = await req.json().catch(() => null);
     if (!body || typeof body.type !== "string") return badRequest("type is required");
     try {

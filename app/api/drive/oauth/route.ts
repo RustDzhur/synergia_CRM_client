@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // (доступ только к файлам, созданным самой CRM). Возврат — на общий /api/mail/oauth/callback, различаем по полю state.
 export async function POST(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     if (!oauthAvailable().google) return badRequest("Google sign-in is not configured on this site");
     const body = await req.json().catch(() => ({}));
     const locale = ["en", "de", "ua"].includes(body?.locale) ? body.locale : "en";

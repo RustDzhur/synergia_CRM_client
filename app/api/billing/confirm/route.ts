@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // (не верим адресу возврата), так тариф включается сразу, не дожидаясь вебхука.
 export async function POST(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     const body = await req.json().catch(() => null);
     const sessionId = typeof body?.sessionId === "string" ? body.sessionId : "";
     if (!/^cs_[A-Za-z0-9_]{8,200}$/.test(sessionId)) return badRequest("Invalid session");

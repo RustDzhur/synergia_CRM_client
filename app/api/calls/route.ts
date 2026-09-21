@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 // GET /api/calls — последние звонки по всем провайдерам (для списка «Недавние» в звонилке)
 export async function GET(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     await connectDB();
     const rows = await Message.find({ owner: user.id, kind: "call" })
         .sort({ createdAt: -1 })
@@ -44,7 +44,7 @@ const STATUSES = ["completed", "missed", "no-answer", "busy", "failed"];
 // { integrationId, callId, direction: "in"|"out", peer, status, duration }. Повтор с тем же callId игнорируется.
 export async function POST(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     const b = await req.json().catch(() => null);
     if (!b || typeof b !== "object") return badRequest("Invalid JSON");
 

@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // поэтому ему нужен пароль; он отдаётся только вошедшему владельцу и не кэшируется. 404 — SIP не подключён.
 export async function GET(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     await connectDB();
     const doc = await Integration.findOne({ owner: user.id, type: "sip", status: "connected" });
     if (!doc) return NextResponse.json({ message: "Not connected" }, { status: 404 });

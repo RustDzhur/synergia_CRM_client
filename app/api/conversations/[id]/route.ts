@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // GET /api/conversations/:id?read=1 — переписка (последние 200); read=1 сбрасывает счётчик непрочитанных
 export async function GET(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     await connectDB();
     const conversation = await Conversation.findOne({ _id: params.id, owner: user.id });
@@ -27,7 +27,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 // DELETE /api/conversations/:id — удалить беседу вместе с сообщениями
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     await connectDB();
     const conversation = await Conversation.findOneAndDelete({ _id: params.id, owner: user.id });

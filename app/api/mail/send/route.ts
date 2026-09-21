@@ -17,7 +17,7 @@ const ADDRESS = /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/;
 // draft: true — сохранить черновик (только в CRM), иначе отправить письмо через ящик
 export async function POST(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     const b = await req.json().catch(() => null);
     if (!b || typeof b.accountId !== "string" || !validId(b.accountId)) return badRequest("accountId is required");
     const to = typeof b.to === "string" ? b.to.trim() : "";

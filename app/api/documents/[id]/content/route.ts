@@ -13,7 +13,7 @@ const INLINE = new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "a
 // GET /api/documents/:id/content — содержимое загруженного файла из хранилища (только владельцу)
 export async function GET(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     try {
         await connectDB();

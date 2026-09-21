@@ -2,13 +2,14 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
+import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import { EMPLOYEE_FIELDS } from "@/lib/crmFields";
 import Employee from "@/models/Employee";
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
 
     await connectDB();
     const employee = await Employee.findOne({ _id: params.id, owner: user.id });
@@ -19,7 +20,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
 
     // только разрешённые поля (раньше в документ записывалось всё, кроме owner)
     const data = pickStrings(await req.json(), EMPLOYEE_FIELDS);
@@ -40,7 +41,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
 
     await connectDB();
     const employee = await Employee.findOneAndDelete({ _id: params.id, owner: user.id });

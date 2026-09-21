@@ -14,7 +14,7 @@ export const maxDuration = 30;
 // PATCH /api/documents/folders/:id — { name?, parent? }. Переименование и перенос в Google Drive — по возможности (ошибка Drive не мешает).
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object") return badRequest("Invalid JSON");
@@ -60,7 +60,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 // DELETE /api/documents/folders/:id — только пустую папку
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     try {
         await connectDB();

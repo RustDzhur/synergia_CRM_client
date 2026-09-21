@@ -6,6 +6,7 @@ import { appOrigin } from "@/lib/appUrl";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { amountCents, isPaidPlan, type Interval } from "@/lib/billing";
 import { stripe, stripeConfigured } from "@/lib/stripe";
+import Organization from "@/models/Organization";
 import User from "@/models/User";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ const ACTIVE = ["active", "trialing", "past_due"];
 // Создаёт сессию Stripe Checkout и возвращает { url } — на него браузер переходит для оплаты.
 export async function POST(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     const body = await req.json().catch(() => null);
     if (!body || !isPaidPlan(body.plan) || (body.interval !== "month" && body.interval !== "year")) return badRequest("Invalid plan");
     if (!stripeConfigured()) return NextResponse.json({ message: "Payments are not configured yet" }, { status: 503 });
@@ -28,8 +29,9 @@ export async function POST(req: Request) {
 
     try {
         await connectDB();
-        const doc = await User.findById(user.id);
-        if (!doc) return unauthorized();
+        const doc = await Organization.findById(user.id);
+        if (!doc) return unauthorized(req);
+        const owner = await User.findById(doc.ownerUser).select("email firstname lastname");
         // уже есть действующая подписка — тариф меняют в кабинете оплаты (Manage billing), иначе получилась бы вторая подписка
         if (doc.billing?.subscriptionId && ACTIVE.includes(doc.billing.status ?? "")) {
             return NextResponse.json({ message: "You already have a subscription. Use Manage billing to change it." }, { status: 409 });
@@ -37,9 +39,9 @@ export async function POST(req: Request) {
         let customer = doc.billing?.customerId ?? "";
         if (!customer) {
             const c = await stripe<{ id: string }>("POST", "/customers", {
-                email: doc.email,
-                name: `${doc.firstname} ${doc.lastname}`.trim(),
-                metadata: { userId: user.id },
+                email: owner?.email,
+                name: doc.name,
+                metadata: { orgId: user.id },
             });
             customer = c.id;
             doc.set("billing.customerId", customer);
@@ -47,7 +49,7 @@ export async function POST(req: Request) {
         }
         const origin = appOrigin(req);
         const label = PLANS.find((p) => p.id === plan) ? plan[0].toUpperCase() + plan.slice(1) : plan;
-        const meta = { userId: user.id, plan, interval };
+        const meta = { orgId: user.id, plan, interval };
         const session = await stripe<{ url: string }>("POST", "/checkout/sessions", {
             mode: "subscription",
             customer,

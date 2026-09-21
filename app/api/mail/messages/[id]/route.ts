@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 // GET /api/mail/messages/:id — письмо целиком; открытое письмо становится прочитанным
 export async function GET(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     await connectDB();
     const mail = await MailMessage.findOneAndUpdate({ _id: params.id, owner: user.id, deleted: false }, { $set: { read: true } }, { returnDocument: "after" });

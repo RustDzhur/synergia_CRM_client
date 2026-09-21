@@ -12,7 +12,7 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // GET /api/mail/messages?account=<id>&q=<поиск> — письма ящика (последние 300, без текста; текст — в /messages/:id)
 export async function GET(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     const url = new URL(req.url);
     const account = url.searchParams.get("account");
     if (!account || !validId(account)) return badRequest("account is required");
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
 // PATCH /api/mail/messages — { ids, patch: { starred?, snoozed?, read? } }
 export async function PATCH(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     const body = await req.json().catch(() => null);
     const ids: unknown[] = Array.isArray(body?.ids) ? body.ids.slice(0, 300) : [];
     if (!ids.length || !ids.every((i) => typeof i === "string" && validId(i))) return badRequest("ids are required");
@@ -46,7 +46,7 @@ export async function PATCH(req: Request) {
 // DELETE /api/mail/messages — { ids }: убрать письма из CRM (на почтовом сервере они остаются)
 export async function DELETE(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     const body = await req.json().catch(() => null);
     const ids: unknown[] = Array.isArray(body?.ids) ? body.ids.slice(0, 300) : [];
     if (!ids.length || !ids.every((i) => typeof i === "string" && validId(i))) return badRequest("ids are required");

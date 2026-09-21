@@ -1,6 +1,6 @@
 import type { HydratedDocument } from "mongoose";
 import { PLANS, YEAR_MONTHS, type PlanId } from "@/app/config/plans";
-import User from "@/models/User";
+import Organization from "@/models/Organization";
 
 // Подписки: состояние берём у Stripe и записываем в пользователя. Функции идемпотентны — повторный вебхук ничего не портит.
 export type Interval = "month" | "year";
@@ -28,25 +28,31 @@ export const isPaidPlan = (v: unknown): v is (typeof PAID_PLANS)[number] => (PAI
 
 const customerId = (c: StripeSubscription["customer"]) => (typeof c === "string" ? c : c?.id ?? "");
 
-// Записывает состояние подписки; пользователь находится по metadata.userId или по id клиента Stripe
+// Тариф фирмы: ручное назначение из админ-кабинета (пока не истекло) главнее подписки Stripe
+export function effectivePlan(org: { plan?: string; planOverride?: string; planOverrideUntil?: Date | null }): PlanId {
+    if (org.planOverride && (!org.planOverrideUntil || org.planOverrideUntil.getTime() > Date.now())) return org.planOverride as PlanId;
+    return (org.plan as PlanId) || "free";
+}
+
+// Записывает состояние подписки в фирму; фирма находится по metadata.orgId или по id клиента Stripe
 export async function applySubscription(sub: StripeSubscription): Promise<HydratedDocument<any> | null> {
     const cid = customerId(sub.customer);
-    const byMeta = sub.metadata?.userId;
-    const user = (byMeta ? await User.findById(byMeta).catch(() => null) : null) ?? (cid ? await User.findOne({ "billing.customerId": cid }) : null);
-    if (!user) return null;
+    const byMeta = sub.metadata?.orgId;
+    const org = (byMeta ? await Organization.findById(byMeta).catch(() => null) : null) ?? (cid ? await Organization.findOne({ "billing.customerId": cid }) : null);
+    if (!org) return null;
     const active = ACTIVE.includes(sub.status);
-    const plan = isPaidPlan(sub.metadata?.plan) ? (sub.metadata!.plan as PlanId) : user.plan;
+    const plan = isPaidPlan(sub.metadata?.plan) ? (sub.metadata!.plan as PlanId) : org.plan;
     const end = sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end;
     const interval = sub.items?.data?.[0]?.price?.recurring?.interval ?? sub.metadata?.interval ?? "";
-    user.plan = active ? plan : "free";
-    user.billing = {
-        customerId: cid || user.billing?.customerId || "",
+    org.plan = active ? plan : "free";
+    org.billing = {
+        customerId: cid || org.billing?.customerId || "",
         subscriptionId: sub.id,
         status: sub.status,
         interval: interval === "year" || interval === "month" ? interval : "",
         currentPeriodEnd: end ? new Date(end * 1000) : undefined,
         cancelAtPeriodEnd: !!sub.cancel_at_period_end,
     };
-    await user.save();
-    return user;
+    await org.save();
+    return org;
 }

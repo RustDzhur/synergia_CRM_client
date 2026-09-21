@@ -3,6 +3,7 @@ import { Schema, isValidObjectId } from "mongoose";
 import type { Model } from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
+import { unauthorized } from "@/lib/api";
 
 // Записи «ленты активности» у сделки, контакта и компании: заметки, комментарии, звонки, письма и т.д.
 // Типы "stage" и "created" — системные, их создаёт сервер, через API их добавить нельзя.
@@ -27,7 +28,7 @@ export function activityHandlers(Entity: Model<any>) {
 
     async function POST(req: Request, { params }: Ctx) {
         const user = await requireUser(req);
-        if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+        if (!user) return unauthorized(req);
         if (!isValidObjectId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
         let body: { type?: unknown; text?: unknown; meta?: unknown };
@@ -57,7 +58,7 @@ export function activityHandlers(Entity: Model<any>) {
 
     async function DELETE(req: Request, { params }: Ctx) {
         const user = await requireUser(req);
-        if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+        if (!user) return unauthorized(req);
 
         const activityId = new URL(req.url).searchParams.get("activityId") ?? "";
         if (!isValidObjectId(params.id) || !isValidObjectId(activityId)) {

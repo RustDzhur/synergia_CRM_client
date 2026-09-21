@@ -3,13 +3,14 @@ import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
+import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import Contact from "@/models/Contact";
 import { CONTACT_FIELDS, contactFullName } from "@/lib/crmFields";
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
     if (!isValidObjectId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
     await connectDB();
@@ -21,7 +22,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
     if (!isValidObjectId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
     const body = await req.json();
@@ -45,7 +46,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
-    if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!user) return unauthorized(req);
 
     await connectDB();
     const contact = await Contact.findOneAndDelete({ _id: params.id, owner: user.id });

@@ -41,7 +41,7 @@ async function syncFromDrive(owner: string) {
 // GET /api/documents[?refresh=1] — папки, документы, состояние Google Drive и файлового хранилища
 export async function GET(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     try {
         await connectDB();
         if (new URL(req.url).searchParams.get("refresh") === "1") await syncFromDrive(user.id).catch(() => undefined);
@@ -54,7 +54,7 @@ export async function GET(req: Request) {
 // POST /api/documents — { kind: "gdoc" | "gsheet" | "gslide", name, folder? }: создаёт Google-документ на Диске пользователя в папке CRM
 export async function POST(req: Request) {
     const user = await requireUser(req);
-    if (!user) return unauthorized();
+    if (!user) return unauthorized(req);
     const body = await req.json().catch(() => null);
     const kind = body?.kind;
     const name = cleanName(body?.name, 100);
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
             else { drive.set("config", { ...drive.config, rootFolderId: "" }); drive.markModified("config"); await drive.save(); }
             file = await create();
         }
-        const me = await User.findById(user.id).select("firstname lastname");
+        const me = await User.findById(user.userId).select("firstname lastname");
         const doc = await DocItem.create({
             owner: user.id,
             kind,
