@@ -5,36 +5,43 @@ import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
 import { FaFacebook, FaFacebookMessenger, FaTelegram, FaViber } from "react-icons/fa";
 import { MdCall, MdSensors, MdSms, MdSmartToy, MdWidgets } from "react-icons/md";
+import { useIntegrationsStore } from "@/app/store/useIntegrationsStore";
+import type { IntegrationType } from "@/app/types/integrations";
+import IntegrationDialog from "./integrations/IntegrationDialog";
 import SettingsTabs from "./SettingsTabs";
 
 interface Integration {
 	id: string;
 	key: string; // ключ перевода в settings
 	icon: IconType;
+	// настоящее подключение (Twilio, Telegram…); у карточек без него включатель остаётся демонстрационным
+	real?: Exclude<IntegrationType, "mail">;
 }
 
 // Порядок как на десктопе в Figma: три колонки по три карточки.
 const INTEGRATIONS: Integration[] = [
-	{ id: "call", key: "intCall", icon: MdCall },
-	{ id: "sms", key: "intSms", icon: MdSms },
-	{ id: "viber", key: "intViber", icon: FaViber },
-	{ id: "telegram", key: "intTelegram", icon: FaTelegram },
-	{ id: "messenger", key: "intMessenger", icon: FaFacebookMessenger },
+	{ id: "call", key: "intCall", icon: MdCall, real: "twilio" }, // звонки и SMS — один и тот же аккаунт Twilio
+	{ id: "sms", key: "intSms", icon: MdSms, real: "twilio" },
+	{ id: "viber", key: "intViber", icon: FaViber, real: "viber" },
+	{ id: "telegram", key: "intTelegram", icon: FaTelegram, real: "telegram" },
+	{ id: "messenger", key: "intMessenger", icon: FaFacebookMessenger, real: "messenger" },
 	{ id: "comments", key: "intComments", icon: FaFacebook },
 	{ id: "chatbot", key: "intChatBot", icon: MdSmartToy },
-	{ id: "onlinechat", key: "intOnlineChat", icon: MdSensors },
-	{ id: "widget", key: "intWidget", icon: MdWidgets },
+	{ id: "onlinechat", key: "intOnlineChat", icon: MdSensors, real: "webchat" },
+	{ id: "widget", key: "intWidget", icon: MdWidgets, real: "webchat" }, // код для сайта — в окне онлайн-чата
 ];
 
 const STORAGE_KEY = "crm.integrations";
-// В макете «Call Provider» подсвечен зелёным — это включённая интеграция; по умолчанию включаем её же.
-const DEFAULT_ON = ["call"];
 
-// Settings → Integration (/crm/settings/integration). Настоящих подключений пока нет (тестовый режим):
+// Settings → Integration (/crm/settings/integration). Каналы с полем real подключаются по-настоящему (окно с реквизитами,
+// сервер проверяет ключи и настраивает вебхуки); Comments и Chat Bot пока демонстрационные:
 // нажатие включает/выключает карточку, состояние хранится в браузере (localStorage).
 export default function IntegrationSettings() {
 	const t = useTranslations("settings");
-	const [enabled, setEnabled] = useState<string[]>(DEFAULT_ON);
+	const [enabled, setEnabled] = useState<string[]>([]);
+	const [dialog, setDialog] = useState<Integration | null>(null);
+	const { items, load } = useIntegrationsStore();
+	useEffect(() => { load(); }, [load]);
 
 	useEffect(() => {
 		try {
@@ -43,7 +50,8 @@ export default function IntegrationSettings() {
 		} catch { /* повреждённое значение — остаёмся на значениях по умолчанию */ }
 	}, []);
 
-	function toggle(item: Integration) {
+	function press(item: Integration) {
+		if (item.real) return setDialog(item);
 		const on = !enabled.includes(item.id);
 		const next = on ? [...enabled, item.id] : enabled.filter((id) => id !== item.id);
 		setEnabled(next);
@@ -57,18 +65,21 @@ export default function IntegrationSettings() {
 				<SettingsTabs className="shrink-0 md:self-start" />
 				<ul className="grid min-w-0 flex-1 grid-cols-2 gap-15 md:gap-20 lg:grid-cols-3 lg:gap-20">
 					{INTEGRATIONS.map((item) => {
-						const on = enabled.includes(item.id);
+						const linked = item.real ? items.find((i) => i.type === item.real) : undefined;
+						const on = item.real ? linked?.status === "connected" : enabled.includes(item.id);
+						const warn = linked?.status === "error";
+						const color = warn ? "text-[#F4A100]" : on ? "text-[#A5FFC9]" : "text-[#666666]";
 						const Icon = item.icon;
 						return (
 							<li key={item.id}>
 								<button
 									type="button"
-									onClick={() => toggle(item)}
+									onClick={() => press(item)}
 									aria-pressed={on}
-									title={t("intDemo")}
+									title={item.real ? undefined : t("intDemo")}
 									className="flex h-[125px] w-full flex-col items-center justify-center gap-10 rounded-8 bg-white px-8 shadow-heroImage transition-transform duration-200 hover:-translate-y-2 md:h-[125px]">
-									<Icon size={42} className={`transition-colors duration-200 ${on ? "text-[#A5FFC9]" : "text-[#666666]"}`} />
-									<span className={`text-center text-14 font-medium transition-colors duration-200 md:text-16 ${on ? "text-[#A5FFC9]" : "text-[#666666]"}`}>
+									<Icon size={42} className={`transition-colors duration-200 ${color}`} />
+									<span className={`text-center text-14 font-medium transition-colors duration-200 md:text-16 ${color}`}>
 										{t(item.key)}
 									</span>
 								</button>
@@ -77,6 +88,7 @@ export default function IntegrationSettings() {
 					})}
 				</ul>
 			</div>
+			<IntegrationDialog type={dialog?.real ?? null} title={dialog ? t(dialog.key) : ""} onClose={() => setDialog(null)} />
 		</div>
 	);
 }
