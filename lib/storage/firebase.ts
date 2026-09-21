@@ -82,3 +82,9 @@ export async function deleteObject(path: string) {
     });
     if (!res.ok && res.status !== 404) throw storageError(res.status);
 }
+
+// Проверка подключения: токен сервисного аккаунта получается и бакет существует (для админ-кабинета)
+export async function checkBucket() {
+    const res = await fetchProvider(`${api()}/storage/v1/b/${encodeURIComponent(bucket())}`, { headers: { Authorization: `Bearer ${await accessToken()}` } });
+    if (!res.ok) throw storageError(res.status);
+}

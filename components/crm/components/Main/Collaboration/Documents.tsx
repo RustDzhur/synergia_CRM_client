@@ -119,8 +119,29 @@ export default function Documents() {
 	const drive = state?.drive;
 	const storage = state?.storage;
 
+	// Кнопка подключения Диска: ошибку (например, не настроены ключи Google) показываем, а не молчим
+	async function connect() {
+		const res = await connectDrive(locale);
+		if (!res.ok) toast.error(res.message);
+	}
+
 	function startCreate(kind: GoogleKind) {
-		if (!drive?.connected) return void toast(t("driveConnectFirst"));
+		if (!drive?.connected) {
+			// подсказка со ссылкой-кнопкой: сразу можно подключить Диск, не ища блок вверху страницы
+			return void toast(
+				(m) => (
+					<span className="flex flex-col gap-8">
+						<span>{drive && !drive.configured ? t("driveNotConfigured") : t("driveConnectFirst")}</span>
+						{(!drive || drive.configured) && (
+							<button type="button" onClick={() => { toast.dismiss(m.id); connect(); }} className="self-start rounded-8 bg-primaryColor px-14 py-6 text-14 font-medium text-white transition-opacity hover:opacity-80">
+								{t("driveConnectButton")}
+							</button>
+						)}
+					</span>
+				),
+				{ duration: 10000 }
+			);
+		}
 		setName(t("newDocument"));
 		setNameMode({ kind: "doc", docKind: kind });
 	}
@@ -270,7 +291,7 @@ export default function Documents() {
 							<p className="text-16 font-medium text-[#333333]">{t("driveConnectTitle")}</p>
 							<p className="mt-2 text-14 text-[#666666]">{drive.configured ? t("driveConnectText") : t("driveNotConfigured")}</p>
 						</div>
-						{drive.configured && <button type="button" onClick={() => connectDrive(locale)} className={`${primary} shrink-0`}>{t("driveConnectButton")}</button>}
+						{drive.configured && <button type="button" onClick={connect} className={`${primary} shrink-0`}>{t("driveConnectButton")}</button>}
 					</div>
 				)}
 				{drive?.connected && (
