@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized();
     await connectDB();
-    const list = await Integration.find({ owner: user.id, type: { $ne: "mail" } }).sort({ createdAt: 1 });
+    const list = await Integration.find({ owner: user.id, type: { $nin: ["mail", "gdrive"] } }).sort({ createdAt: 1 });
     const origin = appOrigin(req);
     return NextResponse.json(list.map((d) => toIntegrationDTO(d, origin)));
 }

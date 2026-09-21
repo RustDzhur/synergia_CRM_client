@@ -96,6 +96,8 @@ export default function Softphone() {
 		}
 	}, [error, t]);
 
+	// Нет ни одного подключённого провайдера: сначала предлагаем подключить его — набор номера появится после подключения
+	const noProvider = state === "off" && providers.length === 0;
 	const inCall = state === "dialing" || state === "incoming" || state === "active";
 	const open = dialerOpen || inCall;
 	const round = "flex h-[52px] w-[52px] items-center justify-center rounded-50 text-white shadow-custom transition-opacity hover:opacity-80";
@@ -111,6 +113,28 @@ export default function Softphone() {
 				<MdDialpad size={26} />
 				<span className={`absolute right-2 top-2 h-[12px] w-[12px] rounded-50 border-2 border-[#FFFFFF] ${dot}`} />
 			</button>
+		);
+	}
+
+	if (noProvider) {
+		return (
+			<div role="dialog" aria-label={t("dialerTitle")} className="fixed bottom-16 right-16 z-[70] w-[300px] max-w-[calc(100vw-32px)] animate-fade-in rounded-16 border border-[#E2F1F5] bg-white shadow-heroImage">
+				<div className="flex items-center gap-8 border-b border-[#EFEFEF] px-16 py-10">
+					<span className="h-[10px] w-[10px] shrink-0 rounded-50 bg-[#BDBDBD]" />
+					<span className="min-w-0 flex-1 truncate text-14 font-medium text-[#333333]">{t("dialerTitle")}</span>
+					<button type="button" onClick={closeDialer} aria-label={t("dialerClose")} className="text-[#999999] transition-colors hover:text-[#333333]">
+						<MdClose size={20} />
+					</button>
+				</div>
+				<div className="flex flex-col items-center px-20 py-24 text-center">
+					<MdDialpad size={40} className="mb-12 text-[#BDBDBD]" aria-hidden />
+					<p className="mb-6 text-16 font-medium text-[#333333]">{t("dialerConnectTitle")}</p>
+					<p className="mb-16 text-14 text-[#666666]">{t("dialerNoProvider")}</p>
+					<Link href={`/${locale}/crm/settings/integration`} onClick={closeDialer} className="flex h-[44px] w-full items-center justify-center rounded-8 bg-primaryColor px-16 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80">
+						{t("dialerConnectButton")}
+					</Link>
+				</div>
+			</div>
 		);
 	}
 
@@ -191,12 +215,7 @@ export default function Softphone() {
 								</button>
 							</div>
 							{keypad}
-							{providers.length === 0 ? (
-								<div className="mt-12 text-center">
-									<p className="text-14 text-[#666666]">{t("dialerNoProvider")}</p>
-									<Link href={`/${locale}/crm/settings/integration`} onClick={closeDialer} className="mt-6 inline-block text-14 font-medium text-primaryColor hover:underline">{t("dialerConnect")}</Link>
-								</div>
-							) : state === "off" ? (
+							{state === "off" ? (
 								<p className="mt-12 text-center text-12 text-[#EB5757]">{t("linkOffline")}</p>
 							) : null}
 							<div className="mt-12 flex justify-center">

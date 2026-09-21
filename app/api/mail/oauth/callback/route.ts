@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { appOrigin } from "@/lib/appUrl";
+import { connectDrive } from "@/lib/google";
 import { connectOAuthAccount, syncAccount } from "@/lib/mail";
 import { exchangeCode, readState } from "@/lib/mail/oauth";
 import { ProviderError } from "@/lib/http";
@@ -16,9 +17,11 @@ export async function GET(req: Request) {
     const state = readState(q.get("state") ?? "");
     if (!state) return new Response("Invalid or expired request. Start again from Web Mails.", { status: 400 });
 
+    // тот же адрес возврата обслуживает и вход в Google Drive (Online Documents) — различаем по state
+    const drive = state.p === "drive";
     const back = (status: string, message = "") => {
-        const u = new URL(`${origin}/${state.l}/crm/collaboration/web-mails`);
-        u.searchParams.set("mail", status);
+        const u = new URL(`${origin}/${state.l}/crm/collaboration/${drive ? "online-documents" : "web-mails"}`);
+        u.searchParams.set(drive ? "drive" : "mail", status);
         if (message) u.searchParams.set("message", message.slice(0, 200));
         return NextResponse.redirect(u);
     };
@@ -28,6 +31,10 @@ export async function GET(req: Request) {
     try {
         await connectDB();
         const tokens = await exchangeCode(state.v, code, origin);
+        if (drive) {
+            await connectDrive(state.sub, tokens);
+            return back("connected");
+        }
         const account = await connectOAuthAccount(state.sub, state.v, tokens);
         await syncAccount(account).catch(() => undefined); // первое наполнение; при ошибке пользователь увидит статус ящика
         return back("connected");

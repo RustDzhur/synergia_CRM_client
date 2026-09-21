@@ -7,7 +7,7 @@ import { registerModel } from "@/lib/registerModel";
 const IntegrationSchema = new Schema(
     {
         owner: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
-        type: { type: String, required: true, enum: ["twilio", "sip", "telegram", "viber", "messenger", "webchat", "mail"] },
+        type: { type: String, required: true, enum: ["twilio", "sip", "gdrive", "telegram", "viber", "messenger", "webchat", "mail"] },
         name: { type: String, default: "" },
         token: { type: String, required: true, unique: true },
         status: { type: String, enum: ["connected", "error"], default: "connected" },
