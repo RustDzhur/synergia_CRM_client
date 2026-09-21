@@ -40,7 +40,7 @@ export default function RecordsPage({ config, renderCustom, fieldOptions }: Prop
 	const tc = useTranslations("crm");
 	const locale = useLocale();
 	const tag = localeTag(locale);
-	useRecordsHydration();
+	useRecordsHydration(config.tabs.filter((tb) => !(config.customTabs ?? []).includes(tb) || true).map((tb) => `${config.section}:${tb}`));
 	const { data, hidden, saveRecord, deleteRecords, setHidden } = useRecordsStore();
 
 	const [tab, setTab] = useState(config.tabs[0]);

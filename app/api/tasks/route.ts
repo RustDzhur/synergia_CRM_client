@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import { TASK_TEXT_FIELDS } from "@/lib/crmFields";
+import { emit } from "@/lib/automation/emit";
 import Task from "@/models/Task";
 import User from "@/models/User";
 
@@ -33,5 +34,6 @@ export async function POST(req: Request) {
         createdBy: author ? `${author.firstname} ${author.lastname}`.trim() : "",
         responsible: fields.responsible || (author ? author.firstname : ""),
     });
+    await emit(user.id, { type: "task_created", data: { id: String(task._id), title: task.title, responsible: task.responsible ?? "" } });
     return NextResponse.json(task, { status: 201 });
 }

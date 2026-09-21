@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
+import { emitDeal } from "@/lib/automation/emit";
 import Deal from "@/models/Deal";
 import Stage from "@/models/Stage";
 import { DEAL_TEXT_FIELDS } from "@/lib/crmFields";
@@ -42,6 +43,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     const deal = await Deal.findOneAndUpdate({ _id: params.id, owner: user.id }, update, { new: true });
     if (!deal) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    if (String(existing.stage) !== String(deal.stage)) await emitDeal(user.id, deal, "deal_stage"); // перенос на другой этап запускает правила этого этапа
     return NextResponse.json(deal);
 }
 

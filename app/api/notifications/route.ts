@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
+import { emit } from "@/lib/automation/emit";
 import { notify } from "@/lib/notify";
 import Deal from "@/models/Deal";
 import Notification from "@/models/Notification";
@@ -14,6 +15,8 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     await connectDB();
+    // отложенные действия автоматизации выполняются, пока кто-то из фирмы работает в CRM (этот запрос приходит каждые 30 секунд)
+    await (await import("@/lib/automation")).runDueJobs(user.id).catch(() => undefined);
     const mine = { org: user.id, $or: [{ user: { $exists: false } }, { user: null }, { user: user.userId }] };
     const [items, unread] = await Promise.all([
         Notification.find(mine).sort({ createdAt: -1 }).limit(50),
@@ -45,5 +48,6 @@ export async function POST(req: Request) {
         link: b.kind === "task" ? "/crm/tasks" : "/crm/crm",
         key: `deadline:${b.kind}:${b.id}:${b.stage}:${b.kind === "task" ? doc.deadline : doc.endDate}`, // новый срок — новое уведомление
     });
+    if (created) await emit(user.id, { type: "deadline", data: { kind: b.kind, title, stage: b.stage, id: String(b.id) } });
     return NextResponse.json({ created });
 }

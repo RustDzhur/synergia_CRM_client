@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import { CONTACT_FIELDS, contactFullName } from "@/lib/crmFields";
+import { emit } from "@/lib/automation/emit";
 import Contact from "@/models/Contact";
 
 // GET /api/contacts — список всех контактов текущего пользователя
@@ -28,5 +29,6 @@ export async function POST(req: Request) {
 
     await connectDB();
     const contact = await Contact.create({ ...fields, name, owner: user.id });
+    await emit(user.id, { type: "contact_created", data: { id: String(contact._id), name: contact.name, email: contact.email ?? "", phone: contact.phone ?? "" } });
     return NextResponse.json(contact, { status: 201 });
 }

@@ -1,6 +1,7 @@
 import type { HydratedDocument } from "mongoose";
 import type { ConversationDTO, MessageDTO, MessagingChannel } from "@/app/types/integrations";
 import { ProviderError } from "@/lib/http";
+import { emit } from "@/lib/automation/emit";
 import { notify } from "@/lib/notify";
 import { secretsOf } from "@/lib/integrations";
 import Contact from "@/models/Contact";
@@ -133,8 +134,10 @@ export async function recordMessage(integration: Doc, input: MessageInput) {
     // уведомления: пропущенный звонок и новое входящее сообщение (повторная доставка вебхука уже отсеяна выше по messageId)
     if (direction === "in") {
         if (input.kind === "call") {
+            if (input.meta?.status !== "completed") await emit(owner, { type: "call_missed", data: { from: conversation.name || input.externalId, name: conversation.name || input.externalId } });
             if (input.meta?.status !== "completed") await notify(owner, { type: "missed_call", params: { name: conversation.name || input.externalId }, link: "/crm/collaboration/chat-and-calls", key: input.messageId ? `call:${input.messageId}` : undefined });
         } else {
+            await emit(owner, { type: "message_received", data: { from: conversation.name || input.externalId, text: input.text, channel } });
             await notify(owner, { type: "message", params: { name: conversation.name || input.externalId, channel, text: input.text.slice(0, 80) }, link: "/crm/collaboration/chat-and-calls", key: `msg:${message._id}` });
         }
     }

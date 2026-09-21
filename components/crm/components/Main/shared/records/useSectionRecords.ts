@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useRecordsStore } from "@/app/store/useRecordsStore";
 import type { RecordItem, SectionConfig } from "./config";
 
@@ -11,6 +12,8 @@ export function useSectionRecords(config: SectionConfig, tab: string) {
 	const records = useRecordsStore((s) => s.data[key]) ?? seed;
 	const saveRecord = useRecordsStore((s) => s.saveRecord);
 	const deleteRecords = useRecordsStore((s) => s.deleteRecords);
+	const load = useRecordsStore((s) => s.load);
+	useEffect(() => { load(key); }, [load, key]);
 	return {
 		records,
 		save: (record: { id?: string; values: Record<string, string> }) => saveRecord(key, seed, record),

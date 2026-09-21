@@ -1,3 +1,4 @@
+import { emit } from "@/lib/automation/emit";
 import { notify } from "@/lib/notify";
 import type { Fetched } from "@/lib/mail/types";
 import { ensureStages } from "@/lib/stages";
@@ -56,7 +57,7 @@ export async function createLeadsFromMail(owner: string, ownEmail: string, mails
         seen.add(sender.email);
 
         const [firstName, ...rest] = sender.name.split(" ");
-        await Contact.create({
+        const contactDoc = await Contact.create({
             owner,
             name: sender.name,
             firstName: rest.length ? firstName : "",
@@ -68,7 +69,7 @@ export async function createLeadsFromMail(owner: string, ownEmail: string, mails
 
         firstStage = firstStage ?? String((await ensureStages(owner))[0]._id);
         const order = await Deal.countDocuments({ owner, stage: firstStage });
-        await Deal.create({
+        const dealDoc = await Deal.create({
             owner,
             stage: firstStage,
             clientName: subject,
@@ -77,6 +78,7 @@ export async function createLeadsFromMail(owner: string, ownEmail: string, mails
             activities: [{ type: "created", text: subject }, { type: "email", text: `Email from ${sender.name} <${sender.email}>` }],
         });
         created += 1;
+        await emit(owner, { type: "lead_created", data: { id: String(dealDoc._id), dealId: String(dealDoc._id), contactId: String(contactDoc._id), name: sender.name, contactName: sender.name, email: sender.email, subject } });
         await notify(owner, { type: "lead", params: { name: sender.name, subject }, link: "/crm/crm", key: `lead:${sender.email}:${new Date().toISOString().slice(0, 10)}` });
     }
     return created;

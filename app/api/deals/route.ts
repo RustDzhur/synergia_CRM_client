@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import { DEAL_TEXT_FIELDS } from "@/lib/crmFields";
+import { emitDeal } from "@/lib/automation/emit";
 import Deal from "@/models/Deal";
 import Stage from "@/models/Stage";
 
@@ -44,5 +45,6 @@ export async function POST(req: Request) {
         activities: [{ type: "created", text: clientName }],
     });
 
+    await emitDeal(user.id, deal, "deal_created");
     return NextResponse.json(deal, { status: 201 });
 }

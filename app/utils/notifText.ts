@@ -12,6 +12,7 @@ export function notifText(t: T, n: Notif) {
 		case "message": return t("message", { name: String(p.name ?? ""), text: String(p.text ?? "") });
 		case "missed_call": return t("missedCall", { name: String(p.name ?? "") });
 		case "deadline": return t(`deadline_${p.stage}`, { title: String(p.title ?? ""), kind: t(`kind_${p.kind}`) });
+		case "automation": return String(p.text ?? "");
 		case "team": return t("team", { name: String(p.name ?? ""), text: String(p.text ?? "") });
 		default: return t("generic");
 	}
