@@ -25,10 +25,11 @@ function Layout() {
 			<div className="hidden md:block shrink-0 md:ml-[49px] lg:ml-[36px]">
 				<Search />
 			</div>
-			<div className="hidden lg:block shrink-0 lg:ml-30 lg:w-[387px]">
+			{/* 387px — ширина из макета; если справа не хватает места (длинное имя, тумблер темы), блок сжимается, но не залезает на язык */}
+			<div className="hidden lg:block min-w-[200px] lg:ml-30 lg:w-[387px] lg:mr-30 shrink">
 				<SwitchCompany />
 			</div>
-			<div className="flex items-center ml-auto gap-30">
+			<div className="flex items-center shrink-0 ml-auto gap-30">
 				<div className="hidden lg:block shrink-0">
 					<SwitchLanguage />
 				</div>
