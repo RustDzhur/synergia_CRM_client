@@ -21,7 +21,10 @@ const QuoteSchema = new Schema(
         issueDate: { type: String, default: "" },
         validUntil: { type: String, default: "" },
         status: { type: String, enum: ["draft", "sent", "accepted", "declined", "expired"], default: "draft" },
+        sentAt: { type: Date },
+        order: { type: Schema.Types.ObjectId, ref: "Order" }, // заказ, созданный из принятого предложения (см. /api/quotes/:id/order)
         notes: { type: String, default: "" },
+        createdByName: { type: String, default: "" },
     },
     { timestamps: true }
 );

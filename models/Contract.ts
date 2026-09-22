@@ -16,8 +16,10 @@ const ContractSchema = new Schema(
         startDate: { type: String, default: "" },
         endDate: { type: String, default: "" },
         status: { type: String, enum: ["draft", "active", "completed", "cancelled"], default: "draft" },
+        signedAt: { type: Date },
         file: { type: Schema.Types.ObjectId, ref: "DocItem" },
         notes: { type: String, default: "" },
+        createdByName: { type: String, default: "" },
     },
     { timestamps: true }
 );

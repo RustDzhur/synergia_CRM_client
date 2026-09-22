@@ -3,13 +3,15 @@ import React, { useState } from "react";
 import { useTranslations } from "next-intl";
 import { TAB_BAR } from "../shared/tabBar";
 import Overview from "./Overview";
+import Quotes from "./Quotes";
 import Orders from "./Orders";
 import Invoices from "./Invoices";
+import Contracts from "./Contracts";
 import Products from "./Products";
 import Expenses from "./Expenses";
 import FinanceSettingsTab from "./Settings";
 
-const TABS = ["overview", "orders", "invoices", "products", "expenses", "settings"] as const;
+const TABS = ["overview", "quotes", "orders", "invoices", "contracts", "products", "expenses", "settings"] as const;
 type Tab = (typeof TABS)[number];
 
 // Finance (/crm/inventory — адрес не меняли, чтобы не ломать ссылки; раздел в сайдбаре называется «Finance»): счета,
@@ -19,10 +21,15 @@ export default function Finance() {
 	const t = useTranslations("finance");
 	const [tab, setTab] = useState<Tab>("overview");
 	const [openInvoiceId, setOpenInvoiceId] = useState<string | null>(null);
+	const [openOrderId, setOpenOrderId] = useState<string | null>(null);
 
 	function openInvoice(id: string) {
 		setOpenInvoiceId(id);
 		setTab("invoices");
+	}
+	function openOrder(id: string) {
+		setOpenOrderId(id);
+		setTab("orders");
 	}
 
 	return (
@@ -36,7 +43,7 @@ export default function Finance() {
 							type="button"
 							role="tab"
 							aria-selected={tab === key}
-							onClick={() => { setTab(key); if (key !== "invoices") setOpenInvoiceId(null); }}
+							onClick={() => { setTab(key); if (key !== "invoices") setOpenInvoiceId(null); if (key !== "orders") setOpenOrderId(null); }}
 							className={`shrink-0 whitespace-nowrap rounded-4 px-16 py-10 text-16 font-medium tracking-[0.32px] transition-colors duration-200 ${
 								tab === key ? "bg-primaryColor text-white" : "text-[#CCCCCC] hover:text-[#999999]"
 							}`}>
@@ -47,8 +54,10 @@ export default function Finance() {
 			</div>
 
 			{tab === "overview" && <Overview />}
-			{tab === "orders" && <Orders onOpenInvoice={openInvoice} />}
+			{tab === "quotes" && <Quotes onOpenOrder={openOrder} />}
+			{tab === "orders" && <Orders onOpenInvoice={openInvoice} openId={openOrderId} />}
 			{tab === "invoices" && <Invoices openId={openInvoiceId} />}
+			{tab === "contracts" && <Contracts />}
 			{tab === "products" && <Products />}
 			{tab === "expenses" && <Expenses />}
 			{tab === "settings" && <FinanceSettingsTab />}

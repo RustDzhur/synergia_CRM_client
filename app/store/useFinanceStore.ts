@@ -25,6 +25,18 @@ export interface Expense {
 	id: string; vendor: string; category: string; amount: number; taxRate: number; currency: string; date: string;
 	deal: string; order: string; receipt: string; recurring: string; notes: string; createdByName: string;
 }
+export interface Quote {
+	id: string; number: string; status: "draft" | "sent" | "accepted" | "declined" | "expired";
+	contact: string; company: string; customerName: string; deal: string; order: string;
+	items: LineItem[]; currency: string; issueDate: string; validUntil: string; notes: string; sentAt: string;
+	totals: Totals; createdAt: string; updatedAt: string;
+}
+export interface Contract {
+	id: string; number: string; status: "draft" | "active" | "completed" | "cancelled";
+	contact: string; company: string; customerName: string; deal: string; value: number; currency: string;
+	startDate: string; endDate: string; notes: string; signedAt: string; file: string;
+	createdAt: string; updatedAt: string;
+}
 export interface FinanceSettings {
 	country: string; currency: string; smallBusiness: boolean; legalName: string; address: string; taxId: string;
 	iban: string; bic: string; paymentTermsDays: number; invoicePrefix: string; quotePrefix: string;
@@ -39,13 +51,15 @@ export interface FinanceDashboard {
 }
 
 interface FinanceStore {
-	products: Product[]; orders: Order[]; invoices: Invoice[]; expenses: Expense[];
+	products: Product[]; orders: Order[]; invoices: Invoice[]; expenses: Expense[]; quotes: Quote[]; contracts: Contract[];
 	settings: FinanceSettings | null; countries: CountryOption[]; dashboard: FinanceDashboard | null;
 	loading: boolean;
 	loadProducts: () => Promise<void>;
 	loadOrders: () => Promise<void>;
 	loadInvoices: () => Promise<void>;
 	loadExpenses: () => Promise<void>;
+	loadQuotes: () => Promise<void>;
+	loadContracts: () => Promise<void>;
 	loadSettings: () => Promise<void>;
 	loadDashboard: (months?: number) => Promise<void>;
 	saveSettings: (patch: Partial<FinanceSettings>) => Promise<string | null>;
@@ -61,16 +75,30 @@ interface FinanceStore {
 	payInvoice: (id: string, amount?: number) => Promise<string | null>;
 	createExpense: (data: Partial<Expense>) => Promise<string | null>;
 	deleteExpense: (id: string) => Promise<void>;
+	createQuote: (data: Partial<Quote>) => Promise<string | null>;
+	updateQuote: (id: string, data: Partial<Quote>) => Promise<string | null>;
+	deleteQuote: (id: string) => Promise<string | null>;
+	sendQuote: (id: string) => Promise<string | null>;
+	decideQuote: (id: string, accepted: boolean) => Promise<string | null>;
+	quoteToOrder: (id: string) => Promise<string | null>;
+	createContract: (data: Partial<Contract>) => Promise<string | null>;
+	updateContract: (id: string, data: Partial<Contract>) => Promise<string | null>;
+	deleteContract: (id: string) => Promise<string | null>;
+	signContract: (id: string) => Promise<string | null>;
+	completeContract: (id: string) => Promise<string | null>;
+	cancelContract: (id: string) => Promise<string | null>;
 }
 
 // Finance (счета, заказы, товары, расходы, склад) — раздел, который заменил собой старое «Inventory Management».
 export const useFinanceStore = create<FinanceStore>()((set, get) => ({
-	products: [], orders: [], invoices: [], expenses: [], settings: null, countries: [], dashboard: null, loading: false,
+	products: [], orders: [], invoices: [], expenses: [], quotes: [], contracts: [], settings: null, countries: [], dashboard: null, loading: false,
 
 	loadProducts: async () => { const r = await apiCall<Product[]>("/api/products"); if (r.ok && r.data) set({ products: r.data }); },
 	loadOrders: async () => { const r = await apiCall<Order[]>("/api/orders"); if (r.ok && r.data) set({ orders: r.data }); },
 	loadInvoices: async () => { const r = await apiCall<Invoice[]>("/api/invoices"); if (r.ok && r.data) set({ invoices: r.data }); },
 	loadExpenses: async () => { const r = await apiCall<Expense[]>("/api/expenses"); if (r.ok && r.data) set({ expenses: r.data }); },
+	loadQuotes: async () => { const r = await apiCall<Quote[]>("/api/quotes"); if (r.ok && r.data) set({ quotes: r.data }); },
+	loadContracts: async () => { const r = await apiCall<Contract[]>("/api/contracts"); if (r.ok && r.data) set({ contracts: r.data }); },
 	loadSettings: async () => {
 		const r = await apiCall<{ settings: FinanceSettings; countries: CountryOption[] }>("/api/finance/settings");
 		if (r.ok && r.data) set({ settings: r.data.settings, countries: r.data.countries });
@@ -148,4 +176,69 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 		return null;
 	},
 	deleteExpense: async (id) => { const before = get().expenses; set({ expenses: before.filter((e) => e.id !== id) }); const r = await apiCall(`/api/expenses/${id}`, "DELETE"); if (!r.ok) set({ expenses: before }); },
+
+	createQuote: async (data) => {
+		const r = await apiCall<Quote>("/api/quotes", "POST", data);
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ quotes: [r.data as Quote, ...s.quotes] }));
+		return null;
+	},
+	updateQuote: async (id, data) => {
+		const r = await apiCall<Quote>(`/api/quotes/${id}`, "PATCH", data);
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ quotes: s.quotes.map((q) => (q.id === id ? (r.data as Quote) : q)) }));
+		return null;
+	},
+	deleteQuote: async (id) => { const r = await apiCall(`/api/quotes/${id}`, "DELETE"); if (!r.ok) return r.message; set((s) => ({ quotes: s.quotes.filter((q) => q.id !== id) })); return null; },
+	sendQuote: async (id) => {
+		const r = await apiCall<Quote>(`/api/quotes/${id}/send`, "POST", {});
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ quotes: s.quotes.map((q) => (q.id === id ? (r.data as Quote) : q)) }));
+		return null;
+	},
+	decideQuote: async (id, accepted) => {
+		const r = await apiCall<Quote>(`/api/quotes/${id}/decide`, "POST", { accepted });
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ quotes: s.quotes.map((q) => (q.id === id ? (r.data as Quote) : q)) }));
+		return null;
+	},
+	quoteToOrder: async (id) => {
+		const r = await apiCall<Order>(`/api/quotes/${id}/order`, "POST", {});
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ orders: [r.data as Order, ...s.orders] }));
+		await get().loadQuotes();
+		return null;
+	},
+
+	createContract: async (data) => {
+		const r = await apiCall<Contract>("/api/contracts", "POST", data);
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ contracts: [r.data as Contract, ...s.contracts] }));
+		return null;
+	},
+	updateContract: async (id, data) => {
+		const r = await apiCall<Contract>(`/api/contracts/${id}`, "PATCH", data);
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ contracts: s.contracts.map((c) => (c.id === id ? (r.data as Contract) : c)) }));
+		return null;
+	},
+	deleteContract: async (id) => { const r = await apiCall(`/api/contracts/${id}`, "DELETE"); if (!r.ok) return r.message; set((s) => ({ contracts: s.contracts.filter((c) => c.id !== id) })); return null; },
+	signContract: async (id) => {
+		const r = await apiCall<Contract>(`/api/contracts/${id}/sign`, "POST", {});
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ contracts: s.contracts.map((c) => (c.id === id ? (r.data as Contract) : c)) }));
+		return null;
+	},
+	completeContract: async (id) => {
+		const r = await apiCall<Contract>(`/api/contracts/${id}/complete`, "POST", {});
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ contracts: s.contracts.map((c) => (c.id === id ? (r.data as Contract) : c)) }));
+		return null;
+	},
+	cancelContract: async (id) => {
+		const r = await apiCall<Contract>(`/api/contracts/${id}/cancel`, "POST", {});
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ contracts: s.contracts.map((c) => (c.id === id ? (r.data as Contract) : c)) }));
+		return null;
+	},
 }));

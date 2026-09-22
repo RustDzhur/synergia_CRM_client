@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdAdd, MdReceiptLong } from "react-icons/md";
@@ -16,7 +16,7 @@ const EMPTY_ITEM: LineItem = { description: "", qty: 1, unitPrice: 0, taxRate: 0
 // Заказы — сердце раздела: «оформили контракт → создали заказ → выполнили (списывается склад) → выставили счёт».
 // Каждая смена статуса — событие автоматизации (order_created/order_status), от него можно завести уведомление, задачу
 // или сдвинуть сделку по воронке — это настраивается в Automation, не зашито здесь намертво.
-export default function Orders({ onOpenInvoice }: { onOpenInvoice: (id: string) => void }) {
+export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: string) => void; openId?: string | null }) {
 	const t = useTranslations("finance");
 	const locale = useLocale();
 	const { orders, products, loadOrders, loadProducts, createOrder, updateOrder, invoiceOrder, settings } = useFinanceStore();
@@ -25,8 +25,12 @@ export default function Orders({ onOpenInvoice }: { onOpenInvoice: (id: string) 
 	const [responsible, setResponsible] = useState("");
 	const [items, setItems] = useState<LineItem[]>([{ ...EMPTY_ITEM }]);
 	const [busy, setBusy] = useState<string | null>(null);
+	const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
 	useEffect(() => { loadOrders(); loadProducts(); }, [loadOrders, loadProducts]);
+	useEffect(() => {
+		if (openId && rowRefs.current[openId]) rowRefs.current[openId]?.scrollIntoView({ behavior: "smooth", block: "center" });
+	}, [openId, orders]);
 
 	async function submit(e: React.FormEvent) {
 		e.preventDefault();
@@ -65,7 +69,7 @@ export default function Orders({ onOpenInvoice }: { onOpenInvoice: (id: string) 
 			) : (
 				<ul className="flex flex-col gap-12">
 					{orders.map((o) => (
-						<li key={o.id} className="rounded-16 bg-white p-16 shadow-heroImage md:p-20">
+						<li key={o.id} ref={(el) => { rowRefs.current[o.id] = el; }} className={`rounded-16 bg-white p-16 shadow-heroImage transition-shadow md:p-20 ${openId === o.id ? "ring-[2px] ring-[#5EA8F5]" : ""}`}>
 							<div className="flex flex-wrap items-start justify-between gap-12">
 								<div className="min-w-0">
 									<p className="flex items-center gap-10 text-16 font-semibold text-[#333333]">
