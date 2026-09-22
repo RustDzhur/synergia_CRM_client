@@ -10,12 +10,12 @@ import FormField from "../shared/FormField";
 export default function FinanceSettingsTab() {
 	const t = useTranslations("finance");
 	const { settings, countries, loadSettings, saveSettings } = useFinanceStore();
-	const [form, setForm] = useState({ country: "", currency: "EUR", smallBusiness: false, legalName: "", address: "", taxId: "", iban: "", bic: "", paymentTermsDays: "14", invoicePrefix: "RE" });
+	const [form, setForm] = useState({ country: "", currency: "EUR", smallBusiness: false, legalName: "", address: "", taxId: "", iban: "", bic: "", paymentTermsDays: "14", invoicePrefix: "RE", creditNotePrefix: "GS", reminderIntervalDays: "7" });
 	const [saving, setSaving] = useState(false);
 
 	useEffect(() => { loadSettings(); }, [loadSettings]);
 	useEffect(() => {
-		if (settings) setForm({ country: settings.country, currency: settings.currency, smallBusiness: settings.smallBusiness, legalName: settings.legalName, address: settings.address, taxId: settings.taxId, iban: settings.iban, bic: settings.bic, paymentTermsDays: String(settings.paymentTermsDays), invoicePrefix: settings.invoicePrefix });
+		if (settings) setForm({ country: settings.country, currency: settings.currency, smallBusiness: settings.smallBusiness, legalName: settings.legalName, address: settings.address, taxId: settings.taxId, iban: settings.iban, bic: settings.bic, paymentTermsDays: String(settings.paymentTermsDays), invoicePrefix: settings.invoicePrefix, creditNotePrefix: settings.creditNotePrefix, reminderIntervalDays: String(settings.reminderIntervalDays) });
 	}, [settings]);
 
 	const selectedCountry = countries.find((c) => c.code === form.country);
@@ -23,7 +23,7 @@ export default function FinanceSettingsTab() {
 	async function submit(e: React.FormEvent) {
 		e.preventDefault();
 		setSaving(true);
-		const err = await saveSettings({ ...form, paymentTermsDays: Number(form.paymentTermsDays) || 14 } as any);
+		const err = await saveSettings({ ...form, paymentTermsDays: Number(form.paymentTermsDays) || 14, reminderIntervalDays: Number(form.reminderIntervalDays) || 7 } as any);
 		setSaving(false);
 		if (err) return toast.error(err);
 		toast.success(t("saved"));
@@ -74,6 +74,8 @@ export default function FinanceSettingsTab() {
 				<div className="grid grid-cols-2 gap-14">
 					<FormField label={t("paymentTerms")} type="number" min={0} value={form.paymentTermsDays} onChange={(e) => setForm({ ...form, paymentTermsDays: e.target.value })} />
 					<FormField label={t("invoicePrefix")} value={form.invoicePrefix} onChange={(e) => setForm({ ...form, invoicePrefix: e.target.value.toUpperCase() })} maxLength={10} />
+					<FormField label={t("creditNotePrefixLabel")} value={form.creditNotePrefix} onChange={(e) => setForm({ ...form, creditNotePrefix: e.target.value.toUpperCase() })} maxLength={10} />
+					<FormField label={t("reminderIntervalLabel")} type="number" min={1} max={90} value={form.reminderIntervalDays} onChange={(e) => setForm({ ...form, reminderIntervalDays: e.target.value })} />
 				</div>
 			</div>
 

@@ -2,8 +2,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdAdd } from "react-icons/md";
+import { MdAdd, MdDownload, MdContentCopy, MdReceiptLong } from "react-icons/md";
 import { LineItem, useFinanceStore } from "@/app/store/useFinanceStore";
+import { authHeaders } from "@/app/store/crmApi";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
@@ -13,15 +14,18 @@ const STATUS_COLOR: Record<string, string> = { draft: "#B3B3B3", sent: "#5EA8F5"
 const EMPTY_ITEM: LineItem = { description: "", qty: 1, unitPrice: 0, taxRate: 0 };
 
 // Счета: по заказу (тогда попадает сюда автоматически) или сами по себе — например разовая услуга без отдельного заказа.
-// Номер — последовательный (RE-2026-1, RE-2026-2…), выдаётся один раз и не переиспользуется.
+// Номер — последовательный (RE-2026-1, RE-2026-2…), выдаётся один раз и не переиспользуется. Кредит-ноты (kind
+// "credit_note") живут в этом же списке — это отдельный юридический документ, а не правка счёта.
 export default function Invoices({ openId }: { openId?: string | null }) {
 	const t = useTranslations("finance");
 	const locale = useLocale();
-	const { invoices, products, loadInvoices, loadProducts, createInvoice, sendInvoice, payInvoice, settings } = useFinanceStore();
+	const { invoices, products, loadInvoices, loadProducts, createInvoice, sendInvoice, payInvoice, duplicateInvoice, issueCreditNote, settings } = useFinanceStore();
 	const [open, setOpen] = useState(false);
 	const [customerName, setCustomerName] = useState("");
 	const [items, setItems] = useState<LineItem[]>([{ ...EMPTY_ITEM }]);
 	const [busy, setBusy] = useState<string | null>(null);
+	const [creditTarget, setCreditTarget] = useState<string | null>(null);
+	const [creditNotes, setCreditNotes] = useState("");
 	const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
 	useEffect(() => { loadInvoices(); loadProducts(); }, [loadInvoices, loadProducts]);
@@ -41,6 +45,29 @@ export default function Invoices({ openId }: { openId?: string | null }) {
 	}
 	async function send(id: string) { setBusy(id); const err = await sendInvoice(id); setBusy(null); if (err) toast.error(err); }
 	async function pay(id: string) { setBusy(id); const err = await payInvoice(id); setBusy(null); if (err) toast.error(err); else toast.success(t("markedPaid")); }
+	async function duplicate(id: string) { setBusy(id); const err = await duplicateInvoice(id); setBusy(null); if (err) toast.error(err); else toast.success(t("invoiceDuplicated")); }
+	async function downloadPdf(id: string, number: string) {
+		try {
+			const res = await fetch(`/api/invoices/${id}/pdf?locale=${locale}`, { headers: authHeaders(false) });
+			if (!res.ok) throw new Error();
+			const url = URL.createObjectURL(await res.blob());
+			const tab = window.open(url, "_blank", "noopener");
+			if (!tab) { const a = document.createElement("a"); a.href = url; a.download = `${number}.pdf`; a.click(); }
+			setTimeout(() => URL.revokeObjectURL(url), 60_000);
+		} catch {
+			toast.error(t("pdfFailed"));
+		}
+	}
+	async function submitCreditNote(e: React.FormEvent) {
+		e.preventDefault();
+		if (!creditTarget) return;
+		setBusy(creditTarget);
+		const err = await issueCreditNote(creditTarget, creditNotes.trim() ? { notes: creditNotes.trim() } : undefined);
+		setBusy(null);
+		if (err) return toast.error(err);
+		toast.success(t("creditNoteIssued"));
+		setCreditTarget(null); setCreditNotes("");
+	}
 
 	return (
 		<div>
@@ -59,7 +86,9 @@ export default function Invoices({ openId }: { openId?: string | null }) {
 								<div className="min-w-0">
 									<p className="flex items-center gap-10 text-16 font-semibold text-[#333333]">
 										{inv.number}
+										{inv.kind === "credit_note" && <span className="rounded-4 bg-[#F0F0F0] px-8 py-2 text-12 font-medium text-[#666666]">{t("creditNote")}</span>}
 										<span className="rounded-4 px-8 py-2 text-12 font-medium text-white" style={{ background: STATUS_COLOR[inv.status] }}>{t(`istatus_${inv.status}`)}</span>
+										{inv.reminderCount > 0 && <span className="rounded-4 bg-[#FFF3E0] px-8 py-2 text-12 font-medium text-[#B36B00]">{t("remindersSent", { count: inv.reminderCount })}</span>}
 									</p>
 									<p className="mt-[4px] text-14 text-[#666666]">{inv.customerName} · {t("colDate")}: {inv.issueDate}{inv.dueDate ? ` · ${t("dueDate")}: ${inv.dueDate}` : ""}</p>
 								</div>
@@ -67,8 +96,21 @@ export default function Invoices({ openId }: { openId?: string | null }) {
 							</div>
 							<div className="mt-14 flex flex-wrap items-center gap-10">
 								{inv.status === "draft" && <button type="button" disabled={busy === inv.id} onClick={() => send(inv.id)} className="rounded-8 bg-primaryColor px-16 py-8 text-14 font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-[0.5]">{t("send")}</button>}
-								{(inv.status === "sent" || inv.status === "overdue") && <button type="button" disabled={busy === inv.id} onClick={() => pay(inv.id)} className="rounded-8 border border-[#0A8A2E] px-16 py-8 text-14 font-medium text-[#0A8A2E] transition-opacity hover:opacity-80 disabled:opacity-[0.5]">{t("markPaid")}</button>}
+								{inv.kind === "invoice" && (inv.status === "sent" || inv.status === "overdue") && <button type="button" disabled={busy === inv.id} onClick={() => pay(inv.id)} className="rounded-8 border border-[#0A8A2E] px-16 py-8 text-14 font-medium text-[#0A8A2E] transition-opacity hover:opacity-80 disabled:opacity-[0.5]">{t("markPaid")}</button>}
 								{inv.status === "paid" && <span className="text-14 text-[#0A8A2E]">{t("paidOn", { date: inv.paidAt ? new Date(inv.paidAt).toLocaleDateString(locale) : "" })}</span>}
+								{inv.kind === "invoice" && ["sent", "paid", "overdue"].includes(inv.status) && (
+									<button type="button" disabled={busy === inv.id} onClick={() => setCreditTarget(inv.id)} className="flex items-center gap-6 rounded-8 border border-[#E6E6E6] px-16 py-8 text-14 font-medium text-[#666666] transition-opacity hover:opacity-80 disabled:opacity-[0.5]">
+										<MdReceiptLong size={16} /> {t("issueCreditNote")}
+									</button>
+								)}
+								{inv.kind === "invoice" && (
+									<button type="button" disabled={busy === inv.id} onClick={() => duplicate(inv.id)} className="flex items-center gap-6 rounded-8 border border-[#E6E6E6] px-16 py-8 text-14 font-medium text-[#666666] transition-opacity hover:opacity-80 disabled:opacity-[0.5]">
+										<MdContentCopy size={16} /> {t("duplicate")}
+									</button>
+								)}
+								<button type="button" onClick={() => downloadPdf(inv.id, inv.number)} className="flex items-center gap-6 rounded-8 border border-[#E6E6E6] px-16 py-8 text-14 font-medium text-[#666666] transition-opacity hover:opacity-80">
+									<MdDownload size={16} /> {t("downloadPdf")}
+								</button>
 							</div>
 						</li>
 					))}
@@ -85,6 +127,18 @@ export default function Invoices({ openId }: { openId?: string | null }) {
 					<div className="mt-24 flex justify-end gap-12">
 						<button type="button" onClick={() => setOpen(false)} className="h-[44px] rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] hover:bg-gray">{t("cancel")}</button>
 						<button type="submit" className="h-[44px] rounded-8 bg-primaryColor px-24 text-16 font-medium text-white shadow-custom hover:opacity-80">{t("save")}</button>
+					</div>
+				</form>
+			</Modal>
+
+			<Modal open={!!creditTarget} onClose={() => setCreditTarget(null)} label={t("issueCreditNote")} className="w-full max-w-[520px]">
+				<form onSubmit={submitCreditNote} className="rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
+					<h2 className="mb-10 text-20 font-medium text-black">{t("issueCreditNote")}</h2>
+					<p className="mb-16 text-14 text-[#999999]">{t("creditNoteHint")}</p>
+					<FormField label={t("notes")} value={creditNotes} onChange={(e) => setCreditNotes(e.target.value)} maxLength={2000} />
+					<div className="mt-24 flex justify-end gap-12">
+						<button type="button" onClick={() => setCreditTarget(null)} className="h-[44px] rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] hover:bg-gray">{t("cancel")}</button>
+						<button type="submit" disabled={busy === creditTarget} className="h-[44px] rounded-8 bg-primaryColor px-24 text-16 font-medium text-white shadow-custom hover:opacity-80 disabled:opacity-60">{t("save")}</button>
 					</div>
 				</form>
 			</Modal>

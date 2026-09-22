@@ -26,8 +26,22 @@ export const toInvoiceDTO = (inv: any) => ({
     currency: inv.currency, smallBusinessNote: !!inv.smallBusinessNote,
     issueDate: inv.issueDate, dueDate: inv.dueDate, notes: inv.notes,
     status: inv.status, sentAt: inv.sentAt ? inv.sentAt.toISOString() : "", paidAt: inv.paidAt ? inv.paidAt.toISOString() : "", paidAmount: inv.paidAmount,
+    reminderCount: inv.reminderCount ?? 0, lastReminderAt: inv.lastReminderAt ? inv.lastReminderAt.toISOString() : "",
+    recurringSource: inv.recurringSource ? String(inv.recurringSource) : "",
     totals: computeTotals(inv.items ?? []),
     createdAt: inv.createdAt.toISOString(), updatedAt: inv.updatedAt.toISOString(),
+});
+
+export const toRecurringInvoiceDTO = (r: any) => ({
+    id: String(r._id), active: !!r.active,
+    contact: r.contact ? String(r.contact) : "", company: r.company ? String(r.company) : "",
+    customerName: r.customerName, customerAddress: r.customerAddress, customerTaxId: r.customerTaxId,
+    items: (r.items ?? []).map((it: any) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice, taxRate: it.taxRate, product: it.product ? String(it.product) : "" })),
+    currency: r.currency, notes: r.notes,
+    interval: r.interval, dayOfMonth: r.dayOfMonth, autoSend: !!r.autoSend,
+    nextRunDate: r.nextRunDate, lastRunAt: r.lastRunAt ? r.lastRunAt.toISOString() : "", lastInvoice: r.lastInvoice ? String(r.lastInvoice) : "",
+    totals: computeTotals(r.items ?? []),
+    createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString(),
 });
 
 const toItemDTO = (it: any) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice, taxRate: it.taxRate, product: it.product ? String(it.product) : "" });

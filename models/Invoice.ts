@@ -48,6 +48,10 @@ const InvoiceSchema = new Schema(
         paidAt: { type: Date },
         paidAmount: { type: Number, default: 0 },
 
+        lastReminderAt: { type: Date },
+        reminderCount: { type: Number, default: 0 }, // сколько напоминаний об оплате уже отправлено (lib/finance/reminders.ts)
+        recurringSource: { type: Schema.Types.ObjectId, ref: "RecurringInvoice" }, // счёт создан автоматически по шаблону
+
         createdByName: { type: String, default: "" },
     },
     { timestamps: true }

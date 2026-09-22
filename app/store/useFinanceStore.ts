@@ -19,7 +19,17 @@ export interface Invoice {
 	contact: string; company: string; customerName: string; customerAddress: string; customerTaxId: string;
 	deal: string; order: string; contract: string; items: LineItem[]; currency: string; smallBusinessNote: boolean;
 	issueDate: string; dueDate: string; notes: string; status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
-	sentAt: string; paidAt: string; paidAmount: number; totals: Totals; createdAt: string; updatedAt: string;
+	sentAt: string; paidAt: string; paidAmount: number;
+	reminderCount: number; lastReminderAt: string; recurringSource: string;
+	totals: Totals; createdAt: string; updatedAt: string;
+}
+export interface RecurringInvoice {
+	id: string; active: boolean; contact: string; company: string;
+	customerName: string; customerAddress: string; customerTaxId: string;
+	items: LineItem[]; currency: string; notes: string;
+	interval: "monthly" | "yearly"; dayOfMonth: number; autoSend: boolean;
+	nextRunDate: string; lastRunAt: string; lastInvoice: string;
+	totals: Totals; createdAt: string; updatedAt: string;
 }
 export interface Expense {
 	id: string; vendor: string; category: string; amount: number; taxRate: number; currency: string; date: string;
@@ -42,6 +52,7 @@ export interface Contract {
 export interface FinanceSettings {
 	country: string; currency: string; smallBusiness: boolean; legalName: string; address: string; taxId: string;
 	iban: string; bic: string; paymentTermsDays: number; invoicePrefix: string; quotePrefix: string;
+	creditNotePrefix: string; reminderIntervalDays: number;
 }
 export interface CountryOption { code: string; name: string; standard: number; reduced?: number; label: string }
 export interface FinanceDashboard {
@@ -54,6 +65,7 @@ export interface FinanceDashboard {
 
 interface FinanceStore {
 	products: Product[]; orders: Order[]; invoices: Invoice[]; expenses: Expense[]; quotes: Quote[]; contracts: Contract[];
+	recurringInvoices: RecurringInvoice[];
 	settings: FinanceSettings | null; countries: CountryOption[]; dashboard: FinanceDashboard | null;
 	loading: boolean;
 	loadProducts: () => Promise<void>;
@@ -62,6 +74,7 @@ interface FinanceStore {
 	loadExpenses: () => Promise<void>;
 	loadQuotes: () => Promise<void>;
 	loadContracts: () => Promise<void>;
+	loadRecurringInvoices: () => Promise<void>;
 	loadSettings: () => Promise<void>;
 	loadDashboard: (months?: number) => Promise<void>;
 	saveSettings: (patch: Partial<FinanceSettings>) => Promise<string | null>;
@@ -75,6 +88,11 @@ interface FinanceStore {
 	createInvoice: (data: Partial<Invoice>) => Promise<string | null>;
 	sendInvoice: (id: string) => Promise<string | null>;
 	payInvoice: (id: string, amount?: number) => Promise<string | null>;
+	duplicateInvoice: (id: string) => Promise<string | null>;
+	issueCreditNote: (id: string, data?: { items?: LineItem[]; notes?: string }) => Promise<string | null>;
+	createRecurringInvoice: (data: Partial<RecurringInvoice>) => Promise<string | null>;
+	updateRecurringInvoice: (id: string, data: Partial<RecurringInvoice>) => Promise<string | null>;
+	deleteRecurringInvoice: (id: string) => Promise<string | null>;
 	createExpense: (data: Partial<Expense>) => Promise<string | null>;
 	deleteExpense: (id: string) => Promise<void>;
 	createQuote: (data: Partial<Quote>) => Promise<string | null>;
@@ -93,7 +111,7 @@ interface FinanceStore {
 
 // Finance (счета, заказы, товары, расходы, склад) — раздел, который заменил собой старое «Inventory Management».
 export const useFinanceStore = create<FinanceStore>()((set, get) => ({
-	products: [], orders: [], invoices: [], expenses: [], quotes: [], contracts: [], settings: null, countries: [], dashboard: null, loading: false,
+	products: [], orders: [], invoices: [], expenses: [], quotes: [], contracts: [], recurringInvoices: [], settings: null, countries: [], dashboard: null, loading: false,
 
 	loadProducts: async () => { const r = await apiCall<Product[]>("/api/products"); if (r.ok && r.data) set({ products: r.data }); },
 	loadOrders: async () => { const r = await apiCall<Order[]>("/api/orders"); if (r.ok && r.data) set({ orders: r.data }); },
@@ -101,6 +119,7 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 	loadExpenses: async () => { const r = await apiCall<Expense[]>("/api/expenses"); if (r.ok && r.data) set({ expenses: r.data }); },
 	loadQuotes: async () => { const r = await apiCall<Quote[]>("/api/quotes"); if (r.ok && r.data) set({ quotes: r.data }); },
 	loadContracts: async () => { const r = await apiCall<Contract[]>("/api/contracts"); if (r.ok && r.data) set({ contracts: r.data }); },
+	loadRecurringInvoices: async () => { const r = await apiCall<RecurringInvoice[]>("/api/recurring-invoices"); if (r.ok && r.data) set({ recurringInvoices: r.data }); },
 	loadSettings: async () => {
 		const r = await apiCall<{ settings: FinanceSettings; countries: CountryOption[] }>("/api/finance/settings");
 		if (r.ok && r.data) set({ settings: r.data.settings, countries: r.data.countries });
@@ -168,6 +187,37 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 		const r = await apiCall<Invoice>(`/api/invoices/${id}/pay`, "POST", amount !== undefined ? { amount } : {});
 		if (!r.ok || !r.data) return r.message;
 		set((s) => ({ invoices: s.invoices.map((i) => (i.id === id ? (r.data as Invoice) : i)) }));
+		return null;
+	},
+	duplicateInvoice: async (id) => {
+		const r = await apiCall<Invoice>(`/api/invoices/${id}/duplicate`, "POST", {});
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ invoices: [r.data as Invoice, ...s.invoices] }));
+		return null;
+	},
+	issueCreditNote: async (id, data) => {
+		const r = await apiCall<Invoice>(`/api/invoices/${id}/credit-note`, "POST", data ?? {});
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ invoices: [r.data as Invoice, ...s.invoices] }));
+		return null;
+	},
+
+	createRecurringInvoice: async (data) => {
+		const r = await apiCall<RecurringInvoice>("/api/recurring-invoices", "POST", data);
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ recurringInvoices: [r.data as RecurringInvoice, ...s.recurringInvoices] }));
+		return null;
+	},
+	updateRecurringInvoice: async (id, data) => {
+		const r = await apiCall<RecurringInvoice>(`/api/recurring-invoices/${id}`, "PATCH", data);
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ recurringInvoices: s.recurringInvoices.map((x) => (x.id === id ? (r.data as RecurringInvoice) : x)) }));
+		return null;
+	},
+	deleteRecurringInvoice: async (id) => {
+		const r = await apiCall(`/api/recurring-invoices/${id}`, "DELETE");
+		if (!r.ok) return r.message;
+		set((s) => ({ recurringInvoices: s.recurringInvoices.filter((x) => x.id !== id) }));
 		return null;
 	},
 

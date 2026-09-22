@@ -6,13 +6,14 @@ import Overview from "./Overview";
 import Quotes, { QuotePrefill } from "./Quotes";
 import Orders from "./Orders";
 import Invoices from "./Invoices";
+import RecurringInvoices from "./RecurringInvoices";
 import Contracts from "./Contracts";
 import Products from "./Products";
 import Expenses from "./Expenses";
 import AuditLog from "./AuditLog";
 import FinanceSettingsTab from "./Settings";
 
-const TABS = ["overview", "quotes", "orders", "invoices", "contracts", "products", "expenses", "audit", "settings"] as const;
+const TABS = ["overview", "quotes", "orders", "invoices", "recurring", "contracts", "products", "expenses", "audit", "settings"] as const;
 type Tab = (typeof TABS)[number];
 
 // Finance (/crm/inventory — адрес не меняли, чтобы не ломать ссылки; раздел в сайдбаре называется «Finance»): счета,
@@ -76,6 +77,7 @@ export default function Finance() {
 			{tab === "quotes" && <Quotes onOpenOrder={openOrder} prefill={quotePrefill} />}
 			{tab === "orders" && <Orders onOpenInvoice={openInvoice} openId={openOrderId} />}
 			{tab === "invoices" && <Invoices openId={openInvoiceId} />}
+			{tab === "recurring" && <RecurringInvoices />}
 			{tab === "contracts" && <Contracts />}
 			{tab === "products" && <Products />}
 			{tab === "expenses" && <Expenses />}
