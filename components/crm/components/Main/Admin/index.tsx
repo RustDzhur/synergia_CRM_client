@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { apiCall } from "@/app/store/crmApi";
+import BlogAdmin from "./BlogAdmin";
 
 interface Summary { orgs: number; users: number; byPlan: Record<string, number>; mrr: number; blocked: number; newRequests: number }
 interface OrgRow { id: string; name: string; ownerEmail: string; ownerName: string; plan: string; stripePlan: string; override: string; overrideUntil: string; status: string; interval: string; periodEnd: string; cancelAtPeriodEnd: boolean; hasSubscription: boolean; members: number; blocked: boolean; createdAt: string }
@@ -161,6 +162,8 @@ export default function AdminPanel() {
 				</table>
 				{orgs.length === 0 && <p className="py-30 text-center text-14 text-[#999999]">{t("none")}</p>}
 			</div>
+
+			<BlogAdmin />
 		</div>
 	);
 }
