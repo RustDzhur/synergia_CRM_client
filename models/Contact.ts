@@ -10,7 +10,8 @@ const ContactSchema = new Schema(
         lastName: { type: String, default: "" },
         email: String,
         phone: String,
-        company: String,
+        company: String, // свободный текст (название компании) — остаётся как отображаемый снимок
+        companyId: { type: Schema.Types.ObjectId, ref: "Company", default: null }, // реальная ссылка, если выбрана из подсказки
         position: String, // «Role» в макете
         website: { type: String, default: "" },
         twitter: { type: String, default: "" },

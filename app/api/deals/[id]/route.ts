@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import { emitDeal } from "@/lib/automation/emit";
+import { ownedContact, ownedCompany } from "@/lib/deals";
 import Deal from "@/models/Deal";
 import Stage from "@/models/Stage";
 import { DEAL_TEXT_FIELDS } from "@/lib/crmFields";
@@ -27,6 +28,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     await connectDB();
     const existing = await Deal.findOne({ _id: params.id, owner: user.id });
     if (!existing) return NextResponse.json({ message: "Not found" }, { status: 404 });
+
+    // "contact"/"company" присланы явно (даже пустой строкой — значит "отвязать") — undefined значит "не трогать"
+    if (body.contact !== undefined) data.contact = await ownedContact(body.contact, user.id);
+    if (body.company !== undefined) data.company = await ownedCompany(body.company, user.id);
 
     const update: Record<string, unknown> = {};
     if (body.stage !== undefined) {
