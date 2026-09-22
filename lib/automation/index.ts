@@ -17,7 +17,7 @@ import User from "@/models/User";
 // Правила лежат в записях раздела Automation (key "automation:rules"), переменные и константы — там же, журнал — "automation:logs".
 export const EVENTS = ["deal_created", "deal_stage", "contact_created", "lead_created", "message_received", "call_missed", "task_created", "deadline"] as const;
 export type EventType = (typeof EVENTS)[number];
-export const ACTIONS = ["notify", "create_task", "add_note", "move_stage", "send_email", "webhook"] as const;
+export const ACTIONS = ["notify", "create_task", "add_note", "move_stage", "send_email", "webhook", "ai_action"] as const;
 
 export interface AutoEvent {
     type: EventType;
@@ -119,6 +119,12 @@ async function perform(org: string, rule: Rule, ev: AutoEvent): Promise<string> 
             if (!to) throw new ProviderError(v.target === "client" ? "The client has no email address" : "The recipient has no email address");
             await sendFromAccount(account, { to, subject: (await render(org, v.name || "Firmspace CRM", ev)).slice(0, 200), text });
             return `Email sent to ${to}`;
+        }
+        case "ai_action": {
+            // в отличие от других действий здесь message — не текст для показа, а инструкция для модели; имя правила
+            // (v.name) не годится в качестве замены: это лейбл для человека, а не поведенческая инструкция для ИИ
+            const { runAiAction } = await import("@/lib/ai/automationStep");
+            return await runAiAction(org, v.message || "", ev);
         }
         case "webhook": {
             let url: URL;

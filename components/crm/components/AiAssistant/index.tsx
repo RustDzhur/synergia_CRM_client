@@ -32,7 +32,7 @@ function ActionCard({ message, action }: { message: AiMessage; action: AiAction 
 	const { confirm, cancel, hide } = useAiStore();
 	const [edits, setEdits] = useState<Record<string, string>>({});
 	const editable = EDITABLE[action.tool] ?? [];
-	const fields = Object.entries(action.args).filter(([k, v]) => k !== "id" && v !== "" && v !== undefined);
+	const fields = Object.entries(action.args).filter(([k, v]) => k !== "id" && !k.endsWith("_id") && v !== "" && v !== undefined);
 	const shown = (k: string, v: unknown) => (typeof v === "boolean" ? t(v ? "yes" : "no") : String(v).replace("T", " "));
 	const done = action.state === "done";
 

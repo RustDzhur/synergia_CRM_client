@@ -36,6 +36,7 @@ export default function AutomationRules({ stages }: CustomTabApi & { stages: Sta
 		if (!v.name.trim()) return void toast.error(t("r_nameRequired"));
 		if (v.action === "move_stage" && !v.moveTo) return void toast.error(t("r_moveRequired"));
 		if (v.action === "webhook" && !/^https:\/\//.test(v.url)) return void toast.error(t("r_urlRequired"));
+		if (v.action === "ai_action" && !v.message.trim()) return void toast.error(t("r_instructionRequired"));
 		setBusy(true);
 		await save({ id: editing.id, values: { ...v, name: v.name.trim() } });
 		setBusy(false);
@@ -124,10 +125,11 @@ export default function AutomationRules({ stages }: CustomTabApi & { stages: Sta
 								<select value={v.target} onChange={(e) => set("target", e.target.value)} className={field}><option value="client">{t("r_toClient")}</option><option value="owner">{t("r_toOwner")}</option></select>
 							</label>
 						)}
+						{v.action === "ai_action" && <p className="rounded-8 bg-[#FFF8E8] p-10 text-14 text-[#8A6D00]">{t("r_aiActionWarning")}</p>}
 						{v.action !== "move_stage" && (
-							<label><span className={label}>{v.action === "add_note" || v.action === "notify" ? t("r_text") : t("r_message")}</span>
-								<textarea value={v.message} onChange={(e) => set("message", e.target.value)} rows={3} maxLength={1000} className="w-full rounded-8 border border-[#E6E6E6] bg-white p-10 text-16 text-[#666666] outline-none focus:border-[#5EA8F5]" />
-								<span className="mt-4 block text-12 text-[#B3B3B3]">{t("r_variables", { examples: VARS })}</span>
+							<label><span className={label}>{v.action === "ai_action" ? t("r_instruction") : v.action === "add_note" || v.action === "notify" ? t("r_text") : t("r_message")}</span>
+								<textarea value={v.message} onChange={(e) => set("message", e.target.value)} rows={3} maxLength={1000} placeholder={v.action === "ai_action" ? t("r_instructionPlaceholder") : undefined} className="w-full rounded-8 border border-[#E6E6E6] bg-white p-10 text-16 text-[#666666] outline-none focus:border-[#5EA8F5]" />
+								<span className="mt-4 block text-12 text-[#B3B3B3]">{v.action === "ai_action" ? t("r_aiActionHint") : t("r_variables", { examples: VARS })}</span>
 							</label>
 						)}
 					</div>

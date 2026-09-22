@@ -12,6 +12,10 @@ const EmployeeSchema = new Schema(
         position: String,
         department: String,
         avatarUrl: String,
+        // из распознанного документа (Firmspace AI → Documents → «Analyze»), например трудового договора
+        contractType: { type: String, default: "" },
+        contractStart: { type: String, default: "" }, // "YYYY-MM-DD"
+        contractNote: { type: String, default: "" }, // краткое резюме документа, из которого взяты поля
     },
     { timestamps: true }
 );

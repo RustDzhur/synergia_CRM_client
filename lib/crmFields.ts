@@ -25,6 +25,7 @@ export const TASK_TEXT_FIELDS = ["title", "description", "deadline", "responsibl
 
 export const EMPLOYEE_FIELDS = [
     "firstname", "lastname", "email", "workPhone", "internalPhone", "position", "department",
+    "contractType", "contractStart", "contractNote",
 ] as const;
 
 // Экранирует спецсимволы регулярных выражений: строка поиска пользователя не должна становиться шаблоном
