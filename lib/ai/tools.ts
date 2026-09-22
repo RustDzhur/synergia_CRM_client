@@ -3,10 +3,13 @@ import { contactFullName, escapeRegex } from "@/lib/crmFields";
 import { postTask } from "@/lib/feed";
 import { emit, emitDeal } from "@/lib/automation/emit";
 import { sendFromAccount } from "@/lib/mail";
+import { extractPdfText } from "@/lib/ai/pdf";
+import { getObject } from "@/lib/storage/firebase";
 import { ensureStages } from "@/lib/stages";
 import Company from "@/models/Company";
 import Contact from "@/models/Contact";
 import Deal from "@/models/Deal";
+import DocItem from "@/models/DocItem";
 import Employee from "@/models/Employee";
 import Integration from "@/models/Integration";
 import MailMessage from "@/models/MailMessage";
@@ -225,6 +228,32 @@ export const TOOLS: AiTool[] = [
             return list.reverse().map((m) => ({ id: String(m._id), direction: m.folder === "sent" ? "we wrote" : "they wrote", subject: m.subject, at: new Date(m.at).toISOString().slice(0, 16), text: cut(m.body, 600) }));
         },
     },
+    {
+        module: "collab", write: false,
+        def: { name: "search_documents", description: "Search uploaded files in Documents by name (not Google Docs/Sheets/Slides — only uploaded files, e.g. PDFs). Use it to find a file's id before read_document.", parameters: schema({ query: S("text in the file name"), limit: N("max results, default 10, max 25") }) },
+        run: async (c, a) => {
+            const q = str(a.query, 150);
+            const filter: Record<string, unknown> = { owner: c.org, kind: "file", archived: { $ne: true } };
+            if (q) filter.name = rx(q);
+            const list = await DocItem.find(filter).sort({ createdAt: -1 }).limit(int(a.limit, 10, 1, 25)).lean();
+            return list.map((d) => ({ id: String(d._id), name: d.name, mime: d.mime, sizeKb: Math.round((d.size ?? 0) / 1024), uploaded: iso(d.createdAt) }));
+        },
+    },
+    {
+        module: "collab", write: false,
+        def: { name: "read_document", description: "Read the text of an uploaded PDF file (not Google Docs/Sheets/Slides, and not images or other file types — PDF only, for now). Use it to summarize a document or, for an employment contract, to find the employee name, contract type and start date before proposing save_employee_contract.", parameters: schema({ id: S("file id from search_documents") }, ["id"]) },
+        run: async (c, a) => {
+            if (!isId(a.id)) throw new ToolError("id must be a file id from search_documents");
+            const doc = await DocItem.findOne({ _id: a.id, owner: c.org, kind: "file" }).lean();
+            if (!doc) throw new ToolError("File not found");
+            if (doc.mime !== "application/pdf") throw new ToolError(`Only PDF files can be read yet (this file is ${doc.mime || "of an unknown type"})`);
+            const res = await getObject(doc.storagePath);
+            if (!res) throw new ToolError("The file is missing from storage");
+            const { text, pages, truncated } = await extractPdfText(Buffer.from(await res.arrayBuffer()));
+            if (!text) throw new ToolError("No text could be found in this PDF (it may be a scanned image without a text layer)");
+            return { name: doc.name, pages, truncated, text };
+        },
+    },
 
     // ─────────── запись: только после подтверждения пользователем ───────────
     {
@@ -275,8 +304,18 @@ export const TOOLS: AiTool[] = [
     {
         module: "crm", write: true,
         def: { name: "create_contact", description: "Create a contact (customer). Needs user confirmation.", parameters: schema({ first_name: S(""), last_name: S(""), email: S(""), phone: S(""), company: S(""), position: S(""), notes: S("") }) },
+        // check() должен уметь принять и свои же прежние аргументы: карточку подтверждения /api/ai/actions проверяет заново
+        // теми же именами, что вернул этот же check() в чате (firstName), а не именами параметров инструмента (first_name)
         check: (a) => {
-            const f = { firstName: str(a.first_name, 80), lastName: str(a.last_name, 80), email: str(a.email, 200), phone: str(a.phone, 60), company: str(a.company, 200), position: str(a.position, 120), notes: str(a.notes, 500) };
+            const f = {
+                firstName: str(a.first_name ?? a.firstName, 80),
+                lastName: str(a.last_name ?? a.lastName, 80),
+                email: str(a.email, 200),
+                phone: str(a.phone, 60),
+                company: str(a.company, 200),
+                position: str(a.position, 120),
+                notes: str(a.notes, 500),
+            };
             if (!contactFullName(f)) throw new ToolError("first_name or last_name is required");
             if (f.email && !/^\S+@\S+\.\S+$/.test(f.email)) throw new ToolError("email is not a valid address");
             return f;
@@ -319,6 +358,30 @@ export const TOOLS: AiTool[] = [
             return { params: { to: String(a.to) }, link: "/crm/collaboration/web-mails" };
         },
     },
+    {
+        module: "company", write: true,
+        def: { name: "save_employee_contract", description: "Save contract fields (read from a document with read_document) to an employee's profile: contract type, start date and a short note. Needs user confirmation. Find the employee first with list_employees.", parameters: schema({ employee_id: S("employee id from list_employees"), contract_type: S("e.g. Full-time, Part-time, Freelance"), start_date: S("date the contract starts, YYYY-MM-DD"), note: S("one-sentence summary of the document") }, ["employee_id"]) },
+        // idempotent, как и create_contact выше: принимает и первичные аргументы модели (contract_type), и свой же прежний
+        // результат (contractType) — так работает и обычное подтверждение из чата, и прямой вызов /api/ai/actions
+        check: (a) => {
+            if (!isId(a.employee_id)) throw new ToolError("employee_id must be an employee id from list_employees");
+            const out: Args = { employee_id: a.employee_id };
+            const contractType = a.contract_type ?? a.contractType;
+            const startDate = a.start_date ?? a.contractStart;
+            const note = a.note ?? a.contractNote;
+            if (contractType !== undefined) out.contractType = str(contractType, 100);
+            if (startDate !== undefined) out.contractStart = day(startDate, "start_date");
+            if (note !== undefined) out.contractNote = str(note, 500);
+            if (Object.keys(out).length < 2) throw new ToolError("Nothing to save: give at least one of contract_type, start_date or note");
+            return out;
+        },
+        run: async (c, a) => {
+            const { employee_id, ...set } = a;
+            const emp = await Employee.findOneAndUpdate({ _id: employee_id, owner: c.org }, { $set: set }, { new: true });
+            if (!emp) throw new ToolError("Employee not found");
+            return { params: { name: `${emp.firstname} ${emp.lastname}`.trim() }, link: "/crm/company" };
+        },
+    },
 ];
 
 export const toolByName = (name: string) => TOOLS.find((t) => t.def.name === name);
@@ -334,6 +397,10 @@ export async function targetLabel(c: Pick<AiCtx, "org">, tool: string, a: Args):
             const Model = a.entity === "deal" ? Deal : a.entity === "contact" ? Contact : Company;
             const r = await Model.findOne({ _id: a.id, owner: c.org }).select("name clientName").lean<{ name?: string; clientName?: string }>();
             return r?.name ?? r?.clientName ?? "";
+        }
+        if (tool === "save_employee_contract") {
+            const r = await Employee.findOne({ _id: a.employee_id, owner: c.org }).select("firstname lastname").lean<{ firstname: string; lastname: string }>();
+            return r ? `${r.firstname} ${r.lastname}`.trim() : "";
         }
     } catch { /* подпись необязательна */ }
     return "";

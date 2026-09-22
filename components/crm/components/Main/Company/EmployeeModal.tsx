@@ -13,7 +13,7 @@ interface Props {
 	onClose: () => void;
 }
 
-const EMPTY: EmployeeInput = { firstname: "", lastname: "", email: "", workPhone: "", internalPhone: "", position: "", department: "" };
+const EMPTY: EmployeeInput = { firstname: "", lastname: "", email: "", workPhone: "", internalPhone: "", position: "", department: "", contractType: "", contractStart: "" };
 
 // Окно «Invite Employees» / редактирования сотрудника.
 export default function EmployeeModal({ open, employee, onClose }: Props) {
@@ -30,6 +30,7 @@ export default function EmployeeModal({ open, employee, onClose }: Props) {
 					firstname: employee.firstname, lastname: employee.lastname, email: employee.email,
 					workPhone: employee.workPhone ?? "", internalPhone: employee.internalPhone ?? "",
 					position: employee.position ?? "", department: employee.department ?? "",
+					contractType: employee.contractType ?? "", contractStart: employee.contractStart ?? "",
 				}
 				: EMPTY
 		);
@@ -64,6 +65,8 @@ export default function EmployeeModal({ open, employee, onClose }: Props) {
 					<FormField label={t("internalPhone")} type="tel" value={form.internalPhone ?? ""} onChange={set("internalPhone")} maxLength={100} />
 					<FormField label={t("position")} value={form.position ?? ""} onChange={set("position")} maxLength={100} />
 					<FormField label={t("department")} value={form.department ?? ""} onChange={set("department")} maxLength={100} />
+					<FormField label={t("contractType")} value={form.contractType ?? ""} onChange={set("contractType")} maxLength={100} placeholder={t("contractTypePlaceholder")} />
+					<FormField label={t("contractStart")} type="date" value={form.contractStart ?? ""} onChange={set("contractStart")} />
 				</div>
 				<div className="mt-24 flex justify-end gap-12">
 					<button type="button" onClick={onClose} className="h-50 rounded-8 border border-[#E6E6E6] px-24 text-16 font-medium text-[#666666] transition-colors hover:bg-gray">

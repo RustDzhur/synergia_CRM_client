@@ -11,6 +11,9 @@ export interface Employee {
     workPhone?: string;
     internalPhone?: string;
     avatarUrl?: string;
+    contractType?: string;
+    contractStart?: string;
+    contractNote?: string;
 }
 
 export type EmployeeInput = Partial<Omit<Employee, "_id" | "avatarUrl">>;

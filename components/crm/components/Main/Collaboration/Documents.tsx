@@ -1,13 +1,16 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdCloudUpload, MdFolder, MdImage, MdInsertDriveFile, MdKeyboardArrowDown, MdMoreHoriz, MdRefresh } from "react-icons/md";
 import type { DocItemDTO, DocKind, FolderDTO } from "@/app/types/documents";
 import { authHeaders } from "@/app/store/crmApi";
+import { useAiStore } from "@/app/store/useAiStore";
 import { useDocsStore } from "@/app/store/useDocsStore";
 import Dropdown from "@/app/utils/Dropdown";
 import { shrinkImage } from "@/app/utils/imageResize";
+import { stripLocale } from "@/app/utils/locale";
 import { useClickOutside } from "@/app/utils/useClickOutside";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import Modal from "../shared/Modal";
@@ -64,7 +67,12 @@ function EntryIcon({ doc, folder, size }: { doc?: DocItemDTO; folder?: boolean; 
 // (редактируются в Google в новой вкладке и сохраняются там сами), файлы и фото хранятся в Firebase Storage. Всё раскладывается по папкам.
 export default function Documents() {
 	const t = useTranslations("collab");
+	const tAi = useTranslations("ai");
 	const locale = useLocale();
+	const pagePath = stripLocale(usePathname());
+	const { show: showAi, send: sendAi, status: aiStatus, loadStatus: loadAiStatus } = useAiStore();
+	useEffect(() => { if (!useAiStore.getState().status) loadAiStatus(); }, [loadAiStatus]);
+	const canAnalyzeDocs = !!aiStatus?.configured && (aiStatus.tools.some((x) => x.name === "read_document"));
 	const { state, loading, load, createFolder, patchFolder, deleteFolder, createDoc, patchDoc, deleteDoc, upload, connectDrive, disconnectDrive } = useDocsStore();
 
 	const [layout, setLayout] = useState<Layout>("list");
@@ -268,8 +276,13 @@ export default function Documents() {
 		{ label: t("moveTo"), onClick: () => startMove({ type: "folder", folder: f }) },
 		{ label: t("delete"), onClick: () => setToDelete({ type: "folder", folder: f }), danger: true },
 	];
+	function analyzeDoc(d: DocItemDTO) {
+		showAi();
+		sendAi(tAi("analyzeDocPrompt", { name: d.name }), { locale, page: pagePath });
+	}
 	const docActions = (d: DocItemDTO): Action[] => [
 		{ label: d.kind === "file" ? t("openFile") : t("openInGoogle"), onClick: () => openDoc(d) },
+		...(canAnalyzeDocs && d.kind === "file" && d.mime === "application/pdf" ? [{ label: tAi("analyzeDoc"), onClick: () => analyzeDoc(d) }] : []),
 		{ label: t("rename"), onClick: () => { setName(d.name); setNameMode({ kind: "doc-rename", doc: d }); } },
 		{ label: t("moveTo"), onClick: () => startMove({ type: "doc", doc: d }) },
 		{ label: d.archived ? t("restore") : t("archive"), onClick: () => void patchDoc(d.id, { archived: !d.archived }) },

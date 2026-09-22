@@ -15,6 +15,7 @@ import ConfirmDialog from "../shared/ConfirmDialog";
 import Modal from "../shared/Modal";
 import SearchBox from "../shared/SearchBox";
 import { formatChatDate } from "./format";
+import AiQuickAsk from "../../AiAssistant/AiQuickAsk";
 import MailConnectDialog from "./MailConnectDialog";
 
 type MailView = "inbox" | "starred" | "snoozed" | "sent" | "draft";
@@ -56,6 +57,7 @@ const inputClass = "h-50 rounded-8 border border-[#E6E6E6] bg-[#FBFBFB] px-16 te
 // новые подтягиваются раз в минуту и по кнопке «обновить». Звезда, «отложить» и удаление действуют только в CRM, на почтовом сервере письма остаются.
 export default function WebMails() {
 	const t = useTranslations("collab");
+	const tAi = useTranslations("ai");
 	const locale = useLocale();
 	const router = useRouter();
 	const pathname = usePathname();
@@ -363,8 +365,19 @@ export default function WebMails() {
 
 			<Modal open={reading !== null} onClose={() => setReading(null)} label={reading?.subject} className="w-full max-w-[600px]">
 				<div className="rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
-					<button type="button" onClick={() => setReading(null)} aria-label={t("close")} className="absolute right-16 top-16 text-iconColor transition-colors hover:text-black"><MdClose size={24} /></button>
-					<h2 className="mb-6 break-words pr-30 text-24 font-medium text-black">{reading?.subject || t("noSubject")}</h2>
+					<div className="mb-6 flex items-start justify-between gap-16">
+						<h2 className="break-words text-24 font-medium text-black">{reading?.subject || t("noSubject")}</h2>
+						<div className="flex shrink-0 items-center gap-12 pt-[4px]">
+							{reading && (
+								<AiQuickAsk
+									prompt={tAi("analyzeMailPrompt", { subject: reading.subject || t("noSubject"), from: reading.from })}
+									requiredTool="search_mail"
+									label={tAi("analyzeMail")}
+								/>
+							)}
+							<button type="button" onClick={() => setReading(null)} aria-label={t("close")} className="text-iconColor transition-colors hover:text-black"><MdClose size={24} /></button>
+						</div>
+					</div>
 					<p className="mb-20 break-words text-14 text-[#999999]">
 						{reading?.from} → {reading?.to} · {reading ? new Date(reading.at).toLocaleString(localeTag(locale)) : ""}
 					</p>
