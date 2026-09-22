@@ -213,6 +213,19 @@
     "terms": "Terms (AGB)",
     "rights": "© {year} Firmspace CRM. All rights reserved."
   },
+  "chatbot": {
+    "title": "Firmspace Assistant",
+    "disclaimer": "Answers come from prepared information only — for anything else, contact Support.",
+    "greeting": "Hi! Ask me about plans, features, security or getting started — I'll answer from what I know.",
+    "placeholder": "Ask a question…",
+    "send": "Send",
+    "open": "Open chat assistant",
+    "close": "Close chat assistant",
+    "quickQuestions": "Try asking:",
+    "fallback": "I don't have a prepared answer for that yet. Try rephrasing, or reach a real person via Support or Contact.",
+    "supportLink": "Support / FAQ",
+    "contactLink": "Contact"
+  },
   "contacts": {
     "title": "Contacts",
     "search": "Search",

@@ -213,6 +213,19 @@
     "terms": "AGB",
     "rights": "© {year} Firmspace CRM. Alle Rechte vorbehalten."
   },
+  "chatbot": {
+    "title": "Firmspace-Assistent",
+    "disclaimer": "Antworten stammen nur aus vorbereiteten Informationen — für alles andere wenden Sie sich an den Support.",
+    "greeting": "Hallo! Fragen Sie mich zu Tarifen, Funktionen, Sicherheit oder dem Einstieg — ich antworte aus meinem Wissen.",
+    "placeholder": "Frage stellen…",
+    "send": "Senden",
+    "open": "Chat-Assistent öffnen",
+    "close": "Chat-Assistent schließen",
+    "quickQuestions": "Fragen Sie zum Beispiel:",
+    "fallback": "Dazu habe ich noch keine vorbereitete Antwort. Formulieren Sie es anders, oder erreichen Sie eine echte Person über Support oder Kontakt.",
+    "supportLink": "Support / FAQ",
+    "contactLink": "Kontakt"
+  },
   "contacts": {
     "title": "Kontakte",
     "search": "Suche",
