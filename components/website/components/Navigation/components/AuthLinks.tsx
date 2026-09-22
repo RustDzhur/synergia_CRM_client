@@ -1,15 +1,31 @@
 "use client";
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import useAuthFormStore from "@/app/store/useAuthFormStore";
 import { useSiteMenuState } from "@/app/store/useSiteMenuState";
 
 export default function AuthLinks() {
 	const t = useTranslations("navWebsite.auth");
+	const locale = useLocale();
+	const router = useRouter();
 	const { toggleSignInForm, toggleSignUpForm } = useAuthFormStore();
 	const { menu, toggleMenu } = useSiteMenuState();
 
+	// Сессия не закончена (в браузере есть токен) — сразу в CRM, а не на форму входа; если токен просрочен,
+	// сама CRM (CrmLayout) вернёт на лендинг. Нет токена — как раньше, открываем форму входа.
 	const handleToggleSignin = () => {
+		let hasToken = false;
+		try {
+			hasToken = !!localStorage.getItem("token");
+		} catch {
+			/* приватный режим */
+		}
+		if (hasToken) {
+			if (menu) toggleMenu();
+			router.push(`/${locale}/crm`);
+			return;
+		}
 		toggleSignInForm();
 		if (!menu) {
 			toggleMenu();

@@ -10,8 +10,6 @@ import { apiCall } from "@/app/store/crmApi";
 import Modal from "../shared/Modal";
 
 const ICONS: Record<PlanId, IconType> = { free: MdSignalCellularAlt, standard: MdInfo, professional: MdArticle };
-// ключи функций в namespace "upgrade"
-const FEATURE_LABEL = { chat: "chat", calls: "hdCalls", calendar: "calendar", workspace: "workspace", feed: "feed", knowledge: "knowledgeBase" } as const;
 
 interface Billing {
 	configured: boolean;
@@ -145,14 +143,17 @@ export default function Upgrade() {
 							<p className="mt-6 text-center text-16 text-[#999999]">
 								{plan.users === null ? t("unlimitedUsers") : t("users", { count: plan.users })}
 							</p>
+							<p className="mt-2 text-center text-14 text-[#B3B3B3]">
+								{t("limitsLine", { rules: plan.automationRules, ai: plan.aiDailyRequests, storage: plan.storageMb >= 1000 ? `${plan.storageMb / 1000} GB` : `${plan.storageMb} MB` })}
+							</p>
 
 							<ul className="mb-40 mt-40 flex w-full flex-col gap-10 text-16">
 								{FEATURE_KEYS.map((f) => {
 									const included = plan.features[f];
 									return (
-										<li key={f} className={`flex items-center gap-8 ${included ? "text-primaryColor" : "text-[#CCCCCC] line-through"}`}>
-											{included ? <MdCheckBox size={20} className="shrink-0" aria-hidden /> : <MdCheckBoxOutlineBlank size={20} className="shrink-0" aria-hidden />}
-											{t(FEATURE_LABEL[f])}
+										<li key={f} className={`flex items-start gap-8 ${included ? "text-primaryColor" : "text-[#CCCCCC] line-through"}`}>
+											{included ? <MdCheckBox size={20} className="mt-[2px] shrink-0" aria-hidden /> : <MdCheckBoxOutlineBlank size={20} className="mt-[2px] shrink-0" aria-hidden />}
+											{t(f)}
 										</li>
 									);
 								})}

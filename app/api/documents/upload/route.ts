@@ -3,7 +3,7 @@ import { Types } from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
-import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, QUOTA_BYTES, ownedFolder, safeFileName, toDocDTO } from "@/lib/documents";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, ownedFolder, quotaBytes, safeFileName, toDocDTO } from "@/lib/documents";
 import { putObject, storageConfigured } from "@/lib/storage/firebase";
 import DocItem from "@/models/DocItem";
 import User from "@/models/User";
@@ -30,8 +30,11 @@ export async function POST(req: Request) {
         await connectDB();
         const folder = await ownedFolder(user.id, form.get("folder") || null);
         if (folder === undefined) return badRequest("Folder not found");
-        const used = await DocItem.aggregate([{ $match: { owner: new Types.ObjectId(user.id), kind: "file" } }, { $group: { _id: null, total: { $sum: "$size" } } }]);
-        if ((used[0]?.total ?? 0) + file.size > QUOTA_BYTES) return NextResponse.json({ message: "Your file storage is full" }, { status: 413 });
+        const [used, quota] = await Promise.all([
+            DocItem.aggregate([{ $match: { owner: new Types.ObjectId(user.id), kind: "file" } }, { $group: { _id: null, total: { $sum: "$size" } } }]),
+            quotaBytes(user.id),
+        ]);
+        if ((used[0]?.total ?? 0) + file.size > quota) return NextResponse.json({ message: "Your file storage is full. Upgrade the plan for more space.", code: "plan_limit" }, { status: 413 });
 
         const me = await User.findById(user.userId).select("firstname lastname");
         const doc = await DocItem.create({

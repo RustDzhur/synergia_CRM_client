@@ -1,18 +1,26 @@
 import { NextResponse } from "next/server";
+import { planFor } from "@/app/config/plans";
+import { effectivePlan } from "@/lib/billing";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { adsAvailable, findAds, toConnectionDTO } from "@/lib/ads";
 import Integration from "@/models/Integration";
+import Organization from "@/models/Organization";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/ads — какие рекламные платформы настроены на сервере и какие подключены у фирмы
+export async function adsPlanOk(org: string) {
+    const o = await Organization.findById(org).select("plan planOverride planOverrideUntil");
+    return planFor(o ? effectivePlan(o) : "free").features.ads;
+}
+
+// GET /api/ads — какие рекламные платформы настроены на сервере, разрешает ли их тариф фирмы, и какие подключены
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     await connectDB();
-    return NextResponse.json({ available: adsAvailable(), connections: (await findAds(user.id)).map(toConnectionDTO) });
+    return NextResponse.json({ available: adsAvailable(), planOk: await adsPlanOk(user.id), connections: (await findAds(user.id)).map(toConnectionDTO) });
 }
 
 // PATCH /api/ads — { id, accountId }: выбрать рекламный аккаунт из найденных

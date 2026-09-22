@@ -121,6 +121,13 @@ async function perform(org: string, rule: Rule, ev: AutoEvent): Promise<string> 
             return `Email sent to ${to}`;
         }
         case "ai_action": {
+            // на случай, если фирма понизила тариф уже после того, как создала это правило на более высоком
+            const { effectivePlan } = await import("@/lib/billing");
+            const { planFor } = await import("@/app/config/plans");
+            const orgDoc = await Organization.findById(org).select("plan planOverride planOverrideUntil");
+            if (!planFor(orgDoc ? effectivePlan(orgDoc) : "free").features.aiAutomation) {
+                throw new ProviderError("This firm's plan no longer includes the autonomous AI automation step");
+            }
             // в отличие от других действий здесь message — не текст для показа, а инструкция для модели; имя правила
             // (v.name) не годится в качестве замены: это лейбл для человека, а не поведенческая инструкция для ИИ
             const { runAiAction } = await import("@/lib/ai/automationStep");

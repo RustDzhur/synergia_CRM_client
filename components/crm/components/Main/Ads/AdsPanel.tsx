@@ -24,7 +24,7 @@ export function Kpi({ label, value }: { label: string; value: string }) {
 	);
 }
 
-function Connection({ c, available, onChoose, onDisconnect, onConnect }: { c: AdsConnectionDTO | undefined; available: boolean; platform: AdsPlatform; onChoose: (id: string, account: string) => void; onDisconnect: (c: AdsConnectionDTO) => void; onConnect: () => void }) {
+function Connection({ c, available, planOk, onChoose, onDisconnect, onConnect }: { c: AdsConnectionDTO | undefined; available: boolean; planOk: boolean; platform: AdsPlatform; onChoose: (id: string, account: string) => void; onDisconnect: (c: AdsConnectionDTO) => void; onConnect: () => void }) {
 	const t = useTranslations("ads");
 	const locale = useLocale();
 	const expired = !!c && c.expiresAt > 0 && c.expiresAt < Date.now();
@@ -47,9 +47,10 @@ function Connection({ c, available, onChoose, onDisconnect, onConnect }: { c: Ad
 					</label>
 				</>
 			)}
-			{!available && !c && <p className="text-14 text-[#999999]">{t("notConfigured")}</p>}
+			{!c && !planOk && <p className="text-14 text-[#F4A100]">{t("needsUpgrade")}</p>}
+			{!c && planOk && !available && <p className="text-14 text-[#999999]">{t("notConfigured")}</p>}
 			<div className="flex gap-10">
-				<button type="button" disabled={!available} onClick={onConnect} className="rounded-8 bg-primaryColor px-16 py-8 text-16 font-medium text-white transition-opacity hover:opacity-80 disabled:cursor-default disabled:opacity-[0.4]">
+				<button type="button" disabled={!available || !planOk} onClick={onConnect} className="rounded-8 bg-primaryColor px-16 py-8 text-16 font-medium text-white transition-opacity hover:opacity-80 disabled:cursor-default disabled:opacity-[0.4]">
 					{c ? t("reconnect") : t("connect")}
 				</button>
 				{c && <button type="button" onClick={() => onDisconnect(c)} className="rounded-8 border border-[#E6E6E6] px-16 py-8 text-16 text-[#666666] transition-colors hover:bg-gray">{t("disconnect")}</button>}
@@ -120,7 +121,7 @@ export default function AdsPanel() {
 						return (
 							<div key={p.id}>
 								<p className="mb-10 flex items-center gap-12 text-18 font-medium text-[#4D4D4D]">{p.icon}{t(p.id)}</p>
-								<Connection c={c} platform={p.id} available={!!status?.available[p.id]} onChoose={onChoose} onDisconnect={setToRemove} onConnect={() => onConnect(p.id)} />
+								<Connection c={c} platform={p.id} available={!!status?.available[p.id]} planOk={status ? status.planOk : true} onChoose={onChoose} onDisconnect={setToRemove} onConnect={() => onConnect(p.id)} />
 							</div>
 						);
 					})}

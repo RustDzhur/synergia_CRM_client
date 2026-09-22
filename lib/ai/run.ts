@@ -1,3 +1,4 @@
+import { planFor } from "@/app/config/plans";
 import { effectivePlan } from "@/lib/billing";
 import { ProviderError } from "@/lib/http";
 import AiLog from "@/models/AiLog";
@@ -7,12 +8,12 @@ import User from "@/models/User";
 import { AiCtx, ToolError, allowedTools, targetLabel } from "./tools";
 import { Msg, complete } from "./provider";
 
-// Сколько разговоров с ИИ в сутки у фирмы (можно переопределить переменной AI_DAILY_LIMIT — одно число для всех тарифов)
-const LIMITS = { free: 15, standard: 100, professional: 300 } as const;
+// Сколько разговоров с ИИ в сутки у фирмы — общий счётчик для чата и автономного шага автоматизации (см. app/config/plans.ts).
+// Можно переопределить переменной AI_DAILY_LIMIT (одно число для всех тарифов) — например, для теста.
 export async function dailyLimit(org: string) {
     if (Number(process.env.AI_DAILY_LIMIT) > 0) return Number(process.env.AI_DAILY_LIMIT);
     const o = await Organization.findById(org).lean<{ plan?: string; planOverride?: string; planOverrideUntil?: Date | null }>();
-    return LIMITS[effectivePlan(o ?? {})] ?? LIMITS.free;
+    return planFor(effectivePlan(o ?? {})).aiDailyRequests;
 }
 const today = () => new Date().toISOString().slice(0, 10);
 export const usedToday = async (org: string) => (await AiUsage.findOne({ org, day: today() }).lean<{ count: number }>())?.count ?? 0;

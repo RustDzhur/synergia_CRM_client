@@ -1,16 +1,24 @@
 import type { HydratedDocument } from "mongoose";
 import type { DocItemDTO, DocsState, FolderDTO } from "@/app/types/documents";
+import { planFor } from "@/app/config/plans";
+import { effectivePlan } from "@/lib/billing";
 import { oauthAvailable } from "@/lib/mail/oauth";
 import { storageConfigured } from "@/lib/storage/firebase";
 import { findDrive } from "@/lib/google";
 import DocFolder from "@/models/DocFolder";
 import DocItem from "@/models/DocItem";
+import Organization from "@/models/Organization";
 
 type Doc = HydratedDocument<any>;
 
 export const MAX_UPLOAD_MB = 4; // предел размера запроса у функций Vercel — 4,5 МБ
 export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
-export const QUOTA_BYTES = 500 * 1024 * 1024; // на пользователя
+
+// Сколько файлов и фото может хранить фирма всего — зависит от тарифа (app/config/plans.ts)
+export async function quotaBytes(org: string): Promise<number> {
+    const o = await Organization.findById(org).select("plan planOverride planOverrideUntil").lean<{ plan?: string; planOverride?: string; planOverrideUntil?: Date | null }>();
+    return planFor(effectivePlan(o ?? {})).storageMb * 1024 * 1024;
+}
 
 export const toFolderDTO = (f: Doc): FolderDTO => ({ id: f._id.toString(), name: f.name, parent: f.parent ? f.parent.toString() : null });
 
@@ -29,16 +37,17 @@ export const toDocDTO = (d: Doc): DocItemDTO => ({
 });
 
 export async function docsState(owner: string): Promise<DocsState> {
-    const [folders, docs, drive] = await Promise.all([
+    const [folders, docs, drive, quota] = await Promise.all([
         DocFolder.find({ owner }).sort({ name: 1 }),
         DocItem.find({ owner }).sort({ createdAt: -1 }),
         findDrive(owner),
+        quotaBytes(owner),
     ]);
     return {
         folders: folders.map(toFolderDTO),
         docs: docs.map(toDocDTO),
         drive: { configured: oauthAvailable().google, connected: !!drive && drive.status === "connected", email: drive?.config?.email ?? "" },
-        storage: { configured: storageConfigured(), maxMb: MAX_UPLOAD_MB },
+        storage: { configured: storageConfigured(), maxMb: MAX_UPLOAD_MB, quotaMb: Math.round(quota / 1024 / 1024) },
     };
 }
 

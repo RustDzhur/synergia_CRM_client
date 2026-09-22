@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { planFor } from "@/app/config/plans";
+import { effectivePlan } from "@/lib/billing";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { ASSIGNABLE_ROLES, GRANTABLE, effectiveModules, type Role } from "@/lib/access";
 import Invitation from "@/models/Invitation";
 import Membership from "@/models/Membership";
+import Organization from "@/models/Organization";
 import User from "@/models/User";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +42,12 @@ export async function POST(req: Request) {
     if (role === "admin" && user.role !== "owner") return NextResponse.json({ message: "Only the owner can add administrators", code: "forbidden" }, { status: 403 });
     const modules = cleanModules(body?.modules);
     await connectDB();
+    const org = await Organization.findById(user.id).select("plan planOverride planOverrideUntil");
+    const plan = planFor(org ? effectivePlan(org) : "free");
+    if (plan.users !== null) {
+        const seats = (await Membership.countDocuments({ org: user.id })) + (await Invitation.countDocuments({ org: user.id, expiresAt: { $gt: new Date() } }));
+        if (seats >= plan.users) return NextResponse.json({ message: `Your plan allows ${plan.users} team members. Upgrade the plan to add more.`, code: "plan_limit" }, { status: 402 });
+    }
     const existing = await User.findOne({ email });
     if (existing) {
         if (await Membership.exists({ org: user.id, user: existing._id })) return NextResponse.json({ message: "This person is already in the firm" }, { status: 409 });

@@ -76,24 +76,27 @@ export default function PaidPlan() {
 									</>
 								)}
 							</p>
-							<p className={`text-16 leading-[24px] tracking-[0.4px] mb-[35px] ${dark ? "text-white" : "text-[#B3B3B3]"}`}>
+							<p className={`text-16 leading-[24px] tracking-[0.4px] ${dark ? "text-white" : "text-[#B3B3B3]"}`}>
 								{subTitles[plan.id]}
+							</p>
+							<p className={`text-14 leading-[20px] tracking-[0.4px] mb-[35px] ${dark ? "text-[#C7CDD1]" : "text-[#B3B3B3]"}`}>
+								{t("limitsLine", { rules: plan.automationRules, ai: plan.aiDailyRequests, storage: plan.storageMb >= 1000 ? `${plan.storageMb / 1000} GB` : `${plan.storageMb} MB` })}
 							</p>
 							<ul className="mb-[34px]">
 								{FEATURE_KEYS.map((key, i) => {
 									const included = plan.features[key];
 									return (
-										<li key={key} className={`flex items-center h-[28px] ${i !== FEATURE_KEYS.length - 1 ? "mb-12" : ""}`}>
+										<li key={key} className={`flex items-start ${i !== FEATURE_KEYS.length - 1 ? "mb-12" : ""}`}>
 											<AiFillCheckCircle
 												size={22}
 												color={included ? (dark ? "#fff" : "#313D45") : dark ? "#5B676F" : "#D9D9D9"}
-												className="mr-8 shrink-0"
+												className="mr-8 mt-2 shrink-0"
 											/>
 											<span
-												className={`text-18 leading-[28px] tracking-[0.4px] ${
+												className={`text-16 leading-[22px] tracking-[0.4px] ${
 													included ? (dark ? "text-white" : "text-textChoosePlan") : dark ? "text-[#7E8990] line-through" : "text-[#B3B3B3] line-through"
 												}`}>
-												{t(`features.${key === "calls" ? "calls" : key}`)}
+												{t(`features.${key}`)}
 											</span>
 										</li>
 									);

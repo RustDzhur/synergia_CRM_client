@@ -57,7 +57,7 @@ export default function ModalMenu() {
 						<div className="flex items-center justify-between h-[55px] px-12">
 							<p className="text-18 font-medium text-iconColor">{t("notifications")}</p>
 							<ThemeToggle />
-							<Notification />
+							<Notification align="up" />
 						</div>
 					</div>
 					<div className="px-12 py-[11px]">

@@ -5,6 +5,7 @@ import { badRequest, unauthorized } from "@/lib/api";
 import { canAccess, type Module } from "@/lib/access";
 import { randomToken } from "@/lib/crypto";
 import { effectivePlan } from "@/lib/billing";
+import { planFor } from "@/app/config/plans";
 import Organization from "@/models/Organization";
 import SectionRecord from "@/models/SectionRecord";
 
@@ -46,13 +47,16 @@ export async function POST(req: Request) {
     if (!k || !Array.isArray(b.records) || b.records.length > 200) return badRequest("Invalid data");
     if (!canAccess(user.role, user.modules, k.module, "POST")) return unauthorized(req);
     await connectDB();
-    // число правил автоматизации зависит от тарифа фирмы (Free — 5, Standard — 30, Professional — 200)
+    // число правил автоматизации и доступность шага «AI decides and acts» зависят от тарифа фирмы (см. app/config/plans.ts)
     if (k.key === "automation:rules") {
         const org = await Organization.findById(user.id).select("plan planOverride planOverrideUntil");
-        const limit = { free: 5, standard: 30, professional: 200 }[org ? effectivePlan(org) : "free"] ?? 5;
+        const plan = planFor(org ? effectivePlan(org) : "free");
+        if (!plan.features.aiAutomation && b.records.some((r: { values?: { action?: string } }) => r?.values?.action === "ai_action")) {
+            return NextResponse.json({ message: "The autonomous AI automation step (“AI decides and acts”) needs the Professional plan.", code: "plan_limit" }, { status: 402 });
+        }
         const existing = new Set((await SectionRecord.find({ org: user.id, key: k.key, rid: { $ne: INIT } }).select("rid")).map((r) => r.rid));
         const added = b.records.filter((r: { id?: string }) => !r?.id || !existing.has(r.id)).length;
-        if (existing.size + added > limit) return NextResponse.json({ message: `Your plan allows ${limit} automation rules. Upgrade the plan to add more.`, code: "plan_limit" }, { status: 402 });
+        if (existing.size + added > plan.automationRules) return NextResponse.json({ message: `Your plan allows ${plan.automationRules} automation rules. Upgrade the plan to add more.`, code: "plan_limit" }, { status: 402 });
     }
     await SectionRecord.updateOne({ org: user.id, key: k.key, rid: INIT }, { $setOnInsert: { values: {} } }, { upsert: true });
     const saved: { id: string; values: Record<string, string> }[] = [];
