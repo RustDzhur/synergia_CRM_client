@@ -16,6 +16,7 @@ import useAuthStore from "@/app/store/useAuthStore";
 import { useSiteMenuState } from "@/app/store/useSiteMenuState";
 import { useRouter } from "next/navigation";
 import Loader from "@/app/utils/Loader";
+import { readPendingPlan, clearPendingPlan } from "@/app/config/pendingPlan";
 
 interface SignInFormData {
 	email: string;
@@ -46,6 +47,13 @@ export default function SignInForm() {
 		reset();
 		toggleSignInForm();
 		toggleMenu();
+		// выбирали платный тариф на лендинге до регистрации — сразу ведём на его оплату, а не в пустую CRM
+		const pending = readPendingPlan();
+		if (pending) {
+			clearPendingPlan();
+			router.push(`/${locale}/crm/upgrade?startPlan=${pending.plan}&interval=${pending.interval}`);
+			return;
+		}
 		router.push(`/${locale}/crm`);
 	};
 

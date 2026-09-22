@@ -34,6 +34,7 @@ export default function Upgrade() {
 	const [busy, setBusy] = useState<string | null>(null);
 	const [invoiceOpen, setInvoiceOpen] = useState(false);
 	const [inv, setInv] = useState({ plan: "standard", company: "", vatId: "", note: "" });
+	const [pendingAutoPlan, setPendingAutoPlan] = useState<PlanId | null>(null);
 
 	const load = useCallback(async () => {
 		const res = await apiCall<Billing>("/api/billing");
@@ -45,7 +46,15 @@ export default function Upgrade() {
 		const q = new URLSearchParams(window.location.search);
 		const result = q.get("checkout");
 		const sessionId = q.get("session_id");
-		if (result || q.get("crypto")) window.history.replaceState(null, "", window.location.pathname);
+		// пришли сюда сразу после регистрации/входа с лендинга, где выбрали платный тариф ("Choose Plan"): запускаем
+		// Stripe Checkout для него автоматически, не заставляя нажимать "Buy" второй раз
+		const startPlan = q.get("startPlan");
+		const startInterval = q.get("interval");
+		if (result || q.get("crypto") || startPlan) window.history.replaceState(null, "", window.location.pathname);
+		if (startPlan === "standard" || startPlan === "professional") {
+			if (startInterval === "year") setInterval("year");
+			setPendingAutoPlan(startPlan);
+		}
 		(async () => {
 			if (result === "success" && sessionId) {
 				const res = await apiCall<{ confirmed: boolean }>("/api/billing/confirm", "POST", { sessionId });
@@ -66,6 +75,18 @@ export default function Upgrade() {
 		setBusy(null);
 		toast.error(res.status === 503 ? t("paymentsNotConfigured") : res.status === 409 ? t("alreadySubscribed") : res.message || t("checkoutFailed"));
 	}
+
+	// автозапуск оплаты после прихода с лендинга (см. ?startPlan= выше) — ждём загрузки billing, чтобы не предлагать
+	// оплату тарифа, который уже активен, и не пытаться уйти на Checkout, пока платежи не настроены
+	useEffect(() => {
+		if (!pendingAutoPlan || !billing) return;
+		setPendingAutoPlan(null);
+		const subscribed = billing.hasCustomer && ["active", "trialing", "past_due"].includes(billing.status);
+		if (billing.plan === pendingAutoPlan && subscribed) return; // уже на этом тарифе
+		if (!billing.configured) return; // тост "оплата не настроена" и так покажет карточка
+		subscribe(pendingAutoPlan);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [pendingAutoPlan, billing]);
 
 	async function payCrypto(plan: PlanId) {
 		if (busy) return;

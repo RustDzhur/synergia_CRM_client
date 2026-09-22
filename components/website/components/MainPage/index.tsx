@@ -31,7 +31,7 @@ export default function MainPage() {
       <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto sm:px-12 sm:py-40 md:px-20 lg:px-100 lg:pt-[120px] lg:pb-60">
         <DiscoverCrm/>
       </div>
-      <div className="lg:max-w-screen-lg m-auto sm:px-12 sm:pt-[58px] sm:pb-[52px] md:px-20 md:pt-[32px] md:pb-[51px] lg:px-100 lg:pt-[48px] lg:pb-[80px]">
+      <div id="choose-plan" className="lg:max-w-screen-lg m-auto sm:px-12 sm:pt-[58px] sm:pb-[52px] md:px-20 md:pt-[32px] md:pb-[51px] lg:px-100 lg:pt-[48px] lg:pb-[80px] scroll-mt-[80px]">
         <PaidPlan/>
       </div>
       <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto">
