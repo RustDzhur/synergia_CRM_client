@@ -10,8 +10,12 @@ const DealSchema = new Schema(
         clientName: { type: String, required: true },
         order: { type: Number, required: true }, // порядок карточки внутри колонки
 
-        contactName: { type: String, default: "" }, // «Client → Contact»
+        contactName: { type: String, default: "" }, // «Client → Contact» — свободный текст (может быть несколько участников через запятую)
         companyName: { type: String, default: "" }, // «Client → Company»
+        // Реальная ссылка, если контакт/компания выбраны из подсказки (не просто вписаны текстом) — contactName/companyName
+        // остаются как отображаемый текст/снимок, contact/company — источник истины для трассировки и отчётов.
+        contact: { type: Schema.Types.ObjectId, ref: "Contact", default: null },
+        company: { type: Schema.Types.ObjectId, ref: "Company", default: null },
         startDate: { type: String, default: "" }, // "YYYY-MM-DD"
         endDate: { type: String, default: "" },
 

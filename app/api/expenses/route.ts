@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
+import { logAudit } from "@/lib/audit";
 import User from "@/models/User";
 import Expense from "@/models/Expense";
 
@@ -48,5 +49,6 @@ export async function POST(req: Request) {
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
         createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
     });
+    await logAudit({ org: user.id, userId: user.userId, action: "expense.created", entityType: "expense", entityId: String(expense._id), summary: `Expense ${expense.vendor} — ${expense.amount} ${expense.currency}`, meta: { amount: expense.amount, currency: expense.currency } });
     return NextResponse.json(toDTO(expense), { status: 201 });
 }

@@ -93,7 +93,7 @@ export default function DealModal({ dealId, onClose }: Props) {
 	const [titleEditing, setTitleEditing] = useState(false);
 	const [titleDraft, setTitleDraft] = useState("");
 	const [aboutEditing, setAboutEditing] = useState(true);
-	const [about, setAbout] = useState({ clientName: "", stage: "", startDate: "", contactName: "", companyName: "" });
+	const [about, setAbout] = useState({ clientName: "", stage: "", startDate: "", contactName: "", companyName: "", contact: "", company: "" });
 	const [moreEditing, setMoreEditing] = useState(false);
 	const [more, setMore] = useState({ dealType: "", responsible: "", availableToAll: true, utm: "" });
 	const [recurringEditing, setRecurringEditing] = useState(false);
@@ -127,8 +127,10 @@ export default function DealModal({ dealId, onClose }: Props) {
 			startDate: deal.startDate ?? "",
 			contactName: deal.contactName ?? "",
 			companyName: deal.companyName ?? "",
+			contact: deal.contact ?? "",
+			company: deal.company ?? "",
 		});
-	}, [deal?._id, deal?.clientName, deal?.stage, deal?.startDate, deal?.contactName, deal?.companyName]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [deal?._id, deal?.clientName, deal?.stage, deal?.startDate, deal?.contactName, deal?.companyName, deal?.contact, deal?.company]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect(() => {
 		if (!deal) return;
@@ -367,10 +369,10 @@ export default function DealModal({ dealId, onClose }: Props) {
 											<span className="mb-6 block text-16 text-[#999999]">{t("contact")}</span>
 											<SuggestInput
 												value={about.contactName}
-												onChange={(text) => setAbout({ ...about, contactName: text })}
+												onChange={(text) => setAbout({ ...about, contactName: text, contact: "" })}
 												onPick={(o) => {
 													const picked = contacts.find((c) => c._id === o.key);
-													setAbout({ ...about, contactName: o.title, companyName: about.companyName || picked?.company || "" });
+													setAbout({ ...about, contactName: o.title, contact: o.key, companyName: about.companyName || picked?.company || "" });
 												}}
 												options={contactOptions}
 												placeholder={t("contactSearchPlaceholder")}
@@ -379,15 +381,15 @@ export default function DealModal({ dealId, onClose }: Props) {
 											/>
 											<button
 												type="button"
-												onClick={() => setAbout({ ...about, contactName: about.contactName ? `${about.contactName}, ` : "" })}
+												onClick={() => setAbout({ ...about, contactName: about.contactName ? `${about.contactName}, ` : "", contact: "" })}
 												className="my-8 block text-14 text-primaryColor">
 												{t("addParticipant")}
 											</button>
 											<span className="mb-6 block text-16 text-[#999999]">{t("company")}</span>
 											<SuggestInput
 												value={about.companyName}
-												onChange={(text) => setAbout({ ...about, companyName: text })}
-												onPick={(o) => setAbout({ ...about, companyName: o.title })}
+												onChange={(text) => setAbout({ ...about, companyName: text, company: "" })}
+												onPick={(o) => setAbout({ ...about, companyName: o.title, company: o.key })}
 												options={companyOptions}
 												placeholder={t("companySearchPlaceholder")}
 												showSearchIcon

@@ -6,6 +6,7 @@ import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import { DEAL_TEXT_FIELDS } from "@/lib/crmFields";
 import { emitDeal } from "@/lib/automation/emit";
+import { ownedContact, ownedCompany } from "@/lib/deals";
 import Deal from "@/models/Deal";
 import Stage from "@/models/Stage";
 
@@ -35,12 +36,15 @@ export async function POST(req: Request) {
     const stage = await Stage.findOne({ _id: body.stage, owner: user.id });
     if (!stage) return NextResponse.json({ message: "Stage not found" }, { status: 404 });
 
+    const [contact, company] = await Promise.all([ownedContact(body.contact, user.id), ownedCompany(body.company, user.id)]);
     const count = await Deal.countDocuments({ owner: user.id, stage: stage._id });
     const deal = await Deal.create({
         ...pickStrings(body, DEAL_TEXT_FIELDS),
         owner: user.id,
         stage: stage._id,
         clientName,
+        contact: contact || undefined,
+        company: company || undefined,
         order: count,
         activities: [{ type: "created", text: clientName }],
     });

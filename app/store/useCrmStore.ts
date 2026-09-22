@@ -16,6 +16,8 @@ export interface Deal {
     order: number;
     contactName?: string;
     companyName?: string;
+    contact?: string | null; // id реального контакта, если выбран из подсказки (не просто вписан текстом)
+    company?: string | null; // id реальной компании, аналогично
     startDate?: string; // "YYYY-MM-DD"
     endDate?: string;
     dealType?: string;
@@ -28,7 +30,7 @@ export interface Deal {
     updatedAt?: string;
 }
 
-export type NewDeal = Pick<Deal, "clientName" | "contactName" | "companyName" | "startDate" | "endDate">;
+export type NewDeal = Pick<Deal, "clientName" | "contactName" | "companyName" | "contact" | "company" | "startDate" | "endDate">;
 export type DealUpdate = Partial<Omit<Deal, "_id" | "activities" | "createdAt" | "updatedAt">>;
 
 interface CrmStore {

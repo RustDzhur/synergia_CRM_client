@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
+import { logAudit } from "@/lib/audit";
 import Contract from "@/models/Contract";
 import { toContractDTO } from "@/lib/finance/dto";
 
@@ -16,5 +17,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (c.status !== "draft" && c.status !== "active") return badRequest("This contract cannot be cancelled");
     c.status = "cancelled";
     await c.save();
+    await logAudit({ org: user.id, userId: user.userId, action: "contract.cancelled", entityType: "contract", entityId: String(c._id), summary: `Contract ${c.number} cancelled` });
     return NextResponse.json(toContractDTO(c));
 }

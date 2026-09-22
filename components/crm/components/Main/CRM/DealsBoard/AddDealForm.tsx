@@ -13,7 +13,7 @@ interface Props {
 	autoFocus: boolean;
 }
 
-const EMPTY: NewDeal = { clientName: "", contactName: "", companyName: "", startDate: "", endDate: "" };
+const EMPTY: NewDeal = { clientName: "", contactName: "", companyName: "", contact: "", company: "", startDate: "", endDate: "" };
 
 // Форма «Add Task» в колонке: название, клиент (контакт с подсказками), компания, две даты.
 export default function AddDealForm({ onSubmit, onCancel, autoFocus }: Props) {
@@ -77,10 +77,10 @@ export default function AddDealForm({ onSubmit, onCancel, autoFocus }: Props) {
 			<div className="mb-10">
 				<SuggestInput
 					value={form.contactName ?? ""}
-					onChange={(text) => set({ contactName: text })}
+					onChange={(text) => set({ contactName: text, contact: "" })}
 					onPick={(o) => {
 						const picked = contacts.find((c) => c._id === o.key);
-						set({ contactName: o.title, companyName: form.companyName || picked?.company || "" });
+						set({ contactName: o.title, contact: o.key, companyName: form.companyName || picked?.company || "" });
 					}}
 					options={contactOptions}
 					placeholder={t("contactNamePlaceholder")}
@@ -91,8 +91,8 @@ export default function AddDealForm({ onSubmit, onCancel, autoFocus }: Props) {
 			<div className="mb-10">
 				<SuggestInput
 					value={form.companyName ?? ""}
-					onChange={(text) => set({ companyName: text })}
-					onPick={(o) => set({ companyName: o.title })}
+					onChange={(text) => set({ companyName: text, company: "" })}
+					onPick={(o) => set({ companyName: o.title, company: o.key })}
 					options={companyOptions}
 					placeholder={t("companyNamePlaceholder")}
 					className="!bg-white"

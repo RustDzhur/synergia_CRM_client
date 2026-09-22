@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
+import { logAudit } from "@/lib/audit";
 import Contract from "@/models/Contract";
 import { toContractDTO } from "@/lib/finance/dto";
 
@@ -20,5 +21,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     c.signedAt = new Date();
     await c.save();
     await emit(user.id, { type: "contract_signed", data: { id: String(c._id), number: c.number, customerName: c.customerName, value: String(c.value), currency: c.currency, dealId: c.deal ? String(c.deal) : "" } });
+    await logAudit({ org: user.id, userId: user.userId, action: "contract.signed", entityType: "contract", entityId: String(c._id), summary: `Contract ${c.number} signed by ${c.customerName} — ${c.value} ${c.currency}`, meta: { value: c.value, currency: c.currency } });
     return NextResponse.json(toContractDTO(c));
 }

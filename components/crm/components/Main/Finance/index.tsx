@@ -9,9 +9,10 @@ import Invoices from "./Invoices";
 import Contracts from "./Contracts";
 import Products from "./Products";
 import Expenses from "./Expenses";
+import AuditLog from "./AuditLog";
 import FinanceSettingsTab from "./Settings";
 
-const TABS = ["overview", "quotes", "orders", "invoices", "contracts", "products", "expenses", "settings"] as const;
+const TABS = ["overview", "quotes", "orders", "invoices", "contracts", "products", "expenses", "audit", "settings"] as const;
 type Tab = (typeof TABS)[number];
 
 // Finance (/crm/inventory — адрес не меняли, чтобы не ломать ссылки; раздел в сайдбаре называется «Finance»): счета,
@@ -60,6 +61,7 @@ export default function Finance() {
 			{tab === "contracts" && <Contracts />}
 			{tab === "products" && <Products />}
 			{tab === "expenses" && <Expenses />}
+			{tab === "audit" && <AuditLog />}
 			{tab === "settings" && <FinanceSettingsTab />}
 		</div>
 	);

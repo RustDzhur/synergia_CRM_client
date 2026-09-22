@@ -1155,6 +1155,8 @@
       "tab_contracts": "Contracts",
       "tab_products": "Products",
       "tab_expenses": "Expenses",
+      "tab_audit": "Audit log",
+      "auditEmpty": "No actions logged yet.",
       "tab_settings": "Settings",
       "kpiRevenue": "Revenue (paid)",
       "kpiOutstanding": "Outstanding",
