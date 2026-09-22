@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
 import Invoice from "@/models/Invoice";
-import { toInvoiceDTO } from "../../route";
+import { toInvoiceDTO } from "@/lib/finance/dto";
 
 // POST /api/invoices/:id/send — отмечает счёт отправленным (сама отправка письма — отдельно, через send_email/Web Mails,
 // это только смена статуса + событие автоматизации invoice_sent). После этого счёт больше не редактируется.

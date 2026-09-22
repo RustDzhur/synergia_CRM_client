@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { cleanItems } from "@/lib/finance/totals";
 import Quote from "@/models/Quote";
-import { toQuoteDTO } from "../route";
+import { toQuoteDTO } from "@/lib/finance/dto";
 
 // решение (принято/отклонено/просрочено) уже зафиксировано — редактировать нельзя, только черновик и отправленное
 const LOCKED = ["accepted", "declined", "expired"];

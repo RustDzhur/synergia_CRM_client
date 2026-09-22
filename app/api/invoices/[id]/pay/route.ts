@@ -5,7 +5,7 @@ import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
 import { computeTotals } from "@/lib/finance/totals";
 import Invoice from "@/models/Invoice";
-import { toInvoiceDTO } from "../../route";
+import { toInvoiceDTO } from "@/lib/finance/dto";
 
 // POST /api/invoices/:id/pay — { amount? }: отметить оплаченным (полностью или частично — amount по умолчанию вся сумма).
 // Оплата фиксируется вручную (банковский перевод, Stripe и т.п. подключаются позже) — это не автоматическое списание.

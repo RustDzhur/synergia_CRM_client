@@ -7,7 +7,7 @@ import { nextNumber } from "@/lib/finance/numbering";
 import Quote from "@/models/Quote";
 import Order from "@/models/Order";
 import User from "@/models/User";
-import { toOrderDTO } from "@/app/api/orders/route";
+import { toOrderDTO } from "@/lib/finance/dto";
 
 // POST /api/quotes/:id/order — превращает принятое клиентом предложение в заказ (как orders/:id/invoice для счёта).
 // Одно предложение — один заказ; повторно нельзя.

@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import Contract from "@/models/Contract";
-import { toContractDTO } from "../../route";
+import { toContractDTO } from "@/lib/finance/dto";
 
 // POST /api/contracts/:id/cancel — draft или active → cancelled (сорвалась сделка, клиент отказался).
 export async function POST(req: Request, { params }: { params: { id: string } }) {

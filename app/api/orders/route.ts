@@ -5,21 +5,11 @@ import { badRequest, unauthorized } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
 import { nextNumber } from "@/lib/finance/numbering";
 import { cleanItems, computeTotals } from "@/lib/finance/totals";
+import { toOrderDTO } from "@/lib/finance/dto";
 import Order from "@/models/Order";
 import User from "@/models/User";
 
 export const dynamic = "force-dynamic";
-
-export const toOrderDTO = (o: any) => ({
-    id: String(o._id), number: o.number, status: o.status,
-    contact: o.contact ? String(o.contact) : "", company: o.company ? String(o.company) : "", customerName: o.customerName,
-    deal: o.deal ? String(o.deal) : "", contract: o.contract ? String(o.contract) : "",
-    items: (o.items ?? []).map((it: any) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice, taxRate: it.taxRate, product: it.product ? String(it.product) : "" })),
-    currency: o.currency, notes: o.notes, responsible: o.responsible,
-    invoice: o.invoice ? String(o.invoice) : "",
-    totals: computeTotals(o.items ?? []),
-    createdAt: o.createdAt.toISOString(), updatedAt: o.updatedAt.toISOString(),
-});
 
 // GET /api/orders?status= — список заказов фирмы, самые новые первыми
 export async function GET(req: Request) {

@@ -5,21 +5,11 @@ import { badRequest, unauthorized } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
 import { cleanItems, computeTotals } from "@/lib/finance/totals";
+import { toQuoteDTO } from "@/lib/finance/dto";
 import Quote from "@/models/Quote";
 import User from "@/models/User";
 
 export const dynamic = "force-dynamic";
-
-export const toQuoteDTO = (q: any) => ({
-    id: String(q._id), number: q.number, status: q.status,
-    contact: q.contact ? String(q.contact) : "", company: q.company ? String(q.company) : "", customerName: q.customerName,
-    deal: q.deal ? String(q.deal) : "", order: q.order ? String(q.order) : "",
-    items: (q.items ?? []).map((it: any) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice, taxRate: it.taxRate, product: it.product ? String(it.product) : "" })),
-    currency: q.currency, issueDate: q.issueDate, validUntil: q.validUntil, notes: q.notes,
-    sentAt: q.sentAt ? q.sentAt.toISOString() : "",
-    totals: computeTotals(q.items ?? []),
-    createdAt: q.createdAt.toISOString(), updatedAt: q.updatedAt.toISOString(),
-});
 
 // GET /api/quotes?status= — коммерческие предложения (Angebot), самые новые первыми
 export async function GET(req: Request) {

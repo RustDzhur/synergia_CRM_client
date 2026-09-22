@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
-import { findAds, insightsFor, toConnectionDTO } from "@/lib/ads";
+import { adsPlanOk, findAds, insightsFor, toConnectionDTO } from "@/lib/ads";
 import type { AdsInsights } from "@/lib/ads/types";
-import { adsPlanOk } from "../route";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;

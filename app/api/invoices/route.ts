@@ -5,23 +5,11 @@ import { badRequest, unauthorized } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
 import { cleanItems, computeTotals } from "@/lib/finance/totals";
+import { toInvoiceDTO } from "@/lib/finance/dto";
 import Invoice from "@/models/Invoice";
 import User from "@/models/User";
 
 export const dynamic = "force-dynamic";
-
-export const toInvoiceDTO = (inv: any) => ({
-    id: String(inv._id), number: inv.number, kind: inv.kind, creditFor: inv.creditFor ? String(inv.creditFor) : "",
-    contact: inv.contact ? String(inv.contact) : "", company: inv.company ? String(inv.company) : "",
-    customerName: inv.customerName, customerAddress: inv.customerAddress, customerTaxId: inv.customerTaxId,
-    deal: inv.deal ? String(inv.deal) : "", order: inv.order ? String(inv.order) : "", contract: inv.contract ? String(inv.contract) : "",
-    items: (inv.items ?? []).map((it: any) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice, taxRate: it.taxRate, product: it.product ? String(it.product) : "" })),
-    currency: inv.currency, smallBusinessNote: !!inv.smallBusinessNote,
-    issueDate: inv.issueDate, dueDate: inv.dueDate, notes: inv.notes,
-    status: inv.status, sentAt: inv.sentAt ? inv.sentAt.toISOString() : "", paidAt: inv.paidAt ? inv.paidAt.toISOString() : "", paidAmount: inv.paidAmount,
-    totals: computeTotals(inv.items ?? []),
-    createdAt: inv.createdAt.toISOString(), updatedAt: inv.updatedAt.toISOString(),
-});
 
 // GET /api/invoices?status=&kind= — список счетов, самые новые первыми
 export async function GET(req: Request) {

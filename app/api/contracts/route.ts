@@ -3,19 +3,11 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
+import { toContractDTO } from "@/lib/finance/dto";
 import Contract from "@/models/Contract";
 import User from "@/models/User";
 
 export const dynamic = "force-dynamic";
-
-export const toContractDTO = (c: any) => ({
-    id: String(c._id), number: c.number, status: c.status,
-    contact: c.contact ? String(c.contact) : "", company: c.company ? String(c.company) : "", customerName: c.customerName,
-    deal: c.deal ? String(c.deal) : "", value: c.value, currency: c.currency,
-    startDate: c.startDate, endDate: c.endDate, notes: c.notes,
-    signedAt: c.signedAt ? c.signedAt.toISOString() : "", file: c.file ? String(c.file) : "",
-    createdAt: c.createdAt.toISOString(), updatedAt: c.updatedAt.toISOString(),
-});
 
 // GET /api/contracts?status= — договоры фирмы, самые новые первыми
 export async function GET(req: Request) {
