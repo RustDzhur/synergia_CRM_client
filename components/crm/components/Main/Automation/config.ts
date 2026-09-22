@@ -4,7 +4,10 @@ import { SectionConfig } from "../shared/records/config";
 export const PLAN_LIMITS: Record<string, number> = { free: 5, standard: 30, professional: 200 };
 
 export const TIMINGS = ["immediately", "after_1h", "after_1d", "after_3d"];
-export const EVENTS = ["deal_created", "deal_stage", "contact_created", "lead_created", "message_received", "call_missed", "task_created", "deadline"];
+export const EVENTS = [
+	"deal_created", "deal_stage", "contact_created", "lead_created", "message_received", "call_missed", "task_created", "deadline",
+	"order_created", "order_status", "invoice_sent", "invoice_paid", "invoice_overdue", "contract_signed", "quote_sent",
+];
 export const ACTIONS = ["notify", "create_task", "add_note", "move_stage", "send_email", "webhook", "ai_action"];
 
 // Раздел Automation. В макете описана вкладка Automation Rules (правила и триггеры по этапам сделок);

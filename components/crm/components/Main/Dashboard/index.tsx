@@ -8,6 +8,7 @@ import TasksFeed from "./TasksFeed";
 import DealsChart from "./DealsChart";
 import TasksDonut from "./TasksDonut";
 import AdsCard from "./AdsCard";
+import FinanceCard from "./FinanceCard";
 
 // Dashboard: слева прогресс за день и лента задач, справа графики сделок и задач.
 export default function Dashboard() {
@@ -29,6 +30,7 @@ export default function Dashboard() {
 			<div className="grid content-start gap-30 md:grid-cols-2 lg:grid-cols-1">
 				<DealsChart deals={deals} stages={stages} />
 				<TasksDonut tasks={tasks} />
+				<FinanceCard />
 				<AdsCard />
 			</div>
 		</div>

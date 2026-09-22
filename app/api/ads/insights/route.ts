@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { findAds, insightsFor, toConnectionDTO } from "@/lib/ads";
 import type { AdsInsights } from "@/lib/ads/types";
+import { adsPlanOk } from "../route";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -14,6 +15,8 @@ export async function GET(req: Request) {
     if (!user) return unauthorized(req);
     const days = Math.min(90, Math.max(1, Number(new URL(req.url).searchParams.get("days")) || 30));
     await connectDB();
+    // фирма понизила тариф уже после подключения рекламы — данные больше не отдаём, но подключение остаётся (можно вернуть тариф)
+    if (!(await adsPlanOk(user.id))) return NextResponse.json({ days, items: [], planOk: false });
     const docs = (await findAds(user.id)).filter((d) => d.config.accountId);
     const items = await Promise.all(
         docs.map(async (d) => {

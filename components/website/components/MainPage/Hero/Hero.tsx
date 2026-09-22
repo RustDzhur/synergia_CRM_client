@@ -1,3 +1,4 @@
+"use client";
 import Image from "next/image";
 import React from "react";
 // Скриншот CRM в макете свой для каждой ширины (с раскрытым сайдбаром); в файлах есть поля под тень (8px), поэтому размеры 541 / 494 / 100%
@@ -17,7 +18,10 @@ export default function Hero() {
 				<h2 className="sm:text-15 lg:text-18 text-[#999] sm:leading-[175%] lg:leading-[31px] tracking-[0.3px] lg:tracking-[0.4px] sm:mb-40 md:mb-30 lg:mb-[41px] md:text-center lg:text-left lg:w-505">
 					{t('subtitle')}
 				</h2>
-				<button className="sm:w-full md:w-auto bg-authBtn text-center sm:px-30 sm:py-[12px] sm:leading-[28px] md:px-40 lg:px-[30px] text-white text-18 font-medium lg:tracking-[0.5px] sm:mb-50">
+				<button
+					type="button"
+					onClick={() => document.getElementById("choose-plan")?.scrollIntoView({ behavior: "smooth" })}
+					className="sm:w-full md:w-auto bg-authBtn text-center sm:px-30 sm:py-[12px] sm:leading-[28px] md:px-40 lg:px-[30px] text-white text-18 font-medium lg:tracking-[0.5px] sm:mb-50">
 					{t('plan')}
 				</button>
 			</div>

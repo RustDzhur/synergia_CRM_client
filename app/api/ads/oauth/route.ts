@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, unauthorized } from "@/lib/api";
+import { connectDB } from "@/lib/mongodb";
 import { adsAvailable, makeMetaState, metaAuthorizeUrl } from "@/lib/ads";
 import { GOOGLE_ADS_SCOPE } from "@/lib/ads/google";
 import { authorizeUrl, makeState } from "@/lib/mail/oauth";
+import { adsPlanOk } from "../route";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,8 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
+    await connectDB();
+    if (!(await adsPlanOk(user.id))) return NextResponse.json({ message: "Ad performance (Google Ads / Meta Ads) needs the Standard plan or higher.", code: "plan_limit" }, { status: 402 });
     const b = await req.json().catch(() => ({}));
     const locale = ["en", "de", "ua"].includes(b?.locale) ? b.locale : "en";
     const origin = appOrigin(req);

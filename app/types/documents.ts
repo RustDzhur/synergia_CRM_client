@@ -25,5 +25,5 @@ export interface DocsState {
     folders: FolderDTO[];
     docs: DocItemDTO[];
     drive: { configured: boolean; connected: boolean; email: string };
-    storage: { configured: boolean; maxMb: number };
+    storage: { configured: boolean; maxMb: number; quotaMb: number };
 }

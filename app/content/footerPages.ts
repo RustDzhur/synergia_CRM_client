@@ -94,9 +94,37 @@ export const DOCS = {
 			t3("Website chat: copy the code from Online Chat and paste it before the closing body tag of your site.", "Website-Chat: Kopieren Sie den Code aus Online Chat und fügen Sie ihn vor dem schließenden Body-Tag Ihrer Website ein.", "Чат сайту: скопіюйте код з Online Chat і вставте його перед закриваючим тегом body вашого сайту."),
 			t3("Mail: use an app password for Gmail, iCloud and Yahoo.", "E-Mail: Verwenden Sie für Gmail, iCloud und Yahoo ein App-Passwort.", "Пошта: для Gmail, iCloud та Yahoo використовуйте пароль застосунку."),
 		] },
+		{ id: "finance", title: t3("Finance: quotes, orders, invoices, contracts", "Finanzen: Angebote, Aufträge, Rechnungen, Verträge", "Фінанси: пропозиції, замовлення, рахунки, договори"), steps: [
+			t3("Open Finance → Settings first and pick your country: it sets the default VAT rate on new invoices (you can still change it on any line) and, if you are a small business (§19 UStG or similar), turn on the small-business exemption.", "Öffnen Sie zuerst Finance → Settings und wählen Sie Ihr Land: Es setzt den Standard-Mehrwertsteuersatz für neue Rechnungen (auf jeder Zeile weiterhin änderbar). Sind Sie Kleinunternehmer (§19 UStG o. Ä.), aktivieren Sie die Kleinunternehmerregelung.", "Спочатку відкрийте Finance → Settings і оберіть країну: вона задає стандартну ставку ПДВ для нових рахунків (її завжди можна змінити в конкретному рядку). Якщо ви — мала фірма (§19 UStG чи аналог), увімкніть звільнення від податку."),
+			t3("Add your products and services in Finance → Products. Goods track stock quantity; services don't.", "Legen Sie Ihre Produkte und Dienstleistungen unter Finance → Products an. Waren führen einen Lagerbestand, Dienstleistungen nicht.", "Додайте товари та послуги в Finance → Products. У товарів є облік залишку, у послуг — ні."),
+			t3("The usual flow: send a Quote → the customer accepts it → one click turns it into an Order → confirm the order and mark it fulfilled (this deducts stock for goods) → create an Invoice from the order → send it → mark it paid once the money arrives. Skip the quote and order for a one-off invoice — create it directly in Invoices.", "Der übliche Ablauf: Angebot senden → Kunde nimmt an → mit einem Klick wird daraus ein Auftrag → Auftrag bestätigen und als erledigt markieren (zieht bei Waren den Bestand ab) → aus dem Auftrag eine Rechnung erstellen → senden → nach Zahlungseingang als bezahlt markieren. Für eine einmalige Rechnung Angebot und Auftrag überspringen und sie direkt unter Invoices anlegen.", "Типовий шлях: надіслати пропозицію (Quote) → клієнт приймає → одним кліком вона стає замовленням (Order) → підтвердіть замовлення й позначте виконаним (для товарів це спише залишок) → створіть рахунок (Invoice) із замовлення → надішліть → позначте оплаченим, коли гроші надійшли. Для разового рахунку пропозицію й замовлення можна пропустити — створіть його одразу в Invoices."),
+			t3("A contract (Contracts tab) is separate from orders/invoices — it's for tracking the legal agreement itself. Create it, then Mark signed once the customer has signed; that fires the contract_signed automation event.", "Ein Vertrag (Tab Contracts) ist unabhängig von Aufträgen/Rechnungen — er dient der Nachverfolgung der eigentlichen Vereinbarung. Legen Sie ihn an und klicken Sie auf Mark signed, sobald der Kunde unterschrieben hat; das löst das Automatisierungsereignis contract_signed aus.", "Договір (вкладка Contracts) не пов’язаний напряму із замовленнями/рахунками — він для обліку самої юридичної угоди. Створіть його й натисніть Mark signed, коли клієнт підписав; це запускає подію автоматизації contract_signed."),
+			t3("Overdue invoices are flagged automatically every day, and Finance → Overview shows revenue, outstanding and overdue amounts, expenses, profit and low-stock warnings — the same numbers as the Finance card on the main Dashboard.", "Überfällige Rechnungen werden täglich automatisch markiert, und Finance → Overview zeigt Umsatz, offene und überfällige Beträge, Ausgaben, Gewinn und Warnungen bei niedrigem Bestand — dieselben Zahlen wie die Finance-Karte auf dem Haupt-Dashboard.", "Прострочені рахунки автоматично позначаються щодня, а Finance → Overview показує виручку, суми до отримання й прострочені, витрати, прибуток та попередження про низький залишок — ті самі цифри, що й картка Finance на головному Dashboard."),
+		] },
+		{ id: "automation", title: t3("Automation rules", "Automatisierungsregeln", "Правила автоматизації"), steps: [
+			t3("In Automation, create a rule: pick an event (a deal is created, an order changes status, an invoice is paid, a contract is signed, and more), an action (notify, create a task, add a note, move a stage, send an e-mail, call a webhook, or let the AI decide), and when it should run.", "Erstellen Sie unter Automation eine Regel: Wählen Sie ein Ereignis (ein Deal wird erstellt, ein Auftrag ändert den Status, eine Rechnung wird bezahlt, ein Vertrag wird unterschrieben u. v. m.), eine Aktion (benachrichtigen, Aufgabe erstellen, Notiz hinzufügen, Phase wechseln, E-Mail senden, Webhook aufrufen oder die KI entscheiden lassen) und den Zeitpunkt.", "В Automation створіть правило: оберіть подію (створено угоду, замовлення змінило статус, рахунок оплачено, договір підписано й інші), дію (сповістити, створити завдання, додати нотатку, перемістити етап, надіслати e-mail, викликати webhook або дати вирішити AI) і коли її виконувати."),
+			t3("Use {{...}} placeholders in your message to pull in real data, for example {{order.number}}, {{order.customerName}}, {{invoice.number}}, {{contract.value}} — see the field list shown next to the message box.", "Verwenden Sie {{...}}-Platzhalter in Ihrer Nachricht, um echte Daten einzufügen, z. B. {{order.number}}, {{order.customerName}}, {{invoice.number}}, {{contract.value}} — die Feldliste finden Sie neben dem Nachrichtenfeld.", "Використовуйте плейсхолдери {{...}} у повідомленні, щоб підставити реальні дані, наприклад {{order.number}}, {{order.customerName}}, {{invoice.number}}, {{contract.value}} — список полів показано біля поля повідомлення."),
+			t3("Example: an order that reaches 'invoiced' status can automatically create a task 'Prepare the proposal', so nothing slips through after a sale.", "Beispiel: Ein Auftrag, der den Status 'invoiced' erreicht, kann automatisch die Aufgabe 'Angebot vorbereiten' erstellen, damit nach einem Verkauf nichts vergessen wird.", "Приклад: замовлення зі статусом 'invoiced' може автоматично створити завдання 'Підготувати пропозицію', щоб нічого не загубилося після продажу."),
+			t3("The number of active rules is limited by your plan; the Automation log shows exactly which rule fired, when, and why one might have failed (for example a channel that isn't connected).", "Die Anzahl aktiver Regeln ist durch Ihren Tarif begrenzt; das Automatisierungsprotokoll zeigt genau, welche Regel wann ausgelöst wurde und warum eine fehlgeschlagen sein könnte (z. B. ein nicht verbundener Kanal).", "Кількість активних правил обмежена вашим тарифом; журнал автоматизації показує, яке саме правило спрацювало, коли і чому воно могло не виконатися (наприклад, канал не підключено)."),
+		] },
+		{ id: "ai", title: t3("Firmspace AI assistant", "Firmspace-KI-Assistent", "AI-асистент Firmspace"), steps: [
+			t3("Open the sparkle icon in the header to chat with Firmspace AI. It can look up contacts, deals, tasks and employees, read attached PDFs and summarize a deal, contact or company.", "Öffnen Sie das Sternchen-Symbol in der Kopfzeile, um mit Firmspace AI zu chatten. Sie kann Kontakte, Deals, Aufgaben und Mitarbeitende nachschlagen, angehängte PDFs lesen und einen Deal, Kontakt oder eine Firma zusammenfassen.", "Відкрийте іконку зірочки в шапці, щоб почати чат з Firmspace AI. Вона може шукати контакти, угоди, завдання й співробітників, читати прикріплені PDF і робити стислий опис угоди, контакту чи компанії."),
+			t3("It never changes anything without asking first: when it proposes a write action (create a task, send an e-mail...) you get a confirmation card and nothing happens until you approve it.", "Ohne vorherige Nachfrage ändert sie nie etwas: Wenn sie eine schreibende Aktion vorschlägt (Aufgabe erstellen, E-Mail senden ...), erhalten Sie eine Bestätigungskarte, und nichts geschieht, bevor Sie zustimmen.", "Вона ніколи нічого не змінює без запитання: коли вона пропонує дію запису (створити завдання, надіслати e-mail...), ви бачите картку підтвердження, і нічого не станеться, доки ви не погодитесь."),
+			t3("You also get one-click Analyze buttons on e-mails and documents, and can turn on an autonomous 'AI decides and acts' step inside an automation rule (Professional plan).", "Außerdem gibt es Analyze-Buttons mit einem Klick für E-Mails und Dokumente, und Sie können einen autonomen 'KI entscheidet und handelt'-Schritt innerhalb einer Automatisierungsregel aktivieren (Tarif Professional).", "Також доступні кнопки Analyze в один клік для листів і документів, а в правилі автоматизації можна увімкнути автономний крок 'AI вирішує та діє' (тариф Professional)."),
+			t3("Daily requests are limited by your plan; remaining requests are shown at the top of the chat.", "Die täglichen Anfragen sind durch Ihren Tarif begrenzt; die verbleibende Anzahl wird oben im Chat angezeigt.", "Кількість запитів на день обмежена вашим тарифом; залишок показано вгорі чату."),
+		] },
+		{ id: "ads", title: t3("Ads performance", "Anzeigenleistung", "Ефективність реклами"), steps: [
+			t3("In Marketing → Ads, connect Google Ads or Meta Ads (Standard plan or higher) to see spend, clicks and conversions next to your CRM data, without switching tabs.", "Verbinden Sie unter Marketing → Ads Google Ads oder Meta Ads (Tarif Standard oder höher), um Ausgaben, Klicks und Conversions direkt neben Ihren CRM-Daten zu sehen, ohne den Tab zu wechseln.", "У Marketing → Ads підключіть Google Ads або Meta Ads (тариф Standard і вище), щоб бачити витрати, кліки та конверсії поряд із даними CRM, не перемикаючи вкладки."),
+			t3("The Ads card on the Dashboard summarizes performance across connected platforms.", "Die Ads-Karte auf dem Dashboard fasst die Leistung über alle verbundenen Plattformen zusammen.", "Картка Ads на Dashboard підсумовує ефективність за всіма підключеними платформами."),
+		] },
 		{ id: "account", title: t3("Account and team", "Konto und Team", "Акаунт і команда"), steps: [
 			t3("Edit your profile, timezone and notifications in Settings.", "Bearbeiten Sie Profil, Zeitzone und Benachrichtigungen unter Settings.", "Редагуйте профіль, часовий пояс і сповіщення в Settings."),
-			t3("Add colleagues in Settings → Colleagues.", "Fügen Sie Kollegen unter Settings → Colleagues hinzu.", "Додавайте колег у Settings → Colleagues."),
+			t3("Add colleagues in Settings → Colleagues, and choose their role (admin, manager, employee, viewer) and, if needed, exactly which sections they can access.", "Fügen Sie Kollegen unter Settings → Colleagues hinzu und wählen Sie ihre Rolle (Admin, Manager, Mitarbeiter, Betrachter) und bei Bedarf genau die Bereiche, auf die sie zugreifen dürfen.", "Додавайте колег у Settings → Colleagues і обирайте їхню роль (admin, manager, employee, viewer) та, за потреби, до яких саме розділів вони матимуть доступ."),
+		] },
+		{ id: "billing", title: t3("Plans and billing", "Tarife und Abrechnung", "Тарифи та оплата"), steps: [
+			t3("Compare plans and see exactly what each includes in Upgrade Your Plan — the same three tiers shown on the public Pricing page, with your current plan highlighted.", "Vergleichen Sie die Tarife und sehen Sie genau, was jeder enthält, unter Upgrade Your Plan — dieselben drei Stufen wie auf der öffentlichen Preisseite, mit hervorgehobenem aktuellem Tarif.", "Порівняйте тарифи й подивіться, що саме входить у кожен, у розділі Upgrade Your Plan — ті самі три рівні, що й на публічній сторінці цін, із виділеним поточним тарифом."),
+			t3("Paying by card, SEPA, Apple/Google Pay, PayPal or Klarna goes through Stripe Checkout; there is also a pay-by-invoice option for companies and, where enabled, payment in cryptocurrency.", "Die Zahlung per Karte, SEPA, Apple/Google Pay, PayPal oder Klarna erfolgt über Stripe Checkout; für Unternehmen gibt es außerdem eine Zahlung auf Rechnung und, sofern aktiviert, eine Zahlung in Kryptowährung.", "Оплата карткою, SEPA, Apple/Google Pay, PayPal чи Klarna проходить через Stripe Checkout; для компаній також є оплата за рахунком і, якщо ввімкнено, оплата криптовалютою."),
+			t3("Manage your payment method, invoices and cancellation from Manage billing (opens Stripe's own billing portal).", "Verwalten Sie Zahlungsmethode, Rechnungen und Kündigung über Manage billing (öffnet das Kundenportal von Stripe).", "Керуйте способом оплати, рахунками й скасуванням через Manage billing (відкриває платіжний кабінет Stripe)."),
 		] },
 	],
 };
@@ -131,4 +159,166 @@ export const REFERRAL = {
 	copy: t3("Copy link", "Link kopieren", "Копіювати посилання"),
 	copied: t3("Copied!", "Kopiert!", "Скопійовано!"),
 	note: t3("Sign in to get your personal link. Rewards are credited after the first payment of the invited company.", "Melden Sie sich an, um Ihren persönlichen Link zu erhalten. Prämien werden nach der ersten Zahlung des eingeladenen Unternehmens gutgeschrieben.", "Увійдіть, щоб отримати особисте посилання. Винагороду нараховують після першого платежу запрошеної компанії."),
+};
+
+// ── Impressum (legal notice, §5 TMG) ─────────────────────────────────────────
+// ШАБЛОН: все значения в квадратных скобках — заглушки. Перед публикацией для немецкого рынка их нужно заменить на
+// реальные данные компании (юридическое название, адрес, торговый реестр, USt-IdNr., ответственное лицо и т.п.).
+// placeholderNote показывается баннером наверху страницы на всех трёх языках, пока плейсхолдеры не заменены.
+export const IMPRESSUM = {
+	title: t3("Legal notice (Impressum)", "Impressum", "Правова інформація (Impressum)"),
+	placeholderNote: t3(
+		"Template — every value in [brackets] is a placeholder. Replace them with your company's real registration details before publishing this page.",
+		"Vorlage — jeder Wert in [eckigen Klammern] ist ein Platzhalter. Ersetzen Sie diese vor der Veröffentlichung durch die echten Angaben Ihres Unternehmens.",
+		"Шаблон — кожне значення в [дужках] є заглушкою. Перед публікацією замініть їх на реальні реєстраційні дані вашої компанії."
+	),
+	sections: [
+		{
+			title: t3("Information pursuant to § 5 TMG", "Angaben gemäß § 5 TMG", "Інформація відповідно до § 5 TMG"),
+			text: t3(
+				"[Your Company Legal Name] GmbH\n[Street and house number]\n[Postal code] [City], [Country]",
+				"[Ihr Firmenname] GmbH\n[Straße und Hausnummer]\n[PLZ] [Ort], [Land]",
+				"[Юридична назва компанії] GmbH\n[Вулиця, номер будинку]\n[Поштовий індекс] [Місто], [Країна]"
+			),
+		},
+		{
+			title: t3("Represented by", "Vertreten durch", "Представник"),
+			text: t3("Managing director: [Full name]", "Geschäftsführer/in: [Vor- und Nachname]", "Керівник: [Повне ім’я]"),
+		},
+		{
+			title: t3("Contact", "Kontakt", "Контакти"),
+			text: t3("Phone: [+49 XX XXXXXXXX]\nE-mail: [legal@yourcompany.example]", "Telefon: [+49 XX XXXXXXXX]\nE-Mail: [legal@yourcompany.example]", "Телефон: [+49 XX XXXXXXXX]\nE-mail: [legal@yourcompany.example]"),
+		},
+		{
+			title: t3("Commercial register", "Registereintrag", "Реєстрація"),
+			text: t3(
+				"Registration court: [Amtsgericht ...]\nRegistration number: [HRB XXXXX]",
+				"Registergericht: [Amtsgericht ...]\nRegisternummer: [HRB XXXXX]",
+				"Суд реєстрації: [Amtsgericht ...]\nРеєстраційний номер: [HRB XXXXX]"
+			),
+		},
+		{
+			title: t3("VAT identification number", "Umsatzsteuer-ID", "Ідентифікаційний номер ПДВ"),
+			text: t3(
+				"VAT ID according to §27a of the German VAT act: [DE XXXXXXXXX]",
+				"USt-IdNr. gemäß §27a Umsatzsteuergesetz: [DE XXXXXXXXX]",
+				"Ідентифікаційний номер платника ПДВ згідно з §27a UStG: [DE XXXXXXXXX]"
+			),
+		},
+		{
+			title: t3("Responsible for content (§ 18 Abs. 2 MStV)", "Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV", "Відповідальний за зміст (§ 18 Abs. 2 MStV)"),
+			text: t3("[Full name]\n[Same address as above]", "[Vor- und Nachname]\n[Anschrift wie oben]", "[Повне ім’я]\n[Адреса, як вище]"),
+		},
+		{
+			title: t3("Dispute resolution", "Streitschlichtung", "Вирішення спорів"),
+			text: t3(
+				"The European Commission provides a platform for online dispute resolution (OS): https://ec.europa.eu/consumers/odr/. We are not willing or obliged to participate in dispute resolution proceedings before a consumer arbitration board.",
+				"Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr/. Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.",
+				"Європейська комісія надає платформу для онлайн-вирішення спорів (OS): https://ec.europa.eu/consumers/odr/. Ми не зобов'язані та не бажаємо брати участь у процедурах вирішення спорів перед споживчим арбітражним органом."
+			),
+		},
+		{
+			title: t3("Liability for content and links", "Haftung für Inhalte und Links", "Відповідальність за зміст і посилання"),
+			text: t3(
+				"As a service provider, we are responsible for our own content on these pages under general law. We are not obliged to monitor transmitted or stored third-party information. Our site may contain links to external websites; we have no influence on their content and assume no liability for it.",
+				"Als Diensteanbieter sind wir gemäß den allgemeinen Gesetzen für eigene Inhalte auf diesen Seiten verantwortlich. Wir sind nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen. Unsere Seite kann Links zu externen Websites enthalten; auf deren Inhalte haben wir keinen Einfluss und übernehmen dafür keine Haftung.",
+				"Як постачальник послуг, ми відповідаємо за власний контент на цих сторінках згідно із загальним законодавством. Ми не зобов'язані відстежувати передану чи збережену інформацію третіх осіб. Наш сайт може містити посилання на зовнішні сайти; ми не маємо впливу на їхній вміст і не несемо за нього відповідальності."
+			),
+		},
+	],
+};
+
+// ── Terms of service (AGB) ────────────────────────────────────────────────────
+// ШАБЛОН — как и Impressum: значения в [скобках] нужно заменить реальными данными и, в идеале, юридически
+// проверенным текстом (особенно разделы про оплату, отмену и ответственность) перед реальным запуском в Германии.
+export const TERMS = {
+	title: t3("Terms and conditions (AGB)", "Allgemeine Geschäftsbedingungen (AGB)", "Умови надання послуг"),
+	placeholderNote: t3(
+		"Template — replace [bracketed] placeholders with your real company details, and have the payment/cancellation/liability sections reviewed by a lawyer before publishing.",
+		"Vorlage — ersetzen Sie die Platzhalter in [eckigen Klammern] durch die echten Angaben Ihres Unternehmens und lassen Sie die Abschnitte zu Zahlung, Kündigung und Haftung vor der Veröffentlichung juristisch prüfen.",
+		"Шаблон — замініть значення в [дужках] на реальні дані вашої компанії, а розділи про оплату, скасування та відповідальність перевірте з юристом перед публікацією."
+	),
+	updated: t3("Last updated: September 2026", "Zuletzt aktualisiert: September 2026", "Востаннє оновлено: вересень 2026"),
+	sections: [
+		{
+			title: t3("1. Scope", "1. Geltungsbereich", "1. Сфера дії"),
+			text: t3(
+				"These terms apply to all contracts between [Your Company Legal Name] GmbH (\"we\", \"us\") and its customers (\"you\") for the use of the Firmspace CRM software as a service.",
+				"Diese Bedingungen gelten für alle Verträge zwischen [Ihr Firmenname] GmbH („wir“) und ihren Kunden („Sie“) über die Nutzung der Software Firmspace CRM als Dienstleistung.",
+				"Ці умови застосовуються до всіх договорів між [Юридична назва компанії] GmbH («ми») та її клієнтами («ви») щодо використання програмного забезпечення Firmspace CRM як послуги."
+			),
+		},
+		{
+			title: t3("2. Contract conclusion", "2. Vertragsschluss", "2. Укладення договору"),
+			text: t3(
+				"A contract is concluded when you complete registration and, for paid plans, when payment is confirmed by our payment provider.",
+				"Ein Vertrag kommt mit Abschluss der Registrierung und, bei kostenpflichtigen Tarifen, mit Bestätigung der Zahlung durch unseren Zahlungsdienstleister zustande.",
+				"Договір укладається після завершення реєстрації та, для платних тарифів, після підтвердження оплати нашим платіжним провайдером."
+			),
+		},
+		{
+			title: t3("3. Plans and pricing", "3. Tarife und Preise", "3. Тарифи та ціни"),
+			text: t3(
+				"Current plans and prices are shown on the Pricing page. Prices are in EUR [plus statutory VAT / already include VAT — confirm which applies in your country]. We may change prices for future billing periods with [30] days' notice.",
+				"Aktuelle Tarife und Preise finden Sie auf der Preisseite. Preise verstehen sich in EUR [zzgl. gesetzlicher USt. / bereits inkl. USt. — bitte prüfen, was für Ihr Land zutrifft]. Preisänderungen für künftige Abrechnungszeiträume kündigen wir mit einer Frist von [30] Tagen an.",
+				"Актуальні тарифи та ціни наведено на сторінці тарифів. Ціни вказано в EUR [плюс ПДВ згідно із законом / вже з ПДВ — уточніть, що застосовується у вашій країні]. Про зміну цін на майбутні періоди ми повідомляємо за [30] днів."
+			),
+		},
+		{
+			title: t3("4. Payment and billing", "4. Zahlung und Abrechnung", "4. Оплата та виставлення рахунків"),
+			text: t3(
+				"Paid plans are billed monthly or yearly in advance via our payment provider (card, SEPA and other methods it offers). Subscriptions renew automatically until cancelled.",
+				"Kostenpflichtige Tarife werden monatlich oder jährlich im Voraus über unseren Zahlungsdienstleister abgerechnet (Karte, SEPA und weitere von ihm angebotene Methoden). Abonnements verlängern sich automatisch bis zur Kündigung.",
+				"Платні тарифи оплачуються щомісяця або щорічно наперед через нашого платіжного провайдера (картка, SEPA та інші доступні способи). Підписка автоматично продовжується до скасування."
+			),
+		},
+		{
+			title: t3("5. Cancellation and right of withdrawal", "5. Kündigung und Widerrufsrecht", "5. Скасування та право на відмову"),
+			text: t3(
+				"You can cancel a paid plan at any time in Upgrade Your Plan; it stays active until the end of the paid period. Consumers in the EU have a 14-day right of withdrawal from the contract date, unless you have expressly requested immediate access and acknowledged the loss of that right. [Confirm exact wording with a lawyer for your country.]",
+				"Sie können einen kostenpflichtigen Tarif jederzeit unter Upgrade Your Plan kündigen; er bleibt bis zum Ende des bezahlten Zeitraums aktiv. Verbraucher in der EU haben ein 14-tägiges Widerrufsrecht ab Vertragsschluss, sofern Sie nicht ausdrücklich den sofortigen Zugang verlangt und den Verlust dieses Rechts bestätigt haben. [Genauen Wortlaut mit einem Anwalt für Ihr Land abstimmen.]",
+				"Ви можете скасувати платний тариф будь-коли в розділі Upgrade Your Plan; він залишається активним до кінця оплаченого періоду. Споживачі в ЄС мають право відмовитися від договору протягом 14 днів з дати укладення, якщо ви прямо не вимагали негайного доступу й не підтвердили втрату цього права. [Уточніть точне формулювання з юристом для вашої країни.]"
+			),
+		},
+		{
+			title: t3("6. Your data and content", "6. Ihre Daten und Inhalte", "6. Ваші дані та вміст"),
+			text: t3(
+				"You retain ownership of all data you enter into the CRM. We process it as described in our Privacy policy and only to provide the service to you.",
+				"Sie behalten das Eigentum an allen Daten, die Sie in das CRM eingeben. Wir verarbeiten sie gemäß unserer Datenschutzerklärung und nur, um Ihnen den Dienst bereitzustellen.",
+				"Ви зберігаєте право власності на всі дані, які вносите в CRM. Ми обробляємо їх згідно з нашою Політикою конфіденційності та лише для надання вам послуги."
+			),
+		},
+		{
+			title: t3("7. Availability and support", "7. Verfügbarkeit und Support", "7. Доступність і підтримка"),
+			text: t3(
+				"We aim for high availability but do not guarantee uninterrupted service. Planned maintenance is announced in advance where possible. Support is available as described on the Support page.",
+				"Wir streben eine hohe Verfügbarkeit an, garantieren jedoch keinen unterbrechungsfreien Betrieb. Geplante Wartungsarbeiten kündigen wir nach Möglichkeit im Voraus an. Support erhalten Sie wie auf der Support-Seite beschrieben.",
+				"Ми прагнемо до високої доступності, але не гарантуємо безперебійної роботи сервісу. Про заплановане технічне обслуговування ми повідомляємо заздалегідь, коли це можливо. Підтримка доступна, як описано на сторінці підтримки."
+			),
+		},
+		{
+			title: t3("8. Liability", "8. Haftung", "8. Відповідальність"),
+			text: t3(
+				"We are liable without limitation for intent and gross negligence, and for injury to life, body or health. For slight negligence, we are liable only for breach of a material contractual obligation, limited to foreseeable, typical damage. [Have this clause reviewed by a lawyer — liability limitations are strictly regulated under German law.]",
+				"Wir haften unbeschränkt für Vorsatz und grobe Fahrlässigkeit sowie für Schäden aus der Verletzung des Lebens, des Körpers oder der Gesundheit. Bei leichter Fahrlässigkeit haften wir nur bei Verletzung einer wesentlichen Vertragspflicht, begrenzt auf den vorhersehbaren, vertragstypischen Schaden. [Diese Klausel unbedingt von einem Anwalt prüfen lassen — Haftungsbeschränkungen sind nach deutschem Recht streng geregelt.]",
+				"Ми несемо необмежену відповідальність за умисел і грубу недбалість, а також за шкоду життю, тілу чи здоров'ю. За легку недбалість ми відповідаємо лише за порушення суттєвого договірного зобов'язання, обмежено передбачуваною типовою шкодою. [Обов'язково перевірте цей пункт з юристом — обмеження відповідальності суворо регулюються німецьким законодавством.]"
+			),
+		},
+		{
+			title: t3("9. Governing law and jurisdiction", "9. Anwendbares Recht und Gerichtsstand", "9. Застосовне право та юрисдикція"),
+			text: t3(
+				"These terms are governed by the law of [Germany / your country], excluding the UN Convention on Contracts for the International Sale of Goods. [Jurisdiction clauses against consumers are restricted by law — confirm with a lawyer.]",
+				"Es gilt das Recht [Deutschlands / Ihres Landes] unter Ausschluss des UN-Kaufrechts. [Gerichtsstandsklauseln gegenüber Verbrauchern sind gesetzlich eingeschränkt — bitte anwaltlich prüfen.]",
+				"Ці умови регулюються правом [Німеччини / вашої країни], за винятком Конвенції ООН про договори міжнародної купівлі-продажу товарів. [Положення про юрисдикцію щодо споживачів обмежені законом — уточніть з юристом.]"
+			),
+		},
+		{
+			title: t3("10. Changes to these terms", "10. Änderungen dieser Bedingungen", "10. Зміни до цих умов"),
+			text: t3(
+				"We may update these terms to reflect changes to the service or the law. We will notify active customers of material changes by e-mail at least [30] days before they take effect.",
+				"Wir können diese Bedingungen anpassen, um Änderungen des Dienstes oder der Rechtslage abzubilden. Über wesentliche Änderungen informieren wir aktive Kunden mindestens [30] Tage vor Inkrafttreten per E-Mail.",
+				"Ми можемо оновлювати ці умови, щоб відобразити зміни в сервісі чи законодавстві. Про суттєві зміни ми повідомимо активних клієнтів електронною поштою щонайменше за [30] днів до набрання чинності."
+			),
+		},
+	],
 };

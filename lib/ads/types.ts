@@ -20,5 +20,6 @@ export interface AdsConnectionDTO {
 
 export interface AdsStatusDTO {
     available: Record<AdsPlatform, boolean>; // настроены ли ключи приложения на сервере
+    planOk: boolean; // разрешает ли тариф фирмы рекламу (app/config/plans.ts)
     connections: AdsConnectionDTO[];
 }

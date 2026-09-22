@@ -5,11 +5,11 @@ import {
 	MdMail,
 	MdAccountBox,
 	MdChat,
-	MdViewHeadline,
 	MdOutlineShoppingBag,
 	MdAssessment,
 	MdKeyboardDoubleArrowUp,
 	MdSettingsSuggest,
+	MdAccountBalance,
 } from "react-icons/md";
 
 export interface SubMenuItem {
@@ -45,7 +45,7 @@ export const menuItems: MenuItem[] = [
 	{ key: "company", icon: MdMail, href: "/crm/company", module: "company" },
 	{ key: "crm", icon: MdAccountBox, href: "/crm/crm", module: "crm" },
 	{ key: "tasks_projects", icon: MdChat, href: "/crm/tasks", module: "tasks" },
-	{ key: "inventory_management", icon: MdViewHeadline, href: "/crm/inventory", module: "inventory" },
+	{ key: "inventory_management", icon: MdAccountBalance, href: "/crm/inventory", module: "inventory" },
 	{ key: "marketing", icon: MdOutlineShoppingBag, href: "/crm/marketing", module: "marketing" },
 	{ key: "automation", icon: MdAssessment, href: "/crm/automation", module: "automation" },
 	{ key: "upgrade_plan", icon: MdKeyboardDoubleArrowUp, href: "/crm/upgrade", module: "billing" },

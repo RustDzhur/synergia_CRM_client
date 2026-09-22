@@ -10,8 +10,6 @@ import { apiCall } from "@/app/store/crmApi";
 import Modal from "../shared/Modal";
 
 const ICONS: Record<PlanId, IconType> = { free: MdSignalCellularAlt, standard: MdInfo, professional: MdArticle };
-// ключи функций в namespace "upgrade"
-const FEATURE_LABEL = { chat: "chat", calls: "hdCalls", calendar: "calendar", workspace: "workspace", feed: "feed", knowledge: "knowledgeBase" } as const;
 
 interface Billing {
 	configured: boolean;
@@ -36,6 +34,7 @@ export default function Upgrade() {
 	const [busy, setBusy] = useState<string | null>(null);
 	const [invoiceOpen, setInvoiceOpen] = useState(false);
 	const [inv, setInv] = useState({ plan: "standard", company: "", vatId: "", note: "" });
+	const [pendingAutoPlan, setPendingAutoPlan] = useState<PlanId | null>(null);
 
 	const load = useCallback(async () => {
 		const res = await apiCall<Billing>("/api/billing");
@@ -47,7 +46,15 @@ export default function Upgrade() {
 		const q = new URLSearchParams(window.location.search);
 		const result = q.get("checkout");
 		const sessionId = q.get("session_id");
-		if (result || q.get("crypto")) window.history.replaceState(null, "", window.location.pathname);
+		// пришли сюда сразу после регистрации/входа с лендинга, где выбрали платный тариф ("Choose Plan"): запускаем
+		// Stripe Checkout для него автоматически, не заставляя нажимать "Buy" второй раз
+		const startPlan = q.get("startPlan");
+		const startInterval = q.get("interval");
+		if (result || q.get("crypto") || startPlan) window.history.replaceState(null, "", window.location.pathname);
+		if (startPlan === "standard" || startPlan === "professional") {
+			if (startInterval === "year") setInterval("year");
+			setPendingAutoPlan(startPlan);
+		}
 		(async () => {
 			if (result === "success" && sessionId) {
 				const res = await apiCall<{ confirmed: boolean }>("/api/billing/confirm", "POST", { sessionId });
@@ -68,6 +75,18 @@ export default function Upgrade() {
 		setBusy(null);
 		toast.error(res.status === 503 ? t("paymentsNotConfigured") : res.status === 409 ? t("alreadySubscribed") : res.message || t("checkoutFailed"));
 	}
+
+	// автозапуск оплаты после прихода с лендинга (см. ?startPlan= выше) — ждём загрузки billing, чтобы не предлагать
+	// оплату тарифа, который уже активен, и не пытаться уйти на Checkout, пока платежи не настроены
+	useEffect(() => {
+		if (!pendingAutoPlan || !billing) return;
+		setPendingAutoPlan(null);
+		const subscribed = billing.hasCustomer && ["active", "trialing", "past_due"].includes(billing.status);
+		if (billing.plan === pendingAutoPlan && subscribed) return; // уже на этом тарифе
+		if (!billing.configured) return; // тост "оплата не настроена" и так покажет карточка
+		subscribe(pendingAutoPlan);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [pendingAutoPlan, billing]);
 
 	async function payCrypto(plan: PlanId) {
 		if (busy) return;
@@ -145,14 +164,17 @@ export default function Upgrade() {
 							<p className="mt-6 text-center text-16 text-[#999999]">
 								{plan.users === null ? t("unlimitedUsers") : t("users", { count: plan.users })}
 							</p>
+							<p className="mt-2 text-center text-14 text-[#B3B3B3]">
+								{t("limitsLine", { rules: plan.automationRules, ai: plan.aiDailyRequests, storage: plan.storageMb >= 1000 ? `${plan.storageMb / 1000} GB` : `${plan.storageMb} MB` })}
+							</p>
 
 							<ul className="mb-40 mt-40 flex w-full flex-col gap-10 text-16">
 								{FEATURE_KEYS.map((f) => {
 									const included = plan.features[f];
 									return (
-										<li key={f} className={`flex items-center gap-8 ${included ? "text-primaryColor" : "text-[#CCCCCC] line-through"}`}>
-											{included ? <MdCheckBox size={20} className="shrink-0" aria-hidden /> : <MdCheckBoxOutlineBlank size={20} className="shrink-0" aria-hidden />}
-											{t(FEATURE_LABEL[f])}
+										<li key={f} className={`flex items-start gap-8 ${included ? "text-primaryColor" : "text-[#CCCCCC] line-through"}`}>
+											{included ? <MdCheckBox size={20} className="mt-[2px] shrink-0" aria-hidden /> : <MdCheckBoxOutlineBlank size={20} className="mt-[2px] shrink-0" aria-hidden />}
+											{t(f)}
 										</li>
 									);
 								})}

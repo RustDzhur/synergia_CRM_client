@@ -1,5 +1,5 @@
-import Inventory from "@/components/crm/components/Main/Inventory";
+import Finance from "@/components/crm/components/Main/Finance";
 
 export default function InventoryPage() {
-    return <Inventory />;
+    return <Finance />;
 }

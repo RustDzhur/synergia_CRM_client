@@ -10,6 +10,7 @@ import { AiOutlineInstagram } from "react-icons/ai";
 import { ImLinkedin2 } from "react-icons/im";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { useTranslations } from "next-intl";
+import Chatbot from "../Chatbot/Chatbot";
 
 // slanted — скошенный верх футера (по макету только на главной странице)
 export default function Footer({ slanted = false }: { slanted?: boolean }) {
@@ -23,6 +24,7 @@ export default function Footer({ slanted = false }: { slanted?: boolean }) {
 		{ icon: <ImLinkedin2 />, key: "linkedin" },
 	];
 	return (
+		<>
 		<div className={`sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto bg-footer ${slanted ? "lg:[clip-path:polygon(0_105px,100%_0,100%_100%,0_100%)]" : ""}`}>
 			<div className={`sm:px-12 sm:py-50 md:px-20 md:py-40 lg:px-100 ${slanted ? "lg:pt-[187px]" : "lg:pt-[82px]"} lg:pb-[73px]`}>
 				<div className="flex justify-start mb-40 md:mb-0 md:hidden">
@@ -168,7 +170,19 @@ export default function Footer({ slanted = false }: { slanted?: boolean }) {
 						</ul>
 					</IconContext.Provider>
 				</div>
+
+				<div className="mt-30 flex flex-col gap-14 border-t border-[#3D3D3D] pt-20 text-12 text-[#B3B3B3] md:mt-40 md:flex-row md:items-center md:justify-between md:pt-30 lg:mt-[50px]">
+					<p>{t("rights", { year: new Date().getFullYear() })}</p>
+					<ul className="flex flex-wrap gap-x-20 gap-y-8">
+						<li><Link href={withLocale(selectedLanguage.code, "/impressum")} className="hover:text-white">{t("impressum")}</Link></li>
+						<li><Link href={withLocale(selectedLanguage.code, "/agb")} className="hover:text-white">{t("terms")}</Link></li>
+						<li><Link href={withLocale(selectedLanguage.code, "/privacypolicy")} className="hover:text-white">{t("privacyPolicy")}</Link></li>
+					</ul>
+				</div>
 			</div>
 		</div>
+		{/* Вне блока с clip-path (slanted): фиксированная кнопка чат-бота не должна зависеть от скошенной формы футера на главной */}
+		<Chatbot />
+		</>
 	);
 }

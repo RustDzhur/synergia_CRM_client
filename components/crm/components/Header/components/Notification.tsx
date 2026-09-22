@@ -22,7 +22,9 @@ const ago = (iso: string) => {
 
 // Колокольчик в шапке: число непрочитанных и список — письма, лиды, пропущенные звонки, сообщения в каналах, дедлайны.
 // Опрос сервера и системные уведомления — в NotificationCenter (подключён один раз в layout CRM).
-export default function Notification() {
+// align="up": в мобильном меню колокольчик стоит низко на длинной прокручиваемой панели — список открывается вверх от него,
+// а не вниз за пределы экрана.
+export default function Notification({ align = "down" }: { align?: "down" | "up" } = {}) {
 	const t = useTranslations("notif");
 	const locale = useLocale();
 	const { items, unread, open, toggle, close, markRead, markAll } = useNotificationStore();
@@ -59,13 +61,16 @@ export default function Notification() {
 					</span>
 				)}
 			</button>
-			<Dropdown open={open} className="right-0 top-full z-[60] mt-12 w-[340px] max-w-[calc(100vw-32px)]">
+			<Dropdown
+				open={open}
+				className={`right-0 z-[60] w-[340px] max-w-[calc(100vw-32px)] ${align === "up" ? "bottom-full mb-12 origin-bottom" : "top-full mt-12"}`}>
 				<div className="overflow-hidden rounded-16 border border-[#E2F1F5] bg-white shadow-heroImage">
 					<div className="flex items-center justify-between border-b border-[#EFEFEF] px-16 py-10">
 						<span className="text-16 font-medium text-[#333333]">{t("title")}</span>
 						{unread > 0 && <button type="button" onClick={markAll} className="text-14 text-primaryColor hover:underline">{t("markAll")}</button>}
 					</div>
-					<div className="max-h-[420px] overflow-y-auto">
+					{/* никогда не просит больше половины высоты экрана — на невысоких телефонах список остаётся виден целиком со своим скроллом */}
+					<div className="max-h-[420px] overflow-y-auto [max-height:min(420px,55vh)]">
 						{items.length === 0 ? <p className="px-16 py-24 text-center text-14 text-[#999999]">{t("empty")}</p> : items.map(row)}
 					</div>
 				</div>
