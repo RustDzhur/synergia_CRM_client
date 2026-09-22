@@ -15,7 +15,11 @@ import User from "@/models/User";
 
 // Автоматизация (как триггеры в Bitrix24/HubSpot): событие CRM → подходящие правила → действие сразу или через заданное время.
 // Правила лежат в записях раздела Automation (key "automation:rules"), переменные и константы — там же, журнал — "automation:logs".
-export const EVENTS = ["deal_created", "deal_stage", "contact_created", "lead_created", "message_received", "call_missed", "task_created", "deadline"] as const;
+export const EVENTS = [
+    "deal_created", "deal_stage", "contact_created", "lead_created", "message_received", "call_missed", "task_created", "deadline",
+    // бухгалтерия (lib/finance): заказ, счёт, договор, предложение — см. app/api/orders, app/api/invoices
+    "order_created", "order_status", "invoice_sent", "invoice_paid", "invoice_overdue", "contract_signed", "quote_sent",
+] as const;
 export type EventType = (typeof EVENTS)[number];
 export const ACTIONS = ["notify", "create_task", "add_note", "move_stage", "send_email", "webhook", "ai_action"] as const;
 
@@ -44,7 +48,10 @@ export async function render(org: string, template: string, ev: AutoEvent) {
         const name = rest.join(".");
         if (head === "constants") return constants[name] ?? "";
         if (head === "variables") return variables[name] ?? "";
-        const bucket = ev.type.startsWith("deal") ? "deal" : ev.type.startsWith("contact") || ev.type === "lead_created" ? "contact" : ev.type.startsWith("task") ? "task" : ev.type.startsWith("message") || ev.type === "call_missed" ? "message" : "deadline";
+        const bucket = ev.type.startsWith("deal") ? "deal" : ev.type.startsWith("contact") || ev.type === "lead_created" ? "contact" : ev.type.startsWith("task") ? "task"
+            : ev.type.startsWith("message") || ev.type === "call_missed" ? "message"
+            : ev.type.startsWith("order") ? "order" : ev.type.startsWith("invoice") ? "invoice" : ev.type.startsWith("contract") ? "contract" : ev.type.startsWith("quote") ? "quote"
+            : "deadline";
         if (head === bucket || head === "event") return ev.data[name] ?? "";
         return ev.data[path] ?? ev.data[name] ?? "";
     });

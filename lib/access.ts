@@ -28,6 +28,8 @@ export function moduleForPath(pathname: string, method: string): Module | null {
         case "feed": case "conversations": case "twilio": case "calls": case "sip": case "documents": case "drive": return "collab";
         case "mail": return "mail";
         case "marketing": case "ads": return "marketing";
+        // раздел переименован из «Inventory Management» в «Finance» (склад остался его частью) — модуль в правах тот же
+        case "products": case "orders": case "invoices": case "expenses": case "finance": return "inventory";
         case "automation": return "automation";
         case "billing": return "billing";
         case "notifications": return null; // свои уведомления видит любой участник
