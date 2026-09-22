@@ -208,7 +208,10 @@
     "support": "Support / FAQ",
     "features": "Features",
     "referral": "Empfehlungsprogramm",
-    "contacts": "Kontakt"
+    "contacts": "Kontakt",
+    "impressum": "Impressum",
+    "terms": "AGB",
+    "rights": "© {year} Firmspace CRM. Alle Rechte vorbehalten."
   },
   "contacts": {
     "title": "Kontakte",

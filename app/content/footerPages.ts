@@ -132,3 +132,165 @@ export const REFERRAL = {
 	copied: t3("Copied!", "Kopiert!", "Скопійовано!"),
 	note: t3("Sign in to get your personal link. Rewards are credited after the first payment of the invited company.", "Melden Sie sich an, um Ihren persönlichen Link zu erhalten. Prämien werden nach der ersten Zahlung des eingeladenen Unternehmens gutgeschrieben.", "Увійдіть, щоб отримати особисте посилання. Винагороду нараховують після першого платежу запрошеної компанії."),
 };
+
+// ── Impressum (legal notice, §5 TMG) ─────────────────────────────────────────
+// ШАБЛОН: все значения в квадратных скобках — заглушки. Перед публикацией для немецкого рынка их нужно заменить на
+// реальные данные компании (юридическое название, адрес, торговый реестр, USt-IdNr., ответственное лицо и т.п.).
+// placeholderNote показывается баннером наверху страницы на всех трёх языках, пока плейсхолдеры не заменены.
+export const IMPRESSUM = {
+	title: t3("Legal notice (Impressum)", "Impressum", "Правова інформація (Impressum)"),
+	placeholderNote: t3(
+		"Template — every value in [brackets] is a placeholder. Replace them with your company's real registration details before publishing this page.",
+		"Vorlage — jeder Wert in [eckigen Klammern] ist ein Platzhalter. Ersetzen Sie diese vor der Veröffentlichung durch die echten Angaben Ihres Unternehmens.",
+		"Шаблон — кожне значення в [дужках] є заглушкою. Перед публікацією замініть їх на реальні реєстраційні дані вашої компанії."
+	),
+	sections: [
+		{
+			title: t3("Information pursuant to § 5 TMG", "Angaben gemäß § 5 TMG", "Інформація відповідно до § 5 TMG"),
+			text: t3(
+				"[Your Company Legal Name] GmbH\n[Street and house number]\n[Postal code] [City], [Country]",
+				"[Ihr Firmenname] GmbH\n[Straße und Hausnummer]\n[PLZ] [Ort], [Land]",
+				"[Юридична назва компанії] GmbH\n[Вулиця, номер будинку]\n[Поштовий індекс] [Місто], [Країна]"
+			),
+		},
+		{
+			title: t3("Represented by", "Vertreten durch", "Представник"),
+			text: t3("Managing director: [Full name]", "Geschäftsführer/in: [Vor- und Nachname]", "Керівник: [Повне ім’я]"),
+		},
+		{
+			title: t3("Contact", "Kontakt", "Контакти"),
+			text: t3("Phone: [+49 XX XXXXXXXX]\nE-mail: [legal@yourcompany.example]", "Telefon: [+49 XX XXXXXXXX]\nE-Mail: [legal@yourcompany.example]", "Телефон: [+49 XX XXXXXXXX]\nE-mail: [legal@yourcompany.example]"),
+		},
+		{
+			title: t3("Commercial register", "Registereintrag", "Реєстрація"),
+			text: t3(
+				"Registration court: [Amtsgericht ...]\nRegistration number: [HRB XXXXX]",
+				"Registergericht: [Amtsgericht ...]\nRegisternummer: [HRB XXXXX]",
+				"Суд реєстрації: [Amtsgericht ...]\nРеєстраційний номер: [HRB XXXXX]"
+			),
+		},
+		{
+			title: t3("VAT identification number", "Umsatzsteuer-ID", "Ідентифікаційний номер ПДВ"),
+			text: t3(
+				"VAT ID according to §27a of the German VAT act: [DE XXXXXXXXX]",
+				"USt-IdNr. gemäß §27a Umsatzsteuergesetz: [DE XXXXXXXXX]",
+				"Ідентифікаційний номер платника ПДВ згідно з §27a UStG: [DE XXXXXXXXX]"
+			),
+		},
+		{
+			title: t3("Responsible for content (§ 18 Abs. 2 MStV)", "Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV", "Відповідальний за зміст (§ 18 Abs. 2 MStV)"),
+			text: t3("[Full name]\n[Same address as above]", "[Vor- und Nachname]\n[Anschrift wie oben]", "[Повне ім’я]\n[Адреса, як вище]"),
+		},
+		{
+			title: t3("Dispute resolution", "Streitschlichtung", "Вирішення спорів"),
+			text: t3(
+				"The European Commission provides a platform for online dispute resolution (OS): https://ec.europa.eu/consumers/odr/. We are not willing or obliged to participate in dispute resolution proceedings before a consumer arbitration board.",
+				"Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr/. Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.",
+				"Європейська комісія надає платформу для онлайн-вирішення спорів (OS): https://ec.europa.eu/consumers/odr/. Ми не зобов'язані та не бажаємо брати участь у процедурах вирішення спорів перед споживчим арбітражним органом."
+			),
+		},
+		{
+			title: t3("Liability for content and links", "Haftung für Inhalte und Links", "Відповідальність за зміст і посилання"),
+			text: t3(
+				"As a service provider, we are responsible for our own content on these pages under general law. We are not obliged to monitor transmitted or stored third-party information. Our site may contain links to external websites; we have no influence on their content and assume no liability for it.",
+				"Als Diensteanbieter sind wir gemäß den allgemeinen Gesetzen für eigene Inhalte auf diesen Seiten verantwortlich. Wir sind nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen. Unsere Seite kann Links zu externen Websites enthalten; auf deren Inhalte haben wir keinen Einfluss und übernehmen dafür keine Haftung.",
+				"Як постачальник послуг, ми відповідаємо за власний контент на цих сторінках згідно із загальним законодавством. Ми не зобов'язані відстежувати передану чи збережену інформацію третіх осіб. Наш сайт може містити посилання на зовнішні сайти; ми не маємо впливу на їхній вміст і не несемо за нього відповідальності."
+			),
+		},
+	],
+};
+
+// ── Terms of service (AGB) ────────────────────────────────────────────────────
+// ШАБЛОН — как и Impressum: значения в [скобках] нужно заменить реальными данными и, в идеале, юридически
+// проверенным текстом (особенно разделы про оплату, отмену и ответственность) перед реальным запуском в Германии.
+export const TERMS = {
+	title: t3("Terms and conditions (AGB)", "Allgemeine Geschäftsbedingungen (AGB)", "Умови надання послуг"),
+	placeholderNote: t3(
+		"Template — replace [bracketed] placeholders with your real company details, and have the payment/cancellation/liability sections reviewed by a lawyer before publishing.",
+		"Vorlage — ersetzen Sie die Platzhalter in [eckigen Klammern] durch die echten Angaben Ihres Unternehmens und lassen Sie die Abschnitte zu Zahlung, Kündigung und Haftung vor der Veröffentlichung juristisch prüfen.",
+		"Шаблон — замініть значення в [дужках] на реальні дані вашої компанії, а розділи про оплату, скасування та відповідальність перевірте з юристом перед публікацією."
+	),
+	updated: t3("Last updated: September 2026", "Zuletzt aktualisiert: September 2026", "Востаннє оновлено: вересень 2026"),
+	sections: [
+		{
+			title: t3("1. Scope", "1. Geltungsbereich", "1. Сфера дії"),
+			text: t3(
+				"These terms apply to all contracts between [Your Company Legal Name] GmbH (\"we\", \"us\") and its customers (\"you\") for the use of the Firmspace CRM software as a service.",
+				"Diese Bedingungen gelten für alle Verträge zwischen [Ihr Firmenname] GmbH („wir“) und ihren Kunden („Sie“) über die Nutzung der Software Firmspace CRM als Dienstleistung.",
+				"Ці умови застосовуються до всіх договорів між [Юридична назва компанії] GmbH («ми») та її клієнтами («ви») щодо використання програмного забезпечення Firmspace CRM як послуги."
+			),
+		},
+		{
+			title: t3("2. Contract conclusion", "2. Vertragsschluss", "2. Укладення договору"),
+			text: t3(
+				"A contract is concluded when you complete registration and, for paid plans, when payment is confirmed by our payment provider.",
+				"Ein Vertrag kommt mit Abschluss der Registrierung und, bei kostenpflichtigen Tarifen, mit Bestätigung der Zahlung durch unseren Zahlungsdienstleister zustande.",
+				"Договір укладається після завершення реєстрації та, для платних тарифів, після підтвердження оплати нашим платіжним провайдером."
+			),
+		},
+		{
+			title: t3("3. Plans and pricing", "3. Tarife und Preise", "3. Тарифи та ціни"),
+			text: t3(
+				"Current plans and prices are shown on the Pricing page. Prices are in EUR [plus statutory VAT / already include VAT — confirm which applies in your country]. We may change prices for future billing periods with [30] days' notice.",
+				"Aktuelle Tarife und Preise finden Sie auf der Preisseite. Preise verstehen sich in EUR [zzgl. gesetzlicher USt. / bereits inkl. USt. — bitte prüfen, was für Ihr Land zutrifft]. Preisänderungen für künftige Abrechnungszeiträume kündigen wir mit einer Frist von [30] Tagen an.",
+				"Актуальні тарифи та ціни наведено на сторінці тарифів. Ціни вказано в EUR [плюс ПДВ згідно із законом / вже з ПДВ — уточніть, що застосовується у вашій країні]. Про зміну цін на майбутні періоди ми повідомляємо за [30] днів."
+			),
+		},
+		{
+			title: t3("4. Payment and billing", "4. Zahlung und Abrechnung", "4. Оплата та виставлення рахунків"),
+			text: t3(
+				"Paid plans are billed monthly or yearly in advance via our payment provider (card, SEPA and other methods it offers). Subscriptions renew automatically until cancelled.",
+				"Kostenpflichtige Tarife werden monatlich oder jährlich im Voraus über unseren Zahlungsdienstleister abgerechnet (Karte, SEPA und weitere von ihm angebotene Methoden). Abonnements verlängern sich automatisch bis zur Kündigung.",
+				"Платні тарифи оплачуються щомісяця або щорічно наперед через нашого платіжного провайдера (картка, SEPA та інші доступні способи). Підписка автоматично продовжується до скасування."
+			),
+		},
+		{
+			title: t3("5. Cancellation and right of withdrawal", "5. Kündigung und Widerrufsrecht", "5. Скасування та право на відмову"),
+			text: t3(
+				"You can cancel a paid plan at any time in Upgrade Your Plan; it stays active until the end of the paid period. Consumers in the EU have a 14-day right of withdrawal from the contract date, unless you have expressly requested immediate access and acknowledged the loss of that right. [Confirm exact wording with a lawyer for your country.]",
+				"Sie können einen kostenpflichtigen Tarif jederzeit unter Upgrade Your Plan kündigen; er bleibt bis zum Ende des bezahlten Zeitraums aktiv. Verbraucher in der EU haben ein 14-tägiges Widerrufsrecht ab Vertragsschluss, sofern Sie nicht ausdrücklich den sofortigen Zugang verlangt und den Verlust dieses Rechts bestätigt haben. [Genauen Wortlaut mit einem Anwalt für Ihr Land abstimmen.]",
+				"Ви можете скасувати платний тариф будь-коли в розділі Upgrade Your Plan; він залишається активним до кінця оплаченого періоду. Споживачі в ЄС мають право відмовитися від договору протягом 14 днів з дати укладення, якщо ви прямо не вимагали негайного доступу й не підтвердили втрату цього права. [Уточніть точне формулювання з юристом для вашої країни.]"
+			),
+		},
+		{
+			title: t3("6. Your data and content", "6. Ihre Daten und Inhalte", "6. Ваші дані та вміст"),
+			text: t3(
+				"You retain ownership of all data you enter into the CRM. We process it as described in our Privacy policy and only to provide the service to you.",
+				"Sie behalten das Eigentum an allen Daten, die Sie in das CRM eingeben. Wir verarbeiten sie gemäß unserer Datenschutzerklärung und nur, um Ihnen den Dienst bereitzustellen.",
+				"Ви зберігаєте право власності на всі дані, які вносите в CRM. Ми обробляємо їх згідно з нашою Політикою конфіденційності та лише для надання вам послуги."
+			),
+		},
+		{
+			title: t3("7. Availability and support", "7. Verfügbarkeit und Support", "7. Доступність і підтримка"),
+			text: t3(
+				"We aim for high availability but do not guarantee uninterrupted service. Planned maintenance is announced in advance where possible. Support is available as described on the Support page.",
+				"Wir streben eine hohe Verfügbarkeit an, garantieren jedoch keinen unterbrechungsfreien Betrieb. Geplante Wartungsarbeiten kündigen wir nach Möglichkeit im Voraus an. Support erhalten Sie wie auf der Support-Seite beschrieben.",
+				"Ми прагнемо до високої доступності, але не гарантуємо безперебійної роботи сервісу. Про заплановане технічне обслуговування ми повідомляємо заздалегідь, коли це можливо. Підтримка доступна, як описано на сторінці підтримки."
+			),
+		},
+		{
+			title: t3("8. Liability", "8. Haftung", "8. Відповідальність"),
+			text: t3(
+				"We are liable without limitation for intent and gross negligence, and for injury to life, body or health. For slight negligence, we are liable only for breach of a material contractual obligation, limited to foreseeable, typical damage. [Have this clause reviewed by a lawyer — liability limitations are strictly regulated under German law.]",
+				"Wir haften unbeschränkt für Vorsatz und grobe Fahrlässigkeit sowie für Schäden aus der Verletzung des Lebens, des Körpers oder der Gesundheit. Bei leichter Fahrlässigkeit haften wir nur bei Verletzung einer wesentlichen Vertragspflicht, begrenzt auf den vorhersehbaren, vertragstypischen Schaden. [Diese Klausel unbedingt von einem Anwalt prüfen lassen — Haftungsbeschränkungen sind nach deutschem Recht streng geregelt.]",
+				"Ми несемо необмежену відповідальність за умисел і грубу недбалість, а також за шкоду життю, тілу чи здоров'ю. За легку недбалість ми відповідаємо лише за порушення суттєвого договірного зобов'язання, обмежено передбачуваною типовою шкодою. [Обов'язково перевірте цей пункт з юристом — обмеження відповідальності суворо регулюються німецьким законодавством.]"
+			),
+		},
+		{
+			title: t3("9. Governing law and jurisdiction", "9. Anwendbares Recht und Gerichtsstand", "9. Застосовне право та юрисдикція"),
+			text: t3(
+				"These terms are governed by the law of [Germany / your country], excluding the UN Convention on Contracts for the International Sale of Goods. [Jurisdiction clauses against consumers are restricted by law — confirm with a lawyer.]",
+				"Es gilt das Recht [Deutschlands / Ihres Landes] unter Ausschluss des UN-Kaufrechts. [Gerichtsstandsklauseln gegenüber Verbrauchern sind gesetzlich eingeschränkt — bitte anwaltlich prüfen.]",
+				"Ці умови регулюються правом [Німеччини / вашої країни], за винятком Конвенції ООН про договори міжнародної купівлі-продажу товарів. [Положення про юрисдикцію щодо споживачів обмежені законом — уточніть з юристом.]"
+			),
+		},
+		{
+			title: t3("10. Changes to these terms", "10. Änderungen dieser Bedingungen", "10. Зміни до цих умов"),
+			text: t3(
+				"We may update these terms to reflect changes to the service or the law. We will notify active customers of material changes by e-mail at least [30] days before they take effect.",
+				"Wir können diese Bedingungen anpassen, um Änderungen des Dienstes oder der Rechtslage abzubilden. Über wesentliche Änderungen informieren wir aktive Kunden mindestens [30] Tage vor Inkrafttreten per E-Mail.",
+				"Ми можемо оновлювати ці умови, щоб відобразити зміни в сервісі чи законодавстві. Про суттєві зміни ми повідомимо активних клієнтів електронною поштою щонайменше за [30] днів до набрання чинності."
+			),
+		},
+	],
+};

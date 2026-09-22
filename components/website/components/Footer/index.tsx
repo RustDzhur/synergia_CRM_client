@@ -168,6 +168,15 @@ export default function Footer({ slanted = false }: { slanted?: boolean }) {
 						</ul>
 					</IconContext.Provider>
 				</div>
+
+				<div className="mt-30 flex flex-col gap-14 border-t border-[#3D3D3D] pt-20 text-12 text-[#B3B3B3] md:mt-40 md:flex-row md:items-center md:justify-between md:pt-30 lg:mt-[50px]">
+					<p>{t("rights", { year: new Date().getFullYear() })}</p>
+					<ul className="flex flex-wrap gap-x-20 gap-y-8">
+						<li><Link href={withLocale(selectedLanguage.code, "/impressum")} className="hover:text-white">{t("impressum")}</Link></li>
+						<li><Link href={withLocale(selectedLanguage.code, "/agb")} className="hover:text-white">{t("terms")}</Link></li>
+						<li><Link href={withLocale(selectedLanguage.code, "/privacypolicy")} className="hover:text-white">{t("privacyPolicy")}</Link></li>
+					</ul>
+				</div>
 			</div>
 		</div>
 	);

@@ -208,7 +208,10 @@
     "support": "Підтримка / FAQ",
     "features": "Особливості",
     "referral": "Реферальна програма",
-    "contacts": "Контакти"
+    "contacts": "Контакти",
+    "impressum": "Правова інформація",
+    "terms": "Умови (AGB)",
+    "rights": "© {year} Firmspace CRM. Усі права захищено."
   },
   "contacts": {
     "title": "Контакти",
