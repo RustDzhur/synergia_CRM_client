@@ -15,6 +15,7 @@ import SuggestInput, { SuggestOption } from "../../shared/SuggestInput";
 import ActivityComposer, { ComposerTab } from "../../shared/ActivityComposer";
 import ActivityTimeline from "../../shared/ActivityTimeline";
 import AiSummaryButton from "../../../AiAssistant/AiSummaryButton";
+import DealQuotes from "./DealQuotes";
 
 interface Props {
 	dealId: string | null;
@@ -409,6 +410,8 @@ export default function DealModal({ dealId, onClose }: Props) {
 								)}
 							</div>
 						</Card>
+
+						<DealQuotes dealId={deal._id} customerName={deal.contactName || deal.clientName} contact={deal.contact ?? undefined} company={deal.company ?? undefined} />
 
 						<Card>
 							<CardHeader

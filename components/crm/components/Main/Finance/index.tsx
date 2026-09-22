@@ -1,9 +1,9 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TAB_BAR } from "../shared/tabBar";
 import Overview from "./Overview";
-import Quotes from "./Quotes";
+import Quotes, { QuotePrefill } from "./Quotes";
 import Orders from "./Orders";
 import Invoices from "./Invoices";
 import Contracts from "./Contracts";
@@ -23,6 +23,24 @@ export default function Finance() {
 	const [tab, setTab] = useState<Tab>("overview");
 	const [openInvoiceId, setOpenInvoiceId] = useState<string | null>(null);
 	const [openOrderId, setOpenOrderId] = useState<string | null>(null);
+	const [quotePrefill, setQuotePrefill] = useState<QuotePrefill | null>(null);
+
+	// пришли по ссылке из карточки сделки (CRM → Deal → "Create Quote", см. DealQuotes.tsx): ?tab=quotes&newFromDeal=...
+	useEffect(() => {
+		const q = new URLSearchParams(window.location.search);
+		const newFromDeal = q.get("newFromDeal");
+		const wantedTab = q.get("tab");
+		if (wantedTab && (TABS as readonly string[]).includes(wantedTab)) setTab(wantedTab as Tab);
+		if (newFromDeal) {
+			setQuotePrefill({
+				dealId: newFromDeal,
+				customerName: q.get("customerName") ?? "",
+				contact: q.get("contact") ?? undefined,
+				company: q.get("company") ?? undefined,
+			});
+		}
+		if (wantedTab || newFromDeal) window.history.replaceState(null, "", window.location.pathname);
+	}, []);
 
 	function openInvoice(id: string) {
 		setOpenInvoiceId(id);
@@ -55,7 +73,7 @@ export default function Finance() {
 			</div>
 
 			{tab === "overview" && <Overview />}
-			{tab === "quotes" && <Quotes onOpenOrder={openOrder} />}
+			{tab === "quotes" && <Quotes onOpenOrder={openOrder} prefill={quotePrefill} />}
 			{tab === "orders" && <Orders onOpenInvoice={openInvoice} openId={openOrderId} />}
 			{tab === "invoices" && <Invoices openId={openInvoiceId} />}
 			{tab === "contracts" && <Contracts />}

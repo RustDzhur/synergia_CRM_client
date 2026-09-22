@@ -25,10 +25,12 @@ export interface Expense {
 	id: string; vendor: string; category: string; amount: number; taxRate: number; currency: string; date: string;
 	deal: string; order: string; receipt: string; recurring: string; notes: string; createdByName: string;
 }
+export interface QuoteVersion { version: number; customerName: string; currency: string; items: LineItem[]; totals: Totals; savedAt: string }
 export interface Quote {
 	id: string; number: string; status: "draft" | "sent" | "accepted" | "declined" | "expired";
 	contact: string; company: string; customerName: string; deal: string; order: string;
 	items: LineItem[]; currency: string; issueDate: string; validUntil: string; notes: string; sentAt: string;
+	version: number; versions: QuoteVersion[];
 	totals: Totals; createdAt: string; updatedAt: string;
 }
 export interface Contract {

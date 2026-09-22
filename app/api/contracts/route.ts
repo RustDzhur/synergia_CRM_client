@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
 import { toContractDTO } from "@/lib/finance/dto";
+import { ownedContact, ownedCompany, ownedDeal } from "@/lib/deals";
 import Contract from "@/models/Contract";
 import User from "@/models/User";
 
@@ -30,10 +31,13 @@ export async function POST(req: Request) {
     const customerName = typeof b?.customerName === "string" ? b.customerName.trim().slice(0, 200) : "";
     if (!customerName) return badRequest("customerName is required");
     await connectDB();
-    const [number, author] = await Promise.all([nextNumber(user.id, "CT"), User.findById(user.userId).select("firstname lastname")]);
+    const [number, author, contact, company, deal] = await Promise.all([
+        nextNumber(user.id, "CT"), User.findById(user.userId).select("firstname lastname"),
+        ownedContact(b.contact, user.id), ownedCompany(b.company, user.id), ownedDeal(b.deal, user.id),
+    ]);
     const contract = await Contract.create({
         org: user.id, number, customerName,
-        contact: b.contact || undefined, company: b.company || undefined, deal: b.deal || undefined,
+        contact: contact || undefined, company: company || undefined, deal: deal || undefined,
         value: Math.max(0, Number(b.value) || 0),
         currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : "EUR",
         startDate: typeof b.startDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.startDate) ? b.startDate : "",

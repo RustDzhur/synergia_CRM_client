@@ -6,6 +6,7 @@ import { emit } from "@/lib/automation/emit";
 import { nextNumber } from "@/lib/finance/numbering";
 import { cleanItems, computeTotals } from "@/lib/finance/totals";
 import { toOrderDTO } from "@/lib/finance/dto";
+import { ownedContact, ownedCompany, ownedDeal, ownedContract } from "@/lib/deals";
 import Order from "@/models/Order";
 import User from "@/models/User";
 
@@ -33,10 +34,13 @@ export async function POST(req: Request) {
     if (!customerName) return badRequest("customerName is required");
     const items = cleanItems(b.items);
     await connectDB();
-    const [number, author] = await Promise.all([nextNumber(user.id, "SO"), User.findById(user.userId).select("firstname lastname")]);
+    const [number, author, contact, company, deal, contract] = await Promise.all([
+        nextNumber(user.id, "SO"), User.findById(user.userId).select("firstname lastname"),
+        ownedContact(b.contact, user.id), ownedCompany(b.company, user.id), ownedDeal(b.deal, user.id), ownedContract(b.contract, user.id),
+    ]);
     const order = await Order.create({
         org: user.id, number, customerName, items,
-        contact: b.contact || undefined, company: b.company || undefined, deal: b.deal || undefined, contract: b.contract || undefined,
+        contact: contact || undefined, company: company || undefined, deal: deal || undefined, contract: contract || undefined,
         currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : "EUR",
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
         responsible: typeof b.responsible === "string" ? b.responsible.trim().slice(0, 120) : "",
