@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import Quote from "@/models/Quote";
-import { toQuoteDTO } from "../../route";
+import { toQuoteDTO } from "@/lib/finance/dto";
 
 // POST /api/quotes/:id/decide — { accepted: boolean }: фиксирует ответ клиента на отправленное предложение.
 // Отдельного события автоматизации на решение клиента нет — тариф на предложении не создаёт ни счёт, ни заказ сам по

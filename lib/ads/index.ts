@@ -1,10 +1,13 @@
 import jwt from "jsonwebtoken";
 import type { HydratedDocument } from "mongoose";
+import { planFor } from "@/app/config/plans";
+import { effectivePlan } from "@/lib/billing";
 import { ProviderError } from "@/lib/http";
 import { packSecrets, secretsOf } from "@/lib/integrations";
 import { randomToken } from "@/lib/crypto";
 import { Tokens, oauthAvailable, refreshTokens } from "@/lib/mail/oauth";
 import Integration from "@/models/Integration";
+import Organization from "@/models/Organization";
 import { googleAccounts, googleAdsConfigured, googleInsights } from "./google";
 import { META_SCOPE, metaAccounts, metaAuthUrl, metaConfigured, metaExchange, metaInsights } from "./meta";
 import type { AdsAccount, AdsConnectionDTO, AdsInsights, AdsPlatform, AdsStatusDTO } from "./types";
@@ -15,6 +18,12 @@ export type { AdsPlatform } from "./types";
 
 export const adsAvailable = (): AdsStatusDTO["available"] => ({ google: oauthAvailable().google && googleAdsConfigured(), meta: metaConfigured() });
 export const metaRedirectUri = (origin: string) => `${origin}/api/ads/callback`;
+
+// вынесено из app/api/ads/route.ts — route.ts не может экспортировать ничего, кроме обработчиков HTTP-методов
+export async function adsPlanOk(org: string) {
+    const o = await Organization.findById(org).select("plan planOverride planOverrideUntil");
+    return planFor(o ? effectivePlan(o) : "free").features.ads;
+}
 
 export const findAds = (owner: string, platform?: AdsPlatform) => Integration.find({ owner, type: "ads", ...(platform ? { "config.platform": platform } : {}) }).sort({ createdAt: 1 });
 

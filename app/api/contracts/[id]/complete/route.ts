@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import Contract from "@/models/Contract";
-import { toContractDTO } from "../../route";
+import { toContractDTO } from "@/lib/finance/dto";
 
 // POST /api/contracts/:id/complete — работы по действующему договору завершены (сдача-приёмка сделана вне системы или
 // через отдельный документ в Files) — active → completed. Без своего события автоматизации: обычно к этому моменту всё

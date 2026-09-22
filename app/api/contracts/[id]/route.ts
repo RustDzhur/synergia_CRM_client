@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import Contract from "@/models/Contract";
-import { toContractDTO } from "../route";
+import { toContractDTO } from "@/lib/finance/dto";
 
 // завершённый/отменённый договор уже мог породить события/заказы — не редактируется, только для истории
 const LOCKED = ["completed", "cancelled"];

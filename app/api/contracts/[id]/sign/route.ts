@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
 import Contract from "@/models/Contract";
-import { toContractDTO } from "../../route";
+import { toContractDTO } from "@/lib/finance/dto";
 
 // POST /api/contracts/:id/sign — договор подписан клиентом: draft → active + событие contract_signed. С этого события
 // правилом автоматизации можно поднять задачу "закупить материалы", создать заказ, сдвинуть сделку и т.п.

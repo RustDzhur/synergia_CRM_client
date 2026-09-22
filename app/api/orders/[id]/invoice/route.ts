@@ -8,7 +8,7 @@ import { financeSettings } from "@/lib/finance/settings";
 import Order from "@/models/Order";
 import Invoice from "@/models/Invoice";
 import User from "@/models/User";
-import { toInvoiceDTO } from "@/app/api/invoices/route";
+import { toInvoiceDTO } from "@/lib/finance/dto";
 
 // POST /api/orders/:id/invoice — { customerAddress?, customerTaxId? }: выставить счёт по заказу. Заказ переходит в "invoiced"
 // и получает ссылку на счёт; повторно выставить счёт по тому же заказу нельзя (один заказ — один счёт).

@@ -3,10 +3,9 @@ import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, unauthorized } from "@/lib/api";
 import { connectDB } from "@/lib/mongodb";
-import { adsAvailable, makeMetaState, metaAuthorizeUrl } from "@/lib/ads";
+import { adsAvailable, adsPlanOk, makeMetaState, metaAuthorizeUrl } from "@/lib/ads";
 import { GOOGLE_ADS_SCOPE } from "@/lib/ads/google";
 import { authorizeUrl, makeState } from "@/lib/mail/oauth";
-import { adsPlanOk } from "../route";
 
 export const dynamic = "force-dynamic";
 

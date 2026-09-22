@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { cleanItems } from "@/lib/finance/totals";
 import Invoice from "@/models/Invoice";
-import { toInvoiceDTO } from "../route";
+import { toInvoiceDTO } from "@/lib/finance/dto";
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);

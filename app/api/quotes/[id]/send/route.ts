@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
 import Quote from "@/models/Quote";
-import { toQuoteDTO } from "../../route";
+import { toQuoteDTO } from "@/lib/finance/dto";
 
 // POST /api/quotes/:id/send — как invoices/:id/send: только смена статуса + событие quote_sent
 // (собственно отправка письма клиенту — отдельно, вручную или правилом send_email на это событие).

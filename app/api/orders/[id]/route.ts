@@ -6,7 +6,7 @@ import { emit } from "@/lib/automation/emit";
 import { cleanItems } from "@/lib/finance/totals";
 import { consumeForOrder } from "@/lib/finance/stock";
 import Order from "@/models/Order";
-import { toOrderDTO } from "../route";
+import { toOrderDTO } from "@/lib/finance/dto";
 
 const STATUSES = ["draft", "confirmed", "fulfilled", "invoiced", "closed", "cancelled"];
 // закрытый заказ уже отражён в дашборде и счетах — редактировать его задним числом нельзя, только статус
