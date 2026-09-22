@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
+import { logAudit } from "@/lib/audit";
 import Invoice from "@/models/Invoice";
 import { toInvoiceDTO } from "../../route";
 
@@ -20,5 +21,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     inv.sentAt = new Date();
     await inv.save();
     await emit(user.id, { type: "invoice_sent", data: { id: String(inv._id), number: inv.number, customerName: inv.customerName, dealId: inv.deal ? String(inv.deal) : "" } });
+    await logAudit({ org: user.id, userId: user.userId, action: "invoice.sent", entityType: "invoice", entityId: String(inv._id), summary: `Invoice ${inv.number} sent to ${inv.customerName}`, meta: { currency: inv.currency } });
     return NextResponse.json(toInvoiceDTO(inv));
 }

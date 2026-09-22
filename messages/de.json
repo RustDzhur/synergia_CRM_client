@@ -1155,6 +1155,8 @@
       "tab_contracts": "Verträge",
       "tab_products": "Produkte",
       "tab_expenses": "Ausgaben",
+      "tab_audit": "Protokoll",
+      "auditEmpty": "Noch keine Aktionen erfasst.",
       "tab_settings": "Einstellungen",
       "kpiRevenue": "Umsatz (bezahlt)",
       "kpiOutstanding": "Offen",

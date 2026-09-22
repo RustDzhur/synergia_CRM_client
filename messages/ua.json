@@ -1155,6 +1155,8 @@
       "tab_contracts": "Договори",
       "tab_products": "Товари",
       "tab_expenses": "Витрати",
+      "tab_audit": "Журнал дій",
+      "auditEmpty": "Ще немає записаних дій.",
       "tab_settings": "Налаштування",
       "kpiRevenue": "Дохід (оплачено)",
       "kpiOutstanding": "До отримання",

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
+import { logAudit } from "@/lib/audit";
 import Contract from "@/models/Contract";
 import { toContractDTO } from "../../route";
 
@@ -18,5 +19,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (c.status !== "active") return badRequest("Only an active contract can be completed");
     c.status = "completed";
     await c.save();
+    await logAudit({ org: user.id, userId: user.userId, action: "contract.completed", entityType: "contract", entityId: String(c._id), summary: `Contract ${c.number} marked completed` });
     return NextResponse.json(toContractDTO(c));
 }
