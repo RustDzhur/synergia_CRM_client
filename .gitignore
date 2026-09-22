@@ -33,3 +33,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# iCloud-дубликаты файлов и папок («name 2.ts», «name 3», …) — в репозиторий не попадают
+* [2-9]
+* [2-9].*

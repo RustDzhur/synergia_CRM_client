@@ -7,8 +7,8 @@ const CHANNELS = ["email_campaign", "sms", "messengers", "voice", "audio_call", 
 export const MARKETING: SectionConfig = {
 	section: "marketing",
 	namespace: "marketing",
-	tabs: ["start", "campaigns", "ads", "segments", "boost", "templates"],
-	customTabs: ["start"],
+	tabs: ["start", "campaigns", "ads", "performance", "segments", "boost", "templates"],
+	customTabs: ["start", "performance"],
 	fields: {
 		campaigns: [
 			{ key: "name", type: "text", required: true },

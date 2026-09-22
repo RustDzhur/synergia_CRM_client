@@ -7,6 +7,7 @@ import { Header, ModalNavigation, Sidebar } from "@/components/crm";
 import MobilePageBar from "@/components/crm/components/Header/components/MobilePageBar";
 import ProfileModal from "@/components/crm/components/Header/components/ProfileModal";
 import NotificationCenter from "@/components/crm/components/shared/NotificationCenter";
+import AiAssistant from "@/components/crm/components/AiAssistant";
 import Softphone from "@/components/crm/components/Main/shared/Softphone";
 import "@/app/[locale]/styles/crm-dark.css";
 import useAuthStore from "@/app/store/useAuthStore";
@@ -65,6 +66,7 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
             <ModalNavigation />
             <ProfileModal />
             <Softphone />
+            <AiAssistant />
             <NotificationCenter />
             <Toaster />
         </>

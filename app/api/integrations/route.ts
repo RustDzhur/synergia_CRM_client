@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     if (!user) return unauthorized(req);
     await connectDB();
     await healWebhooks(user.id, appOrigin(req)).catch(() => undefined);
-    const list = await Integration.find({ owner: user.id, type: { $nin: ["mail", "gdrive"] } }).sort({ createdAt: 1 });
+    const list = await Integration.find({ owner: user.id, type: { $nin: ["mail", "gdrive", "ads"] } }).sort({ createdAt: 1 });
     const origin = appOrigin(req);
     return NextResponse.json(list.map((d) => toIntegrationDTO(d, origin)));
 }

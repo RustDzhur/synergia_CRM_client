@@ -56,7 +56,10 @@ export async function requireUser(req: Request): Promise<AuthContext | null> {
         const url = new URL(req.url);
         // личная фирма заблокирована: остаётся только список фирм (чтобы интерфейс показал причину и дал переключиться)
         if (org.blocked && !(req.method === "GET" && url.pathname === "/api/orgs")) { denied.add(req); return null; }
-        if (!canAccess(membership.role, membership.modules ?? [], moduleForPath(url.pathname, req.method), req.method)) {
+        // разговор с ИИ отправляется POST-запросом, но ничего не меняет (изменения ИИ выполняются отдельным запросом после подтверждения),
+        // поэтому наблюдатель (viewer) им пользоваться может
+        const method = url.pathname === "/api/ai/chat" ? "GET" : req.method;
+        if (!canAccess(membership.role, membership.modules ?? [], moduleForPath(url.pathname, req.method), method)) {
             denied.add(req);
             return null;
         }

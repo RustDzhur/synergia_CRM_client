@@ -28,13 +28,15 @@ export interface CustomTabApi {
 interface Props {
 	config: SectionConfig;
 	renderCustom?: (tab: string, api: CustomTabApi) => React.ReactNode;
+	// после возврата со страницы входа стороннего сервиса (?param=…) сразу открыть нужную вкладку
+	openTabOnParam?: { param: string; tab: string };
 	// список для select-полей без options в конфиге (например, этапы сделок из CRM)
 	fieldOptions?: (tab: string, key: string) => FieldOption[] | undefined;
 }
 
 // Страница раздела со вкладками: поиск, таблица с выбором строк, сортировкой по заголовку и настройкой колонок (шестерёнка),
 // окно создания/правки записи. Вкладки из config.customTabs рисует renderCustom (например, Start в Marketing).
-export default function RecordsPage({ config, renderCustom, fieldOptions }: Props) {
+export default function RecordsPage({ config, renderCustom, fieldOptions, openTabOnParam }: Props) {
 	const t = useTranslations(config.namespace);
 	const tr = useTranslations("records");
 	const tc = useTranslations("crm");
@@ -44,6 +46,9 @@ export default function RecordsPage({ config, renderCustom, fieldOptions }: Prop
 	const { data, hidden, saveRecord, deleteRecords, setHidden } = useRecordsStore();
 
 	const [tab, setTab] = useState(config.tabs[0]);
+	useEffect(() => {
+		if (openTabOnParam && new URLSearchParams(window.location.search).has(openTabOnParam.param)) setTab(openTabOnParam.tab);
+	}, [openTabOnParam?.param, openTabOnParam?.tab]); // eslint-disable-line react-hooks/exhaustive-deps
 	const [query, setQuery] = useState("");
 	const [sort, setSort] = useState<{ key: string; dir: 1 | -1 } | null>(null);
 	const [selected, setSelected] = useState<string[]>([]);
