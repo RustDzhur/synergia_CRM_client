@@ -96,3 +96,42 @@ export async function complete(system: string, msgs: Msg[], tools: ToolDef[]): P
     if (!p) throw new ProviderError("AI is not configured on this site");
     return p === "anthropic" ? anthropic(system, msgs, tools) : openai(system, msgs, tools);
 }
+
+// ── одноразовое распознавание изображения (чек/квитанция) — без истории, без инструментов, просто system+картинка+текст → text ──
+export interface ImageInput { mimeType: string; base64: string }
+
+async function openaiVision(system: string, prompt: string, image: ImageInput): Promise<string> {
+    const j = await post<{ choices?: { message?: { content?: string | null } }[] }>(
+        `${trim(process.env.OPENAI_API_URL || "https://api.openai.com/v1")}/chat/completions`,
+        { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        {
+            model: aiModel("openai"),
+            messages: [
+                { role: "system", content: system },
+                { role: "user", content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: `data:${image.mimeType};base64,${image.base64}` } }] },
+            ],
+        }
+    );
+    return j.choices?.[0]?.message?.content ?? "";
+}
+
+async function anthropicVision(system: string, prompt: string, image: ImageInput): Promise<string> {
+    const j = await post<{ content?: { type: string; text?: string }[] }>(
+        `${trim(process.env.ANTHROPIC_API_URL || "https://api.anthropic.com/v1")}/messages`,
+        { "x-api-key": process.env.ANTHROPIC_API_KEY ?? "", "anthropic-version": "2023-06-01" },
+        {
+            model: aiModel("anthropic"),
+            max_tokens: 1000,
+            system,
+            messages: [{ role: "user", content: [{ type: "image", source: { type: "base64", media_type: image.mimeType, data: image.base64 } }, { type: "text", text: prompt }] }],
+            tools: [],
+        }
+    );
+    return (j.content ?? []).filter((b) => b.type === "text").map((b) => b.text ?? "").join("\n").trim();
+}
+
+export async function completeVision(system: string, prompt: string, image: ImageInput): Promise<string> {
+    const p = aiProvider();
+    if (!p) throw new ProviderError("AI is not configured on this site");
+    return p === "anthropic" ? anthropicVision(system, prompt, image) : openaiVision(system, prompt, image);
+}
