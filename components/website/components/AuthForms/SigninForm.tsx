@@ -146,7 +146,7 @@ export default function SignInForm() {
 					<button
 						type="submit"
 						disabled={isLoading}
-						className="sm:w-full lg:w-[50%] py-15 rounded-4 hover:shadow-authForms bg-authBtn text-18 text-white font-medium">
+						className="sm:w-full lg:w-[50%] py-15 rounded-4 hover:shadow-authForms bg-authBtn text-18 text-[#0A0A0A] font-medium">
 						{t("login")}
 					</button>
 				</div>

@@ -27,7 +27,7 @@ export default function Documentation() {
 							<ol className="space-y-12">
 								{s.steps.map((step, i) => (
 									<li key={i} className="flex gap-12 text-16 lg:text-18 leading-[1.7] tracking-[0.3px] text-discover">
-										<span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[50%] bg-authBtn text-14 font-medium text-white">{i + 1}</span>
+										<span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[50%] bg-authBtn text-14 font-medium text-[#0A0A0A]">{i + 1}</span>
 										<span>{tx(step, locale)}</span>
 									</li>
 								))}

@@ -14,8 +14,10 @@ import BurgerMenu from "./BurgerMenu";
 // Размеры из Figma:
 //  desktop (lg):  развёрнут 270px / свёрнут 52px, пункт 54px, шаг 60px, текст 18px
 //  tablet  (md):  развёрнут 220px / свёрнут 54px, пункт 50px, шаг 56px, текст 15px
-const ROW = "flex items-center w-full h-[50px] lg:h-[54px] px-16 text-left transition-colors duration-200";
+const ROW = "flex items-center w-full h-[50px] lg:h-[54px] px-16 text-left rounded-300 transition-[background-color,box-shadow,color] duration-200";
 const LABEL = "ml-6 lg:ml-10 text-15 lg:text-18 font-medium tracking-[0.3px] whitespace-nowrap transition-[opacity,color] duration-200";
+// Салатовое свечение вокруг активного пункта — как в макете; сам фон пункта уже даёт bg-primaryColor
+const ACTIVE_GLOW = "shadow-[0_0_0_1px_rgba(198,255,77,0.4),0_0_16px_rgba(198,255,77,0.35)]";
 
 export default function Layout() {
 	const { menu, setMenu } = useToggleMenuState();
@@ -41,7 +43,7 @@ export default function Layout() {
 					const active = isActivePath(path, item.href);
 					const Icon = item.icon;
 					const color = active ? "text-white" : "text-iconColor";
-					const rowClass = `${ROW} ${active ? "bg-primaryColor" : "hover:bg-gray"}`;
+					const rowClass = `${ROW} ${active ? `bg-primaryColor ${ACTIVE_GLOW}` : "hover:bg-gray"}`;
 					const icon = <Icon size={20} className={`shrink-0 transition-colors duration-200 ${color}`} />;
 					// подпись всегда в DOM: при сворачивании плавно гаснет, а обрезает её сужающийся сайдбар
 					const label = (

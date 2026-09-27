@@ -30,8 +30,8 @@ export default function Advantages() {
 					key={i}
 					onMouseEnter={() => setActive(i)}
 					onClick={() => setActive(i)}
-					className={`cursor-pointer rounded-16 text-white sm:text-20 lg:text-24 font-medium tracking-[0.5px] lg:tracking-[1px] transition-[background-color,box-shadow] duration-300 flex flex-col items-center justify-center sm:h-[161px] md:h-[160px] lg:h-[186px] ${
-						active === i ? "bg-authBtn shadow-advantages" : ""
+					className={`cursor-pointer rounded-16 sm:text-20 lg:text-24 font-medium tracking-[0.5px] lg:tracking-[1px] transition-[background-color,box-shadow] duration-300 flex flex-col items-center justify-center sm:h-[161px] md:h-[160px] lg:h-[186px] ${
+						active === i ? "bg-authBtn text-[#0A0A0A] shadow-advantages" : "text-white"
 					}`}>
 					<div className="text-[40px] lg:text-[50px] leading-none sm:mb-16 lg:mb-[27px] flex justify-center">
 						<item.icon />

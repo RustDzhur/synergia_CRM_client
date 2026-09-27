@@ -7,6 +7,11 @@ html {
 body {
 	/* clip, а не hidden: hidden на body вместе с html создаёт второй контейнер прокрутки (двойной скроллбар) */
 	overflow-x: clip;
+	/* тёмный фон лендинга (почти чёрный) — секции без своего bg-* показывают этот цвет, а не белый. Текст НЕ трогаем
+	   на этом уровне (у него уже есть явный цвет почти везде на лендинге) — глобальный дефолт рискует испортить
+	   контраст там, где текст лежит на светлой карточке без явного класса.
+	   Внутри CRM html.dark body переопределяет фон своим (более специфичным) правилом, так что сюда это не протекает. */
+	background-color: #0a0a0a;
 }
 .scroll-hide-scrollbar {
 	scrollbar-width: thin; /* "auto" on most browsers, "thin" on Firefox */
@@ -110,6 +115,6 @@ body {
 	opacity: 1;
 }
 .testimonials-slider .swiper-pagination-bullet-active {
-	background: #ff008a;
-	border-color: #ff008a;
+	background: #c6ff4d;
+	border-color: #c6ff4d;
 }

@@ -31,7 +31,7 @@ export default function Careers() {
 								<p className="text-14 text-[#999999]">{tx(p.meta, locale)}</p>
 							</div>
 						</div>
-						<a href={`mailto:hello@firmspace.example?subject=${encodeURIComponent(tx(p.title, "en"))}`} className="self-start rounded-4 bg-authBtn px-24 py-10 text-16 font-medium text-white transition-opacity hover:opacity-80 md:self-auto">
+						<a href={`mailto:hello@firmspace.example?subject=${encodeURIComponent(tx(p.title, "en"))}`} className="self-start rounded-4 bg-authBtn px-24 py-10 text-16 font-medium text-[#0A0A0A] transition-opacity hover:opacity-80 md:self-auto">
 							{tx(CAREERS.apply, locale)}
 						</a>
 					</li>

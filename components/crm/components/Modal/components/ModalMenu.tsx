@@ -9,7 +9,6 @@ import SwitchLanguage from "@/components/crm/components/Modal/components/SwitchL
 import SwitchCompany from "../../Header/components/SwitchCompany";
 import CurrentUser from "../../Header/components/CurrentUser";
 import Notification from "../../Header/components/Notification";
-import ThemeToggle from "../../Header/components/ThemeToggle";
 
 // < 768px: панель на весь экран под шапкой (шапка с «≡» остаётся видимой и закрывает меню),
 //          плавно выезжает сверху.
@@ -56,7 +55,6 @@ export default function ModalMenu() {
 						<SwitchLanguage />
 						<div className="flex items-center justify-between h-[55px] px-12">
 							<p className="text-18 font-medium text-iconColor">{t("notifications")}</p>
-							<ThemeToggle />
 							<Notification align="up" />
 						</div>
 					</div>

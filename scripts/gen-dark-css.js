@@ -39,13 +39,15 @@ const hex2rgb = (h) => { h = h.replace("#", ""); if (h.length === 3) h = [...h].
 function rgb2hsl([r, g, b]) { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b); let h = 0, s = 0; const l = (mx + mn) / 2; if (mx !== mn) { const d = mx - mn; s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h /= 6; } return [h, s, l]; }
 function hsl2hex([h, s, l]) { const f = (n) => { const k = (n + h * 12) % 12; const a = s * Math.min(l, 1 - l); const c = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); return Math.round(255 * c).toString(16).padStart(2, "0"); }; return `#${f(0)}${f(8)}${f(4)}`; }
 
-// Инверсия светлоты по назначению: фон, текст, рамка. Насыщенные цвета (акценты) не трогаем.
+// Инверсия светлоты по назначению: фон, текст, рамка. Насыщенные цвета (акценты, включая новый салатовый
+// primaryColor/accentGreen) не трогаем. Фон/рамка идут почти нейтральными (s≈0) — то самое "почти чёрное" полотно
+// из макета, а не тёмно-синий GitHub-стиль, который давала старая формула (сохранявшая оттенок источника).
 function darken(hex, kind) {
   const [h, s, l] = rgb2hsl(hex2rgb(hex));
-  if (s > 0.45 && l > 0.25 && l < 0.8) return null; // яркий акцент: синий, красный, зелёный, розовый
-  if (kind === "bg") return hsl2hex([h, Math.min(s, 0.25), l > 0.5 ? 0.085 + (1 - l) * 1.15 : Math.min(0.5, 0.5 - (0.5 - l) * 0.4)]);
-  if (kind === "border") return hsl2hex([h, Math.min(s, 0.2), l > 0.5 ? 0.16 + (1 - l) * 0.95 : 0.4]);
-  if (kind === "text") return l > 0.92 ? null : hsl2hex([h, Math.min(s, 0.3), l < 0.55 ? 0.93 - l * 0.55 : Math.max(0.5, 0.86 - l * 0.4)]); // белый остаётся белым (текст на кнопках)
+  if (s > 0.45 && l > 0.25 && l < 0.8) return null; // яркий акцент: салатовый, синий, красный, розовый
+  if (kind === "bg") return hsl2hex([h, Math.min(s, 0.06), l > 0.5 ? 0.04 + (1 - l) * 0.3 : Math.min(0.5, 0.5 - (0.5 - l) * 0.4)]);
+  if (kind === "border") return hsl2hex([h, Math.min(s, 0.08), l > 0.5 ? 0.12 + (1 - l) * 0.6 : 0.4]);
+  if (kind === "text") return l > 0.92 ? null : hsl2hex([h, Math.min(s, 0.06), l < 0.55 ? 0.93 - l * 0.55 : Math.max(0.5, 0.86 - l * 0.4)]); // белый остаётся белым (текст на кнопках)
   return null;
 }
 
@@ -78,15 +80,15 @@ for (const tok of [...tokens].sort()) {
 }
 
 let css = "/* Сгенерировано scripts/gen-dark-css.js — не править вручную */\n";
-css += "html.dark { color-scheme: dark; }\nhtml.dark body { background-color: #0d1117; color: #d7dde5; }\n";
-css += "html.dark .dark-surface { background-color: #161b22; }\n";
+css += "html.dark { color-scheme: dark; }\nhtml.dark body { background-color: #0A0A0A; color: #E8EAE5; }\n";
+css += "html.dark .dark-surface { background-color: #121412; }\n";
 css += rules.base.join("\n") + "\n";
 for (const bp of ["sm", "md", "mp", "lg"]) if (rules[bp].length) css += `@media (min-width: ${SCREENS[bp]}px) {\n${rules[bp].join("\n")}\n}\n`;
 // обёртки без своих цветовых классов: карточки на bg-white внутри, оверлей модальных окон и тени
-css += ".dark .bg-modalBG { background-color: rgba(0, 0, 0, 0.6); }\n";
+css += ".dark .bg-modalBG { background-color: rgba(0, 0, 0, 0.7); }\n";
 css += ".dark img { filter: brightness(0.92); }\n";
-css += ".dark input, .dark textarea, .dark select { color-scheme: dark; background-color: #161b22; color: #d7dde5; border-color: #2c3440; }\n";
-css += ".dark input::placeholder, .dark textarea::placeholder { color: #7d8794; }\n";
-css += ".dark table { color: #d7dde5; }\n";
+css += ".dark input, .dark textarea, .dark select { color-scheme: dark; background-color: #121412; color: #E8EAE5; border-color: #1E211C; }\n";
+css += ".dark input::placeholder, .dark textarea::placeholder { color: #7A8076; }\n";
+css += ".dark table { color: #E8EAE5; }\n";
 fs.writeFileSync(path.join(ROOT, "app/[locale]/styles/crm-dark.css"), css);
 console.log(`tokens: ${tokens.size}, rules: ${Object.values(rules).reduce((a, r) => a + r.length, 0)}`);

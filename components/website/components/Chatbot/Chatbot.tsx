@@ -46,8 +46,8 @@ export default function Chatbot() {
 			{open && (
 				<div role="dialog" aria-label={t("title")} className="mb-14 flex h-[480px] w-[92vw] max-w-[360px] flex-col overflow-hidden rounded-16 bg-white shadow-[0_10px_40px_rgba(0,0,0,0.25)]">
 					<div className="flex shrink-0 items-center justify-between bg-authBtn px-16 py-14">
-						<p className="text-16 font-medium text-white">{t("title")}</p>
-						<button type="button" onClick={() => setOpen(false)} aria-label={t("close")} className="text-white/80 hover:text-white">
+						<p className="text-16 font-medium text-[#0A0A0A]">{t("title")}</p>
+						<button type="button" onClick={() => setOpen(false)} aria-label={t("close")} className="text-[#0A0A0A]/70 hover:text-[#0A0A0A]">
 							<MdClose size={20} />
 						</button>
 					</div>
@@ -56,7 +56,7 @@ export default function Chatbot() {
 					<div ref={listRef} className="flex-1 space-y-10 overflow-y-auto px-16 py-14">
 						{msgs.map((m, i) => (
 							<div key={i} className={`flex ${m.from === "user" ? "justify-end" : "justify-start"}`}>
-								<p className={`max-w-[85%] whitespace-pre-line rounded-12 px-12 py-8 text-14 leading-[1.5] ${m.from === "user" ? "bg-authBtn text-white" : "bg-gray text-discover"}`}>{m.text}</p>
+								<p className={`max-w-[85%] whitespace-pre-line rounded-12 px-12 py-8 text-14 leading-[1.5] ${m.from === "user" ? "bg-authBtn text-[#0A0A0A]" : "bg-gray text-discover"}`}>{m.text}</p>
 							</div>
 						))}
 						{msgs.length <= 1 && (
@@ -91,7 +91,7 @@ export default function Chatbot() {
 							maxLength={300}
 							className="h-[38px] flex-1 rounded-8 border border-[#E6E6E6] px-10 text-14 outline-none focus:border-authBtn"
 						/>
-						<button type="submit" aria-label={t("send")} className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-8 bg-authBtn text-white transition-opacity hover:opacity-80">
+						<button type="submit" aria-label={t("send")} className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-8 bg-authBtn text-[#0A0A0A] transition-opacity hover:opacity-80">
 							<MdSend size={18} />
 						</button>
 					</form>
@@ -102,7 +102,7 @@ export default function Chatbot() {
 				type="button"
 				onClick={() => setOpen((v) => !v)}
 				aria-label={open ? t("close") : t("open")}
-				className="ml-auto flex h-[56px] w-[56px] items-center justify-center rounded-[50%] bg-authBtn text-white shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-transform hover:scale-105">
+				className="ml-auto flex h-[56px] w-[56px] items-center justify-center rounded-[50%] bg-authBtn text-[#0A0A0A] shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-transform hover:scale-105">
 				{open ? <MdClose size={26} /> : <MdChatBubble size={26} />}
 			</button>
 		</div>

@@ -21,15 +21,17 @@ export default function Hero() {
 				<button
 					type="button"
 					onClick={() => document.getElementById("choose-plan")?.scrollIntoView({ behavior: "smooth" })}
-					className="sm:w-full md:w-auto bg-authBtn text-center sm:px-30 sm:py-[12px] sm:leading-[28px] md:px-40 lg:px-[30px] text-white text-18 font-medium lg:tracking-[0.5px] sm:mb-50">
+					className="sm:w-full md:w-auto rounded-300 bg-authBtn text-center sm:px-30 sm:py-[12px] sm:leading-[28px] md:px-40 lg:px-[30px] text-[#0A0A0A] text-18 font-medium lg:tracking-[0.5px] sm:mb-50">
 					{t('plan')}
 				</button>
 			</div>
 
 			<div className="flex justify-center sm:-mx-12 md:mx-0 lg:-mr-[8px]">
-				<Image src={heroDesk} alt="screen crm" priority className="hidden lg:block lg:w-[541px] lg:h-auto" />
-				<Image src={heroTab} alt="screen crm" priority className="hidden md:block lg:hidden md:w-[494px] md:h-auto" />
-				<Image src={heroMob} alt="screen crm" priority className="md:hidden w-full h-auto" />
+				<div className="rounded-24 bg-[#111412] p-12 shadow-[0_20px_60px_rgba(0,0,0,0.5)] lg:p-16">
+					<Image src={heroDesk} alt="screen crm" priority className="hidden rounded-16 lg:block lg:w-[541px] lg:h-auto" />
+					<Image src={heroTab} alt="screen crm" priority className="hidden rounded-16 md:block lg:hidden md:w-[494px] md:h-auto" />
+					<Image src={heroMob} alt="screen crm" priority className="w-full rounded-16 h-auto md:hidden" />
+				</div>
 			</div>
 		</div>
 	);

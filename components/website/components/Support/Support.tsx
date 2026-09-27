@@ -28,7 +28,7 @@ export default function Support() {
 					</li>
 				))}
 			</ul>
-			<Link href={withLocale(locale, "/contacts")} className="inline-block rounded-4 bg-authBtn px-[30px] py-[12px] text-18 font-medium text-white transition-opacity hover:opacity-80">{tx(SUPPORT.contactCta, locale)}</Link>
+			<Link href={withLocale(locale, "/contacts")} className="inline-block rounded-4 bg-authBtn px-[30px] py-[12px] text-18 font-medium text-[#0A0A0A] transition-opacity hover:opacity-80">{tx(SUPPORT.contactCta, locale)}</Link>
 		</PageShell>
 	);
 }

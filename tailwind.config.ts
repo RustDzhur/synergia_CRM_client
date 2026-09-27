@@ -15,15 +15,21 @@ const config: Config = {
 		},
 		colors: {
 			headerBackground: "#F5F7FC",
-			aboutUsBackground: "#313D45",
-			whatIsCrmActive: "#313D45",
+			// тёмный лендинг: раньше тут был грифельно-серый #313D45 — теперь почти чёрный, как в CRM
+			aboutUsBackground: "#0A0A0A",
+			whatIsCrmActive: "#0A0A0A",
 			whatIsCrm: "#E6E6E6",
-			joinUsPink: "#FF008A",
-			joinUsGrey: "#313D45",
-			discover: "#313D45",
-			advantages: "#313D45",
+			// CTA-кнопки лендинга: раньше розовый #FF008A — теперь салатовый акцент (см. accentGreen)
+			joinUsPink: "#C6FF4D",
+			joinUsGrey: "#0A0A0A",
+			discover: "#0A0A0A",
+			advantages: "#0A0A0A",
 			transparent: "transparent",
-			primaryColor: "#5EA8F5",
+			// бренд-зелёный: используется как bg-primaryColor вместе с text-white почти везде в CRM —
+			// поэтому это не самый яркий салатовый (тот см. accentGreen), а более тёмный, чтобы белый текст оставался читаемым
+			primaryColor: "#5FBF3C",
+			// яркий салатовый акцент — только там, где текст на нём подбирается заново (тёмный): пилюли, бейджи, CTA
+			accentGreen: "#C6FF4D",
 			secondaryColor: "#F5F7FC",
 			black: "#4D4D4D",
 			gray: "#EBEEF8",
@@ -32,14 +38,14 @@ const config: Config = {
 			modalBG: "rgba(217, 217, 217, 0.80)",
 			menu: "#cccccc",
 			activeMenu: "#313D45",
-			authBtn: "#FF008A",
+			authBtn: "#C6FF4D",
 			tabChoosePlan: "#768FE5",
 			textChoosePlan: "#313D45",
 			cardPlanColor: "#F2F2F2",
 			basicPlan: "#313D45",
-			contactUs: "#FF008A",
-			testimonials: "#313D45",
-			footer: "#313D45",
+			contactUs: "#C6FF4D",
+			testimonials: "#0A0A0A",
+			footer: "#0A0A0A",
 			// добавил под реальный дизайн CRM:
 			searchBorder: "#E6E6E6", // рамка поля поиска в CRM (отличается от switchCompany)
 			danger: "#EB5757",       // для кнопок удаления/ошибок — своего "красного" в проекте не было
@@ -137,14 +143,14 @@ const config: Config = {
 			activeLink: "#313D45",
 			authFormsFocus: "#5EA8F5",
 			authFormsUnFocus: "#cccccc",
-			authBtn: "#FF008A",
-			authTabBtn: "#FF008A",
+			authBtn: "#C6FF4D",
+			authTabBtn: "#C6FF4D",
 			cardPlan: "#768FE5",
-			testimonials: "#FF008A",
+			testimonials: "#C6FF4D",
 		},
 		backgroundImage: {
 			"gradient-background":
-				"linear-gradient(49deg, #ff008a 15.09%, #768fe5 59.33%, rgba(255, 0, 138, 0) 87.2%)",
+				"linear-gradient(49deg, #c6ff4d 15.09%, #5fbf3c 59.33%, rgba(198, 255, 77, 0) 87.2%)",
 			footerBackground:
 				"linear-gradient(to right, #313D45 100px, #313D45 505px)",
 		},

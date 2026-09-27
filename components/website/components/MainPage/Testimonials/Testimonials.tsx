@@ -40,7 +40,7 @@ export default function Testimonials() {
 			<button ref={prevRef} type="button" aria-label="Previous" className={`${arrow} left-[-80px] border-[#CCCCCC] text-[#999999] hover:border-authBtn hover:text-authBtn`}>
 				<MdKeyboardArrowLeft size={32} />
 			</button>
-			<button ref={nextRef} type="button" aria-label="Next" className={`${arrow} right-[-80px] border-authBtn text-authBtn hover:bg-authBtn hover:text-white`}>
+			<button ref={nextRef} type="button" aria-label="Next" className={`${arrow} right-[-80px] border-authBtn text-authBtn hover:bg-authBtn hover:text-[#0A0A0A]`}>
 				<MdKeyboardArrowRight size={32} />
 			</button>
 			<Swiper
@@ -81,8 +81,8 @@ export default function Testimonials() {
 					<SwiperSlide key={index}>
 						<div
 							key={index}
-							className="px-[18px] pt-[36px] pb-30 border-[3px] border-authBtn rounded-[30px] sm:h-[412px] md:h-400 overflow-y-scroll scrollbar-hidden shadow-[0_4px_10px_rgba(255,0,138,0.18)]">
-							<IconContext.Provider value={{ size: "52px", color: "#FF008A" }}>
+							className="px-[18px] pt-[36px] pb-30 border-[3px] border-authBtn rounded-[30px] sm:h-[412px] md:h-400 overflow-y-scroll scrollbar-hidden shadow-[0_4px_10px_rgba(198,255,77,0.18)]">
+							<IconContext.Provider value={{ size: "52px", color: "#C6FF4D" }}>
 								<div className="flex justify-start mb-[20px] ml-[3px]">
 									<BiSolidQuoteLeft />
 								</div>

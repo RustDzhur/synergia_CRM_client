@@ -62,7 +62,7 @@ export default function ContactsPage() {
 						<textarea value={values.message} onChange={set("message")} placeholder={tx(CONTACT.messagePh, locale)} maxLength={3000} required rows={6} className={`${field} py-12 resize-none lg:h-[137px]`} />
 					</label>
 					<div className="flex flex-col items-end gap-12">
-						<button type="submit" disabled={state === "sending"} className="h-[52px] rounded-4 bg-authBtn px-[30px] text-18 font-medium tracking-[0.4px] text-white transition-opacity hover:opacity-80 disabled:opacity-60">
+						<button type="submit" disabled={state === "sending"} className="h-[52px] rounded-4 bg-authBtn px-[30px] text-18 font-medium tracking-[0.4px] text-[#0A0A0A] transition-opacity hover:opacity-80 disabled:opacity-60">
 							{tx(state === "sending" ? CONTACT.sending : CONTACT.send, locale)}
 						</button>
 						{state === "sent" && <p role="status" className="self-stretch text-14 text-[#009A2B]">{tx(CONTACT.sent, locale)}</p>}
