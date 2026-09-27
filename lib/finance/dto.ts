@@ -26,17 +26,39 @@ export const toInvoiceDTO = (inv: any) => ({
     currency: inv.currency, smallBusinessNote: !!inv.smallBusinessNote,
     issueDate: inv.issueDate, dueDate: inv.dueDate, notes: inv.notes,
     status: inv.status, sentAt: inv.sentAt ? inv.sentAt.toISOString() : "", paidAt: inv.paidAt ? inv.paidAt.toISOString() : "", paidAmount: inv.paidAmount,
+    reminderCount: inv.reminderCount ?? 0, lastReminderAt: inv.lastReminderAt ? inv.lastReminderAt.toISOString() : "",
+    recurringSource: inv.recurringSource ? String(inv.recurringSource) : "",
     totals: computeTotals(inv.items ?? []),
     createdAt: inv.createdAt.toISOString(), updatedAt: inv.updatedAt.toISOString(),
 });
+
+export const toRecurringInvoiceDTO = (r: any) => ({
+    id: String(r._id), active: !!r.active,
+    contact: r.contact ? String(r.contact) : "", company: r.company ? String(r.company) : "",
+    customerName: r.customerName, customerAddress: r.customerAddress, customerTaxId: r.customerTaxId,
+    items: (r.items ?? []).map((it: any) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice, taxRate: it.taxRate, product: it.product ? String(it.product) : "" })),
+    currency: r.currency, notes: r.notes,
+    interval: r.interval, dayOfMonth: r.dayOfMonth, autoSend: !!r.autoSend,
+    nextRunDate: r.nextRunDate, lastRunAt: r.lastRunAt ? r.lastRunAt.toISOString() : "", lastInvoice: r.lastInvoice ? String(r.lastInvoice) : "",
+    totals: computeTotals(r.items ?? []),
+    createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString(),
+});
+
+const toItemDTO = (it: any) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice, taxRate: it.taxRate, product: it.product ? String(it.product) : "" });
 
 export const toQuoteDTO = (q: any) => ({
     id: String(q._id), number: q.number, status: q.status,
     contact: q.contact ? String(q.contact) : "", company: q.company ? String(q.company) : "", customerName: q.customerName,
     deal: q.deal ? String(q.deal) : "", order: q.order ? String(q.order) : "",
-    items: (q.items ?? []).map((it: any) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice, taxRate: it.taxRate, product: it.product ? String(it.product) : "" })),
+    items: (q.items ?? []).map(toItemDTO),
     currency: q.currency, issueDate: q.issueDate, validUntil: q.validUntil, notes: q.notes,
     sentAt: q.sentAt ? q.sentAt.toISOString() : "",
+    version: q.version ?? 1,
+    versions: (q.versions ?? []).map((v: any) => ({
+        version: v.version, customerName: v.customerName, currency: v.currency,
+        items: (v.items ?? []).map(toItemDTO), totals: computeTotals(v.items ?? []),
+        savedAt: v.savedAt ? v.savedAt.toISOString() : "",
+    })),
     totals: computeTotals(q.items ?? []),
     createdAt: q.createdAt.toISOString(), updatedAt: q.updatedAt.toISOString(),
 });

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
@@ -6,19 +7,24 @@ import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
 import { cleanItems, computeTotals } from "@/lib/finance/totals";
 import { toQuoteDTO } from "@/lib/finance/dto";
+import { ownedContact, ownedCompany, ownedDeal } from "@/lib/deals";
 import Quote from "@/models/Quote";
 import User from "@/models/User";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/quotes?status= — коммерческие предложения (Angebot), самые новые первыми
+// GET /api/quotes?status=&deal= — коммерческие предложения (Angebot), самые новые первыми; deal= для показа
+// предложений сделки прямо в её карточке (CRM → Deal → Quotes)
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     await connectDB();
-    const status = new URL(req.url).searchParams.get("status");
+    const url = new URL(req.url);
+    const status = url.searchParams.get("status");
+    const deal = url.searchParams.get("deal");
     const filter: Record<string, unknown> = { org: user.id };
     if (status) filter.status = status;
+    if (deal) filter.deal = isValidObjectId(deal) ? deal : "__none__"; // невалидный id — пустой результат, не ошибка
     const list = await Quote.find(filter).sort({ createdAt: -1 }).limit(300);
     return NextResponse.json(list.map(toQuoteDTO));
 }
@@ -33,13 +39,16 @@ export async function POST(req: Request) {
     const items = cleanItems(b.items);
     if (!items.length) return badRequest("At least one line item is required");
     await connectDB();
-    const [settings, author] = await Promise.all([financeSettings(user.id), User.findById(user.userId).select("firstname lastname")]);
+    const [settings, author, contact, company, deal] = await Promise.all([
+        financeSettings(user.id), User.findById(user.userId).select("firstname lastname"),
+        ownedContact(b.contact, user.id), ownedCompany(b.company, user.id), ownedDeal(b.deal, user.id),
+    ]);
     const number = await nextNumber(user.id, settings.quotePrefix || "AN");
     const today = new Date().toISOString().slice(0, 10);
     const validUntil = typeof b.validUntil === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.validUntil) ? b.validUntil : new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
     const quote = await Quote.create({
         org: user.id, number, customerName, items,
-        contact: b.contact || undefined, company: b.company || undefined, deal: b.deal || undefined,
+        contact: contact || undefined, company: company || undefined, deal: deal || undefined,
         currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : "EUR",
         issueDate: typeof b.issueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.issueDate) ? b.issueDate : today,
         validUntil,

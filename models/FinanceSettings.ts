@@ -18,6 +18,8 @@ const FinanceSettingsSchema = new Schema(
         paymentTermsDays: { type: Number, default: 14 },
         invoicePrefix: { type: String, default: "RE" }, // нумерация «{prefix}-{год}-{порядковый}»; RE — Rechnung (счёт)
         quotePrefix: { type: String, default: "AN" }, // Angebot (предложение)
+        creditNotePrefix: { type: String, default: "GS" }, // Gutschrift (кредит-нота/сторно) — своя последовательность номеров
+        reminderIntervalDays: { type: Number, default: 7 }, // раз в сколько дней слать напоминание по просроченному счёту
         // счётчики последнего использованного номера по типу документа и году — атомарно инкрементируются, без пропусков
         counters: { type: Map, of: Number, default: {} },
     },

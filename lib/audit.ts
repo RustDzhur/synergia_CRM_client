@@ -5,18 +5,22 @@ import User from "@/models/User";
 // как и лог автоматизации (lib/automation/index.ts): если писать некуда, действие всё равно должно пройти.
 export async function logAudit(params: {
     org: string;
-    userId: string;
+    userId?: string; // не указан — системное действие (крон); тогда обязателен userName
     action: string;
     entityType: string;
     entityId: string;
     summary: string;
     meta?: Record<string, unknown>;
+    userName?: string; // готовое имя (например «Automation») — пропускает поиск пользователя, для системных действий без userId
 }) {
     try {
-        const user = await User.findById(params.userId).select("firstname lastname");
-        const userName = user ? `${user.firstname} ${user.lastname}`.trim() : "";
+        let userName = params.userName ?? "";
+        if (params.userName === undefined && params.userId) {
+            const user = await User.findById(params.userId).select("firstname lastname");
+            userName = user ? `${user.firstname} ${user.lastname}`.trim() : "";
+        }
         await AuditLog.create({
-            org: params.org, userId: params.userId, userName,
+            org: params.org, ...(params.userId ? { userId: params.userId } : {}), userName,
             action: params.action, entityType: params.entityType, entityId: params.entityId,
             summary: params.summary, meta: params.meta ?? {},
         });

@@ -12,9 +12,11 @@ import { money } from "./format";
 const STATUS_COLOR: Record<string, string> = { draft: "#B3B3B3", sent: "#5EA8F5", accepted: "#0A8A2E", declined: "#EB5757", expired: "#999999" };
 const EMPTY_ITEM: LineItem = { description: "", qty: 1, unitPrice: 0, taxRate: 0 };
 
+export interface QuotePrefill { dealId: string; customerName: string; contact?: string; company?: string }
+
 // Коммерческое предложение (Angebot): черновик → отправлено → клиент принял/отклонил. Принятое предложение можно одним
 // нажатием превратить в заказ (те же строки переходят в Order) — дальше оно идёт обычным путём заказ → счёт.
-export default function Quotes({ onOpenOrder }: { onOpenOrder: (id: string) => void }) {
+export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: string) => void; prefill?: QuotePrefill | null }) {
 	const t = useTranslations("finance");
 	const locale = useLocale();
 	const { quotes, products, loadQuotes, loadProducts, createQuote, sendQuote, decideQuote, quoteToOrder, settings } = useFinanceStore();
@@ -22,18 +24,29 @@ export default function Quotes({ onOpenOrder }: { onOpenOrder: (id: string) => v
 	const [customerName, setCustomerName] = useState("");
 	const [items, setItems] = useState<LineItem[]>([{ ...EMPTY_ITEM }]);
 	const [busy, setBusy] = useState<string | null>(null);
+	const [dealLink, setDealLink] = useState<{ deal?: string; contact?: string; company?: string }>({});
+	const [historyOpen, setHistoryOpen] = useState<Set<string>>(new Set());
+	const toggleHistory = (id: string) => setHistoryOpen((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
 	useEffect(() => { loadQuotes(); loadProducts(); }, [loadQuotes, loadProducts]);
+
+	// пришли из карточки сделки (CRM → Deal → "Create Quote") — открываем форму сразу заполненной и со связью на сделку
+	useEffect(() => {
+		if (!prefill) return;
+		setCustomerName(prefill.customerName);
+		setDealLink({ deal: prefill.dealId, contact: prefill.contact, company: prefill.company });
+		setOpen(true);
+	}, [prefill]);
 
 	async function submit(e: React.FormEvent) {
 		e.preventDefault();
 		if (!customerName.trim()) return toast.error(t("customerRequired"));
 		const cleanItems = items.filter((it) => it.description.trim());
 		if (!cleanItems.length) return toast.error(t("itemsRequired"));
-		const err = await createQuote({ customerName: customerName.trim(), items: cleanItems, currency: settings?.currency || "EUR" });
+		const err = await createQuote({ customerName: customerName.trim(), items: cleanItems, currency: settings?.currency || "EUR", ...dealLink } as any);
 		if (err) return toast.error(err);
 		toast.success(t("saved"));
-		setOpen(false); setCustomerName(""); setItems([{ ...EMPTY_ITEM }]);
+		setOpen(false); setCustomerName(""); setItems([{ ...EMPTY_ITEM }]); setDealLink({});
 	}
 	async function send(id: string) { setBusy(id); const err = await sendQuote(id); setBusy(null); if (err) toast.error(err); }
 	async function decide(id: string, accepted: boolean) { setBusy(id); const err = await decideQuote(id, accepted); setBusy(null); if (err) toast.error(err); }
@@ -63,11 +76,26 @@ export default function Quotes({ onOpenOrder }: { onOpenOrder: (id: string) => v
 									<p className="flex items-center gap-10 text-16 font-semibold text-[#333333]">
 										{q.number}
 										<span className="rounded-4 px-8 py-2 text-12 font-medium text-white" style={{ background: STATUS_COLOR[q.status] }}>{t(`qstatus_${q.status}`)}</span>
+										{q.version > 1 && (
+											<button type="button" onClick={() => toggleHistory(q.id)} className="rounded-4 border border-[#E6E6E6] px-8 py-2 text-12 font-medium text-[#999999] hover:text-primaryColor">
+												v{q.version} · {t("history")}
+											</button>
+										)}
 									</p>
 									<p className="mt-[4px] text-14 text-[#666666]">{q.customerName} · {t("validUntil")}: {q.validUntil}</p>
 								</div>
 								<p className="text-18 font-semibold text-[#333333]">{money(q.totals.gross, q.currency, locale)}</p>
 							</div>
+							{historyOpen.has(q.id) && q.versions.length > 0 && (
+								<ul className="mt-10 flex flex-col gap-6 rounded-8 bg-[#F5F7FC] p-10">
+									{[...q.versions].reverse().map((v) => (
+										<li key={v.version} className="flex items-center justify-between text-12 text-[#999999]">
+											<span>v{v.version} · {v.customerName} · {new Date(v.savedAt).toLocaleString(locale === "ua" ? "uk" : locale)}</span>
+											<span className="font-medium text-[#666666]">{money(v.totals.gross, v.currency, locale)}</span>
+										</li>
+									))}
+								</ul>
+							)}
 							<div className="mt-14 flex flex-wrap items-center gap-10">
 								{q.status === "draft" && <button type="button" disabled={busy === q.id} onClick={() => send(q.id)} className="rounded-8 bg-primaryColor px-16 py-8 text-14 font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-[0.5]">{t("send")}</button>}
 								{q.status === "sent" && (
@@ -86,15 +114,16 @@ export default function Quotes({ onOpenOrder }: { onOpenOrder: (id: string) => v
 				</ul>
 			)}
 
-			<Modal open={open} onClose={() => setOpen(false)} label={t("newQuote")} className="w-full max-w-[640px]">
+			<Modal open={open} onClose={() => { setOpen(false); setDealLink({}); }} label={t("newQuote")} className="w-full max-w-[640px]">
 				<form onSubmit={submit} className="max-h-[90vh] overflow-y-auto rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
 					<h2 className="mb-16 text-20 font-medium text-black">{t("newQuote")}</h2>
+					{dealLink.deal && <p className="mb-16 rounded-8 bg-[#F5F7FC] px-12 py-8 text-14 text-[#666666]">{t("linkedToDeal")}</p>}
 					<div className="mb-16">
 						<FormField label={t("customer")} value={customerName} onChange={(e) => setCustomerName(e.target.value)} maxLength={200} autoFocus />
 					</div>
 					<LineItemsEditor items={items} onChange={setItems} products={products.filter((p) => !p.archived)} currency={settings?.currency ?? "EUR"} />
 					<div className="mt-24 flex justify-end gap-12">
-						<button type="button" onClick={() => setOpen(false)} className="h-[44px] rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] hover:bg-gray">{t("cancel")}</button>
+						<button type="button" onClick={() => { setOpen(false); setDealLink({}); }} className="h-[44px] rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] hover:bg-gray">{t("cancel")}</button>
 						<button type="submit" className="h-[44px] rounded-8 bg-primaryColor px-24 text-16 font-medium text-white shadow-custom hover:opacity-80">{t("save")}</button>
 					</div>
 				</form>

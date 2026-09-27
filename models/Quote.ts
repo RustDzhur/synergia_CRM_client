@@ -6,6 +6,19 @@ const QuoteItemSchema = new Schema(
     { _id: false }
 );
 
+// Снимок состояния перед коммерчески значимой правкой (items/customerName/currency) — история версий (ТЗ: "Quote v1,
+// v2, v3 — не перезаписывать"). savedAt — когда ИЗ этой версии ушли, не когда она была создана.
+const QuoteVersionSchema = new Schema(
+    {
+        version: { type: Number, required: true },
+        items: { type: [QuoteItemSchema], default: [] },
+        customerName: { type: String, default: "" },
+        currency: { type: String, default: "EUR" },
+        savedAt: { type: Date, default: Date.now },
+    },
+    { _id: false }
+);
+
 // Коммерческое предложение (Angebot/Quote): предшествует заказу. Пока без PDF/отправки — модель заведена, чтобы Order
 // мог на неё ссылаться; API и интерфейс — следующим шагом.
 const QuoteSchema = new Schema(
@@ -25,6 +38,8 @@ const QuoteSchema = new Schema(
         order: { type: Schema.Types.ObjectId, ref: "Order" }, // заказ, созданный из принятого предложения (см. /api/quotes/:id/order)
         notes: { type: String, default: "" },
         createdByName: { type: String, default: "" },
+        version: { type: Number, default: 1 }, // номер текущей версии — растёт при каждой коммерчески значимой правке
+        versions: { type: [QuoteVersionSchema], default: [] }, // снимки ПРЕДЫДУЩИХ версий, самая старая первая
     },
     { timestamps: true }
 );

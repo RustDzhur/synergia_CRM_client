@@ -23,6 +23,8 @@ function toDTO(s: any) {
         paymentTermsDays: s.paymentTermsDays ?? 14,
         invoicePrefix: s.invoicePrefix ?? "RE",
         quotePrefix: s.quotePrefix ?? "AN",
+        creditNotePrefix: s.creditNotePrefix ?? "GS",
+        reminderIntervalDays: s.reminderIntervalDays ?? 7,
     };
 }
 
@@ -45,13 +47,17 @@ export async function PATCH(req: Request) {
     if (typeof b.country === "string") set.country = COUNTRY_CODES.includes(b.country) ? b.country : "";
     const currency = str(b.currency, 6); if (currency !== undefined) set.currency = currency.toUpperCase();
     if (typeof b.smallBusiness === "boolean") set.smallBusiness = b.smallBusiness;
-    for (const k of ["legalName", "address", "taxId", "iban", "bic", "invoicePrefix", "quotePrefix"] as const) {
+    for (const k of ["legalName", "address", "taxId", "iban", "bic", "invoicePrefix", "quotePrefix", "creditNotePrefix"] as const) {
         const v = str(b[k], k === "address" ? 500 : 100);
         if (v !== undefined) set[k] = v;
     }
     if (b.paymentTermsDays !== undefined) {
         const n = Number(b.paymentTermsDays);
         if (Number.isFinite(n) && n >= 0 && n <= 365) set.paymentTermsDays = Math.round(n);
+    }
+    if (b.reminderIntervalDays !== undefined) {
+        const n = Number(b.reminderIntervalDays);
+        if (Number.isFinite(n) && n >= 1 && n <= 90) set.reminderIntervalDays = Math.round(n);
     }
     const s = await FinanceSettings.findOneAndUpdate({ org: user.id }, { $set: set }, { upsert: true, new: true });
     return NextResponse.json(toDTO(s));
