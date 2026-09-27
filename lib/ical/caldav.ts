@@ -66,10 +66,13 @@ async function dav(user: string, password: string, path: string, method: string,
     }, 20000);
 
     const text = await res.text();
-    // Код ответа называем прямо: по нему видно, это неверный пароль или Apple придерживает запросы
+    // Код ответа называем прямо: по нему видно, это неверный пароль или Apple придерживает запросы.
+    // 403 приходит не за неверный пароль, а после нескольких неудачных попыток — их стоит переждать,
+    // поэтому повтор со вторым видом пароля на него не делается (см. connectIcloud).
+    const where = step ? `, ${step}` : "";
     if (res.status === 401) throw new CalDavAuthError("Apple rejected the Apple ID or the app-specific password (HTTP 401)");
-    if (res.status === 403) throw new CalDavRefusal("Apple refused access for this account (HTTP 403). If the password is right, Apple is limiting sign-in attempts — try again in a few minutes.");
-    if (res.status === 429) throw new CalDavRefusal("Apple is limiting sign-in attempts (HTTP 429). Try again in a few minutes.");
+    if (res.status === 403) throw new CalDavRefusal(`Apple refused access for this account (HTTP 403${where}). This is usually a temporary block after several failed attempts: wait 15–30 minutes, then try once more with the password pasted from appleid.apple.com.`);
+    if (res.status === 429) throw new CalDavRefusal(`Apple is limiting sign-in attempts (HTTP 429${where}). Wait 15–30 minutes and try again.`);
     // Шаг важен: без него в окне было бы просто «ошибка 400», и непонятно, что именно Apple не приняла
     if (res.status >= 400) throw new Error(`iCloud refused the request (HTTP ${res.status}${step ? `, ${step}` : ""})`);
     return text;
