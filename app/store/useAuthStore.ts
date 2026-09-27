@@ -13,6 +13,17 @@ interface SignInFormData {
 	password: string;
 }
 
+// Срок действия токена лежит во второй части JWT (payload). Читаем её без проверки подписи:
+// подпись всё равно проверит сервер, а нам нужно только понять, идти ли на страницу входа сразу.
+function isExpired(token: string): boolean {
+	try {
+		const payload = JSON.parse(atob(token.split(".")[1] ?? ""));
+		return typeof payload?.exp === "number" && payload.exp * 1000 <= Date.now();
+	} catch {
+		return true; // токен битый — считаем, что сессии нет
+	}
+}
+
 interface AuthStore {
 	isAuthenticated: boolean;
 	authChecked: boolean;
@@ -30,6 +41,13 @@ const useAuthStore = create<AuthStore>((set) => ({
 
 	checkAuth: () => {
 		const token = localStorage.getItem("token");
+		// Сессия живёт сутки, и просроченный токен лежит в браузере до первого запроса.
+		// Срок проверяем здесь же по полезной нагрузке токена, чтобы не открывать кабинет впустую.
+		if (token && isExpired(token)) {
+			localStorage.removeItem("token");
+			set({ isAuthenticated: false, authChecked: true });
+			return;
+		}
 		set({ isAuthenticated: Boolean(token), authChecked: true });
 	},
 

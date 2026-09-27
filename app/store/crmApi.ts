@@ -13,6 +13,17 @@ export function authHeaders(json = true): Record<string, string> {
     };
 }
 
+// Сессия кончилась (токен старше суток или отозван): убираем его и уводим на страницу входа.
+// 401 отличается от 403 тем, что 403 — это «вошёл, но прав нет», там уходить некуда.
+let leaving = false;
+function sessionExpired() {
+    if (leaving) return;
+    leaving = true;
+    try { localStorage.removeItem("token"); } catch { /* приватный режим */ }
+    const locale = (window.location.pathname.match(/^\/(de|en|ua)(?=\/|$)/) ?? [])[1] ?? "de";
+    window.location.href = `/${locale}`;
+}
+
 // Обёртка над fetch: при ошибке (сеть или статус не 2xx) возвращает null, а не бросает исключение.
 export async function api<T>(url: string, method = "GET", body?: unknown): Promise<T | null> {
     try {
@@ -21,6 +32,7 @@ export async function api<T>(url: string, method = "GET", body?: unknown): Promi
             headers: authHeaders(),
             body: body === undefined ? undefined : JSON.stringify(body),
         });
+        if (res.status === 401) { sessionExpired(); return null; }
         if (!res.ok) return null;
         return (await res.json()) as T;
     } catch {
@@ -39,6 +51,7 @@ export async function apiCall<T>(url: string, method = "GET", body?: unknown, op
             cache: opts.cache,
         });
         const json = res.status === 204 ? null : await res.json().catch(() => null);
+        if (res.status === 401) sessionExpired();
         if (!res.ok) return { ok: false, data: null, message: json?.message ?? `Error ${res.status}`, code: json?.code ?? "", status: res.status };
         return { ok: true, data: json as T, message: "", code: "", status: res.status };
     } catch {

@@ -15,8 +15,10 @@ export async function POST(req: Request) {
         if (!ok) {
             return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
         }
+        // Сессия живёт сутки: раз в день нужно войти заново. Продления нет —
+        // по истечении любой запрос вернёт 401, и клиент уводит на страницу входа.
         const token = jwt.sign({ sub: user._id.toString() }, process.env.JWT_SECRET, {
-            expiresIn: "7d",
+            expiresIn: "1d",
         });
         return NextResponse.json({ token });
     } catch (e) {
