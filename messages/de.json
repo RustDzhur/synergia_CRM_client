@@ -178,7 +178,9 @@
       "crm": "Vertriebspipeline: Deals, Kontakte, Firmen",
       "tasks": "Aufgaben und Projekte",
       "company": "Firmenprofil und Mitarbeiterverzeichnis",
-      "collab": "Team-Feed, Kalender, Online-Dokumente",
+      "collab": "Team-Feed und Kalender",
+      "documents": "Online-Dokumente: gemeinsame Dateien und Ordner",
+      "inventory": "Lager, Aufträge, Rechnungen und Finanzen",
       "channels": "Chat und Anrufe: Telegram, Viber, Messenger, Webchat, SIP/Twilio",
       "mail": "Web-Mail mit automatischen Leads",
       "automation": "Automatisierungsregeln",
@@ -697,7 +699,9 @@
     "crm": "CRM: Deals, Kontakte, Firmen",
     "tasks": "Aufgaben und Projekte",
     "company": "Firma: Mitarbeiter und Verzeichnis",
-    "collab": "Feed, Kalender, Online-Dokumente",
+    "collab": "Feed und Kalender",
+    "documents": "Online-Dokumente: gemeinsame Dateien und Ordner",
+    "inventory": "Lager, Aufträge, Rechnungen und Finanzen",
     "channels": "Chat und Anrufe (Telegram, Viber, Messenger, Webchat, SIP/Twilio)",
     "mail": "Web Mails mit automatischen Leads",
     "automation": "Automatisierungsregeln",
@@ -1669,6 +1673,12 @@
         "blogExcerpt": "Kurztext (in der Blog-Übersicht)",
         "blogBody": "Artikeltext",
         "blogBodyHint": "Absätze durch eine Leerzeile trennen.",
-        "blogTitleRequired": "Geben Sie den englischen Titel ein."
+        "blogTitleRequired": "Geben Sie den englischen Titel ein.",
+        "features": "Bereiche",
+        "featuresTitle": "Bereiche für {name}",
+        "featuresHelp": "Der Tarif enthält die markierten Bereiche bereits. Zusätzliche können Sie hier nur für diese Firma ein- oder ausschalten; „Laut Tarif“ stellt die Tarifeinstellung wieder her.",
+        "featByPlan": "Laut Tarif",
+        "featExtra": "Gewährt",
+        "featOff": "Aus"
     }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/admin";
 import { effectivePlan } from "@/lib/billing";
+import { orgFeatures } from "@/lib/features";
 import Membership from "@/models/Membership";
 import Organization from "@/models/Organization";
 import User from "@/models/User";
@@ -42,6 +43,9 @@ export async function GET(req: Request) {
                 hasSubscription: !!o.billing?.subscriptionId && ["active", "trialing", "past_due"].includes(o.billing?.status ?? ""),
                 members: counts.find((c) => String(c._id) === String(o._id))?.n ?? 0,
                 blocked: !!o.blocked,
+                // что реально доступно фирме: набор тарифа плюс ручные переключатели разделов
+                features: orgFeatures(o),
+                featureOverrides: o.featureOverrides ?? {},
                 createdAt: o.createdAt.toISOString(),
             };
         })

@@ -178,7 +178,9 @@
       "crm": "Sales pipeline: deals, contacts, companies",
       "tasks": "Tasks and Projects",
       "company": "Company profile and employee directory",
-      "collab": "Team feed, calendar, online documents",
+      "collab": "Team feed and calendar",
+      "documents": "Online documents: shared files and folders",
+      "inventory": "Warehouse, orders, invoices and finance",
       "channels": "Chat and calls: Telegram, Viber, Messenger, web chat, SIP/Twilio",
       "mail": "Web mail with automatic leads",
       "automation": "Automation rules",
@@ -697,7 +699,9 @@
     "crm": "CRM: deals, contacts, companies",
     "tasks": "Tasks and Projects",
     "company": "Company: employees and directory",
-    "collab": "Feed, Calendar, Online Documents",
+    "collab": "Feed and calendar",
+    "documents": "Online documents: shared files and folders",
+    "inventory": "Warehouse, orders, invoices and finance",
     "channels": "Chat and Calls (Telegram, Viber, Messenger, web chat, SIP/Twilio)",
     "mail": "Web Mails with automatic leads",
     "automation": "Automation rules",
@@ -1669,6 +1673,12 @@
         "blogExcerpt": "Excerpt (shown on the blog list)",
         "blogBody": "Article text",
         "blogBodyHint": "Separate paragraphs with a blank line.",
-        "blogTitleRequired": "Enter the English title."
+        "blogTitleRequired": "Enter the English title.",
+        "features": "Sections",
+        "featuresTitle": "Sections for {name}",
+        "featuresHelp": "The plan already includes the ticked sections. Extra ones can be switched on or off here for this firm only; “By plan” returns a section to the plan's setting.",
+        "featByPlan": "By plan",
+        "featExtra": "Granted",
+        "featOff": "Off"
     }
 }

@@ -2,6 +2,8 @@ import jwt from "jsonwebtoken";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { canAccess, moduleForPath, type Role } from "@/lib/access";
+import { featureForApi, orgFeatures, orgPlan } from "@/lib/features";
+import type { FeatureKey, PlanId } from "@/app/config/plans";
 import User from "@/models/User";
 import Organization from "@/models/Organization";
 import Membership from "@/models/Membership";
@@ -9,10 +11,25 @@ import Membership from "@/models/Membership";
 // Кто делает запрос. id — идентификатор ФИРМЫ, в рамках которой работает пользователь: именно он записан в поле owner
 // у всех данных CRM, поэтому маршруты, которые фильтруют по user.id, автоматически видят данные выбранной фирмы.
 // userId — сам пользователь (для авторства, уведомлений, профиля).
-export interface AuthContext { id: string; userId: string; role: Role; modules: string[]; orgName: string }
+export interface AuthContext {
+    id: string;
+    userId: string;
+    role: Role;
+    modules: string[];
+    orgName: string;
+    plan: PlanId;
+    features: Record<FeatureKey, boolean>;
+}
 
 const denied = new WeakSet<Request>(); // запрос отклонён из-за прав (а не из-за входа) — ответ 403
 export const wasDenied = (req?: Request) => !!req && denied.has(req);
+
+// Запрос отклонён из-за тарифа — отдельный признак, чтобы интерфейс показал не «нет прав», а предложение сменить тариф
+const planDenied = new WeakSet<Request>();
+export const wasPlanDenied = (req?: Request) => !!req && planDenied.has(req);
+
+// Помета для маршрутов, которые сами проверяют тариф (например, /api/records): ответ будет 403 с кодом plan
+export const denyPlan = (req: Request) => { planDenied.add(req); };
 
 // Личная фирма пользователя (её _id == _id пользователя) создаётся при первом обращении — так данные, накопленные
 // до появления фирм, остаются доступны.
@@ -63,7 +80,14 @@ export async function requireUser(req: Request): Promise<AuthContext | null> {
             denied.add(req);
             return null;
         }
-        return { id: String(org._id), userId: String(user._id), role: membership.role, modules: membership.modules ?? [], orgName: org.name };
+        // раздел, который открывает адрес, должен быть в тарифе фирмы (или выдан администратором платформы вручную)
+        const features = orgFeatures(org);
+        const needed = featureForApi(url.pathname);
+        if (needed && !features[needed]) {
+            planDenied.add(req);
+            return null;
+        }
+        return { id: String(org._id), userId: String(user._id), role: membership.role, modules: membership.modules ?? [], orgName: org.name, plan: orgPlan(org), features };
     } catch {
         return null;
     }

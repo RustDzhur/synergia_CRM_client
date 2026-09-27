@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useFinanceStore } from "@/app/store/useFinanceStore";
+import { useFeature, useOrgStore } from "@/app/store/useOrgStore";
 import { money } from "../Finance/format";
 import { Kpi } from "../Ads/AdsPanel";
 
@@ -10,9 +11,13 @@ import { Kpi } from "../Ads/AdsPanel";
 export default function FinanceCard() {
 	const t = useTranslations("finance");
 	const locale = useLocale();
+	const enabled = useFeature("inventory");
+	// пока список фирм не загружен, неизвестно, входят ли финансы в тариф — запрос не отправляем
+	const planLoaded = useOrgStore((s) => s.loaded);
 	const { dashboard, loadDashboard, settings, loadSettings } = useFinanceStore();
-	useEffect(() => { loadSettings(); loadDashboard(1); }, [loadSettings, loadDashboard]);
-	if (!dashboard) return null;
+	useEffect(() => { if (planLoaded && enabled) { loadSettings(); loadDashboard(1); } }, [planLoaded, enabled, loadSettings, loadDashboard]);
+	// финансы не входят в тариф фирмы — карточки на дашборде нет (раздела всё равно нет в меню)
+	if (!planLoaded || !enabled || !dashboard) return null;
 	const currency = settings?.currency ?? "EUR";
 	const nothingYet = dashboard.revenue === 0 && dashboard.outstandingAmount === 0 && dashboard.expenses === 0 && dashboard.invoiceCounts.draft === 0;
 

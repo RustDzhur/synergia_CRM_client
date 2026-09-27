@@ -185,10 +185,9 @@ async function perform(org: string, rule: Rule, ev: AutoEvent): Promise<string> 
         }
         case "ai_action": {
             // на случай, если фирма понизила тариф уже после того, как создала это правило на более высоком
-            const { effectivePlan } = await import("@/lib/billing");
-            const { planFor } = await import("@/app/config/plans");
-            const orgDoc = await Organization.findById(org).select("plan planOverride planOverrideUntil");
-            if (!planFor(orgDoc ? effectivePlan(orgDoc) : "free").features.aiAutomation) {
+            const { orgFeatures } = await import("@/lib/features");
+            const orgDoc = await Organization.findById(org).select("plan planOverride planOverrideUntil featureOverrides");
+            if (!orgFeatures(orgDoc ?? {}).aiAutomation) {
                 throw new ProviderError("This firm's plan no longer includes the autonomous AI automation step");
             }
             // в отличие от других действий здесь message — не текст для показа, а инструкция для модели; имя правила

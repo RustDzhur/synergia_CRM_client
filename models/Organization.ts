@@ -20,6 +20,8 @@ const OrganizationSchema = new Schema(
             currentPeriodEnd: { type: Date },
             cancelAtPeriodEnd: { type: Boolean, default: false },
         },
+        // разделы сверх тарифа: администратор платформы включает их вручную (ключи из app/config/plans.ts)
+        featureOverrides: { type: Schema.Types.Mixed, default: {} },
         blocked: { type: Boolean, default: false }, // фирму заблокировал администратор платформы
     },
     { timestamps: true }

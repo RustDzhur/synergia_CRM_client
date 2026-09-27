@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useAdsStore } from "@/app/store/useAdsStore";
+import { useFeature, useOrgStore } from "@/app/store/useOrgStore";
 import { ItemStats } from "../Ads/AdsPanel";
 
 // Карточка «Advertising» на Dashboard: расход, клики и конверсии по подключённой рекламной платформе за 30 дней.
@@ -10,13 +11,18 @@ import { ItemStats } from "../Ads/AdsPanel";
 export default function AdsCard() {
 	const t = useTranslations("ads");
 	const locale = useLocale();
+	const enabled = useFeature("ads");
+	// пока список фирм не загружен, неизвестно, входит ли реклама в тариф — запрос не отправляем
+	const planLoaded = useOrgStore((s) => s.loaded);
 	const { items, loadInsights } = useAdsStore();
 	const [index, setIndex] = useState(0);
 	const [ready, setReady] = useState(false);
 
 	useEffect(() => {
-		loadInsights(30).then(() => setReady(true));
-	}, [loadInsights]);
+		if (planLoaded && enabled) loadInsights(30).then(() => setReady(true));
+	}, [planLoaded, enabled, loadInsights]);
+	// реклама не входит в тариф фирмы — карточки на дашборде нет (раздела всё равно нет в меню)
+	if (!planLoaded || !enabled) return null;
 
 	if (!ready) return null;
 	const item = items[Math.min(index, items.length - 1)];

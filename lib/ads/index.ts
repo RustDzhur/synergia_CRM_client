@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import type { HydratedDocument } from "mongoose";
-import { planFor } from "@/app/config/plans";
-import { effectivePlan } from "@/lib/billing";
+import { orgFeatures } from "@/lib/features";
 import { ProviderError } from "@/lib/http";
 import { packSecrets, secretsOf } from "@/lib/integrations";
 import { randomToken } from "@/lib/crypto";
@@ -21,8 +20,8 @@ export const metaRedirectUri = (origin: string) => `${origin}/api/ads/callback`;
 
 // вынесено из app/api/ads/route.ts — route.ts не может экспортировать ничего, кроме обработчиков HTTP-методов
 export async function adsPlanOk(org: string) {
-    const o = await Organization.findById(org).select("plan planOverride planOverrideUntil");
-    return planFor(o ? effectivePlan(o) : "free").features.ads;
+    const o = await Organization.findById(org).select("plan planOverride planOverrideUntil featureOverrides");
+    return orgFeatures(o ?? {}).ads;
 }
 
 export const findAds = (owner: string, platform?: AdsPlatform) => Integration.find({ owner, type: "ads", ...(platform ? { "config.platform": platform } : {}) }).sort({ createdAt: 1 });
