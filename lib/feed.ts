@@ -3,6 +3,7 @@ import { isValidObjectId } from "mongoose";
 import { notifyMembers } from "@/lib/notify";
 import FeedPost from "@/models/FeedPost";
 import Membership from "@/models/Membership";
+import Employee from "@/models/Employee";
 import User from "@/models/User";
 
 type Doc = HydratedDocument<any>;
@@ -80,20 +81,49 @@ const MAX_AUDIENCE = 50;
 
 // Кому адресована запись: оставляем только участников этой фирмы — чужой id не должен попасть в адресаты
 // (иначе в карточке появилось бы имя человека из другой фирмы, а уведомление ушло бы не туда).
+// Кому адресована запись. На входе могут быть как участники фирмы (у них есть аккаунт),
+// так и сотрудники из справочника «Моя фирма» — там человек может быть записан без аккаунта.
+// Сотрудника сопоставляем с участником по почте: если он зарегистрирован, он получит уведомление,
+// а если нет — останется только именем в списке адресатов, и уведомлять его некуда.
 export async function resolveAudience(org: string, raw: unknown): Promise<{ ids: string[]; names: string[] }> {
     const wanted = Array.isArray(raw)
         ? Array.from(new Set(raw.filter((v): v is string => typeof v === "string" && isValidObjectId(v)))).slice(0, MAX_AUDIENCE)
         : [];
     if (!wanted.length) return { ids: [], names: [] };
+
+    // сначала участники: их id и есть адресаты уведомлений
     const members = await Membership.find({ org, user: { $in: wanted } }).select("user").lean<{ user: unknown }[]>();
-    const allowed = new Set(members.map((m) => String(m.user)));
-    const ids = wanted.filter((id) => allowed.has(id));
-    if (!ids.length) return { ids: [], names: [] };
-    const users = await User.find({ _id: { $in: ids } }).select("firstname lastname").lean<{ _id: unknown; firstname: string; lastname: string }[]>();
-    const names = ids.map((id) => {
-        const u = users.find((x) => String(x._id) === id);
-        return u ? `${u.firstname} ${u.lastname}`.trim() : "";
-    });
+    const memberIds = new Set(members.map((m) => String(m.user)));
+
+    // остальные id могут быть сотрудниками справочника
+    const rest = wanted.filter((id) => !memberIds.has(id));
+    const employees = rest.length
+        ? await Employee.find({ _id: { $in: rest }, owner: org }).select("firstname lastname email").lean<{ _id: unknown; firstname: string; lastname: string; email: string }[]>()
+        : [];
+    const employeeNames = new Map(employees.map((e) => [String(e._id), `${e.firstname} ${e.lastname}`.trim()]));
+
+    // сотрудник с аккаунтом: почта совпадает с участником фирмы
+    const emails = employees.map((e) => (e.email ?? "").toLowerCase()).filter(Boolean);
+    const byEmail = emails.length
+        ? await User.find({ email: { $in: emails } }).select("_id email").lean<{ _id: unknown; email: string }[]>()
+        : [];
+    const idByEmail = new Map(byEmail.map((u) => [(u.email ?? "").toLowerCase(), String(u._id)]));
+    const linked = new Set(
+        employees.map((e) => idByEmail.get((e.email ?? "").toLowerCase())).filter((id): id is string => !!id && memberIds.has(id))
+    );
+
+    const ids = Array.from(new Set(wanted.filter((id) => memberIds.has(id)).concat(Array.from(linked))));
+    const users = ids.length
+        ? await User.find({ _id: { $in: ids } }).select("firstname lastname").lean<{ _id: unknown; firstname: string; lastname: string }[]>()
+        : [];
+    // имена собираем по всем адресатам, включая сотрудников без аккаунта — иначе карточка покажет пустоту
+    const names = wanted
+        .map((id) => {
+            const u = users.find((x) => String(x._id) === id);
+            if (u) return `${u.firstname} ${u.lastname}`.trim();
+            return employeeNames.get(id) ?? "";
+        })
+        .filter(Boolean);
     return { ids, names };
 }
 

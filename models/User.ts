@@ -6,6 +6,9 @@ const UserSchema = new Schema(
         firstname: { type: String, required: true, trim: true },
         lastname: { type: String, required: true, trim: true },
         email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+        // Администратор платформы: доступ к кабинету администратора. Выдаётся из самого кабинета
+        // или переменной окружения ADMIN_EMAILS (см. lib/admin.ts)
+        platformAdmin: { type: Boolean, default: false },
         passwordHash: { type: String, required: true },
         // либо внешний URL, либо data:image/...;base64 (загрузка из окна профиля), либо пусто
         avatarUrl: { type: String, default: "" },

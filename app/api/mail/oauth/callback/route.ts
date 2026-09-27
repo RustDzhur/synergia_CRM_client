@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { appOrigin } from "@/lib/appUrl";
 import { connectAds } from "@/lib/ads";
-import { connectDrive } from "@/lib/google";
+import { connectDrive, connectGcal } from "@/lib/google";
 import { connectOAuthAccount, syncAccount } from "@/lib/mail";
 import { exchangeCode, readState } from "@/lib/mail/oauth";
 import { ProviderError } from "@/lib/http";
@@ -21,9 +21,11 @@ export async function GET(req: Request) {
     // тот же адрес возврата обслуживает и вход в Google Drive (Online Documents) и Google Ads (Marketing) — различаем по state
     const drive = state.p === "drive";
     const ads = state.p === "ads";
+    const gcal = state.p === "gcal";
     const back = (status: string, message = "") => {
-        const u = new URL(`${origin}/${state.l}/crm/${ads ? "marketing" : `collaboration/${drive ? "online-documents" : "web-mails"}`}`);
-        u.searchParams.set(ads ? "ads" : drive ? "drive" : "mail", status);
+        const section = ads ? "marketing" : gcal ? "collaboration/calendar" : `collaboration/${drive ? "online-documents" : "web-mails"}`;
+        const u = new URL(`${origin}/${state.l}/crm/${section}`);
+        u.searchParams.set(ads ? "ads" : gcal ? "gcal" : drive ? "drive" : "mail", status);
         if (message) u.searchParams.set("message", message.slice(0, 200));
         return NextResponse.redirect(u);
     };
@@ -35,6 +37,10 @@ export async function GET(req: Request) {
         const tokens = await exchangeCode(state.v, code, origin);
         if (ads) {
             await connectAds(state.sub, "google", tokens);
+            return back("connected");
+        }
+        if (gcal) {
+            await connectGcal(state.sub, tokens);
             return back("connected");
         }
         if (drive) {

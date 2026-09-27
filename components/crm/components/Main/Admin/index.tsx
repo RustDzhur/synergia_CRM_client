@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { apiCall } from "@/app/store/crmApi";
+import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
 import { FEATURE_KEYS, planFor, type FeatureKey } from "@/app/config/plans";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
 import Modal from "../shared/Modal";
@@ -23,6 +24,9 @@ export default function AdminPanel() {
 	const tf = useTranslations("upgrade");
 	const locale = useLocale();
 	const [denied, setDenied] = useState(false);
+	// Права проверяем ещё до запросов: без них незачем дёргать админские маршруты,
+	// а пользователь сразу видит, что кабинет ему недоступен. Сервер проверяет то же самое.
+	const me = useCurrentUserStore((s) => s.user);
 	const [summary, setSummary] = useState<Summary | null>(null);
 	const [orgs, setOrgs] = useState<OrgRow[]>([]);
 	const [reqs, setReqs] = useState<Req[]>([]);
@@ -39,12 +43,13 @@ export default function AdminPanel() {
 	}
 
 	const load = useCallback(async () => {
+		if (me && !me.isAdmin) return void setDenied(true);
 		const [s, o, r] = await Promise.all([apiCall<Summary>("/api/admin/summary"), apiCall<OrgRow[]>(`/api/admin/orgs?q=${encodeURIComponent(q)}`), apiCall<Req[]>("/api/admin/requests")]);
 		if (s.status === 403) return void setDenied(true);
 		if (s.data) setSummary(s.data);
 		if (o.data) setOrgs(o.data);
 		if (r.data) setReqs(r.data);
-	}, [q]);
+	}, [q, me]);
 	useEffect(() => { const id = setTimeout(load, q ? 300 : 0); return () => clearTimeout(id); }, [load, q]);
 
 	async function patch(id: string, body: Record<string, unknown>) {

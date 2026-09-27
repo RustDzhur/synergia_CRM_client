@@ -10,6 +10,12 @@ export function authHeaders(json = true): Record<string, string> {
         ...(json ? { "Content-Type": "application/json" } : {}),
         Authorization: `Bearer ${localStorage.getItem("token")}`,
         ...(org ? { "X-Org-Id": org } : {}),
+        // Местный часовой пояс браузера (минуты от UTC): события и сроки хранят местное время без пояса,
+        // и сервер по этому заголовку понимает, наступило ли уже время напоминания (lib/calendar/reminders.ts).
+        "X-Tz-Offset": String(-new Date().getTimezoneOffset()),
+        // Имя того же пояса («Europe/Berlin»). Сдвиг в минутах верен только на сегодня, а событие может
+        // стоять на дату с другим сезонным временем — для записи в Google нужен сам пояс (lib/google/calendar.ts).
+        "X-Tz-Name": Intl.DateTimeFormat().resolvedOptions().timeZone ?? "",
     };
 }
 

@@ -15,6 +15,8 @@ const TaskSchema = new Schema(
         completed: { type: Boolean, default: false },
         pinned: { type: Boolean, default: false },
         muted: { type: Boolean, default: false },
+        // проект, в рамках которого сделана задача; пусто — задача сама по себе
+        project: { type: Schema.Types.ObjectId, ref: "Project", index: true },
         activities: { type: [ActivitySchema], default: [] }, // комментарии к задаче (type: "comment", meta: имя автора)
     },
     { timestamps: true }

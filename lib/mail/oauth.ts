@@ -29,27 +29,30 @@ export const oauthAvailable = () => ({ google: !!(CONFIG.google.id() && CONFIG.g
 export const redirectUri = (origin: string) => `${origin}/api/mail/oauth/callback`;
 
 // state защищает от подделки запроса: подписан, живёт 10 минут и содержит пользователя, провайдера и язык страницы
-export type OAuthPurpose = "mail" | "drive" | "ads";
+export type OAuthPurpose = "mail" | "drive" | "ads" | "gcal";
 export function makeState(userId: string, vendor: Vendor, locale: string, purpose: OAuthPurpose = "mail") {
     return jwt.sign({ sub: userId, v: vendor, l: locale, p: purpose }, process.env.JWT_SECRET as string, { expiresIn: "10m" });
 }
 export function readState(state: string) {
     try {
         const s = jwt.verify(state, process.env.JWT_SECRET as string) as { sub: string; v: Vendor; l: string; p?: OAuthPurpose };
-        return CONFIG[s.v] ? { ...s, p: (s.p === "drive" || s.p === "ads" ? s.p : "mail") as OAuthPurpose } : null;
+        const purpose: OAuthPurpose = s.p === "drive" || s.p === "ads" || s.p === "gcal" ? s.p : "mail";
+        return CONFIG[s.v] ? { ...s, p: purpose } : null;
     } catch {
         return null;
     }
 }
 
-// scope — если нужен не тот, что у почты (Google Drive)
+// scope — если нужен не тот, что у почты (Google Drive, Google Calendar)
 export function authorizeUrl(vendor: Vendor, origin: string, state: string, scope?: string) {
     const c = CONFIG[vendor];
     const q = new URLSearchParams({ client_id: c.id() ?? "", redirect_uri: redirectUri(origin), response_type: "code", scope: scope ?? c.scope, state, ...c.extra });
     return `${c.authUrl()}?${q}`;
 }
 
-export interface Tokens { accessToken: string; refreshToken: string; expiresAt: number }
+// scope — какие права провайдер выдал на самом деле: согласие можно дать на меньшее, чем запрошено
+// (например, к календарю Google — только на чтение), и по нему решается, доступна ли запись.
+export interface Tokens { accessToken: string; refreshToken: string; expiresAt: number; scope?: string }
 
 async function tokenRequest(vendor: Vendor, form: Record<string, string>) {
     const c = CONFIG[vendor];
@@ -58,9 +61,9 @@ async function tokenRequest(vendor: Vendor, form: Record<string, string>) {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ client_id: c.id() ?? "", client_secret: c.secret() ?? "", ...form }).toString(),
     });
-    const json = (await res.json().catch(() => null)) as { access_token?: string; refresh_token?: string; expires_in?: number; error_description?: string; error?: string } | null;
+    const json = (await res.json().catch(() => null)) as { access_token?: string; refresh_token?: string; expires_in?: number; scope?: string; error_description?: string; error?: string } | null;
     if (!res.ok || !json?.access_token) throw new ProviderError(json?.error_description || json?.error || "Sign-in was rejected by the provider");
-    return { accessToken: json.access_token, refreshToken: json.refresh_token ?? "", expiresAt: Date.now() + (json.expires_in ?? 3600) * 1000 };
+    return { accessToken: json.access_token, refreshToken: json.refresh_token ?? "", expiresAt: Date.now() + (json.expires_in ?? 3600) * 1000, scope: json.scope ?? "" };
 }
 
 export const exchangeCode = (vendor: Vendor, code: string, origin: string) =>

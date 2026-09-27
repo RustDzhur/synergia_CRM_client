@@ -1,7 +1,18 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { TbCalendarEvent, TbChecklist, TbClipboardPlus, TbDots, TbNews, TbPin, TbUser, TbUsers, TbX } from "react-icons/tb";
+import {
+	TbCalendarEvent,
+	TbChecklist,
+	TbClipboardPlus,
+	TbDots,
+	TbMoodSmile,
+	TbNews,
+	TbPin,
+	TbUser,
+	TbUsers,
+	TbX,
+} from "react-icons/tb";
 import toast from "react-hot-toast";
 import { api } from "@/app/store/crmApi";
 import { FeedPost, useFeedStore } from "@/app/store/useFeedStore";
@@ -17,9 +28,19 @@ import { formatDueDate, formatPostDate, initialsOf } from "./format";
 const NAVY = "text-[#f1f4ee]";
 // Набор смайликов для реакций: «свои эмоции» без свободного ввода — одинаково у всех и не ломает вёрстку
 const REACTIONS = ["👍", "❤️", "😄", "🎉", "👏", "🚀"];
+
+// Палитра для вставки в текст записи: сгруппирована по смыслу, чтобы нужное находилось глазами.
+// Своего поиска нет намеренно — набор небольшой и обозримый.
+const EMOJI_GROUPS: Array<{ key: string; items: string[] }> = [
+	{ key: "smileys", items: ["😀", "😄", "😉", "😊", "🙂", "😍", "🤔", "😅", "😎", "🙌", "🤝", "🙏"] },
+	{ key: "work", items: ["👍", "👏", "✅", "❗", "🔥", "💡", "📌", "📅", "⏰", "📈", "💰", "🧾"] },
+	{ key: "marks", items: ["🎉", "🚀", "⭐", "❤️", "☕", "🌍", "📞", "✉️", "📎", "🔗", "⚠️", "🎯"] },
+];
 const action = "text-13 text-[#8c948b] transition-colors hover:text-[#c6ff4d]";
 
-interface Member { userId: string; name: string; email: string; you?: boolean }
+interface Member { userId: string; name: string; email: string; you?: boolean; source?: "member" | "employee" }
+// Сотрудник из справочника «Моя фирма»: аккаунта у него может и не быть — тогда он только адресат в тексте
+interface Employee { _id: string; firstname: string; lastname: string; email: string; position?: string }
 
 // Кому адресована запись: вся фирма или выбранные люди
 function AudiencePicker({ ids, onChange }: { ids: string[]; onChange: (ids: string[]) => void }) {
@@ -31,13 +52,26 @@ function AudiencePicker({ ids, onChange }: { ids: string[]; onChange: (ids: stri
 	const close = useCallback(() => setOpen(false), []);
 	useClickOutside(ref, open, close);
 
-	// Участников спрашиваем при первом открытии списка, а не при загрузке страницы
+	// Людей спрашиваем при первом открытии списка, а не при загрузке страницы.
+	// Берём и участников фирмы (у них есть аккаунт), и сотрудников из справочника «Моя фирма»:
+	// без второго списка адресат не находился, хотя человек в фирме заведён.
 	useEffect(() => {
 		if (!open || loaded) return;
 		let alive = true;
-		api<{ members: Member[] }>("/api/orgs/members").then((data) => {
-			if (!alive || !data) return;
-			setMembers(data.members.filter((m) => !m.you));
+		Promise.all([
+			api<{ members: Member[] }>("/api/orgs/members"),
+			api<{ items: Employee[] }>("/api/employees?page=1"),
+		]).then(([org, staff]) => {
+			if (!alive) return;
+			const list: Member[] = (org?.members ?? []).filter((m) => !m.you).map((m) => ({ ...m, source: "member" as const }));
+			// сотрудника с почтой, совпадающей с участником, второй раз не показываем — это один человек
+			const memberEmails = new Set(list.map((m) => (m.email ?? "").toLowerCase()).filter(Boolean));
+			for (const e of staff?.items ?? []) {
+				const email = (e.email ?? "").toLowerCase();
+				if (email && memberEmails.has(email)) continue;
+				list.push({ userId: e._id, name: `${e.firstname} ${e.lastname}`.trim(), email: e.email, source: "employee" });
+			}
+			setMembers(list);
 			setLoaded(true);
 		});
 		return () => { alive = false; };
@@ -66,7 +100,12 @@ function AudiencePicker({ ids, onChange }: { ids: string[]; onChange: (ids: stri
 					{members.map((m) => (
 						<label key={m.userId} className="fs-popover-row flex cursor-pointer items-center gap-10 rounded-8 px-12 py-8 text-13 transition-colors">
 							<input type="checkbox" checked={ids.includes(m.userId)} onChange={() => toggle(m.userId)} className="h-[15px] w-[15px] accent-[#c6ff4d]" />
-							<span className="truncate">{m.name}</span>
+							<span className="min-w-0 flex-1">
+								<span className="block truncate">{m.name}</span>
+								{/* У сотрудника из справочника может не быть аккаунта: он попадёт в адресаты записи,
+								    но уведомление ему прийти не может — честнее сказать это сразу */}
+								{m.source === "employee" && <span className="block truncate text-11 text-[#9AA396]">{t("employeeNoAccount")}</span>}
+							</span>
 						</label>
 					))}
 					{loaded && members.length === 0 && <p className="px-12 py-8 text-12 text-[#8C948B]">{t("noColleagues")}</p>}
@@ -266,6 +305,21 @@ export default function Feed() {
 	const [busy, setBusy] = useState(false);
 	const [dueAt, setDueAt] = useState("");
 	const [asNews, setAsNews] = useState(false);
+	const [emojiOpen, setEmojiOpen] = useState(false);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const emojiRef = useRef<HTMLDivElement>(null);
+	useClickOutside(emojiRef, emojiOpen, () => setEmojiOpen(false));
+
+	// Вставляем смайлик туда, где стоит курсор, а не в конец текста — иначе правка середины сбивала бы порядок
+	function insertEmoji(emoji: string) {
+		const el = textareaRef.current;
+		if (!el) return void setDraft((d) => d + emoji);
+		const start = el.selectionStart ?? draft.length;
+		const end = el.selectionEnd ?? start;
+		const next = draft.slice(0, start) + emoji + draft.slice(end);
+		setDraft(next.slice(0, 2000));
+		requestAnimationFrame(() => { el.focus(); el.setSelectionRange(start + emoji.length, start + emoji.length); });
+	}
 	const [audienceIds, setAudienceIds] = useState<string[]>([]);
 	const [kindFilter, setKindFilter] = useState<"all" | "news" | "task">("all");
 
@@ -319,6 +373,7 @@ export default function Feed() {
 				<div className="flex items-start gap-12">
 					<Avatar src={meAvatar} initials={initialsOf(meName)} size={38} className="hidden text-13 md:flex" />
 					<textarea
+						ref={textareaRef}
 						value={draft}
 						onChange={(e) => setDraft(e.target.value)}
 						maxLength={2000}
@@ -340,6 +395,38 @@ export default function Feed() {
 						/>
 					</label>
 					<AudiencePicker ids={audienceIds} onChange={setAudienceIds} />
+					{/* Выбор смайлика для текста записи */}
+					<div ref={emojiRef} className="relative">
+						<button
+							type="button"
+							aria-expanded={emojiOpen}
+							aria-label={t("emoji")}
+							onClick={() => setEmojiOpen((v) => !v)}
+							className={`flex h-34 items-center gap-8 rounded-10 border px-12 text-12 transition-colors ${emojiOpen ? "border-inkAccentLine text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+							<TbMoodSmile size={15} aria-hidden />
+							{t("emoji")}
+						</button>
+						<Dropdown open={emojiOpen} className="bottom-full left-0 mb-8 w-[268px]">
+							<div className="fs-popover fs-scroll max-h-[240px] overflow-y-auto p-10">
+								{EMOJI_GROUPS.map((group) => (
+									<div key={group.key} className="mb-8 last:mb-0">
+										<p className="mb-4 px-4 text-10 uppercase tracking-[0.12em] text-[#9AA396]">{t(`emoji_${group.key}`)}</p>
+										<div className="flex flex-wrap gap-2">
+											{group.items.map((emoji) => (
+												<button
+													key={emoji}
+													type="button"
+													onClick={() => insertEmoji(emoji)}
+													className="flex h-30 w-30 items-center justify-center rounded-8 text-18 transition-colors hover:bg-[rgba(255,255,255,0.08)]">
+													{emoji}
+												</button>
+											))}
+										</div>
+									</div>
+								))}
+							</div>
+						</Dropdown>
+					</div>
 					<button
 						type="button"
 						aria-pressed={asNews}

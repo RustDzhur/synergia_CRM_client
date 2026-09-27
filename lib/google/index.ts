@@ -61,3 +61,57 @@ export async function driveParent(token: string, drive: Doc, folderId: string | 
     await folder.save();
     return created.id;
 }
+
+// ── Google Calendar ─────────────────────────────────────────────────────────────────────────────────────
+// Отдельная интеграция со своими токенами: Drive и Календарь подключаются независимо, и отзыв доступа
+// к одному не должен ломать другой. Токен обновляется так же, как у Drive.
+
+export const findGcal = (owner: string) => Integration.findOne({ owner, type: "gcal" });
+
+export async function connectGcal(owner: string, tokens: Tokens) {
+    if (!tokens.refreshToken) throw new ProviderError("Google did not allow offline access. Remove the app in your Google account permissions and connect again.");
+    const doc = (await findGcal(owner)) ?? new Integration({ owner, type: "gcal", token: randomToken() });
+    // Список календарей и имя подключённого аккаунта. Основной календарь Google называется почтой
+    // владельца, поэтому он же и есть имя: через Drive его не узнать — календарное согласие прав
+    // на Drive не даёт, и тот запрос всегда отвечал отказом.
+    let email = "";
+    let calendars = doc.config?.calendars ?? [];
+    try {
+        const { listCalendars, toCalendarEntries } = await import("@/lib/google/calendar");
+        const list = await listCalendars(tokens.accessToken);
+        email = list.find((c) => c.primary)?.id ?? "";
+        // Отметки «синхронизировать» не трогаем, если список уже был: их расставил человек
+        if (!Array.isArray(calendars) || !calendars.length) calendars = toCalendarEntries(list);
+    } catch {
+        // Список не критичен: его можно загрузить из окна «Календари», имя аккаунта останется общим
+    }
+    // Выбранные календари и календарь для записи сохраняем при переподключении: человек их уже отметил.
+    // scopes — то, что Google выдал на самом деле: по ним видно, можно ли писать в календарь.
+    doc.set({
+        name: email || "Google Calendar",
+        config: { email, calendars, target: doc.config?.target ?? "", scopes: tokens.scope || doc.config?.scopes || "" },
+        secrets: packSecrets(tokens),
+        status: "connected",
+        error: "",
+    });
+    doc.markModified("config");
+    await doc.save();
+    return doc;
+}
+
+export async function gcalToken(d: Doc): Promise<string> {
+    const s = secretsOf<Tokens>(d);
+    if (s.expiresAt > Date.now() + 60_000) return s.accessToken;
+    if (!s.refreshToken) throw new ProviderError("Connect Google Calendar again");
+    try {
+        const fresh = await refreshTokens("google", s.refreshToken);
+        d.secrets = packSecrets(fresh);
+        await d.save();
+        return fresh.accessToken;
+    } catch {
+        d.status = "error";
+        d.error = "Google Calendar access was revoked. Connect it again.";
+        await d.save();
+        throw new ProviderError(d.error);
+    }
+}

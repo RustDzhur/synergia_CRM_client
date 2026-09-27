@@ -12,6 +12,14 @@ import type { TemplateDef } from "./templates";
 // на оплату. Отличаются вёрстка, акцентный цвет и порядок блоков, а не набор данных: любой шаблон годится
 // для отправки клиенту и соответствует требованиям к счёту (§14 UStG и аналоги в ЕС).
 // Раскладка намеренно разная: колонка слева, баннер сверху, две колонки, сетка, компактный вариант и т.д.
+//
+// Общий каркас у всех десяти один и рисуется в одном месте, чтобы варианты не «жили своей жизнью»:
+//   • логотип занимает заранее отведённый слот и рисуется ПОСЛЕ подложек шаблона — его никто не закрашивает,
+//     а текст шапки в этот слот не заходит (ему сужается колонка);
+//   • подвал (реквизиты, примечания, QR) всегда стоит внизу ПОСЛЕДНЕЙ страницы; его высота измеряется по
+//     фактическому тексту настроек и резервируется на каждой странице — блоки не налезают друг на друга;
+//   • когда содержимое не помещается, страница честно заканчивается и открывается новая с шапкой-продолжением,
+//     а не так, как раньше: pdfkit сам добавлял страницу ровно под последней строкой.
 
 import type { DocKind, PdfDocumentData, PdfLineItem, PdfParty, PdfSettings } from "./pdf";
 
@@ -70,6 +78,18 @@ const partyLines = (p: PdfParty) => [p.name || "—", p.address, p.taxId].filter
 // Срок оплаты печатаем только у счёта: предложение и заказ ещё не требуют платежа, договор живёт по своим датам
 const payerKind = (k: DocKind) => k === "invoice" || k === "credit_note";
 
+// --- геометрия страницы ---------------------------------------------------------------------------------
+
+// Документ создаётся с полями 50 pt (lib/finance/pdf.ts), поэтому нижняя граница содержимого — 791.89.
+const PAGE_W = 595.28;
+const PAGE_H = 841.89;
+const PAGE_MARGIN = 50;
+const MAX_Y = PAGE_H - PAGE_MARGIN; // = doc.page.maxY(): ниже этой линии pdfkit открывает новую страницу
+const CONTENT_GAP = 12; // воздух между содержимым и нижней полосой
+const BRAND_H = 10; // строка бренда в самом низу
+const BRAND_GAP = 8; // отступ между строкой бренда и полосой подвала
+const QR_GAP = 16; // зазор между текстом подвала и QR-кодом
+
 // --- примитивы вёрстки ---------------------------------------------------------------------------------
 
 // Абзац в точке (x, y): возвращает высоту, чтобы блоки можно было ставить друг под друга
@@ -90,10 +110,22 @@ function box(doc: Doc, x: number, y: number, w: number, h: number, o: { fill?: s
     if (o.stroke) doc.rect(x, y, w, h).lineWidth(0.7).strokeColor(o.stroke).stroke();
 }
 
-// Подпись сверху, значение под ней — «этикетка» блоков с реквизитами
-function labelled(doc: Doc, label: string, value: string, x: number, y: number, o: { labelColor?: string; valueColor?: string; size?: number; width?: number } = {}) {
+// Подпись сверху, значение под ней — «этикетка» блоков с реквизитами. Возвращает занятую высоту:
+// вызывающий ставит следующий блок по ней, а не по «примерно столько же» — иначе блоки смыкались.
+function labelled(doc: Doc, label: string, value: string, x: number, y: number, o: { labelColor?: string; valueColor?: string; size?: number; width?: number } = {}): number {
     const h = text(doc, label.toUpperCase(), x, y, { size: 7.5, color: o.labelColor ?? "#999999", width: o.width });
-    text(doc, value, x, y + h + 1, { size: o.size ?? 10, color: o.valueColor ?? "#333333", width: o.width });
+    const hv = text(doc, value, x, y + h + 1, { size: o.size ?? 10, color: o.valueColor ?? "#333333", width: o.width });
+    return h + 1 + hv;
+}
+
+// Строка, гарантированно влезающая в одну строку: длинную строку бренда обрезаем, а не переносим —
+// перенос уводил её за нижнее поле и pdfkit открывал из-за этого лишнюю страницу.
+function oneLine(doc: Doc, str: string, size: number, width: number): string {
+    doc.fontSize(size);
+    if (doc.widthOfString(str) <= width) return str;
+    let s = str;
+    while (s.length > 1 && doc.widthOfString(`${s}…`) > width) s = s.slice(0, -1);
+    return `${s}…`;
 }
 
 // QR-код на оплату: белый квадрат под модули, тёмные модули — прямоугольниками. Соседние модули в строке
@@ -116,15 +148,51 @@ function drawQr(doc: Doc, payload: string, x: number, y: number, size: number) {
     }
 }
 
-// Где начинать подвал. Обычно сразу под содержимым, но не ниже, чем позволяет нижнее поле страницы: иначе
-// хвост документа (код, подписи под ним, реквизиты) уезжает за границу и pdfkit добавляет вторую страницу.
-const PAGE_H = 841.89;
-const QR_EXTRA = 52; // подпись под кодом и пояснение к ней (при узком коде пояснение переносится на две строки)
-const FOOT_EXTRA = 70; // сам подвал без кода: пометка малого бизнеса, примечания, срок оплаты, реквизиты
-function footerTop(t: TemplateDef, contentY: number, gap: number, qrSize: number, hasQr: boolean, minY = 690): number {
-    const limit = PAGE_H - t.margin - (hasQr ? qrSize + QR_EXTRA : FOOT_EXTRA);
-    return Math.max(Math.min(Math.max(contentY + gap, minY), limit), t.margin);
+// --- логотип -------------------------------------------------------------------------------------------
+
+const LOGO_MAX_W = 160;
+const LOGO_MAX_H = 44;
+
+interface LogoSlot { x: number; y: number; w: number; h: number }
+
+// Слот логотипа в правом верхнем углу: текст шапки в него не заходит (см. headerWidth), поэтому
+// картинка ничего не перекрывает.
+const logoSlotTopRight = (t: TemplateDef): LogoSlot => ({
+    x: PAGE_W - t.margin - LOGO_MAX_W,
+    y: t.margin - 6,
+    w: LOGO_MAX_W,
+    h: LOGO_MAX_H,
+});
+
+// Ширина текста шапки, который не должен залезать в слот логотипа
+const headerWidth = (w: number) => w - LOGO_MAX_W - 16;
+
+// Размеры логотипа по пропорциям картинки, вписанные в слот. pdfkit умеет openImage в рантайме,
+// но его нет в типах — читаем размеры через него.
+function logoSize(doc: Doc, s: PdfSettings, slot: LogoSlot): { w: number; h: number } | null {
+    if (!s.logo?.startsWith("data:image/")) return null;
+    try {
+        const buf = Buffer.from(s.logo.slice(s.logo.indexOf(",") + 1), "base64");
+        const probe = doc as unknown as { openImage: (b: Buffer) => { width: number; height: number } };
+        const img = probe.openImage(buf);
+        if (!img?.width || !img?.height) return null;
+        const scale = Math.min(slot.h / img.height, slot.w / img.width);
+        return { w: img.width * scale, h: img.height * scale };
+    } catch { return null; }
 }
+
+// Логотип прижат к правому краю слота. Рисуется после подложек шаблона, поэтому его ничто не закрашивает.
+function logoDraw(doc: Doc, s: PdfSettings, slot: LogoSlot): { w: number; h: number } | null {
+    const size = logoSize(doc, s, slot);
+    if (!size) return null;
+    try {
+        const buf = Buffer.from(s.logo!.slice(s.logo!.indexOf(",") + 1), "base64");
+        doc.image(buf, slot.x + slot.w - size.w, slot.y, { width: size.w, height: size.h });
+        return size;
+    } catch { return null; }
+}
+
+// --- QR-блок и подвал ----------------------------------------------------------------------------------
 
 // Ссылка на оплату: код рисуем только там, где платёж действительно ожидается и есть куда платить — счёт,
 // кредит-нота, с IBAN продавца и ненулевой суммой. У предложения, заказа и договора счёта на оплату нет.
@@ -136,21 +204,131 @@ function qrPayloadFor(d: PdfDocumentData, s: PdfSettings, L: L, gross: number): 
     };
 }
 
+const QR_CAPTION_GAP = 4; // от подписи до кода
+const QR_HINT_GAP = 2; // от пояснения до подписи
+
+// Высота блока с QR считается по фактическим переносам подписи и пояснения: у узкого кода подпись
+// переносится на две строки, и зарезервированных «на глаз» 52 pt не хватало.
+function qrBlockHeight(doc: Doc, qr: { payload: string; caption: string } | null, size: number, L: L): number {
+    if (!qr) return 0;
+    doc.fontSize(7.5);
+    const capH = doc.heightOfString(qr.caption, { width: size });
+    doc.fontSize(7);
+    const hintH = doc.heightOfString(L.qrHint, { width: size });
+    return size + QR_CAPTION_GAP + capH + QR_HINT_GAP + hintH;
+}
+
 // Блок с QR и пояснением — во всех шаблонах одинаковый по смыслу, отличается только место
 function qrBlock(doc: Doc, qr: { payload: string; caption: string } | null, x: number, y: number, size: number, L: L, align: "left" | "center" | "right" = "left") {
     if (!qr) return;
     drawQr(doc, qr.payload, x, y, size);
-    text(doc, qr.caption, x, y + size + 4, { size: 7.5, color: "#999999", width: size, align: align === "center" ? "center" : align });
-    text(doc, L.qrHint, x, y + size + 14, { size: 7, color: "#B3B3B3", width: size, align: align === "center" ? "center" : align });
+    const capH = text(doc, qr.caption, x, y + size + QR_CAPTION_GAP, { size: 7.5, color: "#999999", width: size, align });
+    text(doc, L.qrHint, x, y + size + QR_CAPTION_GAP + capH + QR_HINT_GAP, { size: 7, color: "#B3B3B3", width: size, align });
 }
+
+// Строки подвала в порядке печати. Один источник и для измерения высоты, и для отрисовки: иначе
+// зарезервированное место разошлось бы с фактическим и подвал налез бы на таблицу.
+interface FootLine { str: string; size: number; color: string; gap: number }
+function footerLines(d: PdfDocumentData, s: PdfSettings, L: L, base: number, color?: string): FootLine[] {
+    const out: FootLine[] = [];
+    if (d.smallBusinessNote) out.push({ str: L.smallBusiness, size: base, color: "#999999", gap: 6 });
+    if (d.notes) {
+        out.push({ str: L.notes, size: base + 1, color: "#333333", gap: 2 });
+        out.push({ str: d.notes, size: base, color: color ?? "#666666", gap: 6 });
+    }
+    if (payerKind(d.kind)) out.push({ str: `${L.paymentTerms}: ${s.paymentTermsDays} ${L.days}`, size: base, color: "#999999", gap: 2 });
+    if (s.iban) out.push({ str: `${L.iban}: ${s.iban}${s.bic ? `   ${L.bic}: ${s.bic}` : ""}`, size: base, color: "#999999", gap: 2 });
+    // Свой текст фирмы (благодарность за своевременную оплату, условия гарантии, часы работы)
+    if (s.footerText) out.push({ str: s.footerText, size: base, color: color ?? "#666666", gap: 4 });
+    if (s.managingDirector) out.push({ str: s.managingDirector, size: base, color: "#999999", gap: 0 });
+    return out;
+}
+
+function footerHeight(doc: Doc, lines: FootLine[], width: number): number {
+    let h = 0;
+    for (const ln of lines) {
+        doc.fontSize(ln.size);
+        h += doc.heightOfString(ln.str, { width }) + ln.gap;
+    }
+    return h;
+}
+
+interface BandOpts {
+    x: number; width: number;
+    qr: { payload: string; caption: string } | null;
+    qrSize: number;
+    footer?: { size?: number; color?: string; align?: "left" | "center" };
+}
+
+// Нижняя полоса документа: подвал слева, QR справа — одинаково во всех десяти шаблонах.
+// Высота полосы измеряется по фактическому содержимому, а не берётся константой.
+interface Band { h: number; top: number; draw: () => void }
+function footBand(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, o: BandOpts): Band {
+    const lines = footerLines(d, s, L, o.footer?.size ?? 9, o.footer?.color);
+    const footW = o.width - (o.qr ? o.qrSize + QR_GAP : 0);
+    const h = Math.max(footerHeight(doc, lines, footW), qrBlockHeight(doc, o.qr, o.qrSize, L));
+    const top = MAX_Y - BRAND_H - BRAND_GAP - h;
+    return {
+        h, top,
+        draw: () => {
+            let cy = top;
+            for (const ln of lines) cy += text(doc, ln.str, o.x, cy, { size: ln.size, color: ln.color, width: footW, align: o.footer?.align }) + ln.gap;
+            qrBlock(doc, o.qr, o.x + o.width - o.qrSize, top, o.qrSize, L, "right");
+        },
+    };
+}
+
+// Копирайт-строка фирмы в самом низу страницы — вне блоков шаблона, чтобы не мешать подписям и QR.
+// Печатается на каждой странице, всегда внутри нижнего поля.
+function footerBrand(doc: Doc, s: PdfSettings, t: TemplateDef) {
+    const line = [s.legalName, s.registerNumber, s.taxId, s.vatId].filter(Boolean).join(" · ");
+    if (!line) return;
+    const size = 7;
+    const width = PAGE_W - t.margin * 2;
+    doc.fontSize(size);
+    const str = oneLine(doc, line, size, width);
+    const h = doc.heightOfString(str, { width });
+    text(doc, str, t.margin, MAX_Y - h - 0.5, { size, color: "#B3B3B3", width, align: "center" });
+}
+
+// --- поток страниц -------------------------------------------------------------------------------------
+
+// Как только содержимое перестаёт помещаться, страница заканчивается (строка бренда), открывается
+// новая и на ней повторяется шапка-продолжение. Раньше pdfkit сам добавлял страницу по последней
+// строке — отсюда и «второй лист из одной серой строчки», и наложение подвала на таблицу.
+interface Flow {
+    bottom: number; // докуда можно рисовать содержимое на любой странице
+    fit: (y: number, h: number) => number; // пропустить блок только при достатке места
+    brk: () => number; // новая страница, возвращает y содержимого
+}
+function flow(doc: Doc, s: PdfSettings, t: TemplateDef, band: Band, contHeader: () => number): Flow {
+    const bottom = Math.max(band.top - CONTENT_GAP, t.margin + 80);
+    const brk = () => { footerBrand(doc, s, t); doc.addPage(); return contHeader(); };
+    return { bottom, brk, fit: (y, h) => (y + h > bottom ? brk() : y) };
+}
+
+// Шапка листа-продолжения: номер документа и даты — иначе вторая страница выглядит оторванной от первой
+function contHeader(doc: Doc, d: PdfDocumentData, L: L, t: TemplateDef, x: number, w: number): number {
+    const hw = headerWidth(w);
+    let y = t.margin;
+    y += text(doc, `${title(d, L)} — ${L.continued}`, x, y, { size: 10, color: t.accent, width: hw });
+    y += text(doc, dateLines(d, L).join("     "), x, y + 2, { size: 9, color: "#666666", width: hw }) + 8;
+    rule(doc, x, y, x + w, "#E6E6E6");
+    return y + 14;
+}
+
+// --- таблица позиций и итоги ---------------------------------------------------------------------------
 
 interface TableOpts {
     x: number; width: number; accent: string; tint: string;
     size?: number; rowPad?: number; headerFill?: boolean; grid?: boolean; zebra?: boolean; border?: string;
     noPrices?: boolean; // накладная: печатаем только наименование и количество
+    bottom?: number; // предел содержимого страницы
+    onBreak?: () => number; // перенос строки на новую страницу: возвращает y после шапки
 }
 
-// Таблица позиций: опции делают её плотной (compact), с сеткой (boxed) или с акцентной шапкой (modern/twocol)
+// Таблица позиций: опции делают её плотной (compact), с сеткой (boxed) или с акцентной шапкой (modern/twocol).
+// Длинная таблица рвётся по строкам с повтором шапки, а не уезжает за нижнее поле.
 function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts): number {
     // В накладной цен нет по определению — решаем это здесь, а не в каждом из десяти шаблонов
     if (d.kind === "delivery_note") o = { ...o, noPrices: true };
@@ -158,22 +336,33 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
     const pad = o.rowPad ?? 6;
     const cols = { desc: o.x, qty: o.x + o.width - 245, price: o.x + o.width - 185, tax: o.x + o.width - 105, total: o.x + o.width - 65 };
     const widths = { qty: 50, price: 60, tax: 40, total: 65 };
-    if (o.headerFill) box(doc, o.x, y, o.width, size + pad, { fill: o.accent });
-    const headerColor = o.headerFill ? "#FFFFFF" : "#999999";
-    const hy = y + pad / 2;
-    text(doc, L.description, cols.desc, hy, { size: size - 1, color: headerColor });
-    text(doc, L.qty, cols.qty, hy, { size: size - 1, color: headerColor, width: widths.qty, align: "right" });
-    if (!o.noPrices) {
-        text(doc, L.unitPrice, cols.price, hy, { size: size - 1, color: headerColor, width: widths.price, align: "right" });
-        text(doc, L.tax, cols.tax, hy, { size: size - 1, color: headerColor, width: widths.tax, align: "right" });
-        text(doc, L.lineTotal, cols.total, hy, { size: size - 1, color: headerColor, width: widths.total, align: "right" });
-    }
-    let top = y + size + pad;
-    if (!o.headerFill) rule(doc, o.x, top - pad / 2, o.x + o.width, o.border ?? "#E6E6E6");
+    const headerH = size + pad;
+    const drawHeader = (yy: number): number => {
+        if (o.headerFill) box(doc, o.x, yy, o.width, headerH, { fill: o.accent });
+        const headerColor = o.headerFill ? "#FFFFFF" : "#999999";
+        const hy = yy + pad / 2;
+        text(doc, L.description, cols.desc, hy, { size: size - 1, color: headerColor });
+        text(doc, L.qty, cols.qty, hy, { size: size - 1, color: headerColor, width: widths.qty, align: "right" });
+        if (!o.noPrices) {
+            text(doc, L.unitPrice, cols.price, hy, { size: size - 1, color: headerColor, width: widths.price, align: "right" });
+            text(doc, L.tax, cols.tax, hy, { size: size - 1, color: headerColor, width: widths.tax, align: "right" });
+            text(doc, L.lineTotal, cols.total, hy, { size: size - 1, color: headerColor, width: widths.total, align: "right" });
+        }
+        const top = yy + headerH;
+        if (!o.headerFill) rule(doc, o.x, top - pad / 2, o.x + o.width, o.border ?? "#E6E6E6");
+        return top;
+    };
+    const rowH = (it: PdfLineItem) => Math.max(doc.fontSize(size).heightOfString(it.description, { width: cols.qty - o.x - 6 }), size) + pad;
+    const bottom = o.bottom ?? Number.POSITIVE_INFINITY;
+    // Шапка не должна отрываться от первой строки: если они вместе не помещаются — переносим заранее
+    if (o.onBreak && d.items.length && y + headerH + rowH(d.items[0]) > bottom) y = o.onBreak();
+    let top = drawHeader(y);
+    let pageTop = top;
     let row = 0;
     for (const it of d.items) {
-        const descH = doc.fontSize(size).heightOfString(it.description, { width: cols.qty - o.x - 6 });
-        const h = Math.max(descH, size) + pad;
+        const h = rowH(it);
+        // Строку переносим только если на этой странице уже есть строки — иначе получилась бы петля
+        if (o.onBreak && top + h > bottom && top > pageTop) { top = drawHeader(o.onBreak()); pageTop = top; }
         if (o.zebra && row % 2 === 1) box(doc, o.x, top, o.width, h, { fill: o.tint });
         if (o.grid) box(doc, o.x, top, o.width, h, { stroke: o.border ?? "#E6E6E6" });
         const ty = top + pad / 2;
@@ -193,235 +382,247 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
 }
 
 // Итоги: нетто, налог (кроме пометки малого бизнеса) и итог. В рамке, на подложке или просто справа — по шаблону.
-function totalsBlock(doc: Doc, d: PdfDocumentData, L: L, totals: ReturnType<typeof computeTotals>, x: number, y: number, w: number, o: { accent: string; tint: string; boxed?: boolean; size?: number; grid?: boolean }) {
-    // У накладной нет сумм: это документ о передаче товара, а не о деньгах
-    if (d.kind === "delivery_note") return y;
-    const size = o.size ?? 10;
-    const breakdown = taxBreakdown(d.items, { exempt: totals.exempt });
+function totalsRows(d: PdfDocumentData, L: L, totals: ReturnType<typeof computeTotals>): [string, string, boolean][] {
     const rows: [string, string, boolean][] = [[L.net, fmt(totals.net, d.currency), false]];
     // Освобождённый документ: строки налога нет вовсе, итог равен нетто (считает computeTotals).
     // Документ с налогом: печатаем сумму по КАЖДОЙ ставке — при смешанных 19 % и 7 % одной общей
     // цифры недостаточно, этого требует §14 Abs. 4 Nr. 8 UStG.
     if (!totals.exempt) {
+        const breakdown = taxBreakdown(d.items, { exempt: totals.exempt });
         if (breakdown.length <= 1) rows.push([L.taxTotal, fmt(totals.tax, d.currency), false]);
         else for (const b of breakdown) rows.push([`${L.taxTotal} ${b.rate}% ${L.taxOn} ${fmt(b.net, d.currency)}`, fmt(b.tax, d.currency), false]);
     }
     const dunningFee = Number(d.dunningFee) || 0;
     if (dunningFee > 0) rows.push([L.dunningFee, fmt(dunningFee, d.currency), false]);
     rows.push([L.gross, fmt(totals.gross + dunningFee, d.currency), true]);
-    const lineH = size + 7;
-    const h = rows.length * lineH + 12;
+    return rows;
+}
+
+// Высоты строк итогов: подпись вида «USt. 19 % auf 1.800,00 €» при узком блоке переносится,
+// поэтому строку меряем, а не считаем по одной константе — иначе строки налезали друг на друга.
+function totalsMetrics(doc: Doc, d: PdfDocumentData, L: L, totals: ReturnType<typeof computeTotals>, w: number, size: number) {
+    const rows = totalsRows(d, L, totals);
+    const heights = rows.map(([label, , strong]) => {
+        doc.fontSize(strong ? size + 1 : size);
+        return Math.max(doc.heightOfString(label, { width: w - 100 }), size + 7);
+    });
+    return { rows, heights, h: heights.reduce((a, b) => a + b, 0) + 12 };
+}
+
+// Высота блока итогов — чтобы шаблон мог заранее решить, поместится ли он на странице
+function totalsHeight(doc: Doc, d: PdfDocumentData, L: L, totals: ReturnType<typeof computeTotals>, w: number, size = 10): number {
+    return totalsMetrics(doc, d, L, totals, w, size).h;
+}
+
+function totalsBlock(doc: Doc, d: PdfDocumentData, L: L, totals: ReturnType<typeof computeTotals>, x: number, y: number, w: number, o: { accent: string; tint: string; boxed?: boolean; size?: number; grid?: boolean }) {
+    // У накладной нет сумм: это документ о передаче товара, а не о деньгах
+    if (d.kind === "delivery_note") return y;
+    const size = o.size ?? 10;
+    const { rows, heights, h } = totalsMetrics(doc, d, L, totals, w, size);
     const top = y + 8;
     if (o.boxed) {
         box(doc, x, top - 6, w, h, { fill: o.tint, stroke: o.grid ? o.accent : undefined });
         box(doc, x, top - 6, 3, h, { fill: o.accent });
     }
     let ty = top;
-    for (const [label, value, strong] of rows) {
+    rows.forEach(([label, value, strong], i) => {
         text(doc, label, x + 12, ty, { size: strong ? size + 1 : size, color: strong ? "#333333" : "#666666", width: w - 100 });
         text(doc, value, x + w - 88, ty, { size: strong ? size + 1 : size, color: strong ? "#333333" : "#666666", width: 76, align: "right" });
-        ty += lineH;
-    }
-    if (!o.boxed) { rule(doc, x + 12, top - 6, x + w - 12, "#E6E6E6"); rule(doc, x + 12, ty - lineH + 2, x + w - 12, o.accent, 0.8); }
+        ty += heights[i];
+    });
+    if (!o.boxed) { rule(doc, x + 12, top - 6, x + w - 12, "#E6E6E6"); rule(doc, x + 12, ty - heights[heights.length - 1] + 2, x + w - 12, o.accent, 0.8); }
     return ty;
-}
-
-// Подвал: срок оплаты, банковские реквизиты, пометка малого бизнеса и примечания
-function footerBlocks(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, x: number, y: number, width: number, o: { size?: number; align?: "left" | "center"; color?: string } = {}) {
-    const size = o.size ?? 9;
-    const align = o.align ?? "left";
-    let cy = y;
-    if (d.smallBusinessNote) { cy += text(doc, L.smallBusiness, x, cy, { size, color: "#999999", width, align }) + 6; }
-    if (d.notes) {
-        cy += text(doc, L.notes, x, cy, { size: size + 1, color: "#333333", width, align }) + 2;
-        cy += text(doc, d.notes, x, cy, { size, color: o.color ?? "#666666", width, align }) + 6;
-    }
-    if (payerKind(d.kind)) cy += text(doc, `${L.paymentTerms}: ${s.paymentTermsDays} ${L.days}`, x, cy, { size, color: "#999999", width, align }) + 2;
-    if (s.iban) cy += text(doc, `${L.iban}: ${s.iban}${s.bic ? `   ${L.bic}: ${s.bic}` : ""}`, x, cy, { size, color: "#999999", width, align }) + 2;
-    // Свой текст фирмы (благодарность за своевременную оплату, условия гарантии, часы работы)
-    if (s.footerText) cy += text(doc, s.footerText, x, cy, { size, color: o.color ?? "#666666", width, align }) + 4;
-    if (s.managingDirector) cy += text(doc, s.managingDirector, x, cy, { size, color: "#999999", width, align });
-    return cy;
-}
-
-// Логотип фирмы в правом верхнем углу — на полосе шапки, выше первой строки реквизитов.
-// Высота ограничена, ширина считается по пропорциям картинки, поэтому широкий логотип не залезет на текст слева.
-const LOGO_MAX_H = 44;
-const LOGO_MAX_W = 160;
-function logoBlock(doc: Doc, s: PdfSettings, t: TemplateDef) {
-    if (!s.logo?.startsWith("data:image/")) return;
-    try {
-        const buf = Buffer.from(s.logo.slice(s.logo.indexOf(",") + 1), "base64");
-        // pdfkit умеет openImage в рантайме, но его нет в типах — считаем размеры через fit:
-        // сначала узнаём пропорции на «примерочной» вставке, затем ставим картинку по правому краю.
-        const probe = doc as unknown as { openImage: (b: Buffer) => { width: number; height: number } };
-        const img = probe.openImage(buf);
-        if (!img?.width || !img?.height) return;
-        const scale = Math.min(LOGO_MAX_H / img.height, LOGO_MAX_W / img.width);
-        const iw = img.width * scale;
-        const ih = img.height * scale;
-        doc.image(buf, doc.page.width - t.margin - iw, t.margin - 6, { width: iw, height: ih });
-    } catch { /* битая картинка не должна ронять печать счёта */ }
-}
-
-// Копирайт-строка фирмы в самом низу страницы — вне блоков шаблона, чтобы не мешать подписям и QR.
-function footerBrand(doc: Doc, s: PdfSettings, t: TemplateDef) {
-    const y = doc.page.height - 34;
-    const line = [s.legalName, s.registerNumber, s.taxId, s.vatId].filter(Boolean).join(" · ");
-    if (!line) return;
-    text(doc, line, t.margin, y, { size: 7, color: "#B3B3B3", width: doc.page.width - t.margin * 2, align: "center" });
 }
 
 // --- шаблоны -------------------------------------------------------------------------------------------
 
-// Классика: реквизиты продавца сверху, документ слева, таблица с линейкой, итоги справа, подвал с QR слева
-function classic(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateDef, totals: ReturnType<typeof computeTotals>, qr: { payload: string; caption: string } | null) {
-    const x = t.margin, w = 595.28 - t.margin * 2;
+type Layout = (doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateDef, totals: ReturnType<typeof computeTotals>, qr: { payload: string; caption: string } | null) => void;
+
+// Классика: реквизиты продавца сверху, документ слева, таблица с линейкой, итоги справа, подвал с QR
+const classic: Layout = (doc, d, s, L, t, totals, qr) => {
+    const x = t.margin, w = PAGE_W - t.margin * 2, hw = headerWidth(w);
+    const band = footBand(doc, d, s, L, { x, width: w, qr, qrSize: 78 });
+    const fl = flow(doc, s, t, band, () => contHeader(doc, d, L, t, x, w));
     let y = t.margin;
     for (const line of senderLines(s)) y += text(doc, line, x, y, { size: 9, color: "#666666", width: w / 2 }) + 1;
     y += 14;
-    y += text(doc, title(d, L), x, y, { size: 20, color: "#333333", width: w }) + 4;
-    if (d.kind === "credit_note" && d.creditForNumber) y += text(doc, `${L.creditFor} ${d.creditForNumber}`, x, y, { size: 11, color: "#666666", width: w }) + 2;
-    for (const line of dateLines(d, L)) y += text(doc, line, x, y, { size: 10, color: "#666666", width: w }) + 1;
+    y += text(doc, title(d, L), x, y, { size: 20, color: "#333333", width: hw }) + 4;
+    if (d.kind === "credit_note" && d.creditForNumber) y += text(doc, `${L.creditFor} ${d.creditForNumber}`, x, y, { size: 11, color: "#666666", width: hw }) + 2;
+    for (const line of dateLines(d, L)) y += text(doc, line, x, y, { size: 10, color: "#666666", width: hw }) + 1;
     y += 14;
-    labelled(doc, L.billTo, "", x, y, {});
-    y += 12;
+    y += labelled(doc, L.billTo, "", x, y, {}) + 2;
     for (const line of partyLines(d.customer)) y += text(doc, line, x, y, { size: 10, color: "#333333", width: w / 2 }) + 1;
     y += 18;
-    if (d.items.length) { y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint }); y = totalsBlock(doc, d, L, totals, x + w - 200, y + 6, 200, { accent: t.accent, tint: t.tint }); }
-    else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12 });
-    y += 12;
-    const qrSize = 78;
-    const footY = footerTop(t, y, 16, qrSize, !!qr, 686);
-    footerBlocks(doc, d, s, L, x, footY, qr ? w - qrSize - 16 : w);
-    qrBlock(doc, qr, x, footY + 4, qrSize, L);
-}
+    // Логотип — в правом верхнем углу, поверх ничего не рисуется: реквизиты, даты и покупатель идут
+    // колонками до x + w/2 или ограничены headerWidth
+    logoDraw(doc, s, logoSlotTopRight(t));
+    if (d.items.length) {
+        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, bottom: fl.bottom, onBreak: fl.brk });
+        y = fl.fit(y + 6, totalsHeight(doc, d, L, totals, 200));
+        y = totalsBlock(doc, d, L, totals, x + w - 200, y + 6, 200, { accent: t.accent, tint: t.tint });
+    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
+    band.draw();
+};
 
 // Современный: акцентная полоса сверху, шапка таблицы на цвете, зебра, итоги в цветной рамке, QR справа
-function modern(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateDef, totals: ReturnType<typeof computeTotals>, qr: { payload: string; caption: string } | null) {
-    const x = t.margin, w = 595.28 - t.margin * 2;
-    box(doc, x, t.margin, w, 74, { fill: t.tint });
-    box(doc, x, t.margin, 5, 74, { fill: t.accent });
-    text(doc, L[d.kind].toUpperCase(), x + 18, t.margin + 18, { size: 9, color: t.accent, width: w - 36 });
-    text(doc, d.number, x + 18, t.margin + 32, { size: 22, color: "#333333", width: w - 36 });
-    if (d.kind === "credit_note" && d.creditForNumber) text(doc, `${L.creditFor} ${d.creditForNumber}`, x + 18, t.margin + 58, { size: 9, color: "#666666", width: w - 36 });
-    let y = t.margin + 90;
+const modern: Layout = (doc, d, s, L, t, totals, qr) => {
+    const x = t.margin, w = PAGE_W - t.margin * 2, hw = headerWidth(w);
+    const band = footBand(doc, d, s, L, { x, width: w, qr, qrSize: 86 });
+    const fl = flow(doc, s, t, band, () => contHeader(doc, d, L, t, x, w));
+    box(doc, x, t.margin, w, 78, { fill: t.tint });
+    box(doc, x, t.margin, 5, 78, { fill: t.accent });
+    text(doc, L[d.kind].toUpperCase(), x + 18, t.margin + 16, { size: 9, color: t.accent, width: w - 36 });
+    text(doc, d.number, x + 18, t.margin + 30, { size: 22, color: "#333333", width: hw });
+    if (d.kind === "credit_note" && d.creditForNumber) text(doc, `${L.creditFor} ${d.creditForNumber}`, x + 18, t.margin + 62, { size: 9, color: "#666666", width: hw });
+    // Логотип ставим ПОД полосой, а не на неё: полоса непрозрачная, картинка на ней не читается
+    logoDraw(doc, s, { x: PAGE_W - t.margin - LOGO_MAX_W, y: t.margin + 78 + 8, w: LOGO_MAX_W, h: LOGO_MAX_H });
+    let y = t.margin + 94;
     const send = senderLines(s);
-    for (const line of send) y += text(doc, line, x, y, { size: 9, color: "#666666", width: w, align: "right" }) + 1;
+    for (const line of send) y += text(doc, line, x, y, { size: 9, color: "#666666", width: hw, align: "right" }) + 1;
     y += 12;
-    labelled(doc, L.billTo, d.customer.name || "—", x, y, { labelColor: t.accent, size: 11 });
+    const labH = labelled(doc, L.billTo, d.customer.name || "—", x, y, { labelColor: t.accent, size: 11 });
     let dy = y;
     for (const line of dateLines(d, L)) dy += text(doc, line, x + w / 2, dy, { size: 10, color: "#666666", width: w / 2, align: "right" }) + 1;
-    let py = y + 26;
+    let py = y + labH + 3;
     for (const line of [d.customer.address, d.customer.taxId].filter(Boolean) as string[]) py += text(doc, line, x, py, { size: 10, color: "#333333", width: w / 2 }) + 1;
     y = Math.max(py, dy) + 20;
     if (d.items.length) {
-        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true, zebra: true });
+        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true, zebra: true, bottom: fl.bottom, onBreak: fl.brk });
+        y = fl.fit(y + 8, totalsHeight(doc, d, L, totals, 210));
         y = totalsBlock(doc, d, L, totals, x + w - 210, y + 8, 210, { accent: t.accent, tint: t.tint, boxed: true, size: 10 });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12 });
-    const qrSize = 86;
-    const footY = footerTop(t, y, 16, qrSize, !!qr, 690);
-    footerBlocks(doc, d, s, L, x, footY, qr ? w - qrSize - 16 : w);
-    qrBlock(doc, qr, x + w - qrSize, footY - 4, qrSize, L, "right");
-}
+    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
+    band.draw();
+};
 
 // Минимализм: без цвета и рамок, только тонкие линейки, широкие поля
-function minimal(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateDef, totals: ReturnType<typeof computeTotals>, qr: { payload: string; caption: string } | null) {
-    const x = t.margin, w = 595.28 - t.margin * 2;
+const minimal: Layout = (doc, d, s, L, t, totals, qr) => {
+    const x = t.margin, w = PAGE_W - t.margin * 2, hw = headerWidth(w);
+    const band = footBand(doc, d, s, L, { x, width: w, qr, qrSize: 74, footer: { color: "#999999" } });
+    const fl = flow(doc, s, t, band, () => contHeader(doc, d, L, t, x, w));
     let y = t.margin;
-    y += text(doc, senderLines(s).join("  ·  "), x, y, { size: 8.5, color: "#999999", width: w }) + 10;
-    rule(doc, x, y, x + w, "#E6E6E6");
+    y += text(doc, senderLines(s).join("  ·  "), x, y, { size: 8.5, color: "#999999", width: hw }) + 10;
+    rule(doc, x, y, x + hw, "#E6E6E6");
     y += 22;
-    y += text(doc, L[d.kind].toUpperCase(), x, y, { size: 11, color: "#111111", width: w }) + 2;
-    y += text(doc, d.number, x, y, { size: 24, color: "#111111", width: w }) + 8;
-    if (d.kind === "credit_note" && d.creditForNumber) y += text(doc, `${L.creditFor} ${d.creditForNumber}`, x, y, { size: 9, color: "#999999", width: w }) + 2;
-    y += text(doc, dateLines(d, L).join("     "), x, y, { size: 9, color: "#666666", width: w }) + 24;
-    y += text(doc, L.billTo.toUpperCase(), x, y, { size: 7.5, color: "#999999", width: w }) + 2;
+    y += text(doc, L[d.kind].toUpperCase(), x, y, { size: 11, color: "#111111", width: hw }) + 2;
+    y += text(doc, d.number, x, y, { size: 24, color: "#111111", width: hw }) + 8;
+    if (d.kind === "credit_note" && d.creditForNumber) y += text(doc, `${L.creditFor} ${d.creditForNumber}`, x, y, { size: 9, color: "#999999", width: hw }) + 2;
+    y += text(doc, dateLines(d, L).join("     "), x, y, { size: 9, color: "#666666", width: hw }) + 24;
+    y += text(doc, L.billTo.toUpperCase(), x, y, { size: 7.5, color: "#999999", width: hw }) + 2;
     for (const line of partyLines(d.customer)) y += text(doc, line, x, y, { size: 11, color: "#333333", width: w }) + 1;
     y += 26;
+    logoDraw(doc, s, logoSlotTopRight(t));
     if (d.items.length) {
-        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 10, rowPad: 9 });
+        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 10, rowPad: 9, bottom: fl.bottom, onBreak: fl.brk });
+        y = fl.fit(y + 10, totalsHeight(doc, d, L, totals, 190));
         y = totalsBlock(doc, d, L, totals, x + w - 190, y + 10, 190, { accent: t.accent, tint: t.tint, size: 10 });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12 });
-    const qrSize = 74;
-    const footY = footerTop(t, y, 24, qrSize, !!qr, 690);
-    footerBlocks(doc, d, s, L, x, footY, qr ? w - qrSize - 20 : w, { color: "#999999" });
-    qrBlock(doc, qr, x, footY, qrSize, L);
-}
+    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
+    band.draw();
+};
 
 // Рамки: продавец и покупатель в рамках, таблица с полной сеткой, итоги в рамке
-function boxed(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateDef, totals: ReturnType<typeof computeTotals>, qr: { payload: string; caption: string } | null) {
-    const x = t.margin, w = 595.28 - t.margin * 2;
+const boxed: Layout = (doc, d, s, L, t, totals, qr) => {
+    const x = t.margin, w = PAGE_W - t.margin * 2, hw = headerWidth(w);
+    const band = footBand(doc, d, s, L, { x, width: w, qr, qrSize: 80 });
+    const fl = flow(doc, s, t, band, () => contHeader(doc, d, L, t, x, w));
+    // Заголовок и даты живут в левой колонке и обрываются до рамки продавца (bx = x + w - 220),
+    // иначе их строки формально заходили под рамку
+    const titleW = Math.min(hw, w - 250);
     let y = t.margin;
-    y += text(doc, title(d, L), x, y, { size: 19, color: t.accent, width: w - 250 }) + 2;
-    if (d.kind === "credit_note" && d.creditForNumber) y += text(doc, `${L.creditFor} ${d.creditForNumber}`, x, y, { size: 10, color: "#666666", width: w - 250 }) + 2;
-    for (const line of dateLines(d, L)) y += text(doc, line, x, y, { size: 10, color: "#666666", width: w - 250 }) + 1;
-    // Продавец — в рамке справа от заголовка, покупатель — в рамке под ним
+    y += text(doc, title(d, L), x, y, { size: 19, color: t.accent, width: titleW }) + 2;
+    if (d.kind === "credit_note" && d.creditForNumber) y += text(doc, `${L.creditFor} ${d.creditForNumber}`, x, y, { size: 10, color: "#666666", width: titleW }) + 2;
+    for (const line of dateLines(d, L)) y += text(doc, line, x, y, { size: 10, color: "#666666", width: titleW }) + 1;
+    // Продавец — в рамке справа от заголовка. Высота рамки считается по строкам реквизитов,
+    // чтобы логотип встал точно под рамкой, а не внутри неё.
     const bx = x + w - 220;
-    box(doc, bx, t.margin, 220, 96, { fill: t.tint, stroke: "#DCDCDC" });
+    const send = senderLines(s);
+    doc.fontSize(7);
+    let sellerH = 10 + doc.heightOfString(L.seller.toUpperCase(), { width: 196 }) + 2;
+    doc.fontSize(9);
+    for (const line of send) sellerH += doc.heightOfString(line, { width: 196 }) + 1;
+    sellerH += 8;
+    box(doc, bx, t.margin, 220, sellerH, { fill: t.tint, stroke: "#DCDCDC" });
     let by = t.margin + 10;
     by += text(doc, L.seller.toUpperCase(), bx + 12, by, { size: 7, color: "#999999", width: 196 }) + 2;
-    for (const line of senderLines(s)) by += text(doc, line, bx + 12, by, { size: 9, color: "#333333", width: 196 }) + 1;
+    for (const line of send) by += text(doc, line, bx + 12, by, { size: 9, color: "#333333", width: 196 }) + 1;
     y = Math.max(y, by) + 16;
+    logoDraw(doc, s, { x: PAGE_W - t.margin - LOGO_MAX_W, y: t.margin + sellerH + 8, w: LOGO_MAX_W, h: LOGO_MAX_H });
+    const party = partyLines(d.customer);
+    doc.fontSize(7);
+    let partyH = 8 + doc.heightOfString(L.billTo.toUpperCase(), { width: 226 }) + 2;
+    doc.fontSize(10);
+    for (const line of party) partyH += doc.heightOfString(line, { width: 226 }) + 1;
+    partyH += 8;
     const py = y;
-    box(doc, x, py, 250, 22 + partyLines(d.customer).length * 13 + 8, { fill: t.tint, stroke: "#DCDCDC" });
+    box(doc, x, py, 250, partyH, { fill: t.tint, stroke: "#DCDCDC" });
     let yy = py + 8;
     yy += text(doc, L.billTo.toUpperCase(), x + 12, yy, { size: 7, color: "#999999", width: 226 }) + 2;
-    for (const line of partyLines(d.customer)) yy += text(doc, line, x + 12, yy, { size: 10, color: "#333333", width: 226 }) + 1;
-    y = Math.max(yy + 8, py + 100) + 10;
+    for (const line of party) yy += text(doc, line, x + 12, yy, { size: 10, color: "#333333", width: 226 }) + 1;
+    y = Math.max(yy + 8, py + partyH) + 10;
     if (d.items.length) {
-        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, grid: true, border: "#DCDCDC" });
+        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, grid: true, border: "#DCDCDC", bottom: fl.bottom, onBreak: fl.brk });
+        y = fl.fit(y + 8, totalsHeight(doc, d, L, totals, 210));
         y = totalsBlock(doc, d, L, totals, x + w - 210, y + 8, 210, { accent: t.accent, tint: t.tint, boxed: true, grid: true });
     } else if (d.kind === "contract") {
         box(doc, x, y, 250, 40, { fill: t.tint, stroke: "#DCDCDC" });
         text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x + 12, y + 14, { size: 12, color: "#333333", width: 226 });
         y += 50;
     }
-    const qrSize = 80;
-    const footY = footerTop(t, y, 14, qrSize, !!qr, 686);
-    footerBlocks(doc, d, s, L, x, footY, qr ? w - qrSize - 16 : w);
-    qrBlock(doc, qr, x + w - qrSize, footY - 6, qrSize, L, "right");
-}
+    band.draw();
+};
 
-// Боковая колонка: слева цветная полоса с реквизитами продавца, содержимое сдвинуто вправо
-function sidebar(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateDef, totals: ReturnType<typeof computeTotals>, qr: { payload: string; caption: string } | null) {
+// Боковая колонка: слева цветная полоса с логотипом и реквизитами продавца, содержимое сдвинуто вправо
+const sidebar: Layout = (doc, d, s, L, t, totals, qr) => {
     const col = 148;
-    const x = col + 34, w = 595.28 - x - t.margin;
-    box(doc, 0, 0, col, 841.89, { fill: t.tint });
-    box(doc, col, 0, 3, 841.89, { fill: t.accent });
-    let sy = t.margin + 6;
-    sy += text(doc, L.seller.toUpperCase(), 24, sy, { size: 7.5, color: t.accent, width: col - 48 }) + 4;
-    for (const line of senderLines(s)) sy += text(doc, line, 24, sy, { size: 9, color: "#333333", width: col - 48 }) + 2;
-    let y = t.margin + 6;
-    y += text(doc, title(d, L), x, y, { size: 20, color: "#333333", width: w }) + 4;
-    if (d.kind === "credit_note" && d.creditForNumber) y += text(doc, `${L.creditFor} ${d.creditForNumber}`, x, y, { size: 10, color: "#666666", width: w }) + 2;
-    for (const line of dateLines(d, L)) y += text(doc, line, x, y, { size: 10, color: "#666666", width: w }) + 1;
-    y += 16;
-    labelled(doc, L.billTo, partyLines(d.customer)[0], x, y, { labelColor: t.accent });
-    y += 24;
-    for (const line of partyLines(d.customer).slice(1)) y += text(doc, line, x, y, { size: 10, color: "#333333", width: w }) + 1;
-    y += 18;
+    const x = col + 34, w = PAGE_W - x - t.margin;
+    const band = footBand(doc, d, s, L, { x, width: w, qr, qrSize: 100 });
+    // Колонка продавца повторяется на каждой странице — вместе с логотипом, чтобы лист-продолжение
+    // не выглядел чужим
+    const panel = () => {
+        box(doc, 0, 0, col, PAGE_H, { fill: t.tint });
+        box(doc, col, 0, 3, PAGE_H, { fill: t.accent });
+        let sy = t.margin + 6;
+        const lg = logoDraw(doc, s, { x: 24, y: sy, w: col - 48, h: LOGO_MAX_H });
+        if (lg) sy += lg.h + 12;
+        sy += text(doc, L.seller.toUpperCase(), 24, sy, { size: 7.5, color: t.accent, width: col - 48 }) + 4;
+        for (const line of senderLines(s)) sy += text(doc, line, 24, sy, { size: 9, color: "#333333", width: col - 48 }) + 2;
+    };
+    const header = (): number => {
+        let y = t.margin + 6;
+        y += text(doc, title(d, L), x, y, { size: 20, color: "#333333", width: w }) + 4;
+        if (d.kind === "credit_note" && d.creditForNumber) y += text(doc, `${L.creditFor} ${d.creditForNumber}`, x, y, { size: 10, color: "#666666", width: w }) + 2;
+        for (const line of dateLines(d, L)) y += text(doc, line, x, y, { size: 10, color: "#666666", width: w }) + 1;
+        y += 16;
+        y += labelled(doc, L.billTo, partyLines(d.customer)[0], x, y, { labelColor: t.accent }) + 4;
+        for (const line of partyLines(d.customer).slice(1)) y += text(doc, line, x, y, { size: 10, color: "#333333", width: w }) + 1;
+        return y + 18;
+    };
+    const fl = flow(doc, s, t, band, () => { panel(); return contHeader(doc, d, L, t, x, w); });
+    panel();
+    let y = header();
     if (d.items.length) {
-        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 9.5, headerFill: true });
+        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 9.5, headerFill: true, bottom: fl.bottom, onBreak: fl.brk });
+        y = fl.fit(y + 8, totalsHeight(doc, d, L, totals, 190));
         y = totalsBlock(doc, d, L, totals, x + w - 190, y + 8, 190, { accent: t.accent, tint: t.tint });
     } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12 });
-    const qrSize = 100;
-    footerBlocks(doc, d, s, L, x, footerTop(t, y, 16, 0, false, 660), w);
-    // QR уходит в нижнюю часть колонки — под реквизитами продавца
-    if (qr) { const qy = footerTop(t, 0, 0, qrSize, true, 0); qrBlock(doc, qr, 24, qy, qrSize, L); }
-}
+    band.draw();
+};
 
 // Баннер: цветная шапка во всю ширину, ниже две колонки (продавец и покупатель), таблица с акцентной шапкой
-function banner(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateDef, totals: ReturnType<typeof computeTotals>, qr: { payload: string; caption: string } | null) {
-    const x = t.margin, w = 595.28 - t.margin * 2;
-    box(doc, 0, 0, 595.28, 104, { fill: t.accent });
-    box(doc, 0, 104, 595.28, 4, { fill: t.tint });
+const banner: Layout = (doc, d, s, L, t, totals, qr) => {
+    const x = t.margin, w = PAGE_W - t.margin * 2;
+    const band = footBand(doc, d, s, L, { x, width: w, qr, qrSize: 84 });
+    const fl = flow(doc, s, t, band, () => contHeader(doc, d, L, t, x, w));
+    box(doc, 0, 0, PAGE_W, 104, { fill: t.accent });
+    box(doc, 0, 104, PAGE_W, 4, { fill: t.tint });
     text(doc, L[d.kind].toUpperCase(), x, 30, { size: 10, color: "#FFFFFF", width: w / 2 });
     text(doc, d.number, x, 46, { size: 26, color: "#FFFFFF", width: w / 2 });
-    if (d.kind === "credit_note" && d.creditForNumber) text(doc, `${L.creditFor} ${d.creditForNumber}`, x, 78, { size: 9, color: "#EAF3FA", width: w / 2 });
+    // Строка кредит-ноты ниже номера: вплотную она смыкалась с его строкой (дефект старых версий)
+    if (d.kind === "credit_note" && d.creditForNumber) text(doc, `${L.creditFor} ${d.creditForNumber}`, x, 84, { size: 9, color: "#EAF3FA", width: w / 2 });
     let dy = 34;
     for (const line of dateLines(d, L)) dy += text(doc, line, x + w / 2, dy, { size: 10, color: "#FFFFFF", width: w / 2, align: "right" }) + 1;
-    let y = 126;
+    // Логотип — под полосой: она непрозрачная и закрасила бы картинку
+    const lg = logoDraw(doc, s, { x: PAGE_W - t.margin - LOGO_MAX_W, y: 108 + 8, w: LOGO_MAX_W, h: LOGO_MAX_H });
+    let y = lg ? 116 + lg.h + 14 : 126;
     const colW = (w - 24) / 2;
     let ly = y;
     ly += text(doc, L.seller.toUpperCase(), x, ly, { size: 7.5, color: t.accent, width: colW }) + 2;
@@ -431,24 +632,37 @@ function banner(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateD
     for (const line of partyLines(d.customer)) ry += text(doc, line, x + colW + 24, ry, { size: 10, color: "#333333", width: colW }) + 1;
     y = Math.max(ly, ry) + 20;
     if (d.items.length) {
-        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true });
+        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true, bottom: fl.bottom, onBreak: fl.brk });
+        y = fl.fit(y + 8, totalsHeight(doc, d, L, totals, 205));
         y = totalsBlock(doc, d, L, totals, x + w - 205, y + 8, 205, { accent: t.accent, tint: t.tint });
     } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12 });
-    const qrSize = 84;
-    const footY = footerTop(t, y, 16, qrSize, !!qr, 682);
-    footerBlocks(doc, d, s, L, x, footY, qr ? w - qrSize - 16 : w);
-    qrBlock(doc, qr, x + w - qrSize, footY - 4, qrSize, L, "right");
-}
+    band.draw();
+};
 
 // Две колонки: слева продавец, справа покупатель, под ними полоса дат
-function twocol(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateDef, totals: ReturnType<typeof computeTotals>, qr: { payload: string; caption: string } | null) {
-    const x = t.margin, w = 595.28 - t.margin * 2;
+const twocol: Layout = (doc, d, s, L, t, totals, qr) => {
+    const x = t.margin, w = PAGE_W - t.margin * 2, hw = headerWidth(w);
+    const band = footBand(doc, d, s, L, { x, width: w, qr, qrSize: 82 });
+    const fl = flow(doc, s, t, band, () => contHeader(doc, d, L, t, x, w));
     let y = t.margin;
-    y += text(doc, title(d, L), x, y, { size: 18, color: t.accent, width: w }) + 4;
-    if (d.kind === "credit_note" && d.creditForNumber) y += text(doc, `${L.creditFor} ${d.creditForNumber}`, x, y, { size: 10, color: "#666666", width: w }) + 2;
+    y += text(doc, title(d, L), x, y, { size: 18, color: t.accent, width: hw }) + 4;
+    if (d.kind === "credit_note" && d.creditForNumber) y += text(doc, `${L.creditFor} ${d.creditForNumber}`, x, y, { size: 10, color: "#666666", width: hw }) + 2;
     y += 12;
     const colW = (w - 16) / 2;
-    const boxH = 96;
+    // Высота колонок — по фактическим строкам реквизитов: при полном наборе настроек
+    // фиксированные 96 pt заканчивались раньше текста
+    doc.fontSize(7);
+    let boxH = 10 + doc.heightOfString(L.seller.toUpperCase(), { width: colW - 24 }) + 2;
+    doc.fontSize(9);
+    for (const line of senderLines(s)) boxH += doc.heightOfString(line, { width: colW - 24 }) + 1;
+    let partyBoxH = 10 + doc.heightOfString(L.billTo.toUpperCase(), { width: colW - 24 }) + 2;
+    for (const line of partyLines(d.customer)) partyBoxH += doc.heightOfString(line, { width: colW - 24 }) + 1;
+    boxH = Math.max(boxH, partyBoxH) + 12;
+    // Логотип занимает правый верхний угол, поэтому подложки колонок начинаются ниже него:
+    // иначе непрозрачная подложка закрасила бы картинку
+    const slot = logoSlotTopRight(t);
+    const lg = logoSize(doc, s, slot);
+    y = Math.max(y, lg ? slot.y + lg.h + 10 : y);
     box(doc, x, y, colW, boxH, { fill: t.tint });
     box(doc, x + colW + 16, y, colW, boxH, { fill: t.tint });
     let ly = y + 10;
@@ -458,47 +672,59 @@ function twocol(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateD
     ry += text(doc, L.billTo.toUpperCase(), x + colW + 28, ry, { size: 7, color: t.accent, width: colW - 24 }) + 2;
     for (const line of partyLines(d.customer)) ry += text(doc, line, x + colW + 28, ry, { size: 10, color: "#333333", width: colW - 24 }) + 1;
     y += boxH + 12;
-    // полоса дат: подпись и значение в одну строку, ячейками
+    logoDraw(doc, s, slot);
+    // полоса дат: подпись и значение в одну строку, ячейками. Высота ячеек считается по фактическому
+    // переносу: длинная строка («Leistungszeitraum» или новый срок оплаты) переносится на две строки.
     const dates = dateLines(d, L);
     if (dates.length) {
         const cellW = w / dates.length;
-        box(doc, x, y, w, 30, { stroke: "#E6E6E6" });
+        doc.fontSize(10);
+        const cellH = Math.max(...dates.map((line) => doc.heightOfString(line, { width: cellW - 20 }))) + 20;
+        box(doc, x, y, w, cellH, { stroke: "#E6E6E6" });
         dates.forEach((line, i) => text(doc, line, x + i * cellW + 10, y + 10, { size: 10, color: "#666666", width: cellW - 20 }));
-        y += 42;
+        y += cellH + 12;
     } else y += 10;
     if (d.items.length) {
-        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true, zebra: true });
+        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true, zebra: true, bottom: fl.bottom, onBreak: fl.brk });
+        y = fl.fit(y + 8, totalsHeight(doc, d, L, totals, 205));
         y = totalsBlock(doc, d, L, totals, x + w - 205, y + 8, 205, { accent: t.accent, tint: t.tint, boxed: true });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12 });
-    const qrSize = 82;
-    const footY = footerTop(t, y, 16, qrSize, !!qr, 684);
-    footerBlocks(doc, d, s, L, x, footY, qr ? w - qrSize - 16 : w);
-    qrBlock(doc, qr, x + w - qrSize, footY - 4, qrSize, L, "right");
-}
+    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
+    band.draw();
+};
 
 // Компактный: мелкий шрифт и плотные строки — длинный счёт помещается на одной странице
-function compact(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateDef, totals: ReturnType<typeof computeTotals>, qr: { payload: string; caption: string } | null) {
-    const x = t.margin, w = 595.28 - t.margin * 2;
+const compact: Layout = (doc, d, s, L, t, totals, qr) => {
+    const x = t.margin, w = PAGE_W - t.margin * 2, hw = headerWidth(w);
+    const band = footBand(doc, d, s, L, { x, width: w, qr, qrSize: 60, footer: { size: 7.5 } });
+    const fl = flow(doc, s, t, band, () => contHeader(doc, d, L, t, x, w));
+    const slot = logoSlotTopRight(t);
+    const lg = logoSize(doc, s, slot);
     let y = t.margin;
-    y += text(doc, title(d, L), x, y, { size: 13, color: "#333333", width: w - 180 }) + 1;
-    text(doc, dateLines(d, L).join("   "), x + w - 300, t.margin + 2, { size: 8.5, color: "#666666", width: 300, align: "right" });
-    y += 2;
+    y += text(doc, title(d, L), x, y, { size: 13, color: "#333333", width: hw }) + 1;
+    if (d.kind === "credit_note" && d.creditForNumber) y += text(doc, `${L.creditFor} ${d.creditForNumber}`, x, y, { size: 8, color: "#666666", width: hw }) + 2;
+    // Даты отдельной строкой под заголовком: раньше правый блок дат смыкался с заголовком в одной полосе
+    y += text(doc, dateLines(d, L).join("   "), x, y, { size: 8.5, color: "#666666", width: hw }) + 6;
+    y = Math.max(y, lg ? slot.y + lg.h + 6 : y);
     y += text(doc, [senderLines(s).join(" · "), partyLines(d.customer).join(" · ")].join("\n"), x, y, { size: 8, color: "#666666", width: w }) + 8;
-    if (d.kind === "credit_note" && d.creditForNumber) y += text(doc, `${L.creditFor} ${d.creditForNumber}`, x, y, { size: 8, color: "#666666", width: w }) + 2;
+    logoDraw(doc, s, slot);
     if (d.items.length) {
-        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 8.5, rowPad: 3, zebra: true });
+        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 8.5, rowPad: 3, zebra: true, bottom: fl.bottom, onBreak: fl.brk });
+        y = fl.fit(y + 4, totalsHeight(doc, d, L, totals, 180, 8.5));
         y = totalsBlock(doc, d, L, totals, x + w - 180, y + 4, 180, { accent: t.accent, tint: t.tint, size: 8.5 });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 10 });
-    const qrSize = 60;
-    const footY = footerTop(t, y, 10, qrSize, !!qr, 726);
-    footerBlocks(doc, d, s, L, x, footY, qr ? w - qrSize - 12 : w, { size: 7.5 });
-    qrBlock(doc, qr, x + w - qrSize, footY - 6, qrSize, L, "right");
-}
+    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 10, width: hw });
+    band.draw();
+};
 
 // Элегантный: всё по центру, подписи вразрядку, тонкие линейки, сдержанный цвет
-function elegant(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateDef, totals: ReturnType<typeof computeTotals>, qr: { payload: string; caption: string } | null) {
-    const x = t.margin, w = 595.28 - t.margin * 2;
+const elegant: Layout = (doc, d, s, L, t, totals, qr) => {
+    const x = t.margin, w = PAGE_W - t.margin * 2;
+    const band = footBand(doc, d, s, L, { x, width: w, qr, qrSize: 78, footer: { align: "left" } });
+    const fl = flow(doc, s, t, band, () => contHeader(doc, d, L, t, x, w));
     let y = t.margin;
+    // Центрированный шаблон: логотип встаёт по центру над реквизитами — правый верхний угол здесь
+    // занят центрированными строками
+    const lg = logoDraw(doc, s, { x: x + (w - LOGO_MAX_W) / 2, y: t.margin, w: LOGO_MAX_W, h: LOGO_MAX_H });
+    if (lg) y = t.margin + lg.h + 10;
     for (const line of senderLines(s)) y += text(doc, line, x, y, { size: 9, color: "#666666", width: w, align: "center" }) + 1;
     y += 12;
     rule(doc, x + w / 3, y, x + (w * 2) / 3, t.accent, 0.8);
@@ -515,23 +741,25 @@ function elegant(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: Template
     for (const line of dateLines(d, L)) ry += text(doc, line, x + colW + 40, ry, { size: 10, color: "#666666", width: colW, align: "right" }) + 1;
     y = Math.max(ly, ry) + 24;
     if (d.items.length) {
-        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 10, rowPad: 8 });
+        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 10, rowPad: 8, bottom: fl.bottom, onBreak: fl.brk });
+        y = fl.fit(y + 12, totalsHeight(doc, d, L, totals, 210));
         y = totalsBlock(doc, d, L, totals, x + w - 210, y + 12, 210, { accent: t.accent, tint: t.tint, size: 10 });
     } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: w, align: "center" });
-    const qrSize = 78;
-    const footY = footerTop(t, y, 22, qrSize, !!qr, 688);
-    footerBlocks(doc, d, s, L, x, footY, qr ? w - qrSize - 20 : w, { align: "left" });
-    qrBlock(doc, qr, x + w - qrSize, footY - 6, qrSize, L, "right");
-}
+    band.draw();
+};
 
-// Швейцарский: строгая сетка «подпись — значение», крупный номер справа сверху, только линейки
-function swiss(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateDef, totals: ReturnType<typeof computeTotals>, qr: { payload: string; caption: string } | null) {
-    const x = t.margin, w = 595.28 - t.margin * 2;
+// Швейцарский: строгая сетка «подпись — значение», крупный номер, только линейки
+const swiss: Layout = (doc, d, s, L, t, totals, qr) => {
+    const x = t.margin, w = PAGE_W - t.margin * 2, hw = headerWidth(w);
+    const band = footBand(doc, d, s, L, { x, width: w, qr, qrSize: 78, footer: { color: "#111111" } });
+    const fl = flow(doc, s, t, band, () => contHeader(doc, d, L, t, x, w));
     let y = t.margin;
-    text(doc, L[d.kind].toUpperCase(), x, y, { size: 8, color: "#666666", width: w - 220 });
-    text(doc, d.number, x + w - 220, y - 6, { size: 26, color: "#111111", width: 220, align: "right" });
-    y += 34;
-    if (d.kind === "credit_note" && d.creditForNumber) y += text(doc, `${L.creditFor} ${d.creditForNumber}`, x, y, { size: 9, color: "#666666", width: w }) + 4;
+    text(doc, L[d.kind].toUpperCase(), x, y, { size: 8, color: "#666666", width: hw });
+    y += 12;
+    // Номер — под надписью вида документа: правый верхний угол отдан логотипу, крупная цифра
+    // в нём налезала на картинку
+    y += text(doc, d.number, x, y, { size: 26, color: "#111111", width: hw }) + 4;
+    if (d.kind === "credit_note" && d.creditForNumber) y += text(doc, `${L.creditFor} ${d.creditForNumber}`, x, y, { size: 9, color: "#666666", width: hw }) + 4;
     rule(doc, x, y, x + w, "#111111", 1);
     y += 14;
     const labelW = 96;
@@ -545,17 +773,16 @@ function swiss(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateDe
     row(L.billTo, partyLines(d.customer).join(", "));
     for (const line of dateLines(d, L)) { const i = line.indexOf(": "); row(line.slice(0, i), line.slice(i + 2)); }
     y += 6;
+    logoDraw(doc, s, logoSlotTopRight(t));
     if (d.items.length) {
-        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 9.5, rowPad: 5, border: "#111111" });
+        y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 9.5, rowPad: 5, border: "#111111", bottom: fl.bottom, onBreak: fl.brk });
+        y = fl.fit(y + 6, totalsHeight(doc, d, L, totals, 220, 9.5));
         y = totalsBlock(doc, d, L, totals, x + w - 220, y + 6, 220, { accent: t.accent, tint: t.tint, grid: true, size: 9.5 });
     } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x + labelW, y, { size: 12, color: "#111111", width: w - labelW });
-    const qrSize = 78;
-    const footY = footerTop(t, y, 16, qrSize, !!qr, 690);
-    footerBlocks(doc, d, s, L, x, footY, qr ? w - qrSize - 16 : w, { color: "#111111" });
-    qrBlock(doc, qr, x + w - qrSize, footY - 6, qrSize, L, "right");
-}
+    band.draw();
+};
 
-const LAYOUTS: Record<string, (doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateDef, totals: ReturnType<typeof computeTotals>, qr: { payload: string; caption: string } | null) => void> = {
+const LAYOUTS: Record<string, Layout> = {
     classic, modern, minimal, boxed, sidebar, banner, twocol, compact, elegant, swiss,
 };
 
@@ -567,7 +794,6 @@ export function renderLayout(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L)
     // В сумму к оплате входит и сбор за напоминание — иначе клиент заплатит меньше, чем должен
     const dueTotal = totals.gross + (Number(d.dunningFee) || 0);
     const qr = (s.paymentQr ?? true) ? qrPayloadFor(d, s, L, dueTotal) : null;
-    logoBlock(doc, s, t);
     (LAYOUTS[t.id] ?? classic)(doc, d, s, L, t, totals, qr);
     footerBrand(doc, s, t);
 }

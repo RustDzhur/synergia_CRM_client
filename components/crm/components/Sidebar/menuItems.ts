@@ -21,7 +21,7 @@ export interface SubMenuItem {
 
 // Группа пунктов в сайдбаре: над каждой группой стоит её название мелким разряженным шрифтом.
 // Значения — ключи в messages -> navigation.groups.
-export type MenuGroup = "workspace" | "collaboration" | "customers" | "operations" | "administration";
+export type MenuGroup = "workspace" | "collaboration" | "customers" | "organization" | "operations" | "administration";
 
 export interface MenuItem {
 	key: string;
@@ -55,7 +55,10 @@ export const menuItems: MenuItem[] = [
 		],
 	},
 	{ key: "crm", icon: TbAddressBook, href: "/crm/crm", feature: "crm", module: "crm", group: "customers" },
-	{ key: "company", icon: TbBuildingSkyscraper, href: "/crm/company", feature: "company", module: "company", group: "customers" },
+	// «Meine Firma» — это собственный бизнес клиента: сотрудники и база знаний.
+	// Лежит отдельно от клиентов, потому что в CRM «Firmen» — это фирмы-заказчики,
+	// и рядом они читались как одно и то же.
+	{ key: "company", icon: TbBuildingSkyscraper, href: "/crm/company", feature: "company", module: "company", group: "organization" },
 	{ key: "tasks_projects", icon: TbCheckbox, href: "/crm/tasks", feature: "tasks", module: "tasks", group: "operations" },
 	{ key: "inventory_management", icon: TbCoin, href: "/crm/inventory", feature: "inventory", module: "inventory", group: "operations" },
 	{ key: "marketing", icon: TbSpeakerphone, href: "/crm/marketing", feature: "marketing", module: "marketing", group: "operations" },

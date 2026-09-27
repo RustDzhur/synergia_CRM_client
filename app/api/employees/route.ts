@@ -20,6 +20,12 @@ export async function GET(req: Request) {
         { lastname: { $regex: q, $options: "i" } },
         { email: { $regex: q, $options: "i" } },
     ];
+    // Фильтры по подразделению и должности — точным совпадением: это не поиск по тексту,
+    // а выбор из значений, которые уже есть в справочнике
+    const department = (searchParams.get("department") ?? "").slice(0, 100);
+    const position = (searchParams.get("position") ?? "").slice(0, 100);
+    if (department) filter.department = department;
+    if (position) filter.position = position;
     const [items, total] = await Promise.all([
         Employee.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
         Employee.countDocuments(filter),

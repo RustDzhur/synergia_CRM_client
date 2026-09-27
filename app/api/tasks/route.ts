@@ -6,7 +6,14 @@ import { pickStrings } from "@/lib/activities";
 import { TASK_TEXT_FIELDS } from "@/lib/crmFields";
 import { emit } from "@/lib/automation/emit";
 import { postTask } from "@/lib/feed";
+import Project from "@/models/Project";
 import Task from "@/models/Task";
+
+// Проект задачи: возвращаем только свой — чужой id из запроса игнорируем
+async function ownedProject(id: unknown, org: string) {
+    if (typeof id !== "string" || !id) return null;
+    return Project.findOne({ _id: id, owner: org }).select("_id").catch(() => null);
+}
 import User from "@/models/User";
 
 // GET /api/tasks — все задачи текущего пользователя (ближайшие сроки первыми)
@@ -24,14 +31,18 @@ export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
 
-    const fields = pickStrings(await req.json(), TASK_TEXT_FIELDS, 500);
+    const body = await req.json().catch(() => ({}));
+    const fields = pickStrings(body, TASK_TEXT_FIELDS, 500);
     if (!fields.title) return NextResponse.json({ message: "Title is required" }, { status: 400 });
 
     await connectDB();
     const author = await User.findById(user.userId);
+    // проект проверяем на принадлежность фирме: чужой id привязывать нельзя
+    const project = await ownedProject(body?.project, user.id);
     const task = await Task.create({
         ...fields,
         owner: user.id,
+        project: project?._id,
         createdBy: author ? `${author.firstname} ${author.lastname}`.trim() : "",
         responsible: fields.responsible || (author ? author.firstname : ""),
     });

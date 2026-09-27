@@ -60,6 +60,8 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 	const [modal, setModal] = useState<{ open: boolean; tab: string; record: RecordItem | null; preset?: Record<string, string> }>({ open: false, tab: config.tabs[0], record: null });
 	const [toDelete, setToDelete] = useState<{ tab: string; ids: string[] } | null>(null);
 	const [gearOpen, setGearOpen] = useState(false);
+	// выбранные значения фильтров — отдельно для каждой вкладки: у вкладок разные наборы колонок
+	const [filters, setFilters] = useState<Record<string, Record<string, string>>>({});
 	const [canScrollRight, setCanScrollRight] = useState(false);
 	const gearRef = useRef<HTMLDivElement>(null);
 	const barRef = useRef<HTMLDivElement>(null);
@@ -72,6 +74,19 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 	const columns = fields.filter((f) => !hiddenKeys.includes(f.key));
 	const list = data[dataKey(tab)] ?? config.seed[tab] ?? [];
 	const statusColors = { ...STATUS_COLORS, ...config.statusColors };
+	// Фильтры для поля поиска: по одному на каждую колонку-список текущей вкладки.
+	// Берём только видимые колонки — фильтр по скрытой колонке сбивал бы с толку.
+	const filterDefs = useMemo(
+		() => columns.filter((f) => f.type === "select" && f.options?.length).map((f) => ({
+			key: f.key,
+			label: t(`f_${f.key}`),
+			options: [{ value: "", label: `${tr("filterAll")} — ${t(`f_${f.key}`)}` }, ...(f.options ?? []).map((o) => ({ value: o, label: t(`o_${o}`) }))],
+		})),
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[columns, t, tr],
+	);
+	const activeFilters = filters[tab] ?? {};
+	const setFilter = (key: string, value: string) => setFilters((f) => ({ ...f, [tab]: { ...(f[tab] ?? {}), [key]: value } }));
 
 	// текст ячейки на текущем языке: значения списков переводятся, даты как в макете, числа с разделителями
 	const display = (f: Field, value: string): string => {
@@ -84,7 +99,12 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 
 	const rows = useMemo(() => {
 		const q = query.trim().toLowerCase();
-		const filtered = q ? list.filter((r) => fields.some((f) => display(f, r.values[f.key] ?? "").toLowerCase().includes(q))) : list;
+		// сначала фильтры по колонкам, затем поиск по тексту — порядок на результат не влияет,
+		// но так список поиска уже сужен и поиск идёт по меньшему числу записей
+		const byFilters = Object.entries(activeFilters).filter(([, v]) => v).length
+			? list.filter((r) => Object.entries(activeFilters).every(([k, v]) => !v || (r.values[k] ?? "") === v))
+			: list;
+		const filtered = q ? byFilters.filter((r) => fields.some((f) => display(f, r.values[f.key] ?? "").toLowerCase().includes(q))) : byFilters;
 		if (!sort) return filtered;
 		const f = fields.find((x) => x.key === sort.key);
 		if (!f) return filtered;
@@ -98,7 +118,7 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 			return sort.dir * display(f, av).localeCompare(display(f, bv), tag, { numeric: true });
 		});
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [list, query, sort, fields, locale]);
+	}, [list, query, sort, fields, locale, activeFilters]);
 
 	function changeTab(next: string) {
 		setTab(next);
@@ -182,7 +202,15 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 							</button>
 						)}
 					</div>
-					<SearchBox value={query} onChange={setQuery} placeholder={tr("search")} className="w-full shrink-0 md:w-[300px]" />
+					<SearchBox
+						value={query}
+						onChange={setQuery}
+						placeholder={tr("search")}
+						filters={filterDefs}
+						active={activeFilters}
+						onFilter={setFilter}
+						className="w-full shrink-0 md:w-[340px]"
+					/>
 				</div>
 			</PageHeader>
 

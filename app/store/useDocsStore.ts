@@ -3,6 +3,7 @@ import type { DocItemDTO, DocKind, DocsState, FolderDTO } from "@/app/types/docu
 import { apiCall, authHeaders } from "./crmApi";
 
 interface Result { ok: boolean; message: string }
+export interface ImportResult extends Result { code: string; imported: number }
 
 interface DocsStore {
     state: DocsState | null;
@@ -16,6 +17,7 @@ interface DocsStore {
     deleteDoc: (id: string) => Promise<Result>;
     upload: (file: File, folder: string | null) => Promise<Result>;
     connectDrive: (locale: string) => Promise<Result>;
+    importDrive: () => Promise<ImportResult>;
     disconnectDrive: () => Promise<void>;
 }
 
@@ -89,6 +91,13 @@ export const useDocsStore = create<DocsStore>()((set, get) => {
             const res = await apiCall<{ url: string }>("/api/drive/oauth", "POST", { locale });
             if (res.ok && res.data?.url) window.location.href = res.data.url;
             return { ok: res.ok, message: res.message };
+        },
+        // Перенос файлов, которые уже лежат на Диске пользователя: сервер сам пропускает уже импортированные,
+        // поэтому после успеха достаточно перечитать список
+        importDrive: async () => {
+            const res = await apiCall<{ imported?: number }>("/api/documents/import-drive", "POST");
+            if (res.ok) await get().load();
+            return { ok: res.ok, message: res.message, code: res.code, imported: res.data?.imported ?? 0 };
         },
         disconnectDrive: async () => {
             await apiCall("/api/drive", "DELETE");

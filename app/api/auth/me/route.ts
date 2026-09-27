@@ -3,10 +3,10 @@ import jwt from "jsonwebtoken";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
-import { isPlatformAdmin } from "@/lib/admin";
+import { isPlatformAdminUser } from "@/lib/admin";
 import User from "@/models/User";
 
-function toPublic(user: any) {
+async function toPublic(user: any) {
     return {
         id: user._id.toString(),
         firstname: user.firstname,
@@ -24,7 +24,7 @@ function toPublic(user: any) {
         timezone: user.timezone ?? "",
         state: user.state ?? "",
         company: user.company ?? "",
-        isAdmin: isPlatformAdmin(user.email),
+        isAdmin: await isPlatformAdminUser(user),
         notifications: {
             browser: Boolean(user.notifications?.browser),
             email: Boolean(user.notifications?.email),
@@ -45,7 +45,7 @@ export async function GET(req: Request) {
         await connectDB();
         const user = await User.findById(sub);
         if (!user) return unauthorized(req);
-        return NextResponse.json(toPublic(user));
+        return NextResponse.json(await toPublic(user));
     } catch {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
@@ -109,5 +109,5 @@ export async function PATCH(req: Request) {
     await connectDB();
     const user = await User.findByIdAndUpdate(auth.id, { $set: update }, { new: true });
     if (!user) return unauthorized(req);
-    return NextResponse.json(toPublic(user));
+    return NextResponse.json(await toPublic(user));
 }

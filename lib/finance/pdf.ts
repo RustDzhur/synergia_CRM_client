@@ -32,6 +32,7 @@ const LABELS: Record<string, Record<string, string>> = {
         smallBusiness: "No VAT is charged pursuant to the small business regulation (§19 UStG or equivalent).",
         paymentTerms: "Payment terms", days: "days", iban: "IBAN", bic: "BIC", notes: "Notes",
         seller: "Seller", payByQr: "Pay by QR code", qrHint: "Scan with your banking app",
+        continued: "continued",
     },
     de: {
         invoice: "Rechnung", credit_note: "Gutschrift", quote: "Angebot", order: "Auftragsbestätigung", contract: "Vertrag",
@@ -47,6 +48,7 @@ const LABELS: Record<string, Record<string, string>> = {
         smallBusiness: "Gemäß §19 UStG (Kleinunternehmerregelung) wird keine Umsatzsteuer berechnet.",
         paymentTerms: "Zahlungsziel", days: "Tage", iban: "IBAN", bic: "BIC", notes: "Anmerkungen",
         seller: "Verkäufer", payByQr: "Zahlung per QR-Code", qrHint: "Mit der Banking-App scannen",
+        continued: "Fortsetzung",
     },
     ua: {
         invoice: "Рахунок", credit_note: "Кредит-нота", quote: "Комерційна пропозиція", order: "Підтвердження замовлення", contract: "Договір",
@@ -62,6 +64,7 @@ const LABELS: Record<string, Record<string, string>> = {
         smallBusiness: "ПДВ не нараховується згідно з режимом для малого підприємця (§19 UStG або аналог).",
         paymentTerms: "Термін оплати", days: "днів", iban: "IBAN", bic: "BIC", notes: "Примітки",
         seller: "Постачальник", payByQr: "Оплата за QR-кодом", qrHint: "Скануйте у банківському застосунку",
+        continued: "продовження",
     },
 };
 

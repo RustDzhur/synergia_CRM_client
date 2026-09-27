@@ -17,6 +17,7 @@ export interface DocItemDTO {
     url: string; // для Google-документов
     mime: string;
     size: number;
+    imported: boolean; // файл перенесён из Диска и принадлежит пользователю: правка только в CRM
     modifiedAt: string;
     createdAt: string;
 }

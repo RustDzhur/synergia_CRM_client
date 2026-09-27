@@ -8,7 +8,9 @@ import { authorizeUrl, makeState, oauthAvailable } from "@/lib/mail/oauth";
 export const dynamic = "force-dynamic";
 
 // POST /api/drive/oauth — { locale }: адрес страницы Google, где пользователь разрешает CRM создавать документы на его Диске
-// (доступ только к файлам, созданным самой CRM). Возврат — на общий /api/mail/oauth/callback, различаем по полю state.
+// и видеть файлы, которые у него уже есть (см. DRIVE_SCOPE). Повторный вызов обновляет и права, и токены —
+// так «Переподключить» выдаёт доступ к старым файлам, если Диск подключали до расширения прав.
+// Возврат — на общий /api/mail/oauth/callback, различаем по полю state.
 export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);

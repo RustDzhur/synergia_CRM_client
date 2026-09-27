@@ -9,11 +9,19 @@ import PageHeader from "@/components/crm/components/shared/PageHeader";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import EmployeeModal from "./EmployeeModal";
 import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tabBar";
+import RecordsPage from "../shared/records/RecordsPage";
+import SearchBox from "../shared/SearchBox";
+import { KNOWLEDGE } from "./knowledge";
 import Avatar from "../shared/Avatar";
 
 const initials = (e: Employee) => `${e.firstname[0] ?? ""}${e.lastname[0] ?? ""}`.toUpperCase();
 
 // Меню строки: «Edit / Delete» (значок «≡» слева в строке таблицы)
+// Вкладка «База знаний»: отдельный раздел записей со своей шапкой и таблицей.
+function KnowledgeTab() {
+    return <RecordsPage config={KNOWLEDGE} />;
+}
+
 function RowMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
     const t = useTranslations("company");
     const [open, setOpen] = useState(false);
@@ -39,12 +47,15 @@ function RowMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => voi
 // Раздел Company: сотрудники (таблица, приглашение, редактирование) и база знаний.
 export default function Company() {
     const t = useTranslations("company");
-    const { items, total, page, pages, isLoading, query, setQuery, fetchEmployees, deleteEmployee } = useEmployeeStore();
+    const { items, total, page, pages, isLoading, query, setQuery, department, setDepartment, position, setPosition, fetchEmployees, deleteEmployee } = useEmployeeStore();
     const [tab, setTab] = useState<"employees" | "knowledge">("employees");
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<Employee | null>(null);
     const [toDelete, setToDelete] = useState<Employee | null>(null);
     const firstLoad = useRef(true);
+    // значения для выпадающих фильтров: из уже загруженных строк
+    const departments = Array.from(new Set(items.map((e) => (e.department ?? "").trim()).filter(Boolean))).sort();
+    const positions = Array.from(new Set(items.map((e) => (e.position ?? "").trim()).filter(Boolean))).sort();
 
     useEffect(() => { fetchEmployees(1); }, [fetchEmployees]);
 
@@ -53,7 +64,7 @@ export default function Company() {
         if (firstLoad.current) { firstLoad.current = false; return; }
         const timer = setTimeout(() => fetchEmployees(1), 300);
         return () => clearTimeout(timer);
-    }, [query, fetchEmployees]);
+    }, [query, department, position, fetchEmployees]);
 
     const th = "px-10 text-center";
     const td = "truncate px-10 text-center text-13";
@@ -76,18 +87,18 @@ export default function Company() {
 
                     {tab === "employees" && (
                         <>
-                            <div className="fs-field flex h-40 w-full items-center justify-between gap-10 rounded-10 px-12 transition-colors md:w-[220px] lg:w-[350px]">
-                                <input
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    placeholder={t("search")}
-                                    className="w-full min-w-0 bg-transparent text-13 text-[#f1f4ee] outline-none placeholder:text-[#9AA396]"
-                                />
-                                <div className="flex shrink-0 items-center gap-10 text-[#9AA396]">
-                                    <TbSearch size={17} />
-                                    <TbAdjustments size={17} />
-                                </div>
-                            </div>
+                            <SearchBox
+                                value={query}
+                                onChange={setQuery}
+                                placeholder={t("search")}
+                                filters={[
+                                    { key: "department", label: t("department"), options: [{ value: "", label: t("allDepartments") }, ...departments.map((d) => ({ value: d, label: d }))] },
+                                    { key: "position", label: t("position"), options: [{ value: "", label: t("allPositions") }, ...positions.map((p) => ({ value: p, label: p }))] },
+                                ]}
+                                active={{ department, position }}
+                                onFilter={(key, value) => (key === "department" ? setDepartment(value) : setPosition(value))}
+                                className="w-full md:w-[280px] lg:w-[420px]"
+                            />
                             <button
                                 type="button"
                                 onClick={() => { setEditing(null); setModalOpen(true); }}
@@ -102,7 +113,9 @@ export default function Company() {
             </PageHeader>
 
             {tab === "knowledge" ? (
-                <p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("kbSoon")}</p>
+                // База знаний — обычные записи раздела: та же таблица, поиск, фильтры и окно правки,
+                // что и в других разделах, поэтому отдельной реализации не требует.
+                <KnowledgeTab />
             ) : (
                 <div className="fs-card min-h-[280px] overflow-x-auto">
                     <table className="fs-table min-w-[1040px] table-fixed">

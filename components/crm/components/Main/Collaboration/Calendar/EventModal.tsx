@@ -4,15 +4,17 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbChevronDown, TbX } from "react-icons/tb";
-import { CalEvent, CalendarKind, useCollabStore } from "@/app/store/useCollabStore";
+import { CalendarKind, EventDraft, useCollabStore } from "@/app/store/useCollabStore";
 import Dropdown from "@/app/utils/Dropdown";
 import { useClickOutside } from "@/app/utils/useClickOutside";
 import Modal from "../../shared/Modal";
 
 export const EVENT_COLORS = ["#FFB02E", "#34A2E8", "#2DDEB6", "#F04333", "#8A8FF5", "#57CAEF"];
-const REMINDERS = ["5", "15", "30", "60"];
+const REMINDERS = [5, 15, 30, 60];
 
-export type EventDraft = Omit<CalEvent, "id"> & { id?: string };
+// Черновик события объявлен в хранилище (с id — правка существующего, без id — новое); реэкспорт —
+// чтобы у вызывающих компонентов (календарь, дашборд) остался один адрес импорта.
+export type { EventDraft };
 
 interface Props {
 	open: boolean;
@@ -20,12 +22,14 @@ interface Props {
 	onClose: () => void;
 }
 
-// Окно «Event Name» (Figma: Calendar-Modal): название и цвет, календарь, даты и время, участники, место и напоминание.
+// Окно «Event Name» (Figma: Calendar-Modal): название и цвет, описание, календарь, даты и время,
+// участники, место и напоминание. Событие сохраняется на сервере (/api/events).
 export default function EventModal({ open, draft, onClose }: Props) {
 	const t = useTranslations("collab");
 	const locale = useLocale();
 	const { saveEvent, deleteEvent } = useCollabStore();
 	const [form, setForm] = useState<EventDraft | null>(draft);
+	const [busy, setBusy] = useState(false); // запрос к серверу в пути: второе нажатие не отправляем
 	const [colorsOpen, setColorsOpen] = useState(false);
 	const colorRef = useRef<HTMLDivElement>(null);
 	useClickOutside(colorRef, colorsOpen, () => setColorsOpen(false));
@@ -53,13 +57,32 @@ export default function EventModal({ open, draft, onClose }: Props) {
 	const isEdit = Boolean(form.id);
 	const set = <K extends keyof EventDraft>(key: K, value: EventDraft[K]) => setForm((f) => (f ? { ...f, [key]: value } : f));
 
-	function submit(e: React.FormEvent) {
+	async function submit(e: React.FormEvent) {
 		e.preventDefault();
-		if (!form) return;
+		if (!form || busy) return;
 		if (!form.title.trim()) return void toast.error(t("eventNameRequired"));
 		if (`${form.endDate}T${form.endTime}` < `${form.date}T${form.startTime}`) return void toast.error(t("eventEndBefore"));
-		saveEvent({ ...form, title: form.title.trim() });
-		toast.success(t("eventSaved"));
+		setBusy(true);
+		const saved = await saveEvent({ ...form, title: form.title.trim() });
+		setBusy(false);
+		// при ошибке окно остаётся открытым — набранное не теряется, можно повторить
+		if (!saved) return void toast.error(t("error"));
+		// событие сохранено, но в Google не уехало: говорим прямо, иначе его будут искать в телефоне
+		if (saved.syncError) toast.error(t("eventSyncFailed", { message: saved.syncError }), { duration: 7000 });
+		else toast.success(t("eventSaved"));
+		onClose();
+	}
+
+	async function remove() {
+		if (!form?.id || busy) return;
+		setBusy(true);
+		const result = await deleteEvent(form.id);
+		setBusy(false);
+		if (!result) return void toast.error(t("error"));
+		// Событие из внешнего календаря могло остаться там (iCloud не даёт писать, Google не ответил):
+		// синхронизация вернёт его, и об этом нужно сказать сразу
+		if (result.syncError) toast.error(t("eventDeleteFailed", { message: result.syncError }), { duration: 7000 });
+		else toast.success(t("eventDeleted"));
 		onClose();
 	}
 
@@ -107,6 +130,18 @@ export default function EventModal({ open, draft, onClose }: Props) {
 				</div>
 
 				<div className="px-16 md:px-32">
+					{/* Подробное описание события: под названием, как «Description» у задачи */}
+					<label htmlFor="event-description" className={`mt-16 block md:mt-20 ${label}`}>{t("eventDescription")}</label>
+					<textarea
+						id="event-description"
+						value={form.description}
+						onChange={(e) => set("description", e.target.value)}
+						placeholder={t("eventDescriptionPlaceholder")}
+						maxLength={2000}
+						rows={3}
+						className="fs-field fs-scroll mt-8 w-full resize-y px-12 py-8 text-13 outline-none"
+					/>
+
 					<label className="relative mt-16 flex items-center gap-8 text-13 text-[#8c948b] md:mt-20">
 						{t("calendarLabel")}:
 						<select
@@ -156,10 +191,10 @@ export default function EventModal({ open, draft, onClose }: Props) {
 					/>
 					<span className="text-[#8c948b]">{t("reminder")}:</span>
 					<div className="flex flex-wrap items-center gap-x-24 gap-y-8">
-						{form.reminder && (
+						{form.reminder > 0 && (
 							<span className="flex items-center gap-6 text-[#c6ff4d]">
-								{t("minutesBefore", { count: Number(form.reminder) })}
-								<button type="button" onClick={() => set("reminder", "")} aria-label={t("removeReminder")} className="text-[#8c948b] transition-colors hover:text-danger">
+								{t("minutesBefore", { count: form.reminder })}
+								<button type="button" onClick={() => set("reminder", 0)} aria-label={t("removeReminder")} className="text-[#8c948b] transition-colors hover:text-danger">
 									<TbX size={16} />
 								</button>
 							</span>
@@ -168,12 +203,12 @@ export default function EventModal({ open, draft, onClose }: Props) {
 							{t("add")}
 							<select
 								value=""
-								onChange={(e) => e.target.value && set("reminder", e.target.value)}
+								onChange={(e) => e.target.value && set("reminder", Number(e.target.value))}
 								aria-label={t("reminder")}
 								className="absolute inset-0 cursor-pointer opacity-0">
 								<option value="" />
 								{REMINDERS.map((m) => (
-									<option key={m} value={m}>{t("minutesBefore", { count: Number(m) })}</option>
+									<option key={m} value={m}>{t("minutesBefore", { count: m })}</option>
 								))}
 							</select>
 						</label>
@@ -184,15 +219,16 @@ export default function EventModal({ open, draft, onClose }: Props) {
 					{isEdit && (
 						<button
 							type="button"
-							onClick={() => { deleteEvent(form.id as string); toast.success(t("eventDeleted")); onClose(); }}
-							className="text-13 font-medium text-danger transition-opacity hover:opacity-80 max-md:order-last md:mr-auto">
+							onClick={remove}
+							disabled={busy}
+							className="text-13 font-medium text-danger transition-opacity hover:opacity-80 disabled:opacity-60 max-md:order-last md:mr-auto">
 							{t("deleteEvent")}
 						</button>
 					)}
 					<button type="button" onClick={onClose} className="fs-btn fs-btn-ghost h-40">
 						{t("cancel")}
 					</button>
-					<button type="submit" className="fs-btn fs-btn-primary h-40 md:min-w-[133px]">
+					<button type="submit" disabled={busy} className="fs-btn fs-btn-primary h-40 disabled:opacity-60 md:min-w-[133px]">
 						{isEdit ? t("save") : t("create")}
 					</button>
 				</div>

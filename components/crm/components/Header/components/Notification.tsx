@@ -4,14 +4,14 @@ import toast from "react-hot-toast";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { MdAccessAlarm, MdAutoMode, MdCallMissed, MdChat, MdMail, MdPersonAdd } from "react-icons/md";
-import { TbBell } from "react-icons/tb";
+import { TbBell, TbCalendarEvent } from "react-icons/tb";
 import { useNotificationStore, type Notif } from "@/app/store/useNotificationStore";
 import Dropdown from "@/app/utils/Dropdown";
 import { notifText } from "@/app/utils/notifText";
 import { useClickOutside } from "@/app/utils/useClickOutside";
 
 const ICON: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
-	mail: MdMail, mail_many: MdMail, lead: MdPersonAdd, message: MdChat, missed_call: MdCallMissed, deadline: MdAccessAlarm, team: MdChat, automation: MdAutoMode,
+	mail: MdMail, mail_many: MdMail, lead: MdPersonAdd, message: MdChat, missed_call: MdCallMissed, deadline: MdAccessAlarm, event: TbCalendarEvent, team: MdChat, automation: MdAutoMode,
 };
 
 const ago = (iso: string) => {

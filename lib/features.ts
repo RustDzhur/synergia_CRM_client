@@ -41,7 +41,7 @@ export function featureForApi(pathname: string): FeatureKey | null {
         case "deals": case "stages": case "contacts": case "companies": return "crm";
         case "tasks": return "tasks";
         case "employees": return "company";
-        case "feed": return "collab";
+        case "feed": case "events": return "collab";
         case "conversations": case "twilio": case "calls": case "sip": return "channels";
         case "documents": case "drive": return "documents";
         case "mail": return "mail";

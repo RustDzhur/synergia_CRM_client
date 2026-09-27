@@ -10,6 +10,7 @@ import { useClickOutside } from "@/app/utils/useClickOutside";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
 import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../../shared/tabBar";
 import SearchBox from "../../shared/SearchBox";
+import SyncPanel from "./SyncPanel";
 import EventModal, { EVENT_COLORS, EventDraft } from "./EventModal";
 import TaskPreviewModal from "./TaskPreviewModal";
 
@@ -96,8 +97,8 @@ export default function Calendar() {
 
 	function openCreate(key: string) {
 		setDraft({
-			title: "", color: EVENT_COLORS[0], calendar: tab, date: key, startTime: "09:00", endDate: key, endTime: "10:00",
-			attendees: "", location: "", reminder: "",
+			title: "", description: "", color: EVENT_COLORS[0], calendar: tab, date: key, startTime: "09:00", endDate: key, endTime: "10:00",
+			attendees: "", location: "", reminder: 0,
 		});
 		setEventOpen(true);
 	}
@@ -129,7 +130,10 @@ export default function Calendar() {
 							</button>
 						))}
 					</div>
-					<SearchBox value={query} onChange={setQuery} placeholder={t("searchCalendar")} withFilter className="w-full md:w-[250px] lg:w-[350px]" />
+					<div className="flex w-full items-center gap-10 md:w-auto">
+						<SearchBox value={query} onChange={setQuery} placeholder={t("searchCalendar")} className="w-full md:w-[250px] lg:w-[320px]" />
+						<SyncPanel />
+					</div>
 				</div>
 			</PageHeader>
 

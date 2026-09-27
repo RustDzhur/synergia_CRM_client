@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
+import { sweepEventReminders } from "@/lib/calendar/reminders";
 import { notify, unreadFor, visibleTo } from "@/lib/notify";
 import Deal from "@/models/Deal";
 import Notification from "@/models/Notification";
@@ -17,6 +18,8 @@ export async function GET(req: Request) {
     await connectDB();
     // отложенные действия автоматизации выполняются, пока кто-то из фирмы работает в CRM (этот запрос приходит каждые 30 секунд)
     await (await import("@/lib/automation")).runDueJobs(user.id).catch(() => undefined);
+    // то же и для напоминаний календаря: суточный крон Vercel для минутных напоминаний слишком редок
+    await sweepEventReminders(user.id, tzOffset(req)).catch(() => undefined);
     const mine = visibleTo(user.id, user.userId);
     const [items, unread] = await Promise.all([
         Notification.find(mine).sort({ createdAt: -1 }).limit(50),
@@ -26,6 +29,13 @@ export async function GET(req: Request) {
         unread,
         items: items.map((n) => ({ id: String(n._id), type: n.type, params: n.params ?? {}, link: n.link, at: n.createdAt.toISOString(), read: (n.readBy ?? []).some((id: unknown) => String(id) === user.userId) })),
     });
+}
+
+// Часовой пояс браузера в минутах от UTC — его присылает crmApi вместе с каждым опросом. События хранят
+// местное время без пояса, поэтому «пора напоминать» сервер считает по местным часам пользователя.
+function tzOffset(req: Request) {
+    const n = Number(req.headers.get("x-tz-offset"));
+    return Number.isFinite(n) ? n : 0;
 }
 
 const STAGES = ["24h", "1h", "overdue"];

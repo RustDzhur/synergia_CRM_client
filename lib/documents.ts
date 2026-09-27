@@ -32,6 +32,7 @@ export const toDocDTO = (d: Doc): DocItemDTO => ({
     url: d.url,
     mime: d.mime,
     size: d.size,
+    imported: !!d.imported,
     modifiedAt: ((d.modifiedAt as Date | undefined) ?? d.updatedAt ?? d.createdAt).toISOString(),
     createdAt: d.createdAt.toISOString(),
 });

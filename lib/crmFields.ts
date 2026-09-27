@@ -21,7 +21,10 @@ export function contactFullName(fields: Record<string, string>, fallback?: unkno
     return typeof fallback === "string" ? fallback.trim().slice(0, 200) : "";
 }
 
+// project — ссылка на проект, поэтому в текст не входит: её проверяем отдельно в маршрутах задач
 export const TASK_TEXT_FIELDS = ["title", "description", "deadline", "responsible"] as const;
+
+export const PROJECT_TEXT_FIELDS = ["name", "description", "status", "startDate", "endDate", "responsible", "color"] as const;
 
 export const EMPLOYEE_FIELDS = [
     "firstname", "lastname", "email", "workPhone", "internalPhone", "position", "department",

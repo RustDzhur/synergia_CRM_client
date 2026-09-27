@@ -12,12 +12,13 @@ export interface Task {
     completed: boolean;
     pinned: boolean;
     muted: boolean;
+    project?: string; // id проекта, в рамках которого сделана задача
     activities?: Activity[]; // комментарии: type "comment", meta — имя автора
     createdAt?: string;
     updatedAt?: string;
 }
 
-export type TaskInput = Partial<Pick<Task, "title" | "description" | "deadline" | "responsible" | "completed" | "pinned" | "muted">>;
+export type TaskInput = Partial<Pick<Task, "title" | "description" | "deadline" | "responsible" | "completed" | "pinned" | "muted" | "project">>;
 
 export type TaskStatus = "active" | "completed" | "ended";
 

@@ -8,7 +8,7 @@ import Loader from "@/app/utils/Loader";
 import Dropdown from "@/app/utils/Dropdown";
 import Collapse from "@/app/utils/Collapse";
 import { useClickOutside } from "@/app/utils/useClickOutside";
-import StageColumn from "./StageColumn";
+import StageColumn, { ARROW_DEPTH } from "./StageColumn";
 import DealsList from "./DealsList";
 import DealModal from "./DealModal";
 
@@ -161,31 +161,37 @@ export default function DealsBoard({ search }: Props) {
                                 ))}
                                 {boardProvided.placeholder}
 
-                                <div className="w-[222px] shrink-0 p-12">
-                                    <Collapse open={isAddingStage}>
-                                        <div className="flex flex-col gap-8 pb-10">
-                                            <input
-                                                ref={stageInputRef}
-                                                className="fs-field h-34 px-10 text-12 outline-none transition-colors"
-                                                placeholder={t("newStageName")}
-                                                value={newStageName}
-                                                onChange={(e) => setNewStageName(e.target.value)}
-                                                onKeyDown={(e) => e.key === "Enter" && saveNewStage()}
-                                            />
-                                            <div className="flex gap-10 text-13">
-                                                <button className="text-[#c6ff4d] transition-opacity hover:opacity-80" onClick={saveNewStage}>{t("save")}</button>
-                                                <button className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]" onClick={() => setIsAddingStage(false)}>{t("cancel")}</button>
+                                {/* Кнопка новой колонки стоит там, где стояла бы следующая стрелка: острие
+                                    последней заходит сюда на ARROW_OVERHANG, поэтому слева остаётся место под
+                                    её вырез (ARROW_DEPTH) — иначе острие накрыло бы рамку кнопки. Справа отступ
+                                    тот же, что у дорожек столбцов (mr-8), а высота равна стрелке (54px) */}
+                                <div className="w-[222px] md:w-[180px] lg:w-[222px] shrink-0">
+                                    <div className="mr-8" style={{ marginLeft: ARROW_DEPTH }}>
+                                        <Collapse open={isAddingStage}>
+                                            <div className="flex flex-col gap-8 pb-10">
+                                                <input
+                                                    ref={stageInputRef}
+                                                    className="fs-field h-34 px-10 text-12 outline-none transition-colors"
+                                                    placeholder={t("newStageName")}
+                                                    value={newStageName}
+                                                    onChange={(e) => setNewStageName(e.target.value)}
+                                                    onKeyDown={(e) => e.key === "Enter" && saveNewStage()}
+                                                />
+                                                <div className="flex gap-10 text-13">
+                                                    <button className="text-[#c6ff4d] transition-opacity hover:opacity-80" onClick={saveNewStage}>{t("save")}</button>
+                                                    <button className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]" onClick={() => setIsAddingStage(false)}>{t("cancel")}</button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </Collapse>
-                                    {!isAddingStage && (
-                                        <button
-                                            className="animate-fade-in w-full rounded-10 border border-dashed border-[rgba(255,255,255,0.14)] py-10 text-13 text-[#8c948b] transition-colors duration-200 hover:border-[rgba(198,255,77,0.45)] hover:text-[#c6ff4d]"
-                                            onClick={() => setIsAddingStage(true)}
-                                        >
-                                            + {t("addStage")}
-                                        </button>
-                                    )}
+                                        </Collapse>
+                                        {!isAddingStage && (
+                                            <button
+                                                className="animate-fade-in flex h-[54px] w-full items-center justify-center gap-6 rounded-10 border border-dashed border-[rgba(255,255,255,0.14)] text-13 text-[#8c948b] transition-colors duration-200 hover:border-[rgba(198,255,77,0.45)] hover:text-[#c6ff4d]"
+                                                onClick={() => setIsAddingStage(true)}
+                                            >
+                                                + {t("addStage")}
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         )}

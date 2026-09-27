@@ -15,6 +15,12 @@ const DocItemSchema = new Schema(
         driveId: { type: String, default: "" },
         url: { type: String, default: "" }, // ссылка «открыть в Google»
         modifiedAt: { type: Date },
+        // Импортированный с Диска файл: он был там до CRM, и прав на запись к нему у приложения нет —
+        // CRM правит только свою запись, а не файл на Диске.
+        imported: { type: Boolean, default: false },
+        // Имя файла на Диске на момент последней синхронизации: по нему видно, переименовали файл на Диске
+        // (тогда имя меняет и CRM) или в CRM (тогда имя на Диске чужое и его не трогаем).
+        driveName: { type: String, default: "" },
         // файл
         storagePath: { type: String, default: "" },
         mime: { type: String, default: "" },

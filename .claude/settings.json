@@ -1,0 +1,21 @@
+{
+  "env": {
+    "DISABLE_AUTOUPDATER": "1"
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(mv:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  },
+  "sandbox": {
+    "network": {
+      "allowedDomains": ["github.com", "api.github.com", "codeload.github.com", "registry.npmjs.org"],
+      "allowLocalBinding": true
+    }
+  }
+}

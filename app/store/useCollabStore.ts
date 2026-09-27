@@ -1,15 +1,18 @@
 import { useEffect } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { api } from "./crmApi";
+import { loadLegacyEvents, migrateLegacyEvents } from "./collabLegacy";
 
-// Разделы Collaboration Calendar и Online Documents пока без сервера (Chat and Calls и Web Mails работают через API):
-// тестовые данные лежат здесь и сохраняются в localStorage браузера (ключ "crm-collab").
-// Когда появятся API, заменяются только действия этого хранилища — компоненты остаются теми же.
+// Хранилище раздела Collaboration. События календаря живут на сервере (/api/events): их видят все участники
+// фирмы, и по ним работают напоминания (lib/calendar/reminders.ts). Онлайн-документы пока без сервера —
+// их тестовые данные лежат в localStorage браузера (ключ "crm-collab").
 
 export type CalendarKind = "my" | "company";
 export interface CalEvent {
 	id: string;
 	title: string;
+	description: string; // подробное описание события (показывается в форме под названием)
 	color: string;
 	calendar: CalendarKind;
 	date: string; // "YYYY-MM-DD"
@@ -18,7 +21,9 @@ export interface CalEvent {
 	endTime: string;
 	attendees: string;
 	location: string;
-	reminder: string; // "15" — за сколько минут; "" — без напоминания
+	reminder: number; // за сколько минут напомнить; 0 — без напоминания
+	/** событие сохранено в CRM, но не перенесено в Google: текст причины для окна события */
+	syncError?: string;
 }
 
 export type DocType = "docx" | "xlsx" | "pptx";
@@ -32,37 +37,85 @@ export interface DocFile {
 	archived: boolean;
 }
 
+// Черновик события: с id — правка существующего, без id — новое.
+// syncError — ответ сервера, а не поле события, поэтому в черновик не попадает.
+export type EventDraft = Omit<CalEvent, "id" | "syncError"> & { id?: string };
+
+// Как событие приходит с сервера (документ Mongo)
+interface ServerEvent extends Partial<Omit<CalEvent, "id">> {
+	_id: string;
+	title: string;
+	reminder?: number;
+	syncError?: string; // заполняет сервер, когда событие не уехало в Google
+}
+
+const toEvent = (doc: ServerEvent): CalEvent => ({
+	id: String(doc._id),
+	title: doc.title ?? "",
+	description: doc.description ?? "",
+	color: doc.color ?? "",
+	calendar: doc.calendar === "company" ? "company" : "my",
+	date: doc.date ?? "",
+	startTime: doc.startTime ?? "",
+	endDate: doc.endDate ?? "",
+	endTime: doc.endTime ?? "",
+	attendees: doc.attendees ?? "",
+	location: doc.location ?? "",
+	reminder: Number(doc.reminder) || 0,
+	...(doc.syncError ? { syncError: doc.syncError } : {}),
+});
+
 const uid = () => Math.random().toString(36).slice(2, 10);
-// Локальное время без пояса ("2023-06-23T18:10:00"): сервер и браузер покажут одно и то же время
-const p2 = (n: number) => String(n).padStart(2, "0");
-const iso = (y: number, m: number, d: number, h = 0, min = 0) => `${y}-${p2(m)}-${p2(d)}T${p2(h)}:${p2(min)}:00`;
 
 interface CollabStore {
 	events: CalEvent[];
+	eventsLoading: boolean;
 	docs: DocFile[];
 
-	saveEvent: (event: Omit<CalEvent, "id"> & { id?: string }) => void;
-	deleteEvent: (id: string) => void;
+	fetchEvents: () => Promise<void>;
+	/** null — сервер не принял событие (сеть или ошибка) */
+	saveEvent: (event: EventDraft) => Promise<CalEvent | null>;
+	/** null — сервер не удалил; иначе предупреждение: пустая строка — удалено без замечаний */
+	deleteEvent: (id: string) => Promise<{ syncError: string } | null>;
 
 	addDoc: (name: string, type: DocType, createdBy: string) => void;
 	updateDoc: (id: string, patch: Partial<Pick<DocFile, "name" | "shared" | "archived">>) => void;
 	deleteDoc: (id: string) => void;
-
 }
 
 export const useCollabStore = create<CollabStore>()(
 	persist(
-		(set) => ({
+		(set, get) => ({
 			events: [],
+			eventsLoading: false,
 			docs: [],
 
-			saveEvent: (event) =>
-				set((s) => {
-					const id = event.id ?? uid();
-					const next = { ...event, id } as CalEvent;
-					return { events: s.events.some((e) => e.id === id) ? s.events.map((e) => (e.id === id ? next : e)) : [...s.events, next] };
-				}),
-			deleteEvent: (id) => set((s) => ({ events: s.events.filter((e) => e.id !== id) })),
+			fetchEvents: async () => {
+				set({ eventsLoading: true });
+				const list = await api<ServerEvent[]>("/api/events");
+				set({ events: list ? list.map(toEvent) : get().events, eventsLoading: false });
+			},
+
+			saveEvent: async (event) => {
+				const { id, ...rest } = event;
+				const fields = { ...rest } as Record<string, unknown>;
+				// syncError — ответ сервера о переносе во внешний календарь, а не поле события:
+				// обратно его отправлять незачем (в окне события черновик приходит целиком)
+				delete fields.syncError;
+				const saved = id ? await api<ServerEvent>(`/api/events/${id}`, "PATCH", fields) : await api<ServerEvent>("/api/events", "POST", fields);
+				if (!saved) return null;
+				const next = toEvent(saved);
+				const exists = get().events.some((e) => e.id === next.id);
+				set({ events: exists ? get().events.map((e) => (e.id === next.id ? next : e)) : [...get().events, next] });
+				return next;
+			},
+
+			deleteEvent: async (id) => {
+				const res = await api<{ ok: boolean; syncError?: string }>(`/api/events/${id}`, "DELETE");
+				if (!res?.ok) return null;
+				set({ events: get().events.filter((e) => e.id !== id) });
+				return { syncError: res.syncError ?? "" };
+			},
 
 			addDoc: (name, type, createdBy) =>
 				set((s) => ({ docs: [{ id: uid(), name, type, createdBy, createdAt: new Date().toISOString(), shared: false, archived: false }, ...s.docs] })),
@@ -71,26 +124,36 @@ export const useCollabStore = create<CollabStore>()(
 		}),
 		{
 			name: "crm-collab",
-			version: 3,
-			// v2: беседы Chat and Calls и почта Web Mails теперь приходят с сервера; v3: так же и лента Feed — старые тестовые данные из localStorage выбрасываем
+			version: 4,
+			// v2: беседы Chat and Calls и почта Web Mails пришли с сервера; v3: так же и лента Feed;
+			// v4: события календаря переехали на сервер — в localStorage остаются только документы.
 			migrate: (state) => {
 				const rest = { ...(state as Record<string, unknown>) };
 				delete rest.chats;
 				delete rest.mails;
 				delete rest.mailProvider;
 				delete rest.posts;
-				return rest as never;
+				delete rest.events;
+				return { docs: (Array.isArray(rest.docs) ? rest.docs : []) as DocFile[] } as never;
 			},
+			// Сохраняем только документы: события приходят с сервера
+			partialize: (s) => ({ docs: s.docs }),
 			// Читаем localStorage уже в браузере (см. useCollabHydration): на сервере и при первой отрисовке
-			// всегда тестовые данные по умолчанию — иначе HTML сервера и клиента разойдутся.
+			// всегда пустое состояние — иначе HTML сервера и клиента разойдутся.
 			skipHydration: true,
 		}
 	)
 );
 
-// Вызывается один раз на странице раздела: подтягивает сохранённые данные из localStorage.
-export function useCollabHydration() {
+// Вызывается один раз на странице, которой нужны события (календарь, дашборд): подтягивает документы
+// из localStorage, переносит старые события на сервер (app/store/collabLegacy.ts) и загружает список событий.
+// enabled = false — раздел закрыт тарифом фирмы: не тратим запрос впустую (сервер всё равно ответит 403).
+export function useCollabHydration(enabled = true) {
 	useEffect(() => {
+		if (!enabled) return;
+		// читаем старые события ДО rehydrate: он перезаписывает сохранённое состояние уже без них
+		loadLegacyEvents();
 		useCollabStore.persist.rehydrate();
-	}, []);
+		void migrateLegacyEvents().finally(() => { void useCollabStore.getState().fetchEvents(); });
+	}, [enabled]);
 }

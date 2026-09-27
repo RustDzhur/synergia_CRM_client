@@ -25,7 +25,11 @@ interface EmployeeStore {
     pages: number;
     isLoading: boolean;
     query: string;
+    department: string;
+    position: string;
     setQuery: (q: string) => void;
+    setDepartment: (value: string) => void;
+    setPosition: (value: string) => void;
     fetchEmployees: (page?: number) => Promise<void>;
     addEmployee: (data: EmployeeInput) => Promise<boolean>;
     updateEmployee: (id: string, data: EmployeeInput) => Promise<boolean>;
@@ -35,12 +39,18 @@ interface EmployeeStore {
 interface ListResponse { items: Employee[]; total: number; page: number; pages: number }
 
 export const useEmployeeStore = create<EmployeeStore>((set, get) => ({
-    items: [], total: 0, page: 1, pages: 1, isLoading: false, query: "",
+    items: [], total: 0, page: 1, pages: 1, isLoading: false, query: "", department: "", position: "",
     setQuery: (query) => set({ query }),
+    setDepartment: (department: string) => set({ department }),
+    setPosition: (position: string) => set({ position }),
 
     fetchEmployees: async (page = 1) => {
         set({ isLoading: true });
-        const data = await api<ListResponse>(`/api/employees?page=${page}&q=${encodeURIComponent(get().query)}`);
+        // подразделение и должность фильтруются на сервере: список постраничный, и фильтр по текущей
+        // странице показывал бы неполную картину
+        const { query, department, position } = get();
+        const params = new URLSearchParams({ page: String(page), q: query, department, position });
+        const data = await api<ListResponse>(`/api/employees?${params}`);
         if (data) set({ items: data.items, total: data.total, page: data.page, pages: data.pages, isLoading: false });
         else set({ isLoading: false });
     },

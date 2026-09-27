@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { TbAdjustments, TbPencil, TbSearch, TbX } from "react-icons/tb";
 import { Employee, useEmployeeStore } from "@/app/store/useEmployeeStore";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
+import SearchBox from "../shared/SearchBox";
 import Checkbox from "../shared/Checkbox";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import EmployeeModal from "../Company/EmployeeModal";
@@ -19,7 +20,7 @@ const TD = "truncate px-10 text-center text-13";
 // но в компактной таблице из макета: имя с должностью, значок «активен», крестик (удалить) и карандаш (изменить).
 export default function Colleagues() {
 	const t = useTranslations("settings");
-	const { items, isLoading, query, setQuery, fetchEmployees, deleteEmployee } = useEmployeeStore();
+	const { items, isLoading, query, setQuery, department, setDepartment, position, setPosition, fetchEmployees, deleteEmployee } = useEmployeeStore();
 	const [selected, setSelected] = useState<string[]>([]);
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editing, setEditing] = useState<Employee | null>(null);
@@ -34,12 +35,16 @@ export default function Colleagues() {
 		if (firstLoad.current) { firstLoad.current = false; return; }
 		const timer = setTimeout(() => fetchEmployees(1), 300);
 		return () => clearTimeout(timer);
-	}, [query, fetchEmployees]);
+	}, [query, department, position, fetchEmployees]);
 
 	// выбранные строки, которых уже нет на странице (поиск, удаление), выпадают из выбора
 	useEffect(() => {
 		setSelected((prev) => prev.filter((id) => items.some((e) => e._id === id)));
 	}, [items]);
+
+	// значения для выпадающих фильтров — из уже загруженных строк
+	const departments = Array.from(new Set(items.map((e) => (e.department ?? "").trim()).filter(Boolean))).sort();
+	const positions = Array.from(new Set(items.map((e) => (e.position ?? "").trim()).filter(Boolean))).sort();
 
 	const allChecked = items.length > 0 && items.every((e) => selected.includes(e._id));
 	const toggle = (id: string) => setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -59,19 +64,19 @@ export default function Colleagues() {
 
 				<section className="min-w-0 flex-1">
 					<div className="mb-20 flex flex-col gap-12 md:flex-row md:items-center md:justify-between">
-						<div className="fs-field flex h-40 w-full items-center justify-between px-12 transition-colors md:w-[260px] lg:w-[320px]">
-							<input
-								value={query}
-								onChange={(e) => setQuery(e.target.value)}
-								placeholder={t("search")}
-								aria-label={t("search")}
-								className="w-full bg-transparent text-13 outline-none"
-							/>
-							<div className="flex shrink-0 items-center gap-10 text-[#9AA396]">
-								<TbSearch size={17} />
-								<TbAdjustments size={17} />
-							</div>
-						</div>
+						<SearchBox
+							value={query}
+							onChange={setQuery}
+							placeholder={t("search")}
+							// фильтры уходят на сервер вместе с поиском — список постраничный
+							filters={[
+								{ key: "department", label: t("department"), options: [{ value: "", label: t("allDepartments") }, ...departments.map((d) => ({ value: d, label: d }))] },
+								{ key: "position", label: t("position"), options: [{ value: "", label: t("allPositions") }, ...positions.map((p) => ({ value: p, label: p }))] },
+							]}
+							active={{ department, position }}
+							onFilter={(key, value) => (key === "department" ? setDepartment(value) : setPosition(value))}
+							className="w-full md:w-[300px] lg:w-[440px]"
+						/>
 						<div className="flex items-center gap-16">
 							{selected.length > 0 && (
 								<button

@@ -74,7 +74,7 @@ export default function Documents() {
 	const { show: showAi, send: sendAi, status: aiStatus, loadStatus: loadAiStatus } = useAiStore();
 	useEffect(() => { if (!useAiStore.getState().status) loadAiStatus(); }, [loadAiStatus]);
 	const canAnalyzeDocs = !!aiStatus?.configured && (aiStatus.tools.some((x) => x.name === "read_document"));
-	const { state, loading, load, createFolder, patchFolder, deleteFolder, createDoc, patchDoc, deleteDoc, upload, connectDrive, disconnectDrive } = useDocsStore();
+	const { state, loading, load, createFolder, patchFolder, deleteFolder, createDoc, patchDoc, deleteDoc, upload, connectDrive, importDrive, disconnectDrive } = useDocsStore();
 
 	const [layout, setLayout] = useState<Layout>("list");
 	const [status, setStatus] = useState<StatusFilter>("active");
@@ -84,6 +84,7 @@ export default function Documents() {
 	const [nameMode, setNameMode] = useState<NameMode | null>(null);
 	const [name, setName] = useState("");
 	const [busy, setBusy] = useState(false);
+	const [importing, setImporting] = useState(false);
 	const [moving, setMoving] = useState<Target | null>(null);
 	const [moveTo, setMoveTo] = useState("");
 	const [toDelete, setToDelete] = useState<Target | null>(null);
@@ -132,6 +133,36 @@ export default function Documents() {
 	async function connect() {
 		const res = await connectDrive(locale);
 		if (!res.ok) toast.error(res.message);
+	}
+
+	// Перенос файлов, которые уже лежат на Диске: если Диск подключён до расширения прав, сервер просит
+	// подключить его заново — тогда в уведомлении показываем кнопку, а не просто текст ошибки
+	async function startImport() {
+		if (importing) return;
+		setImporting(true);
+		const res = await importDrive();
+		setImporting(false);
+		if (res.ok) {
+			if (res.imported) {
+				setCurrent(null); // импортированные файлы появляются в корне раздела — показываем его
+				toast.success(t("driveImportDone", { count: res.imported }));
+			} else toast(t("driveImportEmpty"));
+			return;
+		}
+		if (res.code === "drive_scope") {
+			return void toast(
+				(m) => (
+					<span className="flex flex-col gap-8">
+						<span>{res.message}</span>
+						<button type="button" onClick={() => { toast.dismiss(m.id); connect(); }} className="fs-btn fs-btn-primary h-30 self-start">
+							{t("driveReconnect")}
+						</button>
+					</span>
+				),
+				{ duration: 10000 }
+			);
+		}
+		toast.error(res.message);
 	}
 
 	function startCreate(kind: GoogleKind) {
@@ -186,7 +217,8 @@ export default function Documents() {
 	}
 
 	async function openDoc(d: DocItemDTO) {
-		if (d.kind !== "file") return void window.open(d.url, "_blank", "noopener");
+		// документ живёт на Диске (Google-документ CRM или импортированный файл) — открываем ссылку Google
+		if (d.url) return void window.open(d.url, "_blank", "noopener");
 		const inline = INLINE_TYPES.includes(d.mime);
 		const tab = inline ? window.open("", "_blank") : null;
 		try {
@@ -269,7 +301,8 @@ export default function Documents() {
 		if (!res.ok) toast.error(res.message);
 	}
 
-	const kindLabel = (d: DocItemDTO) => (d.kind === "file" ? fmtSize(d.size) : t(`kind_${d.kind}`));
+	// у импортированных файлов размер не запрашивается — вместо «1 KB» показываем, откуда файл
+	const kindLabel = (d: DocItemDTO): string => (d.kind === "file" ? (d.imported ? t("fileFromDrive") : fmtSize(d.size)) : t(`kind_${d.kind}`));
 	const dateLabel = (iso: string) => new Date(iso).toLocaleDateString(locale === "ua" ? "uk" : locale);
 	const folderActions = (f: FolderDTO): Action[] => [
 		{ label: t("open"), onClick: () => setCurrent(f.id) },
@@ -282,7 +315,7 @@ export default function Documents() {
 		sendAi(tAi("analyzeDocPrompt", { name: d.name }), { locale, page: pagePath });
 	}
 	const docActions = (d: DocItemDTO): Action[] => [
-		{ label: d.kind === "file" ? t("openFile") : t("openInGoogle"), onClick: () => openDoc(d) },
+		{ label: d.url ? t("openInGoogle") : t("openFile"), onClick: () => openDoc(d) },
 		...(canAnalyzeDocs && d.kind === "file" && d.mime === "application/pdf" ? [{ label: tAi("analyzeDoc"), onClick: () => analyzeDoc(d) }] : []),
 		{ label: t("rename"), onClick: () => { setName(d.name); setNameMode({ kind: "doc-rename", doc: d }); } },
 		{ label: t("moveTo"), onClick: () => startMove({ type: "doc", doc: d }) },
@@ -331,10 +364,14 @@ export default function Documents() {
 				</div>
 			)}
 			{drive?.connected && (
-				<p className="mb-16 flex flex-wrap items-center gap-x-12 gap-y-2 text-12 text-[#8c948b]">
-					{t("driveConnectedAs", { email: drive.email || "Google" })}
+				<div className="mb-16 flex flex-wrap items-center gap-x-12 gap-y-8 text-12 text-[#8c948b]">
+					<span>{t("driveConnectedAs", { email: drive.email || "Google" })}</span>
+					<button type="button" onClick={startImport} disabled={importing} className="fs-btn fs-btn-ghost h-30 disabled:opacity-60">
+						{importing ? t("driveImportRunning") : t("driveImportButton")}
+					</button>
+					<button type="button" onClick={connect} className="fs-link">{t("driveReconnect")}</button>
 					<button type="button" onClick={() => disconnectDrive()} className="fs-link">{t("driveDisconnect")}</button>
-				</p>
+				</div>
 			)}
 
 			<ul className="grid grid-cols-2 gap-12 md:grid-cols-4 md:gap-16 lg:gap-20">
@@ -426,7 +463,7 @@ export default function Documents() {
 								{docs.map((d) => (
 									<tr key={d.id} className="h-[52px] animate-fade-in">
 										<td className="px-16">
-											<button type="button" onClick={() => openDoc(d)} className="flex w-full items-center gap-10 text-left transition-colors hover:text-[#c6ff4d]" title={d.kind === "file" ? t("openFile") : t("openInGoogle")}>
+											<button type="button" onClick={() => openDoc(d)} className="flex w-full items-center gap-10 text-left transition-colors hover:text-[#c6ff4d]" title={d.url ? t("openInGoogle") : t("openFile")}>
 												<EntryIcon doc={d} size={18} />
 												<span className="min-w-0">
 													<span className="block truncate text-13 text-[#f1f4ee]">{d.name}</span>

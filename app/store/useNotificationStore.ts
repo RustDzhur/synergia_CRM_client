@@ -14,10 +14,14 @@ interface NotificationStore {
     takeFresh: () => Notif[];
 }
 
-// «Объявляем» (тост, полоса, сигнал) только свежие непрочитанные уведомления (до 90 с) и по одному разу: при открытии страницы
+// «Объявляем» (тост, полоса, сигнал) только свежие непрочитанные уведомления и по одному разу: при открытии страницы
 // старые не всплывают, а созданное секунду назад — покажется независимо от того, какой опрос успел раньше.
 const announced = new Set<string>();
 const FRESH_MS = 90_000;
+// Напоминание календаря создаёт сервер (lib/calendar/reminders.ts) во время опроса, а пока вкладка скрыта,
+// опрос не идёт: к возвращению уведомление уже старше 90 секунд. Для событий окно шире, но не бесконечное —
+// иначе после долгого отсутствия человек получил бы разом полосу и звук по всем старым напоминаниям.
+const EVENT_FRESH_MS = 10 * 60_000;
 
 // Отмечено прочитанным в этой вкладке, но сервер мог ещё не подтвердить: опрос (раз в 30 с) идёт независимо от клика
 // «прочитано», и если его ответ придёт раньше, чем завершится POST /notifications/read, он принесёт ещё старые данные
@@ -56,7 +60,7 @@ export const useNotificationStore = create<NotificationStore>()((set, get) => {
             // no-store: иначе браузер может отдать список из кэша вместе со старым числом непрочитанных
             const res = await apiCall<{ items: Notif[]; unread: number }>("/api/notifications", "GET", undefined, { cache: "no-store" });
             if (!res.ok || !res.data) return;
-            const fresh = res.data.items.filter((n) => !n.read && !announced.has(n.id) && Date.now() - new Date(n.at).getTime() < FRESH_MS);
+            const fresh = res.data.items.filter((n) => !n.read && !announced.has(n.id) && Date.now() - new Date(n.at).getTime() < (n.type === "event" ? EVENT_FRESH_MS : FRESH_MS));
             fresh.forEach((n) => announced.add(n.id));
             const items = res.data.items.map((n) => (readLocally.has(n.id) ? { ...n, read: true } : n));
             // число непрочитанных — всегда серверное; но ответ, посчитанный до отметки «прочитано», оставляем без внимания

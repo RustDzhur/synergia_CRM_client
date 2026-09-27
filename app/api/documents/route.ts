@@ -21,7 +21,8 @@ async function syncFromDrive(owner: string) {
     const [live, trashed] = await Promise.all([listAppFiles(token, false), listAppFiles(token, true)]);
     const liveById = new Map(live.map((f) => [f.id, f]));
     const trashedIds = new Set(trashed.map((f) => f.id));
-    const items = await DocItem.find({ owner, kind: { $in: ["gdoc", "gsheet", "gslide"] }, driveId: { $ne: "" } });
+    // Все документы с идентификатором на Диске: Google-документы, созданные CRM, и файлы, импортированные с Диска
+    const items = await DocItem.find({ owner, driveId: { $ne: "" } });
     for (const it of items) {
         if (trashedIds.has(it.driveId)) {
             await DocItem.deleteOne({ _id: it._id });
@@ -30,8 +31,11 @@ async function syncFromDrive(owner: string) {
         const f = liveById.get(it.driveId);
         if (!f) continue;
         const at = f.modifiedTime ? new Date(f.modifiedTime) : undefined;
-        if (f.name !== it.name || (at && at.getTime() !== it.modifiedAt?.getTime())) {
-            it.name = f.name;
+        // Имя меняем вслед за Диском, только если его изменили там: переименование в CRM (у импортированных
+        // файлов оно остаётся в CRM — на Диске приложение их не правит) не должно затираться.
+        const renamedOnDrive = f.name !== (it.driveName || it.name);
+        if (renamedOnDrive || (at && at.getTime() !== it.modifiedAt?.getTime())) {
+            if (renamedOnDrive) { it.name = f.name; it.driveName = f.name; }
             if (at) it.modifiedAt = at;
             await it.save();
         }
