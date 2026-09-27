@@ -11,8 +11,8 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-	title: "Firmspace CRM",
-	description: "Firmspace CRM for you and your Company",
+	title: "Firmspace AI",
+	description: "CRM, Team-Kommunikation, Projekte und Buchhaltung in einer Plattform — für kleine und mittlere Unternehmen.",
 };
 
 export default async function RootLayout({

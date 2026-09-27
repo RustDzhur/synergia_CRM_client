@@ -9,11 +9,11 @@ export interface FaqEntry { id: string; q: Tx; a: Tx; keywords: string[] }
 export const CHATBOT_FAQ: FaqEntry[] = [
 	{
 		id: "what_is",
-		q: t3("What is Firmspace CRM?", "Was ist Firmspace CRM?", "Що таке Firmspace CRM?"),
+		q: t3("What is Firmspace AI?", "Was ist Firmspace AI?", "Що таке Firmspace AI?"),
 		a: t3(
-			"Firmspace CRM is an all-in-one platform for customer relationships: deals pipeline, contacts and companies, tasks and calendar, a unified inbox for chat and calls, web mail, marketing tools, accounting (quotes, orders, invoices, contracts) and an AI assistant — all in one place.",
-			"Firmspace CRM ist eine All-in-one-Plattform für Kundenbeziehungen: Deal-Pipeline, Kontakte und Firmen, Aufgaben und Kalender, ein einheitlicher Posteingang für Chat und Anrufe, Web-Mail, Marketing-Tools, Buchhaltung (Angebote, Aufträge, Rechnungen, Verträge) und ein KI-Assistent — alles an einem Ort.",
-			"Firmspace CRM — платформа «все в одному» для роботи з клієнтами: воронка угод, контакти й компанії, завдання та календар, єдина скринька для чатів і дзвінків, веб-пошта, маркетингові інструменти, бухгалтерія (пропозиції, замовлення, рахунки, договори) та AI-асистент — усе в одному місці."
+			"Firmspace AI is an all-in-one platform for customer relationships: deals pipeline, contacts and companies, tasks and calendar, a unified inbox for chat and calls, web mail, marketing tools, accounting (quotes, orders, invoices, contracts) and an AI assistant — all in one place.",
+			"Firmspace AI ist eine All-in-one-Plattform für Kundenbeziehungen: Deal-Pipeline, Kontakte und Firmen, Aufgaben und Kalender, ein einheitlicher Posteingang für Chat und Anrufe, Web-Mail, Marketing-Tools, Buchhaltung (Angebote, Aufträge, Rechnungen, Verträge) und ein KI-Assistent — alles an einem Ort.",
+			"Firmspace AI — платформа «все в одному» для роботи з клієнтами: воронка угод, контакти й компанії, завдання та календар, єдина скринька для чатів і дзвінків, веб-пошта, маркетингові інструменти, бухгалтерія (пропозиції, замовлення, рахунки, договори) та AI-асистент — усе в одному місці."
 		),
 		keywords: ["what does firmspace", "tell me about", "about this platform", "what platform", "was ist firmspace", "über firmspace", "plattform ist das", "що таке firmspace", "що це за платформа"],
 	},
@@ -21,9 +21,9 @@ export const CHATBOT_FAQ: FaqEntry[] = [
 		id: "pricing",
 		q: t3("How much does it cost?", "Was kostet es?", "Скільки це коштує?"),
 		a: t3(
-			"There are three plans: Free (up to 5 users, core CRM), Standard (€20/month, up to 50 users, adds Ads performance) and Professional (€35/month, unlimited users, adds the autonomous AI automation step and the highest limits). Paying yearly gives you 2 months free. See the exact feature list under Choose Plan on this page.",
-			"Es gibt drei Tarife: Free (bis 5 Benutzer, Kern-CRM), Standard (20 €/Monat, bis 50 Benutzer, plus Ad-Performance) und Professional (35 €/Monat, unbegrenzte Benutzer, plus autonomer KI-Automatisierungsschritt und die höchsten Limits). Bei jährlicher Zahlung erhalten Sie 2 Monate gratis. Die genaue Funktionsliste finden Sie unter Choose Plan auf dieser Seite.",
-			"Є три тарифи: Free (до 5 користувачів, базовий CRM), Standard (20 €/міс, до 50 користувачів, плюс ефективність реклами) і Professional (35 €/міс, необмежена кількість користувачів, плюс автономний крок AI-автоматизації та найвищі ліміти). При річній оплаті — 2 місяці безкоштовно. Повний список функцій — у розділі Choose Plan на цій сторінці."
+			"There are three plans: Free (1 user, sales pipeline and tasks), Standard (€20/month, up to 50 users, adds team features, documents, finance, marketing and ads performance) and Professional (€53/month, unlimited users, adds the autonomous AI automation step and the highest limits). Paying yearly gives you 2 months free. See the exact feature list under Choose Plan on this page.",
+			"Es gibt drei Tarife: Free (1 Benutzer, Vertriebspipeline und Aufgaben), Standard (20 €/Monat, bis 50 Benutzer, dazu Teamfunktionen, Dokumente, Finanzen, Marketing und Ad-Performance) und Professional (53 €/Monat, unbegrenzte Benutzer, dazu der autonome KI-Automatisierungsschritt und die höchsten Limits). Bei jährlicher Zahlung erhalten Sie 2 Monate gratis. Die genaue Funktionsliste finden Sie unter Choose Plan auf dieser Seite.",
+			"Є три тарифи: Free (1 користувач, воронка продажів і завдання), Standard (20 €/міс, до 50 користувачів, плюс командні функції, документи, фінанси, маркетинг і ефективність реклами) і Professional (53 €/міс, необмежена кількість користувачів, плюс автономний крок AI-автоматизації та найвищі ліміти). При річній оплаті — 2 місяці безкоштовно. Повний список функцій — у розділі Choose Plan на цій сторінці."
 		),
 		keywords: ["price", "cost", "pricing", "plan", "tariff", "subscription", "how much", "preis", "kosten", "tarif", "abo", "ціна", "тариф", "вартість", "план", "підписка"],
 	},
@@ -32,7 +32,7 @@ export const CHATBOT_FAQ: FaqEntry[] = [
 		q: t3("Is there a free plan or trial?", "Gibt es einen kostenlosen Tarif oder eine Testphase?", "Чи є безкоштовний тариф або пробний період?"),
 		a: t3(
 			"Yes — the Free plan is free forever for up to 5 users, with the core CRM (deals, contacts, tasks, feed, calendar, web mail, automation). No credit card is needed to sign up.",
-			"Ja — der Free-Tarif ist dauerhaft kostenlos für bis zu 5 Benutzer, mit dem Kern-CRM (Deals, Kontakte, Aufgaben, Feed, Kalender, Web-Mail, Automatisierung). Für die Registrierung ist keine Kreditkarte nötig.",
+			"Ja — der Free-Tarif ist dauerhaft kostenlos, aber auf einen Benutzer beschränkt: Vertriebspipeline (Deals, Kontakte, Firmen) und Aufgaben. Teamfunktionen wie Feed, Kalender, Chat, Dokumente und Finanzen beginnen mit dem Tarif Standard. Für die Registrierung ist keine Kreditkarte nötig.",
 			"Так — тариф Free безкоштовний назавжди для до 5 користувачів, із базовим CRM (угоди, контакти, завдання, стрічка, календар, веб-пошта, автоматизація). Кредитна картка для реєстрації не потрібна."
 		),
 		keywords: ["free", "trial", "demo", "no cost", "kostenlos", "test", "gratis", "безкоштовн", "пробн", "демо"],

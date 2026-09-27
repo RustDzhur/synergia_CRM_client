@@ -37,7 +37,7 @@ export default function WhatIsCrm() {
 		},
 	];
 	return (
-		<div className="flex justify-between sm:text-center lg:text-left text-whatIsCrmActive">
+		<div className="flex justify-between sm:text-center lg:text-left text-[#f1f4ee]">
 			<div className="lg:w-610">
 				<h2 className="sm:text-24 sm:mb-20 lg:mb-[41px] lg:text-36 font-medium leading-[1.4] sm:tracking-[0.48px] lg:tracking-[1px]">
 					{t('whatIsCrm')}

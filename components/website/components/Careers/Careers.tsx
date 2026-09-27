@@ -11,23 +11,23 @@ export default function Careers() {
 	const locale = useLocale();
 	return (
 		<PageShell title={tx(CAREERS.title, locale)} intro={tx(CAREERS.intro, locale)}>
-			<h2 className="mb-16 text-24 font-medium text-discover">{tx(CAREERS.perksTitle, locale)}</h2>
+			<h2 className="mb-16 text-24 font-medium text-[#f1f4ee]">{tx(CAREERS.perksTitle, locale)}</h2>
 			<ul className="mb-[50px] grid gap-12 md:grid-cols-2">
 				{CAREERS.perks.map((p, i) => (
-					<li key={i} className="flex items-center gap-10 text-16 lg:text-18 tracking-[0.4px] text-discover">
-						<AiFillCheckCircle size={22} className="shrink-0 text-discover" />
+					<li key={i} className="flex items-center gap-10 text-16 lg:text-18 tracking-[0.4px] text-[#f1f4ee]">
+						<AiFillCheckCircle size={22} className="shrink-0 text-[#f1f4ee]" />
 						{tx(p, locale)}
 					</li>
 				))}
 			</ul>
-			<h2 className="mb-16 text-24 font-medium text-discover">{tx(CAREERS.openTitle, locale)}</h2>
+			<h2 className="mb-16 text-24 font-medium text-[#f1f4ee]">{tx(CAREERS.openTitle, locale)}</h2>
 			<ul className="space-y-12">
 				{CAREERS.positions.map((p, i) => (
 					<li key={i} className="flex flex-col gap-12 rounded-16 bg-gray p-20 md:flex-row md:items-center md:justify-between">
 						<div className="flex items-center gap-12">
 							<MdWorkOutline size={26} className="shrink-0 text-authBtn" />
 							<div>
-								<p className="text-18 font-medium tracking-[0.4px] text-discover">{tx(p.title, locale)}</p>
+								<p className="text-18 font-medium tracking-[0.4px] text-[#f1f4ee]">{tx(p.title, locale)}</p>
 								<p className="text-14 text-[#999999]">{tx(p.meta, locale)}</p>
 							</div>
 						</div>

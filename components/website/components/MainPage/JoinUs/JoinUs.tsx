@@ -25,7 +25,7 @@ export default function JoinUs() {
 	];
 	return (
 		<div>
-			<h1 className="text-center text-joinUsGrey sm:text-24 lg:text-36 font-medium tracking-[0.48px] lg:tracking-[1px] sm:mb-20 lg:mb-[52px]">
+			<h1 className="text-center text-[#f1f4ee] sm:text-24 lg:text-36 font-medium tracking-[0.48px] lg:tracking-[1px] sm:mb-20 lg:mb-[52px]">
 				{t("whyJoinUs")}
 			</h1>
 			<div className="bg-joinUsPink sm:px-12 sm:pt-30 sm:pb-[26px] md:px-[4px] md:pt-20 md:pb-[20px] lg:px-100 lg:pt-50 lg:pb-40 text-[#0A0A0A] md:grid md:grid-cols-3 md:gap-x-0 lg:gap-x-80 sm:space-y-40 md:space-y-0">

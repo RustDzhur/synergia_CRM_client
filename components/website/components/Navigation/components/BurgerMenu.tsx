@@ -36,10 +36,10 @@ export default function BurgerMenu() {
 					color: menu ? "#5EA8F5" : "#B3B3B3",
 				}}>
 				{!menu ? (
-					// три штриха 24×22, толщина 4px, цвет #313D45 — как в макете
+					// три штриха 24×22, толщина 4px, светлые — шапка сайта тёмная
 					<span className="flex h-[22px] w-[24px] flex-col justify-between" aria-hidden="true">
 						{[0, 1, 2].map((i) => (
-							<span key={i} className="block h-[4px] rounded-[2px] bg-discover" />
+							<span key={i} className="block h-[4px] rounded-[2px] bg-[#f1f4ee]" />
 						))}
 					</span>
 				) : (

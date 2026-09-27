@@ -1,25 +1,22 @@
 "use client";
-import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { useLocale } from "next-intl";
-import logoMob from "@/app/assets/images/logoMob.png";
+import BrandMark from "@/components/crm/components/shared/BrandMark";
 import { withLocale } from "@/app/utils/locale";
 
 // Логотип сайта: по клику — на главную страницу выбранного языка
 export default function Logo({ light = false }: { light?: boolean }) {
 	const locale = useLocale();
 	return (
-		<Link href={withLocale(locale, "/")} aria-label="Firmspace CRM" className="flex items-center">
-			<Image
-				src={logoMob}
-				alt="logo"
-				className="sm:w-40 lg:w-50 sm:h-40 lg:h-50 mr-8 lg:mr-[11px]"
-			/>
-			<div className={`${light ? "text-white" : "text-primaryColor"} sm:text-16 lg:text-18 font-medium leading-normal tracking-[0.6px] lg:tracking-[0.3px] text-center`}>
-				<p>Firmspace</p>
-				<span className="font-bold">CRM</span>
-			</div>
+		<Link href={withLocale(locale, "/")} aria-label="Firmspace AI" className="flex items-center gap-10">
+			<BrandMark size={30} />
+			<span
+				className={`text-17 font-semibold leading-normal tracking-[-0.2px] lg:text-18 ${
+					light ? "text-white" : "text-[#f1f4ee]"
+				}`}>
+				Firmspace <span className="text-[#c6ff4d]">AI</span>
+			</span>
 		</Link>
 	);
 }

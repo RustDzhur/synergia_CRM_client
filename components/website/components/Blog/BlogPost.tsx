@@ -34,7 +34,7 @@ export default function BlogPost({ slug }: { slug: string }) {
 			<Image src={blogImage(post.image)} alt="" width={400} height={276} className="mb-30 h-auto w-full max-w-[800px] rounded-16 object-cover" unoptimized={post.image.startsWith("http")} />
 			<div className="max-w-[760px]">
 				{post.body.map((p, i) => (
-					<p key={i} className="mb-20 text-16 lg:text-18 leading-[1.7] tracking-[0.4px] text-discover">{tx(p as any, locale)}</p>
+					<p key={i} className="mb-20 text-16 lg:text-18 leading-[1.7] tracking-[0.4px] text-[#f1f4ee]">{tx(p as any, locale)}</p>
 				))}
 			</div>
 			<Link href={withLocale(locale, "/blog")} className="mt-20 inline-block text-16 font-medium text-authBtn hover:opacity-80">← {tx(BLOG.back, locale)}</Link>

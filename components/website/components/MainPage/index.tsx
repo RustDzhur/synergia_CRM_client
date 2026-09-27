@@ -22,7 +22,8 @@ export default function MainPage() {
       <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto bg-advantages sm:px-12 sm:py-40 md:px-20 md:py-20 lg:px-100 lg:py-50">
         <Advantages/>
       </div>
-      <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto sm:px-12 sm:pt-40 sm:pb-[56px] md:pb-40 md:px-20 lg:px-100 lg:pt-[60px] lg:pb-[44px]">
+      {/* id нужен кнопке «Ablauf kennenlernen» в шапке — она прокручивает страницу сюда */}
+      <div id="how-it-works" className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto sm:px-12 sm:pt-40 sm:pb-[56px] md:pb-40 md:px-20 lg:px-100 lg:pt-[60px] lg:pb-[44px] scroll-mt-[90px]">
         <WhatIsCrm/>
       </div>
       <div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto">

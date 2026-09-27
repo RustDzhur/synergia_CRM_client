@@ -77,7 +77,7 @@ function SignupForm() {
 					className={`${
 						activeTab === "company"
 							? "bg-authBtn text-[#0A0A0A]"
-							: "#ffffff text-menu"
+							: "#ffffff text-[#4D4D4D]"
 					} px-20 py-14 rounded-8 border-authTabBtn flex items-center`}>
 					<div className="mr-8">
 						<IconContext.Provider
@@ -95,7 +95,7 @@ function SignupForm() {
 					className={`${
 						activeTab === "personal"
 							? "bg-authBtn text-[#0A0A0A]"
-							: "#ffffff text-menu"
+							: "#ffffff text-[#4D4D4D]"
 					} px-20 py-14 rounded-8 border-authTabBtn flex items-center`}>
 					<div className="mr-8">
 						<IconContext.Provider
@@ -259,7 +259,7 @@ function SignupForm() {
 								<div className="text-left">
 									<label>
 										<input {...field} type="checkbox" className="mr-8" />
-										<span className="text-16 font-normal text-menu">
+										<span className="text-16 font-normal text-[#4D4D4D]">
                                         {t('agreement')}
 										</span>
 									</label>
@@ -416,7 +416,7 @@ function SignupForm() {
 								<div className="text-left">
 									<label>
 										<input {...field} type="checkbox" className="mr-8" />
-										<span className="text-16 font-normal text-menu">
+										<span className="text-16 font-normal text-[#4D4D4D]">
 											{t('agreement')}
 										</span>
 									</label>
@@ -425,7 +425,7 @@ function SignupForm() {
 						/>
 					</div>
 				)}
-				<div className="text-left text-16 text-menu sm:mb-30 mb-40">
+				<div className="text-left text-16 text-[#4D4D4D] sm:mb-30 mb-40">
 					{t('haveaccount.yes')}{" "}
 					<span
 						className="text-primaryColor cursor-pointer"

@@ -48,8 +48,8 @@ export default function Steps() {
 						index === steps.length - 1 ? "h-[88px]" : "h-[115px]"
 					} ${
 						current === index
-							? "bg-whatIsCrmActive text-white"
-							: "bg-whatIsCrm hover:bg-whatIsCrmActive text-[#666666] hover:text-white"
+							? "bg-authBtn text-[#0A0A0A]"
+							: "bg-whatIsCrm hover:bg-authBtn text-[#3D3D3D] hover:text-[#0A0A0A]"
 					} ${index % 2 === 0 ? "ml-auto" : "mr-auto"}`}
 					onClick={() => setClickedStep(index)}>
 					<p className="text-24 font-medium leading-[34px] tracking-[0.5px]">

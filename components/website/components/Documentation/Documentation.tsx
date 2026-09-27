@@ -15,7 +15,7 @@ export default function Documentation() {
 					<ul className="rounded-16 bg-gray p-16 space-y-4">
 						{DOCS.sections.map((s) => (
 							<li key={s.id}>
-								<a href={`#${s.id}`} className="block rounded-8 px-12 py-8 text-16 tracking-[0.3px] text-discover transition-colors hover:bg-white hover:text-authBtn">{tx(s.title, locale)}</a>
+								<a href={`#${s.id}`} className="block rounded-8 px-12 py-8 text-16 tracking-[0.3px] text-[#f1f4ee] transition-colors hover:bg-white hover:text-authBtn">{tx(s.title, locale)}</a>
 							</li>
 						))}
 					</ul>
@@ -23,10 +23,10 @@ export default function Documentation() {
 				<div className="min-w-0 flex-1">
 					{DOCS.sections.map((s) => (
 						<section key={s.id} id={s.id} className="mb-[50px] scroll-mt-[20px]">
-							<h2 className="mb-16 text-24 font-medium text-discover">{tx(s.title, locale)}</h2>
+							<h2 className="mb-16 text-24 font-medium text-[#f1f4ee]">{tx(s.title, locale)}</h2>
 							<ol className="space-y-12">
 								{s.steps.map((step, i) => (
-									<li key={i} className="flex gap-12 text-16 lg:text-18 leading-[1.7] tracking-[0.3px] text-discover">
+									<li key={i} className="flex gap-12 text-16 lg:text-18 leading-[1.7] tracking-[0.3px] text-[#f1f4ee]">
 										<span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[50%] bg-authBtn text-14 font-medium text-[#0A0A0A]">{i + 1}</span>
 										<span>{tx(step, locale)}</span>
 									</li>

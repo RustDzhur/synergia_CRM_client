@@ -64,7 +64,7 @@ export default function PaidPlan() {
 	const tab = (label: string) => (
 		<div
 			className={`sm:flex-1 md:flex-none md:w-[150px] h-[55px] text-center flex items-center justify-center rounded-50 cursor-pointer transition-colors duration-300 ${
-				active === label ? "bg-tabChoosePlan text-white" : "bg-white text-[#CCCCCC]"
+				active === label ? "bg-tabChoosePlan text-white" : "bg-white text-[#4D4D4D]"
 			} font-medium text-20 tracking-[0.4px]`}
 			onClick={() => setActive(label)}>
 			{label}
@@ -106,10 +106,10 @@ export default function PaidPlan() {
 									</>
 								)}
 							</p>
-							<p className={`text-16 leading-[24px] tracking-[0.4px] ${dark ? "text-white" : "text-[#B3B3B3]"}`}>
+							<p className={`text-16 leading-[24px] tracking-[0.4px] ${dark ? "text-white" : "text-[#5A5A5A]"}`}>
 								{subTitles[plan.id]}
 							</p>
-							<p className={`text-14 leading-[20px] tracking-[0.4px] mb-[35px] ${dark ? "text-[#C7CDD1]" : "text-[#B3B3B3]"}`}>
+							<p className={`text-14 leading-[20px] tracking-[0.4px] mb-[35px] ${dark ? "text-[#C7CDD1]" : "text-[#5A5A5A]"}`}>
 								{t("limitsLine", { rules: plan.automationRules, ai: plan.aiDailyRequests, storage: plan.storageMb >= 1000 ? `${plan.storageMb / 1000} GB` : `${plan.storageMb} MB` })}
 							</p>
 							<ul className="mb-[34px]">
@@ -124,7 +124,7 @@ export default function PaidPlan() {
 											/>
 											<span
 												className={`text-16 leading-[22px] tracking-[0.4px] ${
-													included ? (dark ? "text-white" : "text-textChoosePlan") : dark ? "text-[#7E8990] line-through" : "text-[#B3B3B3] line-through"
+													included ? (dark ? "text-white" : "text-textChoosePlan") : dark ? "text-[#A8B2BA] line-through" : "text-[#6B6B6B] line-through"
 												}`}>
 												{t(`features.${key}`)}
 											</span>
@@ -135,7 +135,7 @@ export default function PaidPlan() {
 							<div
 								onClick={() => choosePlan(plan.id)}
 								className={`mt-auto h-[50px] flex items-center justify-center rounded-8 border border-tabChoosePlan cursor-pointer text-20 font-medium tracking-[0.4px] transition-colors duration-200 hover:bg-tabChoosePlan hover:text-white ${
-									dark ? "bg-tabChoosePlan text-white" : "text-tabChoosePlan"
+									dark ? "bg-tabChoosePlan text-white" : "text-[#4A5FBF]"
 								}`}>
 								{t("button")}
 							</div>

@@ -134,7 +134,7 @@ export default function SignInForm() {
 						)}
 					/>
 				</div>
-				<div className="text-left text-16 text-menu sm:mb-30 mb-60">
+				<div className="text-left text-16 text-[#4D4D4D] sm:mb-30 mb-60">
 					{t("haveaccount.no")}{" "}
 					<span
 						className="text-primaryColor cursor-pointer"

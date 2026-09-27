@@ -46,19 +46,19 @@ export default function ContactsPage() {
 
 				<form onSubmit={submit} className="flex-1 lg:max-w-[400px]">
 					<label className="mb-16 block">
-						<span className="mb-8 block text-16 lg:text-18 font-medium text-discover">{tx(CONTACT.name, locale)}</span>
+						<span className="mb-8 block text-16 lg:text-18 font-medium text-[#f1f4ee]">{tx(CONTACT.name, locale)}</span>
 						<input value={values.name} onChange={set("name")} placeholder={tx(CONTACT.namePh, locale)} maxLength={100} required className={`${field} h-[47px]`} />
 					</label>
 					<label className="mb-16 block">
-						<span className="mb-8 block text-16 lg:text-18 font-medium text-discover">{tx(CONTACT.email, locale)}</span>
+						<span className="mb-8 block text-16 lg:text-18 font-medium text-[#f1f4ee]">{tx(CONTACT.email, locale)}</span>
 						<input type="email" value={values.email} onChange={set("email")} placeholder={tx(CONTACT.emailPh, locale)} maxLength={200} required className={`${field} h-[47px]`} />
 					</label>
 					<label className="mb-16 block">
-						<span className="mb-8 block text-16 lg:text-18 font-medium text-discover">{tx(CONTACT.phone, locale)}</span>
+						<span className="mb-8 block text-16 lg:text-18 font-medium text-[#f1f4ee]">{tx(CONTACT.phone, locale)}</span>
 						<input type="tel" value={values.phone} onChange={set("phone")} placeholder={tx(CONTACT.phonePh, locale)} maxLength={40} className={`${field} h-[47px]`} />
 					</label>
 					<label className="mb-30 block">
-						<span className="mb-8 block text-16 lg:text-18 font-medium text-discover">{tx(CONTACT.message, locale)}</span>
+						<span className="mb-8 block text-16 lg:text-18 font-medium text-[#f1f4ee]">{tx(CONTACT.message, locale)}</span>
 						<textarea value={values.message} onChange={set("message")} placeholder={tx(CONTACT.messagePh, locale)} maxLength={3000} required rows={6} className={`${field} py-12 resize-none lg:h-[137px]`} />
 					</label>
 					<div className="flex flex-col items-end gap-12">

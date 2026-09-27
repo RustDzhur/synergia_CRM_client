@@ -85,7 +85,7 @@ export default function SwitchLanguage() {
 								height={languageCodeToProperties(lang.code).height}
 								className="w-40 mr-20 rounded-4"
 							/>
-							<p className="font-medium lg:text-18 text-menu whitespace-nowrap transition-colors duration-150 hover:text-activeMenu">
+							<p className="font-medium lg:text-18 text-[#4D4D4D] whitespace-nowrap transition-colors duration-150 hover:text-activeMenu">
 								{t(`lang.${lang.code}`)}
 							</p>
 						</li>
