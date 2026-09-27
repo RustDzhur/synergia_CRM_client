@@ -9,9 +9,32 @@ import { parseIcal, type IcalOccurrence } from "./parse";
 
 const DAV = "DAV:";
 const CALDAV = "urn:ietf:params:xml:ns:caldav";
+const DEFAULT_BASE = "https://caldav.icloud.com";
 
-// Адрес сервера можно переопределить — нужно для проверки без настоящего аккаунта
-const base = () => (process.env.ICLOUD_CALDAV_URL || "https://caldav.icloud.com").replace(/\/+$/, "");
+// Адрес сервера можно переопределить — нужно для проверки без настоящего аккаунта.
+// Значение может прийти без схемы, а совсем неразбираемое лучше игнорировать: с ним запрос ушёл бы
+// в никуда, и причина выглядела бы как «ENOTFOUND» вместо понятной ошибки настройки.
+const base = () => {
+    const raw = (process.env.ICLOUD_CALDAV_URL || "").trim().replace(/\/+$/, "");
+    if (!raw) return DEFAULT_BASE;
+    const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    try {
+        // localhost оставляем: переопределение нужно именно для проверки на своём стенде
+        const { hostname } = new URL(withScheme);
+        return hostname.includes(".") || hostname === "localhost" || hostname === "::1" ? withScheme : DEFAULT_BASE;
+    } catch {
+        return DEFAULT_BASE;
+    }
+};
+
+/**
+ * Адрес запроса из href. Apple отдаёт их и относительными («/123456789/principal/»), и полными
+ * («https://p12-caldav.icloud.com/123456789/principal/») — причём полный адрес может вести на другой
+ * узел, куда аккаунт приписан. Приклеивать полный адрес к своему нельзя: получается
+ * «https://caldav.icloud.comhttps://…», и запрос уходит в никуда (ENOTFOUND caldav.icloud.comhttps).
+ * new URL сам разбирает оба вида: относительный считает от нашего адреса, полный берёт как есть.
+ */
+const endpoint = (href: string) => new URL(href, `${base()}/`).toString();
 
 export interface CalDavCalendar {
     href: string;       // путь календаря для REPORT
@@ -25,7 +48,7 @@ const authHeader = (user: string, password: string) =>
     "Basic " + Buffer.from(`${user}:${password}`, "utf8").toString("base64");
 
 async function dav(user: string, password: string, path: string, method: string, body?: string, depth = "0", step = ""): Promise<string> {
-    const res = await fetchProvider(`${base()}${path}`, {
+    const res = await fetchProvider(endpoint(path), {
         method,
         headers: {
             Authorization: authHeader(user, password),
@@ -65,12 +88,12 @@ export async function discoverCalendars(user: string, password: string): Promise
     const principalXml = await dav(user, password, "/", "PROPFIND",
         `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="${DAV}"><d:prop><d:current-user-principal/></d:prop></d:propfind>`, "0", "sign-in");
     // principal приходит как <d:href>/123456789/principal/</d:href>
-    const principal = /<[^>]*current-user-principal[^>]*>[\s\S]*?<[^>]*href[^>]*>([^<]+)</i.exec(principalXml)?.[1];
+    const principal = decodeXml(/<[^>]*current-user-principal[^>]*>[\s\S]*?<[^>]*href[^>]*>([^<]+)</i.exec(principalXml)?.[1] ?? "");
     if (!principal) throw new CalDavAuthError("Apple did not return a calendar principal for this account");
 
     const homeXml = await dav(user, password, principal, "PROPFIND",
         `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="${DAV}" xmlns:c="${CALDAV}"><d:prop><c:calendar-home-set/></d:prop></d:propfind>`, "0", "address of the calendars");
-    const home = /<[^>]*calendar-home-set[^>]*>[\s\S]*?<[^>]*href[^>]*>([^<]+)</i.exec(homeXml)?.[1];
+    const home = decodeXml(/<[^>]*calendar-home-set[^>]*>[\s\S]*?<[^>]*href[^>]*>([^<]+)</i.exec(homeXml)?.[1] ?? "");
     if (!home) throw new CalDavAuthError("Apple did not return a calendar home for this account");
 
     const listXml = await dav(user, password, home, "PROPFIND",
