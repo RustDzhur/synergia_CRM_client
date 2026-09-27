@@ -8,6 +8,7 @@ import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
 import { downloadDocumentPdf } from "./download";
+import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
 
 const STATUS_COLOR: Record<string, string> = { draft: "#B3B3B3", active: "#0A8A2E", completed: "#5EA8F5", cancelled: "#EB5757" };
@@ -19,7 +20,7 @@ const EMPTY = { customerName: "", value: "0", currency: "EUR", startDate: "", en
 export default function Contracts() {
 	const t = useTranslations("finance");
 	const locale = useLocale();
-	const { contracts, loadContracts, createContract, signContract, completeContract, cancelContract, deleteContract, settings } = useFinanceStore();
+	const { contracts, loadContracts, createContract, updateContract, signContract, completeContract, cancelContract, deleteContract, settings } = useFinanceStore();
 	const [open, setOpen] = useState(false);
 	const [form, setForm] = useState(EMPTY);
 	const [busy, setBusy] = useState<string | null>(null);
@@ -80,6 +81,7 @@ export default function Contracts() {
 								<button type="button" onClick={() => downloadContractPdf(c.id, c.number)} className="flex items-center gap-6 rounded-8 border border-[#E6E6E6] px-16 py-8 text-14 font-medium text-[#666666] transition-opacity hover:opacity-80">
 									<MdDownload size={16} /> {t("downloadPdf")}
 								</button>
+								<DocumentTemplateButton kind="contracts" id={c.id} number={c.number} template={c.template} onSave={updateContract} />
 							</div>
 						</li>
 					))}

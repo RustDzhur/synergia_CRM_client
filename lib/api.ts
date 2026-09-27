@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { ProviderError } from "@/lib/http";
-import { wasDenied } from "@/lib/auth";
+import { wasDenied, wasPlanDenied } from "@/lib/auth";
 
-// 403, если пользователь вошёл, но у его роли нет доступа к разделу (или фирма заблокирована); иначе 401
-export const unauthorized = (req?: Request) =>
-    wasDenied(req) ? NextResponse.json({ message: "You have no access to this section", code: "forbidden" }, { status: 403 }) : NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+// 403, если пользователь вошёл, но у его роли нет доступа к разделу (или фирма заблокирована); иначе 401.
+// Отдельный код plan — раздел есть, но его нет в тарифе фирмы: интерфейс покажет предложение сменить тариф, а не «нет прав».
+export const unauthorized = (req?: Request) => {
+    if (wasPlanDenied(req)) return NextResponse.json({ message: "This section is not included in your plan", code: "plan" }, { status: 403 });
+    if (wasDenied(req)) return NextResponse.json({ message: "You have no access to this section", code: "forbidden" }, { status: 403 });
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+};
 export const badRequest = (message: string) => NextResponse.json({ message }, { status: 400 });
 export const notFound = () => NextResponse.json({ message: "Not found" }, { status: 404 });
 export const validId = (id: string) => isValidObjectId(id);

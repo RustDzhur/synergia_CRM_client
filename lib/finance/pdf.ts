@@ -1,6 +1,8 @@
 import PDFDocument from "pdfkit";
 import notoSansUrl from "@/assets/fonts/NotoSans-Regular.ttf";
-import { computeTotals } from "./totals";
+import { isTemplate, renderLayout } from "./layouts";
+export { TEMPLATES, TEMPLATE_IDS, isTemplate, templateDef } from "./templates";
+export type { TemplateDef, TemplateVariant } from "./templates";
 
 // Данные шрифта из data-URI — см. scripts/ttf-data-uri-loader.js и правило webpack в next.config.js. Шрифт встроен
 // в бандл, поэтому рендер PDF не зависит от файлов node_modules: иначе pdfkit для своей встроенной гарнитуры
@@ -25,6 +27,7 @@ const LABELS: Record<string, Record<string, string>> = {
         net: "Net", taxTotal: "Tax", gross: "Total",
         smallBusiness: "No VAT is charged pursuant to the small business regulation (§19 UStG or equivalent).",
         paymentTerms: "Payment terms", days: "days", iban: "IBAN", bic: "BIC", notes: "Notes",
+        seller: "Seller", payByQr: "Pay by QR code", qrHint: "Scan with your banking app",
     },
     de: {
         invoice: "Rechnung", credit_note: "Gutschrift", quote: "Angebot", order: "Auftragsbestätigung", contract: "Vertrag",
@@ -35,6 +38,7 @@ const LABELS: Record<string, Record<string, string>> = {
         net: "Netto", taxTotal: "USt.", gross: "Gesamt",
         smallBusiness: "Gemäß §19 UStG (Kleinunternehmerregelung) wird keine Umsatzsteuer berechnet.",
         paymentTerms: "Zahlungsziel", days: "Tage", iban: "IBAN", bic: "BIC", notes: "Anmerkungen",
+        seller: "Verkäufer", payByQr: "Zahlung per QR-Code", qrHint: "Mit der Banking-App scannen",
     },
     ua: {
         invoice: "Рахунок", credit_note: "Кредит-нота", quote: "Комерційна пропозиція", order: "Підтвердження замовлення", contract: "Договір",
@@ -45,6 +49,7 @@ const LABELS: Record<string, Record<string, string>> = {
         net: "Нетто", taxTotal: "ПДВ", gross: "Разом",
         smallBusiness: "ПДВ не нараховується згідно з режимом для малого підприємця (§19 UStG або аналог).",
         paymentTerms: "Термін оплати", days: "днів", iban: "IBAN", bic: "BIC", notes: "Примітки",
+        seller: "Постачальник", payByQr: "Оплата за QR-кодом", qrHint: "Скануйте у банківському застосунку",
     },
 };
 
@@ -65,37 +70,17 @@ export interface PdfDocumentData {
     endDate?: string;
     value?: number; // договор: сумма договора
     notes?: string;
+    template?: string; // id шаблона оформления; если не задан — берётся умолчание из настроек бухгалтерии
 }
-export interface PdfSettings { legalName: string; address: string; taxId: string; iban: string; bic: string; paymentTermsDays: number }
-
-const fmt = (n: number, currency: string) => {
-    try { return new Intl.NumberFormat("de-DE", { style: "currency", currency, maximumFractionDigits: 2 }).format(n); }
-    catch { return `${n.toFixed(2)} ${currency}`; }
-};
-
-// Даты документа: у каждой бумаги свой набор и свои подписи (у счёта — дата выставления и срок оплаты,
-// у предложения — дата и срок действия, у договора — начало и конец).
-function dateLines(d: PdfDocumentData, L: Record<string, string>): string[] {
-    const out: string[] = [];
-    const add = (label: string, value?: string) => { if (value) out.push(`${label}: ${value}`); };
-    if (d.kind === "invoice" || d.kind === "credit_note") {
-        add(L.issueDate, d.issueDate);
-        add(L.dueDate, d.dueDate);
-    } else if (d.kind === "quote") {
-        add(L.date, d.issueDate);
-        add(L.validUntil, d.validUntil);
-    } else if (d.kind === "order") {
-        add(L.orderDate, d.issueDate);
-    } else {
-        add(L.startDate, d.startDate);
-        add(L.endDate, d.endDate);
-    }
-    return out;
+export interface PdfSettings {
+    legalName: string; address: string; taxId: string; iban: string; bic: string; paymentTermsDays: number;
+    template?: string; // шаблон оформления по умолчанию для новых документов
+    paymentQr?: boolean; // печатать ли QR-код на оплату в счетах
 }
 
 // Рендерит PDF финансового документа в буфер — вызывается из app/api/*/[id]/pdf/route.ts (скачивание и печать)
-// и из lib/finance/send.ts (вложение к письму клиенту). Вёрстка табличная, без шаблонов: этого достаточно для
-// юридически корректного документа (номер, даты, стороны, позиции, суммы).
+// и из lib/finance/send.ts (вложение к письму клиенту). Сам рендер (десять шаблонов оформления) живёт в
+// lib/finance/layouts.ts; здесь остаётся только создание документа с встроенным шрифтом и выбор языка подписей.
 export function renderDocumentPdf(d: PdfDocumentData, settings: PdfSettings, locale = "en"): Promise<Buffer> {
     const L = LABELS[locale] ?? LABELS.en;
     return new Promise((resolve, reject) => {
@@ -106,87 +91,7 @@ export function renderDocumentPdf(d: PdfDocumentData, settings: PdfSettings, loc
         doc.on("end", () => resolve(Buffer.concat(chunks)));
         doc.on("error", reject);
 
-        // Шапка: продавец
-        doc.fontSize(10).fillColor("#666666");
-        if (settings.legalName) doc.text(settings.legalName);
-        if (settings.address) doc.text(settings.address);
-        if (settings.taxId) doc.text(settings.taxId);
-
-        doc.moveDown(1.5);
-        doc.fontSize(20).fillColor("#333333").text(`${L[d.kind]} ${d.number}`);
-        if (d.kind === "credit_note" && d.creditForNumber) {
-            doc.fontSize(11).fillColor("#666666").text(`${L.creditFor} ${d.creditForNumber}`);
-        }
-        doc.moveDown(0.5);
-        doc.fontSize(10).fillColor("#666666");
-        for (const line of dateLines(d, L)) doc.text(line);
-
-        doc.moveDown(1);
-        doc.fontSize(11).fillColor("#333333").text(L.billTo, { underline: true });
-        doc.fontSize(10).fillColor("#333333").text(d.customer.name || "—");
-        if (d.customer.address) doc.text(d.customer.address);
-        if (d.customer.taxId) doc.text(d.customer.taxId);
-
-        const totals = computeTotals(d.items);
-        if (d.items.length) {
-            doc.moveDown(1.5);
-            const colX = { desc: 50, qty: 300, price: 360, tax: 430, total: 480 };
-            const top = doc.y;
-            doc.fontSize(9).fillColor("#999999");
-            doc.text(L.description, colX.desc, top);
-            doc.text(L.qty, colX.qty, top, { width: 50, align: "right" });
-            doc.text(L.unitPrice, colX.price, top, { width: 60, align: "right" });
-            doc.text(L.tax, colX.tax, top, { width: 40, align: "right" });
-            doc.text(L.lineTotal, colX.total, top, { width: 65, align: "right" });
-            doc.moveDown(0.5);
-            doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor("#E6E6E6").stroke();
-            doc.moveDown(0.3);
-
-            doc.fontSize(10).fillColor("#333333");
-            for (const it of d.items) {
-                const line = it.qty * it.unitPrice;
-                const y = doc.y;
-                doc.text(it.description, colX.desc, y, { width: 240 });
-                doc.text(String(it.qty), colX.qty, y, { width: 50, align: "right" });
-                doc.text(fmt(it.unitPrice, d.currency), colX.price, y, { width: 60, align: "right" });
-                doc.text(`${it.taxRate}%`, colX.tax, y, { width: 40, align: "right" });
-                doc.text(fmt(line, d.currency), colX.total, y, { width: 65, align: "right" });
-                doc.moveDown(0.6);
-            }
-
-            doc.moveDown(0.5);
-            doc.moveTo(350, doc.y).lineTo(545, doc.y).strokeColor("#E6E6E6").stroke();
-            doc.moveDown(0.3);
-            const totalLine = (label: string, value: string, bold = false) => {
-                doc.fontSize(bold ? 11 : 10).fillColor(bold ? "#333333" : "#666666");
-                doc.text(label, 350, doc.y, { width: 130, align: "right", continued: true });
-                doc.text(`  ${value}`, { width: 65, align: "right" });
-            };
-            totalLine(L.net, fmt(totals.net, d.currency));
-            if (!d.smallBusinessNote) totalLine(L.taxTotal, fmt(totals.tax, d.currency));
-            totalLine(L.gross, fmt(totals.gross, d.currency), true);
-        } else if (d.kind === "contract") {
-            // У договора нет позиций — вместо таблицы печатаем сумму договора
-            doc.moveDown(1.5);
-            doc.fontSize(12).fillColor("#333333").text(`${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`);
-        }
-
-        if (d.smallBusinessNote) {
-            doc.moveDown(1);
-            doc.fontSize(9).fillColor("#999999").text(L.smallBusiness, 50, doc.y, { width: 495 });
-        }
-
-        if (d.notes) {
-            doc.moveDown(1);
-            doc.fontSize(10).fillColor("#333333").text(L.notes, { underline: true });
-            doc.fontSize(10).fillColor("#666666").text(d.notes, { width: 495 });
-        }
-
-        doc.moveDown(1.5);
-        doc.fontSize(9).fillColor("#999999");
-        // Срок оплаты печатаем только у счёта: предложение и заказ ещё не требуют платежа, договор живёт по своим датам
-        if (d.kind === "invoice" || d.kind === "credit_note") doc.text(`${L.paymentTerms}: ${settings.paymentTermsDays} ${L.days}`);
-        if (settings.iban) doc.text(`${L.iban}: ${settings.iban}${settings.bic ? `   ${L.bic}: ${settings.bic}` : ""}`);
+        renderLayout(doc, d, settings, L);
 
         doc.end();
     });

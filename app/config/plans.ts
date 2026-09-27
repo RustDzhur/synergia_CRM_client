@@ -1,16 +1,19 @@
 // Тарифы Firmspace CRM — один источник правды для лендинга (блок Choose Your Plan), раздела CRM «Upgrade Your Plan»
-// и серверных проверок лимитов (lib/access.ts, /api/records, lib/ai/run.ts, /api/documents/upload, /api/orgs/members, /api/ads).
-// Все три тарифа дают полный набор разделов CRM (это не урезанная демоверсия) — разница между ними в трёх вещах:
-// сколько это стоит, сколько людей/действий умещается в лимиты, и две функции, которые имеет смысл продавать отдельно
-// (реальная реклама — Google/Meta Ads — и автономный ИИ-шаг в автоматизации, который действует без подтверждения).
+// и серверных проверок (lib/features.ts, lib/access.ts, /api/records, lib/ai/run.ts, /api/documents/upload, /api/orgs/members).
+// Тарифы отличаются тремя вещами: цена, лимиты (люди, правила автоматизации, обращения к ИИ, хранилище) и набор
+// разделов. Набор разделов — не украшение карточки: он проверяется на сервере (lib/features.ts), поэтому неоплаченный
+// раздел не открыть ни запросом, ни по прямой ссылке. Администратор платформы может выдать фирме отдельные разделы
+// сверх тарифа — тумблерами в админ-кабинете (см. Organization.featureOverrides).
 export type PlanId = "free" | "standard" | "professional";
 export type FeatureKey =
 	| "crm" // сделки, контакты, компании — воронка продаж
 	| "tasks" // Tasks and Projects
 	| "company" // Company: сотрудники и справочник фирмы
-	| "collab" // Feed, Calendar, Online Documents
+	| "collab" // Feed и Calendar
+	| "documents" // Online Documents: документы и папки фирмы
 	| "channels" // Chat and Calls: Telegram, Viber, Messenger, веб-чат, SIP/Twilio-звонки
 	| "mail" // Web Mails: почта, автосоздание лидов из писем
+	| "inventory" // Finance: счета, расходы, склад, предложения, договоры
 	| "automation" // конструктор правил автоматизации (без автономного ИИ-шага — см. aiAutomation)
 	| "aiAssistant" // Firmspace AI: чат, сводки, чтение PDF, разбор писем и документов
 	| "marketing" // Marketing: кампании, сегменты, шаблоны, Sales Boost
@@ -19,7 +22,8 @@ export type FeatureKey =
 	| "aiAutomation"; // «AI decides and acts» — автономный шаг автоматизации без подтверждения
 
 export const FEATURE_KEYS: FeatureKey[] = [
-	"crm", "tasks", "company", "collab", "channels", "mail", "automation", "aiAssistant", "marketing", "multiFirm", "ads", "aiAutomation",
+	"crm", "tasks", "company", "collab", "documents", "channels", "mail", "inventory",
+	"automation", "aiAssistant", "marketing", "multiFirm", "ads", "aiAutomation",
 ];
 
 export interface PlanDef {
@@ -36,40 +40,41 @@ export interface PlanDef {
 // Год = 10 месяцев (два месяца в подарок)
 export const YEAR_MONTHS = 10;
 
-const BASE: Record<FeatureKey, boolean> = {
-	crm: true, tasks: true, company: true, collab: true, channels: true, mail: true,
-	automation: true, aiAssistant: true, marketing: true, multiFirm: true,
-	ads: false, aiAutomation: false,
-};
+// Набор разделов тарифа: перечислены включённые, остальные выключены
+const withFeatures = (on: FeatureKey[]): Record<FeatureKey, boolean> =>
+	FEATURE_KEYS.reduce((acc, key) => ({ ...acc, [key]: on.includes(key) }), {} as Record<FeatureKey, boolean>);
 
 export const PLANS: PlanDef[] = [
 	{
+		// Free — минимум для одного человека: воронка продаж и задачи
 		id: "free",
 		priceMonth: 0,
-		users: 5,
-		automationRules: 5,
-		aiDailyRequests: 15,
+		users: 1,
+		automationRules: 0,
+		aiDailyRequests: 0,
 		storageMb: 500,
-		features: { ...BASE },
+		features: withFeatures(["crm", "tasks"]),
 	},
 	{
+		// Company — для небольшой команды: добавляются сотрудники, лента и календарь
 		id: "standard",
 		priceMonth: 20,
 		users: 50,
 		automationRules: 30,
 		aiDailyRequests: 100,
 		storageMb: 2000,
-		features: { ...BASE, ads: true },
+		features: withFeatures(["crm", "tasks", "company", "collab", "multiFirm"]),
 		highlighted: true,
 	},
 	{
+		// Everything — вся платформа без ограничений по людям
 		id: "professional",
-		priceMonth: 35,
+		priceMonth: 53,
 		users: null,
 		automationRules: 200,
 		aiDailyRequests: 300,
 		storageMb: 10000,
-		features: { ...BASE, ads: true, aiAutomation: true },
+		features: withFeatures(FEATURE_KEYS),
 	},
 ];
 

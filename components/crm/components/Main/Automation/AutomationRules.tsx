@@ -1,8 +1,9 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdBolt, MdDelete, MdEdit, MdPlayArrow } from "react-icons/md";
+import { PLANS, PlanId, planFor } from "@/app/config/plans";
 import { apiCall } from "@/app/store/crmApi";
 import type { Stage } from "@/app/store/useCrmStore";
 import ConfirmDialog from "../shared/ConfirmDialog";
@@ -20,10 +21,18 @@ const VARS = "{{deal.name}} {{deal.stageName}} {{contact.name}} {{message.text}}
 // происходит событие (новая сделка, перенос на этап, новый контакт, письмо-лид, сообщение, пропущенный звонок, задача, дедлайн).
 export default function AutomationRules({ stages }: CustomTabApi & { stages: Stage[] }) {
 	const t = useTranslations("automation");
+	const tUpgrade = useTranslations("upgrade");
 	const { records, save, remove } = useSectionRecords(AUTOMATION, "rules");
 	const [editing, setEditing] = useState<{ id?: string; values: Record<string, string> } | null>(null);
 	const [toDelete, setToDelete] = useState<RecordItem | null>(null);
 	const [busy, setBusy] = useState(false);
+	// тариф фирмы: сколько правил он разрешает (лимит проверяет и сервер — POST /api/records)
+	const [plan, setPlan] = useState<PlanId>("free");
+	useEffect(() => {
+		void apiCall<{ plan: PlanId }>("/api/billing").then((r) => { if (r.data?.plan) setPlan(r.data.plan); });
+	}, []);
+	const limit = planFor(plan).automationRules;
+	const planName = PLANS.find((x) => x.id === plan)?.id ?? "free";
 	const sorted = [...stages].sort((a, b) => a.order - b.order);
 	const stageName = (id: string) => sorted.find((s) => s._id === id)?.name ?? t("anyStage");
 
@@ -38,8 +47,10 @@ export default function AutomationRules({ stages }: CustomTabApi & { stages: Sta
 		if (v.action === "webhook" && !/^https:\/\//.test(v.url)) return void toast.error(t("r_urlRequired"));
 		if (v.action === "ai_action" && !v.message.trim()) return void toast.error(t("r_instructionRequired"));
 		setBusy(true);
-		await save({ id: editing.id, values: { ...v, name: v.name.trim() } });
+		const res = await save({ id: editing.id, values: { ...v, name: v.name.trim() } });
 		setBusy(false);
+		// сервер не сохранил (например, тариф не разрешает ещё одно правило) — окно оставляем открытым, чтобы правило не потерялось
+		if (!res.ok) return void toast.error(res.message || t("r_saveFailed"));
 		setEditing(null);
 		toast.success(t("r_saved"));
 	}
@@ -57,7 +68,16 @@ export default function AutomationRules({ stages }: CustomTabApi & { stages: Sta
 	return (
 		<div>
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-12">
-				<p className="max-w-[640px] text-14 text-[#999999]">{t("r_help", { examples: "{{deal.name}}, {{contact.name}}, {{constants.NAME}}" })}</p>
+				<div className="max-w-[640px]">
+					<p className="text-14 text-[#999999]">{t("r_help", { examples: "{{deal.name}}, {{contact.name}}, {{constants.NAME}}" })}</p>
+					<p className="mt-6 inline-flex flex-wrap items-center rounded-8 bg-[#F2F8FF] px-10 py-4 text-13 text-[#3E7BB8]">
+						<span>{t("planBanner", { count: limit })}</span>
+						<span className="mx-6 text-[#C2D8EC]">·</span>
+						<span>{tUpgrade(planName)}</span>
+						<span className="mx-6 text-[#C2D8EC]">·</span>
+						<span aria-label="rules-used">{records.length}/{limit}</span>
+					</p>
+				</div>
 				<button type="button" onClick={() => setEditing({ values: { ...EMPTY, stage: sorted[0]?._id ?? "" } })} className="h-[44px] rounded-8 bg-primaryColor px-20 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80">+ {t("r_addRule")}</button>
 			</div>
 
@@ -123,6 +143,11 @@ export default function AutomationRules({ stages }: CustomTabApi & { stages: Sta
 						{v.action === "send_email" && (
 							<label><span className={label}>{t("r_recipient")}</span>
 								<select value={v.target} onChange={(e) => set("target", e.target.value)} className={field}><option value="client">{t("r_toClient")}</option><option value="owner">{t("r_toOwner")}</option></select>
+							</label>
+						)}
+						{v.action === "create_task" && (
+							<label><span className={label}>{t("r_assignee")}</span>
+								<select value={v.target} onChange={(e) => set("target", e.target.value)} className={field}><option value="manager">{t("o_manager")}</option><option value="responsible">{t("o_responsible")}</option></select>
 							</label>
 						)}
 						{v.action === "ai_action" && <p className="rounded-8 bg-[#FFF8E8] p-10 text-14 text-[#8A6D00]">{t("r_aiActionWarning")}</p>}

@@ -39,10 +39,7 @@ export type PasswordResult = "ok" | "wrong" | "weak" | "error";
 interface CurrentUserStore {
   user: User | null;
   isLoading: boolean;
-  isDropDown: boolean;
   isProfileOpen: boolean;
-  toggleDropDown: () => void;
-  closeDropDown: () => void;
   openProfile: () => void;
   closeProfile: () => void;
   fetchUser: () => Promise<void>;
@@ -57,11 +54,8 @@ let inflight: Promise<void> | null = null;
 export const useCurrentUserStore = create<CurrentUserStore>((set) => ({
   user: null,
   isLoading: true,
-  isDropDown: false,
   isProfileOpen: false,
-  toggleDropDown: () => set((state) => ({ isDropDown: !state.isDropDown })),
-  closeDropDown: () => set({ isDropDown: false }),
-  openProfile: () => set({ isProfileOpen: true, isDropDown: false }),
+  openProfile: () => set({ isProfileOpen: true }),
   closeProfile: () => set({ isProfileOpen: false }),
   fetchUser: () => {
     if (inflight) return inflight;

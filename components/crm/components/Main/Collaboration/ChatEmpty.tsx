@@ -16,8 +16,9 @@ export default function ChatEmpty() {
 
 	useEffect(() => {
 		load().then(() => {
-			// у Telegram спрашиваем, доходят ли до нас сообщения (вебхук мог не зарегистрироваться или сайт закрыт паролем)
-			useIntegrationsStore.getState().items.filter((i) => i.type === "telegram").forEach((i) => patch(i.id, { action: "check" }));
+			// у Telegram спрашиваем, доходят ли до нас сообщения (вебхук мог не зарегистрироваться или сайт закрыт паролем),
+			// у WhatsApp — отвечает ли номер на сохранённый токен (Meta могла отозвать доступ)
+			useIntegrationsStore.getState().items.filter((i) => i.type === "telegram" || i.type === "whatsapp").forEach((i) => patch(i.id, { action: "check" }));
 		});
 	}, [load, patch]);
 

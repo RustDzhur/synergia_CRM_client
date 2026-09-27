@@ -8,6 +8,7 @@ import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
 import { downloadDocumentPdf } from "./download";
+import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
 
 const STATUS_COLOR: Record<string, string> = { draft: "#B3B3B3", sent: "#5EA8F5", accepted: "#0A8A2E", declined: "#EB5757", expired: "#999999" };
@@ -20,7 +21,7 @@ export interface QuotePrefill { dealId: string; customerName: string; contact?: 
 export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: string) => void; prefill?: QuotePrefill | null }) {
 	const t = useTranslations("finance");
 	const locale = useLocale();
-	const { quotes, products, loadQuotes, loadProducts, createQuote, sendQuote, decideQuote, quoteToOrder, settings } = useFinanceStore();
+	const { quotes, products, loadQuotes, loadProducts, createQuote, updateQuote, sendQuote, decideQuote, quoteToOrder, settings } = useFinanceStore();
 	const [open, setOpen] = useState(false);
 	const [customerName, setCustomerName] = useState("");
 	const [items, setItems] = useState<LineItem[]>([{ ...EMPTY_ITEM }]);
@@ -124,6 +125,7 @@ export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: str
 								<button type="button" onClick={() => downloadPdf(q.id, q.number)} className="flex items-center gap-6 rounded-8 border border-[#E6E6E6] px-16 py-8 text-14 font-medium text-[#666666] transition-opacity hover:opacity-80">
 									<MdDownload size={16} /> {t("downloadPdf")}
 								</button>
+								<DocumentTemplateButton kind="quotes" id={q.id} number={q.number} template={q.template} onSave={updateQuote} />
 								{q.status === "sent" && (
 									<>
 										<button type="button" disabled={busy === q.id} onClick={() => decide(q.id, true)} className="rounded-8 border border-[#0A8A2E] px-16 py-8 text-14 font-medium text-[#0A8A2E] transition-opacity hover:opacity-80 disabled:opacity-[0.5]">{t("markAccepted")}</button>

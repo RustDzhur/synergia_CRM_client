@@ -20,3 +20,11 @@ export function formatChatDate(iso: string, locale: string): string {
 
 export const initialsOf = (name: string) =>
 	name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+
+// "23.06.2026 18:10" — срок, указанный у записи ленты
+export function formatDueDate(iso: string, locale: string): string {
+	const d = new Date(iso);
+	if (Number.isNaN(d.getTime())) return "";
+	// как и в чатах: день перед месяцем, для английского — британский порядок
+	return `${d.toLocaleDateString(locale === "en" ? "en-GB" : localeTag(locale))} ${hhmm(d)}`;
+}

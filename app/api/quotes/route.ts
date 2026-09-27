@@ -7,6 +7,7 @@ import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
 import { cleanItems, computeTotals } from "@/lib/finance/totals";
 import { toQuoteDTO } from "@/lib/finance/dto";
+import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal } from "@/lib/deals";
 import Quote from "@/models/Quote";
 import User from "@/models/User";
@@ -53,6 +54,7 @@ export async function POST(req: Request) {
         issueDate: typeof b.issueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.issueDate) ? b.issueDate : today,
         validUntil,
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
+        template: isTemplate(b.template) ? b.template : "",
         createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
     });
     return NextResponse.json(toQuoteDTO(quote), { status: 201 });

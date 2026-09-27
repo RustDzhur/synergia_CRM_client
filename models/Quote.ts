@@ -38,6 +38,8 @@ const QuoteSchema = new Schema(
         sentTo: { type: String, default: "" }, // адрес, на который предложение ушло письмом (кнопка «Отправить»)
         order: { type: Schema.Types.ObjectId, ref: "Order" }, // заказ, созданный из принятого предложения (см. /api/quotes/:id/order)
         notes: { type: String, default: "" },
+        // Шаблон оформления PDF: у каждого документа он свой, чтобы счёт клиенту и договор могли выглядеть по-разному
+        template: { type: String, default: "" },
         createdByName: { type: String, default: "" },
         version: { type: Number, default: 1 }, // номер текущей версии — растёт при каждой коммерчески значимой правке
         versions: { type: [QuoteVersionSchema], default: [] }, // снимки ПРЕДЫДУЩИХ версий, самая старая первая

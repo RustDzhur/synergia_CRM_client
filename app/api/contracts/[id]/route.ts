@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import Contract from "@/models/Contract";
 import { toContractDTO } from "@/lib/finance/dto";
+import { isTemplate } from "@/lib/finance/pdf";
 
 // завершённый/отменённый договор уже мог породить события/заказы — не редактируется, только для истории
 const LOCKED = ["completed", "cancelled"];
@@ -33,6 +34,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (typeof b.startDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.startDate)) contract.startDate = b.startDate;
     if (typeof b.endDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.endDate)) contract.endDate = b.endDate;
     if (typeof b.notes === "string") contract.notes = b.notes.trim().slice(0, 2000);
+    // пустая строка — «печатать оформление из настроек бухгалтерии», поэтому её тоже принимаем
+    if (b.template === "") contract.template = "";
+    else if (isTemplate(b.template)) contract.template = b.template;
     if (typeof b.file === "string" && b.file) contract.file = b.file as any;
     await contract.save();
     return NextResponse.json(toContractDTO(contract));

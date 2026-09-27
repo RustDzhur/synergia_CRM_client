@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { RiArrowDownSLine } from "react-icons/ri";
@@ -22,19 +22,23 @@ export default function CurrentUser({ showAvatar = false }: Props) {
 	const { logout } = useAuthStore();
 	const router = useRouter();
 	const locale = useLocale();
-	const { user, isLoading, isDropDown, toggleDropDown, closeDropDown, openProfile, fetchUser } =
-		useCurrentUserStore();
+	const { user, isLoading, openProfile, fetchUser } = useCurrentUserStore();
 	const t = useTranslations("navBar");
+	// Состояние меню — своё у каждого экземпляра: CurrentUser рендерится и в шапке, и в мобильном меню,
+	// а общий флаг в сторе открывал оба сразу, и «клик снаружи» от невидимого экземпляра закрывал меню
+	// того, по которому как раз кликнули (mousedown закрывает → mouseup/click уже мимо пункта).
+	const [open, setOpen] = useState(false);
+	const closeMenu = useCallback(() => setOpen(false), []);
 	const rootRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		fetchUser();
 	}, [fetchUser]);
 
-	useClickOutside(rootRef, isDropDown, closeDropDown);
+	useClickOutside(rootRef, open, closeMenu);
 
 	const handleLogout = () => {
-		closeDropDown();
+		closeMenu();
 		logout();
 		router.replace(`/${locale}`);
 	};
@@ -53,8 +57,8 @@ export default function CurrentUser({ showAvatar = false }: Props) {
 		<div ref={rootRef} className="relative">
 			<button
 				type="button"
-				aria-expanded={isDropDown}
-				onClick={toggleDropDown}
+				aria-expanded={open}
+				onClick={() => setOpen((v) => !v)}
 				className="flex items-center cursor-pointer">
 				{/* Аватар: серый круг 50px (#D9D9D9); на 768px в Figma его нет */}
 				<Avatar
@@ -69,24 +73,24 @@ export default function CurrentUser({ showAvatar = false }: Props) {
 				<RiArrowDownSLine
 					size={24}
 					color="#4D4D4D"
-					className={`ml-6 transition-transform duration-200 ${isDropDown ? "rotate-180" : ""}`}
+					className={`ml-6 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
 				/>
 			</button>
 
 			<Dropdown
-				open={isDropDown}
+				open={open}
 				className={`w-[200px] ${
 					showAvatar ? "bottom-full left-0 mb-[8px] origin-bottom" : "right-0 top-full mt-[8px]"
 				}`}>
 				<div className="overflow-hidden rounded-8 border border-[#E2F1F5] bg-white shadow-custom">
-					<button type="button" onClick={openProfile} className={menuItem}>
+					<button type="button" onClick={() => { closeMenu(); openProfile(); }} className={menuItem}>
 						<MdSettings size={20} className="text-iconColor" />
 						{t("currentUser.settings")}
 					</button>
 					{user.isAdmin && (
 						<>
 							<div className="border-t border-[#E2F1F5]" />
-							<Link href={`/${locale}/crm/admin`} onClick={closeDropDown} className={menuItem}>
+							<Link href={`/${locale}/crm/admin`} onClick={closeMenu} className={menuItem}>
 								<MdAdminPanelSettings size={20} className="text-iconColor" />
 								{t("adminCabinet")}
 							</Link>

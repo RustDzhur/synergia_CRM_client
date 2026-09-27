@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
-import { FaFacebook, FaFacebookMessenger, FaTelegram, FaViber } from "react-icons/fa";
+import { FaFacebook, FaFacebookMessenger, FaTelegram, FaViber, FaWhatsapp } from "react-icons/fa";
 import { MdCall, MdSensors, MdSms, MdSmartToy, MdWidgets } from "react-icons/md";
 import { useIntegrationsStore } from "@/app/store/useIntegrationsStore";
 import type { IntegrationType } from "@/app/types/integrations";
@@ -26,6 +26,7 @@ const INTEGRATIONS: Integration[] = [
 	{ id: "viber", key: "intViber", icon: FaViber, real: "viber" },
 	{ id: "telegram", key: "intTelegram", icon: FaTelegram, real: "telegram" },
 	{ id: "messenger", key: "intMessenger", icon: FaFacebookMessenger, real: "messenger" },
+	{ id: "whatsapp", key: "intWhatsapp", icon: FaWhatsapp, real: "whatsapp" },
 	{ id: "comments", key: "intComments", icon: FaFacebook },
 	{ id: "chatbot", key: "intChatBot", icon: MdSmartToy },
 	{ id: "onlinechat", key: "intOnlineChat", icon: MdSensors, real: "webchat" },

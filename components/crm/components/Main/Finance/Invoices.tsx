@@ -8,6 +8,7 @@ import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
 import { downloadDocumentPdf } from "./download";
+import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
 
 const STATUS_COLOR: Record<string, string> = { draft: "#B3B3B3", sent: "#5EA8F5", paid: "#0A8A2E", overdue: "#EB5757", cancelled: "#999999" };
@@ -19,7 +20,7 @@ const EMPTY_ITEM: LineItem = { description: "", qty: 1, unitPrice: 0, taxRate: 0
 export default function Invoices({ openId }: { openId?: string | null }) {
 	const t = useTranslations("finance");
 	const locale = useLocale();
-	const { invoices, products, loadInvoices, loadProducts, createInvoice, sendInvoice, payInvoice, duplicateInvoice, issueCreditNote, settings } = useFinanceStore();
+	const { invoices, products, loadInvoices, loadProducts, createInvoice, updateInvoice, sendInvoice, payInvoice, duplicateInvoice, issueCreditNote, settings } = useFinanceStore();
 	const [open, setOpen] = useState(false);
 	const [customerName, setCustomerName] = useState("");
 	const [items, setItems] = useState<LineItem[]>([{ ...EMPTY_ITEM }]);
@@ -122,6 +123,7 @@ export default function Invoices({ openId }: { openId?: string | null }) {
 								<button type="button" onClick={() => downloadPdf(inv.id, inv.number)} className="flex items-center gap-6 rounded-8 border border-[#E6E6E6] px-16 py-8 text-14 font-medium text-[#666666] transition-opacity hover:opacity-80">
 									<MdDownload size={16} /> {t("downloadPdf")}
 								</button>
+								<DocumentTemplateButton kind="invoices" id={inv.id} number={inv.number} template={inv.template} onSave={updateInvoice} />
 							</div>
 						</li>
 					))}

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { Toaster } from "react-hot-toast";
 import { Header, ModalNavigation, Sidebar } from "@/components/crm";
@@ -12,14 +12,23 @@ import Softphone from "@/components/crm/components/Main/shared/Softphone";
 import "@/app/[locale]/styles/crm-dark.css";
 import useAuthStore from "@/app/store/useAuthStore";
 import { useThemeStore } from "@/app/store/useThemeStore";
-import { useActiveOrg } from "@/app/store/useOrgStore";
+import { useActiveOrg, useFeature } from "@/app/store/useOrgStore";
+import { featureForPage } from "@/lib/features";
+import Upgrade from "@/components/crm/components/Main/Upgrade";
 import Loader from "@/app/utils/Loader";
 
 export default function CrmLayout({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, authChecked, checkAuth } = useAuthStore();
     const router = useRouter();
+    const pathname = usePathname();
     const locale = useLocale();
     const activeOrg = useActiveOrg();
+    // раздел, который открывает страница: если его нет в тарифе фирмы, вместо раздела показываем выбор тарифа
+    const path = pathname?.startsWith(`/${locale}/`) ? pathname.slice(locale.length + 1) : pathname ?? "";
+    const needed = featureForPage(path);
+    const locked = !!needed && activeOrg?.features?.[needed] === false;
+    const softphone = useFeature("channels");
+    const aiAssistant = useFeature("aiAssistant");
 
     useEffect(() => { checkAuth(); }, [checkAuth]);
     useEffect(() => {
@@ -61,12 +70,12 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
             <MobilePageBar />
             <div className="flex lg:max-w-screen-lg m-auto min-h-[calc(100vh-82px)] md:min-h-[calc(100vh-110px)]">
                 <Sidebar />
-                <main className="flex-1 min-w-0 bg-white pb-[80px]">{children}</main>
+                <main className="flex-1 min-w-0 bg-white pb-[80px]">{locked ? <Upgrade /> : children}</main>
             </div>
             <ModalNavigation />
             <ProfileModal />
-            <Softphone />
-            <AiAssistant />
+            {softphone && <Softphone />}
+            {aiAssistant && <AiAssistant />}
             <NotificationCenter />
             <Toaster />
         </>

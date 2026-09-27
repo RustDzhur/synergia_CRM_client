@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { effectiveModules, type Role } from "@/lib/access";
 import { effectivePlan } from "@/lib/billing";
+import { orgFeatures } from "@/lib/features";
 import Membership from "@/models/Membership";
 import Organization from "@/models/Organization";
 
@@ -11,7 +12,8 @@ export const dynamic = "force-dynamic";
 
 const MAX_ORGS = 10;
 
-// GET /api/orgs — фирмы пользователя (личная создаётся автоматически) и активная: { orgs: [{ id, name, role, plan, modules }], activeId }
+// GET /api/orgs — фирмы пользователя (личная создаётся автоматически) и активная: { orgs: [{ id, name, role, plan, modules, features }], activeId }
+// features — разделы, доступные фирме по её тарифу: по ним интерфейс решает, что показывать в меню и на страницах.
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
@@ -21,7 +23,7 @@ export async function GET(req: Request) {
     const list = memberships
         .map((m) => {
             const o = orgs.find((x) => String(x._id) === String(m.org));
-            return o ? { id: String(o._id), name: o.name, role: m.role as Role, plan: effectivePlan(o), modules: effectiveModules(m.role as Role, m.modules ?? []), blocked: !!o.blocked, personal: String(o._id) === user.userId } : null;
+            return o ? { id: String(o._id), name: o.name, role: m.role as Role, plan: effectivePlan(o), modules: effectiveModules(m.role as Role, m.modules ?? []), features: orgFeatures(o), blocked: !!o.blocked, personal: String(o._id) === user.userId } : null;
         })
         .filter(Boolean)
         .sort((a, b) => Number(b!.personal) - Number(a!.personal) || a!.name.localeCompare(b!.name));

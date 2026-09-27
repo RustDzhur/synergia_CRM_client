@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { requireUser } from "@/lib/auth";
+import { denyPlan, requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { canAccess, type Module } from "@/lib/access";
 import { randomToken } from "@/lib/crypto";
-import { effectivePlan } from "@/lib/billing";
-import { planFor } from "@/app/config/plans";
-import Organization from "@/models/Organization";
+import { planFor, type FeatureKey } from "@/app/config/plans";
 import SectionRecord from "@/models/SectionRecord";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +31,7 @@ export async function GET(req: Request) {
     const k = parseKey(new URL(req.url).searchParams.get("key"));
     if (!k) return badRequest("Invalid key");
     if (!canAccess(user.role, user.modules, k.module, "GET")) return unauthorized(req);
+    if (!user.features[k.module as FeatureKey]) { denyPlan(req); return unauthorized(req); }
     await connectDB();
     const list = await SectionRecord.find({ org: user.id, key: k.key }).sort({ createdAt: -1 });
     return NextResponse.json({ initialized: list.some((r) => r.rid === INIT), records: list.filter((r) => r.rid !== INIT).map((r) => ({ id: r.rid, values: r.values ?? {} })) });
@@ -46,12 +45,12 @@ export async function POST(req: Request) {
     const k = parseKey(b?.key);
     if (!k || !Array.isArray(b.records) || b.records.length > 200) return badRequest("Invalid data");
     if (!canAccess(user.role, user.modules, k.module, "POST")) return unauthorized(req);
+    if (!user.features[k.module as FeatureKey]) { denyPlan(req); return unauthorized(req); }
     await connectDB();
     // число правил автоматизации и доступность шага «AI decides and acts» зависят от тарифа фирмы (см. app/config/plans.ts)
     if (k.key === "automation:rules") {
-        const org = await Organization.findById(user.id).select("plan planOverride planOverrideUntil");
-        const plan = planFor(org ? effectivePlan(org) : "free");
-        if (!plan.features.aiAutomation && b.records.some((r: { values?: { action?: string } }) => r?.values?.action === "ai_action")) {
+        const plan = planFor(user.plan);
+        if (!user.features.aiAutomation && b.records.some((r: { values?: { action?: string } }) => r?.values?.action === "ai_action")) {
             return NextResponse.json({ message: "The autonomous AI automation step (“AI decides and acts”) needs the Professional plan.", code: "plan_limit" }, { status: 402 });
         }
         const existing = new Set((await SectionRecord.find({ org: user.id, key: k.key, rid: { $ne: INIT } }).select("rid")).map((r) => r.rid));
@@ -77,6 +76,7 @@ export async function DELETE(req: Request) {
     const k = parseKey(b?.key);
     if (!k || !Array.isArray(b.ids)) return badRequest("Invalid data");
     if (!canAccess(user.role, user.modules, k.module, "DELETE")) return unauthorized(req);
+    if (!user.features[k.module as FeatureKey]) { denyPlan(req); return unauthorized(req); }
     await connectDB();
     await SectionRecord.deleteMany({ org: user.id, key: k.key, rid: { $in: b.ids.filter((i: unknown) => typeof i === "string" && i !== INIT) } });
     return NextResponse.json({ ok: true });

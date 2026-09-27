@@ -5,6 +5,7 @@ import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { cleanItems } from "@/lib/finance/totals";
 import Quote from "@/models/Quote";
 import { toQuoteDTO } from "@/lib/finance/dto";
+import { isTemplate } from "@/lib/finance/pdf";
 
 // решение (принято/отклонено/просрочено) уже зафиксировано — редактировать нельзя, только черновик и отправленное
 const LOCKED = ["accepted", "declined", "expired"];
@@ -49,6 +50,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (newCustomerName !== undefined) quote.customerName = newCustomerName;
     if (typeof b.validUntil === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.validUntil)) quote.validUntil = b.validUntil;
     if (typeof b.notes === "string") quote.notes = b.notes.trim().slice(0, 2000);
+    // пустая строка — «печатать оформление из настроек бухгалтерии», поэтому её тоже принимаем
+    if (b.template === "") quote.template = "";
+    else if (isTemplate(b.template)) quote.template = b.template;
     await quote.save();
     return NextResponse.json(toQuoteDTO(quote));
 }

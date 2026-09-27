@@ -16,6 +16,8 @@ const FinanceSettingsSchema = new Schema(
         iban: { type: String, default: "" },
         bic: { type: String, default: "" },
         paymentTermsDays: { type: Number, default: 14 },
+        template: { type: String, default: "classic" }, // шаблон оформления по умолчанию для новых документов
+        paymentQr: { type: Boolean, default: true }, // печатать ли QR-код на оплату в счетах
         invoicePrefix: { type: String, default: "RE" }, // нумерация «{prefix}-{год}-{порядковый}»; RE — Rechnung (счёт)
         quotePrefix: { type: String, default: "AN" }, // Angebot (предложение)
         creditNotePrefix: { type: String, default: "GS" }, // Gutschrift (кредит-нота/сторно) — своя последовательность номеров

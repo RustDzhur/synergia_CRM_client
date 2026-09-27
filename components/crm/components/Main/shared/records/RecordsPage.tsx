@@ -45,7 +45,11 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 	useRecordsHydration(config.tabs.filter((tb) => !(config.customTabs ?? []).includes(tb) || true).map((tb) => `${config.section}:${tb}`));
 	const { data, hidden, saveRecord, deleteRecords, setHidden } = useRecordsStore();
 
-	const [tab, setTab] = useState(config.tabs[0]);
+	// ?tab=… открывает конкретную вкладку (те же ссылки, что и в «Финансах»: пришли из уведомления — попали на нужную вкладку)
+	const [tab, setTab] = useState(() => {
+		const wanted = typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("tab") ?? "";
+		return config.tabs.includes(wanted) ? wanted : config.tabs[0];
+	});
 	useEffect(() => {
 		if (openTabOnParam && new URLSearchParams(window.location.search).has(openTabOnParam.param)) setTab(openTabOnParam.tab);
 	}, [openTabOnParam?.param, openTabOnParam?.tab]); // eslint-disable-line react-hooks/exhaustive-deps

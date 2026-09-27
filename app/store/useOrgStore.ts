@@ -1,8 +1,11 @@
 import { create } from "zustand";
 import type { Role } from "@/lib/access";
+import type { FeatureKey } from "@/app/config/plans";
 import { ORG_KEY, apiCall } from "./crmApi";
 
-export interface Org { id: string; name: string; role: Role; plan: string; modules: string[]; blocked: boolean; personal: boolean }
+// features — разделы, доступные фирме по тарифу (плюс то, что выдал администратор платформы вручную).
+// Меню и страницы показывают только их; чего нет — то закрыто и на сервере.
+export interface Org { id: string; name: string; role: Role; plan: string; modules: string[]; features: Partial<Record<FeatureKey, boolean>>; blocked: boolean; personal: boolean }
 
 interface OrgStore {
     orgs: Org[];
@@ -48,3 +51,12 @@ export const useOrgStore = create<OrgStore>()((set, get) => ({
 }));
 
 export const useActiveOrg = () => useOrgStore((s) => s.orgs.find((o) => o.id === s.activeId) ?? null);
+
+// Доступен ли раздел в текущей фирме. Пока список фирм не загружен, ничего не прячем — иначе при первом
+// рендере мигало бы пустое меню, а сервер всё равно не отдаст данные закрытого раздела.
+export const useFeature = (key: FeatureKey) => {
+    const org = useActiveOrg();
+    const loaded = useOrgStore((s) => s.loaded);
+    if (!org || !loaded) return true;
+    return org.features?.[key] !== false;
+};

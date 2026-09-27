@@ -1,11 +1,12 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { IconType } from "react-icons";
 import { FaFacebook, FaLinkedinIn, FaTwitter } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { MdCall, MdChat, MdEmail, MdForwardToInbox, MdGraphicEq, MdSms } from "react-icons/md";
 import type { CustomTabApi } from "../shared/records/RecordsPage";
+import ChannelDialog from "./components/ChannelDialog";
 
 interface Card {
 	id: string; // ключ перевода: card_<id>
@@ -31,11 +32,13 @@ const CARDS: Card[] = [
 	{ id: "email", target: "campaigns", preset: { channel: "email" }, circle: { bg: "#D50FB3", icon: MdEmail } },
 ];
 
-// Вкладка Start: заголовок «Create Campaign» и карточки каналов. Нажатие открывает окно новой записи
-// (кампания или реклама) с уже выбранным каналом; после сохранения страница переключается на нужную вкладку.
+// Вкладка Start: заголовок «Create Campaign» и карточки каналов. Нажатие на канал рассылки открывает окно
+// с его интеграциями (e-mail кампании — почтовые ящики, SMS и звонки — Twilio, мессенджеры — боты) и кнопкой
+// «Создать кампанию»; рекламные площадки по-прежнему сразу открывают окно новой рекламы.
 export default function StartTab({ query, create }: CustomTabApi) {
 	const t = useTranslations("marketing");
 	const tr = useTranslations("records");
+	const [channel, setChannel] = useState<Card | null>(null);
 	const q = query.trim().toLowerCase();
 	const cards = q ? CARDS.filter((c) => t(`card_${c.id}`).toLowerCase().includes(q)) : CARDS;
 
@@ -53,7 +56,7 @@ export default function StartTab({ query, create }: CustomTabApi) {
 							<li key={c.id}>
 								<button
 									type="button"
-									onClick={() => create(c.target, c.preset)}
+									onClick={() => (c.target === "campaigns" ? setChannel(c) : create(c.target, c.preset))}
 									className="flex h-[123px] w-full flex-col items-center justify-center gap-12 rounded-8 bg-white px-8 shadow-heroImage transition-transform duration-200 hover:-translate-y-2 lg:h-[126px]">
 									<span className="flex h-[70px] w-[70px] items-center justify-center">
 										{Circle && c.circle && (
@@ -70,6 +73,8 @@ export default function StartTab({ query, create }: CustomTabApi) {
 					})}
 				</ul>
 			)}
+
+			<ChannelDialog card={channel} onClose={() => setChannel(null)} onCreate={(target, preset) => { setChannel(null); create(target, preset); }} />
 		</section>
 	);
 }

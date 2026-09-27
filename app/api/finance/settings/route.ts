@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { COUNTRY_CODES, COUNTRY_TAX } from "@/lib/finance/taxRates";
 import { financeSettings } from "@/lib/finance/settings";
+import { TEMPLATE_IDS, isTemplate } from "@/lib/finance/pdf";
 import FinanceSettings from "@/models/FinanceSettings";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,8 @@ function toDTO(s: any) {
         quotePrefix: s.quotePrefix ?? "AN",
         creditNotePrefix: s.creditNotePrefix ?? "GS",
         reminderIntervalDays: s.reminderIntervalDays ?? 7,
+        template: isTemplate(s.template) ? s.template : "classic",
+        paymentQr: s.paymentQr !== false,
     };
 }
 
@@ -55,6 +58,8 @@ export async function PATCH(req: Request) {
         const n = Number(b.paymentTermsDays);
         if (Number.isFinite(n) && n >= 0 && n <= 365) set.paymentTermsDays = Math.round(n);
     }
+    if (isTemplate(b.template)) set.template = b.template;
+    if (typeof b.paymentQr === "boolean") set.paymentQr = b.paymentQr;
     if (b.reminderIntervalDays !== undefined) {
         const n = Number(b.reminderIntervalDays);
         if (Number.isFinite(n) && n >= 1 && n <= 90) set.reminderIntervalDays = Math.round(n);

@@ -1,7 +1,7 @@
 // Типы, общие для сервера (API) и клиента (Settings → Integration, Chat and Calls, Web Mails)
 
-export type IntegrationType = "twilio" | "sip" | "telegram" | "viber" | "messenger" | "webchat" | "mail";
-export type MessagingChannel = "twilio" | "sip" | "telegram" | "viber" | "messenger" | "webchat";
+export type IntegrationType = "twilio" | "sip" | "telegram" | "viber" | "whatsapp" | "messenger" | "webchat" | "mail";
+export type MessagingChannel = "twilio" | "sip" | "telegram" | "viber" | "whatsapp" | "messenger" | "webchat";
 
 export interface IntegrationDTO {
     id: string;
@@ -42,6 +42,14 @@ export interface CallDTO {
     channel: MessagingChannel;
 }
 
+// Вложение сообщения: файл лежит в хранилище фирмы, в переписке отдаётся по /api/messages/:id/attachment
+export interface AttachmentDTO {
+    kind: "image" | "file" | "voice";
+    name: string;
+    mime: string;
+    size: number;
+}
+
 export interface MessageDTO {
     id: string;
     direction: "in" | "out";
@@ -49,6 +57,7 @@ export interface MessageDTO {
     text: string;
     at: string;
     status: "sent" | "failed";
+    attachment: AttachmentDTO | null;
     // для звонков: { status: "completed" | "no-answer" | "busy" | "failed", duration: секунды }
     meta: Record<string, string | number>;
 }

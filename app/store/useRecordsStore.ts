@@ -11,12 +11,27 @@ import { apiCall } from "./crmApi";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+// Результат сохранения: сервер может отказать (например, тариф не разрешает ещё одно правило автоматизации),
+// и тогда правку нужно откатить и показать причину — иначе запись остаётся в таблице, хотя её никто не сохранил.
+export interface SaveResult { ok: boolean; message: string; code: string; status: number }
+
+// Сервер отказал — возвращаем таблицу к состоянию до правки (запись не сохранена, значит её и не должно быть видно)
+function finish(key: string, previous: RecordItem[] | undefined, res: { ok: boolean; message: string; code: string; status: number }): SaveResult {
+	if (!res.ok) useRecordsStore.setState((s) => {
+		const data = { ...s.data };
+		if (previous) data[key] = previous;
+		else delete data[key];
+		return { data };
+	});
+	return res;
+}
+
 interface RecordsStore {
 	data: Record<string, RecordItem[]>;
 	hidden: Record<string, string[]>; // скрытые колонки (шестерёнка в шапке таблицы)
 	load: (key: string) => Promise<void>;
-	saveRecord: (key: string, seed: RecordItem[], record: { id?: string; values: Record<string, string> }) => Promise<void>;
-	deleteRecords: (key: string, seed: RecordItem[], ids: string[]) => Promise<void>;
+	saveRecord: (key: string, seed: RecordItem[], record: { id?: string; values: Record<string, string> }) => Promise<SaveResult>;
+	deleteRecords: (key: string, seed: RecordItem[], ids: string[]) => Promise<SaveResult>;
 	setHidden: (key: string, columns: string[]) => void;
 }
 
@@ -34,22 +49,26 @@ export const useRecordsStore = create<RecordsStore>()(
 			},
 
 			saveRecord: async (key, seed, record) => {
-				const list = get().data[key] ?? seed;
+				const previous = get().data[key];
+				const list = previous ?? seed;
 				const isNew = !record.id;
 				const id = record.id ?? uid();
 				const next = isNew ? [{ id, values: record.values }, ...list] : list.map((r) => (r.id === id ? { id, values: record.values } : r));
 				set((s) => ({ data: { ...s.data, [key]: next } }));
 				// первая правка вкладки: тестовые данные становятся настоящими записями, затем сохраняется изменение
-				const toSave = get().data[key] && list !== seed ? [{ id, values: record.values }] : next;
-				await apiCall("/api/records", "POST", { key, records: toSave });
+				const toSave = previous && list !== seed ? [{ id, values: record.values }] : next;
+				return finish(key, previous, await apiCall("/api/records", "POST", { key, records: toSave }));
 			},
 
 			deleteRecords: async (key, seed, ids) => {
-				const list = get().data[key] ?? seed;
-				const fromSeed = !get().data[key];
+				const previous = get().data[key];
+				const list = previous ?? seed;
+				const fromSeed = !previous;
 				set((s) => ({ data: { ...s.data, [key]: list.filter((r) => !ids.includes(r.id)) } }));
-				if (fromSeed) await apiCall("/api/records", "POST", { key, records: list.filter((r) => !ids.includes(r.id)) });
-				else await apiCall("/api/records", "DELETE", { key, ids });
+				const res = fromSeed
+					? await apiCall("/api/records", "POST", { key, records: list.filter((r) => !ids.includes(r.id)) })
+					: await apiCall("/api/records", "DELETE", { key, ids });
+				return finish(key, previous, res);
 			},
 
 			setHidden: (key, columns) => set((s) => ({ hidden: { ...s.hidden, [key]: columns } })),

@@ -8,6 +8,7 @@ import { cleanItems } from "@/lib/finance/totals";
 import { emit } from "@/lib/automation/emit";
 import { logAudit } from "@/lib/audit";
 import Invoice from "@/models/Invoice";
+import { isTemplate } from "@/lib/finance/pdf";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 
 // POST /api/invoices/:id/credit-note — { items?, notes? }: выпускает кредит-ноту (Gutschrift/storno) к отправленному
@@ -41,6 +42,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         items, currency: source.currency, smallBusinessNote: source.smallBusinessNote,
         issueDate: today, dueDate: "",
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
+        // кредит-нота выглядит как исправляемый счёт, если в запросе не попросили другой шаблон
+        template: isTemplate(b.template) ? b.template : source.template,
         status: "sent", sentAt: new Date(),
     });
     await emit(user.id, { type: "invoice_credit_note_created", data: { id: String(credit._id), number: credit.number, customerName: credit.customerName, sourceInvoice: source.number } });

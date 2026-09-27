@@ -6,6 +6,7 @@ import { emit } from "@/lib/automation/emit";
 import { nextNumber } from "@/lib/finance/numbering";
 import { cleanItems, computeTotals } from "@/lib/finance/totals";
 import { toOrderDTO } from "@/lib/finance/dto";
+import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal, ownedContract } from "@/lib/deals";
 import Order from "@/models/Order";
 import User from "@/models/User";
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
         contact: contact || undefined, company: company || undefined, deal: deal || undefined, contract: contract || undefined,
         currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : "EUR",
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
+        template: isTemplate(b.template) ? b.template : "",
         responsible: typeof b.responsible === "string" ? b.responsible.trim().slice(0, 120) : "",
         createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
     });

@@ -1,7 +1,7 @@
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { notFound, unauthorized, validId } from "@/lib/api";
-import { contractPdfBuffer, pdfLocale } from "@/lib/finance/document";
+import { contractPdfBuffer, pdfTemplate, pdfLocale } from "@/lib/finance/document";
 import Contract from "@/models/Contract";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     await connectDB();
     const contract = await Contract.findOne({ _id: params.id, org: user.id });
     if (!contract) return notFound();
-    const buffer = await contractPdfBuffer(user.id, contract, pdfLocale(new URL(req.url).searchParams.get("locale")));
+    const buffer = await contractPdfBuffer(user.id, contract, pdfLocale(new URL(req.url).searchParams.get("locale")), pdfTemplate(new URL(req.url).searchParams.get("template")));
     return new Response(buffer as unknown as BodyInit, {
         headers: {
             "content-type": "application/pdf",

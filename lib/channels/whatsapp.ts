@@ -1,0 +1,130 @@
+import { fetchProvider, ProviderError } from "@/lib/http";
+import { safeEqual } from "@/lib/crypto";
+import { verifyMetaSignature } from "./messenger";
+
+// WHATSAPP_API_URL нужен для собственного прокси Graph API и для локальных проверок без настоящего номера Meta
+const base = () => (process.env.WHATSAPP_API_URL || "https://graph.facebook.com/v21.0").replace(/\/+$/, "");
+
+// Токен передаём заголовком Authorization, а не строкой запроса: так он не попадает в логи прокси
+async function graph<T extends object>(path: string, accessToken: string, init: RequestInit = {}): Promise<T> {
+    const res = await fetchProvider(`${base()}${path}`, {
+        ...init,
+        headers: { Authorization: `Bearer ${accessToken}`, ...(init.headers as Record<string, string> | undefined) },
+    });
+    const json = (await res.json().catch(() => null)) as (T & { error?: { message?: string } }) | null;
+    if (!res.ok || !json || json.error) throw new ProviderError(json?.error?.message ?? `WhatsApp error ${res.status}`);
+    return json;
+}
+
+// Реквизиты номера: заодно проверяем, что id номера и токен доступа подходят друг другу
+export const getPhoneNumber = (phoneNumberId: string, accessToken: string) =>
+    graph<{ id: string; display_phone_number?: string; verified_name?: string }>(`/${phoneNumberId}?fields=display_phone_number,verified_name`, accessToken);
+
+// Приложение подписывается на аккаунт WhatsApp Business: без этой подписки Meta не присылает вебхуки
+export const subscribeApp = (wabaId: string, accessToken: string) =>
+    graph<{ success?: boolean }>(`/${wabaId}/subscribed_apps`, accessToken, { method: "POST" });
+
+export async function sendWhatsApp(accessToken: string, phoneNumberId: string, to: string, text: string) {
+    const res = await graph<{ messages?: { id?: string }[] }>(`/${phoneNumberId}/messages`, accessToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to,
+            type: "text",
+            text: { preview_url: false, body: text },
+        }),
+    });
+    return res.messages?.[0]?.id ?? "";
+}
+
+// Meta подписывает вебхуки WhatsApp так же, как Messenger: X-Hub-Signature-256 = HMAC-SHA256(тело, App secret)
+export const verifyWhatsAppSignature = verifyMetaSignature;
+
+// Проверка адреса при настройке вебхука в кабинете Meta: отвечаем hub.challenge, если совпал verify token
+export function verifyWhatsAppChallenge(query: URLSearchParams, verifyToken: string) {
+    if (query.get("hub.mode") !== "subscribe") return null;
+    if (!safeEqual(query.get("hub.verify_token") ?? "", verifyToken)) return null;
+    return query.get("hub.challenge") ?? "";
+}
+
+interface WaMedia { caption?: string; filename?: string; id?: string; mime_type?: string }
+
+interface WaMessage {
+    id?: string;
+    from?: string;
+    timestamp?: string;
+    type?: string;
+    text?: { body?: string };
+    button?: { text?: string };
+    interactive?: { button_reply?: { title?: string }; list_reply?: { title?: string } };
+    image?: WaMedia;
+    video?: WaMedia;
+    document?: WaMedia;
+    audio?: WaMedia;
+    voice?: WaMedia;
+    sticker?: WaMedia;
+}
+
+interface WaChange {
+    field?: string;
+    value?: {
+        contacts?: { wa_id?: string; profile?: { name?: string } }[];
+        messages?: WaMessage[];
+        statuses?: { id?: string; status?: string; errors?: { title?: string; message?: string }[] }[];
+    };
+}
+
+// Вложение показываем меткой вроде «[photo]»: сам файл лежит в WhatsApp и забирается отдельным запросом по media id
+const MEDIA_LABEL: Record<string, string> = {
+    image: "[photo]",
+    video: "[video]",
+    document: "[file]",
+    audio: "[voice]",
+    voice: "[voice]",
+    sticker: "[sticker]",
+    location: "[location]",
+    contacts: "[contact]",
+};
+
+// Текст входящего: подпись к вложению важнее метки, а служебные типы (реакция, системное) остаются меткой
+function incomingText(m: WaMessage) {
+    if (m.text?.body) return m.text.body;
+    if (m.button?.text) return m.button.text;
+    if (m.interactive?.button_reply?.title) return m.interactive.button_reply.title;
+    if (m.interactive?.list_reply?.title) return m.interactive.list_reply.title;
+    const caption = m.image?.caption ?? m.video?.caption ?? m.document?.caption;
+    if (caption) return caption;
+    const type = m.type ?? "";
+    return MEDIA_LABEL[type] ?? (type ? `[${type}]` : "[message]");
+}
+
+// События вебхука: входящие сообщения и отчёты о доставке наших сообщений (Meta присылает и то, и другое сюда)
+export function parseWhatsAppWebhook(body: { object?: string; entry?: WaChange extends never ? never : { changes?: WaChange[] }[] }) {
+    const messages: { externalId: string; name: string; text: string; messageId?: string }[] = [];
+    const statuses: { id: string; status: string; error: string }[] = [];
+    if (body.object !== "whatsapp_business_account") return { messages, statuses };
+    for (const entry of body.entry ?? []) {
+        for (const change of entry.changes ?? []) {
+            if (change.field !== "messages" || !change.value) continue;
+            const value = change.value;
+            // имя собеседника Meta присылает один раз, в том же событии, где пришло сообщение
+            const names = new Map((value.contacts ?? []).map((c) => [c.wa_id ?? "", c.profile?.name ?? ""]));
+            for (const m of value.messages ?? []) {
+                if (!m.from) continue;
+                messages.push({
+                    externalId: m.from,
+                    name: names.get(m.from) || m.from,
+                    text: incomingText(m),
+                    messageId: m.id,
+                });
+            }
+            for (const s of value.statuses ?? []) {
+                if (!s.id) continue;
+                statuses.push({ id: s.id, status: s.status ?? "", error: s.errors?.[0]?.title ?? s.errors?.[0]?.message ?? "" });
+            }
+        }
+    }
+    return { messages, statuses };
+}

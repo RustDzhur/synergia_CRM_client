@@ -4,18 +4,19 @@ import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { useFinanceStore } from "@/app/store/useFinanceStore";
 import FormField from "../shared/FormField";
+import TemplatePicker from "./TemplatePicker";
 
 // Настройки бухгалтерии: страна определяет ставку налога по умолчанию на новых счетах (её всё равно можно поменять
 // на конкретном счёте) — заполнять не обязательно, но без страны ставка по умолчанию 0%.
 export default function FinanceSettingsTab() {
 	const t = useTranslations("finance");
 	const { settings, countries, loadSettings, saveSettings } = useFinanceStore();
-	const [form, setForm] = useState({ country: "", currency: "EUR", smallBusiness: false, legalName: "", address: "", taxId: "", iban: "", bic: "", paymentTermsDays: "14", invoicePrefix: "RE", creditNotePrefix: "GS", reminderIntervalDays: "7" });
+	const [form, setForm] = useState({ country: "", currency: "EUR", smallBusiness: false, legalName: "", address: "", taxId: "", iban: "", bic: "", paymentTermsDays: "14", invoicePrefix: "RE", creditNotePrefix: "GS", reminderIntervalDays: "7", template: "classic", paymentQr: true });
 	const [saving, setSaving] = useState(false);
 
 	useEffect(() => { loadSettings(); }, [loadSettings]);
 	useEffect(() => {
-		if (settings) setForm({ country: settings.country, currency: settings.currency, smallBusiness: settings.smallBusiness, legalName: settings.legalName, address: settings.address, taxId: settings.taxId, iban: settings.iban, bic: settings.bic, paymentTermsDays: String(settings.paymentTermsDays), invoicePrefix: settings.invoicePrefix, creditNotePrefix: settings.creditNotePrefix, reminderIntervalDays: String(settings.reminderIntervalDays) });
+		if (settings) setForm({ country: settings.country, currency: settings.currency, smallBusiness: settings.smallBusiness, legalName: settings.legalName, address: settings.address, taxId: settings.taxId, iban: settings.iban, bic: settings.bic, paymentTermsDays: String(settings.paymentTermsDays), invoicePrefix: settings.invoicePrefix, creditNotePrefix: settings.creditNotePrefix, reminderIntervalDays: String(settings.reminderIntervalDays), template: settings.template || "classic", paymentQr: settings.paymentQr !== false });
 	}, [settings]);
 
 	const selectedCountry = countries.find((c) => c.code === form.country);
@@ -67,6 +68,17 @@ export default function FinanceSettingsTab() {
 						<FormField label="BIC" value={form.bic} onChange={(e) => setForm({ ...form, bic: e.target.value })} maxLength={20} />
 					</div>
 				</div>
+			</div>
+
+			<div className="mb-20 rounded-16 bg-white p-20 shadow-heroImage">
+				<h3 className="mb-16 text-18 font-medium text-[#333333]">{t("templateSection")}</h3>
+				<p className="mb-14 text-14 text-[#999999]">{t("templateSectionHint")}</p>
+				<TemplatePicker value={form.template || "classic"} onChange={(v) => setForm({ ...form, template: v || "classic" })} columns={5} />
+				<label className="mt-18 flex items-center gap-10 text-16 text-[#666666]">
+					<input type="checkbox" checked={form.paymentQr} onChange={(e) => setForm({ ...form, paymentQr: e.target.checked })} className="h-[18px] w-[18px] accent-primaryColor" />
+					{t("paymentQr")}
+				</label>
+				<p className="mt-[4px] pl-[28px] text-14 text-[#B3B3B3]">{t("paymentQrHint")}</p>
 			</div>
 
 			<div className="mb-20 rounded-16 bg-white p-20 shadow-heroImage">

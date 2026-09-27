@@ -3,10 +3,12 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { apiCall } from "@/app/store/crmApi";
+import { FEATURE_KEYS, planFor, type FeatureKey } from "@/app/config/plans";
+import Modal from "../shared/Modal";
 import BlogAdmin from "./BlogAdmin";
 
 interface Summary { orgs: number; users: number; byPlan: Record<string, number>; mrr: number; blocked: number; newRequests: number }
-interface OrgRow { id: string; name: string; ownerEmail: string; ownerName: string; plan: string; stripePlan: string; override: string; overrideUntil: string; status: string; interval: string; periodEnd: string; cancelAtPeriodEnd: boolean; hasSubscription: boolean; members: number; blocked: boolean; createdAt: string }
+interface OrgRow { id: string; name: string; ownerEmail: string; ownerName: string; plan: string; stripePlan: string; override: string; overrideUntil: string; status: string; interval: string; periodEnd: string; cancelAtPeriodEnd: boolean; hasSubscription: boolean; members: number; blocked: boolean; createdAt: string; features: Record<string, boolean>; featureOverrides: Record<string, boolean> }
 interface Check { id: string; ok: boolean; message: string }
 interface Req { id: string; orgId: string; orgName: string; email: string; plan: string; interval: string; company: string; vatId: string; note: string; status: "new" | "done"; createdAt: string }
 
@@ -17,12 +19,14 @@ const addDays = (n: number) => new Date(Date.now() + n * 86400_000).toISOString(
 // Админ-кабинет владельца платформы (/crm/admin): фирмы-клиенты, их тарифы и подписки, запросы счетов. Доступ — по ADMIN_EMAILS.
 export default function AdminPanel() {
 	const t = useTranslations("admin");
+	const tf = useTranslations("upgrade");
 	const locale = useLocale();
 	const [denied, setDenied] = useState(false);
 	const [summary, setSummary] = useState<Summary | null>(null);
 	const [orgs, setOrgs] = useState<OrgRow[]>([]);
 	const [reqs, setReqs] = useState<Req[]>([]);
 	const [q, setQ] = useState("");
+	const [featuresFor, setFeaturesFor] = useState<OrgRow | null>(null); // фирма, которой сейчас правим разделы
 	const [checks, setChecks] = useState<Check[] | null>(null);
 	const [checking, setChecking] = useState(false);
 	async function runCheck() {
@@ -48,6 +52,15 @@ export default function AdminPanel() {
 		else toast.success(t("saved"));
 		load();
 	}
+	// переключатель раздела: undefined — вернуть как в тарифе, true — выдать сверх тарифа, false — отключить вопреки тарифу
+	function toggleFeature(o: OrgRow, key: FeatureKey, value: boolean | undefined) {
+		const next = { ...(o.featureOverrides ?? {}) };
+		if (value === undefined) delete next[key];
+		else next[key] = value;
+		setFeaturesFor({ ...o, featureOverrides: next, features: { ...o.features, [key]: value ?? !!planFor(o.plan).features[key] } });
+		patch(o.id, { featureOverrides: next });
+	}
+
 	async function cancel(o: OrgRow) {
 		if (!window.confirm(t("cancelConfirm", { name: o.name }))) return;
 		const res = await apiCall(`/api/admin/orgs/${o.id}/cancel`, "POST");
@@ -152,6 +165,7 @@ export default function AdminPanel() {
 								<td className="px-12 py-10 text-[#999999]">{day(o.createdAt)}</td>
 								<td className="px-12 py-10">
 									<div className="flex flex-wrap gap-8">
+										<button type="button" onClick={() => setFeaturesFor(o)} className="text-14 text-primaryColor hover:underline">{t("features")}</button>
 										{o.hasSubscription && !o.cancelAtPeriodEnd && <button type="button" onClick={() => cancel(o)} className="text-14 text-primaryColor hover:underline">{t("cancelSub")}</button>}
 										<button type="button" onClick={() => patch(o.id, { blocked: !o.blocked })} className={`text-14 hover:underline ${o.blocked ? "text-[#009A2B]" : "text-danger"}`}>{o.blocked ? t("unblock") : t("block")}</button>
 									</div>
@@ -162,6 +176,45 @@ export default function AdminPanel() {
 				</table>
 				{orgs.length === 0 && <p className="py-30 text-center text-14 text-[#999999]">{t("none")}</p>}
 			</div>
+
+			{/* Разделы фирмы: что открыто по тарифу и что администратор включил или выключил вручную */}
+			<Modal open={!!featuresFor} onClose={() => setFeaturesFor(null)} label={t("features")} align="top" className="w-full max-w-[560px] rounded-16 bg-white p-24 pt-20">
+				{featuresFor && (
+					<>
+						<h2 className="mb-6 text-20 font-semibold text-[#333333]">{t("featuresTitle", { name: featuresFor.name })}</h2>
+						<p className="mb-16 text-13 text-[#666666]">{t("featuresHelp")}</p>
+						<div className="mb-16 flex flex-wrap items-center gap-8 text-12 text-[#999999]">
+							<span className="rounded-4 bg-[#EEF5FF] px-8 py-2 font-medium text-primaryColor">{featuresFor.plan}</span>
+							<span>{tf("limitsLine", { rules: planFor(featuresFor.plan).automationRules, ai: planFor(featuresFor.plan).aiDailyRequests, storage: planFor(featuresFor.plan).storageMb >= 1000 ? `${planFor(featuresFor.plan).storageMb / 1000} GB` : `${planFor(featuresFor.plan).storageMb} MB` })}</span>
+						</div>
+						<ul className="mb-20 flex flex-col gap-8">
+							{FEATURE_KEYS.map((key) => {
+								const byPlan = !!planFor(featuresFor.plan).features[key];
+								const override = featuresFor.featureOverrides?.[key];
+								const on = override ?? byPlan;
+								return (
+									<li key={key} className="flex items-center gap-12 rounded-12 border border-[#F0F0F0] p-10">
+										<span className="flex-1 text-14 text-[#333333]">{tf(key)}</span>
+										<span className={`rounded-4 px-8 py-2 text-12 ${on ? "bg-[#EAF7EE] text-[#009A2B]" : "bg-[#F5F5F5] text-[#999999]"}`}>
+											{override === undefined ? (byPlan ? t("featByPlan") : t("featOff")) : override ? t("featExtra") : t("featOff")}
+										</span>
+										<select
+											value={override === undefined ? "" : override ? "on" : "off"}
+											onChange={(e) => toggleFeature(featuresFor, key, e.target.value === "" ? undefined : e.target.value === "on")}
+											aria-label={tf(key)}
+											className={input}>
+											<option value="">{t("featByPlan")}</option>
+											<option value="on">{t("featExtra")}</option>
+											<option value="off">{t("featOff")}</option>
+										</select>
+									</li>
+								);
+							})}
+						</ul>
+						<button type="button" onClick={() => setFeaturesFor(null)} className="rounded-10 bg-primaryColor px-20 py-10 text-14 font-medium text-white">{t("cancel")}</button>
+					</>
+				)}
+			</Modal>
 
 			<BlogAdmin />
 		</div>

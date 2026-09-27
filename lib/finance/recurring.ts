@@ -34,7 +34,7 @@ export async function runRecurringInvoices() {
             customerName: r.customerName, customerAddress: r.customerAddress, customerTaxId: r.customerTaxId,
             contact: r.contact || undefined, company: r.company || undefined,
             items: r.items, currency: r.currency, smallBusinessNote: !!settings.smallBusiness,
-            issueDate: today, dueDate, notes: r.notes, recurringSource: r._id,
+            issueDate: today, dueDate, notes: r.notes, recurringSource: r._id, template: r.template,
             status: r.autoSend ? "sent" : "draft", sentAt: r.autoSend ? new Date() : undefined,
             createdByName: "Automation",
         });

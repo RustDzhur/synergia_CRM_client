@@ -11,6 +11,7 @@ import { parseSip } from "./sip";
 import { connectTwilio, normalizePhone } from "./twilio";
 import { deleteWebhook, getMe, getWebhookInfo, setWebhook } from "./telegram";
 import { getAccount, removeViberWebhook, setViberWebhook } from "./viber";
+import { getPhoneNumber, subscribeApp } from "./whatsapp";
 
 type Doc = HydratedDocument<any>;
 type Input = Record<string, unknown>;
@@ -37,6 +38,8 @@ async function registerWebhook(doc: Doc, origin: string) {
         doc.set("config.polling", "");
         doc.markModified("config");
     }
+    // WhatsApp вебхук не умеет регистрировать сам: адрес и verify token вводят в кабинете Meta (Settings → Integration)
+    if (doc.type === "whatsapp") return undefined;
     if (!isPublicHttps(origin)) return "Webhooks need a public https address. Set APP_URL or deploy the site, then press «Register webhook».";
     try {
         if (doc.type === "telegram") await setWebhook(secretsOf(doc).botToken, url, secretsOf(doc).webhookSecret);
@@ -70,6 +73,20 @@ export async function connectIntegration(owner: string, type: string, input: Inp
             name = acc.name;
             config = { botName: acc.name };
             secrets = { authToken };
+            break;
+        }
+        case "whatsapp": {
+            const phoneNumberId = need(str(input.phoneNumberId, 64), "Phone number ID");
+            const accessToken = need(str(input.accessToken, 800), "Access token");
+            const appSecret = need(str(input.appSecret, 200), "App secret");
+            const phone = await getPhoneNumber(phoneNumberId, accessToken);
+            name = phone.display_phone_number || phone.verified_name || phoneNumberId;
+            // botName — отображаемое имя канала (как у Viber): в списках рядом с номером видно и название фирмы
+            config = { phoneNumberId, verifyToken: randomToken(8), ...(phone.verified_name ? { botName: phone.verified_name } : {}) };
+            // без подписки приложения на аккаунт WhatsApp Business Meta не присылает вебхуки; если id не указали — настроим в кабинете
+            const wabaId = str(input.wabaId, 64);
+            if (wabaId) config.wabaId = wabaId;
+            secrets = { accessToken, appSecret };
             break;
         }
         case "messenger": {
@@ -112,7 +129,9 @@ export async function connectIntegration(owner: string, type: string, input: Inp
     const doc = (await Integration.findOne({ owner, type })) ?? new Integration({ owner, type });
     doc.set({ name, token, config, secrets: packSecrets(secrets), status: "connected", error: "" });
     await doc.save();
-    const warning = type === "telegram" || type === "viber" ? await registerWebhook(doc, origin) : undefined;
+    // подписка на аккаунт WhatsApp Business: без неё Meta не станет присылать события, но подключение уже рабочее для отправки
+    const subscribeWarning = config.wabaId ? await subscribeApp(config.wabaId, secrets.accessToken).then(() => "").catch((e) => (e instanceof ProviderError ? e.message : "Could not subscribe the app to the WhatsApp Business account")) : "";
+    const warning = (type === "telegram" || type === "viber" ? await registerWebhook(doc, origin) : undefined) || subscribeWarning || undefined;
     if (warning) {
         doc.status = "error";
         doc.error = warning;
@@ -132,6 +151,19 @@ export function webchatConfig(input: Input) {
 
 // Проверка канала: у Telegram спрашиваем, дошёл ли до нас вебхук и почему нет (например, сайт закрыт паролем Vercel)
 export async function checkIntegration(doc: Doc, origin: string) {
+    // у WhatsApp проверяем доступ к номеру: токен мог истечь или номер отвязали от приложения
+    if (doc.type === "whatsapp") {
+        let message = "";
+        try {
+            await getPhoneNumber(doc.config.phoneNumberId, secretsOf(doc).accessToken);
+        } catch (e) {
+            message = e instanceof ProviderError ? e.message : "Could not reach the WhatsApp number";
+        }
+        doc.status = message ? "error" : "connected";
+        doc.error = message;
+        await doc.save();
+        return;
+    }
     if (doc.type !== "telegram" || doc.config.polling === "1") return;
     let message = "";
     try {

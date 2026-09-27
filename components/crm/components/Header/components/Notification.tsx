@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
@@ -28,7 +28,12 @@ const ago = (iso: string) => {
 export default function Notification({ align = "down" }: { align?: "down" | "up" } = {}) {
 	const t = useTranslations("notif");
 	const locale = useLocale();
-	const { items, unread, open, toggle, close, markRead, markAll } = useNotificationStore();
+	const { items, unread, markRead, markAll } = useNotificationStore();
+	// Панель — своя у каждого колокольчика (шапка и мобильное меню рендерят его одновременно): общий флаг
+	// в сторе открывал обе, и «клик снаружи» от одной закрывал ту, в которой как раз нажимали кнопку —
+	// из-за этого «прочитать все» не срабатывало. См. CurrentUser.tsx.
+	const [open, setOpen] = useState(false);
+	const close = useCallback(() => setOpen(false), []);
 	const ref = useRef<HTMLDivElement>(null);
 	useClickOutside(ref, open, close);
 
@@ -59,7 +64,7 @@ export default function Notification({ align = "down" }: { align?: "down" | "up"
 
 	return (
 		<div ref={ref} className="relative">
-			<button type="button" aria-label={t("title")} aria-expanded={open} onClick={toggle} className="relative flex">
+			<button type="button" aria-label={t("title")} aria-expanded={open} onClick={() => setOpen((v) => !v)} className="relative flex">
 				<MdNotifications size={24} color={unread > 0 ? "#5EA8F5" : "#B3B3B3"} />
 				{unread > 0 && (
 					<span className="absolute -right-6 -top-6 flex h-[18px] min-w-[18px] items-center justify-center rounded-[9px] bg-danger px-4 text-[11px] font-semibold leading-none text-white">
