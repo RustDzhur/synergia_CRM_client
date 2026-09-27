@@ -41,20 +41,57 @@ async function keyValues(org: string, key: string) {
     return Object.fromEntries(rows.map((r) => [String(r.values?.name ?? ""), String(r.values?.value ?? "")]).filter(([k]) => k));
 }
 
+// Какая сущность стоит за событием — на неё и «нанизываются» поля события (deal.stageName, task.title, invoice.number)
+function eventBucket(type: string) {
+    return type.startsWith("deal") ? "deal" : type.startsWith("contact") || type === "lead_created" ? "contact" : type.startsWith("task") ? "task"
+        : type.startsWith("message") || type === "call_missed" ? "message"
+        : type.startsWith("order") ? "order" : type.startsWith("invoice") ? "invoice" : type.startsWith("contract") ? "contract" : type.startsWith("quote") ? "quote"
+        : "deadline";
+}
+
+// Одно и то же поле у разных событий называется по-разному: у сделки контакт — contactName, у счёта клиент — customerName,
+// у сообщения отправитель — from. Синонимы дают шаблону устойчивое имя независимо от события.
+const ALIASES: Record<string, string[]> = {
+    "contact.name": ["contactName", "name", "from", "customerName"],
+    "contact.email": ["email", "contactEmail"],
+    "deal.name": ["customerName"],
+    "deal.contactName": ["contactName"],
+    "deal.stageName": ["stageName"],
+    "task.title": ["title"],
+    "message.text": ["text"],
+    "message.from": ["from", "name"],
+};
+
+// Событие приходит одним плоским набором полей, поэтому {{contact.name}} в событии сделки раньше подставлял название сделки.
+// Строим канонический вид: каждое поле доступно и коротко ({{stageName}}), и как «сущность.поле» ({{deal.stageName}}).
+function eventView(ev: AutoEvent) {
+    const bucket = eventBucket(ev.type);
+    const view: Record<string, string> = { "event.type": ev.type };
+    for (const [k, v] of Object.entries(ev.data)) {
+        const s = String(v ?? "");
+        if (!(k in view)) view[k] = s;
+        if (!view[`${bucket}.${k}`]) view[`${bucket}.${k}`] = s;
+    }
+    for (const [path, sources] of Object.entries(ALIASES)) {
+        if (view[path]) continue;
+        const found = sources.map((s) => view[s]).find(Boolean);
+        if (found) view[path] = found;
+    }
+    // номер документа один и тот же у счёта, заказа, предложения и договора
+    if (view.number) for (const b of ["invoice", "order", "quote", "contract"]) if (!view[`${b}.number`]) view[`${b}.number`] = view.number;
+    return view;
+}
+
 // «Здравствуйте, {{contact.name}}!» → значения события, констант и переменных раздела
 export async function render(org: string, template: string, ev: AutoEvent) {
+    if (!template.includes("{{")) return template;
     const [constants, variables] = await Promise.all([keyValues(org, "automation:constants"), keyValues(org, "automation:variables")]);
+    const view = eventView(ev);
     return template.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, path: string) => {
         const [head, ...rest] = path.split(".");
-        const name = rest.join(".");
-        if (head === "constants") return constants[name] ?? "";
-        if (head === "variables") return variables[name] ?? "";
-        const bucket = ev.type.startsWith("deal") ? "deal" : ev.type.startsWith("contact") || ev.type === "lead_created" ? "contact" : ev.type.startsWith("task") ? "task"
-            : ev.type.startsWith("message") || ev.type === "call_missed" ? "message"
-            : ev.type.startsWith("order") ? "order" : ev.type.startsWith("invoice") ? "invoice" : ev.type.startsWith("contract") ? "contract" : ev.type.startsWith("quote") ? "quote"
-            : "deadline";
-        if (head === bucket || head === "event") return ev.data[name] ?? "";
-        return ev.data[path] ?? ev.data[name] ?? "";
+        if (head === "constants") return constants[rest.join(".")] ?? "";
+        if (head === "variables") return variables[rest.join(".")] ?? "";
+        return view[path] ?? "";
     });
 }
 
@@ -79,12 +116,30 @@ async function clientEmail(org: string, ev: AutoEvent) {
     return c?.email ?? "";
 }
 
+// Куда ведёт уведомление: у каждого события свой раздел (счёт — в счёта раздела «Финансы», письмо-лид — в воронку).
+// Раньше ссылку выбирали только между CRM, задачами и чатом, поэтому уведомление по счёту уводило в «Chat and Calls».
+const LINKS: [string, string][] = [
+    ["/crm/crm", "deal"],
+    ["/crm/tasks", "task"],
+    ["/crm/inventory?tab=invoices", "invoice"],
+    ["/crm/inventory?tab=orders", "order"],
+    ["/crm/inventory?tab=quotes", "quote"],
+    ["/crm/inventory?tab=contracts", "contract"],
+];
+function eventLink(ev: AutoEvent) {
+    const bucket = eventBucket(ev.type);
+    if (ev.type === "lead_created") return "/crm/crm";
+    if (ev.type === "deadline") return "/crm/tasks";
+    if (ev.type === "contact_created") return "/crm/crm/contacts";
+    return LINKS.find(([, b]) => b === bucket)?.[0] ?? "/crm/collaboration/chat-and-calls";
+}
+
 async function perform(org: string, rule: Rule, ev: AutoEvent): Promise<string> {
     const v = rule.values;
     const text = await render(org, v.message || v.name || "", ev);
     switch (v.action) {
         case "notify": {
-            await notify(org, { type: "automation", params: { text: text || v.name }, link: ev.type.startsWith("deal") || ev.type === "lead_created" ? "/crm/crm" : ev.type.startsWith("task") || ev.type === "deadline" ? "/crm/tasks" : "/crm/collaboration/chat-and-calls", key: `auto:${rule.id}:${randomToken(4)}` });
+            await notify(org, { type: "automation", params: { text: text || v.name }, link: eventLink(ev), key: `auto:${rule.id}:${randomToken(4)}` });
             return "Notification sent";
         }
         case "create_task": {

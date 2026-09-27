@@ -1,8 +1,5 @@
 import { SectionConfig } from "../shared/records/config";
 
-// Сколько правил и триггеров разрешает текущий тариф (плашка «You Can Use 5 Rules And Triggers On Your Current Plan»)
-export const PLAN_LIMITS: Record<string, number> = { free: 5, standard: 30, professional: 200 };
-
 export const TIMINGS = ["immediately", "after_1h", "after_1d", "after_3d"];
 export const EVENTS = [
 	"deal_created", "deal_stage", "contact_created", "lead_created", "message_received", "call_missed", "task_created", "deadline",
