@@ -2,10 +2,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdArrowBack, MdAttachFile, MdCall, MdCallMade, MdCallMissed, MdCallReceived, MdForum, MdMoreHoriz } from "react-icons/md";
-import { apiCall } from "@/app/store/crmApi";
+import { MdArrowBack, MdAttachFile, MdCall, MdCallMade, MdCallMissed, MdCallReceived, MdForum, MdInsertDriveFile, MdMic, MdMoreHoriz, MdStop } from "react-icons/md";
+import { apiCall, authHeaders } from "@/app/store/crmApi";
 import { useCallStore } from "@/app/store/useCallStore";
-import type { ConversationDTO, MessageDTO, MessagingChannel } from "@/app/types/integrations";
+import type { AttachmentDTO, ConversationDTO, MessageDTO, MessagingChannel } from "@/app/types/integrations";
 import Dropdown from "@/app/utils/Dropdown";
 import { useClickOutside } from "@/app/utils/useClickOutside";
 import { usePolling } from "@/app/utils/usePolling";
@@ -45,6 +45,67 @@ function CallEntry({ m }: { m: MessageDTO }) {
 			<span>{hhmm(new Date(m.at))}</span>
 		</div>
 	);
+}
+
+// Каналы, в которые можно отправлять фото, файлы и голосовые (совпадает с серверным списком)
+const MEDIA_CHANNELS: MessagingChannel[] = ["telegram", "viber"];
+
+const sizeLabel = (bytes: number) => (bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`);
+
+// Вложение сообщения: фото показываем, звук проигрываем, остальное отдаём карточкой файла со скачиванием
+function AttachmentView({ a, url, mine }: { a: AttachmentDTO; url?: string; mine: boolean }) {
+	const t = useTranslations("collab");
+	const frame = `overflow-hidden rounded-16 shadow-custom ${mine ? "bg-white" : "bg-primaryColor"}`;
+	if (!url) return <div className={`${frame} px-20 py-12 text-16 text-[#999999]`}>{t("attachmentLoading")}</div>;
+	if (a.kind === "image")
+		return (
+			<a href={url} target="_blank" rel="noreferrer" title={a.name} className="block max-w-[85%] transition-transform duration-150 hover:scale-[1.01] motion-reduce:transform-none">
+				<img src={url} alt={a.name} className="max-h-[320px] w-auto max-w-full rounded-16 shadow-custom" />
+			</a>
+		);
+	if (a.kind === "voice")
+		return (
+			<div className={`${frame} flex items-center gap-12 px-16 py-10`}>
+				<audio controls src={url} className="h-[36px] w-[220px]" aria-label={t("mediaVoice")} />
+			</div>
+		);
+	return (
+		<a href={url} download={a.name} className={`${frame} flex max-w-[85%] items-center gap-12 px-16 py-12`}>
+			<span className="shrink-0 text-primaryColor"><MdInsertDriveFile size={28} /></span>
+			<span className="min-w-0 text-16">
+				<span className="block truncate text-[#4D4D4D] md:text-18">{a.name}</span>
+				<span className="block text-14 text-[#999999]">{sizeLabel(a.size)}</span>
+			</span>
+		</a>
+	);
+}
+
+// Вложения подгружаются с авторизацией, поэтому в <img>/<audio> попадают ссылки на уже полученные файлы
+function useAttachmentUrls(messages: MessageDTO[]) {
+	const [urls, setUrls] = useState<Record<string, string>>({});
+	const made = useRef<Record<string, string>>({});
+	useEffect(() => {
+		const pending = messages.filter((m) => m.attachment && !made.current[m.id]);
+		if (pending.length === 0) return;
+		let stop = false;
+		(async () => {
+			for (const m of pending) {
+				try {
+					const res = await fetch(`/api/messages/${m.id}/attachment`, { headers: authHeaders(false) });
+					if (!res.ok) continue;
+					const url = URL.createObjectURL(await res.blob());
+					if (stop) return void URL.revokeObjectURL(url);
+					made.current[m.id] = url;
+					setUrls((u) => ({ ...u, [m.id]: url }));
+				} catch {
+					// файл не отдался — сообщение останется без вложения, переписка не ломается
+				}
+			}
+		})();
+		return () => { stop = true; };
+	}, [messages]);
+	useEffect(() => () => { Object.values(made.current).forEach((u) => URL.revokeObjectURL(u)); made.current = {}; }, []);
+	return urls;
 }
 
 function ChatList({ chats, activeId, onSelect }: { chats: ConversationDTO[]; activeId: string | null; onSelect: (id: string) => void }) {
@@ -105,8 +166,11 @@ export default function Chat() {
 	const [sending, setSending] = useState(false);
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [confirmDelete, setConfirmDelete] = useState(false);
+	const [recording, setRecording] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
 	const endRef = useRef<HTMLDivElement>(null);
+	const fileRef = useRef<HTMLInputElement>(null);
+	const recorderRef = useRef<MediaRecorder | null>(null);
 	const callState = useCallStore((s) => s.state);
 	useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
 	useScrollLock(drawer);
@@ -131,6 +195,7 @@ export default function Chat() {
 		setChats((list) => list.map((c) => (c.id === activeId ? { ...c, unread: 0 } : c)));
 	}, [activeId]);
 
+	const attachmentUrls = useAttachmentUrls(messages);
 	usePolling(loadChats, 6000);
 	usePolling(loadMessages, 3000, visible);
 	useEffect(() => { setMessages([]); }, [activeId]);
@@ -155,6 +220,48 @@ export default function Chat() {
 		setText("");
 		if (res.data) setMessages((list) => (list.some((m) => m.id === res.data!.id) ? list : [...list, res.data!]));
 		loadChats();
+	}
+
+	// Отправка вложения: сначала файл уходит в хранилище фирмы, потом — собеседнику через его канал.
+	// Текст рядом с файлом становится подписью (у Viber для файлов — отдельным сообщением).
+	async function sendFile(file: File) {
+		if (!active || sending) return;
+		setSending(true);
+		const form = new FormData();
+		form.append("file", file);
+		const caption = text.trim();
+		if (caption) form.append("text", caption);
+		const res = await fetch(`/api/conversations/${active.id}/attachment`, { method: "POST", headers: authHeaders(false), body: form });
+		const body = await res.json().catch(() => null);
+		setSending(false);
+		if (!res.ok) return void toast.error(body?.message || t("sendFailed")); // текст остаётся в поле — можно отправить ещё раз
+		setText("");
+		if (body) setMessages((list) => (list.some((m) => m.id === body.id) ? list : [...list, body as MessageDTO]));
+		loadChats();
+	}
+
+	// Голосовое: пишем с микрофона и отправляем как звуковой файл (то же поле, что и у вложения)
+	async function toggleRecording() {
+		if (recording) return void recorderRef.current?.stop();
+		if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") return void toast.error(t("micDenied"));
+		try {
+			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+			const recorder = new MediaRecorder(stream);
+			const chunks: Blob[] = [];
+			recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+			recorder.onstop = () => {
+				stream.getTracks().forEach((track) => track.stop());
+				setRecording(false);
+				const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+				if (blob.size) void sendFile(new File([blob], "voice.webm", { type: blob.type }));
+			};
+			recorderRef.current = recorder;
+			setRecording(true);
+			recorder.start();
+		} catch {
+			setRecording(false);
+			toast.error(t("micDenied"));
+		}
 	}
 
 	async function removeChat() {
@@ -242,12 +349,17 @@ export default function Chat() {
 												{mine ? t("you") : active.name}{" "}
 												<span className="ml-6 text-14 font-normal text-[#B3B3B3]">{hhmm(new Date(m.at))}</span>
 											</p>
-											<p
-												className={`max-w-[85%] whitespace-pre-wrap break-words rounded-16 px-20 py-12 text-16 shadow-custom md:text-18 ${
-													mine ? "bg-white text-[#4D4D4D]" : "bg-primaryColor text-white"
-												}`}>
-												{m.text}
-											</p>
+											{m.attachment && (
+												<AttachmentView a={m.attachment} url={attachmentUrls[m.id]} mine={mine} />
+											)}
+											{m.text && (
+												<p
+													className={`max-w-[85%] whitespace-pre-wrap break-words rounded-16 px-20 py-12 text-16 shadow-custom md:text-18 ${
+														mine ? "bg-white text-[#4D4D4D]" : "bg-primaryColor text-white"
+													} ${m.attachment ? "mt-8" : ""}`}>
+													{m.text}
+												</p>
+											)}
 										</div>
 									);
 								})}
@@ -268,9 +380,35 @@ export default function Chat() {
 								maxLength={2000}
 								className="h-[64px] w-full text-16 text-[#4D4D4D] outline-none placeholder:text-[#CCCCCC]"
 							/>
-							<button type="button" onClick={() => toast(t("attachSoon"))} aria-label={t("attach")} className="shrink-0 text-[#B3B3B3] transition-colors hover:text-primaryColor">
-								<MdAttachFile size={24} />
-							</button>
+							{active && MEDIA_CHANNELS.includes(active.channel) && (
+								<>
+									{/* голосовое с микрофона */}
+									<button
+										type="button"
+										onClick={toggleRecording}
+										disabled={sending}
+										aria-label={recording ? t("stopRecording") : t("recordVoice")}
+										aria-pressed={recording}
+										className={`shrink-0 transition-colors ${recording ? "animate-pulse text-danger" : "text-[#B3B3B3] hover:text-primaryColor"}`}>
+										{recording ? <MdStop size={24} /> : <MdMic size={24} />}
+									</button>
+									<input
+										ref={fileRef}
+										type="file"
+										className="hidden"
+										aria-label={t("attach")}
+										onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ""; if (file) void sendFile(file); }}
+									/>
+									<button
+										type="button"
+										onClick={() => fileRef.current?.click()}
+										disabled={sending}
+										aria-label={t("attach")}
+										className="shrink-0 text-[#B3B3B3] transition-colors hover:text-primaryColor disabled:opacity-50">
+										<MdAttachFile size={24} />
+									</button>
+								</>
+							)}
 						</footer>
 						)}
 					</>

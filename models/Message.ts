@@ -11,6 +11,14 @@ const MessageSchema = new Schema(
         text: { type: String, default: "" },
         status: { type: String, enum: ["sent", "failed"], default: "sent" },
         externalId: { type: String }, // id сообщения у провайдера — защита от повторной доставки вебхука
+        // вложение (фото, файл, голосовое): path — путь в хранилище фирмы, по нему файл отдаётся в переписке
+        attachment: {
+            type: new Schema(
+                { kind: { type: String, enum: ["image", "file", "voice"] }, name: String, mime: String, size: Number, path: String },
+                { _id: false }
+            ),
+            default: null,
+        },
         meta: { type: Schema.Types.Mixed, default: {} },
     },
     { timestamps: true, minimize: false }
