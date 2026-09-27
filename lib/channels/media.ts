@@ -5,6 +5,7 @@ import { fetchProvider } from "@/lib/http";
 import { secretsOf } from "@/lib/integrations";
 import { deleteObject, putObject, storageConfigured } from "@/lib/storage/firebase";
 import { downloadTelegramFile } from "./telegram";
+import { webmOpusToOgg } from "./oggOpus";
 
 type Doc = HydratedDocument<any>;
 
@@ -82,6 +83,23 @@ export async function saveMedia(owner: string, ref: { kind: MediaKind; name: str
 
 export async function dropMedia(path: string) {
     await deleteObject(path).catch(() => undefined);
+}
+
+// Голосовое из браузера приходит в WebM, а Telegram принимает голосовые только как OGG/Opus,
+// MP3 или M4A. Перекладываем контейнер прямо перед отправкой: в хранилище и в переписке
+// остаётся исходный файл (браузер его и так проигрывает), а в Telegram уходит Ogg/Opus.
+// Не получилось — отправляем как раньше, документом: голосовое важнее не потерять.
+export function telegramMedia(media: OutgoingMedia): OutgoingMedia {
+    const { attachment } = media;
+    if (attachment.kind !== "voice") return media; // настоящее видео конвертировать нельзя
+    const mime = (attachment.mime || "").split(";")[0].trim().toLowerCase();
+    if (mime !== "audio/webm" && mime !== "video/webm") return media;
+    try {
+        const data = webmOpusToOgg(media.data);
+        return { ...media, data, attachment: { ...attachment, mime: "audio/ogg", name: attachment.name.replace(/\.[a-z0-9]+$/i, "") + ".ogg", size: data.length } };
+    } catch {
+        return media;
+    }
 }
 
 // Забираем входящее вложение у провайдера и сохраняем. Ошибка не должна мешать самому сообщению.

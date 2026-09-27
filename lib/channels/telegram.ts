@@ -48,6 +48,10 @@ export async function sendTelegram(botToken: string, chatId: string, text: strin
     return String(msg.message_id);
 }
 
+// Голосовым сообщением Telegram принимает OGG/Opus, MP3 и M4A (Safari пишет как раз M4A);
+// всё остальное, включая WebM, уходит документом — его в клиенте не прослушать.
+const VOICE_MIME = /^audio\/(ogg|oga|opus|m4a|x-m4a|mp4|mpeg|mp3|x-mpeg)$/i;
+
 // Отправка файла: сам файл уходит в Telegram телом запроса (multipart), поэтому публичная ссылка не нужна.
 // Фото и голосовые Telegram принимает только «своими» способами, всё остальное — документом.
 export async function sendTelegramMedia(
@@ -57,7 +61,8 @@ export async function sendTelegramMedia(
     data: Buffer,
     caption = ""
 ) {
-    const voice = media.kind === "voice" && /^(audio\/ogg|audio\/opus)/i.test(media.mime);
+    const mime = (media.mime || "").split(";")[0].trim();
+    const voice = media.kind === "voice" && VOICE_MIME.test(mime);
     const method = media.kind === "image" ? "sendPhoto" : voice ? "sendVoice" : "sendDocument";
     const field = method === "sendPhoto" ? "photo" : method === "sendVoice" ? "voice" : "document";
     const form = new FormData();

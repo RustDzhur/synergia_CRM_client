@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdArrowBack, MdAttachFile, MdCall, MdCallMade, MdCallMissed, MdCallReceived, MdForum, MdInsertDriveFile, MdMic, MdMoreHoriz, MdStop } from "react-icons/md";
+import { TbArrowLeft, TbDots, TbFile, TbMessages, TbMicrophone, TbPaperclip, TbPhone, TbPhoneIncoming, TbPhoneOutgoing, TbPhoneX, TbPlayerStop } from "react-icons/tb";
 import { apiCall, authHeaders } from "@/app/store/crmApi";
 import { useCallStore } from "@/app/store/useCallStore";
 import type { AttachmentDTO, ConversationDTO, MessageDTO, MessagingChannel } from "@/app/types/integrations";
@@ -31,16 +31,16 @@ function CallEntry({ m }: { m: MessageDTO }) {
 	const duration = Number(m.meta.duration) || 0;
 	const done = status === "completed";
 	let label: string;
-	let Icon = m.direction === "in" ? MdCallReceived : MdCallMade;
+	let Icon = m.direction === "in" ? TbPhoneIncoming : TbPhoneOutgoing;
 	if (m.direction === "in") {
 		label = done ? t("callLogIn", { duration: mmss(duration) }) : t("callLogMissed");
-		if (!done) Icon = MdCallMissed;
+		if (!done) Icon = TbPhoneX;
 	} else {
 		label = done ? t("callLogOut", { duration: mmss(duration) }) : status === "no-answer" ? t("callLogNoAnswer") : status === "busy" ? t("callLogBusy") : t("callLogFailed");
 	}
 	return (
-		<div className="flex animate-fade-in items-center justify-center gap-8 text-14 text-[#999999]">
-			<Icon size={18} className={done ? "text-[#009A2B]" : "text-danger"} />
+		<div className="flex animate-fade-in items-center justify-center gap-8 text-12 text-[#8c948b]">
+			<Icon size={16} className={done ? "text-[#c6ff4d]" : "text-danger"} />
 			<span>{label}</span>
 			<span>{hhmm(new Date(m.at))}</span>
 		</div>
@@ -52,29 +52,39 @@ const MEDIA_CHANNELS: MessagingChannel[] = ["telegram", "viber"];
 
 const sizeLabel = (bytes: number) => (bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`);
 
+// Расширение записи: Chrome пишет WebM, Safari — MP4 (m4a). Имя должно совпадать с содержимым,
+// иначе и Telegram, и наш сервер определят тип файла неправильно.
+function voiceExt(mimeType: string) {
+	const m = (mimeType || "").toLowerCase();
+	if (m.includes("mp4")) return "m4a";
+	if (m.includes("ogg")) return "ogg";
+	if (m.includes("mpeg")) return "mp3";
+	return "webm";
+}
+
 // Вложение сообщения: фото показываем, звук проигрываем, остальное отдаём карточкой файла со скачиванием
 function AttachmentView({ a, url, mine }: { a: AttachmentDTO; url?: string; mine: boolean }) {
 	const t = useTranslations("collab");
-	const frame = `overflow-hidden rounded-16 shadow-custom ${mine ? "bg-white" : "bg-primaryColor"}`;
-	if (!url) return <div className={`${frame} px-20 py-12 text-16 text-[#999999]`}>{t("attachmentLoading")}</div>;
+	const frame = `overflow-hidden rounded-14 border border-inkLine ${mine ? "bg-[rgba(198,255,77,0.14)]" : "bg-[rgba(255,255,255,0.05)]"}`;
+	if (!url) return <div className={`${frame} px-16 py-10 text-13 text-[#8c948b]`}>{t("attachmentLoading")}</div>;
 	if (a.kind === "image")
 		return (
 			<a href={url} target="_blank" rel="noreferrer" title={a.name} className="block max-w-[85%] transition-transform duration-150 hover:scale-[1.01] motion-reduce:transform-none">
-				<img src={url} alt={a.name} className="max-h-[320px] w-auto max-w-full rounded-16 shadow-custom" />
+				<img src={url} alt={a.name} className="max-h-[320px] w-auto max-w-full rounded-14 border border-inkLine" />
 			</a>
 		);
 	if (a.kind === "voice")
 		return (
-			<div className={`${frame} flex items-center gap-12 px-16 py-10`}>
-				<audio controls src={url} className="h-[36px] w-[220px]" aria-label={t("mediaVoice")} />
+			<div className={`${frame} flex items-center gap-12 px-14 py-8`}>
+				<audio controls src={url} className="h-[34px] w-[220px]" aria-label={t("mediaVoice")} />
 			</div>
 		);
 	return (
-		<a href={url} download={a.name} className={`${frame} flex max-w-[85%] items-center gap-12 px-16 py-12`}>
-			<span className="shrink-0 text-primaryColor"><MdInsertDriveFile size={28} /></span>
-			<span className="min-w-0 text-16">
-				<span className="block truncate text-[#4D4D4D] md:text-18">{a.name}</span>
-				<span className="block text-14 text-[#999999]">{sizeLabel(a.size)}</span>
+		<a href={url} download={a.name} className={`${frame} flex max-w-[85%] items-center gap-10 px-14 py-10`}>
+			<span className="shrink-0 text-[#c6ff4d]"><TbFile size={24} /></span>
+			<span className="min-w-0">
+				<span className="block truncate text-13 text-[#f1f4ee]">{a.name}</span>
+				<span className="block text-11 text-[#8c948b]">{sizeLabel(a.size)}</span>
 			</span>
 		</a>
 	);
@@ -111,7 +121,7 @@ function useAttachmentUrls(messages: MessageDTO[]) {
 function ChatList({ chats, activeId, onSelect }: { chats: ConversationDTO[]; activeId: string | null; onSelect: (id: string) => void }) {
 	const t = useTranslations("collab");
 	const locale = useLocale();
-	if (chats.length === 0) return <p className="p-30 text-center text-16 text-[#999999]">{t("chatsEmpty")}</p>;
+	if (chats.length === 0) return <p className="p-30 text-center text-13 text-[#8c948b]">{t("chatsEmpty")}</p>;
 	return (
 		<ul>
 			{chats.map((c) => {
@@ -122,20 +132,20 @@ function ChatList({ chats, activeId, onSelect }: { chats: ConversationDTO[]; act
 							type="button"
 							onClick={() => onSelect(c.id)}
 							aria-current={active ? "true" : undefined}
-							className={`flex w-full items-center gap-12 px-12 py-[18px] text-left transition-colors duration-150 ${active ? "bg-[#EBEEFF]" : "hover:bg-[#F7F9FF]"}`}>
-							<Avatar initials={initialsOf(c.name)} size={58} className="flex text-18" />
+							className={`flex w-full items-center gap-12 border-b border-inkLineSoft px-14 py-14 text-left transition-colors duration-150 last:border-b-0 ${active ? "bg-[rgba(198,255,77,0.08)]" : "hover:bg-[rgba(255,255,255,0.04)]"}`}>
+							<Avatar initials={initialsOf(c.name)} size={44} className="flex text-14" />
 							<div className="min-w-0 flex-1">
 								<div className="flex items-start justify-between gap-8">
-									<p className="flex min-w-0 items-center gap-6 text-18 font-semibold text-[#333333]">
+									<p className="flex min-w-0 items-center gap-6 text-13 font-semibold text-[#f1f4ee]">
 											<ChannelBadge channel={c.channel} />
 											<span className="truncate">{c.name}</span>
 										</p>
-									<p className="shrink-0 whitespace-nowrap text-12 text-[#333333] md:max-lg:hidden lg:text-14">{formatChatDate(c.lastAt, locale)}</p>
+									<p className="shrink-0 whitespace-nowrap text-11 text-[#8C948B] md:max-lg:hidden">{formatChatDate(c.lastAt, locale)}</p>
 								</div>
 								<div className="mt-2 flex items-end justify-between gap-8">
-									<p className="truncate text-14 text-[#666666]">{c.lastText}</p>
+									<p className="truncate text-12 text-[#8c948b]">{c.lastText}</p>
 									{c.unread > 0 && (
-										<span className="flex h-[25px] min-w-[27px] shrink-0 items-center justify-center rounded-4 bg-primaryColor px-6 text-14 font-semibold text-white">
+										<span className="flex h-20 min-w-22 shrink-0 items-center justify-center rounded-50 bg-[#c6ff4d] px-6 text-11 font-semibold text-[#0a0c0b]">
 											{c.unread}
 										</span>
 									)}
@@ -252,8 +262,9 @@ export default function Chat() {
 			recorder.onstop = () => {
 				stream.getTracks().forEach((track) => track.stop());
 				setRecording(false);
-				const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
-				if (blob.size) void sendFile(new File([blob], "voice.webm", { type: blob.type }));
+				const type = recorder.mimeType || "audio/webm";
+				const blob = new Blob(chunks, { type });
+				if (blob.size) void sendFile(new File([blob], `voice.${voiceExt(type)}`, { type: blob.type }));
 			};
 			recorderRef.current = recorder;
 			setRecording(true);
@@ -287,50 +298,50 @@ export default function Chat() {
 		useCallStore.getState().startCall(active.externalId);
 	}
 
-	const iconButton = "text-[#666666] transition-colors hover:text-primaryColor";
+	const iconButton = "text-[#8c948b] transition-colors hover:text-[#c6ff4d]";
 
 	if (loaded && chats.length === 0) return <ChatEmpty />;
 
 	return (
-		<div className="flex h-[calc(100vh-137px)] md:h-[calc(100vh-110px)] md:p-30">
+		<div className="flex h-[calc(100vh-137px)] md:h-[calc(100vh-110px)] md:p-24 lg:p-32">
 			{/* список бесед: телефон (страница) и десктоп (колонка слева) */}
 			<aside
-				className={`${view === "list" ? "block" : "hidden"} w-full overflow-y-auto md:hidden lg:block lg:w-[400px] lg:shrink-0 lg:rounded-16 lg:border lg:border-[#E6E6E6] lg:shadow-custom`}>
+				className={`${view === "list" ? "block" : "hidden"} fs-scroll w-full overflow-y-auto md:hidden lg:block lg:w-[340px] lg:shrink-0 lg:fs-card`}>
 				<ChatList chats={chats} activeId={activeId} onSelect={select} />
 			</aside>
 
 			<section
-				className={`${view === "chat" ? "flex" : "hidden"} min-w-0 flex-1 flex-col md:flex md:overflow-hidden md:rounded-16 md:border md:border-[#E6E6E6] md:shadow-heroImage lg:ml-30`}>
+				className={`${view === "chat" ? "flex" : "hidden"} min-w-0 flex-1 flex-col md:flex md:overflow-hidden md:fs-card lg:ml-20`}>
 				{!active ? (
-					<p className="m-auto p-30 text-16 text-[#999999]">{t("chatsEmpty")}</p>
+					<p className="m-auto p-30 text-13 text-[#8c948b]">{t("chatsEmpty")}</p>
 				) : (
 					<>
-						<header className="flex items-center justify-between gap-12 border-b border-[#E6E6E6] px-16 py-16 md:px-30">
+						<header className="flex items-center justify-between gap-12 border-b border-inkLine px-16 py-12 md:px-20">
 							<div className="flex min-w-0 items-center gap-12">
 								<button type="button" onClick={() => setView("list")} aria-label={t("back")} className={`${iconButton} md:hidden`}>
-									<MdArrowBack size={24} />
+									<TbArrowLeft size={20} />
 								</button>
-								<h2 className="truncate text-24 font-semibold text-primaryColor">{active.name}</h2>
-								<ChannelBadge channel={active.channel} size={20} />
+								<h2 className="truncate text-14 font-semibold text-[#f1f4ee]">{active.name}</h2>
+								<ChannelBadge channel={active.channel} size={18} />
 							</div>
-							<div ref={menuRef} className="relative flex items-center gap-20">
+							<div ref={menuRef} className="relative flex items-center gap-16">
 								<button type="button" onClick={() => setDrawer(true)} aria-label={t("conversations")} className={`${iconButton} hidden md:block lg:hidden`}>
-									<MdForum size={24} />
+									<TbMessages size={20} />
 								</button>
 								{(active.channel === "twilio" || active.channel === "sip") && (
 									<button type="button" onClick={call} aria-label={t("call")} className={iconButton}>
-										<MdCall size={24} />
+										<TbPhone size={20} />
 									</button>
 								)}
 								<button type="button" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-label={t("more")} className={iconButton}>
-									<MdMoreHoriz size={24} />
+									<TbDots size={20} />
 								</button>
 								<Dropdown open={menuOpen} className="right-0 top-full mt-8 min-w-[190px]">
-									<div className="overflow-hidden rounded-8 border border-[#E2F1F5] bg-white shadow-custom">
+									<div className="fs-popover overflow-hidden py-4">
 										<button
 											type="button"
 											onClick={() => { setMenuOpen(false); setConfirmDelete(true); }}
-											className="block w-full px-16 py-10 text-left text-16 text-danger transition-colors hover:bg-gray">
+											className="fs-popover-row block w-full px-14 py-10 text-left text-13 !text-danger transition-colors">
 											{t("deleteChat")}
 										</button>
 									</div>
@@ -338,24 +349,24 @@ export default function Chat() {
 							</div>
 						</header>
 
-						<div className="flex-1 overflow-y-auto px-16 py-20 md:px-30">
-							<div className="flex flex-col gap-16">
+						<div className="fs-scroll flex-1 overflow-y-auto px-16 py-20 md:px-20">
+							<div className="flex flex-col gap-14">
 								{messages.map((m) => {
 									if (m.kind === "call") return <CallEntry key={m.id} m={m} />;
 									const mine = m.direction === "out";
 									return (
 										<div key={m.id} className={`flex animate-fade-in flex-col ${mine ? "items-end" : "items-start"}`}>
-											<p className="mb-8 text-16 font-medium text-[#4D4D4D]">
+											<p className="mb-6 text-12 font-medium text-[#8c948b]">
 												{mine ? t("you") : active.name}{" "}
-												<span className="ml-6 text-14 font-normal text-[#B3B3B3]">{hhmm(new Date(m.at))}</span>
+												<span className="ml-6 text-11 font-normal text-[#8C948B]">{hhmm(new Date(m.at))}</span>
 											</p>
 											{m.attachment && (
 												<AttachmentView a={m.attachment} url={attachmentUrls[m.id]} mine={mine} />
 											)}
 											{m.text && (
 												<p
-													className={`max-w-[85%] whitespace-pre-wrap break-words rounded-16 px-20 py-12 text-16 shadow-custom md:text-18 ${
-														mine ? "bg-white text-[#4D4D4D]" : "bg-primaryColor text-white"
+													className={`max-w-[85%] whitespace-pre-wrap break-words rounded-14 px-16 py-10 text-13 md:text-13 ${
+														mine ? "bg-[rgba(198,255,77,0.14)] text-[#f1f4ee]" : "bg-[rgba(255,255,255,0.05)] text-[#f1f4ee]"
 													} ${m.attachment ? "mt-8" : ""}`}>
 													{m.text}
 												</p>
@@ -368,9 +379,9 @@ export default function Chat() {
 						</div>
 
 						{active.channel === "sip" ? (
-							<footer className="flex h-[64px] items-center border-t border-[#E6E6E6] px-16 text-14 text-[#999999] md:px-30">{t("callsOnly")}</footer>
+							<footer className="flex h-[56px] items-center border-t border-inkLine px-16 text-12 text-[#8c948b] md:px-20">{t("callsOnly")}</footer>
 						) : (
-						<footer className="flex items-center gap-12 border-t border-[#E6E6E6] px-16 md:px-30">
+						<footer className="flex items-center gap-12 border-t border-inkLine px-16 md:px-20">
 							<input
 								value={text}
 								onChange={(e) => setText(e.target.value)}
@@ -378,7 +389,7 @@ export default function Chat() {
 								placeholder={t("writeMessage")}
 								aria-label={t("writeMessage")}
 								maxLength={2000}
-								className="h-[64px] w-full text-16 text-[#4D4D4D] outline-none placeholder:text-[#CCCCCC]"
+								className="h-[56px] w-full bg-transparent text-13 text-[#f1f4ee] outline-none placeholder:text-[#9AA396]"
 							/>
 							{active && MEDIA_CHANNELS.includes(active.channel) && (
 								<>
@@ -389,8 +400,8 @@ export default function Chat() {
 										disabled={sending}
 										aria-label={recording ? t("stopRecording") : t("recordVoice")}
 										aria-pressed={recording}
-										className={`shrink-0 transition-colors ${recording ? "animate-pulse text-danger" : "text-[#B3B3B3] hover:text-primaryColor"}`}>
-										{recording ? <MdStop size={24} /> : <MdMic size={24} />}
+										className={`shrink-0 transition-colors ${recording ? "animate-pulse text-danger" : "text-[#8C948B] hover:text-[#c6ff4d]"}`}>
+										{recording ? <TbPlayerStop size={20} /> : <TbMicrophone size={20} />}
 									</button>
 									<input
 										ref={fileRef}
@@ -404,8 +415,8 @@ export default function Chat() {
 										onClick={() => fileRef.current?.click()}
 										disabled={sending}
 										aria-label={t("attach")}
-										className="shrink-0 text-[#B3B3B3] transition-colors hover:text-primaryColor disabled:opacity-50">
-										<MdAttachFile size={24} />
+										className="shrink-0 text-[#8C948B] transition-colors hover:text-[#c6ff4d] disabled:opacity-50">
+										<TbPaperclip size={20} />
 									</button>
 								</>
 							)}
@@ -422,7 +433,7 @@ export default function Chat() {
 				className={`fixed inset-0 z-50 hidden justify-end bg-modalBG transition-[opacity,visibility] duration-300 motion-reduce:transition-none md:flex lg:hidden ${
 					drawer ? "visible opacity-100" : "invisible opacity-0"
 				}`}>
-				<div className={`h-full w-[300px] overflow-y-auto bg-white shadow-heroImage transition-transform duration-300 ease-out motion-reduce:transition-none ${drawer ? "translate-x-0" : "translate-x-full"}`}>
+				<div className={`fs-scroll h-full w-[300px] overflow-y-auto border-l border-inkLine bg-inkPanel shadow-[0_18px_44px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out motion-reduce:transition-none ${drawer ? "translate-x-0" : "translate-x-full"}`}>
 					<ChatList chats={chats} activeId={activeId} onSelect={select} />
 				</div>
 			</div>

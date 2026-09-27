@@ -9,7 +9,7 @@ import Conversation from "@/models/Conversation";
 import Message from "@/models/Message";
 import { sendMessenger } from "./messenger";
 import { sendSms, TwilioSecrets } from "./twilio";
-import { fetchMedia, mediaLabel, mediaUrl, type MediaRef, type OutgoingMedia, type StoredMedia } from "./media";
+import { fetchMedia, mediaLabel, mediaUrl, telegramMedia, type MediaRef, type OutgoingMedia, type StoredMedia } from "./media";
 import { sendTelegram, sendTelegramMedia } from "./telegram";
 import { sendViber, sendViberMedia } from "./viber";
 import { sendWhatsApp } from "./whatsapp";
@@ -187,11 +187,14 @@ export async function sendToConversation(integration: Doc, conversation: Doc, te
     if (media && !MEDIA_CHANNELS.includes(channel)) throw new ProviderError("This channel does not accept file attachments yet");
     let externalId: string | undefined;
     switch (channel) {
-        case "telegram":
-            externalId = media
-                ? `${conversation.externalId}:${await sendTelegramMedia(secretsOf(integration).botToken, conversation.externalId, media.attachment, media.data, text)}`
+        case "telegram": {
+            // в Telegram голосовое уходит в Ogg/Opus, даже если запись сделана в WebM (см. telegramMedia)
+            const out = media ? telegramMedia(media) : null;
+            externalId = out
+                ? `${conversation.externalId}:${await sendTelegramMedia(secretsOf(integration).botToken, conversation.externalId, out.attachment, out.data, text)}`
                 : `${conversation.externalId}:${await sendTelegram(secretsOf(integration).botToken, conversation.externalId, text)}`;
             break;
+        }
         case "viber": {
             const token = secretsOf(integration).authToken;
             const botName = integration.config.botName ?? "";
