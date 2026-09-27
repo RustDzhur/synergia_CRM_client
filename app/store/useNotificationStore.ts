@@ -6,11 +6,8 @@ export interface Notif { id: string; type: string; params: Record<string, string
 interface NotificationStore {
     items: Notif[];
     unread: number;
-    open: boolean;
     fresh: Notif[]; // появились с прошлого опроса и ещё не показаны (тост, верхняя полоса, системное уведомление)
     load: () => Promise<void>;
-    toggle: () => void;
-    close: () => void;
     /** false — сервер отметку не подтвердил (интерфейс вернулся к настоящему состоянию) */
     markRead: (ids: string[]) => Promise<boolean>;
     markAll: () => Promise<boolean>;
@@ -52,7 +49,6 @@ export const useNotificationStore = create<NotificationStore>()((set, get) => {
     return {
         items: [],
         unread: 0,
-        open: false,
         fresh: [],
 
         load: async () => {
@@ -68,8 +64,6 @@ export const useNotificationStore = create<NotificationStore>()((set, get) => {
             set({ items, unread, fresh: [...get().fresh, ...fresh] });
         },
 
-        toggle: () => set((s) => ({ open: !s.open })),
-        close: () => set({ open: false }),
 
         markRead: async (ids) => {
             if (!ids.length) return true;
