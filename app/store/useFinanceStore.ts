@@ -2,6 +2,10 @@ import { create } from "zustand";
 import { apiCall } from "./crmApi";
 
 export interface LineItem { description: string; qty: number; unitPrice: number; taxRate: number; product?: string }
+
+// Итог отправки документа клиенту: либо адрес, на который ушло письмо, либо текст ошибки и её код
+// ("no_recipient" — нет адреса у клиента, "no_mailbox" — не подключён ящик), по которому окно решает, что делать.
+export type SendOutcome = { ok: true; sentTo: string } | { ok: false; message: string; code: string };
 export interface Totals { net: number; tax: number; gross: number }
 
 export interface Product {
@@ -19,7 +23,7 @@ export interface Invoice {
 	contact: string; company: string; customerName: string; customerAddress: string; customerTaxId: string;
 	deal: string; order: string; contract: string; items: LineItem[]; currency: string; smallBusinessNote: boolean;
 	issueDate: string; dueDate: string; notes: string; status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
-	sentAt: string; paidAt: string; paidAmount: number;
+	sentAt: string; sentTo: string; paidAt: string; paidAmount: number;
 	reminderCount: number; lastReminderAt: string; recurringSource: string;
 	totals: Totals; createdAt: string; updatedAt: string;
 }
@@ -39,7 +43,7 @@ export interface QuoteVersion { version: number; customerName: string; currency:
 export interface Quote {
 	id: string; number: string; status: "draft" | "sent" | "accepted" | "declined" | "expired";
 	contact: string; company: string; customerName: string; deal: string; order: string;
-	items: LineItem[]; currency: string; issueDate: string; validUntil: string; notes: string; sentAt: string;
+	items: LineItem[]; currency: string; issueDate: string; validUntil: string; notes: string; sentAt: string; sentTo: string;
 	version: number; versions: QuoteVersion[];
 	totals: Totals; createdAt: string; updatedAt: string;
 }
@@ -86,7 +90,7 @@ interface FinanceStore {
 	deleteOrder: (id: string) => Promise<string | null>;
 	invoiceOrder: (id: string) => Promise<string | null>;
 	createInvoice: (data: Partial<Invoice>) => Promise<string | null>;
-	sendInvoice: (id: string) => Promise<string | null>;
+	sendInvoice: (id: string, to?: string) => Promise<SendOutcome>;
 	payInvoice: (id: string, amount?: number) => Promise<string | null>;
 	duplicateInvoice: (id: string) => Promise<string | null>;
 	issueCreditNote: (id: string, data?: { items?: LineItem[]; notes?: string }) => Promise<string | null>;
@@ -98,7 +102,7 @@ interface FinanceStore {
 	createQuote: (data: Partial<Quote>) => Promise<string | null>;
 	updateQuote: (id: string, data: Partial<Quote>) => Promise<string | null>;
 	deleteQuote: (id: string) => Promise<string | null>;
-	sendQuote: (id: string) => Promise<string | null>;
+	sendQuote: (id: string, to?: string) => Promise<SendOutcome>;
 	decideQuote: (id: string, accepted: boolean) => Promise<string | null>;
 	quoteToOrder: (id: string) => Promise<string | null>;
 	createContract: (data: Partial<Contract>) => Promise<string | null>;
@@ -177,11 +181,13 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 		set((s) => ({ invoices: [r.data as Invoice, ...s.invoices] }));
 		return null;
 	},
-	sendInvoice: async (id) => {
-		const r = await apiCall<Invoice>(`/api/invoices/${id}/send`, "POST", {});
-		if (!r.ok || !r.data) return r.message;
-		set((s) => ({ invoices: s.invoices.map((i) => (i.id === id ? (r.data as Invoice) : i)) }));
-		return null;
+	sendInvoice: async (id, to) => {
+		// to — адрес, введённый вручную; без него сервер сам берёт e-mail контакта или фирмы клиента
+		const r = await apiCall<Invoice>(`/api/invoices/${id}/send`, "POST", to ? { to } : {});
+		if (!r.ok || !r.data) return { ok: false, message: r.message, code: r.code };
+		const sent = r.data as Invoice;
+		set((s) => ({ invoices: s.invoices.map((i) => (i.id === id ? sent : i)) }));
+		return { ok: true, sentTo: sent.sentTo };
 	},
 	payInvoice: async (id, amount) => {
 		const r = await apiCall<Invoice>(`/api/invoices/${id}/pay`, "POST", amount !== undefined ? { amount } : {});
@@ -242,11 +248,12 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 		return null;
 	},
 	deleteQuote: async (id) => { const r = await apiCall(`/api/quotes/${id}`, "DELETE"); if (!r.ok) return r.message; set((s) => ({ quotes: s.quotes.filter((q) => q.id !== id) })); return null; },
-	sendQuote: async (id) => {
-		const r = await apiCall<Quote>(`/api/quotes/${id}/send`, "POST", {});
-		if (!r.ok || !r.data) return r.message;
-		set((s) => ({ quotes: s.quotes.map((q) => (q.id === id ? (r.data as Quote) : q)) }));
-		return null;
+	sendQuote: async (id, to) => {
+		const r = await apiCall<Quote>(`/api/quotes/${id}/send`, "POST", to ? { to } : {});
+		if (!r.ok || !r.data) return { ok: false, message: r.message, code: r.code };
+		const sent = r.data as Quote;
+		set((s) => ({ quotes: s.quotes.map((q) => (q.id === id ? sent : q)) }));
+		return { ok: true, sentTo: sent.sentTo };
 	},
 	decideQuote: async (id, accepted) => {
 		const r = await apiCall<Quote>(`/api/quotes/${id}/decide`, "POST", { accepted });

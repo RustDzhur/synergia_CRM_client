@@ -1,24 +1,24 @@
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { notFound, unauthorized, validId } from "@/lib/api";
-import { invoicePdfBuffer, pdfLocale } from "@/lib/finance/document";
-import Invoice from "@/models/Invoice";
+import { contractPdfBuffer, pdfLocale } from "@/lib/finance/document";
+import Contract from "@/models/Contract";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/invoices/:id/pdf?locale= — счёт/кредит-нота как PDF-файл для скачивания или печати
+// GET /api/contracts/:id/pdf?locale= — договор как PDF (номер, стороны, сумма, срок)
 export async function GET(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     await connectDB();
-    const inv = await Invoice.findOne({ _id: params.id, org: user.id });
-    if (!inv) return notFound();
-    const buffer = await invoicePdfBuffer(user.id, inv, pdfLocale(new URL(req.url).searchParams.get("locale")));
+    const contract = await Contract.findOne({ _id: params.id, org: user.id });
+    if (!contract) return notFound();
+    const buffer = await contractPdfBuffer(user.id, contract, pdfLocale(new URL(req.url).searchParams.get("locale")));
     return new Response(buffer as unknown as BodyInit, {
         headers: {
             "content-type": "application/pdf",
-            "content-disposition": `inline; filename="${inv.number}.pdf"`,
+            "content-disposition": `inline; filename="${contract.number}.pdf"`,
             "cache-control": "private, no-store",
         },
     });

@@ -55,7 +55,7 @@ export default function Finance() {
 	return (
 		<div className="p-16 md:p-30">
 			<div className="mb-20 flex flex-col gap-16 md:mb-30 md:flex-row md:items-center md:justify-between">
-				<h1 className="text-32 font-medium text-[#4D4D4D] md:text-34">{t("title")}</h1>
+				<h1 className="text-24 font-medium text-[#4D4D4D] md:text-25">{t("title")}</h1>
 				<div role="tablist" className={`${TAB_BAR} gap-6 overflow-x-auto`}>
 					{TABS.map((key) => (
 						<button

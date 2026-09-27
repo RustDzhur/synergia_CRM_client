@@ -12,7 +12,7 @@ import { ImapSmtpConfig, fetchImap, sendSmtp, verifyImapSmtp } from "./imap";
 import { Tokens, Vendor, refreshTokens } from "./oauth";
 import { fetchOutlook, outlookEmail, sendOutlook } from "./outlook";
 import { MAIL_PRESETS, MAIL_PROVIDERS } from "./providers";
-import type { Fetched } from "./types";
+import type { Fetched, MailAttachment } from "./types";
 
 type Doc = HydratedDocument<any>;
 
@@ -113,7 +113,7 @@ export async function syncAccount(d: Doc) {
 }
 
 // Отправка письма. Копию в «Отправленных» сохраняем сразу (для Outlook её подтянет синхронизация).
-export async function sendFromAccount(d: Doc, msg: { to: string; subject: string; text: string }) {
+export async function sendFromAccount(d: Doc, msg: { to: string; subject: string; text: string; attachments?: MailAttachment[] }) {
     const owner = d.owner.toString();
     const email: string = d.config.email;
     let externalId: string | null;

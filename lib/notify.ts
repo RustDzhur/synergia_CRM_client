@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import Notification from "@/models/Notification";
 import Membership from "@/models/Membership";
 
@@ -30,3 +31,16 @@ export async function notifyMembers(org: string, n: Omit<NotifyInput, "user">, o
         console.error("notifyMembers failed", e);
     }
 }
+
+// Кто видит уведомление: вся фирма (поле user пусто) и адресованные лично этому участнику.
+// Один и тот же фильтр нужен списку (GET /api/notifications) и отметке «прочитано» (POST /api/notifications/read):
+// если они разойдутся, число непрочитанных и сама отметка перестанут совпадать и счётчик «залипнет».
+export function visibleTo(org: string, userId: string) {
+    return {
+        org: new Types.ObjectId(org),
+        $or: [{ user: { $exists: false } }, { user: null }, { user: new Types.ObjectId(userId) }],
+    };
+}
+
+// То же самое плюс «я ещё не читал» — для подсчёта непрочитанных.
+export const unreadFor = (org: string, userId: string) => ({ ...visibleTo(org, userId), readBy: { $ne: new Types.ObjectId(userId) } });

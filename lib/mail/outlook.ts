@@ -1,5 +1,5 @@
 import { ProviderError, fetchProvider } from "@/lib/http";
-import type { Fetched } from "./types";
+import type { Fetched, MailAttachment } from "./types";
 
 const base = () => (process.env.MS_GRAPH_URL || "https://graph.microsoft.com/v1.0").replace(/\/+$/, "");
 
@@ -57,7 +57,17 @@ export async function fetchOutlook(token: string, limit = 30): Promise<Fetched[]
     return out;
 }
 
-export async function sendOutlook(token: string, msg: { to: string; subject: string; text: string }) {
+// Вложения Graph принимает только объектами fileAttachment с содержимым в base64 (лимит письма ~3 МБ —
+// нам хватает: PDF финансового документа весит десятки килобайт)
+const graphAttachments = (list?: MailAttachment[]) =>
+    (list ?? []).map((a) => ({
+        "@odata.type": "#microsoft.graph.fileAttachment",
+        name: a.filename,
+        contentType: a.contentType,
+        contentBytes: a.content.toString("base64"),
+    }));
+
+export async function sendOutlook(token: string, msg: { to: string; subject: string; text: string; attachments?: MailAttachment[] }) {
     await graph(token, "/me/sendMail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -66,6 +76,7 @@ export async function sendOutlook(token: string, msg: { to: string; subject: str
                 subject: msg.subject,
                 body: { contentType: "Text", content: msg.text },
                 toRecipients: msg.to.split(",").map((a) => ({ emailAddress: { address: a.trim() } })),
+                attachments: graphAttachments(msg.attachments),
             },
             saveToSentItems: true,
         }),

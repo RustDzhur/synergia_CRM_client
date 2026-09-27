@@ -2,11 +2,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdAdd, MdReceiptLong } from "react-icons/md";
+import { MdAdd, MdDownload, MdReceiptLong } from "react-icons/md";
 import { LineItem, useFinanceStore } from "@/app/store/useFinanceStore";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
+import { downloadDocumentPdf } from "./download";
 import { money } from "./format";
 
 const STATUS_COLOR: Record<string, string> = { draft: "#B3B3B3", confirmed: "#5EA8F5", fulfilled: "#F4A100", invoiced: "#8A6FE8", closed: "#0A8A2E", cancelled: "#EB5757" };
@@ -43,6 +44,9 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 		setOpen(false); setCustomerName(""); setResponsible(""); setItems([{ ...EMPTY_ITEM }]);
 	}
 
+	async function downloadOrderPdf(id: string, number: string) {
+		if (!(await downloadDocumentPdf("orders", id, number, locale))) toast.error(t("pdfFailed"));
+	}
 	async function advance(id: string, status: string) {
 		setBusy(id);
 		const err = await updateOrder(id, { status: status as any });
@@ -91,6 +95,9 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 										<MdReceiptLong size={16} /> {t("makeInvoice")}
 									</button>
 								)}
+								<button type="button" onClick={() => downloadOrderPdf(o.id, o.number)} className="flex items-center gap-6 rounded-8 border border-[#E6E6E6] px-16 py-8 text-14 font-medium text-[#666666] transition-opacity hover:opacity-80">
+									<MdDownload size={16} /> {t("downloadPdf")}
+								</button>
 								{o.invoice && (
 									<button type="button" onClick={() => onOpenInvoice(o.invoice)} className="text-14 font-medium text-primaryColor hover:underline">{t("viewInvoice")}</button>
 								)}

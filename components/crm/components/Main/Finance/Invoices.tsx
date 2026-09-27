@@ -4,10 +4,10 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdAdd, MdDownload, MdContentCopy, MdReceiptLong } from "react-icons/md";
 import { LineItem, useFinanceStore } from "@/app/store/useFinanceStore";
-import { authHeaders } from "@/app/store/crmApi";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
+import { downloadDocumentPdf } from "./download";
 import { money } from "./format";
 
 const STATUS_COLOR: Record<string, string> = { draft: "#B3B3B3", sent: "#5EA8F5", paid: "#0A8A2E", overdue: "#EB5757", cancelled: "#999999" };
@@ -26,6 +26,9 @@ export default function Invoices({ openId }: { openId?: string | null }) {
 	const [busy, setBusy] = useState<string | null>(null);
 	const [creditTarget, setCreditTarget] = useState<string | null>(null);
 	const [creditNotes, setCreditNotes] = useState("");
+	// Окно «введите адрес»: открывается, когда у клиента нет сохранённого e-mail (сервер отвечает no_recipient)
+	const [mailFor, setMailFor] = useState<string | null>(null);
+	const [mailTo, setMailTo] = useState("");
 	const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
 	useEffect(() => { loadInvoices(); loadProducts(); }, [loadInvoices, loadProducts]);
@@ -43,20 +46,28 @@ export default function Invoices({ openId }: { openId?: string | null }) {
 		toast.success(t("saved"));
 		setOpen(false); setCustomerName(""); setItems([{ ...EMPTY_ITEM }]);
 	}
-	async function send(id: string) { setBusy(id); const err = await sendInvoice(id); setBusy(null); if (err) toast.error(err); }
+	async function send(id: string, to?: string) {
+		setBusy(id);
+		const r = await sendInvoice(id, to);
+		setBusy(null);
+		if (r.ok) return toast.success(t("sentTo", { email: r.sentTo }));
+		// адреса нет — спрашиваем его в окне; если адрес ввели неверно, показываем текст ошибки сервера
+		if (r.code === "no_recipient") { if (to) toast.error(r.message); setMailFor(id); setMailTo(to ?? ""); return; }
+		toast.error(r.message);
+	}
+	async function submitMail(e: React.FormEvent) {
+		e.preventDefault();
+		if (!mailFor) return;
+		const to = mailTo.trim();
+		if (!to) return toast.error(t("emailRequired"));
+		const id = mailFor;
+		setMailFor(null);
+		await send(id, to);
+	}
 	async function pay(id: string) { setBusy(id); const err = await payInvoice(id); setBusy(null); if (err) toast.error(err); else toast.success(t("markedPaid")); }
 	async function duplicate(id: string) { setBusy(id); const err = await duplicateInvoice(id); setBusy(null); if (err) toast.error(err); else toast.success(t("invoiceDuplicated")); }
 	async function downloadPdf(id: string, number: string) {
-		try {
-			const res = await fetch(`/api/invoices/${id}/pdf?locale=${locale}`, { headers: authHeaders(false) });
-			if (!res.ok) throw new Error();
-			const url = URL.createObjectURL(await res.blob());
-			const tab = window.open(url, "_blank", "noopener");
-			if (!tab) { const a = document.createElement("a"); a.href = url; a.download = `${number}.pdf`; a.click(); }
-			setTimeout(() => URL.revokeObjectURL(url), 60_000);
-		} catch {
-			toast.error(t("pdfFailed"));
-		}
+		if (!(await downloadDocumentPdf("invoices", id, number, locale))) toast.error(t("pdfFailed"));
 	}
 	async function submitCreditNote(e: React.FormEvent) {
 		e.preventDefault();
@@ -127,6 +138,18 @@ export default function Invoices({ openId }: { openId?: string | null }) {
 					<div className="mt-24 flex justify-end gap-12">
 						<button type="button" onClick={() => setOpen(false)} className="h-[44px] rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] hover:bg-gray">{t("cancel")}</button>
 						<button type="submit" className="h-[44px] rounded-8 bg-primaryColor px-24 text-16 font-medium text-white shadow-custom hover:opacity-80">{t("save")}</button>
+					</div>
+				</form>
+			</Modal>
+
+			<Modal open={!!mailFor} onClose={() => setMailFor(null)} label={t("sendTitle")} className="w-full max-w-[520px]">
+				<form onSubmit={submitMail} className="rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
+					<h2 className="mb-10 text-20 font-medium text-black">{t("sendTitle")}</h2>
+					<p className="mb-16 text-14 text-[#999999]">{t("sendHint")}</p>
+					<FormField label={t("email")} type="email" value={mailTo} onChange={(e) => setMailTo(e.target.value)} maxLength={200} autoFocus />
+					<div className="mt-24 flex justify-end gap-12">
+						<button type="button" onClick={() => setMailFor(null)} className="h-[44px] rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] hover:bg-gray">{t("cancel")}</button>
+						<button type="submit" disabled={busy === mailFor} className="h-[44px] rounded-8 bg-primaryColor px-24 text-16 font-medium text-white shadow-custom hover:opacity-80 disabled:opacity-60">{t("send")}</button>
 					</div>
 				</form>
 			</Modal>

@@ -11,13 +11,12 @@ import { isActivePath } from "../menuItems";
 import { useVisibleMenu } from "../useVisibleMenu";
 import BurgerMenu from "./BurgerMenu";
 
-// Размеры из Figma:
-//  desktop (lg):  развёрнут 270px / свёрнут 52px, пункт 54px, шаг 60px, текст 18px
-//  tablet  (md):  развёрнут 220px / свёрнут 54px, пункт 50px, шаг 56px, текст 15px
-const ROW = "flex items-center w-full h-[50px] lg:h-[54px] px-16 text-left rounded-300 transition-[background-color,box-shadow,color] duration-200";
-const LABEL = "ml-6 lg:ml-10 text-15 lg:text-18 font-medium tracking-[0.3px] whitespace-nowrap transition-[opacity,color] duration-200";
-// Салатовое свечение вокруг активного пункта — как в макете; сам фон пункта уже даёт bg-primaryColor
-const ACTIVE_GLOW = "shadow-[0_0_0_1px_rgba(198,255,77,0.4),0_0_16px_rgba(198,255,77,0.35)]";
+// Плотный вид по образцу (не по старым размерам Figma — их сознательно уменьшили): пункт меньше и компактнее,
+// шрифт заметно мельче, чем было. Активный пункт — не сплошная заливка, а тонкая салатовая рамка + мягкое свечение
+// на тёмном полупрозрачном фоне (как в образце), текст остаётся светлым, а не тёмным на ярком фоне.
+const ROW = "flex items-center w-full h-[40px] lg:h-[42px] px-14 text-left rounded-8 transition-[background-color,box-shadow,color,border-color] duration-200 border border-transparent";
+const LABEL = "ml-8 lg:ml-10 text-13 lg:text-14 font-medium tracking-[0.2px] whitespace-nowrap transition-[opacity,color] duration-200";
+const ACTIVE = "bg-[rgba(198,255,77,0.08)] border-[rgba(198,255,77,0.45)] shadow-[0_0_14px_rgba(198,255,77,0.18)]";
 
 export default function Layout() {
 	const { menu, setMenu } = useToggleMenuState();
@@ -43,8 +42,8 @@ export default function Layout() {
 					const active = isActivePath(path, item.href);
 					const Icon = item.icon;
 					const color = active ? "text-white" : "text-iconColor";
-					const rowClass = `${ROW} ${active ? `bg-primaryColor ${ACTIVE_GLOW}` : "hover:bg-gray"}`;
-					const icon = <Icon size={20} className={`shrink-0 transition-colors duration-200 ${color}`} />;
+					const rowClass = `${ROW} ${active ? ACTIVE : "hover:bg-gray"}`;
+					const icon = <Icon size={18} className={`shrink-0 transition-colors duration-200 ${active ? "text-accentGreen" : "text-iconColor"}`} />;
 					// подпись всегда в DOM: при сворачивании плавно гаснет, а обрезает её сужающийся сайдбар
 					const label = (
 						<span className={`${LABEL} ${color} ${menu ? "opacity-100" : "opacity-0"}`}>{t(item.key)}</span>
@@ -54,7 +53,7 @@ export default function Layout() {
 					// в свёрнутом (только иконки) ведёт на первую страницу раздела.
 					if (item.children) {
 						return (
-							<li key={item.key} className="mb-6">
+							<li key={item.key} className="mb-4">
 								{menu ? (
 									<button
 										type="button"
@@ -78,10 +77,10 @@ export default function Layout() {
 								<Collapse open={menu && collabOpen}>
 									<ul className="pt-6">
 										{item.children.map((child) => (
-											<li key={child.key} className="mb-6">
+											<li key={child.key} className="mb-4">
 												<Link
 													href={`/${locale}${child.href}`}
-													className={`${ROW} text-15 lg:text-18 font-medium tracking-[0.3px] whitespace-nowrap hover:bg-gray ${
+													className={`${ROW} text-13 lg:text-14 font-medium tracking-[0.2px] whitespace-nowrap hover:bg-gray ${
 														isActivePath(path, child.href)
 															? "text-primaryColor"
 															: "text-[#999999]"
@@ -97,7 +96,7 @@ export default function Layout() {
 					}
 
 					return (
-						<li key={item.key} className="mb-6">
+						<li key={item.key} className="mb-4">
 							<Link href={`/${locale}${item.href}`} className={rowClass}>
 								{icon}
 								{label}
