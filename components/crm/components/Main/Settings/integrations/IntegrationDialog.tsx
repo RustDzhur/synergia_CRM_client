@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdClose, MdContentCopy } from "react-icons/md";
+import { TbCopy, TbX } from "react-icons/tb";
 import { useCallStore } from "@/app/store/useCallStore";
 import { CALL_PROVIDERS, type CallProviderId } from "@/app/config/callProviders";
 import { testSipRegistration } from "@/app/store/phone/sipEngine";
@@ -62,11 +62,11 @@ function CopyField({ label, value }: { label: string; value: string }) {
 	}
 	return (
 		<div>
-			<span className="mb-6 block text-16 text-[#999999]">{label}</span>
+			<span className="mb-6 block text-12 text-[#8c948b]">{label}</span>
 			<div className="flex items-stretch gap-8">
-				<input readOnly value={value} onFocus={(e) => e.currentTarget.select()} aria-label={label} className="h-[40px] min-w-0 flex-1 rounded-8 border border-[#EFEFEF] bg-[#F3F3F3] px-10 text-14 text-[#666666] outline-none" />
-				<button type="button" onClick={copy} aria-label={t("intCopy")} className="flex w-[40px] shrink-0 items-center justify-center rounded-8 border border-[#EFEFEF] text-[#666666] transition-colors hover:text-primaryColor">
-					<MdContentCopy size={18} />
+				<input readOnly value={value} onFocus={(e) => e.currentTarget.select()} aria-label={label} className="fs-field h-40 min-w-0 flex-1 px-12 text-13 outline-none" />
+				<button type="button" onClick={copy} aria-label={t("intCopy")} className="flex w-40 shrink-0 items-center justify-center rounded-10 border border-inkLine text-[#8c948b] transition-colors hover:border-[rgba(198,255,77,0.35)] hover:text-[#c6ff4d]">
+					<TbCopy size={17} />
 				</button>
 			</div>
 		</div>
@@ -193,20 +193,20 @@ export default function IntegrationDialog({ type, title, onClose, providerSwitch
 		snippet = `<script src="${u.origin}/widget.js" data-token="${u.pathname.split("/").pop()}" async></script>`;
 	}
 
-	const buttonBase = "h-[44px] rounded-8 px-24 text-16 font-medium transition-opacity disabled:opacity-50";
+	const buttonBase = "fs-btn h-40 disabled:opacity-50";
 
 	return (
 		<>
 			<Modal open={type !== null} onClose={onClose} label={title} className="w-full max-w-[520px]">
-				<div className="max-h-[calc(100vh-32px)] overflow-y-auto rounded-16 bg-white shadow-heroImage">
-					<div className="flex items-center justify-between bg-primaryColor px-20 py-12">
-						<h2 className="text-20 font-medium text-white">{title}</h2>
-						<button type="button" onClick={onClose} aria-label={t("intClose")} className="text-white transition-opacity hover:opacity-80">
-							<MdClose size={22} />
+				<div className="fs-popover fs-scroll max-h-[calc(100vh-32px)] overflow-y-auto">
+					<div className="flex items-center justify-between border-b border-inkLine bg-[rgba(198,255,77,0.06)] px-20 py-12">
+						<h2 className="text-15 font-semibold text-[#f1f4ee]">{title}</h2>
+						<button type="button" onClick={onClose} aria-label={t("intClose")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+							<TbX size={18} />
 						</button>
 					</div>
 
-					<form onSubmit={submit} className="flex flex-col gap-16 p-20 md:p-24">
+					<form onSubmit={submit} className="flex flex-col gap-14 p-20">
 						{providerSwitch && (
 							<ul className="grid grid-cols-2 gap-10 sm:grid-cols-3" aria-label={t("intProviders")}>
 								{CALL_PROVIDERS.map((p) => (
@@ -215,33 +215,33 @@ export default function IntegrationDialog({ type, title, onClose, providerSwitch
 											type="button"
 											onClick={() => pickProvider(p.id)}
 											aria-pressed={preset === p.id}
-											className={`relative flex h-[92px] w-full flex-col items-center justify-center gap-6 rounded-10 border-2 px-6 text-center text-14 font-medium transition-colors ${preset === p.id ? "border-[#5EA8F5] bg-[#EEF5FF] text-primaryColor" : "border-[#EFEFEF] bg-white text-[#666666] hover:border-[#CFE3FA]"}`}>
-											<ProviderLogo id={p.id} size={34} />
+											className={`relative flex h-80 w-full flex-col items-center justify-center gap-6 rounded-12 border px-6 text-center text-12 font-medium transition-colors ${preset === p.id ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.08)] text-[#c6ff4d]" : "border-inkLine bg-transparent text-[#8c948b] hover:border-[rgba(255,255,255,0.20)]"}`}>
+											<ProviderLogo id={p.id} size={30} />
 											<span className="leading-[1.15]">{p.id === "custom" ? t("provCustom") : p.name}</span>
-											{tileConnected(p.id) && <span className="absolute right-6 top-6 h-[10px] w-[10px] rounded-[50%] bg-[#009A2B]" title={t("intStatusShort")} />}
+											{tileConnected(p.id) && <span className="absolute right-6 top-6 h-8 w-8 rounded-50 bg-[#2DDEB6]" title={t("intStatusShort")} />}
 										</button>
 									</li>
 								))}
 							</ul>
 						)}
-						{chooserOnly && <p className="text-14 text-[#666666]">{t("intChooseProvider")}</p>}
-						{!chooserOnly && <p className="text-14 text-[#666666]">{providerSwitch && shown === "sip" && preset && preset !== "custom" ? t(`provHelp_${preset}`) : t(`intHelp_${shown}`)}</p>}
-						{replacing && <p className="rounded-8 bg-[#FFF6EA] p-12 text-14 text-[#8A5A1F]">{t("intSipReplaces", { name: replacing.name })}</p>}
+						{chooserOnly && <p className="text-12 text-[#8c948b]">{t("intChooseProvider")}</p>}
+						{!chooserOnly && <p className="text-12 text-[#8c948b]">{providerSwitch && shown === "sip" && preset && preset !== "custom" ? t(`provHelp_${preset}`) : t(`intHelp_${shown}`)}</p>}
+						{replacing && <p className="rounded-10 bg-[rgba(244,161,0,0.10)] p-12 text-12 text-[#F4A100]">{t("intSipReplaces", { name: replacing.name })}</p>}
 
 						{current && (
-							<p className={`text-16 font-medium ${current.status === "connected" ? "text-[#009A2B]" : "text-[#D9822B]"}`}>
+							<p className={`text-13 font-medium ${current.status === "connected" ? "text-[#2DDEB6]" : "text-[#F4A100]"}`}>
 								{current.status === "connected" ? t("intStatusOn", { name: current.name }) : t("intStatusWarn", { name: current.name })}
 							</p>
 						)}
-						{current?.type === "telegram" && current.config.polling === "1" && <p className="text-14 text-[#666666]">{t("intPollingInfo")}</p>}
-						{current?.status === "error" && current.error && <p className="rounded-8 bg-[#FFF6EA] p-12 text-14 text-[#8A5A1F]">{current.error.startsWith("Webhooks need a public https address") ? t("intErrNeedHttps") : current.error}</p>}
+						{current?.type === "telegram" && current.config.polling === "1" && <p className="text-12 text-[#8c948b]">{t("intPollingInfo")}</p>}
+						{current?.status === "error" && current.error && <p className="rounded-10 bg-[rgba(244,161,0,0.10)] p-12 text-12 text-[#F4A100]">{current.error.startsWith("Webhooks need a public https address") ? t("intErrNeedHttps") : current.error}</p>}
 
 						{editable && !chooserOnly &&
 							fields.map((f) =>
 								f.type === "color" ? (
 									<label key={f.key} className="block">
-										<span className="mb-6 block text-16 text-[#999999]">{t(f.label)}</span>
-										<input type="color" value={values[f.key] ?? "#5EA8F5"} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} className="h-[40px] w-[80px] cursor-pointer rounded-8 border border-[#EFEFEF] bg-[#FAFAFA] p-4" />
+										<span className="mb-6 block text-12 text-[#8c948b]">{t(f.label)}</span>
+										<input type="color" value={values[f.key] ?? "#5EA8F5"} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} className="fs-field h-40 w-80 cursor-pointer p-4" />
 									</label>
 								) : (
 									<FormField
@@ -269,33 +269,33 @@ export default function IntegrationDialog({ type, title, onClose, providerSwitch
 							<>
 								<CopyField label={t("intCallbackUrl")} value={current.webhookUrl} />
 								<CopyField label={t("intVerifyToken")} value={current.config.verifyToken ?? ""} />
-								<p className="text-12 text-[#999999]">{t("intWaWebhookHelp")}</p>
+								<p className="text-11 text-[#8c948b]">{t("intWaWebhookHelp")}</p>
 							</>
 						)}
-						{current && shown === "twilio" && <p className="text-14 text-[#666666]">{t("intTwilioAuto")}</p>}
-						{current && shown === "sip" && <p className="text-14 text-[#666666]">{t("intSipConnected")}</p>}
+						{current && shown === "twilio" && <p className="text-12 text-[#8c948b]">{t("intTwilioAuto")}</p>}
+						{current && shown === "sip" && <p className="text-12 text-[#8c948b]">{t("intSipConnected")}</p>}
 						{current && isWebchat && (
 							<div>
 								<CopyField label={t("intEmbedCode")} value={snippet} />
-								<p className="mt-6 text-12 text-[#999999]">{t("intEmbedHelp")}</p>
+								<p className="mt-6 text-11 text-[#8c948b]">{t("intEmbedHelp")}</p>
 							</div>
 						)}
 
-						{error && <p role="alert" className="text-14 text-danger">{error}</p>}
+						{error && <p role="alert" className="text-13 text-danger">{error}</p>}
 
 						<div className="mt-8 flex flex-wrap items-center justify-end gap-12">
 							{current && (
-								<button type="button" disabled={busy} onClick={() => setConfirm(true)} className={`${buttonBase} mr-auto border border-[#E6E6E6] text-danger hover:bg-gray`}>
+								<button type="button" disabled={busy} onClick={() => setConfirm(true)} className={`${buttonBase} fs-btn-ghost mr-auto text-danger hover:border-[rgba(235,87,87,0.4)] hover:bg-[rgba(235,87,87,0.08)]`}>
 									{t("intDisconnect")}
 								</button>
 							)}
 							{current?.status === "error" && (shown === "telegram" || shown === "viber") && (
-								<button type="button" disabled={busy} onClick={retryWebhook} className={`${buttonBase} border border-[#E6E6E6] text-[#666666] hover:bg-gray`}>
+								<button type="button" disabled={busy} onClick={retryWebhook} className={`${buttonBase} fs-btn-ghost`}>
 									{t("intRegisterWebhook")}
 								</button>
 							)}
 							{editable && !chooserOnly && (
-								<button type="submit" disabled={busy} className={`${buttonBase} bg-primaryColor text-white shadow-custom hover:opacity-80`}>
+								<button type="submit" disabled={busy} className={`${buttonBase} fs-btn-primary`}>
 									{testing ? t("intSipTesting") : busy ? "…" : isWebchat && current ? t("intSave") : t("intConnect")}
 								</button>
 							)}

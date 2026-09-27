@@ -2,9 +2,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdPhotoCamera } from "react-icons/md";
+import { TbCamera } from "react-icons/tb";
 import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
 import { fileToAvatar, MAX_AVATAR_FILE_BYTES } from "@/app/utils/avatar";
+import PageHeader from "@/components/crm/components/shared/PageHeader";
 import FormField from "../shared/FormField";
 import SettingsTabs from "./SettingsTabs";
 import Avatar from "../shared/Avatar";
@@ -18,8 +19,8 @@ type ProfileForm = Record<ProfileKey, string>;
 
 const EMPTY: ProfileForm = Object.fromEntries(PROFILE_KEYS.map((k) => [k, ""])) as ProfileForm;
 
-const SECTION_TITLE = "mb-10 text-20 font-semibold text-black";
-const BUTTON = "h-[44px] w-full rounded-4 bg-primaryColor text-16 font-semibold text-white shadow-custom transition-opacity hover:opacity-80 disabled:opacity-60 md:text-18";
+const SECTION_TITLE = "mb-10 text-15 font-semibold text-[#f1f4ee]";
+const BUTTON = "fs-btn fs-btn-primary h-40 w-full text-13 disabled:opacity-60";
 
 // Settings → Account (/crm/settings). Сетка как в Figma:
 //  desktop: карточка вкладок | Basic Information | вертикальная линия | Additional Information, Job, Change Password
@@ -97,20 +98,27 @@ export default function Account() {
 	);
 
 	return (
-		<div className="p-16 md:p-30">
+		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
+			<PageHeader />
 			<div className="grid grid-cols-1 gap-y-20 md:grid-cols-2 md:gap-x-30 lg:grid-cols-[max-content_379px_349px] lg:gap-x-0">
 				<SettingsTabs className="self-start md:col-start-1 md:row-start-1 md:justify-self-start" />
 
 				{/* Basic Information */}
 				<form onSubmit={saveProfile} className="md:col-start-1 md:row-start-2 lg:col-start-2 lg:row-start-1 lg:ml-30 lg:mr-50">
 					<div className="relative mx-auto mb-20 h-[60px] w-[60px] lg:mb-30">
-						<Avatar src={user?.avatarUrl} initials={initials} size={60} className="flex text-20" />
+						<Avatar
+							src={user?.avatarUrl}
+							initials={initials}
+							size={60}
+							className="flex text-18"
+							style={user?.avatarUrl ? undefined : { background: "rgba(198,255,77,0.14)", color: "#c6ff4d" }}
+						/>
 						<button
 							type="button"
 							onClick={() => fileRef.current?.click()}
 							aria-label={t("uploadPhoto")}
-							className="absolute -bottom-2 -right-2 flex h-[24px] w-[24px] items-center justify-center rounded-50 bg-primaryColor text-white shadow-custom transition-transform hover:scale-110">
-							<MdPhotoCamera size={14} />
+							className="absolute -bottom-2 -right-2 flex h-24 w-24 items-center justify-center rounded-50 border border-[rgba(198,255,77,0.35)] bg-[rgba(198,255,77,0.14)] text-[#c6ff4d] transition-transform hover:scale-110">
+							<TbCamera size={13} />
 						</button>
 						<input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
 					</div>
@@ -118,7 +126,7 @@ export default function Account() {
 					<div className="flex flex-col gap-15">
 						{field("firstname", t("firstName"))}
 						{field("lastname", t("lastName"))}
-						<FormField label={t("email")} value={user?.email ?? ""} readOnly title={t("emailLocked")} className="cursor-not-allowed text-[#B3B3B3]" />
+						<FormField label={t("email")} value={user?.email ?? ""} readOnly title={t("emailLocked")} className="cursor-not-allowed text-[#9AA396]" />
 						{field("phone", t("phone"), { type: "tel" })}
 						{field("role", t("role"))}
 						{field("department", t("department"))}
@@ -130,7 +138,7 @@ export default function Account() {
 				</form>
 
 				{/* Additional Information / Job / Change Password */}
-				<div className="md:col-start-2 md:row-span-2 md:row-start-1 lg:col-start-3 lg:row-span-1 lg:w-[349px] lg:border-l lg:border-[#E6E6E6] lg:pl-50">
+				<div className="md:col-start-2 md:row-span-2 md:row-start-1 lg:col-start-3 lg:row-span-1 lg:w-[349px] lg:border-l lg:border-inkLine lg:pl-40">
 					<form onSubmit={saveProfile}>
 						<h2 className={SECTION_TITLE}>{t("additionalInfo")}</h2>
 						<div className="flex flex-col gap-15">
@@ -144,7 +152,7 @@ export default function Account() {
 					</form>
 
 					{/* Change Password — отдельная форма: своя кнопка и проверка старого пароля на сервере */}
-					<form onSubmit={submitPassword} className="mt-30 border-t border-[#E6E6E6] pt-20 md:border-0 md:pt-0">
+					<form onSubmit={submitPassword} className="mt-30 border-t border-inkLine pt-20 md:border-0 md:pt-0">
 						<h2 className={SECTION_TITLE}>{t("changePassword")}</h2>
 						<div className="flex flex-col gap-15">
 							<FormField label={t("previousPassword")} type="password" autoComplete="current-password" placeholder="*****" value={passwords.current} onChange={setPw("current")} maxLength={128} />

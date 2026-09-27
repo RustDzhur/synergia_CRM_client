@@ -1,13 +1,14 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { MdChevronLeft, MdChevronRight, MdKeyboardArrowDown } from "react-icons/md";
+import { TbChevronDown, TbChevronLeft, TbChevronRight } from "react-icons/tb";
 import { CalEvent, CalendarKind, useCollabHydration, useCollabStore } from "@/app/store/useCollabStore";
 import { Task, useTaskStore } from "@/app/store/useTaskStore";
 import { addDays, dayKey, localeTag } from "@/app/utils/dateHelpers";
 import Dropdown from "@/app/utils/Dropdown";
 import { useClickOutside } from "@/app/utils/useClickOutside";
-import { TAB_BAR } from "../../shared/tabBar";
+import PageHeader from "@/components/crm/components/shared/PageHeader";
+import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../../shared/tabBar";
 import SearchBox from "../../shared/SearchBox";
 import EventModal, { EVENT_COLORS, EventDraft } from "./EventModal";
 import TaskPreviewModal from "./TaskPreviewModal";
@@ -111,46 +112,48 @@ export default function Calendar() {
 	}
 
 	const selectedPills = pillsByDay.get(selectedDay) ?? [];
-	const control = "text-16 text-[#B3B3B3] transition-colors hover:text-primaryColor";
+	const control = "text-13 text-[#8c948b] transition-colors hover:text-[#c6ff4d]";
 
 	return (
-		<div className="p-16 pt-0 md:p-30">
-			<div className="mb-20 flex flex-col gap-16 md:mb-30 md:flex-row md:items-center md:justify-between">
-				<div className={TAB_BAR}>
-					{(["my", "company"] as const).map((key) => (
-						<button
-							key={key}
-							type="button"
-							onClick={() => setTab(key)}
-							className={`rounded-4 px-16 py-10 text-16 font-medium tracking-[0.32px] transition-colors duration-200 ${tab === key ? "bg-primaryColor text-white" : "text-[#CCCCCC] hover:text-[#999999]"}`}>
-							{key === "my" ? t("myCalendar") : t("companyCalendar")}
-						</button>
-					))}
+		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
+			<PageHeader>
+				<div className="flex flex-col gap-16 md:flex-row md:items-center md:justify-between">
+					<div className={TAB_BAR}>
+						{(["my", "company"] as const).map((key) => (
+							<button
+								key={key}
+								type="button"
+								onClick={() => setTab(key)}
+								className={`${TAB_ITEM} ${tab === key ? TAB_ITEM_ACTIVE : TAB_ITEM_IDLE}`}>
+								{key === "my" ? t("myCalendar") : t("companyCalendar")}
+							</button>
+						))}
+					</div>
+					<SearchBox value={query} onChange={setQuery} placeholder={t("searchCalendar")} withFilter className="w-full md:w-[250px] lg:w-[350px]" />
 				</div>
-				<SearchBox value={query} onChange={setQuery} placeholder={t("searchCalendar")} withFilter className="w-full md:w-[250px] lg:w-[350px]" />
-			</div>
+			</PageHeader>
 
-			<div className="md:rounded-24 md:bg-white md:p-20 md:shadow-heroImage">
+			<div className="md:rounded-14 md:border md:border-inkLine md:bg-[rgba(255,255,255,0.022)] md:p-16">
 				<div className="flex flex-col md:flex-row md:items-center md:justify-between md:pb-16">
-					<h2 className="hidden text-24 font-semibold text-[#666666] md:block">{title}</h2>
-					<div className="flex flex-col md:flex-row md:items-center md:gap-30">
-						<div ref={viewRef} className="relative -mx-16 border-y border-[#E6E6E6] px-16 md:mx-0 md:border-0 md:px-0">
+					<h2 className="hidden text-16 font-semibold text-[#f1f4ee] md:block">{title}</h2>
+					<div className="flex flex-col md:flex-row md:items-center md:gap-20">
+						<div ref={viewRef} className="relative -mx-16 border-y border-inkLine px-16 md:mx-0 md:border-0 md:px-0">
 							<button
 								type="button"
 								onClick={() => setViewOpen(!viewOpen)}
 								aria-expanded={viewOpen}
-								className={`flex w-full items-center justify-between gap-8 py-12 md:w-auto md:py-0 ${control} text-18 md:text-16`}>
+								className={`flex w-full items-center justify-between gap-8 py-12 md:w-auto md:py-0 ${control}`}>
 								{view === "month" ? t("month") : t("week")}
-								<MdKeyboardArrowDown size={22} className={`transition-transform duration-200 ${viewOpen ? "rotate-180" : ""}`} />
+								<TbChevronDown size={16} className={`transition-transform duration-200 ${viewOpen ? "rotate-180" : ""}`} />
 							</button>
 							<Dropdown open={viewOpen} className="left-16 top-full mt-2 min-w-[150px] md:left-auto md:right-0">
-								<div className="overflow-hidden rounded-8 border border-[#E2F1F5] bg-white shadow-custom">
+								<div className="fs-popover overflow-hidden py-2">
 									{(["month", "week"] as const).map((v) => (
 										<button
 											key={v}
 											type="button"
 											onClick={() => { setView(v); setViewOpen(false); }}
-											className={`block w-full px-16 py-10 text-left text-16 transition-colors hover:bg-gray ${view === v ? "text-primaryColor" : "text-[#666666]"}`}>
+											className={`fs-popover-row block w-full px-14 py-10 text-left text-13 transition-colors duration-150 ${view === v ? "text-[#c6ff4d]" : ""}`}>
 											{v === "month" ? t("month") : t("week")}
 										</button>
 									))}
@@ -158,18 +161,18 @@ export default function Calendar() {
 							</Dropdown>
 						</div>
 						<div className="flex items-center justify-between py-16 md:justify-start md:gap-16 md:py-0">
-							<button type="button" onClick={() => shift(-1)} aria-label={t("previous")} className={control}><MdChevronLeft size={24} /></button>
-							<button type="button" onClick={goToday} className={`${control} text-18 md:text-16`}>{t("today")}</button>
-							<button type="button" onClick={() => shift(1)} aria-label={t("next")} className={control}><MdChevronRight size={24} /></button>
+							<button type="button" onClick={() => shift(-1)} aria-label={t("previous")} className={control}><TbChevronLeft size={20} /></button>
+							<button type="button" onClick={goToday} className={control}>{t("today")}</button>
+							<button type="button" onClick={() => shift(1)} aria-label={t("next")} className={control}><TbChevronRight size={20} /></button>
 						</div>
 					</div>
 				</div>
 
 				<div className="-mx-16 md:mx-0">
-					<div className="grid grid-cols-7 pb-8 text-center text-14 text-[#666666] md:text-right md:text-18 md:[&>span]:pr-16">
+					<div className="grid grid-cols-7 pb-8 text-center text-11 uppercase tracking-[0.08em] text-[#8c948b] md:text-right md:[&>span]:pr-16">
 						{weekdays.map((w) => <span key={w}>{w}</span>)}
 					</div>
-					<div className="grid grid-cols-7 border-l border-t border-[#D9D9D9] md:border-[#E0E0E0]">
+					<div className="grid grid-cols-7 border-l border-t border-inkLine">
 						{days.map((d) => {
 							const key = dayKey(d);
 							const inMonth = view === "week" || d.getMonth() === cursor.getMonth();
@@ -183,16 +186,18 @@ export default function Calendar() {
 									aria-label={d.toLocaleDateString(tag, { dateStyle: "full" })}
 									onClick={() => onDay(key)}
 									onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onDay(key))}
-									className={`group relative cursor-pointer border-b border-r border-[#D9D9D9] transition-colors duration-150 hover:bg-[#F0F6FF] md:border-[#E0E0E0] ${
-										isWeekend(d) ? "bg-[#F5F7FC]" : "bg-white"
-									} ${view === "week" ? "min-h-[300px]" : "min-h-[52px] md:min-h-[90px] lg:min-h-[150px]"}`}>
+									className={`group relative cursor-pointer border-b border-r transition-colors duration-150 hover:bg-[rgba(255,255,255,0.03)] ${
+										isToday ? "border-[#c6ff4d]" : "border-inkLine"
+									} ${isWeekend(d) ? "bg-[rgba(255,255,255,0.02)]" : ""} ${
+										view === "week" ? "min-h-[300px]" : "min-h-[52px] md:min-h-[90px] lg:min-h-[150px]"
+									}`}>
 									<div className="flex justify-center py-6 md:justify-end md:px-10 md:py-8">
 										<span
-											className={`flex h-[36px] min-w-[54px] items-center justify-center text-16 max-md:rounded-50 md:h-auto md:min-w-0 md:text-18 md:rounded-4 md:px-6 ${
+											className={`flex h-[36px] min-w-[54px] items-center justify-center text-13 max-md:rounded-50 md:h-auto md:min-w-0 md:rounded-6 md:px-6 ${
 												isToday
-													? "font-semibold text-primaryColor md:bg-primaryColor md:text-white"
-													: inMonth ? "text-[#999999]" : "text-[#CCCCCC]"
-											} ${selectedDay === key ? "max-md:bg-[#CCCCCC] max-md:text-white" : ""}`}>
+													? "font-semibold text-[#c6ff4d] md:bg-[#c6ff4d] md:text-[#0a0c0b]"
+													: inMonth ? "text-[#cfd4cb]" : "text-[#8C948B]"
+											} ${selectedDay === key ? "max-md:bg-[rgba(255,255,255,0.12)] max-md:text-[#f1f4ee]" : ""}`}>
 											{d.getDate()}
 										</span>
 									</div>
@@ -207,13 +212,13 @@ export default function Calendar() {
 													type="button"
 													onClick={(e) => { e.stopPropagation(); openPill(p); }}
 													style={{ background: p.color }}
-													className={`block w-full truncate rounded-4 px-6 py-2 text-left text-12 text-white transition-opacity hover:opacity-80 ${p.done ? "line-through" : ""}`}>
+													className={`block w-full truncate rounded-4 px-6 py-2 text-left text-11 text-white transition-opacity hover:opacity-80 ${p.done ? "line-through" : ""}`}>
 													{p.title}
 												</button>
 											</li>
 										))}
 										{view === "month" && pills.length > MAX_PILLS && (
-											<li className="px-6 text-12 text-[#999999]">+{pills.length - MAX_PILLS}</li>
+											<li className="px-6 text-11 text-[#9AA396]">+{pills.length - MAX_PILLS}</li>
 										)}
 									</ul>
 								</div>
@@ -226,18 +231,18 @@ export default function Calendar() {
 			{/* телефон: события выбранного дня и кнопка добавления */}
 			<div className="mt-20 md:hidden">
 				<div className="mb-10 flex items-center justify-between">
-					<p className="text-16 font-medium text-[#666666]">{new Date(`${selectedDay}T00:00`).toLocaleDateString(tag, { day: "numeric", month: "long" })}</p>
-					<button type="button" onClick={() => openCreate(selectedDay)} className="rounded-4 bg-primaryColor px-16 py-8 text-14 font-semibold text-white shadow-custom">
+					<p className="text-13 font-medium text-[#f1f4ee]">{new Date(`${selectedDay}T00:00`).toLocaleDateString(tag, { day: "numeric", month: "long" })}</p>
+					<button type="button" onClick={() => openCreate(selectedDay)} className="fs-btn fs-btn-primary h-34">
 						{t("addEvent")}
 					</button>
 				</div>
 				{selectedPills.length === 0 ? (
-					<p className="text-14 text-[#B3B3B3]">{t("noEvents")}</p>
+					<p className="text-12 text-[#8c948b]">{t("noEvents")}</p>
 				) : (
 					<ul className="flex flex-col gap-8">
 						{selectedPills.map((p) => (
 							<li key={p.id}>
-								<button type="button" onClick={() => openPill(p)} style={{ background: p.color }} className={`block w-full truncate rounded-8 px-12 py-10 text-left text-16 text-white ${p.done ? "line-through" : ""}`}>
+								<button type="button" onClick={() => openPill(p)} style={{ background: p.color }} className={`block w-full truncate rounded-8 px-12 py-10 text-left text-13 text-white ${p.done ? "line-through" : ""}`}>
 									{p.title}
 								</button>
 							</li>

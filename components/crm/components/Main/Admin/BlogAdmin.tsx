@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdAdd, MdDelete, MdEdit } from "react-icons/md";
+import { TbPencil, TbPlus, TbTrash } from "react-icons/tb";
 import { apiCall } from "@/app/store/crmApi";
 import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
@@ -71,56 +71,56 @@ export default function BlogAdmin() {
 		load();
 	}
 
-	const field = "h-[40px] w-full rounded-8 border border-[#E6E6E6] bg-white px-8 text-14 text-[#4D4D4D] outline-none focus:border-[#5EA8F5]";
-	const area = "w-full rounded-8 border border-[#E6E6E6] bg-white p-8 text-14 text-[#4D4D4D] outline-none focus:border-[#5EA8F5]";
+	const field = "fs-field h-40 w-full px-12 text-13 outline-none";
+	const area = "fs-field fs-scroll w-full p-10 text-13 outline-none";
 
 	return (
 		<div className="mt-24">
 			<div className="mb-12 flex items-center justify-between gap-12">
-				<h2 className="text-18 font-medium text-[#333333]">{t("blogTitle")}</h2>
-				<button type="button" onClick={openNew} className="flex h-[36px] items-center gap-6 rounded-8 bg-primaryColor px-14 text-14 font-medium text-white transition-opacity hover:opacity-80">
-					<MdAdd size={18} /> {t("blogNew")}
+				<h2 className="text-14 font-semibold text-[#f1f4ee]">{t("blogTitle")}</h2>
+				<button type="button" onClick={openNew} className="fs-btn fs-btn-primary h-34">
+					<TbPlus size={16} /> {t("blogNew")}
 				</button>
 			</div>
-			<div className="overflow-x-auto rounded-16 bg-white shadow-heroImage">
-				<table className="w-full min-w-[640px] border-collapse text-left text-14">
+			<div className="fs-card overflow-x-auto">
+				<table className="fs-table min-w-[640px]">
 					<thead>
-						<tr className="border-b border-[#F0F0F0] bg-[#FAFCFF] text-[#999999]">
-							{[t("blogColTitle"), t("blogColSlug"), t("blogColDate"), t("blogColStatus"), ""].map((h, i) => <th key={i} className="px-12 py-12 font-medium">{h}</th>)}
+						<tr>
+							{[t("blogColTitle"), t("blogColSlug"), t("blogColDate"), t("blogColStatus"), ""].map((h, i) => <th key={i} className="px-12 py-12">{h}</th>)}
 						</tr>
 					</thead>
 					<tbody>
 						{posts.map((p) => (
-							<tr key={p.id} className="border-b border-[#F0F0F0]">
-								<td className="px-12 py-10 font-medium text-[#333333]">{p.title.en || "—"}</td>
-								<td className="px-12 py-10 text-[#999999]">{p.slug}</td>
-								<td className="px-12 py-10 text-[#999999]">{p.publishedAt}</td>
+							<tr key={p.id}>
+								<td className="px-12 py-10 text-13 font-medium text-[#f1f4ee]">{p.title.en || "—"}</td>
+								<td className="px-12 py-10 text-13 text-[#8c948b]">{p.slug}</td>
+								<td className="px-12 py-10 text-13 text-[#8c948b]">{p.publishedAt}</td>
 								<td className="px-12 py-10">
-									<span className={`rounded-4 px-8 py-2 text-12 font-medium ${p.published ? "bg-[#E8F8EE] text-[#0A8A2E]" : "bg-[#F5F5F5] text-[#999999]"}`}>
+									<span className={`rounded-50 px-10 py-2 text-10 font-medium ${p.published ? "bg-[rgba(45,222,182,0.12)] text-[#2DDEB6]" : "bg-[rgba(255,255,255,0.05)] text-[#8c948b]"}`}>
 										{p.published ? t("blogPublished") : t("blogDraft")}
 									</span>
 								</td>
 								<td className="px-12 py-10">
 									<div className="flex items-center gap-12">
-										<button type="button" onClick={() => openEdit(p)} aria-label={t("edit")} className="text-[#5EA8F5] hover:opacity-80"><MdEdit size={18} /></button>
-										<button type="button" onClick={() => setToDelete(p.id)} aria-label={t("blogDelete")} className="text-[#B3B3B3] hover:text-danger"><MdDelete size={18} /></button>
+										<button type="button" onClick={() => openEdit(p)} aria-label={t("edit")} className="text-[#c6ff4d] hover:opacity-80"><TbPencil size={16} /></button>
+										<button type="button" onClick={() => setToDelete(p.id)} aria-label={t("blogDelete")} className="text-[#9AA396] hover:text-danger"><TbTrash size={16} /></button>
 									</div>
 								</td>
 							</tr>
 						))}
 					</tbody>
 				</table>
-				{posts.length === 0 && <p className="py-30 text-center text-14 text-[#999999]">{t("none")}</p>}
+				{posts.length === 0 && <p className="py-30 text-center text-13 text-[#8c948b]">{t("none")}</p>}
 			</div>
 
 			<Modal open={open} onClose={() => setOpen(false)} label={editId ? t("blogEdit") : t("blogNew")} className="w-full max-w-[720px]">
-				<form onSubmit={submit} className="max-h-[90vh] overflow-y-auto rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
-					<h2 className="mb-16 text-20 font-medium text-black">{editId ? t("blogEdit") : t("blogNew")}</h2>
+				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20">
+					<h2 className="mb-16 text-16 font-semibold text-[#f1f4ee]">{editId ? t("blogEdit") : t("blogNew")}</h2>
 
 					<div className="mb-14 grid grid-cols-1 gap-14 md:grid-cols-2">
 						<FormField label={t("blogSlug")} value={slug} onChange={(e) => setSlug(e.target.value)} placeholder={t("blogSlugHint")} maxLength={80} />
 						<label className="block">
-							<span className="mb-6 block text-16 text-[#999999]">{t("blogImage")}</span>
+							<span className="mb-6 block text-12 text-[#8c948b]">{t("blogImage")}</span>
 							<select value={PRESET_IMAGES.includes(image) ? image : "custom"} onChange={(e) => setImage(e.target.value === "custom" ? "" : e.target.value)} className={field}>
 								{PRESET_IMAGES.map((src) => <option key={src} value={src}>{src.split("/").pop()}</option>)}
 								<option value="custom">{t("blogImageCustom")}</option>
@@ -131,29 +131,29 @@ export default function BlogAdmin() {
 						<div className="mb-14"><FormField label={t("blogImageUrl")} value={image} onChange={(e) => setImage(e.target.value)} placeholder="https://…" maxLength={300} /></div>
 					)}
 
-					<label className="mb-16 flex items-center gap-10 text-16 text-[#666666]">
-						<input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} className="h-[18px] w-[18px] accent-primaryColor" />
+					<label className="mb-16 flex items-center gap-10 text-13 text-[#cfd4cb]">
+						<input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} className="h-18 w-18 accent-[#c6ff4d]" />
 						{t("blogPublished")}
 					</label>
 
 					{LANGS.map((l) => (
-						<div key={l.key} className="mb-20 rounded-12 border border-[#F0F0F0] p-14">
-							<p className="mb-10 text-14 font-semibold text-[#999999]">{l.label}</p>
+						<div key={l.key} className="mb-20 rounded-10 border border-inkLine p-14">
+							<p className="mb-10 text-12 font-semibold text-[#8c948b]">{l.label}</p>
 							<div className="mb-10"><FormField label={t("blogArticleTitle")} value={title[l.key]} onChange={(e) => setTitle({ ...title, [l.key]: e.target.value })} maxLength={200} /></div>
 							<div className="mb-10">
-								<span className="mb-6 block text-16 text-[#999999]">{t("blogExcerpt")}</span>
+								<span className="mb-6 block text-12 text-[#8c948b]">{t("blogExcerpt")}</span>
 								<textarea value={excerpt[l.key]} onChange={(e) => setExcerpt({ ...excerpt, [l.key]: e.target.value })} maxLength={400} rows={2} className={area} />
 							</div>
 							<div>
-								<span className="mb-6 block text-16 text-[#999999]">{t("blogBody")}</span>
+								<span className="mb-6 block text-12 text-[#8c948b]">{t("blogBody")}</span>
 								<textarea value={bodyText[l.key]} onChange={(e) => setBodyText({ ...bodyText, [l.key]: e.target.value })} rows={6} placeholder={t("blogBodyHint")} className={area} />
 							</div>
 						</div>
 					))}
 
 					<div className="mt-10 flex justify-end gap-12">
-						<button type="button" onClick={() => setOpen(false)} className="h-[44px] rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] hover:bg-gray">{t("cancel")}</button>
-						<button type="submit" className="h-[44px] rounded-8 bg-primaryColor px-24 text-16 font-medium text-white shadow-custom hover:opacity-80">{t("save")}</button>
+						<button type="button" onClick={() => setOpen(false)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
+						<button type="submit" className="fs-btn fs-btn-primary h-40">{t("save")}</button>
 					</div>
 				</form>
 			</Modal>

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdClose } from "react-icons/md";
+import { TbX } from "react-icons/tb";
 import { Employee, EmployeeInput, useEmployeeStore } from "@/app/store/useEmployeeStore";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
@@ -52,11 +52,11 @@ export default function EmployeeModal({ open, employee, onClose }: Props) {
 
 	return (
 		<Modal open={open} onClose={onClose} label={employee ? t("editTitle") : t("inviteTitle")} className="w-full max-w-[560px]">
-			<form onSubmit={submit} className="max-h-[90vh] overflow-y-auto rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
-				<button type="button" onClick={onClose} aria-label={t("cancel")} className="absolute right-16 top-16 text-iconColor transition-colors hover:text-black">
-					<MdClose size={24} />
+			<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-24">
+				<button type="button" onClick={onClose} aria-label={t("cancel")} className="absolute right-16 top-16 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+					<TbX size={20} />
 				</button>
-				<h2 className="mb-20 text-24 font-medium text-black">{employee ? t("editTitle") : t("inviteTitle")}</h2>
+				<h2 className="mb-20 text-16 font-semibold text-[#f1f4ee]">{employee ? t("editTitle") : t("inviteTitle")}</h2>
 				<div className="grid grid-cols-1 gap-16 md:grid-cols-2">
 					<FormField label={t("firstname")} value={form.firstname ?? ""} onChange={set("firstname")} maxLength={100} />
 					<FormField label={t("lastname")} value={form.lastname ?? ""} onChange={set("lastname")} maxLength={100} />
@@ -68,11 +68,11 @@ export default function EmployeeModal({ open, employee, onClose }: Props) {
 					<FormField label={t("contractType")} value={form.contractType ?? ""} onChange={set("contractType")} maxLength={100} placeholder={t("contractTypePlaceholder")} />
 					<FormField label={t("contractStart")} type="date" value={form.contractStart ?? ""} onChange={set("contractStart")} />
 				</div>
-				<div className="mt-24 flex justify-end gap-12">
-					<button type="button" onClick={onClose} className="h-50 rounded-8 border border-[#E6E6E6] px-24 text-16 font-medium text-[#666666] transition-colors hover:bg-gray">
+				<div className="mt-24 flex justify-end gap-10">
+					<button type="button" onClick={onClose} className="fs-btn fs-btn-ghost h-40">
 						{t("cancel")}
 					</button>
-					<button type="submit" disabled={busy} className="h-50 rounded-8 bg-primaryColor px-30 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80 disabled:opacity-60">
+					<button type="submit" disabled={busy} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">
 						{employee ? t("save") : t("send")}
 					</button>
 				</div>

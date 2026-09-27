@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdClose, MdStar } from "react-icons/md";
+import { TbStar, TbStarFilled, TbX } from "react-icons/tb";
 import { taskStatus, useTaskStore } from "@/app/store/useTaskStore";
 import Modal from "../../shared/Modal";
 
@@ -41,7 +41,7 @@ export default function TaskPreviewModal({ taskId, onClose }: Props) {
 
 	const status = task ? taskStatus(task) : "active";
 	const statusText = status === "completed" ? t("statusCompleted") : status === "ended" ? t("statusOverdue") : t("statusInProgress");
-	const statusColor = status === "ended" ? "text-[#D0021B]" : status === "completed" ? "text-[#009A2B]" : "text-primaryColor";
+	const statusColor = status === "ended" ? "text-[#ff7b8a]" : status === "completed" ? "text-[#0BD065]" : "text-[#c6ff4d]";
 
 	async function finish() {
 		if (!task || busyRef.current) return; // второе нажатие, пока идёт запрос, игнорируем
@@ -75,34 +75,34 @@ export default function TaskPreviewModal({ taskId, onClose }: Props) {
 
 	return (
 		<Modal open={open} onClose={onClose} label={task?.title ?? t("task")} className="w-full max-w-[788px]" flushOnMobile>
-			<div className="overflow-hidden bg-white shadow-heroImage max-md:min-h-screen md:rounded-24">
-				<div className="flex items-center justify-between gap-16 bg-[#F5F7FC] px-16 py-16 md:bg-white md:px-40 md:pt-30">
-					<h2 className="min-w-0 truncate text-24 font-medium text-[#666666]">{task?.title}</h2>
-					<button type="button" onClick={onClose} aria-label={t("close")} className="shrink-0 text-[#4D4D4D] transition-opacity hover:opacity-70">
-						<MdClose size={28} />
+			<div className="fs-popover fs-scroll overflow-hidden max-md:min-h-screen max-md:rounded-[0px] max-md:border-0">
+				<div className="flex items-center justify-between gap-16 border-b border-inkLine bg-[rgba(255,255,255,0.02)] px-16 py-14 md:border-0 md:bg-transparent md:px-32 md:pt-24">
+					<h2 className="min-w-0 truncate text-16 font-semibold text-[#f1f4ee]">{task?.title}</h2>
+					<button type="button" onClick={onClose} aria-label={t("close")} className="shrink-0 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+						<TbX size={20} />
 					</button>
 				</div>
-				<p className={`px-16 pb-16 pt-16 text-18 md:px-40 md:pt-10 md:text-20 ${statusColor}`}>
+				<p className={`px-16 py-14 text-13 md:px-32 md:pt-10 ${statusColor}`}>
 					{t("taskNumber", { number })} - {statusText}
 				</p>
-				<div className="flex min-h-[140px] items-start justify-between gap-16 border-y border-[#E6E6E6] px-16 py-16 md:px-40">
-					<p className="whitespace-pre-wrap break-words text-16 text-[#666666] md:text-18">{task?.description || task?.title}</p>
+				<div className="flex min-h-[140px] items-start justify-between gap-16 border-y border-inkLine px-16 py-16 md:px-32">
+					<p className="whitespace-pre-wrap break-words text-13 text-[#cfd4cb]">{task?.description || task?.title}</p>
 					<button
 						type="button"
 						aria-label={t("pin")}
 						aria-pressed={task?.pinned ?? false}
 						onClick={togglePin}
-						className={`shrink-0 transition-colors ${task?.pinned ? "text-[#F4A100]" : "text-[#D9D9D9] hover:text-[#B3B3B3]"}`}>
-						<MdStar size={26} />
+						className={`shrink-0 transition-colors ${task?.pinned ? "text-[#F4A100]" : "text-[#8C948B] hover:text-[#8c948b]"}`}>
+						{task?.pinned ? <TbStarFilled size={20} /> : <TbStar size={20} />}
 					</button>
 				</div>
 				{task?.responsible && (
-					<p className="border-b border-[#E6E6E6] px-16 py-16 text-16 text-[#B3B3B3] md:px-40">
-						{t("responsible")} <span className="text-[#666666]">{task.responsible}</span>
+					<p className="border-b border-inkLine px-16 py-14 text-13 text-[#8c948b] md:px-32">
+						{t("responsible")} <span className="text-[#f1f4ee]">{task.responsible}</span>
 					</p>
 				)}
-				<div className="flex flex-col items-stretch gap-12 px-16 py-24 md:flex-row md:items-center md:justify-end md:gap-20 md:px-40 md:py-30">
-					<Link href={`/${locale}/crm/tasks`} className="px-16 py-10 text-center text-16 font-medium text-[#B3B3B3] transition-colors hover:text-primaryColor">
+				<div className="flex flex-col items-stretch gap-12 px-16 py-20 md:flex-row md:items-center md:justify-end md:gap-12 md:px-32 md:py-24">
+					<Link href={`/${locale}/crm/tasks`} className="fs-btn fs-btn-ghost h-40">
 						{t("edit")}
 					</Link>
 					{status !== "completed" && (
@@ -110,7 +110,7 @@ export default function TaskPreviewModal({ taskId, onClose }: Props) {
 							type="button"
 							onClick={finish}
 							disabled={busy}
-							className="h-[50px] rounded-4 bg-primaryColor px-30 text-18 font-semibold text-white shadow-custom transition-opacity hover:opacity-80 disabled:opacity-60 md:min-w-[126px]">
+							className="fs-btn fs-btn-primary h-40 disabled:opacity-60 md:min-w-[126px]">
 							{t("finish")}
 						</button>
 					)}

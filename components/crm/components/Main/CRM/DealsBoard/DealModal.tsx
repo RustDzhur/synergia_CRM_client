@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdClose, MdEdit } from "react-icons/md";
+import { TbPencil, TbX } from "react-icons/tb";
 import { Deal, DealUpdate, useCrmStore } from "@/app/store/useCrmStore";
 import { useContactStore } from "@/app/store/useContactStore";
 import { useCompaniesStore } from "@/app/store/useCompaniesStore";
@@ -26,14 +26,14 @@ type SectionKey = "more" | "recurring";
 
 // --- вспомогательные элементы разметки (на уровне модуля, чтобы не пересоздаваться при каждом рендере) ---
 function Card({ children }: { children: React.ReactNode }) {
-	return <section className="overflow-hidden rounded-16 bg-white shadow-custom">{children}</section>;
+	return <section className="fs-card overflow-hidden">{children}</section>;
 }
 
 function CardHeader({ title, action, onAction }: { title: string; action: string; onAction: () => void }) {
 	return (
-		<header className="flex items-center justify-between border-b border-[#EFEFEF] px-20 py-16">
-			<h3 className="text-16 font-semibold text-black">{title}</h3>
-			<button type="button" onClick={onAction} className="text-16 text-[#999999] transition-colors hover:text-primaryColor">
+		<header className="flex items-center justify-between border-b border-inkLine px-16 py-12">
+			<h3 className="text-14 font-semibold text-[#f1f4ee]">{title}</h3>
+			<button type="button" onClick={onAction} className="text-12 text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
 				{action}
 			</button>
 		</header>
@@ -43,8 +43,8 @@ function CardHeader({ title, action, onAction }: { title: string; action: string
 function Row({ label, children, accent }: { label: string; children: React.ReactNode; accent?: boolean }) {
 	return (
 		<div className="mb-12 last:mb-0">
-			<p className="text-16 text-[#999999]">{label}</p>
-			<p className={`text-20 font-semibold ${accent ? "text-primaryColor" : "text-[#4D4D4D]"}`}>{children || "—"}</p>
+			<p className="text-12 text-[#8c948b]">{label}</p>
+			<p className={`mt-6 text-15 font-semibold ${accent ? "text-[#c6ff4d]" : "text-[#f1f4ee]"}`}>{children || "—"}</p>
 		</div>
 	);
 }
@@ -52,12 +52,12 @@ function Row({ label, children, accent }: { label: string; children: React.React
 function SectionFooter({ onDelete }: { onDelete: () => void }) {
 	const t = useTranslations("crm");
 	return (
-		<footer className="flex flex-wrap items-center justify-between gap-x-16 gap-y-6 border-t border-[#EFEFEF] px-20 py-14 text-14 md:text-16">
-			<div className="flex gap-16 whitespace-nowrap text-[#999999]">
+		<footer className="flex flex-wrap items-center justify-between gap-x-16 gap-y-6 border-t border-inkLine px-16 py-12 text-12">
+			<div className="flex gap-14 whitespace-nowrap text-[#9AA396]">
 				<button type="button" disabled title={t("soon")} className="cursor-not-allowed opacity-60">{t("selectField")}</button>
 				<button type="button" disabled title={t("soon")} className="cursor-not-allowed opacity-60">{t("createField")}</button>
 			</div>
-			<button type="button" onClick={onDelete} className="text-[#666666] underline transition-colors hover:text-black">
+			<button type="button" onClick={onDelete} className="text-[#8c948b] underline transition-colors hover:text-[#f1f4ee]">
 				{t("deleteSection")}
 			</button>
 		</footer>
@@ -67,9 +67,9 @@ function SectionFooter({ onDelete }: { onDelete: () => void }) {
 function SaveRow({ onSave, onCancel }: { onSave: () => void; onCancel: () => void }) {
 	const t = useTranslations("crm");
 	return (
-		<div className="mt-16 flex items-center justify-end gap-12">
-			<button type="button" onClick={onCancel} className="px-12 py-8 text-16 text-[#999999] hover:text-black">{t("cancel")}</button>
-			<button type="button" onClick={onSave} className="rounded-4 bg-primaryColor px-20 py-8 text-16 font-medium text-white shadow-custom">
+		<div className="mt-14 flex items-center justify-end gap-10">
+			<button type="button" onClick={onCancel} className="px-12 py-8 text-12 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">{t("cancel")}</button>
+			<button type="button" onClick={onSave} className="fs-btn fs-btn-primary h-34">
 				{t("save")}
 			</button>
 		</div>
@@ -225,9 +225,9 @@ export default function DealModal({ dealId, onClose }: Props) {
 				onClose={onClose}
 				align="top"
 				label={deal.clientName}
-				className="my-[40px] w-full max-w-[1222px] rounded-24 bg-[#FBFCFF] p-20 shadow-heroImage md:p-40">
+				className="fs-popover fs-scroll my-[40px] w-full max-w-[1222px] p-20 md:p-40">
 				{/* заголовок и закрытие */}
-				<div className="mb-24 flex items-center justify-between gap-16">
+				<div className="mb-20 flex items-center justify-between gap-16">
 					<div className="flex min-w-0 items-center gap-12">
 						{titleEditing ? (
 							<input
@@ -243,31 +243,31 @@ export default function DealModal({ dealId, onClose }: Props) {
 									}
 								}}
 								maxLength={200}
-								className="min-w-0 rounded-8 border border-[#5EA8F5] bg-white px-10 py-4 text-24 text-black outline-none md:text-32"
+								className="fs-field min-w-0 px-10 py-6 text-16 outline-none md:text-20"
 							/>
 						) : (
 							<>
-								<h2 className="truncate text-24 font-medium text-black md:text-32">{deal.clientName}</h2>
+								<h2 className="truncate text-18 font-semibold text-[#f1f4ee] md:text-20">{deal.clientName}</h2>
 								<button
 									type="button"
 									aria-label={t("edit")}
 									onClick={() => setTitleEditing(true)}
-									className="shrink-0 text-[#999999] transition-colors hover:text-primaryColor">
-									<MdEdit size={22} />
+									className="shrink-0 text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
+									<TbPencil size={18} />
 								</button>
 							</>
 						)}
 					</div>
 					<div className="flex shrink-0 items-center gap-16">
 						<AiSummaryButton kind="deal" name={deal.clientName} />
-						<button type="button" onClick={onClose} aria-label={t("close")} className="shrink-0 text-[#4D4D4D] transition-colors hover:text-black">
-							<MdClose size={32} />
+						<button type="button" onClick={onClose} aria-label={t("close")} className="shrink-0 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+							<TbX size={24} />
 						</button>
 					</div>
 				</div>
 
 				{/* стрелки стадий: клик переносит сделку в стадию */}
-				<div className="mb-30 flex overflow-x-auto pb-4">
+				<div className="fs-scroll mb-20 flex overflow-x-auto pb-6">
 					{sortedStages.map((stage, index) => {
 						const active = stage._id === deal.stage;
 						return (
@@ -280,7 +280,7 @@ export default function DealModal({ dealId, onClose }: Props) {
 									backgroundColor: stageColor(stage.color, index),
 									clipPath: "polygon(0 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 0 100%)",
 								}}
-								className={`h-[54px] w-[170px] shrink-0 px-16 text-14 font-semibold md:w-[222px] md:px-24 md:text-16 text-white transition-opacity duration-200 ${
+								className={`h-[54px] w-[170px] shrink-0 px-16 text-12 font-semibold md:w-[222px] md:px-24 md:text-13 text-white transition-opacity duration-200 ${
 									active ? "opacity-100" : "opacity-60 hover:opacity-80"
 								}`}>
 								<span className="block truncate">{stage.name}</span>
@@ -289,21 +289,21 @@ export default function DealModal({ dealId, onClose }: Props) {
 					})}
 				</div>
 
-				<div className="grid grid-cols-1 gap-24 mp:grid-cols-[minmax(0,450px)_minmax(0,1fr)]">
+				<div className="grid grid-cols-1 gap-16 mp:grid-cols-[minmax(0,450px)_minmax(0,1fr)]">
 					{/* левая колонка */}
-					<div className="flex flex-col gap-30">
+					<div className="flex flex-col gap-16">
 						<Card>
 							<CardHeader
 								title={t("more")}
 								action={moreEditing ? t("cancel") : t("edit")}
 								onAction={() => setMoreEditing(!moreEditing)}
 							/>
-							<div className="px-20 py-16">
+							<div className="px-16 py-14">
 								{moreEditing ? (
 									<>
 										<FormField label={t("dealType")} value={more.dealType} onChange={(e) => setMore({ ...more, dealType: e.target.value })} wrapperClassName="mb-12" />
 										<label className="mb-12 block">
-											<span className="mb-6 block text-16 text-[#999999]">{t("availableToAll")}</span>
+											<span className="mb-6 block text-12 text-[#8c948b]">{t("availableToAll")}</span>
 											<select
 												value={more.availableToAll ? "yes" : "no"}
 												onChange={(e) => setMore({ ...more, availableToAll: e.target.value === "yes" })}
@@ -335,7 +335,7 @@ export default function DealModal({ dealId, onClose }: Props) {
 								action={aboutEditing ? t("cancel") : t("edit")}
 								onAction={() => setAboutEditing(!aboutEditing)}
 							/>
-							<div className="px-20 py-16">
+							<div className="px-16 py-14">
 								{aboutEditing ? (
 									<>
 										<FormField
@@ -344,14 +344,13 @@ export default function DealModal({ dealId, onClose }: Props) {
 											onChange={(e) => setAbout({ ...about, clientName: e.target.value })}
 											maxLength={200}
 											wrapperClassName="mb-12"
-											className="!bg-white"
 										/>
 										<label className="mb-12 block">
-											<span className="mb-6 block text-16 text-[#999999]">{t("stage")}</span>
+											<span className="mb-6 block text-12 text-[#8c948b]">{t("stage")}</span>
 											<select
 												value={about.stage}
 												onChange={(e) => setAbout({ ...about, stage: e.target.value })}
-												className={`${fieldClass} !bg-white`}>
+												className={fieldClass}>
 												{sortedStages.map((s) => (
 													<option key={s._id} value={s._id}>{s.name}</option>
 												))}
@@ -363,11 +362,10 @@ export default function DealModal({ dealId, onClose }: Props) {
 											value={about.startDate}
 											onChange={(e) => setAbout({ ...about, startDate: e.target.value })}
 											wrapperClassName="mb-16"
-											className="!bg-white"
 										/>
-										<div className="-mx-20 bg-[#F5F5F5] px-20 py-16">
-											<p className="mb-12 text-16 text-[#999999]">{t("client")}</p>
-											<span className="mb-6 block text-16 text-[#999999]">{t("contact")}</span>
+										<div className="-mx-16 rounded-10 bg-[rgba(255,255,255,0.03)] px-16 py-14">
+											<p className="mb-10 text-12 font-medium text-[#8c948b]">{t("client")}</p>
+											<span className="mb-6 block text-12 text-[#8c948b]">{t("contact")}</span>
 											<SuggestInput
 												value={about.contactName}
 												onChange={(text) => setAbout({ ...about, contactName: text, contact: "" })}
@@ -378,15 +376,14 @@ export default function DealModal({ dealId, onClose }: Props) {
 												options={contactOptions}
 												placeholder={t("contactSearchPlaceholder")}
 												showSearchIcon
-												className="!bg-white"
 											/>
 											<button
 												type="button"
 												onClick={() => setAbout({ ...about, contactName: about.contactName ? `${about.contactName}, ` : "", contact: "" })}
-												className="my-8 block text-14 text-primaryColor">
+												className="my-8 block text-12 text-[#c6ff4d] transition-opacity hover:opacity-80">
 												{t("addParticipant")}
 											</button>
-											<span className="mb-6 block text-16 text-[#999999]">{t("company")}</span>
+											<span className="mb-6 block text-12 text-[#8c948b]">{t("company")}</span>
 											<SuggestInput
 												value={about.companyName}
 												onChange={(text) => setAbout({ ...about, companyName: text, company: "" })}
@@ -394,7 +391,6 @@ export default function DealModal({ dealId, onClose }: Props) {
 												options={companyOptions}
 												placeholder={t("companySearchPlaceholder")}
 												showSearchIcon
-												className="!bg-white"
 											/>
 										</div>
 										<SaveRow onSave={saveAbout} onCancel={() => setAboutEditing(false)} />
@@ -419,11 +415,11 @@ export default function DealModal({ dealId, onClose }: Props) {
 								action={recurringEditing ? t("cancel") : t("edit")}
 								onAction={() => setRecurringEditing(!recurringEditing)}
 							/>
-							<div className="px-20 py-16">
+							<div className="px-16 py-14">
 								{recurringEditing ? (
 									<>
 										<label className="block">
-											<span className="mb-6 block text-16 text-[#999999]">{t("recurringDeal")}</span>
+											<span className="mb-6 block text-12 text-[#8c948b]">{t("recurringDeal")}</span>
 											<select value={recurring} onChange={(e) => setRecurring(e.target.value)} className={fieldClass}>
 												{Object.entries(recurringLabels).map(([value, label]) => (
 													<option key={value} value={value}>{label}</option>
@@ -442,7 +438,7 @@ export default function DealModal({ dealId, onClose }: Props) {
 						<button
 							type="button"
 							onClick={() => setConfirmDelete(true)}
-							className="self-start text-16 text-danger transition-opacity hover:opacity-80">
+							className="self-start text-13 text-[#eb5757] transition-opacity hover:opacity-80">
 							{t("deleteDeal")}
 						</button>
 					</div>

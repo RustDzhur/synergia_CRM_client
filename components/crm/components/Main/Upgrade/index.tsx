@@ -3,13 +3,14 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
-import { MdCheckBox, MdCheckBoxOutlineBlank, MdInfo, MdArticle, MdLock, MdSignalCellularAlt } from "react-icons/md";
+import { TbChartBar, TbCircle, TbCircleCheck, TbFileText, TbInfoCircle, TbLock } from "react-icons/tb";
 import { SiApplepay, SiGooglepay, SiKlarna, SiMastercard, SiPaypal, SiVisa } from "react-icons/si";
 import { FEATURE_KEYS, PLANS, PlanId, YEAR_MONTHS } from "@/app/config/plans";
 import { apiCall } from "@/app/store/crmApi";
+import PageHeader from "@/components/crm/components/shared/PageHeader";
 import Modal from "../shared/Modal";
 
-const ICONS: Record<PlanId, IconType> = { free: MdSignalCellularAlt, standard: MdInfo, professional: MdArticle };
+const ICONS: Record<PlanId, IconType> = { free: TbChartBar, standard: TbInfoCircle, professional: TbFileText };
 
 interface Billing {
 	configured: boolean;
@@ -120,22 +121,23 @@ export default function Upgrade() {
 	const current = billing?.plan ?? "free";
 	const subscribed = billing?.hasCustomer && ["active", "trialing", "past_due"].includes(billing.status);
 	const date = billing?.currentPeriodEnd ? new Date(billing.currentPeriodEnd).toLocaleDateString(locale === "ua" ? "uk" : locale) : "";
-	const seg = (on: boolean) => `h-[36px] rounded-6 px-16 text-14 font-medium transition-colors ${on ? "bg-white text-primaryColor shadow-custom" : "text-[#999999]"}`;
+	const seg = (on: boolean) => `h-34 rounded-50 px-16 text-13 font-medium transition-colors ${on ? "bg-[#c6ff4d] text-[#0a0c0b]" : "text-[#8c948b] hover:text-[#f1f4ee]"}`;
 
 	return (
-		<div className="p-16 md:p-30">
+		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
+			<PageHeader />
 			<div className="mx-auto mb-20 flex max-w-[1140px] flex-col items-center gap-12">
-				<div className="flex rounded-8 bg-[#F5F8FA] p-2" role="tablist" aria-label={t("billingPeriod")}>
+				<div className="flex rounded-50 border border-inkLine bg-[rgba(255,255,255,0.03)] p-2" role="tablist" aria-label={t("billingPeriod")}>
 					<button type="button" role="tab" aria-selected={interval === "month"} onClick={() => setInterval("month")} className={seg(interval === "month")}>{t("monthly")}</button>
 					<button type="button" role="tab" aria-selected={interval === "year"} onClick={() => setInterval("year")} className={seg(interval === "year")}>
-						{t("yearly")} <span className="ml-6 text-12 text-[#009A2B]">{t("twoMonthsFree", { count: 12 - YEAR_MONTHS })}</span>
+						{t("yearly")} <span className="ml-6 text-11 opacity-80">{t("twoMonthsFree", { count: 12 - YEAR_MONTHS })}</span>
 					</button>
 				</div>
-				{billing && billing.status === "past_due" && <p role="alert" className="rounded-8 bg-[#FFF6EA] px-16 py-10 text-14 text-[#8A5A1F]">{t("pastDue")}</p>}
-				{billing && !billing.configured && <p className="rounded-8 bg-[#F5F8FA] px-16 py-10 text-14 text-[#666666]">{t("paymentsNotConfigured")}</p>}
+				{billing && billing.status === "past_due" && <p role="alert" className="rounded-10 bg-[rgba(244,161,0,0.10)] px-16 py-10 text-12 text-[#F4A100]">{t("pastDue")}</p>}
+				{billing && !billing.configured && <p className="rounded-10 border border-inkLine bg-[rgba(255,255,255,0.03)] px-16 py-10 text-12 text-[#8c948b]">{t("paymentsNotConfigured")}</p>}
 			</div>
 
-			<ul className="mx-auto grid max-w-[1140px] grid-cols-1 gap-20 md:grid-cols-3 md:gap-20 lg:gap-30">
+			<ul className="mx-auto grid max-w-[1140px] grid-cols-1 gap-16 md:grid-cols-3 lg:gap-20">
 				{PLANS.map((plan) => {
 					const Icon = ICONS[plan.id];
 					const isCurrent = current === plan.id;
@@ -143,65 +145,65 @@ export default function Upgrade() {
 					return (
 						<li
 							key={plan.id}
-							className={`mx-auto flex w-full max-w-[340px] flex-col items-center rounded-24 px-24 pb-30 pt-24 shadow-heroImage md:max-w-none ${
-								plan.highlighted ? "bg-[#EEF5FF]" : "bg-[#FAFCFF]"
-							} ${isCurrent ? "border-2 border-[#5EA8F5]" : ""}`}>
-							<Icon size={46} className="text-[#FABFAD]" aria-hidden />
-							<h2 className="mt-[4px] text-20 font-semibold text-[#999999]">{t(plan.id)}</h2>
+							className={`fs-card mx-auto flex w-full max-w-[340px] flex-col items-center px-24 pb-30 pt-24 md:max-w-none ${
+								plan.highlighted ? "border-[rgba(198,255,77,0.35)] bg-[rgba(198,255,77,0.04)]" : ""
+							} ${isCurrent ? "border-[#c6ff4d]" : ""}`}>
+							<Icon size={32} className="text-[#c6ff4d]" aria-hidden />
+							<h2 className="mt-4 text-17 font-semibold text-[#f1f4ee]">{t(plan.id)}</h2>
 							<div className="mt-6 flex h-[22px] items-center">
-								{isCurrent && <span className="rounded-4 bg-primaryColor px-10 py-2 text-12 font-medium text-white">{t("currentPlan")}</span>}
+								{isCurrent && <span className="fs-chip h-24 border-[rgba(198,255,77,0.40)] px-10 text-10 text-[#c6ff4d]">{t("currentPlan")}</span>}
 							</div>
 
-							<p className="mt-30 text-36 font-bold leading-[1.1] text-[#666666] lg:text-40">
+							<p className="mt-24 text-30 font-bold leading-[1.1] text-[#f1f4ee] lg:text-34">
 								{plan.priceMonth === 0 ? (
 									t("freePrice")
 								) : (
 									<>
-										{price}€/<span className="text-20">{interval === "year" ? t("perYear") : t("perMonth")}</span>
+										{price}€/<span className="text-14">{interval === "year" ? t("perYear") : t("perMonth")}</span>
 									</>
 								)}
 							</p>
-							<p className="mt-6 text-center text-16 text-[#999999]">
+							<p className="mt-6 text-center text-13 text-[#8c948b]">
 								{plan.users === null ? t("unlimitedUsers") : t("users", { count: plan.users })}
 							</p>
-							<p className="mt-2 text-center text-14 text-[#B3B3B3]">
+							<p className="mt-2 text-center text-11 text-[#9AA396]">
 								{t("limitsLine", { rules: plan.automationRules, ai: plan.aiDailyRequests, storage: plan.storageMb >= 1000 ? `${plan.storageMb / 1000} GB` : `${plan.storageMb} MB` })}
 							</p>
 
-							<ul className="mb-40 mt-40 flex w-full flex-col gap-10 text-16">
+							<ul className="mb-30 mt-30 flex w-full flex-col gap-8 text-13">
 								{FEATURE_KEYS.map((f) => {
 									const included = plan.features[f];
 									return (
-										<li key={f} className={`flex items-start gap-8 ${included ? "text-primaryColor" : "text-[#CCCCCC] line-through"}`}>
-											{included ? <MdCheckBox size={20} className="mt-[2px] shrink-0" aria-hidden /> : <MdCheckBoxOutlineBlank size={20} className="mt-[2px] shrink-0" aria-hidden />}
+										<li key={f} className={`flex items-start gap-8 ${included ? "text-[#c6ff4d]" : "text-[#8C948B] line-through"}`}>
+											{included ? <TbCircleCheck size={16} className="mt-2 shrink-0" aria-hidden /> : <TbCircle size={16} className="mt-2 shrink-0" aria-hidden />}
 											{t(f)}
 										</li>
 									);
 								})}
 							</ul>
-							{plan.id === "professional" && <p className="mb-16 text-14 font-medium text-[#009A2B]">{t("fullAccess")}</p>}
+							{plan.id === "professional" && <p className="mb-16 text-12 font-medium text-[#2DDEB6]">{t("fullAccess")}</p>}
 
 							{isCurrent && !subscribed && billing?.prepaidUntil && plan.priceMonth > 0 && (
-								<p className="mb-12 text-center text-14 text-[#999999]">{t("paidUntil", { date: new Date(billing.prepaidUntil).toLocaleDateString(locale === "ua" ? "uk" : locale) })}</p>
+								<p className="mb-12 text-center text-12 text-[#8c948b]">{t("paidUntil", { date: new Date(billing.prepaidUntil).toLocaleDateString(locale === "ua" ? "uk" : locale) })}</p>
 							)}
 							{isCurrent && subscribed && billing?.currentPeriodEnd && plan.priceMonth > 0 && (
-								<p className="mb-12 text-center text-14 text-[#999999]">{billing.cancelAtPeriodEnd ? t("endsOn", { date }) : t("renewsOn", { date })}</p>
+								<p className="mb-12 text-center text-12 text-[#8c948b]">{billing.cancelAtPeriodEnd ? t("endsOn", { date }) : t("renewsOn", { date })}</p>
 							)}
 
 							{plan.priceMonth === 0 ? (
 								isCurrent ? (
-									<button type="button" disabled className="mt-auto h-[50px] w-[165px] rounded-4 bg-[#EBEEF8] text-18 font-semibold text-[#999999]">{t("currentPlan")}</button>
+									<button type="button" disabled className="fs-btn mt-auto h-40 w-[165px] bg-[rgba(255,255,255,0.05)] text-13 font-semibold text-[#8C948B]">{t("currentPlan")}</button>
 								) : (
-									<button type="button" onClick={portal} disabled={busy !== null} className="mt-auto h-[50px] w-[165px] rounded-4 border border-[#5EA8F5] text-16 font-semibold text-primaryColor transition-opacity hover:opacity-80 disabled:opacity-60">
+									<button type="button" onClick={portal} disabled={busy !== null} className="fs-btn fs-btn-ghost mt-auto h-40 w-[165px] text-[#c6ff4d] disabled:opacity-60">
 										{t("manageBilling")}
 									</button>
 								)
 							) : isCurrent && subscribed ? (
-								<button type="button" onClick={portal} disabled={busy !== null} className="mt-auto h-[50px] w-[165px] rounded-4 border border-[#5EA8F5] text-16 font-semibold text-primaryColor transition-opacity hover:opacity-80 disabled:opacity-60">
+								<button type="button" onClick={portal} disabled={busy !== null} className="fs-btn fs-btn-ghost mt-auto h-40 w-[165px] text-[#c6ff4d] disabled:opacity-60">
 									{busy === "portal" ? "…" : t("manageBilling")}
 								</button>
 							) : subscribed ? (
-								<button type="button" onClick={portal} disabled={busy !== null} className="mt-auto h-[50px] w-[165px] rounded-4 bg-primaryColor text-18 font-semibold text-white shadow-custom transition-opacity hover:opacity-80 disabled:opacity-60">
+								<button type="button" onClick={portal} disabled={busy !== null} className="fs-btn fs-btn-primary mt-auto h-40 w-[165px] text-13 disabled:opacity-60">
 									{busy === "portal" ? "…" : t("changePlan")}
 								</button>
 							) : (
@@ -209,12 +211,12 @@ export default function Upgrade() {
 									type="button"
 									onClick={() => subscribe(plan.id)}
 									disabled={busy !== null || !billing || !billing.configured}
-									className="mt-auto h-[50px] w-[165px] rounded-4 bg-primaryColor text-18 font-semibold text-white shadow-custom transition-opacity hover:opacity-80 disabled:opacity-60">
+									className="fs-btn fs-btn-primary mt-auto h-40 w-[165px] text-13 disabled:opacity-60">
 									{busy === plan.id ? "…" : t("buy")}
 								</button>
 							)}
 							{plan.priceMonth > 0 && !subscribed && billing?.crypto && (
-								<button type="button" onClick={() => payCrypto(plan.id)} disabled={busy !== null} className="mt-10 text-14 font-medium text-primaryColor transition-opacity hover:opacity-80 disabled:opacity-60">
+								<button type="button" onClick={() => payCrypto(plan.id)} disabled={busy !== null} className="mt-10 text-12 font-medium text-[#c6ff4d] transition-opacity hover:opacity-80 disabled:opacity-60">
 									{busy === `crypto-${plan.id}` ? "…" : t("payCrypto")}
 								</button>
 							)}
@@ -224,32 +226,32 @@ export default function Upgrade() {
 			</ul>
 
 			<div className="mx-auto mt-30 flex max-w-[1140px] flex-col items-center gap-10">
-				<div className="flex flex-wrap items-center justify-center gap-x-16 gap-y-8 text-[#999999]" aria-label={t("methods")}>
-					<SiVisa size={34} aria-label="Visa" /><SiMastercard size={28} aria-label="Mastercard" /><SiApplepay size={38} aria-label="Apple Pay" /><SiGooglepay size={38} aria-label="Google Pay" />
-					<SiPaypal size={22} aria-label="PayPal" /><SiKlarna size={40} aria-label="Klarna" />
-					<span className="text-14 font-medium">SEPA</span>
+				<div className="flex flex-wrap items-center justify-center gap-x-16 gap-y-8 text-[#8c948b]" aria-label={t("methods")}>
+					<SiVisa size={30} aria-label="Visa" /><SiMastercard size={24} aria-label="Mastercard" /><SiApplepay size={32} aria-label="Apple Pay" /><SiGooglepay size={32} aria-label="Google Pay" />
+					<SiPaypal size={20} aria-label="PayPal" /><SiKlarna size={34} aria-label="Klarna" />
+					<span className="text-12 font-medium">SEPA</span>
 				</div>
-				<p className="max-w-[640px] text-center text-12 text-[#B3B3B3]">{t("methodsNote")}</p>
-				<button type="button" onClick={() => setInvoiceOpen(true)} className="text-14 font-medium text-primaryColor transition-opacity hover:opacity-80">{t("invoiceButton")}</button>
-				<p className="flex items-center justify-center gap-6 text-center text-14 text-[#999999]">
-					<MdLock size={16} aria-hidden /> {t("securePayment")}
+				<p className="max-w-[640px] text-center text-11 text-[#9AA396]">{t("methodsNote")}</p>
+				<button type="button" onClick={() => setInvoiceOpen(true)} className="text-12 font-semibold text-[#c6ff4d] transition-opacity hover:opacity-80">{t("invoiceButton")}</button>
+				<p className="flex items-center justify-center gap-6 text-center text-12 text-[#8c948b]">
+					<TbLock size={14} aria-hidden /> {t("securePayment")}
 				</p>
 			</div>
 
 			<Modal open={invoiceOpen} onClose={() => setInvoiceOpen(false)} label={t("invoiceButton")} className="w-full max-w-[460px]">
-				<form onSubmit={sendInvoice} className="rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
-					<h2 className="mb-6 text-24 font-medium text-black">{t("invoiceButton")}</h2>
-					<p className="mb-16 text-14 text-[#666666]">{t("invoiceText")}</p>
+				<form onSubmit={sendInvoice} className="fs-popover p-20">
+					<h2 className="mb-6 text-16 font-semibold text-[#f1f4ee]">{t("invoiceButton")}</h2>
+					<p className="mb-16 text-13 text-[#8c948b]">{t("invoiceText")}</p>
 					<div className="flex flex-col gap-12">
-						<select value={inv.plan} onChange={(e) => setInv({ ...inv, plan: e.target.value })} aria-label={t("planLabel")} className="h-[44px] rounded-8 border border-[#E6E6E6] bg-white px-10 text-16 text-[#666666]">
+						<select value={inv.plan} onChange={(e) => setInv({ ...inv, plan: e.target.value })} aria-label={t("planLabel")} className="fs-field h-40 px-12 text-13 outline-none">
 							{PLANS.filter((p) => p.priceMonth > 0).map((p) => <option key={p.id} value={p.id}>{t(p.id)} · {interval === "year" ? p.priceMonth * YEAR_MONTHS : p.priceMonth}€/{interval === "year" ? t("perYear") : t("perMonth")}</option>)}
 						</select>
-						<textarea required value={inv.company} onChange={(e) => setInv({ ...inv, company: e.target.value })} maxLength={200} rows={3} placeholder={t("invoiceCompany")} aria-label={t("invoiceCompany")} className="rounded-8 border border-[#E6E6E6] p-10 text-16 outline-none focus:border-[#5EA8F5]" />
-						<input value={inv.vatId} onChange={(e) => setInv({ ...inv, vatId: e.target.value })} maxLength={40} placeholder={t("invoiceVat")} aria-label={t("invoiceVat")} className="h-[44px] rounded-8 border border-[#E6E6E6] px-10 text-16 outline-none focus:border-[#5EA8F5]" />
+						<textarea required value={inv.company} onChange={(e) => setInv({ ...inv, company: e.target.value })} maxLength={200} rows={3} placeholder={t("invoiceCompany")} aria-label={t("invoiceCompany")} className="fs-field fs-scroll w-full p-10 text-13 outline-none" />
+						<input value={inv.vatId} onChange={(e) => setInv({ ...inv, vatId: e.target.value })} maxLength={40} placeholder={t("invoiceVat")} aria-label={t("invoiceVat")} className="fs-field h-40 px-12 text-13 outline-none" />
 					</div>
 					<div className="mt-20 flex justify-end gap-12">
-						<button type="button" onClick={() => setInvoiceOpen(false)} className="h-[44px] rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] hover:bg-gray">{t("cancel")}</button>
-						<button type="submit" disabled={busy === "invoice"} className="h-[44px] rounded-8 bg-primaryColor px-24 text-16 font-medium text-white shadow-custom hover:opacity-80 disabled:opacity-60">{busy === "invoice" ? "…" : t("invoiceSend")}</button>
+						<button type="button" onClick={() => setInvoiceOpen(false)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
+						<button type="submit" disabled={busy === "invoice"} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{busy === "invoice" ? "…" : t("invoiceSend")}</button>
 					</div>
 				</form>
 			</Modal>

@@ -15,21 +15,20 @@ interface Props {
 export default function DealsList({ deals, stages, onOpen }: Props) {
 	const t = useTranslations("crm");
 	const locale = useLocale();
-	const th = "px-16 py-14 text-left text-16 font-medium text-[#999999]";
 
-	if (deals.length === 0) return <p className="py-40 text-center text-16 text-[#999999]">{t("noDeals")}</p>;
+	if (deals.length === 0) return <p className="py-40 text-center text-13 text-[#8c948b]">{t("noDeals")}</p>;
 
 	return (
-		<div className="overflow-x-auto rounded-16 bg-white shadow-custom">
-			<table className="w-full min-w-[720px] border-collapse">
+		<div className="fs-card fs-scroll overflow-x-auto">
+			<table className="fs-table min-w-[720px]">
 				<thead>
-					<tr className="border-b border-[#EFEFEF]">
-						<th className={th}>{t("listName")}</th>
-						<th className={th}>{t("client")}</th>
-						<th className={th}>{t("company")}</th>
-						<th className={th}>{t("listStage")}</th>
-						<th className={th}>{t("startDate")}</th>
-						<th className={th}>{t("lastSeen")}</th>
+					<tr>
+						<th>{t("listName")}</th>
+						<th>{t("client")}</th>
+						<th>{t("company")}</th>
+						<th>{t("listStage")}</th>
+						<th>{t("startDate")}</th>
+						<th>{t("lastSeen")}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -40,21 +39,21 @@ export default function DealsList({ deals, stages, onOpen }: Props) {
 							<tr
 								key={deal._id}
 								onClick={() => onOpen(deal._id)}
-								className="cursor-pointer border-b border-[#F5F5F5] transition-colors duration-150 last:border-b-0 hover:bg-[#F5F7FC]">
-								<td className="px-16 py-14 text-16 font-medium text-primaryColor">{deal.clientName}</td>
-								<td className="px-16 py-14 text-16 text-[#666666]">{deal.contactName}</td>
-								<td className="px-16 py-14 text-16 text-[#666666]">{deal.companyName}</td>
-								<td className="px-16 py-14">
+								className="cursor-pointer">
+								<td className="font-medium text-[#f1f4ee]">{deal.clientName}</td>
+								<td className="text-[#8c948b]">{deal.contactName}</td>
+								<td className="text-[#8c948b]">{deal.companyName}</td>
+								<td>
 									{stage && (
 										<span
 											style={{ backgroundColor: stageColor(stage.color, index) }}
-											className="inline-block rounded-50 px-12 py-4 text-14 font-medium text-white">
+											className="inline-block rounded-50 px-10 py-2 text-11 font-medium text-white">
 											{stage.name}
 										</span>
 									)}
 								</td>
-								<td className="px-16 py-14 text-16 text-[#666666]">{formatDate(deal.startDate)}</td>
-								<td className="px-16 py-14 text-16 text-[#999999]">
+								<td className="text-[#8c948b]">{formatDate(deal.startDate)}</td>
+								<td className="text-[#9AA396]">
 									{relativeTime(deal.updatedAt ?? deal.createdAt, locale, t("justNow"))}
 								</td>
 							</tr>

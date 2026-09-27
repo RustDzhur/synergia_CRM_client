@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdBolt, MdDelete, MdEdit, MdPlayArrow } from "react-icons/md";
+import { TbBolt, TbPencil, TbPlayerPlay, TbTrash } from "react-icons/tb";
 import { PLANS, PlanId, planFor } from "@/app/config/plans";
 import { apiCall } from "@/app/store/crmApi";
 import type { Stage } from "@/app/store/useCrmStore";
@@ -12,24 +13,27 @@ import type { CustomTabApi } from "../shared/records/RecordsPage";
 import type { RecordItem } from "../shared/records/config";
 import { useSectionRecords } from "../shared/records/useSectionRecords";
 import { ACTIONS, AUTOMATION, EVENTS, TIMINGS } from "./config";
+import VariableHints from "./VariableHints";
 
 const EMPTY: Record<string, string> = { name: "", event: "deal_stage", stage: "", timing: "immediately", action: "notify", message: "", target: "client", moveTo: "", url: "", enabled: "1" };
 const STAGE_EVENTS = ["deal_created", "deal_stage"];
-const VARS = "{{deal.name}} {{deal.stageName}} {{contact.name}} {{message.text}} {{task.title}} {{constants.NAME}} {{variables.name}}";
 
 // Automation Rules: «когда (событие) → через (время) → сделать (действие)». Правила настоящие: их выполняет сервер, когда в CRM
 // происходит событие (новая сделка, перенос на этап, новый контакт, письмо-лид, сообщение, пропущенный звонок, задача, дедлайн).
 export default function AutomationRules({ stages }: CustomTabApi & { stages: Stage[] }) {
 	const t = useTranslations("automation");
 	const tUpgrade = useTranslations("upgrade");
+	const locale = useLocale();
 	const { records, save, remove } = useSectionRecords(AUTOMATION, "rules");
 	const [editing, setEditing] = useState<{ id?: string; values: Record<string, string> } | null>(null);
 	const [toDelete, setToDelete] = useState<RecordItem | null>(null);
 	const [busy, setBusy] = useState(false);
-	// тариф фирмы: сколько правил он разрешает (лимит проверяет и сервер — POST /api/records)
+	// тариф фирмы: сколько правил он разрешает (лимит проверяет и сервер — POST /api/records).
+	// planKnown — тариф действительно получен: до ответа лимит неизвестен, и показывать «0 правил» нельзя
 	const [plan, setPlan] = useState<PlanId>("free");
+	const [planKnown, setPlanKnown] = useState(false);
 	useEffect(() => {
-		void apiCall<{ plan: PlanId }>("/api/billing").then((r) => { if (r.data?.plan) setPlan(r.data.plan); });
+		void apiCall<{ plan: PlanId }>("/api/billing").then((r) => { if (r.ok && r.data?.plan) { setPlan(r.data.plan); setPlanKnown(true); } });
 	}, []);
 	const limit = planFor(plan).automationRules;
 	const planName = PLANS.find((x) => x.id === plan)?.id ?? "free";
@@ -61,53 +65,59 @@ export default function AutomationRules({ stages }: CustomTabApi & { stages: Sta
 		else toast.error(res.message);
 	}
 
-	const field = "h-[44px] w-full rounded-8 border border-[#E6E6E6] bg-white px-10 text-16 text-[#666666] outline-none focus:border-[#5EA8F5]";
-	const label = "mb-4 block text-14 text-[#999999]";
+	const field = "fs-field h-40 w-full px-12 text-13 outline-none";
+	const label = "mb-6 block text-12 text-[#8c948b]";
 	const v = editing?.values ?? EMPTY;
 
 	return (
 		<div>
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-12">
 				<div className="max-w-[640px]">
-					<p className="text-14 text-[#999999]">{t("r_help", { examples: "{{deal.name}}, {{contact.name}}, {{constants.NAME}}" })}</p>
-					<p className="mt-6 inline-flex flex-wrap items-center rounded-8 bg-[#F2F8FF] px-10 py-4 text-13 text-[#3E7BB8]">
-						<span>{t("planBanner", { count: limit })}</span>
-						<span className="mx-6 text-[#C2D8EC]">·</span>
-						<span>{tUpgrade(planName)}</span>
-						<span className="mx-6 text-[#C2D8EC]">·</span>
-						<span aria-label="rules-used">{records.length}/{limit}</span>
-					</p>
+					<p className="text-12 text-[#8c948b]">{t("r_help")}</p>
+					{/* Пока тариф не получен, лимит неизвестен: строка «0 правил» до ответа сервера читалась как «правил нет».
+					    Тариф без автоматизации (Free) называем прямо и не показываем «0/0» — правил не будет вовсе. */}
+					{planKnown && (
+						<p className="mt-6 inline-flex flex-wrap items-center rounded-10 border border-inkLine bg-[rgba(255,255,255,0.03)] px-12 py-6 text-12 text-[#cfd4cb]">
+							<span>{limit > 0 ? t("planBanner", { count: limit }) : t("planNone")}</span>
+							<span className="mx-6 text-[#8C948B]">·</span>
+							<span>{tUpgrade(planName)}</span>
+							<span className="mx-6 text-[#8C948B]">·</span>
+							{limit > 0
+								? <span aria-label="rules-used">{records.length}/{limit}</span>
+								: <Link href={`/${locale}/crm/upgrade`} className="fs-link text-12">{tUpgrade("changePlan")}</Link>}
+						</p>
+					)}
 				</div>
-				<button type="button" onClick={() => setEditing({ values: { ...EMPTY, stage: sorted[0]?._id ?? "" } })} className="h-[44px] rounded-8 bg-primaryColor px-20 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80">+ {t("r_addRule")}</button>
+				<button type="button" onClick={() => setEditing({ values: { ...EMPTY, stage: sorted[0]?._id ?? "" } })} disabled={planKnown && limit === 0} className="fs-btn fs-btn-primary h-40 disabled:cursor-default disabled:opacity-60">+ {t("r_addRule")}</button>
 			</div>
 
 			{records.length === 0 ? (
-				<p className="rounded-16 bg-white p-30 text-center text-16 text-[#999999] shadow-heroImage">{t("r_empty")}</p>
+				<p className="fs-card p-24 text-center text-13 text-[#8c948b]">{t("r_empty")}</p>
 			) : (
-				<ul className="grid gap-16 md:grid-cols-2">
+				<ul className="grid gap-12 md:grid-cols-2">
 					{records.map((r) => {
 						const on = r.values.enabled !== "0";
 						return (
-							<li key={r.id} className={`animate-fade-in rounded-16 bg-white p-16 shadow-heroImage ${on ? "" : "opacity-60"}`}>
+							<li key={r.id} className={`fs-card animate-fade-in p-16 ${on ? "" : "opacity-60"}`}>
 								<div className="flex items-start gap-10">
-									<MdBolt size={24} className="mt-2 shrink-0 text-[#F4A100]" aria-hidden />
+									<TbBolt size={18} className="mt-2 shrink-0 text-[#F4A100]" aria-hidden />
 									<div className="min-w-0 flex-1">
-										<p className="truncate text-16 font-semibold text-[#333333]">{r.values.name}</p>
-										<p className="mt-4 text-14 text-[#666666]">
+										<p className="truncate text-13 font-semibold text-[#f1f4ee]">{r.values.name}</p>
+										<p className="mt-4 text-12 text-[#8c948b]">
 											{t(`ev_${r.values.event}`)}{STAGE_EVENTS.includes(r.values.event) ? ` · ${stageName(r.values.stage)}` : ""}
-											{" → "}{t(`o_${r.values.timing}`)}{" → "}<span className="font-medium text-primaryColor">{t(`ac_${r.values.action}`)}</span>
+											{" → "}{t(`o_${r.values.timing}`)}{" → "}<span className="font-medium text-[#c6ff4d]">{t(`ac_${r.values.action}`)}</span>
 										</p>
-										{r.values.message && <p className="mt-4 truncate text-12 text-[#B3B3B3]">{r.values.message}</p>}
+										{r.values.message && <p className="mt-4 truncate text-11 text-[#9AA396]">{r.values.message}</p>}
 									</div>
-									<label className="flex shrink-0 cursor-pointer items-center gap-6 text-12 text-[#999999]">
-										<input type="checkbox" checked={on} onChange={async (e) => save({ id: r.id, values: { ...r.values, enabled: e.target.checked ? "1" : "0" } })} className="accent-[#5EA8F5]" />
+									<label className="flex shrink-0 cursor-pointer items-center gap-6 text-12 text-[#8c948b]">
+										<input type="checkbox" checked={on} onChange={async (e) => save({ id: r.id, values: { ...r.values, enabled: e.target.checked ? "1" : "0" } })} className="accent-[#c6ff4d]" />
 										{t("r_enabled")}
 									</label>
 								</div>
-								<div className="mt-12 flex items-center justify-end gap-16 text-14">
-									<button type="button" onClick={() => test(r)} className="flex items-center gap-4 text-primaryColor transition-opacity hover:opacity-80"><MdPlayArrow size={18} />{t("r_test")}</button>
-									<button type="button" onClick={() => setEditing({ id: r.id, values: { ...EMPTY, ...r.values } })} className="flex items-center gap-4 text-[#666666] transition-colors hover:text-primaryColor"><MdEdit size={18} />{t("r_edit")}</button>
-									<button type="button" onClick={() => setToDelete(r)} className="flex items-center gap-4 text-[#999999] transition-colors hover:text-danger"><MdDelete size={18} />{t("r_delete")}</button>
+								<div className="mt-12 flex items-center justify-end gap-16 text-12">
+									<button type="button" onClick={() => test(r)} className="flex items-center gap-4 text-[#c6ff4d] transition-opacity hover:opacity-80"><TbPlayerPlay size={16} />{t("r_test")}</button>
+									<button type="button" onClick={() => setEditing({ id: r.id, values: { ...EMPTY, ...r.values } })} className="flex items-center gap-4 text-[#8c948b] transition-colors hover:text-[#c6ff4d]"><TbPencil size={16} />{t("r_edit")}</button>
+									<button type="button" onClick={() => setToDelete(r)} className="flex items-center gap-4 text-[#9AA396] transition-colors hover:text-danger"><TbTrash size={16} />{t("r_delete")}</button>
 								</div>
 							</li>
 						);
@@ -116,8 +126,8 @@ export default function AutomationRules({ stages }: CustomTabApi & { stages: Sta
 			)}
 
 			<Modal open={editing !== null} onClose={() => setEditing(null)} label={t("r_addRule")} className="w-full max-w-[520px]">
-				<form onSubmit={submit} className="max-h-[calc(100vh-32px)] overflow-y-auto rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
-					<h2 className="mb-16 text-24 font-medium text-black">{editing?.id ? t("r_edit") : t("r_addRule")}</h2>
+				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[calc(100vh-32px)] overflow-y-auto p-20">
+					<h2 className="mb-16 text-16 font-semibold text-[#f1f4ee]">{editing?.id ? t("r_edit") : t("r_addRule")}</h2>
 					<div className="flex flex-col gap-14">
 						<label><span className={label}>{t("r_name")}</span><input value={v.name} onChange={(e) => set("name", e.target.value)} maxLength={100} className={field} autoFocus /></label>
 						<label><span className={label}>{t("r_when")}</span>
@@ -150,17 +160,21 @@ export default function AutomationRules({ stages }: CustomTabApi & { stages: Sta
 								<select value={v.target} onChange={(e) => set("target", e.target.value)} className={field}><option value="manager">{t("o_manager")}</option><option value="responsible">{t("o_responsible")}</option></select>
 							</label>
 						)}
-						{v.action === "ai_action" && <p className="rounded-8 bg-[#FFF8E8] p-10 text-14 text-[#8A6D00]">{t("r_aiActionWarning")}</p>}
+						{v.action === "ai_action" && <p className="rounded-10 bg-[rgba(244,161,0,0.10)] p-10 text-12 text-[#F4A100]">{t("r_aiActionWarning")}</p>}
 						{v.action !== "move_stage" && (
-							<label><span className={label}>{v.action === "ai_action" ? t("r_instruction") : v.action === "add_note" || v.action === "notify" ? t("r_text") : t("r_message")}</span>
-								<textarea value={v.message} onChange={(e) => set("message", e.target.value)} rows={3} maxLength={1000} placeholder={v.action === "ai_action" ? t("r_instructionPlaceholder") : undefined} className="w-full rounded-8 border border-[#E6E6E6] bg-white p-10 text-16 text-[#666666] outline-none focus:border-[#5EA8F5]" />
-								<span className="mt-4 block text-12 text-[#B3B3B3]">{v.action === "ai_action" ? t("r_aiActionHint") : t("r_variables", { examples: VARS })}</span>
-							</label>
+							<>
+								<label><span className={label}>{v.action === "ai_action" ? t("r_instruction") : v.action === "add_note" || v.action === "notify" ? t("r_text") : t("r_message")}</span>
+									<textarea value={v.message} onChange={(e) => set("message", e.target.value)} rows={3} maxLength={1000} placeholder={v.action === "ai_action" ? t("r_instructionPlaceholder") : undefined} className="fs-field fs-scroll w-full p-10 text-13 outline-none" />
+									{v.action === "ai_action" && <span className="mt-4 block text-11 text-[#9AA396]">{t("r_aiActionHint")}</span>}
+								</label>
+								{/* подстановки — вне <label>: клик по токену копирует его, а не переводит курсор в поле текста */}
+								{v.action !== "ai_action" && <VariableHints />}
+							</>
 						)}
 					</div>
 					<div className="mt-24 flex justify-end gap-12">
-						<button type="button" onClick={() => setEditing(null)} className="h-[44px] rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] hover:bg-gray">{t("r_cancel")}</button>
-						<button type="submit" disabled={busy} className="h-[44px] rounded-8 bg-primaryColor px-24 text-16 font-medium text-white shadow-custom hover:opacity-80 disabled:opacity-60">{busy ? "…" : t("r_save")}</button>
+						<button type="button" onClick={() => setEditing(null)} className="fs-btn fs-btn-ghost h-40">{t("r_cancel")}</button>
+						<button type="submit" disabled={busy} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{busy ? "…" : t("r_save")}</button>
 					</div>
 				</form>
 			</Modal>

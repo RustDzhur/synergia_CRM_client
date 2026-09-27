@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { MdClose } from "react-icons/md";
+import { TbX } from "react-icons/tb";
 import { apiCall } from "@/app/store/crmApi";
 import type { MailAccountDTO, MailProviderId } from "@/app/types/integrations";
 import FormField from "../shared/FormField";
@@ -68,18 +68,18 @@ export default function MailConnectDialog({ provider, oauth, onClose, onConnecte
 		onConnected(res.data);
 	}
 
-	const primary = "h-[44px] rounded-8 bg-primaryColor px-24 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80 disabled:opacity-50";
+	const primary = "fs-btn fs-btn-primary h-40 disabled:opacity-50";
 	return (
 		<Modal open={provider !== null} onClose={onClose} label={LABEL[shown]} className="w-full max-w-[520px]">
-			<div className="max-h-[calc(100vh-32px)] overflow-y-auto rounded-16 bg-white shadow-heroImage">
-				<div className="flex items-center justify-between bg-primaryColor px-20 py-12">
-					<h2 className="text-20 font-medium text-white">{LABEL[shown]}</h2>
-					<button type="button" onClick={onClose} aria-label={t("close")} className="text-white transition-opacity hover:opacity-80"><MdClose size={22} /></button>
+			<div className="fs-popover fs-scroll max-h-[calc(100vh-32px)] overflow-y-auto">
+				<div className="flex items-center justify-between border-b border-inkLine px-20 py-14">
+					<h2 className="text-14 font-semibold text-[#f1f4ee]">{LABEL[shown]}</h2>
+					<button type="button" onClick={onClose} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><TbX size={18} /></button>
 				</div>
 				<div className="flex flex-col gap-16 p-20 md:p-24">
-					<p className="text-14 text-[#666666]">{t(`mailHelp_${shown}`)}</p>
+					<p className="text-13 text-[#8c948b]">{t(`mailHelp_${shown}`)}</p>
 					{APP_PASSWORD_URL[shown] && (
-						<a href={APP_PASSWORD_URL[shown]} target="_blank" rel="noopener noreferrer" className="-mt-8 text-14 text-primaryColor underline transition-opacity hover:opacity-80">
+						<a href={APP_PASSWORD_URL[shown]} target="_blank" rel="noopener noreferrer" className="-mt-8 text-13 text-[#c6ff4d] underline underline-offset-2 transition-opacity hover:opacity-80">
 							{t("mailCreateAppPassword")}
 						</a>
 					)}
@@ -90,7 +90,7 @@ export default function MailConnectDialog({ provider, oauth, onClose, onConnecte
 								{vendor === "google" ? t("mailSignInGoogle") : t("mailSignInMicrosoft")}
 							</button>
 							{!showPassword && (
-								<button type="button" onClick={() => setShowPassword(true)} className="text-center text-14 text-primaryColor transition-opacity hover:opacity-80">
+								<button type="button" onClick={() => setShowPassword(true)} className="text-center text-13 text-[#c6ff4d] transition-opacity hover:opacity-80">
 									{t("mailUsePassword")}
 								</button>
 							)}
@@ -114,7 +114,7 @@ export default function MailConnectDialog({ provider, oauth, onClose, onConnecte
 							</div>
 						</form>
 					)}
-					{error && <p role="alert" className="text-14 text-danger">{error}</p>}
+					{error && <p role="alert" className="text-12 text-danger">{error}</p>}
 				</div>
 			</div>
 		</Modal>

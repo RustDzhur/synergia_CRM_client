@@ -1,5 +1,5 @@
 import React from "react";
-import { MdSettingsEthernet } from "react-icons/md";
+import { TbPlugConnected } from "react-icons/tb";
 import { SiTwilio } from "react-icons/si";
 import type { CallProviderId } from "@/app/config/callProviders";
 
@@ -30,5 +30,5 @@ export default function ProviderLogo({ id, size = 40 }: { id: CallProviderId; si
 			</span>
 		);
 	}
-	return <MdSettingsEthernet size={size} className="text-[#666666]" aria-hidden />;
+	return <TbPlugConnected size={size} className="text-[#8c948b]" aria-hidden />;
 }

@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { MdDeleteOutline, MdFormatColorFill } from "react-icons/md";
-import { FiSettings } from "react-icons/fi";
+import { TbColorPicker, TbPlus, TbSettings, TbTrash } from "react-icons/tb";
 import { Droppable, Draggable, DraggableProvided } from "@hello-pangea/dnd";
 import { Stage, Deal, NewDeal, useCrmStore } from "@/app/store/useCrmStore";
 import { stageColor } from "@/app/utils/stageColors";
@@ -72,7 +71,7 @@ export default function StageColumn({ stage, index, deals, dragProvided, isDragg
             {/* внутренняя обёртка: библиотека dnd сама двигает внешний элемент, поэтому «эффект подъёма» вешаем сюда */}
             <div
                 className={`transition-[transform,filter] duration-200 ease-out ${
-                    isDragging ? "scale-[1.03] drop-shadow-[0_8px_12px_rgba(0,0,0,0.25)]" : ""
+                    isDragging ? "scale-[1.03] shadow-[0_18px_44px_rgba(0,0,0,0.55)]" : ""
                 }`}
             >
                 {/* заголовок-стрелка — он же «ручка», за которую переносится весь столбец */}
@@ -83,7 +82,7 @@ export default function StageColumn({ stage, index, deals, dragProvided, isDragg
                         // фокус ушёл из заголовка (не на его кнопки и не в окно выбора цвета) — сохраняем название
                         if (isRenaming && !pickerOpen && !e.currentTarget.contains(e.relatedTarget as Node | null)) finishRename();
                     }}
-                    className={`relative h-[54px] flex items-center justify-center gap-12 px-[36px] select-none ${
+                    className={`relative h-[54px] flex items-center justify-center gap-10 px-[36px] select-none ${
                         isDragging ? "cursor-grabbing" : "cursor-grab"
                     }`}
                     style={{
@@ -98,7 +97,7 @@ export default function StageColumn({ stage, index, deals, dragProvided, isDragg
                             <input
                                 ref={nameRef}
                                 autoFocus
-                                className="min-w-0 flex-1 rounded-4 bg-white px-8 py-4 text-14 text-[#666666] outline-none"
+                                className="fs-field h-30 min-w-0 flex-1 px-8 text-12 outline-none"
                                 value={nameDraft}
                                 placeholder={t("stageNamePlaceholder")}
                                 maxLength={60}
@@ -117,9 +116,9 @@ export default function StageColumn({ stage, index, deals, dragProvided, isDragg
                                 aria-label={t("chooseColor")}
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => setPickerOpen(true)}
-                                className="shrink-0 text-white transition-transform hover:scale-110"
+                                className="shrink-0 text-white/80 transition-transform hover:scale-110 hover:text-white"
                             >
-                                <MdFormatColorFill size={22} />
+                                <TbColorPicker size={19} />
                             </button>
                             <button
                                 type="button"
@@ -129,12 +128,12 @@ export default function StageColumn({ stage, index, deals, dragProvided, isDragg
                                 onClick={() => setConfirmDelete(true)}
                                 className="shrink-0 text-white/80 transition-colors hover:text-white"
                             >
-                                <MdDeleteOutline size={20} />
+                                <TbTrash size={18} />
                             </button>
                         </>
                     ) : (
                         <>
-                            <span className="text-16 font-semibold text-white capitalize tracking-[0.32px] truncate">
+                            <span className="text-13 font-semibold text-white capitalize truncate">
                                 {stage.name}
                             </span>
                             <button
@@ -144,36 +143,38 @@ export default function StageColumn({ stage, index, deals, dragProvided, isDragg
                                 onClick={startRename}
                                 className="shrink-0 transition-transform duration-200 hover:rotate-90"
                             >
-                                <FiSettings size={18} className="text-white" />
+                                <TbSettings size={16} className="text-white/80" />
                             </button>
                         </>
                     )}
                 </div>
 
-                {/* «дорожка» столбца: светлый фон и рамка, чтобы границы были видны на белом.
-                    mr-8 — тот же зазор между дорожками, что и между стрелками */}
+                {/* «дорожка» столбца: приглушённая поверхность fs-card с тонкой рамкой;
+                    под подсветкой переноса — салатовая рамка. mr-8 — тот же зазор между дорожками, что и между стрелками */}
                 <Droppable droppableId={stage._id} type="DEAL">
                     {(provided, snapshot) => (
                         <div
                             ref={provided.innerRef}
                             {...provided.droppableProps}
-                            className={`mt-8 mr-8 min-h-[420px] rounded-8 border p-16 flex flex-col gap-10 transition-colors duration-200 ${
-                                snapshot.isDraggingOver
-                                    ? "border-[#5EA8F5] bg-[#EEF5FF]"
-                                    : "border-[#E6E6E6] bg-[#FBFBFB]"
+                            className={`fs-card mt-8 mr-8 min-h-[420px] p-12 flex flex-col gap-10 transition-colors duration-200 ${
+                                snapshot.isDraggingOver ? "border-[rgba(198,255,77,0.45)] bg-[rgba(198,255,77,0.05)]" : ""
                             }`}
                         >
-                            {/* кнопка «Add» сверху колонки, как в макете; под ней раскрывается форма новой сделки */}
-                            <button
-                                type="button"
-                                aria-expanded={isAdding}
-                                className="self-center rounded-8 bg-[#F2F2F2]/60 px-36 py-12 text-16 font-semibold text-[#666666] capitalize tracking-[0.32px] shadow-sm transition-colors duration-200 hover:bg-[#F2F2F2]"
-                                onClick={() => setIsAdding(!isAdding)}
-                            >
-                                {t("addTask")}
-                            </button>
+                            {/* шапка дорожки: кнопка «Add» и счётчик сделок; под кнопкой раскрывается форма новой сделки */}
+                            <div className="flex items-center justify-between gap-8">
+                                <button
+                                    type="button"
+                                    aria-expanded={isAdding}
+                                    className="fs-btn fs-btn-ghost h-34 min-w-0 flex-1 text-12"
+                                    onClick={() => setIsAdding(!isAdding)}
+                                >
+                                    <TbPlus size={15} />
+                                    {t("addTask")}
+                                </button>
+                                <span className="fs-chip h-24 shrink-0 px-8 text-10">{deals.length}</span>
+                            </div>
                             <Collapse open={isAdding}>
-                                <div className="pb-4 pt-10">
+                                <div className="pb-6 pt-10">
                                     <AddDealForm
                                         autoFocus={isAdding}
                                         onSubmit={handleAdd}

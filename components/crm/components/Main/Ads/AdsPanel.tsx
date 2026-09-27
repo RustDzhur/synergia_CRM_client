@@ -17,9 +17,9 @@ const PLATFORMS: { id: AdsPlatform; icon: React.ReactNode }[] = [
 
 export function Kpi({ label, value }: { label: string; value: string }) {
 	return (
-		<div className="min-w-0 rounded-8 bg-[#F5F7FC] px-16 py-10">
-			<p className="truncate text-14 text-[#999999]">{label}</p>
-			<p className="truncate text-20 font-medium text-[#4D4D4D]">{value}</p>
+		<div className="fs-card min-w-0 px-14 py-10">
+			<p className="truncate text-11 text-[#8c948b]">{label}</p>
+			<p className="truncate text-16 font-semibold text-[#f1f4ee]">{value}</p>
 		</div>
 	);
 }
@@ -29,31 +29,31 @@ function Connection({ c, available, planOk, onChoose, onDisconnect, onConnect }:
 	const locale = useLocale();
 	const expired = !!c && c.expiresAt > 0 && c.expiresAt < Date.now();
 	return (
-		<div className="flex flex-col gap-10 rounded-16 border border-[#F0F0F0] bg-white p-20 shadow-[0_2px_8px_rgba(0,0,0,0.16)]">
+		<div className="fs-card flex flex-col gap-10 p-16">
 			{c && (
 				<>
-					<p className={`text-14 ${c.status === "error" || expired ? "text-danger" : "text-[#009A2B]"}`}>
+					<p className={`text-12 ${c.status === "error" || expired ? "text-danger" : "text-[#2DDEB6]"}`}>
 						{c.status === "error" ? c.error : expired ? t("expired") : c.expiresAt > 0 ? t("validUntil", { date: new Date(c.expiresAt).toLocaleDateString(locale) }) : t("connected")}
 					</p>
-					<label className="flex flex-col gap-[4px] text-14 text-[#999999]">
+					<label className="flex flex-col gap-[4px] text-12 text-[#8c948b]">
 						{t("account")}
 						<select
 							value={c.accountId}
 							onChange={(e) => onChoose(c.id, e.target.value)}
-							className="h-[42px] rounded-8 border border-[#E6E6E6] bg-white px-10 text-16 text-[#4D4D4D] outline-none focus:border-[#5EA8F5]">
+							className="fs-field h-40 px-12 text-13 outline-none">
 							{!c.accountId && <option value="">{t("chooseAccount")}</option>}
 							{c.accounts.map((a) => <option key={a.id} value={a.id}>{a.name} {a.currency && `(${a.currency})`}</option>)}
 						</select>
 					</label>
 				</>
 			)}
-			{!c && !planOk && <p className="text-14 text-[#F4A100]">{t("needsUpgrade")}</p>}
-			{!c && planOk && !available && <p className="text-14 text-[#999999]">{t("notConfigured")}</p>}
+			{!c && !planOk && <p className="text-12 text-[#F4A100]">{t("needsUpgrade")}</p>}
+			{!c && planOk && !available && <p className="text-12 text-[#8c948b]">{t("notConfigured")}</p>}
 			<div className="flex gap-10">
-				<button type="button" disabled={!available || !planOk} onClick={onConnect} className="rounded-8 bg-primaryColor px-16 py-8 text-16 font-medium text-white transition-opacity hover:opacity-80 disabled:cursor-default disabled:opacity-[0.4]">
+				<button type="button" disabled={!available || !planOk} onClick={onConnect} className="fs-btn fs-btn-primary h-36 disabled:cursor-default disabled:opacity-40">
 					{c ? t("reconnect") : t("connect")}
 				</button>
-				{c && <button type="button" onClick={() => onDisconnect(c)} className="rounded-8 border border-[#E6E6E6] px-16 py-8 text-16 text-[#666666] transition-colors hover:bg-gray">{t("disconnect")}</button>}
+				{c && <button type="button" onClick={() => onDisconnect(c)} className="fs-btn fs-btn-ghost h-36">{t("disconnect")}</button>}
 			</div>
 		</div>
 	);
@@ -61,7 +61,7 @@ function Connection({ c, available, planOk, onChoose, onDisconnect, onConnect }:
 
 export function ItemStats({ item, locale, compact = false }: { item: AdsItem; locale: string; compact?: boolean }) {
 	const t = useTranslations("ads");
-	if (item.error) return <p className="rounded-8 bg-[#FFF3F3] p-16 text-16 text-danger">{item.error}</p>;
+	if (item.error) return <p className="rounded-10 bg-[rgba(235,87,87,0.08)] p-14 text-13 text-danger">{item.error}</p>;
 	if (!item.data) return null;
 	const sum = totals(item.data.days);
 	const cur = item.data.currency;
@@ -112,15 +112,15 @@ export default function AdsPanel() {
 	}
 
 	return (
-		<section className="flex flex-col gap-30">
+		<section className="flex flex-col gap-24">
 			<div>
-				<h1 className="mb-20 text-24 font-normal text-[#666666] lg:text-32">{t("platforms")}</h1>
-				<div className="grid gap-20 md:grid-cols-2">
+				<h1 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("platforms")}</h1>
+				<div className="grid gap-16 md:grid-cols-2">
 					{PLATFORMS.map((p) => {
 						const c = status?.connections.find((x) => x.platform === p.id);
 						return (
 							<div key={p.id}>
-								<p className="mb-10 flex items-center gap-12 text-18 font-medium text-[#4D4D4D]">{p.icon}{t(p.id)}</p>
+								<p className="mb-10 flex items-center gap-10 text-14 font-medium text-[#f1f4ee]">{p.icon}{t(p.id)}</p>
 								<Connection c={c} platform={p.id} available={!!status?.available[p.id]} planOk={status ? status.planOk : true} onChoose={onChoose} onDisconnect={setToRemove} onConnect={() => onConnect(p.id)} />
 							</div>
 						);
@@ -130,40 +130,40 @@ export default function AdsPanel() {
 
 			{items.length > 0 && (
 				<div>
-					<div className="mb-20 flex flex-wrap items-center justify-between gap-12">
-						<h2 className="text-24 font-normal text-[#666666] lg:text-32">{t("performance")}</h2>
-						<select value={days} onChange={(e) => loadInsights(Number(e.target.value))} aria-label={t("period")} className="h-[42px] rounded-8 border border-[#E6E6E6] bg-white px-10 text-16 text-[#4D4D4D] outline-none focus:border-[#5EA8F5]">
+					<div className="mb-14 flex flex-wrap items-center justify-between gap-12">
+						<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("performance")}</h2>
+						<select value={days} onChange={(e) => loadInsights(Number(e.target.value))} aria-label={t("period")} className="fs-field h-40 px-12 text-13 outline-none">
 							{[7, 30, 90].map((d) => <option key={d} value={d}>{t("lastDays", { n: d })}</option>)}
 						</select>
 					</div>
-					<div className={`flex flex-col gap-30 ${loading ? "opacity-[0.6]" : ""}`}>
+					<div className={`flex flex-col gap-16 ${loading ? "opacity-60" : ""}`}>
 						{items.map((it) => (
-							<div key={it.connection.id} className="rounded-16 border border-[#F0F0F0] bg-white p-20 shadow-[0_2px_8px_rgba(0,0,0,0.16)]">
-								<h3 className="mb-16 text-20 font-medium text-[#4D4D4D]">{t(it.connection.platform)} · {it.connection.accounts.find((a) => a.id === it.connection.accountId)?.name}</h3>
+							<div key={it.connection.id} className="fs-card p-16">
+								<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t(it.connection.platform)} · {it.connection.accounts.find((a) => a.id === it.connection.accountId)?.name}</h3>
 								<ItemStats item={it} locale={locale} />
 								{it.data && (
-									<div className="mt-20 overflow-x-auto">
-										<table className="w-full min-w-[520px] text-left text-16">
+									<div className="mt-16 overflow-x-auto">
+										<table className="fs-table min-w-[520px]">
 											<thead>
-												<tr className="text-14 text-[#999999]">
-													<th className="py-8 pr-12 font-normal">{t("campaign")}</th>
-													<th className="py-8 pr-12 font-normal">{t("status")}</th>
-													<th className="py-8 pr-12 text-right font-normal">{t("spend")}</th>
-													<th className="py-8 pr-12 text-right font-normal">{t("clicks")}</th>
-													<th className="py-8 text-right font-normal">{t("conversions")}</th>
+												<tr>
+													<th className="py-8 pr-12">{t("campaign")}</th>
+													<th className="py-8 pr-12">{t("status")}</th>
+													<th className="py-8 pr-12 text-right">{t("spend")}</th>
+													<th className="py-8 pr-12 text-right">{t("clicks")}</th>
+													<th className="py-8 text-right">{t("conversions")}</th>
 												</tr>
 											</thead>
 											<tbody>
 												{it.data.campaigns.map((c) => (
-													<tr key={c.id} className="border-t border-[#F0F0F0] text-[#4D4D4D]">
-														<td className="max-w-[240px] truncate py-10 pr-12">{c.name}</td>
-														<td className="py-10 pr-12 text-[#999999]">{c.status}</td>
-														<td className="py-10 pr-12 text-right">{money(c.spend, it.data!.currency, locale)}</td>
-														<td className="py-10 pr-12 text-right">{count(c.clicks, locale)}</td>
-														<td className="py-10 text-right">{count(c.conversions, locale)}</td>
+													<tr key={c.id}>
+														<td className="max-w-[240px] truncate py-10 pr-12 text-13">{c.name}</td>
+														<td className="py-10 pr-12 text-13 text-[#8c948b]">{c.status}</td>
+														<td className="py-10 pr-12 text-right text-13">{money(c.spend, it.data!.currency, locale)}</td>
+														<td className="py-10 pr-12 text-right text-13">{count(c.clicks, locale)}</td>
+														<td className="py-10 text-right text-13">{count(c.conversions, locale)}</td>
 													</tr>
 												))}
-												{it.data.campaigns.length === 0 && <tr><td colSpan={5} className="py-20 text-center text-[#999999]">{t("noData")}</td></tr>}
+												{it.data.campaigns.length === 0 && <tr><td colSpan={5} className="py-20 text-center text-13 text-[#8c948b]">{t("noData")}</td></tr>}
 											</tbody>
 										</table>
 									</div>

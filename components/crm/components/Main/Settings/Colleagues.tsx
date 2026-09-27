@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { MdClose, MdEdit, MdSearch, MdTune } from "react-icons/md";
+import { TbAdjustments, TbPencil, TbSearch, TbX } from "react-icons/tb";
 import { Employee, useEmployeeStore } from "@/app/store/useEmployeeStore";
+import PageHeader from "@/components/crm/components/shared/PageHeader";
 import Checkbox from "../shared/Checkbox";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import EmployeeModal from "../Company/EmployeeModal";
@@ -11,8 +12,8 @@ import Avatar from "../shared/Avatar";
 
 const initials = (e: Employee) => `${e.firstname[0] ?? ""}${e.lastname[0] ?? ""}`.toUpperCase();
 
-const TH = "border-l border-[#F0F0F0] px-10 py-16 text-center text-16 font-medium text-[#999999] md:text-18";
-const TD = "truncate px-10 text-center text-16 text-iconColor md:text-18";
+const TH = "px-10 text-center";
+const TD = "truncate px-10 text-center text-13";
 
 // Settings → Colleagues (/crm/settings/colleagues): те же сотрудники, что и в разделе Company,
 // но в компактной таблице из макета: имя с должностью, значок «активен», крестик (удалить) и карандаш (изменить).
@@ -51,48 +52,49 @@ export default function Colleagues() {
 	}
 
 	return (
-		<div className="p-16 md:p-30">
-			<div className="flex flex-col gap-30 lg:flex-row">
+		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
+			<PageHeader />
+			<div className="flex flex-col gap-20 lg:flex-row">
 				<SettingsTabs className="shrink-0 md:self-start" />
 
 				<section className="min-w-0 flex-1">
-					<div className="mb-30 flex flex-col gap-16 md:flex-row md:items-center md:justify-between">
-						<div className="flex h-[50px] w-full items-center justify-between rounded-8 border-2 border-[#E6E6E6] bg-white px-16 shadow-custom transition-colors focus-within:border-[#5EA8F5] md:w-[250px] lg:w-[350px]">
+					<div className="mb-20 flex flex-col gap-12 md:flex-row md:items-center md:justify-between">
+						<div className="fs-field flex h-40 w-full items-center justify-between px-12 transition-colors md:w-[260px] lg:w-[320px]">
 							<input
 								value={query}
 								onChange={(e) => setQuery(e.target.value)}
 								placeholder={t("search")}
 								aria-label={t("search")}
-								className="w-full text-18 outline-none placeholder:text-[#CCCCCC]"
+								className="w-full bg-transparent text-13 outline-none"
 							/>
-							<div className="flex shrink-0 items-center gap-10 text-[#CCCCCC]">
-								<MdSearch size={20} />
-								<MdTune size={20} />
+							<div className="flex shrink-0 items-center gap-10 text-[#9AA396]">
+								<TbSearch size={17} />
+								<TbAdjustments size={17} />
 							</div>
 						</div>
-						<div className="flex items-center gap-24">
+						<div className="flex items-center gap-16">
 							{selected.length > 0 && (
 								<button
 									type="button"
 									onClick={() => setToDelete(items.filter((e) => selected.includes(e._id)))}
-									className="animate-fade-in text-16 font-semibold text-danger transition-opacity hover:opacity-80">
+									className="animate-fade-in text-13 font-semibold text-danger transition-opacity hover:opacity-80">
 									{t("deleteSelected")} ({selected.length})
 								</button>
 							)}
 							<button
 								type="button"
 								onClick={() => { setEditing(null); setModalOpen(true); }}
-								className="h-[50px] w-full rounded-4 bg-primaryColor px-30 text-18 font-semibold text-white shadow-custom transition-opacity hover:opacity-80 md:w-auto">
+								className="fs-btn fs-btn-primary h-40 w-full md:w-auto">
 								{t("addEmployee")}
 							</button>
 						</div>
 					</div>
 
-					<div className="min-h-[280px] overflow-x-auto rounded-16 bg-white shadow-heroImage">
-						<table className="w-full min-w-[900px] table-fixed border-collapse">
+					<div className="fs-card min-h-[280px] overflow-x-auto">
+						<table className="fs-table min-w-[900px] table-fixed">
 							<thead>
-								<tr className="bg-[#FAFCFF]">
-									<th className="w-[46px] py-16 pl-16 text-left">
+								<tr>
+									<th className="w-[46px] pl-16 text-left">
 										<Checkbox
 											checked={allChecked}
 											onChange={(v) => setSelected(v ? items.map((e) => e._id) : [])}
@@ -108,24 +110,30 @@ export default function Colleagues() {
 							</thead>
 							<tbody>
 								{items.map((e) => (
-									<tr key={e._id} className={`h-[84px] animate-fade-in transition-colors duration-150 hover:bg-[#F7F9FF] ${selected.includes(e._id) ? "bg-[#F5F9FF]" : ""}`}>
+									<tr key={e._id} className={`h-[64px] animate-fade-in transition-colors duration-150 ${selected.includes(e._id) ? "bg-[rgba(198,255,77,0.06)]" : ""}`}>
 										<td className="pl-16">
 											<Checkbox checked={selected.includes(e._id)} onChange={() => toggle(e._id)} label={t("selectRow")} />
 										</td>
 										<td className="px-10">
 											<div className="flex items-center gap-10">
-												<Avatar src={e.avatarUrl} initials={initials(e)} size={40} className="flex text-14" />
+												<Avatar
+													src={e.avatarUrl}
+													initials={initials(e)}
+													size={32}
+													className="flex text-12"
+													style={e.avatarUrl ? undefined : { background: "rgba(198,255,77,0.14)", color: "#c6ff4d" }}
+												/>
 												<div className="min-w-0">
-													<p className="truncate text-18 font-medium text-[#999999]">{e.firstname} {e.lastname}</p>
-													<p className="truncate text-14 text-iconColor">{e.position}</p>
+													<p className="truncate text-13 font-medium text-[#f1f4ee]">{e.firstname} {e.lastname}</p>
+													<p className="truncate text-12 text-[#8c948b]">{e.position}</p>
 												</div>
 												<span className="flex shrink-0 items-center gap-8">
-													<span title={t("active")} className="h-8 w-8 rounded-50 bg-[#009A2B]" />
-													<button type="button" onClick={() => setToDelete([e])} aria-label={t("remove")} className="text-[#666666] transition-colors hover:text-danger">
-														<MdClose size={18} />
+													<span title={t("active")} className="h-8 w-8 rounded-50 bg-[#2DDEB6]" />
+													<button type="button" onClick={() => setToDelete([e])} aria-label={t("remove")} className="text-[#9AA396] transition-colors hover:text-danger">
+														<TbX size={16} />
 													</button>
-													<button type="button" onClick={() => { setEditing(e); setModalOpen(true); }} aria-label={t("edit")} className="text-[#666666] transition-colors hover:text-primaryColor">
-														<MdEdit size={18} />
+													<button type="button" onClick={() => { setEditing(e); setModalOpen(true); }} aria-label={t("edit")} className="text-[#9AA396] transition-colors hover:text-[#c6ff4d]">
+														<TbPencil size={16} />
 													</button>
 												</span>
 											</div>
@@ -138,8 +146,8 @@ export default function Colleagues() {
 								))}
 							</tbody>
 						</table>
-						{!isLoading && items.length === 0 && <p className="py-40 text-center text-16 text-[#999999]">{t("empty")}</p>}
-						{isLoading && items.length === 0 && <p className="py-40 text-center text-16 text-[#999999]">{t("loading")}</p>}
+						{!isLoading && items.length === 0 && <p className="py-40 text-center text-13 text-[#8c948b]">{t("empty")}</p>}
+						{isLoading && items.length === 0 && <p className="py-40 text-center text-13 text-[#8c948b]">{t("loading")}</p>}
 					</div>
 				</section>
 			</div>

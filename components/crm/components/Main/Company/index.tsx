@@ -1,13 +1,14 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { MdChevronLeft, MdChevronRight, MdMenu, MdSearch, MdSettings, MdTune } from "react-icons/md";
+import { TbAdjustments, TbChevronLeft, TbChevronRight, TbDots, TbPlus, TbSearch, TbSettings } from "react-icons/tb";
 import { Employee, useEmployeeStore } from "@/app/store/useEmployeeStore";
 import Dropdown from "@/app/utils/Dropdown";
 import { useClickOutside } from "@/app/utils/useClickOutside";
+import PageHeader from "@/components/crm/components/shared/PageHeader";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import EmployeeModal from "./EmployeeModal";
-import { TAB_BAR } from "../shared/tabBar";
+import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tabBar";
 import Avatar from "../shared/Avatar";
 
 const initials = (e: Employee) => `${e.firstname[0] ?? ""}${e.lastname[0] ?? ""}`.toUpperCase();
@@ -18,16 +19,16 @@ function RowMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => voi
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
     useClickOutside(ref, open, () => setOpen(false));
-    const item = "block w-full px-16 py-10 text-left text-16 text-[#666666] transition-colors duration-150 hover:bg-gray";
+    const item = "fs-popover-row block w-full px-14 py-10 text-left text-13 transition-colors duration-150";
     return (
         <div ref={ref} className="relative inline-block">
-            <button type="button" aria-label={t("rowMenu")} aria-expanded={open} onClick={() => setOpen(!open)} className="text-[#666666] transition-colors hover:text-primaryColor">
-                <MdMenu size={22} />
+            <button type="button" aria-label={t("rowMenu")} aria-expanded={open} onClick={() => setOpen(!open)} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
+                <TbDots size={20} />
             </button>
             <Dropdown open={open} className="left-0 top-full mt-8 min-w-[150px]">
-                <div className="overflow-hidden rounded-8 border border-[#E2F1F5] bg-white text-left shadow-custom">
+                <div className="fs-popover overflow-hidden py-4 text-left">
                     <button type="button" className={item} onClick={() => { setOpen(false); onEdit(); }}>{t("edit")}</button>
-                    <div className="border-t border-[#E2F1F5]" />
+                    <div className="my-4 border-t border-inkLine" />
                     <button type="button" className={`${item} !text-danger`} onClick={() => { setOpen(false); onDelete(); }}>{t("delete")}</button>
                 </div>
             </Dropdown>
@@ -54,59 +55,60 @@ export default function Company() {
         return () => clearTimeout(timer);
     }, [query, fetchEmployees]);
 
-    const th = "border-l border-[#F0F0F0] px-10 py-16 text-center text-16 font-medium text-[#999999] md:text-18";
-    const td = "truncate px-10 text-center text-16 text-[#999999] md:text-18";
+    const th = "px-10 text-center";
+    const td = "truncate px-10 text-center text-13";
 
     return (
-        <div className="p-16 md:p-30">
-            <div className="mb-30 flex flex-wrap items-center justify-between gap-16">
-                <div className={TAB_BAR}>
-                    {(["employees", "knowledge"] as const).map((key) => (
-                        <button
-                            key={key}
-                            onClick={() => setTab(key)}
-                            className={`rounded-4 px-16 py-10 text-16 font-medium tracking-[0.32px] transition-colors duration-200 ${
-                                tab === key ? "bg-primaryColor text-white" : "text-[#CCCCCC] hover:text-[#999999]"
-                            }`}
-                        >
-                            {key === "employees" ? t("employeesTab") : t("knowledgeBase")}
-                        </button>
-                    ))}
-                </div>
+        <div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
+            <PageHeader>
+                <div className="flex flex-col gap-16 md:flex-row md:items-center md:justify-between">
+                    <div className={TAB_BAR}>
+                        {(["employees", "knowledge"] as const).map((key) => (
+                            <button
+                                key={key}
+                                onClick={() => setTab(key)}
+                                className={`${TAB_ITEM} ${tab === key ? TAB_ITEM_ACTIVE : TAB_ITEM_IDLE}`}
+                            >
+                                {key === "employees" ? t("employeesTab") : t("knowledgeBase")}
+                            </button>
+                        ))}
+                    </div>
 
-                {tab === "employees" && (
-                    <>
-                        <div className="flex h-[50px] w-full items-center justify-between rounded-8 border-2 border-[#E6E6E6] bg-white px-16 shadow-custom transition-colors focus-within:border-[#5EA8F5] md:w-[220px] lg:w-[350px]">
-                            <input
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                placeholder={t("search")}
-                                className="w-full text-18 outline-none placeholder:text-[#CCCCCC]"
-                            />
-                            <div className="flex shrink-0 items-center gap-10 text-[#CCCCCC]">
-                                <MdSearch size={20} />
-                                <MdTune size={20} />
+                    {tab === "employees" && (
+                        <>
+                            <div className="fs-field flex h-40 w-full items-center justify-between gap-10 rounded-10 px-12 transition-colors md:w-[220px] lg:w-[350px]">
+                                <input
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                    placeholder={t("search")}
+                                    className="w-full min-w-0 bg-transparent text-13 text-[#f1f4ee] outline-none placeholder:text-[#9AA396]"
+                                />
+                                <div className="flex shrink-0 items-center gap-10 text-[#9AA396]">
+                                    <TbSearch size={17} />
+                                    <TbAdjustments size={17} />
+                                </div>
                             </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => { setEditing(null); setModalOpen(true); }}
-                            className="h-[50px] w-full rounded-4 bg-primaryColor px-30 text-18 font-semibold text-white shadow-custom transition-opacity hover:opacity-80 md:w-auto"
-                        >
-                            {t("invite")}
-                        </button>
-                    </>
-                )}
-            </div>
+                            <button
+                                type="button"
+                                onClick={() => { setEditing(null); setModalOpen(true); }}
+                                className="fs-btn fs-btn-primary h-40 w-full md:w-auto"
+                            >
+                                <TbPlus size={16} aria-hidden />
+                                {t("invite")}
+                            </button>
+                        </>
+                    )}
+                </div>
+            </PageHeader>
 
             {tab === "knowledge" ? (
-                <p className="rounded-16 bg-[#F5F7FC] p-30 text-center text-16 text-[#999999]">{t("kbSoon")}</p>
+                <p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("kbSoon")}</p>
             ) : (
-                <div className="min-h-[280px] overflow-x-auto rounded-16 bg-white shadow-custom">
-                    <table className="w-full min-w-[1040px] table-fixed border-collapse">
+                <div className="fs-card min-h-[280px] overflow-x-auto">
+                    <table className="fs-table min-w-[1040px] table-fixed">
                         <thead>
-                            <tr className="border-b border-[#F0F0F0]">
-                                <th className="w-[60px] py-16 text-center text-[#999999]"><MdSettings size={22} className="mx-auto" aria-hidden /></th>
+                            <tr>
+                                <th className="w-[60px]"><TbSettings size={18} className="mx-auto block text-[#8c948b]" aria-hidden /></th>
                                 <th className={`${th} w-[100px]`}>{t("photo")}</th>
                                 <th className={`${th} w-[230px]`}>{t("fullName")}</th>
                                 <th className={`${th} w-[200px]`}>{t("email")}</th>
@@ -118,12 +120,12 @@ export default function Company() {
                         </thead>
                         <tbody>
                             {items.map((e) => (
-                                <tr key={e._id} className="h-[84px] animate-fade-in border-b border-[#F0F0F0] transition-colors duration-150 hover:bg-[#F7F9FF]">
+                                <tr key={e._id} className="h-[68px] animate-fade-in transition-colors duration-150">
                                     <td className="text-center"><RowMenu onEdit={() => { setEditing(e); setModalOpen(true); }} onDelete={() => setToDelete(e)} /></td>
                                     <td className="text-center">
-                                        <Avatar src={e.avatarUrl} initials={initials(e)} size={50} className="mx-auto flex text-16" />
+                                        <Avatar src={e.avatarUrl} initials={initials(e)} size={40} className="mx-auto flex text-13" />
                                     </td>
-                                    <td className={`${td} text-[#666666]`}>{e.firstname} {e.lastname}</td>
+                                    <td className={`${td} font-medium text-[#f1f4ee]`}>{e.firstname} {e.lastname}</td>
                                     <td className={td}>{e.email}</td>
                                     <td className={td}>{e.workPhone}</td>
                                     <td className={td}>{e.position}</td>
@@ -133,18 +135,18 @@ export default function Company() {
                             ))}
                         </tbody>
                     </table>
-                    {!isLoading && items.length === 0 && <p className="py-40 text-center text-16 text-[#999999]">{t("empty")}</p>}
-                    {isLoading && items.length === 0 && <p className="py-40 text-center text-16 text-[#999999]">…</p>}
+                    {!isLoading && items.length === 0 && <p className="py-40 text-center text-13 text-[#8c948b]">{t("empty")}</p>}
+                    {isLoading && items.length === 0 && <p className="py-40 text-center text-13 text-[#8c948b]">…</p>}
 
-                    <footer className="flex flex-wrap items-center gap-x-24 gap-y-8 px-18 py-16 text-16 uppercase text-[#999999]">
+                    <footer className="flex flex-wrap items-center gap-x-24 gap-y-8 border-t border-inkLine px-18 py-14 text-11 uppercase tracking-[0.08em] text-[#8c948b]">
                         <span>{t("total", { total })}</span>
                         <span>{t("pages", { pages })}</span>
-                        <div className="flex w-full items-center justify-center gap-24 text-[#666666] md:ml-[-160px] md:flex-1">
-                            <button type="button" disabled={page <= 1} onClick={() => fetchEmployees(page - 1)} className="flex items-center transition-colors enabled:hover:text-primaryColor disabled:opacity-40">
-                                <MdChevronLeft size={22} />{t("previous")}
+                        <div className="flex w-full items-center justify-center gap-24 text-[#8c948b] md:ml-[-160px] md:flex-1">
+                            <button type="button" disabled={page <= 1} onClick={() => fetchEmployees(page - 1)} className="flex items-center gap-6 transition-colors enabled:hover:text-[#c6ff4d] disabled:opacity-40">
+                                <TbChevronLeft size={18} />{t("previous")}
                             </button>
-                            <button type="button" disabled={page >= pages} onClick={() => fetchEmployees(page + 1)} className="flex items-center transition-colors enabled:hover:text-primaryColor disabled:opacity-40">
-                                {t("next")}<MdChevronRight size={22} />
+                            <button type="button" disabled={page >= pages} onClick={() => fetchEmployees(page + 1)} className="flex items-center gap-6 transition-colors enabled:hover:text-[#c6ff4d] disabled:opacity-40">
+                                {t("next")}<TbChevronRight size={18} />
                             </button>
                         </div>
                     </footer>

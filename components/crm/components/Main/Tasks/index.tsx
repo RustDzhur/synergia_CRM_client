@@ -2,16 +2,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdMenu, MdMoreHoriz, MdNotificationsOff, MdPushPin, MdSearch, MdSettings, MdTune } from "react-icons/md";
-import { RiArrowDownSLine } from "react-icons/ri";
+import { TbAdjustments, TbBellOff, TbChevronDown, TbDots, TbPin, TbPlus, TbSearch, TbSettings } from "react-icons/tb";
 import { Task, TaskStatus, taskStatus, useTaskStore } from "@/app/store/useTaskStore";
 import { localeTag } from "@/app/utils/dateHelpers";
 import Dropdown from "@/app/utils/Dropdown";
 import { useClickOutside } from "@/app/utils/useClickOutside";
+import PageHeader from "@/components/crm/components/shared/PageHeader";
 import Checkbox from "../shared/Checkbox";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import TaskModal from "./TaskModal";
-import { TAB_BAR } from "../shared/tabBar";
+import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tabBar";
 
 type View = "list" | "deadline" | "planner";
 type Action = "" | "done" | "active" | "delete";
@@ -34,14 +34,14 @@ function Menu({ options, children, align = "left" }: { options: Array<{ label: s
         <div ref={ref} className="relative inline-block">
             {children({ open, toggle: () => setOpen(!open) })}
             <Dropdown open={open} className={`${align === "left" ? "left-0" : "right-0"} top-full mt-8 min-w-[190px]`}>
-                <div className="overflow-hidden rounded-8 border border-[#E2F1F5] bg-white text-left shadow-custom">
+                <div className="fs-popover overflow-hidden py-4 text-left">
                     {options.map((o, i) => (
                         <div key={o.label}>
-                            {i > 0 && <div className="border-t border-[#E2F1F5]" />}
+                            {i > 0 && <div className="my-4 border-t border-inkLine" />}
                             <button
                                 type="button"
                                 onClick={() => { setOpen(false); o.onClick(); }}
-                                className={`block w-full px-16 py-10 text-left text-16 transition-colors duration-150 hover:bg-gray ${o.danger ? "text-danger" : "text-[#666666]"}`}>
+                                className={`fs-popover-row block w-full px-14 py-10 text-left text-13 transition-colors duration-150 ${o.danger ? "!text-danger" : ""}`}>
                                 {o.label}
                             </button>
                         </div>
@@ -112,17 +112,17 @@ export default function Tasks() {
         setAction("");
     }
 
-    const th = "border-l border-[#F0F0F0] px-10 py-16 text-center text-16 font-medium text-[#999999] md:text-18";
-    const td = "truncate px-10 text-center text-16 text-[#999999] md:text-18";
+    const th = "px-10 text-center";
+    const td = "truncate px-10 text-center text-13";
     const tab = (active: boolean) =>
-        `px-16 py-10 text-16 font-medium tracking-[0.32px] border-b-2 transition-colors duration-200 ${
-            active ? "border-primaryColor text-primaryColor" : "border-transparent text-[#999999] hover:text-[#666666]"
+        `h-30 shrink-0 rounded-8 px-12 text-12 font-medium transition-colors duration-150 ${
+            active ? "bg-[rgba(198,255,77,0.14)] text-[#c6ff4d]" : "text-[#8c948b] hover:text-[#f1f4ee]"
         }`;
 
     const deadlineBadge = (task: Task) => {
         const status = taskStatus(task, now);
-        if (status === "completed") return <span className="rounded-4 bg-[#0BD065] px-8 py-4 text-14 font-semibold capitalize text-white">{t("statusCompleted")}</span>;
-        if (status === "ended" && task.deadline) return <span className="rounded-4 bg-[#C8102E] px-8 py-4 text-14 font-semibold capitalize text-white">{overdueLabel(task.deadline, locale)}</span>;
+        if (status === "completed") return <span className="rounded-6 bg-[rgba(11,208,101,0.16)] px-8 py-4 text-11 font-semibold capitalize text-[#0BD065]">{t("statusCompleted")}</span>;
+        if (status === "ended" && task.deadline) return <span className="rounded-6 bg-[rgba(200,16,46,0.18)] px-8 py-4 text-11 font-semibold capitalize text-[#ff7b8a]">{overdueLabel(task.deadline, locale)}</span>;
         return <span>{task.deadline ? dateText(task.deadline) : t("noDeadline")}</span>;
     };
 
@@ -140,95 +140,96 @@ export default function Tasks() {
     }, [rows]);
 
     return (
-        <div className="p-16 md:p-30">
-            <div className="mb-20 flex flex-wrap items-center justify-between gap-16">
-                <div className={TAB_BAR}>
-                    {(["tasks", "projects"] as const).map((key) => (
-                        <button
-                            key={key}
-                            onClick={() => setSection(key)}
-                            className={`rounded-4 px-16 py-10 text-16 font-medium tracking-[0.32px] transition-colors duration-200 ${
-                                section === key ? "bg-primaryColor text-white" : "text-[#CCCCCC] hover:text-[#999999]"
-                            }`}>
-                            {t(key)}
-                        </button>
-                    ))}
+        <div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
+            <PageHeader>
+                <div className="flex flex-col gap-16 md:flex-row md:items-center md:justify-between">
+                    <div className={TAB_BAR}>
+                        {(["tasks", "projects"] as const).map((key) => (
+                            <button
+                                key={key}
+                                onClick={() => setSection(key)}
+                                className={`${TAB_ITEM} ${section === key ? TAB_ITEM_ACTIVE : TAB_ITEM_IDLE}`}>
+                                {t(key)}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="fs-field flex h-40 w-full items-center justify-between gap-10 rounded-10 px-12 transition-colors md:w-[220px] lg:w-[350px]">
+                        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("search")} className="w-full min-w-0 bg-transparent text-13 text-[#f1f4ee] outline-none placeholder:text-[#9AA396]" />
+                        <div className="flex shrink-0 items-center gap-10 text-[#9AA396]"><TbSearch size={17} /><TbAdjustments size={17} /></div>
+                    </div>
                 </div>
-                <div className="flex h-[50px] w-full items-center justify-between rounded-8 border-2 border-[#E6E6E6] bg-white px-16 shadow-custom transition-colors focus-within:border-[#5EA8F5] md:w-[220px] lg:w-[350px]">
-                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("search")} className="w-full text-18 outline-none placeholder:text-[#CCCCCC]" />
-                    <div className="flex shrink-0 items-center gap-10 text-[#CCCCCC]"><MdSearch size={20} /><MdTune size={20} /></div>
-                </div>
-            </div>
+            </PageHeader>
 
             {section === "projects" ? (
-                <p className="rounded-16 bg-[#F5F7FC] p-30 text-center text-16 text-[#999999]">{t("projectsSoon")}</p>
+                <p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("projectsSoon")}</p>
             ) : (
                 <>
                     <div className="mb-20 flex flex-wrap items-center justify-between gap-16">
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-2 rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-2">
                             {(["list", "deadline", "planner"] as const).map((v) => (
                                 <button key={v} className={tab(view === v)} onClick={() => setView(v)}>
                                     {v === "deadline" ? t("deadlineTab") : t(v)}
                                 </button>
                             ))}
                         </div>
-                        <div className="flex items-center gap-16 text-16 font-medium text-[#666666]">
+                        <div className="flex items-center gap-16 text-12 text-[#8c948b]">
                             <span>{t("myItems")}:</span>
-                            <span className="flex items-center gap-6">{t("overdue")}<span className="rounded-4 bg-primaryColor px-4 text-white">{overdue}</span></span>
-                            <span className="flex items-center gap-6">{t("comments")}<span className="rounded-4 bg-primaryColor px-4 text-white">{commentsCount}</span></span>
+                            <span className="flex items-center gap-6">{t("overdue")}<span className="flex h-20 items-center rounded-50 bg-[rgba(198,255,77,0.14)] px-8 text-11 font-semibold text-[#c6ff4d]">{overdue}</span></span>
+                            <span className="flex items-center gap-6">{t("comments")}<span className="flex h-20 items-center rounded-50 bg-[rgba(198,255,77,0.14)] px-8 text-11 font-semibold text-[#c6ff4d]">{commentsCount}</span></span>
                         </div>
-                        <div className="flex items-center gap-16">
-                            <button type="button" onClick={() => openEdit(null)} className="h-[44px] rounded-4 bg-primaryColor px-24 text-16 font-semibold text-white shadow-custom transition-opacity hover:opacity-80">
+                        <div className="flex items-center gap-12">
+                            <button type="button" onClick={() => openEdit(null)} className="fs-btn fs-btn-primary h-38">
+                                <TbPlus size={16} aria-hidden />
                                 {t("addTask")}
                             </button>
                             <MoreIcon />
                         </div>
                     </div>
 
-                    {view === "planner" && <p className="rounded-16 bg-[#F5F7FC] p-30 text-center text-16 text-[#999999]">{t("plannerSoon")}</p>}
+                    {view === "planner" && <p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("plannerSoon")}</p>}
 
                     {view === "deadline" && (
                         <div className="flex flex-col gap-24">
                             {(["overdue", "today", "upcoming", "none"] as const).map((g) =>
                                 groups[g].length === 0 ? null : (
                                     <section key={g} className="animate-fade-in">
-                                        <h3 className={`mb-10 text-20 font-medium ${g === "overdue" ? "text-danger" : "text-[#666666]"}`}>
+                                        <h3 className={`mb-10 text-13 font-semibold ${g === "overdue" ? "text-danger" : "text-[#8c948b]"}`}>
                                             {g === "overdue" ? t("overdue") : g === "today" ? t("today") : g === "upcoming" ? t("upcoming") : t("noDeadline")} ({groups[g].length})
                                         </h3>
-                                        <ul className="overflow-hidden rounded-16 bg-white shadow-custom">
+                                        <ul className="fs-card overflow-hidden">
                                             {groups[g].map((task) => (
-                                                <li key={task._id} className="flex flex-wrap items-center justify-between gap-12 border-b border-[#F0F0F0] px-20 py-14 last:border-b-0 hover:bg-[#F7F9FF]">
-                                                    <button type="button" onClick={() => openEdit(task)} className={`text-left text-18 text-[#666666] ${task.completed ? "line-through" : ""}`}>{task.title}</button>
-                                                    <span className="text-16 text-[#999999]">{deadlineBadge(task)}</span>
+                                                <li key={task._id} className="flex flex-wrap items-center justify-between gap-12 border-b border-inkLineSoft px-20 py-14 last:border-b-0 hover:bg-[rgba(255,255,255,0.025)]">
+                                                    <button type="button" onClick={() => openEdit(task)} className={`text-left text-13 text-[#f1f4ee] transition-colors hover:text-[#c6ff4d] ${task.completed ? "line-through" : ""}`}>{task.title}</button>
+                                                    <span className="text-12 text-[#8c948b]">{deadlineBadge(task)}</span>
                                                 </li>
                                             ))}
                                         </ul>
                                     </section>
                                 )
                             )}
-                            {rows.length === 0 && <p className="py-40 text-center text-16 text-[#999999]">{isLoading ? "…" : t("empty")}</p>}
+                            {rows.length === 0 && <p className="py-40 text-center text-13 text-[#8c948b]">{isLoading ? "…" : t("empty")}</p>}
                         </div>
                     )}
 
                     {view === "list" && (
                         <>
-                            <div className="min-h-[300px] overflow-x-auto rounded-16 bg-white shadow-custom">
-                                <table className="w-full min-w-[900px] table-fixed border-collapse">
+                            <div className="fs-card min-h-[300px] overflow-x-auto">
+                                <table className="fs-table min-w-[900px] table-fixed">
                                     <thead>
-                                        <tr className="border-b border-[#F0F0F0]">
-                                            <th className="w-[46px] py-16 pl-16 text-left">
+                                        <tr>
+                                            <th className="w-[46px] pl-16">
                                                 <Checkbox checked={allChecked} onChange={(c) => setSelected(c ? rows.map((r) => r._id) : [])} label={t("selectAll")} />
                                             </th>
-                                            <th className="w-[60px] text-center text-[#999999]"><MdSettings size={22} className="mx-auto" aria-hidden /></th>
+                                            <th className="w-[60px]"><TbSettings size={18} className="mx-auto block text-[#8c948b]" aria-hidden /></th>
                                             <th className={th}>{t("name")}</th>
                                             <th className={`${th} w-[200px]`}>
                                                 <Menu
                                                     align="right"
                                                     options={(["all", "active", "completed", "ended"] as const).map((s) => ({ label: statusLabel[s], onClick: () => setStatusFilter(s) }))}>
                                                     {({ open, toggle }) => (
-                                                        <button type="button" onClick={toggle} aria-expanded={open} className="inline-flex items-center gap-6 transition-colors hover:text-primaryColor">
+                                                        <button type="button" onClick={toggle} aria-expanded={open} className="inline-flex items-center gap-6 transition-colors hover:text-[#c6ff4d]">
                                                             {statusFilter === "all" ? t("status") : statusLabel[statusFilter]}
-                                                            <RiArrowDownSLine size={22} className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+                                                            <TbChevronDown size={16} className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
                                                         </button>
                                                     )}
                                                 </Menu>
@@ -240,22 +241,22 @@ export default function Tasks() {
                                     </thead>
                                     <tbody>
                                         {rows.map((task) => (
-                                            <tr key={task._id} className={`h-[60px] animate-fade-in border-b border-[#F0F0F0] transition-colors duration-150 hover:bg-[#F7F9FF] ${selected.includes(task._id) ? "bg-[#F5F9FF]" : ""}`}>
+                                            <tr key={task._id} className={`h-[52px] animate-fade-in transition-colors duration-150 ${selected.includes(task._id) ? "bg-[rgba(198,255,77,0.06)]" : ""}`}>
                                                 <td className="pl-16">
                                                     <Checkbox checked={selected.includes(task._id)} onChange={() => setSelected((s) => (s.includes(task._id) ? s.filter((x) => x !== task._id) : [...s, task._id]))} label={t("selectRow")} />
                                                 </td>
                                                 <td className="text-center">
                                                     <Menu options={[{ label: t("editTask"), onClick: () => openEdit(task) }, { label: t("actionDelete"), danger: true, onClick: () => setConfirmIds([task._id]) }]}>
                                                         {({ open, toggle }) => (
-                                                            <button type="button" onClick={toggle} aria-expanded={open} aria-label={t("options")} className="text-[#666666] transition-colors hover:text-primaryColor"><MdMenu size={22} /></button>
+                                                            <button type="button" onClick={toggle} aria-expanded={open} aria-label={t("options")} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]"><TbDots size={20} /></button>
                                                         )}
                                                     </Menu>
                                                 </td>
                                                 <td className="px-10 text-center">
                                                     <span className="inline-flex max-w-full items-center gap-8">
-                                                        <button type="button" onClick={() => openEdit(task)} className={`truncate text-16 text-[#666666] transition-colors hover:text-primaryColor md:text-18 ${task.completed ? "line-through" : ""}`}>{task.title}</button>
-                                                        <button type="button" aria-label={t("pinned")} aria-pressed={task.pinned} onClick={() => updateTask(task._id, { pinned: !task.pinned })} className={`shrink-0 transition-colors ${task.pinned ? "text-primaryColor" : "text-[#B3B3B3] hover:text-[#666666]"}`}><MdPushPin size={18} /></button>
-                                                        <button type="button" aria-label={t("muted")} aria-pressed={task.muted} onClick={() => updateTask(task._id, { muted: !task.muted })} className={`shrink-0 transition-colors ${task.muted ? "text-primaryColor" : "text-[#B3B3B3] hover:text-[#666666]"}`}><MdNotificationsOff size={18} /></button>
+                                                        <button type="button" onClick={() => openEdit(task)} className={`truncate text-13 text-[#f1f4ee] transition-colors hover:text-[#c6ff4d] ${task.completed ? "line-through" : ""}`}>{task.title}</button>
+                                                        <button type="button" aria-label={t("pinned")} aria-pressed={task.pinned} onClick={() => updateTask(task._id, { pinned: !task.pinned })} className={`shrink-0 transition-colors ${task.pinned ? "text-[#c6ff4d]" : "text-[#8C948B] hover:text-[#8c948b]"}`}><TbPin size={16} /></button>
+                                                        <button type="button" aria-label={t("muted")} aria-pressed={task.muted} onClick={() => updateTask(task._id, { muted: !task.muted })} className={`shrink-0 transition-colors ${task.muted ? "text-[#c6ff4d]" : "text-[#8C948B] hover:text-[#8c948b]"}`}><TbBellOff size={16} /></button>
                                                     </span>
                                                 </td>
                                                 <td className={td}>{dateText(task.updatedAt ?? task.createdAt, "short")}</td>
@@ -266,16 +267,16 @@ export default function Tasks() {
                                         ))}
                                     </tbody>
                                 </table>
-                                {rows.length === 0 && <p className="py-40 text-center text-16 text-[#999999]">{isLoading ? "…" : t("empty")}</p>}
-                                <footer className="flex flex-wrap items-center justify-between gap-x-24 gap-y-8 border-t border-[#F0F0F0] px-18 py-16 text-16 uppercase text-[#999999]">
+                                {rows.length === 0 && <p className="py-40 text-center text-13 text-[#8c948b]">{isLoading ? "…" : t("empty")}</p>}
+                                <footer className="flex flex-wrap items-center justify-between gap-x-24 gap-y-8 border-t border-inkLine px-18 py-14 text-11 uppercase tracking-[0.08em] text-[#8c948b]">
                                     <span>{t("selected", { selected: selected.length, total: rows.length })}</span>
                                     <span>{t("total", { total: rows.length })}</span>
                                     <span>{t("pages", { pages: 1 })}</span>
                                 </footer>
                             </div>
 
-                            <div className="mt-20 flex flex-wrap items-center gap-16">
-                                <button type="button" onClick={applyAction} disabled={!action || selected.length === 0} className="h-[44px] rounded-4 border-2 border-[#CCCCCC] px-24 text-16 font-medium text-[#999999] transition-colors enabled:hover:border-primaryColor enabled:hover:text-primaryColor disabled:cursor-not-allowed">
+                            <div className="mt-20 flex flex-wrap items-center gap-12">
+                                <button type="button" onClick={applyAction} disabled={!action || selected.length === 0} className="fs-btn fs-btn-ghost h-38 disabled:cursor-not-allowed disabled:opacity-40">
                                     {t("apply")}
                                 </button>
                                 <Menu
@@ -285,9 +286,9 @@ export default function Tasks() {
                                         { label: t("actionDelete"), danger: true, onClick: () => setAction("delete") },
                                     ]}>
                                     {({ open, toggle }) => (
-                                        <button type="button" onClick={toggle} aria-expanded={open} className="flex h-[44px] items-center gap-8 rounded-4 border-2 border-[#CCCCCC] px-16 text-16 font-medium text-[#999999] transition-colors hover:border-primaryColor">
+                                        <button type="button" onClick={toggle} aria-expanded={open} className="fs-btn fs-btn-ghost h-38">
                                             {action === "done" ? t("actionDone") : action === "active" ? t("actionActive") : action === "delete" ? t("actionDelete") : t("selectAction")}
-                                            <RiArrowDownSLine size={20} className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+                                            <TbChevronDown size={16} className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
                                         </button>
                                     )}
                                 </Menu>
@@ -310,5 +311,5 @@ export default function Tasks() {
 }
 
 function MoreIcon() {
-    return <MdMoreHoriz size={20} className="text-[#666666]" aria-hidden />;
+    return <TbDots size={20} className="text-[#8c948b]" aria-hidden />;
 }

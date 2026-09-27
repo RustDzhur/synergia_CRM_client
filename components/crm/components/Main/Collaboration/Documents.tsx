@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdCloudUpload, MdFolder, MdImage, MdInsertDriveFile, MdKeyboardArrowDown, MdMoreHoriz, MdRefresh } from "react-icons/md";
+import { TbChevronDown, TbCloudUpload, TbDots, TbFile, TbFolder, TbPhoto, TbRefresh } from "react-icons/tb";
 import type { DocItemDTO, DocKind, FolderDTO } from "@/app/types/documents";
 import { authHeaders } from "@/app/store/crmApi";
 import { useAiStore } from "@/app/store/useAiStore";
@@ -12,9 +12,10 @@ import Dropdown from "@/app/utils/Dropdown";
 import { shrinkImage } from "@/app/utils/imageResize";
 import { stripLocale } from "@/app/utils/locale";
 import { useClickOutside } from "@/app/utils/useClickOutside";
+import PageHeader from "@/components/crm/components/shared/PageHeader";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import Modal from "../shared/Modal";
-import { TAB_BAR } from "../shared/tabBar";
+import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tabBar";
 import FileTypeIcon from "./FileTypeIcon";
 
 type Layout = "list" | "grid" | "tile";
@@ -36,17 +37,17 @@ function RowMenu({ actions }: { actions: Action[] }) {
 	const [open, setOpen] = useState(false);
 	const ref = useRef<HTMLDivElement>(null);
 	useClickOutside(ref, open, () => setOpen(false));
-	const item = "block w-full px-16 py-10 text-left text-16 text-[#666666] transition-colors hover:bg-gray";
+	const item = "fs-popover-row block w-full px-14 py-10 text-left text-13 transition-colors duration-150";
 	return (
 		<div ref={ref} className="relative inline-block">
-			<button type="button" aria-label={t("more")} aria-expanded={open} onClick={() => setOpen(!open)} className="text-[#999999] transition-colors hover:text-primaryColor">
-				<MdMoreHoriz size={22} />
+			<button type="button" aria-label={t("more")} aria-expanded={open} onClick={() => setOpen(!open)} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
+				<TbDots size={20} />
 			</button>
 			<Dropdown open={open} className="right-0 top-full mt-8 min-w-[190px]">
-				<div className="overflow-hidden rounded-8 border border-[#E2F1F5] bg-white text-left shadow-custom">
+				<div className="fs-popover overflow-hidden py-2 text-left">
 					{actions.map((a, i) => (
 						<React.Fragment key={a.label}>
-							{a.danger && i > 0 && <div className="border-t border-[#E2F1F5]" />}
+							{a.danger && i > 0 && <div className="border-t border-inkLine" />}
 							<button type="button" className={`${item} ${a.danger ? "!text-danger" : ""}`} onClick={() => { setOpen(false); a.onClick(); }}>{a.label}</button>
 						</React.Fragment>
 					))}
@@ -57,10 +58,10 @@ function RowMenu({ actions }: { actions: Action[] }) {
 }
 
 function EntryIcon({ doc, folder, size }: { doc?: DocItemDTO; folder?: boolean; size: number }) {
-	if (folder) return <MdFolder size={size} className="shrink-0 text-[#FABF4D]" aria-hidden />;
+	if (folder) return <TbFolder size={size} className="shrink-0 text-[#FABF4D]" aria-hidden />;
 	if (doc && doc.kind !== "file") return <FileTypeIcon type={ICON_TYPE[doc.kind]} size={size} withLabel={false} />;
-	if (doc?.mime.startsWith("image/")) return <MdImage size={size} className="shrink-0 text-[#7CB305]" aria-hidden />;
-	return <MdInsertDriveFile size={size} className="shrink-0 text-[#999999]" aria-hidden />;
+	if (doc?.mime.startsWith("image/")) return <TbPhoto size={size} className="shrink-0 text-[#7CB305]" aria-hidden />;
+	return <TbFile size={size} className="shrink-0 text-[#8c948b]" aria-hidden />;
 }
 
 // Online Documents (/crm/collaboration/online-documents): Google Docs / Sheets / Slides создаются на Google Drive пользователя
@@ -141,7 +142,7 @@ export default function Documents() {
 					<span className="flex flex-col gap-8">
 						<span>{drive && !drive.configured ? t("driveNotConfigured") : t("driveConnectFirst")}</span>
 						{(!drive || drive.configured) && (
-							<button type="button" onClick={() => { toast.dismiss(m.id); connect(); }} className="self-start rounded-8 bg-primaryColor px-14 py-6 text-14 font-medium text-white transition-opacity hover:opacity-80">
+							<button type="button" onClick={() => { toast.dismiss(m.id); connect(); }} className="fs-btn fs-btn-primary h-30 self-start">
 								{t("driveConnectButton")}
 							</button>
 						)}
@@ -289,113 +290,112 @@ export default function Documents() {
 		{ label: t("delete"), onClick: () => setToDelete({ type: "doc", doc: d }), danger: true },
 	];
 
-	const th = "border-l border-[#F0F0F0] px-10 py-16 text-center text-16 font-medium text-[#999999] first:border-l-0 md:text-18";
-	const td = "truncate px-10 text-center text-16 text-[#999999] md:text-18";
+	const th = "px-10 text-center";
+	const td = "truncate px-10 text-center text-13";
 	const statusLabel = { active: t("active"), archived: t("archived"), all: t("all") };
-	const primary = "h-[44px] rounded-8 bg-primaryColor px-20 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80 disabled:opacity-60";
 	const empty = subfolders.length === 0 && docs.length === 0;
 
 	return (
-		<div className="p-16 pt-0 md:p-30">
-			<div className="mx-auto max-w-[1000px] pt-16 md:pt-0">
-				{drive && !drive.connected && (
-					<div className="mb-16 flex flex-col gap-12 rounded-16 bg-white p-16 shadow-heroImage md:flex-row md:items-center md:justify-between">
-						<div>
-							<p className="text-16 font-medium text-[#333333]">{t("driveConnectTitle")}</p>
-							<p className="mt-2 text-14 text-[#666666]">{drive.configured ? t("driveConnectText") : t("driveNotConfigured")}</p>
-						</div>
-						{drive.configured && <button type="button" onClick={connect} className={`${primary} shrink-0`}>{t("driveConnectButton")}</button>}
-					</div>
-				)}
-				{drive?.connected && (
-					<p className="mb-16 flex flex-wrap items-center gap-x-12 gap-y-2 text-14 text-[#999999]">
-						{t("driveConnectedAs", { email: drive.email || "Google" })}
-						<button type="button" onClick={() => disconnectDrive()} className="text-primaryColor transition-opacity hover:opacity-80">{t("driveDisconnect")}</button>
-					</p>
-				)}
-
-				<ul className="grid grid-cols-2 gap-16 md:grid-cols-4 md:gap-24 lg:gap-35">
-					{GOOGLE_KINDS.map((kind) => (
-						<li key={kind}>
+		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
+			<PageHeader>
+				<div className="flex flex-wrap items-center justify-between gap-x-16 gap-y-12">
+					<div className={`${TAB_BAR} justify-center md:w-fit md:justify-start`}>
+						{(["list", "grid", "tile"] as const).map((key) => (
 							<button
+								key={key}
 								type="button"
-								onClick={() => startCreate(kind)}
-								className={`flex aspect-square w-full flex-col items-center justify-center gap-10 rounded-24 bg-white shadow-heroImage transition-transform duration-200 hover:-translate-y-2 lg:max-h-[240px] ${drive?.connected ? "" : "opacity-60"}`}>
-								<FileTypeIcon type={ICON_TYPE[kind]} size={72} />
-								<span className="text-16 font-semibold text-[#999999] md:text-18">{t(`kind_${kind}`)}</span>
+								onClick={() => setLayout(key)}
+								className={`${TAB_ITEM} md:px-24 ${layout === key ? TAB_ITEM_ACTIVE : TAB_ITEM_IDLE}`}>
+								{t(key)}
 							</button>
-						</li>
-					))}
-					<li>
+						))}
+					</div>
+					<div className="flex items-center gap-12">
+						<button type="button" onClick={() => load(true)} aria-label={t("refresh")} title={t("refresh")} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
+							<TbRefresh size={18} className={loading ? "animate-spin" : ""} />
+						</button>
+						<button type="button" onClick={() => { setName(""); setNameMode({ kind: "folder-new" }); }} className="fs-btn fs-btn-ghost h-40">
+							{t("folderNew")}
+						</button>
+					</div>
+				</div>
+			</PageHeader>
+
+			{drive && !drive.connected && (
+				<div className="fs-card mb-16 flex flex-col gap-12 p-16 md:flex-row md:items-center md:justify-between">
+					<div>
+						<p className="text-14 font-medium text-[#f1f4ee]">{t("driveConnectTitle")}</p>
+						<p className="mt-2 text-12 text-[#8c948b]">{drive.configured ? t("driveConnectText") : t("driveNotConfigured")}</p>
+					</div>
+					{drive.configured && <button type="button" onClick={connect} className="fs-btn fs-btn-primary h-38 shrink-0">{t("driveConnectButton")}</button>}
+				</div>
+			)}
+			{drive?.connected && (
+				<p className="mb-16 flex flex-wrap items-center gap-x-12 gap-y-2 text-12 text-[#8c948b]">
+					{t("driveConnectedAs", { email: drive.email || "Google" })}
+					<button type="button" onClick={() => disconnectDrive()} className="fs-link">{t("driveDisconnect")}</button>
+				</p>
+			)}
+
+			<ul className="grid grid-cols-2 gap-12 md:grid-cols-4 md:gap-16 lg:gap-20">
+				{GOOGLE_KINDS.map((kind) => (
+					<li key={kind}>
 						<button
 							type="button"
-							onClick={startUpload}
-							className={`flex aspect-square w-full flex-col items-center justify-center gap-10 rounded-24 bg-white shadow-heroImage transition-transform duration-200 hover:-translate-y-2 lg:max-h-[240px] ${storage?.configured ? "" : "opacity-60"}`}>
-							<MdCloudUpload size={72} className="text-[#B3B3B3]" aria-hidden />
-							<span className="text-16 font-semibold text-[#999999] md:text-18">{t("uploadFile")}</span>
+							onClick={() => startCreate(kind)}
+							className={`fs-card flex aspect-square w-full flex-col items-center justify-center gap-10 transition-transform duration-200 hover:-translate-y-2 lg:max-h-[240px] ${drive?.connected ? "" : "opacity-60"}`}>
+							<FileTypeIcon type={ICON_TYPE[kind]} size={56} />
+							<span className="text-12 font-semibold text-[#8c948b] md:text-13">{t(`kind_${kind}`)}</span>
 						</button>
-						<input ref={fileRef} type="file" multiple hidden onChange={(e) => onFiles(e.target.files)} aria-label={t("uploadFile")} />
 					</li>
-				</ul>
-			</div>
-
-			<div className="mx-auto mt-24 flex max-w-[1000px] flex-wrap items-center justify-between gap-x-16 gap-y-12 md:mt-30">
-				<div className={`${TAB_BAR} justify-center md:w-fit md:justify-start`}>
-					{(["list", "grid", "tile"] as const).map((key) => (
-						<button
-							key={key}
-							type="button"
-							onClick={() => setLayout(key)}
-							className={`rounded-4 px-16 py-10 text-16 font-medium tracking-[0.32px] transition-colors duration-200 md:px-24 ${layout === key ? "bg-primaryColor text-white" : "text-[#CCCCCC] hover:text-[#999999]"}`}>
-							{t(key)}
-						</button>
-					))}
-				</div>
-				<div className="flex items-center gap-12">
-					<button type="button" onClick={() => load(true)} aria-label={t("refresh")} title={t("refresh")} className="text-primaryColor transition-opacity hover:opacity-80">
-						<MdRefresh size={24} className={loading ? "animate-spin" : ""} />
+				))}
+				<li>
+					<button
+						type="button"
+						onClick={startUpload}
+						className={`fs-card flex aspect-square w-full flex-col items-center justify-center gap-10 transition-transform duration-200 hover:-translate-y-2 lg:max-h-[240px] ${storage?.configured ? "" : "opacity-60"}`}>
+						<TbCloudUpload size={56} className="text-[#8c948b]" aria-hidden />
+						<span className="text-12 font-semibold text-[#8c948b] md:text-13">{t("uploadFile")}</span>
 					</button>
-					<button type="button" onClick={() => { setName(""); setNameMode({ kind: "folder-new" }); }} className="h-[44px] rounded-8 border border-[#5EA8F5] px-20 text-16 font-medium text-primaryColor transition-opacity hover:opacity-80">
-						{t("folderNew")}
-					</button>
-				</div>
-			</div>
+					<input ref={fileRef} type="file" multiple hidden onChange={(e) => onFiles(e.target.files)} aria-label={t("uploadFile")} />
+				</li>
+			</ul>
 
-			<nav aria-label={t("breadcrumbs")} className="mx-auto mt-16 flex max-w-[1000px] flex-wrap items-center gap-x-8 gap-y-2 text-16">
-				<button type="button" onClick={() => setCurrent(null)} className={current === null ? "font-semibold text-[#666666]" : "text-primaryColor hover:underline"}>{t("rootFolder")}</button>
+			<nav aria-label={t("breadcrumbs")} className="mt-16 flex flex-wrap items-center gap-x-8 gap-y-2 text-13">
+				<button type="button" onClick={() => setCurrent(null)} className={current === null ? "font-medium text-[#f1f4ee]" : "text-[#c6ff4d] hover:underline"}>{t("rootFolder")}</button>
 				{path.map((f, i) => (
 					<React.Fragment key={f.id}>
-						<span className="text-[#CCCCCC]" aria-hidden>/</span>
-						<button type="button" onClick={() => setCurrent(f.id)} className={i === path.length - 1 ? "font-semibold text-[#666666]" : "text-primaryColor hover:underline"}>{f.name}</button>
+						<span className="text-[#8C948B]" aria-hidden>/</span>
+						<button type="button" onClick={() => setCurrent(f.id)} className={i === path.length - 1 ? "font-medium text-[#f1f4ee]" : "text-[#c6ff4d] hover:underline"}>{f.name}</button>
 					</React.Fragment>
 				))}
 			</nav>
 
-			<div className="mx-auto mt-16 min-h-[300px] max-w-[1000px] rounded-16 bg-white shadow-heroImage">
+			<div className="mt-16 min-h-[240px]">
 				{layout === "list" ? (
-					<div className="max-md:min-h-[200px] max-md:overflow-x-auto">
-						<table className="w-full min-w-[620px] table-fixed border-collapse">
+					<div className="fs-card overflow-x-auto">
+						<table className="fs-table min-w-[620px] table-fixed">
 							<thead>
-								<tr className="border-b border-[#F0F0F0] bg-[#FAFCFF]">
+								<tr>
 									<th className={`${th} w-[38%]`}>
-										<button type="button" onClick={() => setSortAsc(!sortAsc)} className="text-primaryColor" aria-label={t("sortByName")}>
+										<button type="button" onClick={() => setSortAsc(!sortAsc)} className="inline-flex items-center gap-6 transition-colors hover:text-[#c6ff4d]" aria-label={t("sortByName")}>
 											{t("fileName")} {sortAsc ? "↑" : "↓"}
 										</button>
 									</th>
 									<th className={th}>
 										<div ref={statusRef} className="relative inline-block">
-											<button type="button" onClick={() => setStatusOpen(!statusOpen)} aria-expanded={statusOpen} className="inline-flex items-center gap-6">
+											<button type="button" onClick={() => setStatusOpen(!statusOpen)} aria-expanded={statusOpen} className="inline-flex items-center gap-6 transition-colors hover:text-[#c6ff4d]">
 												{statusLabel[status]}
-												<MdKeyboardArrowDown size={20} className={`transition-transform duration-200 ${statusOpen ? "rotate-180" : ""}`} />
+												<TbChevronDown size={16} className={`transition-transform duration-200 ${statusOpen ? "rotate-180" : ""}`} />
 											</button>
 											<Dropdown open={statusOpen} className="left-1/2 top-full mt-8 min-w-[150px] -translate-x-1/2">
-												<div className="overflow-hidden rounded-8 border border-[#E2F1F5] bg-white text-left shadow-custom">
+												<div className="fs-popover overflow-hidden py-2 text-left">
 													{(["active", "archived", "all"] as const).map((s) => (
 														<button
 															key={s}
 															type="button"
 															onClick={() => { setStatus(s); setStatusOpen(false); }}
-															className={`block w-full px-16 py-10 text-left text-16 transition-colors hover:bg-gray ${status === s ? "text-primaryColor" : "text-[#666666]"}`}>
+															className={`fs-popover-row block w-full px-14 py-10 text-left text-13 transition-colors duration-150 ${status === s ? "text-[#c6ff4d]" : ""}`}>
 															{statusLabel[s]}
 														</button>
 													))}
@@ -410,11 +410,11 @@ export default function Documents() {
 							</thead>
 							<tbody>
 								{subfolders.map((f) => (
-									<tr key={f.id} className="h-[64px] animate-fade-in border-b border-[#F0F0F0] transition-colors duration-150 hover:bg-[#F7F9FF]">
+									<tr key={f.id} className="h-[52px] animate-fade-in">
 										<td className="px-16">
-											<button type="button" onClick={() => setCurrent(f.id)} className="flex w-full items-center gap-10 text-left">
-												<EntryIcon folder size={26} />
-												<span className="truncate text-16 font-medium text-[#666666] md:text-18">{f.name}</span>
+											<button type="button" onClick={() => setCurrent(f.id)} className="flex w-full items-center gap-10 text-left transition-colors hover:text-[#c6ff4d]">
+												<EntryIcon folder size={20} />
+												<span className="truncate text-13 font-medium text-[#f1f4ee]">{f.name}</span>
 											</button>
 										</td>
 										<td className={td}>{t("folder")}</td>
@@ -424,13 +424,13 @@ export default function Documents() {
 									</tr>
 								))}
 								{docs.map((d) => (
-									<tr key={d.id} className="h-[64px] animate-fade-in border-b border-[#F0F0F0] transition-colors duration-150 hover:bg-[#F7F9FF]">
+									<tr key={d.id} className="h-[52px] animate-fade-in">
 										<td className="px-16">
-											<button type="button" onClick={() => openDoc(d)} className="flex w-full items-center gap-10 text-left" title={d.kind === "file" ? t("openFile") : t("openInGoogle")}>
-												<EntryIcon doc={d} size={22} />
+											<button type="button" onClick={() => openDoc(d)} className="flex w-full items-center gap-10 text-left transition-colors hover:text-[#c6ff4d]" title={d.kind === "file" ? t("openFile") : t("openInGoogle")}>
+												<EntryIcon doc={d} size={18} />
 												<span className="min-w-0">
-													<span className="block truncate text-16 text-[#666666] md:text-18">{d.name}</span>
-													<span className="block truncate text-12 text-[#B3B3B3]">{kindLabel(d)}</span>
+													<span className="block truncate text-13 text-[#f1f4ee]">{d.name}</span>
+													<span className="block truncate text-11 text-[#8c948b]">{kindLabel(d)}</span>
 												</span>
 											</button>
 										</td>
@@ -442,41 +442,45 @@ export default function Documents() {
 								))}
 							</tbody>
 						</table>
+						{state && empty && <p className="py-40 text-center text-13 text-[#8c948b]">{current === null ? t("docsEmpty") : t("folderEmpty")}</p>}
+						{!state && <p className="py-40 text-center text-13 text-[#8c948b]">…</p>}
 					</div>
 				) : (
-					<ul className={`grid gap-16 p-16 md:p-24 ${layout === "grid" ? "grid-cols-2 md:grid-cols-4 lg:grid-cols-6" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"}`}>
-						{subfolders.map((f) => (
-							<li key={f.id} className={`animate-fade-in rounded-16 border border-[#EFEFEF] shadow-custom ${layout === "grid" ? "flex flex-col items-center gap-8 p-16 text-center" : "flex items-center gap-16 p-16"}`}>
-								<button type="button" onClick={() => setCurrent(f.id)} className={`flex min-w-0 flex-1 gap-8 ${layout === "grid" ? "flex-col items-center" : "items-center text-left"}`}>
-									<EntryIcon folder size={layout === "grid" ? 50 : 44} />
-									<span className="w-full truncate text-16 font-medium text-[#666666]">{f.name}</span>
-								</button>
-								<RowMenu actions={folderActions(f)} />
-							</li>
-						))}
-						{docs.map((d) => (
-							<li key={d.id} className={`animate-fade-in rounded-16 border border-[#EFEFEF] shadow-custom ${layout === "grid" ? "flex flex-col items-center gap-8 p-16 text-center" : "flex items-center gap-16 p-16"}`}>
-								<button type="button" onClick={() => openDoc(d)} className={`flex min-w-0 flex-1 gap-8 ${layout === "grid" ? "flex-col items-center" : "items-center text-left"}`}>
-									<EntryIcon doc={d} size={layout === "grid" ? 50 : 44} />
-									<span className="w-full min-w-0">
-										<span className="block truncate text-16 font-medium text-[#666666]">{d.name}</span>
-										<span className="block truncate text-14 text-[#999999]">{kindLabel(d)}</span>
-									</span>
-								</button>
-								<RowMenu actions={docActions(d)} />
-							</li>
-						))}
-					</ul>
+					<>
+						<ul className={`grid gap-12 ${layout === "grid" ? "grid-cols-2 md:grid-cols-4 lg:grid-cols-6" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"}`}>
+							{subfolders.map((f) => (
+								<li key={f.id} className={`fs-card animate-fade-in transition-colors duration-150 hover:border-[rgba(198,255,77,0.28)] ${layout === "grid" ? "flex flex-col items-center gap-8 p-14 text-center" : "flex items-center gap-16 p-14"}`}>
+									<button type="button" onClick={() => setCurrent(f.id)} className={`flex min-w-0 flex-1 gap-8 transition-colors hover:text-[#c6ff4d] ${layout === "grid" ? "flex-col items-center" : "items-center text-left"}`}>
+										<EntryIcon folder size={layout === "grid" ? 36 : 30} />
+										<span className="w-full truncate text-13 font-medium text-[#f1f4ee]">{f.name}</span>
+									</button>
+									<RowMenu actions={folderActions(f)} />
+								</li>
+							))}
+							{docs.map((d) => (
+								<li key={d.id} className={`fs-card animate-fade-in transition-colors duration-150 hover:border-[rgba(198,255,77,0.28)] ${layout === "grid" ? "flex flex-col items-center gap-8 p-14 text-center" : "flex items-center gap-16 p-14"}`}>
+									<button type="button" onClick={() => openDoc(d)} className={`flex min-w-0 flex-1 gap-8 transition-colors hover:text-[#c6ff4d] ${layout === "grid" ? "flex-col items-center" : "items-center text-left"}`}>
+										<EntryIcon doc={d} size={layout === "grid" ? 36 : 30} />
+										<span className="w-full min-w-0">
+											<span className="block truncate text-13 font-medium text-[#f1f4ee]">{d.name}</span>
+											<span className="block truncate text-11 text-[#8c948b]">{kindLabel(d)}</span>
+										</span>
+									</button>
+									<RowMenu actions={docActions(d)} />
+								</li>
+							))}
+						</ul>
+						{state && empty && <p className="py-40 text-center text-13 text-[#8c948b]">{current === null ? t("docsEmpty") : t("folderEmpty")}</p>}
+						{!state && <p className="py-40 text-center text-13 text-[#8c948b]">…</p>}
+					</>
 				)}
-				{state && empty && <p className="py-40 text-center text-16 text-[#999999]">{current === null ? t("docsEmpty") : t("folderEmpty")}</p>}
-				{!state && <p className="py-40 text-center text-16 text-[#999999]">…</p>}
 			</div>
 
 			<Modal open={nameMode !== null} onClose={() => setNameMode(null)} label={t("document")} className="w-full max-w-[440px]">
-				<form onSubmit={submitName} className="rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
-					<h2 className="mb-20 flex items-center gap-12 text-24 font-medium text-black">
-						{nameMode?.kind === "doc" && <FileTypeIcon type={ICON_TYPE[nameMode.docKind]} size={26} withLabel={false} />}
-						{(nameMode?.kind === "folder-new" || nameMode?.kind === "folder-rename") && <MdFolder size={28} className="text-[#FABF4D]" aria-hidden />}
+				<form onSubmit={submitName} className="fs-popover p-20">
+					<h2 className="mb-16 flex items-center gap-12 text-16 font-semibold text-[#f1f4ee]">
+						{nameMode?.kind === "doc" && <FileTypeIcon type={ICON_TYPE[nameMode.docKind]} size={20} withLabel={false} />}
+						{(nameMode?.kind === "folder-new" || nameMode?.kind === "folder-rename") && <TbFolder size={20} className="text-[#FABF4D]" aria-hidden />}
 						{nameMode?.kind === "doc" ? t("newDocument") : nameMode?.kind === "folder-new" ? t("folderNew") : t("rename")}
 					</h2>
 					<input
@@ -486,12 +490,12 @@ export default function Documents() {
 						autoFocus
 						placeholder={nameMode?.kind === "folder-new" || nameMode?.kind === "folder-rename" ? t("folderName") : undefined}
 						aria-label={t("fileName")}
-						className="h-50 w-full rounded-8 border border-[#E6E6E6] bg-[#FBFBFB] px-16 text-16 text-black shadow-custom outline-none transition-colors focus:border-[#5EA8F5]"
+						className="fs-field h-40 w-full px-12 text-13 outline-none transition-colors"
 					/>
-					{nameMode?.kind === "doc" && <p className="mt-10 text-14 text-[#999999]">{t("docOpenNote")}</p>}
-					<div className="mt-24 flex justify-end gap-12">
-						<button type="button" onClick={() => setNameMode(null)} className="h-50 rounded-8 border border-[#E6E6E6] px-24 text-16 font-medium text-[#666666] transition-colors hover:bg-gray">{t("cancel")}</button>
-						<button type="submit" disabled={busy} className="h-50 rounded-8 bg-primaryColor px-30 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80 disabled:opacity-60">
+					{nameMode?.kind === "doc" && <p className="mt-8 text-12 text-[#8c948b]">{t("docOpenNote")}</p>}
+					<div className="mt-20 flex justify-end gap-10">
+						<button type="button" onClick={() => setNameMode(null)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
+						<button type="submit" disabled={busy} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">
 							{busy ? "…" : nameMode?.kind === "doc" || nameMode?.kind === "folder-new" ? t("create") : t("save")}
 						</button>
 					</div>
@@ -499,15 +503,15 @@ export default function Documents() {
 			</Modal>
 
 			<Modal open={moving !== null} onClose={() => setMoving(null)} label={t("moveTo")} className="w-full max-w-[440px]">
-				<form onSubmit={submitMove} className="rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
-					<h2 className="mb-6 text-24 font-medium text-black">{t("moveTo")}</h2>
-					<p className="mb-16 truncate text-14 text-[#999999]">{moving?.type === "folder" ? moving.folder.name : moving?.doc.name}</p>
-					<select value={moveTo} onChange={(e) => setMoveTo(e.target.value)} aria-label={t("moveTo")} className="h-50 w-full rounded-8 border border-[#E6E6E6] bg-[#FBFBFB] px-12 text-16 text-black outline-none focus:border-[#5EA8F5]">
+				<form onSubmit={submitMove} className="fs-popover p-20">
+					<h2 className="mb-6 text-16 font-semibold text-[#f1f4ee]">{t("moveTo")}</h2>
+					<p className="mb-12 truncate text-12 text-[#8c948b]">{moving?.type === "folder" ? moving.folder.name : moving?.doc.name}</p>
+					<select value={moveTo} onChange={(e) => setMoveTo(e.target.value)} aria-label={t("moveTo")} className="fs-field h-40 w-full px-12 text-13 outline-none">
 						{moveOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
 					</select>
-					<div className="mt-24 flex justify-end gap-12">
-						<button type="button" onClick={() => setMoving(null)} className="h-50 rounded-8 border border-[#E6E6E6] px-24 text-16 font-medium text-[#666666] transition-colors hover:bg-gray">{t("cancel")}</button>
-						<button type="submit" disabled={busy} className="h-50 rounded-8 bg-primaryColor px-30 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80 disabled:opacity-60">{busy ? "…" : t("moveHere")}</button>
+					<div className="mt-20 flex justify-end gap-10">
+						<button type="button" onClick={() => setMoving(null)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
+						<button type="submit" disabled={busy} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{busy ? "…" : t("moveHere")}</button>
 					</div>
 				</form>
 			</Modal>

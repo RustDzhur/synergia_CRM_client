@@ -23,21 +23,21 @@ export default function SpendChart({ days, currency, label }: { days: AdsDay[]; 
 
 	return (
 		<svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={label} onMouseLeave={() => setHover(null)}>
-			<line x1={M.left} x2={W - M.right} y1={H - M.bottom} y2={H - M.bottom} stroke="#D9D9D9" />
+			<line x1={M.left} x2={W - M.right} y1={H - M.bottom} y2={H - M.bottom} stroke="rgba(255,255,255,0.12)" />
 			{days.map((d, i) => {
 				const h = max ? (d.spend / max) * plotH : 0;
 				return (
 					<g key={d.date} onMouseEnter={() => setHover(i)}>
 						<rect x={M.left + i * slot} y={M.top} width={slot} height={plotH} fill="transparent" />
-						<rect x={M.left + i * slot + (slot - bar) / 2} y={H - M.bottom - h} width={bar} height={Math.max(h, d.spend > 0 ? 2 : 0)} rx="2" fill={i === shown ? "#5EA8F5" : "#8CB5E1"} />
+						<rect x={M.left + i * slot + (slot - bar) / 2} y={H - M.bottom - h} width={bar} height={Math.max(h, d.spend > 0 ? 2 : 0)} rx="2" fill={i === shown ? "#c6ff4d" : "rgba(198,255,77,0.45)"} />
 					</g>
 				);
 			})}
 			{ticks.map((i) => days[i] && (
-				<text key={i} x={M.left + i * slot + slot / 2} y={H - 8} textAnchor={i === 0 ? "start" : i === days.length - 1 && days.length > 1 ? "end" : "middle"} fontSize="13" fill="#999999">{dayLabel(days[i].date)}</text>
+				<text key={i} x={M.left + i * slot + slot / 2} y={H - 8} textAnchor={i === 0 ? "start" : i === days.length - 1 && days.length > 1 ? "end" : "middle"} fontSize="13" fill="#8c948b">{dayLabel(days[i].date)}</text>
 			))}
 			{shown >= 0 && days[shown] && max > 0 && (
-				<text x={Math.min(Math.max(M.left + shown * slot + slot / 2, 60), W - 60)} y={12} textAnchor="middle" fontSize="13" fontWeight="600" fill="#4D4D4D" pointerEvents="none">
+				<text x={Math.min(Math.max(M.left + shown * slot + slot / 2, 60), W - 60)} y={12} textAnchor="middle" fontSize="13" fontWeight="600" fill="#f1f4ee" pointerEvents="none">
 					{dayLabel(days[shown].date)} · {money(days[shown].spend, currency, locale)} · {count(days[shown].clicks, locale)} ↗
 				</text>
 			)}

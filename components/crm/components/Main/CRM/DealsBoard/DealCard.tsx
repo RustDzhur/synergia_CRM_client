@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { MdChatBubbleOutline, MdMail, MdPhone } from "react-icons/md";
+import { TbMail, TbMessageCircle, TbPhone } from "react-icons/tb";
 import { Deal } from "@/app/store/useCrmStore";
 import { relativeTime } from "@/app/utils/crmFormat";
 
@@ -24,32 +24,32 @@ export default function DealCard({ deal, isDragging }: Props) {
 		(acc, a) => (!acc || new Date(a.createdAt) > new Date(acc) ? a.createdAt : acc),
 		undefined
 	);
-	const icon = (active: boolean) => (active ? "text-primaryColor" : "text-[#CCCCCC]");
+	const icon = (active: boolean) => (active ? "text-[#c6ff4d]" : "text-[#7E867C]");
 
 	return (
 		<div
-			className={`cursor-pointer rounded-8 bg-white p-12 shadow-custom transition-shadow duration-200 hover:shadow-md ${
-				isDragging ? "shadow-lg" : ""
+			className={`cursor-pointer rounded-12 border border-inkLine bg-[rgba(255,255,255,0.02)] p-12 transition-[border-color,box-shadow] duration-200 hover:border-[rgba(255,255,255,0.16)] ${
+				isDragging ? "shadow-[0_18px_44px_rgba(0,0,0,0.55)]" : ""
 			}`}>
 			<div className="flex items-start justify-between gap-8">
 				<div className="min-w-0">
-					<p className="truncate text-14 font-semibold text-primaryColor">{deal.clientName}</p>
+					<p className="truncate text-13 font-semibold text-[#f1f4ee]">{deal.clientName}</p>
 					{(deal.contactName || deal.companyName) && (
-						<p className="mt-2 truncate text-12 text-[#999999]">
+						<p className="mt-2 truncate text-11 text-[#8c948b]">
 							{[deal.contactName, deal.companyName].filter(Boolean).join(" · ")}
 						</p>
 					)}
 				</div>
-				<div className="flex shrink-0 flex-col items-end gap-4">
-					<span className="rounded-4 bg-[#999999] px-6 text-12 font-medium leading-[18px] text-white">{userActivities.length}</span>
-					<MdChatBubbleOutline size={16} className={icon(has("comment", "note", "sms", "whatsapp", "telegram"))} />
-					<MdMail size={16} className={icon(has("email"))} />
-					<MdPhone size={16} className={icon(has("call"))} />
+				<div className="flex shrink-0 flex-col items-end gap-6">
+					<span className="rounded-4 bg-[rgba(255,255,255,0.08)] px-6 text-10 font-medium leading-[16px] text-[#cfd4cb]">{userActivities.length}</span>
+					<TbMessageCircle size={15} className={icon(has("comment", "note", "sms", "whatsapp", "telegram"))} />
+					<TbMail size={15} className={icon(has("email"))} />
+					<TbPhone size={15} className={icon(has("call"))} />
 				</div>
 			</div>
-			<div className="mt-8 flex items-center justify-between text-12">
-				<span className="font-medium text-[#999999]">{t("activity")}</span>
-				<span className="text-[#B3B3B3]">{relativeTime(last ?? deal.createdAt, locale, t("justNow"))}</span>
+			<div className="mt-8 flex items-center justify-between text-11">
+				<span className="font-medium text-[#9AA396]">{t("activity")}</span>
+				<span className="text-[#8c948b]">{relativeTime(last ?? deal.createdAt, locale, t("justNow"))}</span>
 			</div>
 		</div>
 	);

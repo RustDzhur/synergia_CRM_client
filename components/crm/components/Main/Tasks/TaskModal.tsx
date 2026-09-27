@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdClose } from "react-icons/md";
+import { TbX } from "react-icons/tb";
 import { Task, useTaskStore } from "@/app/store/useTaskStore";
 import Modal from "../shared/Modal";
 import FormField, { fieldClass } from "../shared/FormField";
@@ -45,15 +45,15 @@ export default function TaskModal({ open, task, onClose }: Props) {
 
 	return (
 		<Modal open={open} onClose={onClose} label={task ? t("editTask") : t("newTask")} className="w-full max-w-[560px]">
-			<form onSubmit={submit} className="max-h-[90vh] overflow-y-auto rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
-				<button type="button" onClick={onClose} aria-label={t("cancel")} className="absolute right-16 top-16 text-iconColor transition-colors hover:text-black">
-					<MdClose size={24} />
+			<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-24">
+				<button type="button" onClick={onClose} aria-label={t("cancel")} className="absolute right-16 top-16 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+					<TbX size={20} />
 				</button>
-				<h2 className="mb-20 text-24 font-medium text-black">{task ? t("editTask") : t("newTask")}</h2>
+				<h2 className="mb-20 text-16 font-semibold text-[#f1f4ee]">{task ? t("editTask") : t("newTask")}</h2>
 				<div className="flex flex-col gap-16">
 					<FormField label={t("title")} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} maxLength={200} autoFocus />
 					<label className="block">
-						<span className="mb-6 block text-16 text-[#999999]">{t("description")}</span>
+						<span className="mb-6 block text-12 text-[#8c948b]">{t("description")}</span>
 						<textarea
 							value={form.description}
 							onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -65,11 +65,11 @@ export default function TaskModal({ open, task, onClose }: Props) {
 					<FormField label={t("deadline")} type="datetime-local" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
 					<FormField label={t("responsible")} value={form.responsible} onChange={(e) => setForm({ ...form, responsible: e.target.value })} maxLength={100} />
 				</div>
-				<div className="mt-24 flex justify-end gap-12">
-					<button type="button" onClick={onClose} className="h-50 rounded-8 border border-[#E6E6E6] px-24 text-16 font-medium text-[#666666] transition-colors hover:bg-gray">
+				<div className="mt-24 flex justify-end gap-10">
+					<button type="button" onClick={onClose} className="fs-btn fs-btn-ghost h-40">
 						{t("cancel")}
 					</button>
-					<button type="submit" disabled={busy} className="h-50 rounded-8 bg-primaryColor px-30 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80 disabled:opacity-60">
+					<button type="submit" disabled={busy} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">
 						{t("save")}
 					</button>
 				</div>

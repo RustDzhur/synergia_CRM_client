@@ -6,7 +6,7 @@ import { apiCall } from "@/app/store/crmApi";
 
 interface QuoteRow { id: string; number: string; status: string; customerName: string; currency: string; totals: { gross: number } }
 
-const STATUS_COLOR: Record<string, string> = { draft: "#B3B3B3", sent: "#5EA8F5", accepted: "#0A8A2E", declined: "#EB5757", expired: "#999999" };
+const STATUS_COLOR: Record<string, string> = { draft: "#8c948b", sent: "#5EA8F5", accepted: "#c6ff4d", declined: "#eb5757", expired: "#9AA396" };
 
 // Предложения (Quotes), связанные с этой сделкой (Opportunity → Quote, ТЗ Phase 2) — показываются прямо на карточке
 // сделки, а не только в разделе Finance. "Create Quote" переносит клиента/контакт/компанию сделки в новое предложение.
@@ -28,25 +28,28 @@ export default function DealQuotes({ dealId, customerName, contact, company }: {
 	}
 
 	return (
-		<section className="overflow-hidden rounded-16 bg-white shadow-custom">
-			<header className="flex items-center justify-between border-b border-[#EFEFEF] px-20 py-16">
-				<h3 className="text-16 font-semibold text-black">{t("dealQuotes")}</h3>
-				<button type="button" onClick={createQuote} className="text-16 text-primaryColor transition-colors hover:opacity-80">
+		<section className="fs-card overflow-hidden">
+			<header className="flex items-center justify-between border-b border-inkLine px-16 py-12">
+				<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("dealQuotes")}</h3>
+				<button type="button" onClick={createQuote} className="fs-link">
 					{t("dealCreateQuote")}
 				</button>
 			</header>
-			<div className="p-20">
+			<div className="p-16">
 				{!quotes || quotes.length === 0 ? (
-					<p className="text-16 text-[#999999]">{t("dealNoQuotes")}</p>
+					<p className="text-13 text-[#8c948b]">{t("dealNoQuotes")}</p>
 				) : (
-					<ul className="flex flex-col gap-10">
+					<ul className="flex flex-col gap-8">
 						{quotes.map((q) => (
-							<li key={q.id} className="flex items-center justify-between gap-10 text-16">
-								<span className="flex items-center gap-8 text-[#333333]">
-									{q.number}
-									<span className="rounded-4 px-6 py-2 text-12 font-medium text-white" style={{ background: STATUS_COLOR[q.status] }}>{q.status}</span>
+							<li key={q.id} className="flex items-center justify-between gap-10 text-13">
+								<span className="flex min-w-0 items-center gap-8 text-[#f1f4ee]">
+									<span className="truncate">{q.number}</span>
+									<span className="fs-chip h-22 shrink-0 gap-6 px-8 text-10">
+										<span className="h-6 w-6 rounded-50" style={{ background: STATUS_COLOR[q.status] }} />
+										{q.status}
+									</span>
 								</span>
-								<span className="font-medium text-[#4D4D4D]">{q.totals.gross.toFixed(2)} {q.currency}</span>
+								<span className="shrink-0 font-medium text-[#cfd4cb]">{q.totals.gross.toFixed(2)} {q.currency}</span>
 							</li>
 						))}
 					</ul>

@@ -55,7 +55,7 @@ export default function AddDealForm({ onSubmit, onCancel, autoFocus }: Props) {
 		setForm(EMPTY);
 	}
 
-	const label = "mb-6 block text-14 text-[#999999]";
+	const label = "mb-6 block text-12 text-[#8c948b]";
 
 	return (
 		<form
@@ -63,7 +63,7 @@ export default function AddDealForm({ onSubmit, onCancel, autoFocus }: Props) {
 				e.preventDefault();
 				submit();
 			}}
-			className="rounded-8 bg-white p-12 shadow-custom">
+			className="rounded-12 border border-inkLine bg-[rgba(255,255,255,0.02)] p-12">
 			<FormField
 				label={t("taskName")}
 				value={form.clientName}
@@ -71,7 +71,6 @@ export default function AddDealForm({ onSubmit, onCancel, autoFocus }: Props) {
 				placeholder={t("taskNamePlaceholder")}
 				maxLength={200}
 				wrapperClassName="mb-10"
-				className="!bg-white"
 			/>
 			<span className={label}>{t("client")}</span>
 			<div className="mb-10">
@@ -84,7 +83,6 @@ export default function AddDealForm({ onSubmit, onCancel, autoFocus }: Props) {
 					}}
 					options={contactOptions}
 					placeholder={t("contactNamePlaceholder")}
-					className="!bg-white"
 				/>
 			</div>
 			<span className={label}>{t("company")}</span>
@@ -95,7 +93,6 @@ export default function AddDealForm({ onSubmit, onCancel, autoFocus }: Props) {
 					onPick={(o) => set({ companyName: o.title, company: o.key })}
 					options={companyOptions}
 					placeholder={t("companyNamePlaceholder")}
-					className="!bg-white"
 				/>
 			</div>
 			<FormField
@@ -104,7 +101,6 @@ export default function AddDealForm({ onSubmit, onCancel, autoFocus }: Props) {
 				value={form.startDate ?? ""}
 				onChange={(e) => set({ startDate: e.target.value })}
 				wrapperClassName="mb-10"
-				className="!bg-white"
 			/>
 			<FormField
 				label={t("endDate")}
@@ -112,18 +108,17 @@ export default function AddDealForm({ onSubmit, onCancel, autoFocus }: Props) {
 				value={form.endDate ?? ""}
 				onChange={(e) => set({ endDate: e.target.value })}
 				wrapperClassName="mb-12"
-				className="!bg-white"
 			/>
 			{/* Колонка узкая (222px, на планшете 180px), а подписи в ua/de длинные («Скасувати», «Abbrechen»):
 			    кнопки делят ширину поровну, а если не помещаются в ряд — переносятся друг под друга, но не выходят за карточку */}
 			<div className="flex flex-wrap gap-8">
-				<button type="button" onClick={onCancel} className="min-w-[88px] flex-1 whitespace-nowrap rounded-4 px-8 py-8 text-center text-16 font-medium text-[#999999] transition-colors hover:text-black">
+				<button type="button" onClick={onCancel} className="fs-btn fs-btn-ghost h-34 min-w-[88px] flex-1 whitespace-nowrap px-10 text-12">
 					{t("cancel")}
 				</button>
 				<button
 					type="submit"
 					disabled={busy || !form.clientName.trim()}
-					className="min-w-[88px] flex-1 whitespace-nowrap rounded-4 bg-primaryColor px-8 py-8 text-center text-16 font-medium text-white shadow-custom transition-opacity disabled:opacity-60">
+					className="fs-btn fs-btn-primary h-34 min-w-[88px] flex-1 whitespace-nowrap px-10 text-12 disabled:opacity-60">
 					{t("save")}
 				</button>
 			</div>

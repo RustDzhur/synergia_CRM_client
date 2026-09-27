@@ -4,9 +4,10 @@ import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
 import { FaFacebook, FaFacebookMessenger, FaTelegram, FaViber, FaWhatsapp } from "react-icons/fa";
-import { MdCall, MdSensors, MdSms, MdSmartToy, MdWidgets } from "react-icons/md";
+import { TbCode, TbDeviceMobileMessage, TbHeadset, TbPhone, TbRobot } from "react-icons/tb";
 import { useIntegrationsStore } from "@/app/store/useIntegrationsStore";
 import type { IntegrationType } from "@/app/types/integrations";
+import PageHeader from "@/components/crm/components/shared/PageHeader";
 import IntegrationDialog from "./integrations/IntegrationDialog";
 import SettingsTabs from "./SettingsTabs";
 
@@ -21,16 +22,16 @@ interface Integration {
 
 // Порядок как на десктопе в Figma: три колонки по три карточки.
 const INTEGRATIONS: Integration[] = [
-	{ id: "call", key: "intCall", icon: MdCall, real: "twilio", alt: "sip" }, // звонки: Twilio или любой SIP-провайдер; SMS — только Twilio
-	{ id: "sms", key: "intSms", icon: MdSms, real: "twilio" },
+	{ id: "call", key: "intCall", icon: TbPhone, real: "twilio", alt: "sip" }, // звонки: Twilio или любой SIP-провайдер; SMS — только Twilio
+	{ id: "sms", key: "intSms", icon: TbDeviceMobileMessage, real: "twilio" },
 	{ id: "viber", key: "intViber", icon: FaViber, real: "viber" },
 	{ id: "telegram", key: "intTelegram", icon: FaTelegram, real: "telegram" },
 	{ id: "messenger", key: "intMessenger", icon: FaFacebookMessenger, real: "messenger" },
 	{ id: "whatsapp", key: "intWhatsapp", icon: FaWhatsapp, real: "whatsapp" },
 	{ id: "comments", key: "intComments", icon: FaFacebook },
-	{ id: "chatbot", key: "intChatBot", icon: MdSmartToy },
-	{ id: "onlinechat", key: "intOnlineChat", icon: MdSensors, real: "webchat" },
-	{ id: "widget", key: "intWidget", icon: MdWidgets, real: "webchat" }, // код для сайта — в окне онлайн-чата
+	{ id: "chatbot", key: "intChatBot", icon: TbRobot },
+	{ id: "onlinechat", key: "intOnlineChat", icon: TbHeadset, real: "webchat" },
+	{ id: "widget", key: "intWidget", icon: TbCode, real: "webchat" }, // код для сайта — в окне онлайн-чата
 ];
 
 const STORAGE_KEY = "crm.integrations";
@@ -66,15 +67,16 @@ export default function IntegrationSettings() {
 	}
 
 	return (
-		<div className="p-16 md:p-30">
-			<div className="flex flex-col gap-30 lg:flex-row">
+		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
+			<PageHeader />
+			<div className="flex flex-col gap-20 lg:flex-row">
 				<SettingsTabs className="shrink-0 md:self-start" />
-				<ul className="grid min-w-0 flex-1 grid-cols-2 gap-15 md:gap-20 lg:grid-cols-3 lg:gap-20">
+				<ul className="grid min-w-0 flex-1 grid-cols-2 gap-12 md:gap-16 lg:grid-cols-3 lg:gap-16">
 					{INTEGRATIONS.map((item) => {
 						const linkedAll = item.real ? items.filter((i) => i.type === item.real || i.type === item.alt) : [];
 						const on = item.real ? linkedAll.some((i) => i.status === "connected") : enabled.includes(item.id);
 						const warn = !on && linkedAll.some((i) => i.status === "error");
-						const color = warn ? "text-[#F4A100]" : on ? "text-[#A5FFC9]" : "text-[#666666]";
+						const color = warn ? "text-[#F4A100]" : on ? "text-[#c6ff4d]" : "text-[#9AA396]";
 						const Icon = item.icon;
 						return (
 							<li key={item.id}>
@@ -83,9 +85,9 @@ export default function IntegrationSettings() {
 									onClick={() => press(item)}
 									aria-pressed={on}
 									title={item.real ? undefined : t("intDemo")}
-									className="flex h-[125px] w-full flex-col items-center justify-center gap-10 rounded-8 bg-white px-8 shadow-heroImage transition-transform duration-200 hover:-translate-y-2 md:h-[125px]">
-									<Icon size={42} className={`transition-colors duration-200 ${color}`} />
-									<span className={`text-center text-14 font-medium transition-colors duration-200 md:text-16 ${color}`}>
+									className={`fs-card flex h-[112px] w-full flex-col items-center justify-center gap-10 px-8 transition-all duration-200 hover:-translate-y-2 ${on ? "border-[rgba(198,255,77,0.28)]" : "hover:border-[rgba(255,255,255,0.16)]"}`}>
+									<Icon size={30} className={`transition-colors duration-200 ${color}`} />
+									<span className={`text-center text-12 font-medium transition-colors duration-200 ${color}`}>
 										{t(item.key)}
 									</span>
 								</button>

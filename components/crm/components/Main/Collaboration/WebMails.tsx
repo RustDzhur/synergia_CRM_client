@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
-import { MdAlarm, MdClose, MdEditNote, MdMoveToInbox, MdOutlineCheckCircleOutline, MdRefresh, MdStar, MdStarBorder } from "react-icons/md";
+import { TbAlarm, TbCircleCheck, TbInbox, TbNote, TbRefresh, TbStar, TbStarFilled, TbX } from "react-icons/tb";
 import { SiGmail, SiIcloud, SiMicrosoftoffice, SiMicrosoftoutlook } from "react-icons/si";
 import { apiCall } from "@/app/store/crmApi";
 import type { MailAccountDTO, MailDTO, MailProviderId } from "@/app/types/integrations";
@@ -30,15 +30,15 @@ const PROVIDERS: Provider[] = [
 	{ id: "office365", label: "Office 365", logo: <SiMicrosoftoffice size={42} color="#D83B01" /> },
 	{ id: "icloud", label: "iCloud", logo: <SiIcloud size={42} color="#3D9EEE" /> },
 	{ id: "yahoo", label: "Yahoo", logo: YAHOO },
-	{ id: "imap", label: "IMAP", logo: <span className="font-serif text-18 tracking-[1px] text-[#666666]">IMAP</span> },
+	{ id: "imap", label: "IMAP", logo: <span className="font-serif text-14 tracking-[1px] text-[#8c948b]">IMAP</span> },
 ];
 
 const VIEWS: { key: MailView; icon: IconType }[] = [
-	{ key: "inbox", icon: MdMoveToInbox },
-	{ key: "starred", icon: MdStar },
-	{ key: "snoozed", icon: MdAlarm },
-	{ key: "sent", icon: MdOutlineCheckCircleOutline },
-	{ key: "draft", icon: MdEditNote },
+	{ key: "inbox", icon: TbInbox },
+	{ key: "starred", icon: TbStar },
+	{ key: "snoozed", icon: TbAlarm },
+	{ key: "sent", icon: TbCircleCheck },
+	{ key: "draft", icon: TbNote },
 ];
 
 function inView(m: MailDTO, view: MailView) {
@@ -50,7 +50,7 @@ function inView(m: MailDTO, view: MailView) {
 
 const LABELS: Record<MailProviderId, string> = { gmail: "Google Mail", outlook: "Outlook", yahoo: "Yahoo", icloud: "iCloud", office365: "Office 365", imap: "IMAP" };
 const EMPTY_DRAFT = { id: "", to: "", subject: "", body: "" };
-const inputClass = "h-50 rounded-8 border border-[#E6E6E6] bg-[#FBFBFB] px-16 text-16 shadow-custom outline-none focus:border-[#5EA8F5]";
+const inputClass = "fs-field h-40 w-full px-12 text-13 outline-none";
 
 // Web Mails (/crm/collaboration/web-mails): подключение ящика (Gmail / Outlook через OAuth или пароль приложения, Yahoo, iCloud, любой IMAP),
 // затем ящик — Inbox / Starred / Snoozed / Sent / Draft. Письма загружаются с почтового сервера (сервер CRM ходит по IMAP или API провайдера),
@@ -221,9 +221,9 @@ export default function WebMails() {
 	// ── выбор почтового сервиса ────────────────────────────────────────────────
 	if (loaded && (accounts.length === 0 || adding)) {
 		return (
-			<div className="p-16 md:p-30">
+			<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
 				{adding && (
-					<button type="button" onClick={() => setAdding(false)} className="mb-16 text-14 text-primaryColor transition-opacity hover:opacity-80">← {t("back")}</button>
+					<button type="button" onClick={() => setAdding(false)} className="mb-16 text-12 text-[#c6ff4d] transition-opacity hover:opacity-80">← {t("back")}</button>
 				)}
 				<ul className="grid grid-cols-2 gap-16 md:grid-cols-4 md:gap-20">
 					{PROVIDERS.map((p, i) => (
@@ -231,9 +231,9 @@ export default function WebMails() {
 							<button
 								type="button"
 								onClick={() => setConnectFor(p.id)}
-								className="flex h-[150px] w-full flex-col items-center justify-center gap-16 rounded-8 bg-white shadow-heroImage transition-transform duration-200 hover:-translate-y-2 md:h-[100px] md:gap-6 lg:h-[125px] lg:gap-10">
-								<span className="flex h-[60px] items-center md:h-[40px] md:scale-[0.7] lg:h-[60px] lg:scale-100">{p.logo}</span>
-								<span className="text-16 text-[#999999] lg:text-18">{p.label}</span>
+								className="fs-card flex h-[124px] w-full flex-col items-center justify-center gap-12 transition-transform duration-200 hover:-translate-y-2 md:h-[92px] md:gap-6 lg:h-[112px] lg:gap-10">
+								<span className="flex h-[52px] items-center md:h-[36px] md:scale-[0.65] lg:h-[52px] lg:scale-90">{p.logo}</span>
+								<span className="text-13 text-[#8c948b] lg:text-14">{p.label}</span>
 							</button>
 						</li>
 					))}
@@ -242,25 +242,25 @@ export default function WebMails() {
 			</div>
 		);
 	}
-	if (!loaded || !active) return <div className="p-30 text-center text-16 text-[#999999]">…</div>;
+	if (!loaded || !active) return <div className="p-30 text-center text-13 text-[#8c948b]">…</div>;
 
 	// ── почтовый ящик ────────────────────────────────────────────────
-	const barButton = "text-16 font-semibold transition-opacity hover:opacity-80";
+	const barButton = "text-13 font-semibold transition-opacity hover:opacity-80";
 	return (
-		<div className="p-16 md:p-30">
-			<div className="flex flex-col gap-30 lg:flex-row">
-				<nav aria-label={t("mailFolders")} className="w-full shrink-0 self-start rounded-16 bg-white px-20 shadow-heroImage md:w-auto md:min-w-[166px] md:max-w-[280px]">
+		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
+			<div className="flex flex-col gap-20 lg:flex-row">
+				<nav aria-label={t("mailFolders")} className="fs-card w-full shrink-0 self-start p-8 md:w-auto md:min-w-[166px] md:max-w-[280px]">
 					<ul>
 						{VIEWS.map(({ key, icon: Icon }, i) => (
-							<li key={key} className={i > 0 ? "border-t border-[#E6E6E6]" : ""}>
+							<li key={key} className={i > 0 ? "border-t border-inkLineSoft" : ""}>
 								<button
 									type="button"
 									onClick={() => { setView(key); setSelected([]); }}
 									aria-current={view === key ? "page" : undefined}
-									className={`flex h-[70px] w-full items-center gap-12 text-left text-16 font-medium transition-colors duration-200 md:text-18 ${view === key ? "text-primaryColor" : "text-iconColor hover:text-[#808080]"}`}>
-									<Icon size={28} className="shrink-0" />
+									className={`flex h-44 w-full items-center gap-10 rounded-8 px-12 text-left text-13 font-medium transition-colors duration-200 ${view === key ? "bg-[rgba(198,255,77,0.08)] text-[#c6ff4d]" : "text-[#8c948b] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#f1f4ee]"}`}>
+									<Icon size={20} className="shrink-0" />
 									<span className="flex-1 truncate">{t(`folder_${key}`)}</span>
-									{key === "inbox" && unreadInbox > 0 && <span className="text-14 text-[#B3B3B3]">{unreadInbox}</span>}
+									{key === "inbox" && unreadInbox > 0 && <span className="text-11 text-[#8C948B]">{unreadInbox}</span>}
 								</button>
 							</li>
 						))}
@@ -268,37 +268,37 @@ export default function WebMails() {
 				</nav>
 
 				<section className="min-w-0 flex-1">
-					<div className="mb-16 flex flex-wrap items-center gap-x-12 gap-y-6 text-14 text-[#999999]">
+					<div className="mb-16 flex flex-wrap items-center gap-x-12 gap-y-6 text-12 text-[#8c948b]">
 						{t("mailAccount")}:
 						{accounts.length > 1 ? (
-							<select value={active.id} onChange={(e) => { setActiveId(e.target.value); setSelected([]); }} aria-label={t("mailAccount")} className="max-w-[240px] rounded-4 border border-[#E6E6E6] bg-white px-6 py-2 font-medium text-[#666666]">
+							<select value={active.id} onChange={(e) => { setActiveId(e.target.value); setSelected([]); }} aria-label={t("mailAccount")} className="fs-field h-34 max-w-[240px] px-10 text-12 font-medium">
 								{accounts.map((a) => <option key={a.id} value={a.id}>{a.email}</option>)}
 							</select>
 						) : (
-							<span className="font-medium text-[#666666]">{active.email} <span className="font-normal text-[#B3B3B3]">({LABELS[active.provider]})</span></span>
+							<span className="font-medium text-[#f1f4ee]">{active.email} <span className="font-normal text-[#8C948B]">({LABELS[active.provider]})</span></span>
 						)}
-						<button type="button" onClick={() => sync(true)} disabled={syncing} aria-label={t("mailRefresh")} title={t("mailRefresh")} className="flex items-center text-primaryColor transition-opacity hover:opacity-80 disabled:opacity-60">
-							<MdRefresh size={20} className={syncing ? "animate-spin" : ""} />
+						<button type="button" onClick={() => sync(true)} disabled={syncing} aria-label={t("mailRefresh")} title={t("mailRefresh")} className="flex items-center text-[#c6ff4d] transition-opacity hover:opacity-80 disabled:opacity-60">
+							<TbRefresh size={17} className={syncing ? "animate-spin" : ""} />
 						</button>
-						<button type="button" onClick={() => setAdding(true)} className="text-primaryColor transition-opacity hover:opacity-80">{t("mailAddAccount")}</button>
-						<button type="button" onClick={() => setConfirmDisconnect(true)} className="flex items-center gap-2 text-primaryColor transition-opacity hover:opacity-80">
-							<MdClose size={16} /> {t("mailDisconnect")}
+						<button type="button" onClick={() => setAdding(true)} className="text-[#c6ff4d] transition-opacity hover:opacity-80">{t("mailAddAccount")}</button>
+						<button type="button" onClick={() => setConfirmDisconnect(true)} className="flex items-center gap-2 text-[#c6ff4d] transition-opacity hover:opacity-80">
+							<TbX size={14} /> {t("mailDisconnect")}
 						</button>
 						<label className="flex cursor-pointer items-center gap-6" title={t("mailAutoLeadsHint")}>
-							<input type="checkbox" checked={active.autoLeads} onChange={(e) => toggleAutoLeads(e.target.checked)} className="h-[16px] w-[16px] cursor-pointer accent-[#5EA8F5]" />
+							<input type="checkbox" checked={active.autoLeads} onChange={(e) => toggleAutoLeads(e.target.checked)} className="h-[15px] w-[15px] cursor-pointer accent-[#c6ff4d]" />
 							{t("mailAutoLeads")}
 						</label>
 					</div>
 					{active.status === "error" && (
-						<p role="alert" className="mb-16 rounded-8 bg-[#FFF1F1] p-12 text-14 text-danger">{t("mailAccountError", { message: active.error })}</p>
+						<p role="alert" className="mb-16 rounded-10 border border-[rgba(235,87,87,0.25)] bg-[rgba(235,87,87,0.08)] p-12 text-12 text-danger">{t("mailAccountError", { message: active.error })}</p>
 					)}
-					<div className="mb-30 flex flex-col gap-16 md:flex-row md:items-center md:justify-between">
+					<div className="mb-20 flex flex-col gap-16 md:flex-row md:items-center md:justify-between">
 						<SearchBox value={query} onChange={setQuery} placeholder={t("filterSearchMail")} className="w-full md:w-[250px] lg:w-[350px]" />
-						<div className="flex items-center gap-20">
+						<div className="flex items-center gap-16">
 							{selected.length > 0 && (
 								<>
-									<button type="button" onClick={() => { patch(selected, { starred: true }); setSelected([]); }} className={`${barButton} text-[#999999]`}>{t("markStar")}</button>
-									<button type="button" onClick={() => { patch(selected, { snoozed: view !== "snoozed" }); setSelected([]); }} className={`${barButton} text-[#999999]`}>
+									<button type="button" onClick={() => { patch(selected, { starred: true }); setSelected([]); }} className={`${barButton} text-[#8c948b]`}>{t("markStar")}</button>
+									<button type="button" onClick={() => { patch(selected, { snoozed: view !== "snoozed" }); setSelected([]); }} className={`${barButton} text-[#8c948b]`}>
 										{view === "snoozed" ? t("unsnooze") : t("snooze")}
 									</button>
 									<button type="button" onClick={() => setConfirmDelete(true)} className={`${barButton} text-danger`}>{t("delete")} ({selected.length})</button>
@@ -307,66 +307,66 @@ export default function WebMails() {
 							<button
 								type="button"
 								onClick={() => { setDraft(EMPTY_DRAFT); setComposeOpen(true); }}
-								className="h-[50px] w-full rounded-4 bg-primaryColor px-30 text-16 font-semibold text-white shadow-custom transition-opacity hover:opacity-80 md:w-auto md:text-18">
+								className="fs-btn fs-btn-primary h-40 w-full md:w-auto">
 								{t("newEmail")}
 							</button>
 						</div>
 					</div>
 
-					<div className="min-h-[280px] overflow-x-auto rounded-16 bg-white shadow-heroImage">
-						<table className="w-full min-w-[480px] table-fixed border-collapse">
+					<div className="fs-card min-h-[280px] overflow-x-auto">
+						<table className="fs-table min-w-[480px] table-fixed">
 							<thead>
-								<tr className="bg-[#FAFCFF]">
-									<th className="w-[46px] py-16 pl-16 text-left"><Checkbox checked={allChecked} onChange={(v) => setSelected(v ? rows.map((m) => m.id) : [])} label={t("selectAll")} /></th>
-									<th className="border-l border-[#F0F0F0] px-10 py-16 text-center text-16 font-medium text-[#999999] md:text-18">{t("mailName")}</th>
-									<th className="w-[230px] border-l border-[#F0F0F0] px-10 py-16 text-center text-16 font-medium text-[#999999] md:text-18">{t("mailDate")}</th>
+								<tr>
+									<th className="w-[46px] pl-16"><Checkbox checked={allChecked} onChange={(v) => setSelected(v ? rows.map((m) => m.id) : [])} label={t("selectAll")} /></th>
+									<th className="px-10 text-center">{t("mailName")}</th>
+									<th className="w-[230px] px-10 text-center">{t("mailDate")}</th>
 								</tr>
 							</thead>
 							<tbody>
 								{rows.map((m) => (
-									<tr key={m.id} className={`h-[60px] animate-fade-in border-b border-[#F0F0F0] transition-colors duration-150 hover:bg-[#F7F9FF] ${selected.includes(m.id) ? "bg-[#F5F9FF]" : ""}`}>
+									<tr key={m.id} className={`h-[52px] animate-fade-in transition-colors duration-150 ${selected.includes(m.id) ? "bg-[rgba(198,255,77,0.06)]" : ""}`}>
 										<td className="pl-16"><Checkbox checked={selected.includes(m.id)} onChange={() => toggle(m.id)} label={t("selectRow")} /></td>
 										<td className="px-10">
 											<div className="flex items-center gap-10">
-												<button type="button" aria-pressed={m.starred} aria-label={t("markStar")} onClick={() => patch([m.id], { starred: !m.starred })} className={`shrink-0 transition-colors ${m.starred ? "text-[#F4A100]" : "text-[#D9D9D9] hover:text-[#B3B3B3]"}`}>
-													{m.starred ? <MdStar size={22} /> : <MdStarBorder size={22} />}
+												<button type="button" aria-pressed={m.starred} aria-label={t("markStar")} onClick={() => patch([m.id], { starred: !m.starred })} className={`shrink-0 transition-colors ${m.starred ? "text-[#f4b942]" : "text-[#8C948B] hover:text-[#8c948b]"}`}>
+													{m.starred ? <TbStarFilled size={18} /> : <TbStar size={18} />}
 												</button>
-												<button type="button" onClick={() => openMail(m)} className={`min-w-0 flex-1 truncate text-left text-16 transition-colors hover:text-primaryColor md:text-18 ${m.read ? "text-[#666666]" : "font-semibold text-[#333333]"}`}>
+												<button type="button" onClick={() => openMail(m)} className={`min-w-0 flex-1 truncate text-left text-13 transition-colors hover:text-[#c6ff4d] ${m.read ? "text-[#8c948b]" : "font-semibold text-[#f1f4ee]"}`}>
 													<span className="font-medium">{view === "sent" || view === "draft" ? m.to || "—" : m.from}</span>
-													<span className={m.read ? "text-[#999999]" : "text-[#666666]"}> — {m.subject || t("noSubject")}</span>
+													<span className={m.read ? "text-[#8C948B]" : "text-[#8c948b]"}> — {m.subject || t("noSubject")}</span>
 												</button>
 											</div>
 										</td>
-										<td className="truncate px-10 text-center text-14 text-[#999999] md:text-16">{formatChatDate(m.at, locale)}</td>
+										<td className="truncate px-10 text-center text-11 text-[#8c948b]">{formatChatDate(m.at, locale)}</td>
 									</tr>
 								))}
 							</tbody>
 						</table>
-						{rows.length === 0 && <p className="py-40 text-center text-16 text-[#999999]">{syncing ? t("mailSyncing") : t("mailEmpty")}</p>}
+						{rows.length === 0 && <p className="py-40 text-center text-13 text-[#8c948b]">{syncing ? t("mailSyncing") : t("mailEmpty")}</p>}
 					</div>
 				</section>
 			</div>
 
 			<Modal open={composeOpen} onClose={() => setComposeOpen(false)} label={t("newEmail")} className="w-full max-w-[600px]">
-				<form onSubmit={(e) => { e.preventDefault(); saveMail(false); }} className="rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
-					<h2 className="mb-20 text-24 font-medium text-black">{t("newEmail")}</h2>
-					<div className="flex flex-col gap-16">
+				<form onSubmit={(e) => { e.preventDefault(); saveMail(false); }} className="fs-popover p-24">
+					<h2 className="mb-20 text-16 font-semibold text-[#f1f4ee]">{t("newEmail")}</h2>
+					<div className="flex flex-col gap-12">
 						<input value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} placeholder={t("mailTo")} aria-label={t("mailTo")} maxLength={300} className={inputClass} />
 						<input value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} placeholder={t("mailSubject")} aria-label={t("mailSubject")} maxLength={200} className={inputClass} />
-						<textarea value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} placeholder={t("mailBody")} aria-label={t("mailBody")} rows={7} maxLength={5000} className="resize-none rounded-8 border border-[#E6E6E6] bg-[#FBFBFB] p-16 text-16 shadow-custom outline-none focus:border-[#5EA8F5]" />
+						<textarea value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} placeholder={t("mailBody")} aria-label={t("mailBody")} rows={7} maxLength={5000} className="fs-field h-auto resize-none p-12 text-13 outline-none" />
 					</div>
-					<div className="mt-24 flex flex-wrap justify-end gap-12">
-						<button type="button" onClick={() => setComposeOpen(false)} className="h-50 px-16 text-16 font-medium text-[#999999] transition-colors hover:text-black">{t("cancel")}</button>
-						<button type="button" disabled={sending} onClick={() => saveMail(true)} className="h-50 rounded-8 border border-[#E6E6E6] px-24 text-16 font-medium text-[#666666] transition-colors hover:bg-gray disabled:opacity-50">{t("saveDraft")}</button>
-						<button type="submit" disabled={sending} className="h-50 rounded-8 bg-primaryColor px-30 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80 disabled:opacity-50">{sending ? "…" : t("send")}</button>
+					<div className="mt-20 flex flex-wrap justify-end gap-10">
+						<button type="button" onClick={() => setComposeOpen(false)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
+						<button type="button" disabled={sending} onClick={() => saveMail(true)} className="fs-btn fs-btn-ghost h-40 disabled:opacity-50">{t("saveDraft")}</button>
+						<button type="submit" disabled={sending} className="fs-btn fs-btn-primary h-40 disabled:opacity-50">{sending ? "…" : t("send")}</button>
 					</div>
 				</form>
 			</Modal>
 
 			<Modal open={reading !== null} onClose={() => setReading(null)} label={reading?.subject} className="w-full max-w-[600px]">
-				<div className="rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
+				<div className="fs-popover p-24">
 					<div className="mb-6 flex items-start justify-between gap-16">
-						<h2 className="break-words text-24 font-medium text-black">{reading?.subject || t("noSubject")}</h2>
+						<h2 className="break-words text-16 font-semibold text-[#f1f4ee]">{reading?.subject || t("noSubject")}</h2>
 						<div className="flex shrink-0 items-center gap-12 pt-[4px]">
 							{reading && (
 								<AiQuickAsk
@@ -375,13 +375,13 @@ export default function WebMails() {
 									label={tAi("analyzeMail")}
 								/>
 							)}
-							<button type="button" onClick={() => setReading(null)} aria-label={t("close")} className="text-iconColor transition-colors hover:text-black"><MdClose size={24} /></button>
+							<button type="button" onClick={() => setReading(null)} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><TbX size={18} /></button>
 						</div>
 					</div>
-					<p className="mb-20 break-words text-14 text-[#999999]">
+					<p className="mb-20 break-words text-12 text-[#8C948B]">
 						{reading?.from} → {reading?.to} · {reading ? new Date(reading.at).toLocaleString(localeTag(locale)) : ""}
 					</p>
-					<p className="whitespace-pre-wrap break-words text-16 text-[#666666]">{reading?.body}</p>
+					<p className="whitespace-pre-wrap break-words text-13 text-[#f1f4ee]">{reading?.body}</p>
 				</div>
 			</Modal>
 

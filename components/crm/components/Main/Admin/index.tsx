@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { apiCall } from "@/app/store/crmApi";
 import { FEATURE_KEYS, planFor, type FeatureKey } from "@/app/config/plans";
+import PageHeader from "@/components/crm/components/shared/PageHeader";
 import Modal from "../shared/Modal";
 import BlogAdmin from "./BlogAdmin";
 
@@ -74,24 +75,25 @@ export default function AdminPanel() {
 		load();
 	}
 
-	if (denied) return <p className="p-30 text-16 text-[#666666]">{t("denied")}</p>;
-	const card = "rounded-16 bg-white p-16 shadow-heroImage";
-	const input = "h-[36px] rounded-8 border border-[#E6E6E6] bg-white px-8 text-14 text-[#666666] outline-none focus:border-[#5EA8F5]";
+	if (denied) return <p className="px-16 py-20 text-13 text-[#8c948b] md:px-24 md:py-24 lg:px-32">{t("denied")}</p>;
+	const card = "fs-card p-16";
+	const input = "fs-field h-34 px-10 text-12 outline-none";
 
 	return (
-		<div className="p-16 md:p-30">
-			<h1 className="mb-16 text-24 font-semibold text-[#333333]">{t("title")}</h1>
-			<div className="mb-24 rounded-16 bg-white p-16 shadow-heroImage">
+		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
+			<PageHeader />
+			<h1 className="mb-16 text-20 font-semibold text-[#f1f4ee]">{t("title")}</h1>
+			<div className="fs-card mb-24 p-16">
 				<div className="flex flex-wrap items-center justify-between gap-12">
-					<div><p className="text-16 font-medium text-[#333333]">{t("sysTitle")}</p><p className="text-14 text-[#999999]">{t("sysHelp")}</p></div>
-					<button type="button" onClick={runCheck} disabled={checking} className="h-[40px] rounded-8 bg-primaryColor px-20 text-14 font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-60">{checking ? "…" : t("sysRun")}</button>
+					<div><p className="text-14 font-medium text-[#f1f4ee]">{t("sysTitle")}</p><p className="text-12 text-[#8c948b]">{t("sysHelp")}</p></div>
+					<button type="button" onClick={runCheck} disabled={checking} className="fs-btn fs-btn-primary h-36 disabled:opacity-60">{checking ? "…" : t("sysRun")}</button>
 				</div>
 				{checks && (
 					<ul className="mt-12 flex flex-col gap-6">
 						{checks.map((c) => (
-							<li key={c.id} className="flex items-start gap-8 text-14">
-								<span className={`mt-2 shrink-0 font-semibold ${c.ok ? "text-[#009A2B]" : "text-danger"}`}>{c.ok ? "✓" : "✗"}</span>
-								<span><span className="font-medium text-[#333333]">{t(`sys_${c.id}`)}</span> <span className="text-[#666666]">{c.message}</span></span>
+							<li key={c.id} className="flex items-start gap-8 text-13">
+								<span className={`mt-2 shrink-0 font-semibold ${c.ok ? "text-[#2DDEB6]" : "text-danger"}`}>{c.ok ? "✓" : "✗"}</span>
+								<span><span className="font-medium text-[#f1f4ee]">{t(`sys_${c.id}`)}</span> <span className="text-[#8c948b]">{c.message}</span></span>
 							</li>
 						))}
 					</ul>
@@ -103,54 +105,54 @@ export default function AdminPanel() {
 						[t("firms"), summary.orgs], [t("users"), summary.users],
 						[t("planFree"), summary.byPlan.free], [t("planStandard"), summary.byPlan.standard], [t("planProfessional"), summary.byPlan.professional],
 					].map(([k, v]) => (
-						<div key={String(k)} className={card}><p className="text-14 text-[#999999]">{k}</p><p className="text-24 font-semibold text-[#333333]">{v}</p></div>
+						<div key={String(k)} className={card}><p className="text-11 text-[#8c948b]">{k}</p><p className="text-18 font-semibold text-[#f1f4ee]">{v}</p></div>
 					))}
-					<div className={card}><p className="text-14 text-[#999999]">{t("mrr")}</p><p className="text-24 font-semibold text-[#333333]">{summary.mrr} €</p></div>
-					<div className={card}><p className="text-14 text-[#999999]">{t("blocked")}</p><p className="text-24 font-semibold text-[#333333]">{summary.blocked}</p></div>
-					<div className={card}><p className="text-14 text-[#999999]">{t("newRequests")}</p><p className="text-24 font-semibold text-[#333333]">{summary.newRequests}</p></div>
+					<div className={card}><p className="text-11 text-[#8c948b]">{t("mrr")}</p><p className="text-18 font-semibold text-[#f1f4ee]">{summary.mrr} €</p></div>
+					<div className={card}><p className="text-11 text-[#8c948b]">{t("blocked")}</p><p className="text-18 font-semibold text-[#f1f4ee]">{summary.blocked}</p></div>
+					<div className={card}><p className="text-11 text-[#8c948b]">{t("newRequests")}</p><p className="text-18 font-semibold text-[#f1f4ee]">{summary.newRequests}</p></div>
 				</div>
 			)}
 
 			{reqs.some((r) => r.status === "new") && (
 				<div className="mb-24">
-					<h2 className="mb-8 text-18 font-medium text-[#333333]">{t("requests")}</h2>
+					<h2 className="mb-8 text-14 font-semibold text-[#f1f4ee]">{t("requests")}</h2>
 					<ul className="flex flex-col gap-8">
 						{reqs.filter((r) => r.status === "new").map((r) => (
 							<li key={r.id} className={`${card} flex flex-wrap items-center gap-x-16 gap-y-8`}>
-								<div className="min-w-0 flex-1 text-14 text-[#666666]">
-									<p className="font-medium text-[#333333]">{r.orgName} · {r.plan} / {r.interval === "year" ? t("year") : t("month")}</p>
+								<div className="min-w-0 flex-1 text-12 text-[#8c948b]">
+									<p className="font-medium text-[#f1f4ee]">{r.orgName} · {r.plan} / {r.interval === "year" ? t("year") : t("month")}</p>
 									<p>{r.company}{r.vatId ? ` · ${r.vatId}` : ""} · {r.email}</p>
-									{r.note && <p className="text-[#999999]">{r.note}</p>}
+									{r.note && <p className="text-[#8c948b]">{r.note}</p>}
 								</div>
-								<button type="button" onClick={() => activate(r)} className="h-[36px] rounded-8 bg-primaryColor px-16 text-14 font-medium text-white transition-opacity hover:opacity-80">{t("activate")}</button>
-								<button type="button" onClick={async () => { await apiCall(`/api/admin/requests/${r.id}`, "PATCH", { status: "done" }); load(); }} className="text-14 text-[#999999] hover:text-danger">{t("dismiss")}</button>
+								<button type="button" onClick={() => activate(r)} className="fs-btn fs-btn-primary h-34">{t("activate")}</button>
+								<button type="button" onClick={async () => { await apiCall(`/api/admin/requests/${r.id}`, "PATCH", { status: "done" }); load(); }} className="text-12 text-[#9AA396] hover:text-danger">{t("dismiss")}</button>
 							</li>
 						))}
 					</ul>
-					<p className="mt-6 text-12 text-[#B3B3B3]">{t("requestsHelp")}</p>
+					<p className="mt-6 text-11 text-[#9AA396]">{t("requestsHelp")}</p>
 				</div>
 			)}
 
 			<div className="mb-12 flex items-center gap-12">
-				<h2 className="text-18 font-medium text-[#333333]">{t("firms")}</h2>
+				<h2 className="text-14 font-semibold text-[#f1f4ee]">{t("firms")}</h2>
 				<input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("search")} aria-label={t("search")} className={`${input} w-[240px]`} />
 			</div>
-			<div className="overflow-x-auto rounded-16 bg-white shadow-heroImage">
-				<table className="w-full min-w-[900px] border-collapse text-left text-14">
+			<div className="fs-card overflow-x-auto">
+				<table className="fs-table min-w-[900px]">
 					<thead>
-						<tr className="border-b border-[#F0F0F0] bg-[#FAFCFF] text-[#999999]">
-							{[t("colFirm"), t("colOwner"), t("colPlan"), t("colStripe"), t("colOverride"), t("colMembers"), t("colCreated"), ""].map((h, i) => <th key={i} className="px-12 py-12 font-medium">{h}</th>)}
+						<tr>
+							{[t("colFirm"), t("colOwner"), t("colPlan"), t("colStripe"), t("colOverride"), t("colMembers"), t("colCreated"), ""].map((h, i) => <th key={i} className="px-12 py-12">{h}</th>)}
 						</tr>
 					</thead>
 					<tbody>
 						{orgs.map((o) => (
-							<tr key={o.id} className={`border-b border-[#F0F0F0] ${o.blocked ? "bg-[#FFF1F1]" : ""}`}>
-								<td className="px-12 py-10 font-medium text-[#333333]">{o.name}{o.blocked && <span className="ml-6 text-12 text-danger">({t("blockedTag")})</span>}</td>
-								<td className="px-12 py-10 text-[#666666]"><span className="block">{o.ownerName}</span><span className="text-12 text-[#999999]">{o.ownerEmail}</span></td>
-								<td className="px-12 py-10"><span className="rounded-4 bg-[#EEF5FF] px-8 py-2 text-12 font-medium text-primaryColor">{o.plan}</span></td>
-								<td className="px-12 py-10 text-[#666666]">
+							<tr key={o.id} className={o.blocked ? "bg-[rgba(235,87,87,0.06)]" : ""}>
+								<td className="px-12 py-10 text-13 font-medium text-[#f1f4ee]">{o.name}{o.blocked && <span className="ml-6 text-12 text-danger">({t("blockedTag")})</span>}</td>
+								<td className="px-12 py-10 text-13 text-[#8c948b]"><span className="block">{o.ownerName}</span><span className="text-12 text-[#9AA396]">{o.ownerEmail}</span></td>
+								<td className="px-12 py-10"><span className="fs-chip h-24 border-[rgba(198,255,77,0.30)] px-8 text-10 text-[#c6ff4d]">{o.plan}</span></td>
+								<td className="px-12 py-10 text-13 text-[#8c948b]">
 									{o.status ? `${o.stripePlan} · ${o.status}${o.interval ? ` · ${o.interval === "year" ? t("year") : t("month")}` : ""}` : "—"}
-									{o.periodEnd && <span className="block text-12 text-[#999999]">{o.cancelAtPeriodEnd ? t("endsOn") : t("renewsOn")} {new Date(o.periodEnd).toLocaleDateString(locale === "ua" ? "uk" : locale)}</span>}
+									{o.periodEnd && <span className="block text-12 text-[#9AA396]">{o.cancelAtPeriodEnd ? t("endsOn") : t("renewsOn")} {new Date(o.periodEnd).toLocaleDateString(locale === "ua" ? "uk" : locale)}</span>}
 								</td>
 								<td className="px-12 py-10">
 									<div className="flex flex-wrap items-center gap-6">
@@ -161,30 +163,30 @@ export default function AdminPanel() {
 										{o.override && <input type="date" value={day(o.overrideUntil)} onChange={(e) => patch(o.id, { planOverrideUntil: e.target.value ? new Date(`${e.target.value}T23:59:00`).toISOString() : null })} aria-label={t("until")} className={input} />}
 									</div>
 								</td>
-								<td className="px-12 py-10 text-[#666666]">{o.members}</td>
-								<td className="px-12 py-10 text-[#999999]">{day(o.createdAt)}</td>
+								<td className="px-12 py-10 text-13 text-[#8c948b]">{o.members}</td>
+								<td className="px-12 py-10 text-13 text-[#9AA396]">{day(o.createdAt)}</td>
 								<td className="px-12 py-10">
 									<div className="flex flex-wrap gap-8">
-										<button type="button" onClick={() => setFeaturesFor(o)} className="text-14 text-primaryColor hover:underline">{t("features")}</button>
-										{o.hasSubscription && !o.cancelAtPeriodEnd && <button type="button" onClick={() => cancel(o)} className="text-14 text-primaryColor hover:underline">{t("cancelSub")}</button>}
-										<button type="button" onClick={() => patch(o.id, { blocked: !o.blocked })} className={`text-14 hover:underline ${o.blocked ? "text-[#009A2B]" : "text-danger"}`}>{o.blocked ? t("unblock") : t("block")}</button>
+										<button type="button" onClick={() => setFeaturesFor(o)} className="text-12 text-[#c6ff4d] hover:underline">{t("features")}</button>
+										{o.hasSubscription && !o.cancelAtPeriodEnd && <button type="button" onClick={() => cancel(o)} className="text-12 text-[#c6ff4d] hover:underline">{t("cancelSub")}</button>}
+										<button type="button" onClick={() => patch(o.id, { blocked: !o.blocked })} className={`text-12 hover:underline ${o.blocked ? "text-[#2DDEB6]" : "text-danger"}`}>{o.blocked ? t("unblock") : t("block")}</button>
 									</div>
 								</td>
 							</tr>
 						))}
 					</tbody>
 				</table>
-				{orgs.length === 0 && <p className="py-30 text-center text-14 text-[#999999]">{t("none")}</p>}
+				{orgs.length === 0 && <p className="py-30 text-center text-13 text-[#8c948b]">{t("none")}</p>}
 			</div>
 
 			{/* Разделы фирмы: что открыто по тарифу и что администратор включил или выключил вручную */}
-			<Modal open={!!featuresFor} onClose={() => setFeaturesFor(null)} label={t("features")} align="top" className="w-full max-w-[560px] rounded-16 bg-white p-24 pt-20">
+			<Modal open={!!featuresFor} onClose={() => setFeaturesFor(null)} label={t("features")} align="top" className="fs-popover w-full max-w-[560px] p-20">
 				{featuresFor && (
 					<>
-						<h2 className="mb-6 text-20 font-semibold text-[#333333]">{t("featuresTitle", { name: featuresFor.name })}</h2>
-						<p className="mb-16 text-13 text-[#666666]">{t("featuresHelp")}</p>
-						<div className="mb-16 flex flex-wrap items-center gap-8 text-12 text-[#999999]">
-							<span className="rounded-4 bg-[#EEF5FF] px-8 py-2 font-medium text-primaryColor">{featuresFor.plan}</span>
+						<h2 className="mb-6 text-15 font-semibold text-[#f1f4ee]">{t("featuresTitle", { name: featuresFor.name })}</h2>
+						<p className="mb-16 text-12 text-[#8c948b]">{t("featuresHelp")}</p>
+						<div className="mb-16 flex flex-wrap items-center gap-8 text-12 text-[#8c948b]">
+							<span className="fs-chip h-24 border-[rgba(198,255,77,0.30)] px-8 text-10 text-[#c6ff4d]">{featuresFor.plan}</span>
 							<span>{tf("limitsLine", { rules: planFor(featuresFor.plan).automationRules, ai: planFor(featuresFor.plan).aiDailyRequests, storage: planFor(featuresFor.plan).storageMb >= 1000 ? `${planFor(featuresFor.plan).storageMb / 1000} GB` : `${planFor(featuresFor.plan).storageMb} MB` })}</span>
 						</div>
 						<ul className="mb-20 flex flex-col gap-8">
@@ -193,9 +195,9 @@ export default function AdminPanel() {
 								const override = featuresFor.featureOverrides?.[key];
 								const on = override ?? byPlan;
 								return (
-									<li key={key} className="flex items-center gap-12 rounded-12 border border-[#F0F0F0] p-10">
-										<span className="flex-1 text-14 text-[#333333]">{tf(key)}</span>
-										<span className={`rounded-4 px-8 py-2 text-12 ${on ? "bg-[#EAF7EE] text-[#009A2B]" : "bg-[#F5F5F5] text-[#999999]"}`}>
+									<li key={key} className="flex items-center gap-12 rounded-10 border border-inkLine p-10">
+										<span className="flex-1 text-13 text-[#f1f4ee]">{tf(key)}</span>
+										<span className={`rounded-50 px-10 py-2 text-10 ${on ? "bg-[rgba(45,222,182,0.12)] text-[#2DDEB6]" : "bg-[rgba(255,255,255,0.05)] text-[#8c948b]"}`}>
 											{override === undefined ? (byPlan ? t("featByPlan") : t("featOff")) : override ? t("featExtra") : t("featOff")}
 										</span>
 										<select
@@ -211,7 +213,7 @@ export default function AdminPanel() {
 								);
 							})}
 						</ul>
-						<button type="button" onClick={() => setFeaturesFor(null)} className="rounded-10 bg-primaryColor px-20 py-10 text-14 font-medium text-white">{t("cancel")}</button>
+						<button type="button" onClick={() => setFeaturesFor(null)} className="fs-btn fs-btn-primary h-36">{t("cancel")}</button>
 					</>
 				)}
 			</Modal>

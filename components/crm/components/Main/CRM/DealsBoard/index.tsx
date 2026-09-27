@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { BsChevronDown, BsThreeDots } from "react-icons/bs";
+import { TbChevronDown, TbDots } from "react-icons/tb";
 import { useCrmStore } from "@/app/store/useCrmStore";
 import Loader from "@/app/utils/Loader";
 import Dropdown from "@/app/utils/Dropdown";
@@ -74,14 +74,14 @@ export default function DealsBoard({ search }: Props) {
     if (isLoading && stages.length === 0) {
         return (
             <div className="flex justify-center py-60">
-                <Loader color="#5EA8F5" width="50" height="10" radius="9" />
+                <Loader color="#c6ff4d" width="50" height="10" radius="9" />
             </div>
         );
     }
 
     const tab = (active: boolean) =>
-        `px-16 py-10 text-16 font-medium capitalize tracking-[0.32px] border-b-2 transition-colors duration-200 ${
-            active ? "border-primaryColor text-primaryColor" : "border-transparent text-[#999999] hover:text-[#666666]"
+        `px-14 py-8 text-13 font-medium capitalize border-b-2 transition-colors duration-200 ${
+            active ? "border-[#c6ff4d] text-[#c6ff4d]" : "border-transparent text-[#8c948b] hover:text-[#f1f4ee]"
         }`;
 
     return (
@@ -97,34 +97,34 @@ export default function DealsBoard({ search }: Props) {
                     </button>
                 </div>
 
-                <div className="flex items-center gap-10">
-                    <div className="flex items-center gap-6">
-                        <span className="text-16 font-medium text-[#666666] capitalize tracking-[0.32px]">{t("inbound")}</span>
-                        <span className="bg-primaryColor text-white text-16 font-medium rounded-4 px-4">{inboundCount}</span>
+                <div className="flex items-center gap-12">
+                    <div className="flex items-center gap-8">
+                        <span className="text-12 text-[#8c948b] capitalize">{t("inbound")}</span>
+                        <span className="fs-chip h-22 px-8 text-10">{inboundCount}</span>
                     </div>
-                    <div className="flex items-center gap-6">
-                        <span className="text-16 font-medium text-[#666666] capitalize tracking-[0.32px]">{t("planned")}</span>
-                        <span className="bg-primaryColor text-white text-16 font-medium rounded-4 px-4">{plannedCount}</span>
+                    <div className="flex items-center gap-8">
+                        <span className="text-12 text-[#8c948b] capitalize">{t("planned")}</span>
+                        <span className="fs-chip h-22 px-8 text-10">{plannedCount}</span>
                     </div>
                     <div ref={moreRef} className="relative">
                         <button
-                            className="flex items-center gap-6"
+                            className="flex items-center gap-8"
                             aria-expanded={moreOpen}
                             onClick={() => setMoreOpen(!moreOpen)}
                         >
-                            <span className="text-16 font-medium text-[#666666] capitalize tracking-[0.32px]">{t("more")}</span>
-                            <span className="bg-primaryColor text-white text-16 font-medium rounded-4 px-4">{moreCount}</span>
-                            <BsChevronDown
-                                size={14}
-                                className={`text-[#666666] transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`}
+                            <span className="text-12 text-[#8c948b] capitalize">{t("more")}</span>
+                            <span className="fs-chip h-22 px-8 text-10">{moreCount}</span>
+                            <TbChevronDown
+                                size={15}
+                                className={`text-[#8c948b] transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`}
                             />
                         </button>
-                        <Dropdown open={moreOpen} className="right-0 top-full mt-4 min-w-[160px]">
-                            <div className="bg-white border border-[#E6E6E6] rounded-8 p-10 shadow-lg">
+                        <Dropdown open={moreOpen} className="right-0 top-full mt-6 min-w-[180px]">
+                            <div className="fs-popover fs-scroll p-6">
                                 {sortedStages.slice(2).map((s) => (
-                                    <div key={s._id} className="flex justify-between text-14 py-4">
-                                        <span>{s.name}</span>
-                                        <span>{dealsForStage(s._id).length}</span>
+                                    <div key={s._id} className="fs-popover-row flex items-center justify-between gap-12 rounded-8 px-10 py-6 text-12">
+                                        <span className="truncate">{s.name}</span>
+                                        <span className="shrink-0 text-[#8c948b]">{dealsForStage(s._id).length}</span>
                                     </div>
                                 ))}
                             </div>
@@ -132,7 +132,7 @@ export default function DealsBoard({ search }: Props) {
                     </div>
                 </div>
 
-                <BsThreeDots size={18} className="text-[#666666]" />
+                <TbDots size={18} className="text-[#9AA396]" />
             </div>
 
             {view === "kanban" ? (
@@ -142,7 +142,7 @@ export default function DealsBoard({ search }: Props) {
                             <div
                                 ref={boardProvided.innerRef}
                                 {...boardProvided.droppableProps}
-                                className="flex items-start overflow-x-auto pb-16 pr-[24px]"
+                                className="fs-scroll flex items-start overflow-x-auto pb-16 pr-[24px]"
                             >
                                 {sortedStages.map((stage, index) => (
                                     <Draggable key={stage._id} draggableId={`stage-${stage._id}`} index={index}>
@@ -161,26 +161,26 @@ export default function DealsBoard({ search }: Props) {
                                 ))}
                                 {boardProvided.placeholder}
 
-                                <div className="w-[222px] shrink-0 p-16">
+                                <div className="w-[222px] shrink-0 p-12">
                                     <Collapse open={isAddingStage}>
-                                        <div className="flex flex-col gap-6 pb-10">
+                                        <div className="flex flex-col gap-8 pb-10">
                                             <input
                                                 ref={stageInputRef}
-                                                className="border border-[#E6E6E6] rounded-6 px-8 py-6 text-14 outline-none transition-colors focus:border-[#5EA8F5]"
+                                                className="fs-field h-34 px-10 text-12 outline-none transition-colors"
                                                 placeholder={t("newStageName")}
                                                 value={newStageName}
                                                 onChange={(e) => setNewStageName(e.target.value)}
                                                 onKeyDown={(e) => e.key === "Enter" && saveNewStage()}
                                             />
-                                            <div className="flex gap-8 text-14">
-                                                <button className="text-primaryColor" onClick={saveNewStage}>{t("save")}</button>
-                                                <button className="text-menu" onClick={() => setIsAddingStage(false)}>{t("cancel")}</button>
+                                            <div className="flex gap-10 text-13">
+                                                <button className="text-[#c6ff4d] transition-opacity hover:opacity-80" onClick={saveNewStage}>{t("save")}</button>
+                                                <button className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]" onClick={() => setIsAddingStage(false)}>{t("cancel")}</button>
                                             </div>
                                         </div>
                                     </Collapse>
                                     {!isAddingStage && (
                                         <button
-                                            className="animate-fade-in text-14 text-[#666666] border border-dashed border-[#CCCCCC] rounded-8 py-10 w-full transition-colors duration-200 hover:border-[#5EA8F5] hover:text-primaryColor"
+                                            className="animate-fade-in w-full rounded-10 border border-dashed border-[rgba(255,255,255,0.14)] py-10 text-13 text-[#8c948b] transition-colors duration-200 hover:border-[rgba(198,255,77,0.45)] hover:text-[#c6ff4d]"
                                             onClick={() => setIsAddingStage(true)}
                                         >
                                             + {t("addStage")}
