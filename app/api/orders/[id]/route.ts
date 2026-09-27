@@ -7,6 +7,7 @@ import { cleanItems } from "@/lib/finance/totals";
 import { consumeForOrder } from "@/lib/finance/stock";
 import Order from "@/models/Order";
 import { toOrderDTO } from "@/lib/finance/dto";
+import { isTemplate } from "@/lib/finance/pdf";
 
 const STATUSES = ["draft", "confirmed", "fulfilled", "invoiced", "closed", "cancelled"];
 // закрытый заказ уже отражён в дашборде и счетах — редактировать его задним числом нельзя, только статус
@@ -35,6 +36,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     if (b.items !== undefined) order.items = cleanItems(b.items) as any;
     if (typeof b.notes === "string") order.notes = b.notes.trim().slice(0, 2000);
+    // пустая строка — «печатать оформление из настроек бухгалтерии», поэтому её тоже принимаем
+    if (b.template === "") order.template = "";
+    else if (isTemplate(b.template)) order.template = b.template;
     if (typeof b.responsible === "string") order.responsible = b.responsible.trim().slice(0, 120);
 
     let statusChanged = false;

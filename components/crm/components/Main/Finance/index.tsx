@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TAB_BAR } from "../shared/tabBar";
+import { useFinanceStore } from "@/app/store/useFinanceStore";
 import Overview from "./Overview";
 import Quotes, { QuotePrefill } from "./Quotes";
 import Orders from "./Orders";
@@ -21,10 +22,16 @@ type Tab = (typeof TABS)[number];
 // (события order_created/order_status/invoice_sent/invoice_paid/invoice_overdue, см. lib/automation).
 export default function Finance() {
 	const t = useTranslations("finance");
+	const loadSettings = useFinanceStore((s) => s.loadSettings);
 	const [tab, setTab] = useState<Tab>("overview");
 	const [openInvoiceId, setOpenInvoiceId] = useState<string | null>(null);
 	const [openOrderId, setOpenOrderId] = useState<string | null>(null);
 	const [quotePrefill, setQuotePrefill] = useState<QuotePrefill | null>(null);
+
+	// Настройки бухгалтерии нужны всем вкладкам, а не только своей: из них берутся валюта по умолчанию,
+	// оформление документа и адрес с IBAN. Раньше их грузила только вкладка настроек, поэтому счёт,
+	// созданный со вкладки «Счета», всегда получал EUR, даже если в фирме выбрана другая валюта.
+	useEffect(() => { loadSettings(); }, [loadSettings]);
 
 	// пришли по ссылке из карточки сделки (CRM → Deal → "Create Quote", см. DealQuotes.tsx): ?tab=quotes&newFromDeal=...
 	useEffect(() => {

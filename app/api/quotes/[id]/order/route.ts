@@ -26,7 +26,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const order = await Order.create({
         org: user.id, number,
         contact: quote.contact, company: quote.company, customerName: quote.customerName, deal: quote.deal,
-        items: quote.items, currency: quote.currency,
+        items: quote.items, currency: quote.currency, template: quote.template,
         createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
     });
     quote.order = order._id as any;

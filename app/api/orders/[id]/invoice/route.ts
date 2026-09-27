@@ -7,6 +7,7 @@ import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
 import Order from "@/models/Order";
 import Invoice from "@/models/Invoice";
+import { isTemplate } from "@/lib/finance/pdf";
 import User from "@/models/User";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 
@@ -37,6 +38,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         items: order.items, currency: order.currency,
         smallBusinessNote: !!settings.smallBusiness,
         issueDate: today, dueDate: due,
+        template: order.template, // счёт по заказу печатается так же, как сам заказ
         createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
     });
     order.invoice = invoice._id as any;

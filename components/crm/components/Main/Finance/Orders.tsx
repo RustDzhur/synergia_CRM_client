@@ -8,6 +8,7 @@ import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
 import { downloadDocumentPdf } from "./download";
+import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
 
 const STATUS_COLOR: Record<string, string> = { draft: "#B3B3B3", confirmed: "#5EA8F5", fulfilled: "#F4A100", invoiced: "#8A6FE8", closed: "#0A8A2E", cancelled: "#EB5757" };
@@ -98,6 +99,7 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 								<button type="button" onClick={() => downloadOrderPdf(o.id, o.number)} className="flex items-center gap-6 rounded-8 border border-[#E6E6E6] px-16 py-8 text-14 font-medium text-[#666666] transition-opacity hover:opacity-80">
 									<MdDownload size={16} /> {t("downloadPdf")}
 								</button>
+								<DocumentTemplateButton kind="orders" id={o.id} number={o.number} template={o.template} onSave={updateOrder} />
 								{o.invoice && (
 									<button type="button" onClick={() => onOpenInvoice(o.invoice)} className="text-14 font-medium text-primaryColor hover:underline">{t("viewInvoice")}</button>
 								)}

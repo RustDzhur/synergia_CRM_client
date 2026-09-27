@@ -6,6 +6,7 @@ import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
 import { cleanItems, computeTotals } from "@/lib/finance/totals";
 import { toInvoiceDTO } from "@/lib/finance/dto";
+import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal } from "@/lib/deals";
 import Invoice from "@/models/Invoice";
 import User from "@/models/User";
@@ -52,6 +53,7 @@ export async function POST(req: Request) {
         issueDate: typeof b.issueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.issueDate) ? b.issueDate : today,
         dueDate: typeof b.dueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.dueDate) ? b.dueDate : due,
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
+        template: isTemplate(b.template) ? b.template : "",
         createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
     });
     return NextResponse.json(toInvoiceDTO(invoice), { status: 201 });

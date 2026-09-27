@@ -1,4 +1,4 @@
-import { renderDocumentPdf, PdfSettings, PdfParty, PdfLineItem } from "./pdf";
+import { isTemplate, renderDocumentPdf, PdfSettings, PdfParty, PdfLineItem } from "./pdf";
 import { financeSettings } from "./settings";
 import Contact from "@/models/Contact";
 import Company from "@/models/Company";
@@ -11,6 +11,10 @@ import Invoice from "@/models/Invoice";
 export const LOCALES = ["en", "de", "ua"] as const;
 export const pdfLocale = (v: unknown) => (typeof v === "string" && (LOCALES as readonly string[]).includes(v) ? v : "en");
 
+// Шаблон оформления: явный выбор в запросе (?template=modern) важнее шаблона самого документа, а тот —
+// умолчания из настроений бухгалтерии. Неизвестное значение молча игнорируется, рендер берёт classic.
+export const pdfTemplate = (v: unknown) => (isTemplate(v) ? v : undefined);
+
 export const toPdfSettings = (s: any): PdfSettings => ({
     legalName: s?.legalName ?? "",
     address: s?.address ?? "",
@@ -18,6 +22,8 @@ export const toPdfSettings = (s: any): PdfSettings => ({
     iban: s?.iban ?? "",
     bic: s?.bic ?? "",
     paymentTermsDays: Number(s?.paymentTermsDays) || 0,
+    template: isTemplate(s?.template) ? s.template : undefined,
+    paymentQr: s?.paymentQr !== false, // по умолчанию код на оплату печатается
 });
 
 export const toPdfItems = (items: any): PdfLineItem[] =>
@@ -48,7 +54,7 @@ export async function customerParty(org: string, doc: { customerName?: string; c
 }
 
 // Счёт и кредит-нота: стороны и позиции — снимок внутри документа, поэтому дополнительных запросов нет
-export async function invoicePdfBuffer(org: string, inv: any, locale: string): Promise<Buffer> {
+export async function invoicePdfBuffer(org: string, inv: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     let creditForNumber: string | undefined;
     if (inv.kind === "credit_note" && inv.creditFor) {
@@ -67,13 +73,14 @@ export async function invoicePdfBuffer(org: string, inv: any, locale: string): P
             issueDate: inv.issueDate,
             dueDate: inv.dueDate,
             notes: inv.notes,
+            template: template ?? pdfTemplate(inv.template),
         },
         toPdfSettings(settings),
         pdfLocale(locale)
     );
 }
 
-export async function quotePdfBuffer(org: string, q: any, locale: string): Promise<Buffer> {
+export async function quotePdfBuffer(org: string, q: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     return renderDocumentPdf(
         {
@@ -85,13 +92,14 @@ export async function quotePdfBuffer(org: string, q: any, locale: string): Promi
             issueDate: q.issueDate,
             validUntil: q.validUntil,
             notes: q.notes,
+            template: template ?? pdfTemplate(q.template),
         },
         toPdfSettings(settings),
         pdfLocale(locale)
     );
 }
 
-export async function orderPdfBuffer(org: string, o: any, locale: string): Promise<Buffer> {
+export async function orderPdfBuffer(org: string, o: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     return renderDocumentPdf(
         {
@@ -102,13 +110,14 @@ export async function orderPdfBuffer(org: string, o: any, locale: string): Promi
             currency: o.currency,
             issueDate: o.createdAt ? new Date(o.createdAt).toISOString().slice(0, 10) : "",
             notes: o.notes,
+            template: template ?? pdfTemplate(o.template),
         },
         toPdfSettings(settings),
         pdfLocale(locale)
     );
 }
 
-export async function contractPdfBuffer(org: string, c: any, locale: string): Promise<Buffer> {
+export async function contractPdfBuffer(org: string, c: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     return renderDocumentPdf(
         {
@@ -121,6 +130,7 @@ export async function contractPdfBuffer(org: string, c: any, locale: string): Pr
             startDate: c.startDate,
             endDate: c.endDate,
             notes: c.notes,
+            template: template ?? pdfTemplate(c.template),
         },
         toPdfSettings(settings),
         pdfLocale(locale)

@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
 import { toContractDTO } from "@/lib/finance/dto";
+import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal } from "@/lib/deals";
 import Contract from "@/models/Contract";
 import User from "@/models/User";
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
         startDate: typeof b.startDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.startDate) ? b.startDate : "",
         endDate: typeof b.endDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.endDate) ? b.endDate : "",
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
+        template: isTemplate(b.template) ? b.template : "",
         createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
     });
     return NextResponse.json(toContractDTO(contract), { status: 201 });

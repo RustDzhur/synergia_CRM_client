@@ -34,6 +34,8 @@ const OrderSchema = new Schema(
         invoice: { type: Schema.Types.ObjectId, ref: "Invoice" }, // счёт, выставленный по этому заказу
 
         notes: { type: String, default: "" },
+        // Шаблон оформления PDF: у каждого документа он свой, чтобы счёт клиенту и договор могли выглядеть по-разному
+        template: { type: String, default: "" },
         responsible: { type: String, default: "" },
         createdByName: { type: String, default: "" },
     },

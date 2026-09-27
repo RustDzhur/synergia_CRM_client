@@ -5,6 +5,7 @@ import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { cleanItems } from "@/lib/finance/totals";
 import Invoice from "@/models/Invoice";
 import { toInvoiceDTO } from "@/lib/finance/dto";
+import { isTemplate } from "@/lib/finance/pdf";
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
@@ -31,6 +32,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (typeof b.customerAddress === "string") inv.customerAddress = b.customerAddress.trim().slice(0, 500);
     if (typeof b.customerTaxId === "string") inv.customerTaxId = b.customerTaxId.trim().slice(0, 60);
     if (typeof b.notes === "string") inv.notes = b.notes.trim().slice(0, 2000);
+    // пустая строка — «печатать оформление из настроек бухгалтерии», поэтому её тоже принимаем
+    if (b.template === "") inv.template = "";
+    else if (isTemplate(b.template)) inv.template = b.template;
     if (typeof b.dueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.dueDate)) inv.dueDate = b.dueDate;
     await inv.save();
     return NextResponse.json(toInvoiceDTO(inv));

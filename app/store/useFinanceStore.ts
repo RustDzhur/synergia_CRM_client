@@ -16,7 +16,7 @@ export interface Order {
 	id: string; number: string; status: "draft" | "confirmed" | "fulfilled" | "invoiced" | "closed" | "cancelled";
 	contact: string; company: string; customerName: string; deal: string; contract: string;
 	items: LineItem[]; currency: string; notes: string; responsible: string; invoice: string; totals: Totals;
-	createdAt: string; updatedAt: string;
+	template: string; createdAt: string; updatedAt: string;
 }
 export interface Invoice {
 	id: string; number: string; kind: "invoice" | "credit_note"; creditFor: string;
@@ -25,7 +25,7 @@ export interface Invoice {
 	issueDate: string; dueDate: string; notes: string; status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
 	sentAt: string; sentTo: string; paidAt: string; paidAmount: number;
 	reminderCount: number; lastReminderAt: string; recurringSource: string;
-	totals: Totals; createdAt: string; updatedAt: string;
+	template: string; totals: Totals; createdAt: string; updatedAt: string;
 }
 export interface RecurringInvoice {
 	id: string; active: boolean; contact: string; company: string;
@@ -44,19 +44,21 @@ export interface Quote {
 	id: string; number: string; status: "draft" | "sent" | "accepted" | "declined" | "expired";
 	contact: string; company: string; customerName: string; deal: string; order: string;
 	items: LineItem[]; currency: string; issueDate: string; validUntil: string; notes: string; sentAt: string; sentTo: string;
-	version: number; versions: QuoteVersion[];
+	template: string; version: number; versions: QuoteVersion[];
 	totals: Totals; createdAt: string; updatedAt: string;
 }
 export interface Contract {
 	id: string; number: string; status: "draft" | "active" | "completed" | "cancelled";
 	contact: string; company: string; customerName: string; deal: string; value: number; currency: string;
 	startDate: string; endDate: string; notes: string; signedAt: string; file: string;
-	createdAt: string; updatedAt: string;
+	template: string; createdAt: string; updatedAt: string;
 }
 export interface FinanceSettings {
 	country: string; currency: string; smallBusiness: boolean; legalName: string; address: string; taxId: string;
 	iban: string; bic: string; paymentTermsDays: number; invoicePrefix: string; quotePrefix: string;
 	creditNotePrefix: string; reminderIntervalDays: number;
+	// Оформление по умолчанию для всех документов и код оплаты на счетах; у отдельного документа шаблон свой
+	template: string; paymentQr: boolean;
 }
 export interface CountryOption { code: string; name: string; standard: number; reduced?: number; label: string }
 export interface FinanceDashboard {
@@ -90,6 +92,7 @@ interface FinanceStore {
 	deleteOrder: (id: string) => Promise<string | null>;
 	invoiceOrder: (id: string) => Promise<string | null>;
 	createInvoice: (data: Partial<Invoice>) => Promise<string | null>;
+	updateInvoice: (id: string, data: Partial<Invoice>) => Promise<string | null>;
 	sendInvoice: (id: string, to?: string) => Promise<SendOutcome>;
 	payInvoice: (id: string, amount?: number) => Promise<string | null>;
 	duplicateInvoice: (id: string) => Promise<string | null>;
@@ -179,6 +182,12 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 		const r = await apiCall<Invoice>("/api/invoices", "POST", data);
 		if (!r.ok || !r.data) return r.message;
 		set((s) => ({ invoices: [r.data as Invoice, ...s.invoices] }));
+		return null;
+	},
+	updateInvoice: async (id, data) => {
+		const r = await apiCall<Invoice>(`/api/invoices/${id}`, "PATCH", data);
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ invoices: s.invoices.map((i) => (i.id === id ? (r.data as Invoice) : i)) }));
 		return null;
 	},
 	sendInvoice: async (id, to) => {

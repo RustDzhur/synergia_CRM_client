@@ -19,6 +19,8 @@ const ContractSchema = new Schema(
         signedAt: { type: Date },
         file: { type: Schema.Types.ObjectId, ref: "DocItem" },
         notes: { type: String, default: "" },
+        // Шаблон оформления PDF: у каждого документа он свой, чтобы счёт клиенту и договор могли выглядеть по-разному
+        template: { type: String, default: "" },
         createdByName: { type: String, default: "" },
     },
     { timestamps: true }

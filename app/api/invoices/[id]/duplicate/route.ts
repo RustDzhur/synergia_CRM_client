@@ -5,6 +5,7 @@ import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
 import Invoice from "@/models/Invoice";
+import { isTemplate } from "@/lib/finance/pdf";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 
 // POST /api/invoices/:id/duplicate — новый черновик с теми же клиентом и позициями (повторный/шаблонный счёт без
@@ -27,7 +28,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         contact: source.contact, company: source.company,
         customerName: source.customerName, customerAddress: source.customerAddress, customerTaxId: source.customerTaxId,
         items: source.items, currency: source.currency, smallBusinessNote: source.smallBusinessNote,
-        issueDate: today, dueDate: due, notes: source.notes,
+        issueDate: today, dueDate: due, notes: source.notes, template: source.template,
     });
     return NextResponse.json(toInvoiceDTO(copy), { status: 201 });
 }

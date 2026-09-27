@@ -42,6 +42,8 @@ const InvoiceSchema = new Schema(
         issueDate: { type: String, required: true }, // "YYYY-MM-DD"
         dueDate: { type: String, default: "" },
         notes: { type: String, default: "" },
+        // Шаблон оформления PDF: у каждого документа он свой, чтобы счёт клиенту и договор могли выглядеть по-разному
+        template: { type: String, default: "" },
 
         status: { type: String, enum: ["draft", "sent", "paid", "overdue", "cancelled"], default: "draft" },
         sentAt: { type: Date },
