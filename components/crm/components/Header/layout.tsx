@@ -4,7 +4,6 @@ import Search from "./components/Search";
 import SwitchCompany from "./components/SwitchCompany";
 import SwitchLanguage from "./components/SwitchLanguage";
 import Notification from "./components/Notification";
-import ThemeToggle from "./components/ThemeToggle";
 import AiButton from "./components/AiButton";
 import CurrentUser from "./components/CurrentUser";
 import MobileMenu from "./components/MobileMenu";
@@ -26,7 +25,7 @@ function Layout() {
 			<div className="hidden md:block shrink-0 md:ml-[49px] lg:ml-[36px]">
 				<Search />
 			</div>
-			{/* 387px — ширина из макета; если справа не хватает места (длинное имя, тумблер темы), блок сжимается, но не залезает на язык */}
+			{/* 387px — ширина из макета; если справа не хватает места (длинное имя), блок сжимается, но не залезает на язык */}
 			<div className="hidden lg:block min-w-[200px] lg:ml-30 lg:w-[387px] lg:mr-30 shrink">
 				<SwitchCompany />
 			</div>
@@ -36,7 +35,6 @@ function Layout() {
 				</div>
 				<div className="hidden md:flex items-center gap-25 md:flex-row-reverse lg:flex-row">
 					<AiButton />
-					<ThemeToggle />
 					<Notification />
 					<CurrentUser />
 				</div>

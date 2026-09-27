@@ -76,14 +76,14 @@ function SignupForm() {
 					onClick={() => toggleTab("company")}
 					className={`${
 						activeTab === "company"
-							? "bg-authBtn text-white"
+							? "bg-authBtn text-[#0A0A0A]"
 							: "#ffffff text-menu"
 					} px-20 py-14 rounded-8 border-authTabBtn flex items-center`}>
 					<div className="mr-8">
 						<IconContext.Provider
 							value={{
 								size: "22px",
-								color: `${activeTab === "company" ? "#fff" : "#ccc"}`,
+								color: `${activeTab === "company" ? "#0A0A0A" : "#ccc"}`,
 							}}>
 							<BsFillBuildingsFill />
 						</IconContext.Provider>
@@ -94,14 +94,14 @@ function SignupForm() {
 					onClick={() => toggleTab("personal")}
 					className={`${
 						activeTab === "personal"
-							? "bg-authBtn text-white"
+							? "bg-authBtn text-[#0A0A0A]"
 							: "#ffffff text-menu"
 					} px-20 py-14 rounded-8 border-authTabBtn flex items-center`}>
 					<div className="mr-8">
 						<IconContext.Provider
 							value={{
 								size: "22px",
-								color: `${activeTab === "personal" ? "#fff" : "#ccc"}`,
+								color: `${activeTab === "personal" ? "#0A0A0A" : "#ccc"}`,
 							}}>
 							<MdOutlinePersonalInjury />
 						</IconContext.Provider>
@@ -436,7 +436,7 @@ function SignupForm() {
 				<button
 					type="submit"
 					disabled={isLoading}
-					className="sm:w-full lg:w-[50%] py-15 rounded-4 hover:shadow-authForms bg-authBtn text-18 text-white font-medium">
+					className="sm:w-full lg:w-[50%] py-15 rounded-4 hover:shadow-authForms bg-authBtn text-18 text-[#0A0A0A] font-medium">
 					{t('signup')}
 				</button>
 			</form>

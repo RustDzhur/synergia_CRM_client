@@ -39,16 +39,15 @@ export default function AuthLinks() {
 	};
 
 	return (
-		<ul className="flex items-center sm:justify-between sm:px-20 lg:px-0">
+		<ul className="flex items-center gap-16 sm:justify-between sm:px-20 lg:gap-20 lg:px-0">
 			<li
 				onClick={handleToggleSignin}
-				className="cursor-pointer lg:text-white sm:text-menu sm:text-24 sm:font-medium hover:text-activeMenu lg:text-18 lg:font-medium lg:tracking-[0.4px]">
+				className="cursor-pointer lg:text-white sm:text-menu sm:text-24 sm:font-medium hover:text-accentGreen lg:text-18 lg:font-medium lg:tracking-[0.4px]">
 				{t("signin")}
 			</li>
-			<li className="mr-10 ml-10 text-white hidden lg:block">|</li>
 			<li
 				onClick={handleToggleSignup}
-				className="cursor-pointer lg:text-white sm:text-menu sm:text-24 sm:font-medium hover:text-activeMenu lg:text-18 lg:font-medium lg:tracking-[0.4px]">
+				className="cursor-pointer rounded-300 bg-accentGreen px-20 py-10 text-14 font-medium text-[#0A0A0A] transition-opacity hover:opacity-80 sm:text-24 lg:text-16 lg:tracking-[0.4px]">
 				{t("signup")}
 			</li>
 		</ul>

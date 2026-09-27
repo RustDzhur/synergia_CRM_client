@@ -73,7 +73,7 @@ export default function PaidPlan() {
 
 	return (
 		<div>
-			<h2 className="text-24 lg:text-36 font-medium text-center sm:mb-[29px] md:mb-30 lg:mb-[59px] text-textChoosePlan leading-[1.4] tracking-[0.48px] lg:tracking-[1px]">
+			<h2 className="text-24 lg:text-36 font-medium text-center sm:mb-[29px] md:mb-30 lg:mb-[59px] text-white leading-[1.4] tracking-[0.48px] lg:tracking-[1px]">
 				{t("choosePlan")}
 			</h2>
 			<div className="flex justify-center md:mb-[32px] lg:mb-[39px] sm:mb-[32px]">
