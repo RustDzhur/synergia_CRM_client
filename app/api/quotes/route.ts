@@ -6,6 +6,7 @@ import { badRequest, unauthorized } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
 import { cleanItems, computeTotals } from "@/lib/finance/totals";
+import { applyTaxPolicy } from "@/lib/finance/tax";
 import { toQuoteDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal } from "@/lib/deals";
@@ -37,13 +38,15 @@ export async function POST(req: Request) {
     const b = await req.json().catch(() => null);
     const customerName = typeof b?.customerName === "string" ? b.customerName.trim().slice(0, 200) : "";
     if (!customerName) return badRequest("customerName is required");
-    const items = cleanItems(b.items);
-    if (!items.length) return badRequest("At least one line item is required");
+    const rawItems = cleanItems(b.items);
+    if (!rawItems.length) return badRequest("At least one line item is required");
     await connectDB();
     const [settings, author, contact, company, deal] = await Promise.all([
         financeSettings(user.id), User.findById(user.userId).select("firstname lastname"),
         ownedContact(b.contact, user.id), ownedCompany(b.company, user.id), ownedDeal(b.deal, user.id),
     ]);
+    // ставку определяет фирма, а не браузер: освобождённая — 0 % во всех строках, иначе страна по умолчанию
+    const items = applyTaxPolicy(rawItems, settings);
     const number = await nextNumber(user.id, settings.quotePrefix || "AN");
     const today = new Date().toISOString().slice(0, 10);
     const validUntil = typeof b.validUntil === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.validUntil) ? b.validUntil : new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);

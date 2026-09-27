@@ -41,6 +41,11 @@ const InvoiceSchema = new Schema(
 
         issueDate: { type: String, required: true }, // "YYYY-MM-DD"
         dueDate: { type: String, default: "" },
+        // Дата поставки/услуги (§14 Abs. 4 Nr. 6 UStG) — обязательное поле немецкого счёта, печатается как Leistungsdatum.
+        // Если услуга оказывалась периодом, вместо даты печатается период (supplyPeriodFrom – supplyPeriodTo).
+        supplyDate: { type: String, default: "" },
+        supplyPeriodFrom: { type: String, default: "" },
+        supplyPeriodTo: { type: String, default: "" },
         notes: { type: String, default: "" },
         // Шаблон оформления PDF: у каждого документа он свой, чтобы счёт клиенту и договор могли выглядеть по-разному
         template: { type: String, default: "" },
@@ -53,6 +58,15 @@ const InvoiceSchema = new Schema(
 
         lastReminderAt: { type: Date },
         reminderCount: { type: Number, default: 0 }, // сколько напоминаний об оплате уже отправлено (lib/finance/reminders.ts)
+        // Манаведение (Mahnwesen): ступень напоминания и накопленные за неё сборы.
+        // Уровни: 0 — напоминаний не было, 1 — Zahlungserinnerung, 2 — 1. Mahnung, 3 — 2. Mahnung, 4 — letzte Mahnung.
+        dunningLevel: { type: Number, default: 0 },
+        dunningFee: { type: Number, default: 0 }, // сумма выставленных за напоминания сборов, без налога
+        // История напоминаний: что и когда ушло, чтобы клиентская переписка была воспроизводима
+        dunningLog: {
+            type: [new Schema({ level: Number, sentAt: Date, fee: Number, dueDate: String, method: String }, { _id: false })],
+            default: [],
+        },
         recurringSource: { type: Schema.Types.ObjectId, ref: "RecurringInvoice" }, // счёт создан автоматически по шаблону
 
         createdByName: { type: String, default: "" },

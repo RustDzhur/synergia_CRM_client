@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdPalette, MdDownload } from "react-icons/md";
+import { TbDownload, TbPalette } from "react-icons/tb";
 import Modal from "../shared/Modal";
 import TemplatePicker from "./TemplatePicker";
 import { downloadDocumentPdf, DocumentKind } from "./download";
@@ -48,22 +48,22 @@ export default function DocumentTemplateButton({ kind, id, number, template, onS
 
 	return (
 		<>
-			<button type="button" onClick={openDialog} className={className ?? "flex items-center gap-6 rounded-8 border border-[#E6E6E6] px-16 py-8 text-14 font-medium text-[#666666] transition-opacity hover:opacity-80"}>
-				<MdPalette size={16} /> {t("template")}
+			<button type="button" onClick={openDialog} className={className ?? "fs-btn fs-btn-ghost h-34"}>
+				<TbPalette size={15} /> {t("template")}
 			</button>
 
 			<Modal open={open} onClose={() => setOpen(false)} label={t("templateTitle")} className="w-full max-w-[860px]">
-				<div className="max-h-[90vh] overflow-y-auto rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
-					<h2 className="mb-6 text-20 font-medium text-black">{t("templateTitle")}</h2>
-					<p className="mb-16 text-14 text-[#999999]">{t("templateHint", { number })}</p>
+				<div className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
+					<h2 className="mb-6 text-16 font-semibold text-[#f1f4ee]">{t("templateTitle")}</h2>
+					<p className="mb-16 text-12 text-[#8c948b]">{t("templateHint", { number })}</p>
 					<TemplatePicker value={picked} onChange={setPicked} inherit={settingsTemplate} />
-					<p className="mt-12 text-14 text-[#B3B3B3]">{t("templateInherit", { name: picked ? t(`tpl_${picked}`) : t("templateFromSettings") })}</p>
-					<div className="mt-24 flex flex-wrap justify-end gap-12">
-						<button type="button" onClick={() => setPicked("")} className="mr-auto h-[44px] rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] hover:bg-gray">{t("templateReset")}</button>
-						<button type="button" disabled={busy} onClick={preview} className="flex h-[44px] items-center gap-6 rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] transition-opacity hover:opacity-80 disabled:opacity-60">
-							<MdDownload size={18} /> {t("preview")}
+					<p className="mt-12 text-11 text-[#9AA396]">{t("templateInherit", { name: picked ? t(`tpl_${picked}`) : t("templateFromSettings") })}</p>
+					<div className="mt-20 flex flex-wrap justify-end gap-10">
+						<button type="button" onClick={() => setPicked("")} className="fs-btn fs-btn-ghost mr-auto h-40">{t("templateReset")}</button>
+						<button type="button" disabled={busy} onClick={preview} className="fs-btn fs-btn-ghost h-40 disabled:opacity-60">
+							<TbDownload size={16} /> {t("preview")}
 						</button>
-						<button type="button" disabled={busy} onClick={save} className="h-[44px] rounded-8 bg-primaryColor px-24 text-16 font-medium text-white shadow-custom hover:opacity-80 disabled:opacity-60">{t("save")}</button>
+						<button type="button" disabled={busy} onClick={save} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{t("save")}</button>
 					</div>
 				</div>
 			</Modal>

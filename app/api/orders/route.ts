@@ -5,6 +5,8 @@ import { badRequest, unauthorized } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
 import { nextNumber } from "@/lib/finance/numbering";
 import { cleanItems, computeTotals } from "@/lib/finance/totals";
+import { applyTaxPolicy } from "@/lib/finance/tax";
+import { financeSettings } from "@/lib/finance/settings";
 import { toOrderDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal, ownedContract } from "@/lib/deals";
@@ -33,12 +35,15 @@ export async function POST(req: Request) {
     const b = await req.json().catch(() => null);
     const customerName = typeof b?.customerName === "string" ? b.customerName.trim().slice(0, 200) : "";
     if (!customerName) return badRequest("customerName is required");
-    const items = cleanItems(b.items);
+    const rawItems = cleanItems(b.items);
     await connectDB();
-    const [number, author, contact, company, deal, contract] = await Promise.all([
+    const [number, author, contact, company, deal, contract, settings] = await Promise.all([
         nextNumber(user.id, "SO"), User.findById(user.userId).select("firstname lastname"),
         ownedContact(b.contact, user.id), ownedCompany(b.company, user.id), ownedDeal(b.deal, user.id), ownedContract(b.contract, user.id),
+        financeSettings(user.id),
     ]);
+    // ставку определяет фирма, а не браузер: освобождённая — 0 % во всех строках, иначе страна по умолчанию
+    const items = applyTaxPolicy(rawItems, settings);
     const order = await Order.create({
         org: user.id, number, customerName, items,
         contact: contact || undefined, company: company || undefined, deal: deal || undefined, contract: contract || undefined,

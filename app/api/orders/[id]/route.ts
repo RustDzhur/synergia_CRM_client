@@ -4,6 +4,8 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
 import { cleanItems } from "@/lib/finance/totals";
+import { applyTaxPolicy } from "@/lib/finance/tax";
+import { financeSettings } from "@/lib/finance/settings";
 import { consumeForOrder } from "@/lib/finance/stock";
 import Order from "@/models/Order";
 import { toOrderDTO } from "@/lib/finance/dto";
@@ -34,7 +36,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!order) return notFound();
     if (LOCKED.includes(order.status) && (b.items !== undefined || b.customerName !== undefined)) return badRequest("This order is locked (already invoiced/closed/cancelled) and its items can no longer change");
 
-    if (b.items !== undefined) order.items = cleanItems(b.items) as any;
+    // правка строк подчиняется текущей налоговой политике фирмы, как и создание
+    if (b.items !== undefined) order.items = applyTaxPolicy(cleanItems(b.items), await financeSettings(user.id)) as any;
     if (typeof b.notes === "string") order.notes = b.notes.trim().slice(0, 2000);
     // пустая строка — «печатать оформление из настроек бухгалтерии», поэтому её тоже принимаем
     if (b.template === "") order.template = "";

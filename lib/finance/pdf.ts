@@ -13,40 +13,52 @@ const DOC_FONT = Buffer.from(notoSansUrl.slice(notoSansUrl.indexOf(",") + 1), "b
 
 // Какие бумаги рисует этот файл. Счёт и кредит-нота жили здесь и раньше, предложение/заказ/договор добавлены,
 // чтобы каждый финансовый документ можно было и скачать, и отправить клиенту одним и тем же рендером.
-export type DocKind = "invoice" | "credit_note" | "quote" | "order" | "contract";
+export type DocKind = "invoice" | "credit_note" | "quote" | "order" | "contract" | "delivery_note";
 
 // Небольшой словарь подписей PDF на трёх языках интерфейса — сам PDFKit не знает про next-intl (это не React-рендер),
 // поэтому подписи держим здесь же, минимальным набором, без обращения к messages/*.json.
 const LABELS: Record<string, Record<string, string>> = {
     en: {
         invoice: "Invoice", credit_note: "Credit Note", quote: "Quotation", order: "Order confirmation", contract: "Contract",
+        delivery_note: "Delivery note", deliveryDate: "Delivery date", ourOrder: "Our order",
+        level_1: "Payment reminder", level_2: "First reminder", level_3: "Second reminder", level_4: "Final reminder",
         creditFor: "Credit note for invoice",
         billTo: "Bill to", issueDate: "Issue date", dueDate: "Due date", date: "Date", orderDate: "Order date",
+        supplyDate: "Service date", supplyPeriod: "Service period",
+        dunningLevel: "Payment reminder", dunningFee: "Reminder fee", dunningNewDue: "New payment date",
         validUntil: "Valid until", startDate: "Start date", endDate: "End date", contractValue: "Contract value",
         description: "Description", qty: "Qty", unitPrice: "Unit price", tax: "Tax", lineTotal: "Total",
-        net: "Net", taxTotal: "Tax", gross: "Total",
+        net: "Net", taxTotal: "Tax", gross: "Total", taxOn: "on",
         smallBusiness: "No VAT is charged pursuant to the small business regulation (§19 UStG or equivalent).",
         paymentTerms: "Payment terms", days: "days", iban: "IBAN", bic: "BIC", notes: "Notes",
         seller: "Seller", payByQr: "Pay by QR code", qrHint: "Scan with your banking app",
     },
     de: {
         invoice: "Rechnung", credit_note: "Gutschrift", quote: "Angebot", order: "Auftragsbestätigung", contract: "Vertrag",
+        delivery_note: "Lieferschein", deliveryDate: "Lieferdatum", ourOrder: "Unsere Bestellung",
+        level_1: "Zahlungserinnerung", level_2: "1. Mahnung", level_3: "2. Mahnung", level_4: "Letzte Mahnung",
         creditFor: "Gutschrift zur Rechnung",
         billTo: "Rechnungsempfänger", issueDate: "Rechnungsdatum", dueDate: "Fällig am", date: "Datum", orderDate: "Bestelldatum",
+        supplyDate: "Leistungsdatum", supplyPeriod: "Leistungszeitraum",
+        dunningLevel: "Zahlungserinnerung", dunningFee: "Mahngebühr", dunningNewDue: "Neues Zahlungsziel",
         validUntil: "Gültig bis", startDate: "Beginn", endDate: "Ende", contractValue: "Vertragswert",
         description: "Beschreibung", qty: "Menge", unitPrice: "Einzelpreis", tax: "USt.", lineTotal: "Summe",
-        net: "Netto", taxTotal: "USt.", gross: "Gesamt",
+        net: "Netto", taxTotal: "USt.", gross: "Gesamt", taxOn: "auf",
         smallBusiness: "Gemäß §19 UStG (Kleinunternehmerregelung) wird keine Umsatzsteuer berechnet.",
         paymentTerms: "Zahlungsziel", days: "Tage", iban: "IBAN", bic: "BIC", notes: "Anmerkungen",
         seller: "Verkäufer", payByQr: "Zahlung per QR-Code", qrHint: "Mit der Banking-App scannen",
     },
     ua: {
         invoice: "Рахунок", credit_note: "Кредит-нота", quote: "Комерційна пропозиція", order: "Підтвердження замовлення", contract: "Договір",
+        delivery_note: "Видаткова накладна", deliveryDate: "Дата поставки", ourOrder: "Наше замовлення",
+        level_1: "Нагадування про оплату", level_2: "1-ше нагадування", level_3: "2-ге нагадування", level_4: "Останнє нагадування",
         creditFor: "Кредит-нота до рахунку",
         billTo: "Платник", issueDate: "Дата виставлення", dueDate: "Термін оплати", date: "Дата", orderDate: "Дата замовлення",
+        supplyDate: "Дата надання послуг", supplyPeriod: "Період надання послуг",
+        dunningLevel: "Нагадування про оплату", dunningFee: "Плата за нагадування", dunningNewDue: "Новий строк оплати",
         validUntil: "Дійсний до", startDate: "Початок", endDate: "Завершення", contractValue: "Сума договору",
         description: "Опис", qty: "К-сть", unitPrice: "Ціна", tax: "ПДВ", lineTotal: "Сума",
-        net: "Нетто", taxTotal: "ПДВ", gross: "Разом",
+        net: "Нетто", taxTotal: "ПДВ", gross: "Разом", taxOn: "на",
         smallBusiness: "ПДВ не нараховується згідно з режимом для малого підприємця (§19 UStG або аналог).",
         paymentTerms: "Термін оплати", days: "днів", iban: "IBAN", bic: "BIC", notes: "Примітки",
         seller: "Постачальник", payByQr: "Оплата за QR-кодом", qrHint: "Скануйте у банківському застосунку",
@@ -58,12 +70,19 @@ export interface PdfParty { name: string; address?: string; taxId?: string }
 export interface PdfDocumentData {
     kind: DocKind;
     number: string;
+    orderNumber?: string; // накладная: номер заказа, по которому она выписана
     creditForNumber?: string; // для kind "credit_note" — номер исправляемого счёта
     customer: PdfParty;
     items: PdfLineItem[]; // у договора позиций нет — вместо таблицы печатается сумма договора
     currency: string;
     smallBusinessNote?: boolean;
     issueDate?: string;
+    supplyDate?: string; // дата поставки/услуги (§14 Abs. 4 Nr. 6 UStG) — обязательна в немецком счёте
+    supplyPeriodFrom?: string; // если услуга оказывалась периодом: начало
+    supplyPeriodTo?: string; // и конец
+    dunningLevel?: number; // 0 — обычный счёт, 1..4 — напоминание соответствующей ступени
+    dunningFee?: number; // начисленные сборы за напоминания, без налога
+    dunningNewDue?: string; // новый срок оплаты, который даёт напоминание
     dueDate?: string; // счёт
     validUntil?: string; // предложение
     startDate?: string; // договор
@@ -74,6 +93,12 @@ export interface PdfDocumentData {
 }
 export interface PdfSettings {
     legalName: string; address: string; taxId: string; iban: string; bic: string; paymentTermsDays: number;
+    vatId?: string; // USt-IdNr. — отдельная строка, на немецком счёте печатается вместе с налоговым номером
+    logo?: string; // data-URL логотипа фирмы из настроек
+    phone?: string; email?: string; website?: string; // контактная строка в шапке
+    registerNumber?: string; // Handelsregister / ЄДРПОУ и т.п.
+    footerText?: string; // свой текст внизу документа: благодарность, условия, реквизиты
+    managingDirector?: string; // подпись/руководитель, как принято в немецких документах
     template?: string; // шаблон оформления по умолчанию для новых документов
     paymentQr?: boolean; // печатать ли QR-код на оплату в счетах
 }

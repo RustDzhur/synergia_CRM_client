@@ -6,7 +6,7 @@ import PeriodSelect from "./PeriodSelect";
 
 type Period = "month" | "week" | "year";
 
-const COLORS = { active: "#FFB02E", completed: "#0BD065", ended: "#F04333" } as const;
+const COLORS = { active: "#FFB02E", completed: "#C6FF4D", ended: "#F04333" } as const;
 
 function inPeriod(deadline: string | undefined, period: Period, now: Date): boolean {
 	if (!deadline) return false;
@@ -46,9 +46,9 @@ export default function TasksDonut({ tasks }: { tasks: Task[] }) {
 	let offset = 0;
 
 	return (
-		<section className="rounded-16 border border-[#F0F0F0] bg-white p-20 shadow-[0_2px_8px_rgba(0,0,0,0.16)] lg:p-25">
+		<section className="fs-card p-16 md:p-20">
 			<header className="flex items-center justify-between gap-12">
-				<h2 className="shrink-0 text-20 font-medium text-[#4D4D4D] lg:text-24">{t("tasksTitle")}</h2>
+				<h2 className="shrink-0 text-14 font-semibold text-[#f1f4ee]">{t("tasksTitle")}</h2>
 				<PeriodSelect<Period>
 					value={period}
 					onChange={setPeriod}
@@ -60,7 +60,7 @@ export default function TasksDonut({ tasks }: { tasks: Task[] }) {
 				/>
 			</header>
 
-			<ul className="mt-8 flex flex-wrap items-center justify-center gap-16 text-14 text-[#999999] md:text-16">
+			<ul className="mt-8 flex flex-wrap items-center justify-center gap-16 text-12 text-[#8c948b]">
 				{(["active", "completed", "ended"] as const).map((k) => (
 					<li key={k} className="flex items-center gap-6">
 						{t(k)}
@@ -72,7 +72,7 @@ export default function TasksDonut({ tasks }: { tasks: Task[] }) {
 			<div className="relative mx-auto mt-16 w-full max-w-[340px]">
 				<svg viewBox="0 0 320 320" className="w-full" role="img" aria-label={`${percent}%`}>
 					<g transform="rotate(-110 160 160)">
-						<circle cx="160" cy="160" r={R} fill="none" stroke="#EDEDED" strokeWidth="22" />
+						<circle cx="160" cy="160" r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="22" />
 						{segments.map((s) => {
 							const dashOffset = -offset;
 							offset += s.length + GAP;
@@ -95,7 +95,7 @@ export default function TasksDonut({ tasks }: { tasks: Task[] }) {
 				</svg>
 				<p
 					className="absolute inset-0 flex items-center justify-center text-[56px] font-bold leading-none md:text-[64px]"
-					style={{ color: total ? COLORS.completed : "#B3B3B3" }}>
+					style={{ color: total ? COLORS.completed : "#8C948B" }}>
 					{percent} %
 				</p>
 			</div>

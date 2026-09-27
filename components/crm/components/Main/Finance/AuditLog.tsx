@@ -17,14 +17,14 @@ export default function AuditLog() {
 	}, []);
 
 	if (entries === null) return null;
-	if (entries.length === 0) return <p className="rounded-16 bg-[#F5F7FC] p-30 text-center text-16 text-[#999999]">{t("auditEmpty")}</p>;
+	if (entries.length === 0) return <p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("auditEmpty")}</p>;
 
 	return (
 		<ul className="flex flex-col gap-8">
 			{entries.map((e) => (
-				<li key={e.id} className="flex flex-wrap items-center justify-between gap-8 rounded-12 bg-white px-16 py-12 shadow-heroImage">
-					<p className="text-14 text-[#333333]">{e.summary}</p>
-					<p className="shrink-0 text-12 text-[#999999]">{e.userName || "—"} · {new Date(e.createdAt).toLocaleString(locale === "ua" ? "uk" : locale)}</p>
+				<li key={e.id} className="flex flex-wrap items-center justify-between gap-8 fs-card px-16 py-12">
+					<p className="text-13 text-[#cfd4cb]">{e.summary}</p>
+					<p className="shrink-0 text-11 text-[#9AA396]">{e.userName || "—"} · {new Date(e.createdAt).toLocaleString(locale === "ua" ? "uk" : locale)}</p>
 				</li>
 			))}
 		</ul>

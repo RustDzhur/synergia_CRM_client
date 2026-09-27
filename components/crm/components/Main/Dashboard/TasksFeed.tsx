@@ -2,8 +2,8 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { MdSearch, MdTune } from "react-icons/md";
 import { Task } from "@/app/store/useTaskStore";
+import SearchBox from "../shared/SearchBox";
 import TaskCard from "./TaskCard";
 
 interface Props {
@@ -28,33 +28,22 @@ export default function TasksFeed({ tasks, selected, isLoading }: Props) {
 
 	return (
 		<section>
-			<div className="mb-16 flex flex-wrap items-center justify-between gap-16">
-				<h2 className="text-20 font-medium text-[#666666] md:text-24">{t("tasksTitle")}</h2>
-				<div className="flex h-[50px] w-full items-center justify-between rounded-8 border-2 border-[#E6E6E6] bg-white px-16 shadow-custom transition-colors focus-within:border-[#5EA8F5] sm:w-[350px]">
-					<input
-						value={query}
-						onChange={(e) => setQuery(e.target.value)}
-						placeholder={t("filterSearch")}
-						className="w-full text-16 outline-none placeholder:text-[#CCCCCC] md:text-18"
-					/>
-					<div className="flex shrink-0 items-center gap-10 text-[#CCCCCC]">
-						<MdSearch size={20} />
-						<MdTune size={20} />
-					</div>
-				</div>
+			<div className="mb-14 flex flex-wrap items-center justify-between gap-16">
+				<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("tasksTitle")}</h2>
+				<SearchBox value={query} onChange={setQuery} placeholder={t("filterSearch")} className="w-full sm:w-300" />
 			</div>
 
 			{visible.length === 0 ? (
-				<div className="rounded-16 border border-dashed border-[#CCCCCC] p-30 text-center">
-					<p className="text-16 text-[#999999]">{isLoading ? "…" : t("noTasks")}</p>
+				<div className="rounded-14 border border-dashed border-[rgba(255,255,255,0.12)] p-30 text-center">
+					<p className="text-13 text-[#8c948b]">{isLoading ? "…" : t("noTasks")}</p>
 					{!isLoading && (
-						<Link href={`/${locale}/crm/tasks`} className="mt-8 inline-block text-16 font-medium text-primaryColor hover:underline">
+						<Link href={`/${locale}/crm/tasks`} className="mt-8 inline-block text-13 font-medium text-[#c6ff4d] hover:underline">
 							{t("createTaskHint")}
 						</Link>
 					)}
 				</div>
 			) : (
-				<div className="flex flex-col gap-24">
+				<div className="flex flex-col gap-12">
 					{visible.map((task) => (
 						<TaskCard key={task._id} task={task} />
 					))}

@@ -28,25 +28,25 @@ export default function AdsCard() {
 	const item = items[Math.min(index, items.length - 1)];
 
 	return (
-		<section className="rounded-16 border border-[#F0F0F0] bg-white p-20 shadow-[0_2px_8px_rgba(0,0,0,0.16)] lg:p-25">
+		<section className="fs-card p-16 md:p-20">
 			<header className="flex flex-wrap items-center justify-between gap-12">
-				<h2 className="shrink-0 text-20 font-medium text-[#4D4D4D] lg:text-24">{t("title")}</h2>
-				<Link href={`/${locale}/crm/marketing`} className="text-16 font-medium text-primaryColor transition-opacity hover:opacity-80">{item ? t("details") : t("connectCta")}</Link>
+				<h2 className="shrink-0 text-14 font-semibold text-[#f1f4ee]">{t("title")}</h2>
+				<Link href={`/${locale}/crm/marketing`} className="text-12 font-semibold text-[#c6ff4d] transition-opacity hover:opacity-80">{item ? t("details") : t("connectCta")}</Link>
 			</header>
 			{!item ? (
-				<p className="mt-16 text-16 text-[#999999]">{t("none")}</p>
+				<p className="mt-14 text-13 text-[#8c948b]">{t("none")}</p>
 			) : (
 				<>
 					{items.length > 1 && (
 						<div className="mt-12 flex gap-8">
 							{items.map((it, i) => (
-								<button key={it.connection.id} type="button" onClick={() => setIndex(i)} aria-pressed={i === index} className={`rounded-8 px-12 py-[4px] text-14 transition-colors ${i === index ? "bg-primaryColor text-white" : "bg-[#F5F7FC] text-[#666666] hover:bg-gray"}`}>
+								<button key={it.connection.id} type="button" onClick={() => setIndex(i)} aria-pressed={i === index} className={`rounded-50 border px-12 py-[4px] text-12 transition-colors ${i === index ? "border-[#c6ff4d] bg-[#c6ff4d] text-[#0a0c0b]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
 									{t(it.connection.platform)}
 								</button>
 							))}
 						</div>
 					)}
-					<p className="mb-12 mt-12 text-14 text-[#999999]">{t("lastDays", { n: 30 })}</p>
+					<p className="mb-10 mt-10 text-12 text-[#8c948b]">{t("lastDays", { n: 30 })}</p>
 					<ItemStats item={item} locale={locale} compact />
 				</>
 			)}

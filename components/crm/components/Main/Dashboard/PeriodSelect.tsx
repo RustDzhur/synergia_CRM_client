@@ -1,7 +1,7 @@
 "use client";
 import React, { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { RiArrowDownSLine } from "react-icons/ri";
+import { TbChevronDown } from "react-icons/tb";
 import Dropdown from "@/app/utils/Dropdown";
 import { useClickOutside } from "@/app/utils/useClickOutside";
 
@@ -16,7 +16,7 @@ interface Props<T extends string> {
 	onChange: (value: T) => void;
 }
 
-// «Show: Monthly ⌄» из макета: синяя подпись, значение и выпадающий список периодов.
+// «Zeigen: Monatlich ⌄» — подпись акцентом, значение и выпадающий список периодов.
 export default function PeriodSelect<T extends string>({ value, options, onChange }: Props<T>) {
 	const t = useTranslations("dashboard");
 	const [open, setOpen] = useState(false);
@@ -30,13 +30,13 @@ export default function PeriodSelect<T extends string>({ value, options, onChang
 				type="button"
 				aria-expanded={open}
 				onClick={() => setOpen(!open)}
-				className="flex items-center gap-6 whitespace-nowrap text-16 md:text-18">
-				<span className="font-medium text-primaryColor">{t("show")}:</span>
-				<span className="text-[#4D4D4D]">{current?.label}</span>
-				<RiArrowDownSLine size={22} className={`text-[#4D4D4D] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+				className="flex items-center gap-6 whitespace-nowrap text-12">
+				<span className="font-medium text-[#c6ff4d]">{t("show")}:</span>
+				<span className="text-[#cfd4cb]">{current?.label}</span>
+				<TbChevronDown size={15} className={`text-[#8c948b] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
 			</button>
 			<Dropdown open={open} className="right-0 top-full mt-8 min-w-[160px]">
-				<ul className="overflow-hidden rounded-8 border border-[#E2F1F5] bg-white shadow-custom">
+				<ul className="fs-popover overflow-hidden py-4">
 					{options.map((o) => (
 						<li key={o.value}>
 							<button
@@ -45,8 +45,8 @@ export default function PeriodSelect<T extends string>({ value, options, onChang
 									onChange(o.value);
 									setOpen(false);
 								}}
-								className={`block w-full px-16 py-10 text-left text-16 transition-colors duration-150 hover:bg-gray ${
-									o.value === value ? "font-medium text-primaryColor" : "text-[#666666]"
+								className={`fs-popover-row block w-full px-14 py-10 text-left text-13 transition-colors duration-150 ${
+									o.value === value ? "font-medium text-[#c6ff4d]" : "text-[#cfd4cb]"
 								}`}>
 								{o.label}
 							</button>

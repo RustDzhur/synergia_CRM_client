@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdAdd, MdDownload } from "react-icons/md";
+import { TbDownload, TbPlus } from "react-icons/tb";
 import { useFinanceStore } from "@/app/store/useFinanceStore";
 import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
@@ -11,7 +11,7 @@ import { downloadDocumentPdf } from "./download";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
 
-const STATUS_COLOR: Record<string, string> = { draft: "#B3B3B3", active: "#0A8A2E", completed: "#5EA8F5", cancelled: "#EB5757" };
+const STATUS_COLOR: Record<string, string> = { draft: "#8c948b", active: "#c6ff4d", completed: "#5EA8F5", cancelled: "#eb5757" };
 const EMPTY = { customerName: "", value: "0", currency: "EUR", startDate: "", endDate: "", notes: "" };
 
 // Договоры: метаданные + статус (draft → active когда клиент подписал — событие contract_signed, на него можно
@@ -43,43 +43,46 @@ export default function Contracts() {
 
 	return (
 		<div>
-			<div className="mb-20 flex justify-end">
-				<button type="button" onClick={() => setOpen(true)} className="flex h-[44px] items-center gap-6 rounded-8 bg-primaryColor px-20 text-16 font-medium text-white shadow-custom hover:opacity-80">
-					<MdAdd size={20} /> {t("newContract")}
+			<div className="mb-16 flex justify-end">
+				<button type="button" onClick={() => setOpen(true)} className="fs-btn fs-btn-primary h-40">
+					<TbPlus size={16} /> {t("newContract")}
 				</button>
 			</div>
 			{contracts.length === 0 ? (
-				<p className="rounded-16 bg-[#F5F7FC] p-30 text-center text-16 text-[#999999]">{t("empty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("empty")}</p>
 			) : (
-				<ul className="flex flex-col gap-12">
+				<ul className="flex flex-col gap-10">
 					{contracts.map((c) => (
-						<li key={c.id} className="rounded-16 bg-white p-16 shadow-heroImage md:p-20">
+						<li key={c.id} className="fs-card p-14 md:p-18">
 							<div className="flex flex-wrap items-start justify-between gap-12">
 								<div className="min-w-0">
-									<p className="flex items-center gap-10 text-16 font-semibold text-[#333333]">
+									<p className="flex flex-wrap items-center gap-8 text-14 font-semibold text-[#f1f4ee]">
 										{c.number}
-										<span className="rounded-4 px-8 py-2 text-12 font-medium text-white" style={{ background: STATUS_COLOR[c.status] }}>{t(`cstatus_${c.status}`)}</span>
+										<span className="fs-chip h-22 gap-6 px-8 text-10">
+											<span className="h-6 w-6 rounded-50" style={{ background: STATUS_COLOR[c.status] }} />
+											{t(`cstatus_${c.status}`)}
+										</span>
 									</p>
-									<p className="mt-[4px] text-14 text-[#666666]">{c.customerName}{c.startDate ? ` · ${c.startDate}${c.endDate ? ` – ${c.endDate}` : ""}` : ""}</p>
+									<p className="mt-[4px] text-12 text-[#8c948b]">{c.customerName}{c.startDate ? ` · ${c.startDate}${c.endDate ? ` – ${c.endDate}` : ""}` : ""}</p>
 								</div>
-								{c.value > 0 && <p className="text-18 font-semibold text-[#333333]">{money(c.value, c.currency, locale)}</p>}
+								{c.value > 0 && <p className="text-15 font-semibold text-[#f1f4ee]">{money(c.value, c.currency, locale)}</p>}
 							</div>
-							<div className="mt-14 flex flex-wrap items-center gap-10">
+							<div className="mt-12 flex flex-wrap items-center gap-8">
 								{c.status === "draft" && (
 									<>
-										<button type="button" disabled={busy === c.id} onClick={() => act(c.id, signContract)} className="rounded-8 bg-primaryColor px-16 py-8 text-14 font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-[0.5]">{t("markSigned")}</button>
-										<button type="button" disabled={busy === c.id} onClick={() => setToDelete(c.id)} className="text-14 text-[#999999] hover:text-danger">{t("delete")}</button>
+										<button type="button" disabled={busy === c.id} onClick={() => act(c.id, signContract)} className="fs-btn fs-btn-primary h-34 disabled:opacity-[0.5]">{t("markSigned")}</button>
+										<button type="button" disabled={busy === c.id} onClick={() => setToDelete(c.id)} className="text-12 text-[#9AA396] transition-colors hover:text-danger">{t("delete")}</button>
 									</>
 								)}
 								{c.status === "active" && (
 									<>
-										<button type="button" disabled={busy === c.id} onClick={() => act(c.id, completeContract)} className="rounded-8 border border-[#0A8A2E] px-16 py-8 text-14 font-medium text-[#0A8A2E] transition-opacity hover:opacity-80 disabled:opacity-[0.5]">{t("markCompleted")}</button>
-										<button type="button" disabled={busy === c.id} onClick={() => act(c.id, cancelContract)} className="text-14 text-[#999999] hover:text-danger">{t("cancel")}</button>
+										<button type="button" disabled={busy === c.id} onClick={() => act(c.id, completeContract)} className="fs-btn fs-btn-ghost h-34 border-[rgba(198,255,77,0.4)] text-[#c6ff4d] disabled:opacity-[0.5]">{t("markCompleted")}</button>
+										<button type="button" disabled={busy === c.id} onClick={() => act(c.id, cancelContract)} className="text-12 text-[#9AA396] transition-colors hover:text-danger">{t("cancel")}</button>
 									</>
 								)}
-								{c.status === "active" && c.signedAt && <span className="text-14 text-[#999999]">{t("signedOn", { date: new Date(c.signedAt).toLocaleDateString(locale) })}</span>}
-								<button type="button" onClick={() => downloadContractPdf(c.id, c.number)} className="flex items-center gap-6 rounded-8 border border-[#E6E6E6] px-16 py-8 text-14 font-medium text-[#666666] transition-opacity hover:opacity-80">
-									<MdDownload size={16} /> {t("downloadPdf")}
+								{c.status === "active" && c.signedAt && <span className="text-12 text-[#9AA396]">{t("signedOn", { date: new Date(c.signedAt).toLocaleDateString(locale) })}</span>}
+								<button type="button" onClick={() => downloadContractPdf(c.id, c.number)} className="fs-btn fs-btn-ghost h-34">
+									<TbDownload size={15} /> {t("downloadPdf")}
 								</button>
 								<DocumentTemplateButton kind="contracts" id={c.id} number={c.number} template={c.template} onSave={updateContract} />
 							</div>
@@ -89,19 +92,19 @@ export default function Contracts() {
 			)}
 
 			<Modal open={open} onClose={() => setOpen(false)} label={t("newContract")} className="w-full max-w-[480px]">
-				<form onSubmit={submit} className="rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
-					<h2 className="mb-16 text-20 font-medium text-black">{t("newContract")}</h2>
-					<div className="flex flex-col gap-14">
+				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
+					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("newContract")}</h2>
+					<div className="flex flex-col gap-12">
 						<FormField label={t("customer")} value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} maxLength={200} autoFocus />
 						<FormField label={t("contractValue")} type="number" step="0.01" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} />
-						<div className="grid grid-cols-2 gap-14">
+						<div className="grid grid-cols-2 gap-12">
 							<FormField label={t("startDate")} type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
 							<FormField label={t("endDate")} type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
 						</div>
 					</div>
-					<div className="mt-24 flex justify-end gap-12">
-						<button type="button" onClick={() => setOpen(false)} className="h-[44px] rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] hover:bg-gray">{t("cancel")}</button>
-						<button type="submit" className="h-[44px] rounded-8 bg-primaryColor px-24 text-16 font-medium text-white shadow-custom hover:opacity-80">{t("save")}</button>
+					<div className="mt-20 flex justify-end gap-10">
+						<button type="button" onClick={() => setOpen(false)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
+						<button type="submit" className="fs-btn fs-btn-primary h-40">{t("save")}</button>
 					</div>
 				</form>
 			</Modal>

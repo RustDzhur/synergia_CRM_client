@@ -3,6 +3,8 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { cleanItems } from "@/lib/finance/totals";
+import { applyTaxPolicy } from "@/lib/finance/tax";
+import { financeSettings } from "@/lib/finance/settings";
 import Quote from "@/models/Quote";
 import { toQuoteDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
@@ -34,7 +36,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     let newItems: typeof quote.items | undefined;
     if (b.items !== undefined) {
-        const items = cleanItems(b.items);
+        // правка строк подчиняется текущей налоговой политике фирмы, как и создание
+        const items = applyTaxPolicy(cleanItems(b.items), await financeSettings(user.id));
         if (!items.length) return badRequest("At least one line item is required");
         newItems = items as any;
     }

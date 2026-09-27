@@ -16,14 +16,20 @@ export interface Order {
 	id: string; number: string; status: "draft" | "confirmed" | "fulfilled" | "invoiced" | "closed" | "cancelled";
 	contact: string; company: string; customerName: string; deal: string; contract: string;
 	items: LineItem[]; currency: string; notes: string; responsible: string; invoice: string; totals: Totals;
+	// Накладная (Lieferschein): номер присваивается при первой выписке, дата — фактической поставки
+	deliveryNoteNumber?: string; deliveryDate?: string;
 	template: string; createdAt: string; updatedAt: string;
 }
 export interface Invoice {
 	id: string; number: string; kind: "invoice" | "credit_note"; creditFor: string;
 	contact: string; company: string; customerName: string; customerAddress: string; customerTaxId: string;
 	deal: string; order: string; contract: string; items: LineItem[]; currency: string; smallBusinessNote: boolean;
-	issueDate: string; dueDate: string; notes: string; status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
+	issueDate: string; dueDate: string; notes: string;
+	// Дата/период оказания услуги — обязательное поле немецкого счёта (§14 Abs. 4 Nr. 6 UStG), в PDF печатается как Leistungsdatum
+	supplyDate: string; supplyPeriodFrom: string; supplyPeriodTo: string;
+	status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
 	sentAt: string; sentTo: string; paidAt: string; paidAmount: number;
+	dunningLevel?: number; dunningFee?: number; dunningLog?: { level: number; sentAt: string; fee: number; dueDate: string; method: string }[];
 	reminderCount: number; lastReminderAt: string; recurringSource: string;
 	template: string; totals: Totals; createdAt: string; updatedAt: string;
 }
@@ -55,6 +61,9 @@ export interface Contract {
 }
 export interface FinanceSettings {
 	country: string; currency: string; smallBusiness: boolean; legalName: string; address: string; taxId: string;
+	// Реквизиты и контакты для шапки документов, свой текст внизу и логотип (data-URL) — печатает lib/finance/layouts.ts
+	vatId: string; registerNumber: string; managingDirector: string; phone: string; email: string; website: string;
+	logo: string; footerText: string;
 	iban: string; bic: string; paymentTermsDays: number; invoicePrefix: string; quotePrefix: string;
 	creditNotePrefix: string; reminderIntervalDays: number;
 	// Оформление по умолчанию для всех документов и код оплаты на счетах; у отдельного документа шаблон свой

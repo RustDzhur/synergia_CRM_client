@@ -1,5 +1,5 @@
 import type PDFDocument from "pdfkit";
-import { computeTotals } from "./totals";
+import { computeTotals, taxBreakdown } from "./totals";
 import { epcPayload, qrMatrix } from "./qr";
 import { templateDef } from "./templates";
 export { TEMPLATES, TEMPLATE_IDS, isTemplate, templateDef } from "./templates";
@@ -30,15 +30,42 @@ type L = Record<string, string>;
 export function dateLines(d: PdfDocumentData, L: L): string[] {
     const out: string[] = [];
     const add = (label: string, value?: string) => { if (value) out.push(`${label}: ${value}`); };
-    if (d.kind === "invoice" || d.kind === "credit_note") { add(L.issueDate, d.issueDate); add(L.dueDate, d.dueDate); }
+    if (d.kind === "delivery_note") {
+        // В накладной важны дата поставки и ссылка на заказ, по которому она сделана
+        add(L.deliveryDate, d.supplyDate || d.issueDate);
+        add(L.ourOrder, d.orderNumber);
+    }
+    else if (d.kind === "invoice" || d.kind === "credit_note") { add(L.issueDate, d.issueDate); add(L.dueDate, d.dueDate); }
     else if (d.kind === "quote") { add(L.date, d.issueDate); add(L.validUntil, d.validUntil); }
     else if (d.kind === "order") { add(L.orderDate, d.issueDate); }
     else { add(L.startDate, d.startDate); add(L.endDate, d.endDate); }
+    // Период оказания услуг — обязательное поле счёта в Германии (§14 Abs. 4 Nr. 6 UStG):
+    // без него счёт формально неполный. Печатаем и в счёте, и в кредит-ноте, и в подтверждении заказа.
+    if (d.supplyPeriodFrom || d.supplyPeriodTo) {
+        add(L.supplyPeriod, [d.supplyPeriodFrom, d.supplyPeriodTo].filter(Boolean).join(" – "));
+    } else if (d.supplyDate) add(L.supplyDate, d.supplyDate);
+    // Напоминание всегда называет новый срок оплаты и, если он есть, начисленный сбор
+    if (d.dunningNewDue) add(L.dunningNewDue, d.dunningNewDue);
     return out;
 }
 
-const title = (d: PdfDocumentData, L: L) => `${L[d.kind]} ${d.number}`;
-const senderLines = (s: PdfSettings) => [s.legalName, s.address, s.taxId].filter(Boolean);
+// Заголовок документа. У счёта со ступенью напоминания вместо «Rechnung» печатается название ступени
+// («Zahlungserinnerung», «1. Mahnung»), иначе клиент не поймёт, что это уже не первый документ.
+const title = (d: PdfDocumentData, L: L) => {
+    const level = Number(d.dunningLevel) || 0;
+    if (d.kind === "invoice" && level > 0) return `${L[`level_${Math.min(4, level)}`] ?? L.invoice} ${d.number}`;
+    return `${L[d.kind]} ${d.number}`;
+};
+// Реквизиты продавца в шапке. Помимо названия, адреса и налогового номера печатаем контакты
+// и регистровый номер: в Германии счёт без обратного адреса и контактов продавца считается неполным.
+const senderLines = (s: PdfSettings) => [
+    s.legalName,
+    s.address,
+    s.taxId,
+    s.vatId ? `${s.vatId}` : "",
+    s.registerNumber,
+    [s.phone, s.email, s.website].filter(Boolean).join(" · "),
+].filter((v): v is string => !!v);
 const partyLines = (p: PdfParty) => [p.name || "—", p.address, p.taxId].filter(Boolean) as string[];
 // Срок оплаты печатаем только у счёта: предложение и заказ ещё не требуют платежа, договор живёт по своим датам
 const payerKind = (k: DocKind) => k === "invoice" || k === "credit_note";
@@ -120,10 +147,13 @@ function qrBlock(doc: Doc, qr: { payload: string; caption: string } | null, x: n
 interface TableOpts {
     x: number; width: number; accent: string; tint: string;
     size?: number; rowPad?: number; headerFill?: boolean; grid?: boolean; zebra?: boolean; border?: string;
+    noPrices?: boolean; // накладная: печатаем только наименование и количество
 }
 
 // Таблица позиций: опции делают её плотной (compact), с сеткой (boxed) или с акцентной шапкой (modern/twocol)
 function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts): number {
+    // В накладной цен нет по определению — решаем это здесь, а не в каждом из десяти шаблонов
+    if (d.kind === "delivery_note") o = { ...o, noPrices: true };
     const size = o.size ?? 10;
     const pad = o.rowPad ?? 6;
     const cols = { desc: o.x, qty: o.x + o.width - 245, price: o.x + o.width - 185, tax: o.x + o.width - 105, total: o.x + o.width - 65 };
@@ -133,9 +163,11 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
     const hy = y + pad / 2;
     text(doc, L.description, cols.desc, hy, { size: size - 1, color: headerColor });
     text(doc, L.qty, cols.qty, hy, { size: size - 1, color: headerColor, width: widths.qty, align: "right" });
-    text(doc, L.unitPrice, cols.price, hy, { size: size - 1, color: headerColor, width: widths.price, align: "right" });
-    text(doc, L.tax, cols.tax, hy, { size: size - 1, color: headerColor, width: widths.tax, align: "right" });
-    text(doc, L.lineTotal, cols.total, hy, { size: size - 1, color: headerColor, width: widths.total, align: "right" });
+    if (!o.noPrices) {
+        text(doc, L.unitPrice, cols.price, hy, { size: size - 1, color: headerColor, width: widths.price, align: "right" });
+        text(doc, L.tax, cols.tax, hy, { size: size - 1, color: headerColor, width: widths.tax, align: "right" });
+        text(doc, L.lineTotal, cols.total, hy, { size: size - 1, color: headerColor, width: widths.total, align: "right" });
+    }
     let top = y + size + pad;
     if (!o.headerFill) rule(doc, o.x, top - pad / 2, o.x + o.width, o.border ?? "#E6E6E6");
     let row = 0;
@@ -147,9 +179,12 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
         const ty = top + pad / 2;
         text(doc, it.description, cols.desc, ty, { size, color: "#333333", width: cols.qty - o.x - 6 });
         text(doc, String(it.qty), cols.qty, ty, { size, color: "#333333", width: widths.qty, align: "right" });
-        text(doc, fmt(it.unitPrice, d.currency), cols.price, ty, { size, color: "#333333", width: widths.price, align: "right" });
-        text(doc, `${it.taxRate}%`, cols.tax, ty, { size, color: "#333333", width: widths.tax, align: "right" });
-        text(doc, fmt(it.qty * it.unitPrice, d.currency), cols.total, ty, { size, color: "#333333", width: widths.total, align: "right" });
+        if (!o.noPrices) {
+            text(doc, fmt(it.unitPrice, d.currency), cols.price, ty, { size, color: "#333333", width: widths.price, align: "right" });
+            // у документа без налога в колонке ставки стоит прочерк: печатать там 19 % при нулевом налоге — противоречие
+            text(doc, d.smallBusinessNote ? "—" : `${it.taxRate}%`, cols.tax, ty, { size, color: "#333333", width: widths.tax, align: "right" });
+            text(doc, fmt(it.qty * it.unitPrice, d.currency), cols.total, ty, { size, color: "#333333", width: widths.total, align: "right" });
+        }
         top += h;
         row++;
     }
@@ -159,10 +194,21 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
 
 // Итоги: нетто, налог (кроме пометки малого бизнеса) и итог. В рамке, на подложке или просто справа — по шаблону.
 function totalsBlock(doc: Doc, d: PdfDocumentData, L: L, totals: ReturnType<typeof computeTotals>, x: number, y: number, w: number, o: { accent: string; tint: string; boxed?: boolean; size?: number; grid?: boolean }) {
+    // У накладной нет сумм: это документ о передаче товара, а не о деньгах
+    if (d.kind === "delivery_note") return y;
     const size = o.size ?? 10;
+    const breakdown = taxBreakdown(d.items, { exempt: totals.exempt });
     const rows: [string, string, boolean][] = [[L.net, fmt(totals.net, d.currency), false]];
-    if (!d.smallBusinessNote) rows.push([L.taxTotal, fmt(totals.tax, d.currency), false]);
-    rows.push([L.gross, fmt(totals.gross, d.currency), true]);
+    // Освобождённый документ: строки налога нет вовсе, итог равен нетто (считает computeTotals).
+    // Документ с налогом: печатаем сумму по КАЖДОЙ ставке — при смешанных 19 % и 7 % одной общей
+    // цифры недостаточно, этого требует §14 Abs. 4 Nr. 8 UStG.
+    if (!totals.exempt) {
+        if (breakdown.length <= 1) rows.push([L.taxTotal, fmt(totals.tax, d.currency), false]);
+        else for (const b of breakdown) rows.push([`${L.taxTotal} ${b.rate}% ${L.taxOn} ${fmt(b.net, d.currency)}`, fmt(b.tax, d.currency), false]);
+    }
+    const dunningFee = Number(d.dunningFee) || 0;
+    if (dunningFee > 0) rows.push([L.dunningFee, fmt(dunningFee, d.currency), false]);
+    rows.push([L.gross, fmt(totals.gross + dunningFee, d.currency), true]);
     const lineH = size + 7;
     const h = rows.length * lineH + 12;
     const top = y + 8;
@@ -191,8 +237,39 @@ function footerBlocks(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, x: num
         cy += text(doc, d.notes, x, cy, { size, color: o.color ?? "#666666", width, align }) + 6;
     }
     if (payerKind(d.kind)) cy += text(doc, `${L.paymentTerms}: ${s.paymentTermsDays} ${L.days}`, x, cy, { size, color: "#999999", width, align }) + 2;
-    if (s.iban) text(doc, `${L.iban}: ${s.iban}${s.bic ? `   ${L.bic}: ${s.bic}` : ""}`, x, cy, { size, color: "#999999", width, align });
+    if (s.iban) cy += text(doc, `${L.iban}: ${s.iban}${s.bic ? `   ${L.bic}: ${s.bic}` : ""}`, x, cy, { size, color: "#999999", width, align }) + 2;
+    // Свой текст фирмы (благодарность за своевременную оплату, условия гарантии, часы работы)
+    if (s.footerText) cy += text(doc, s.footerText, x, cy, { size, color: o.color ?? "#666666", width, align }) + 4;
+    if (s.managingDirector) cy += text(doc, s.managingDirector, x, cy, { size, color: "#999999", width, align });
     return cy;
+}
+
+// Логотип фирмы в правом верхнем углу — на полосе шапки, выше первой строки реквизитов.
+// Высота ограничена, ширина считается по пропорциям картинки, поэтому широкий логотип не залезет на текст слева.
+const LOGO_MAX_H = 44;
+const LOGO_MAX_W = 160;
+function logoBlock(doc: Doc, s: PdfSettings, t: TemplateDef) {
+    if (!s.logo?.startsWith("data:image/")) return;
+    try {
+        const buf = Buffer.from(s.logo.slice(s.logo.indexOf(",") + 1), "base64");
+        // pdfkit умеет openImage в рантайме, но его нет в типах — считаем размеры через fit:
+        // сначала узнаём пропорции на «примерочной» вставке, затем ставим картинку по правому краю.
+        const probe = doc as unknown as { openImage: (b: Buffer) => { width: number; height: number } };
+        const img = probe.openImage(buf);
+        if (!img?.width || !img?.height) return;
+        const scale = Math.min(LOGO_MAX_H / img.height, LOGO_MAX_W / img.width);
+        const iw = img.width * scale;
+        const ih = img.height * scale;
+        doc.image(buf, doc.page.width - t.margin - iw, t.margin - 6, { width: iw, height: ih });
+    } catch { /* битая картинка не должна ронять печать счёта */ }
+}
+
+// Копирайт-строка фирмы в самом низу страницы — вне блоков шаблона, чтобы не мешать подписям и QR.
+function footerBrand(doc: Doc, s: PdfSettings, t: TemplateDef) {
+    const y = doc.page.height - 34;
+    const line = [s.legalName, s.registerNumber, s.taxId, s.vatId].filter(Boolean).join(" · ");
+    if (!line) return;
+    text(doc, line, t.margin, y, { size: 7, color: "#B3B3B3", width: doc.page.width - t.margin * 2, align: "center" });
 }
 
 // --- шаблоны -------------------------------------------------------------------------------------------
@@ -485,7 +562,12 @@ const LAYOUTS: Record<string, (doc: Doc, d: PdfDocumentData, s: PdfSettings, L: 
 // Точка входа: считает суммы, решает, нужен ли QR на оплату, и отдаёт документ выбранному шаблону
 export function renderLayout(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L) {
     const t = templateDef(d.template || s.template);
-    const totals = computeTotals(d.items);
-    const qr = (s.paymentQr ?? true) ? qrPayloadFor(d, s, L, totals.gross) : null;
+    // Освобождение от налога считается здесь же: и в итогах, и в сумме QR-кода должна стоять одна и та же цифра.
+    const totals = computeTotals(d.items, { exempt: !!d.smallBusinessNote });
+    // В сумму к оплате входит и сбор за напоминание — иначе клиент заплатит меньше, чем должен
+    const dueTotal = totals.gross + (Number(d.dunningFee) || 0);
+    const qr = (s.paymentQr ?? true) ? qrPayloadFor(d, s, L, dueTotal) : null;
+    logoBlock(doc, s, t);
     (LAYOUTS[t.id] ?? classic)(doc, d, s, L, t, totals, qr);
+    footerBrand(doc, s, t);
 }

@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
+import { applyTaxPolicy } from "@/lib/finance/tax";
 import Invoice from "@/models/Invoice";
 import { isTemplate } from "@/lib/finance/pdf";
 import { toInvoiceDTO } from "@/lib/finance/dto";
@@ -27,7 +28,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         org: user.id, number, kind: "invoice",
         contact: source.contact, company: source.company,
         customerName: source.customerName, customerAddress: source.customerAddress, customerTaxId: source.customerTaxId,
-        items: source.items, currency: source.currency, smallBusinessNote: source.smallBusinessNote,
+        items: applyTaxPolicy(source.items, settings), currency: source.currency, smallBusinessNote: !!settings.smallBusiness,
         issueDate: today, dueDate: due, notes: source.notes, template: source.template,
     });
     return NextResponse.json(toInvoiceDTO(copy), { status: 201 });

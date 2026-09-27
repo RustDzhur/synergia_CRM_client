@@ -19,9 +19,18 @@ export const toPdfSettings = (s: any): PdfSettings => ({
     legalName: s?.legalName ?? "",
     address: s?.address ?? "",
     taxId: s?.taxId ?? "",
+    // Налоговый номер и USt-IdNr. — разные строки: на немецком счёте обычно указывают оба
+    vatId: s?.vatId ?? "",
     iban: s?.iban ?? "",
     bic: s?.bic ?? "",
     paymentTermsDays: Number(s?.paymentTermsDays) || 0,
+    phone: s?.phone ?? "",
+    email: s?.email ?? "",
+    website: s?.website ?? "",
+    registerNumber: s?.registerNumber ?? "",
+    managingDirector: s?.managingDirector ?? "",
+    logo: s?.logo ?? "",
+    footerText: s?.footerText ?? "",
     template: isTemplate(s?.template) ? s.template : undefined,
     paymentQr: s?.paymentQr !== false, // по умолчанию код на оплату печатается
 });
@@ -71,7 +80,14 @@ export async function invoicePdfBuffer(org: string, inv: any, locale: string, te
             currency: inv.currency,
             smallBusinessNote: !!inv.smallBusinessNote,
             issueDate: inv.issueDate,
+            supplyDate: inv.supplyDate,
+            supplyPeriodFrom: inv.supplyPeriodFrom,
+            supplyPeriodTo: inv.supplyPeriodTo,
             dueDate: inv.dueDate,
+            // Ступень манаведения и начисленный сбор попадают и в заголовок документа, и в сумму к оплате
+            dunningLevel: Number(inv.dunningLevel) || 0,
+            dunningFee: Number(inv.dunningFee) || 0,
+            dunningNewDue: Number(inv.dunningLevel) > 0 ? new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10) : undefined,
             notes: inv.notes,
             template: template ?? pdfTemplate(inv.template),
         },
@@ -111,6 +127,29 @@ export async function orderPdfBuffer(org: string, o: any, locale: string, templa
             issueDate: o.createdAt ? new Date(o.createdAt).toISOString().slice(0, 10) : "",
             notes: o.notes,
             template: template ?? pdfTemplate(o.template),
+        },
+        toPdfSettings(settings),
+        pdfLocale(locale)
+    );
+}
+
+// Накладная (Lieferschein): выписывается по заказу, цен не содержит — только что и сколько передано.
+// Номер присваивается один раз при первой выписке (см. app/api/orders/[id]/delivery-note/route.ts),
+// поэтому повторная печать даёт тот же документ, а не новый номер.
+export async function deliveryNotePdfBuffer(org: string, order: any, locale: string, template?: string): Promise<Buffer> {
+    const settings = await financeSettings(org);
+    return renderDocumentPdf(
+        {
+            kind: "delivery_note",
+            number: order.deliveryNoteNumber || order.number,
+            orderNumber: order.number,
+            customer: await customerParty(org, order),
+            items: toPdfItems(order.items),
+            currency: order.currency,
+            // Дата поставки: если её не указали, берём сегодняшнюю — накладная всегда про состоявшуюся передачу
+            supplyDate: order.deliveryDate || new Date().toISOString().slice(0, 10),
+            notes: order.notes,
+            template: template ?? pdfTemplate(order.template),
         },
         toPdfSettings(settings),
         pdfLocale(locale)

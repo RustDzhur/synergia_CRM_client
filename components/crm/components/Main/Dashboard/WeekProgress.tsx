@@ -1,7 +1,7 @@
 "use client";
 import React, { useMemo, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { MdCalendarMonth } from "react-icons/md";
+import { TbCalendarEvent } from "react-icons/tb";
 import { Task } from "@/app/store/useTaskStore";
 import { addDays, dayKey, localeTag, parseDayKey, startOfWeek } from "@/app/utils/dateHelpers";
 
@@ -29,26 +29,26 @@ export default function WeekProgress({ tasks, selected, onSelect }: Props) {
 	const month = day.toLocaleDateString(tag, { month: "long" });
 
 	return (
-		<section className="md:rounded-16 md:border md:border-[#F0F0F0] md:bg-white md:p-30 md:shadow-[0_2px_8px_rgba(0,0,0,0.16)]">
-			<div className="flex flex-wrap items-center justify-between gap-12 text-16 text-[#999999] md:text-18">
+		<section className="fs-card p-16 md:p-20">
+			<div className="flex flex-wrap items-center justify-between gap-12 text-13 text-[#8c948b]">
 				<p>
 					{t.rich("progress", {
 						done,
 						total,
-						b: (chunks) => <span className="text-primaryColor">{chunks}</span>,
+						b: (chunks) => <span className="font-medium text-[#c6ff4d]">{chunks}</span>,
 					})}
 				</p>
 				<div className="flex items-center gap-8">
-					<span className="font-medium text-primaryColor">{t("date")}</span>
-					<span className="text-[#666666]">
+					<span className="font-medium text-[#c6ff4d]">{t("date")}</span>
+					<span className="text-[#cfd4cb]">
 						{day.toLocaleDateString(tag, { day: "numeric", month: "long", year: "numeric" })}
 					</span>
 					<button
 						type="button"
 						aria-label={t("pickDate")}
 						onClick={() => dateInput.current?.showPicker?.()}
-						className="relative text-[#666666] transition-colors hover:text-primaryColor">
-						<MdCalendarMonth size={24} />
+						className="relative text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
+						<TbCalendarEvent size={17} />
 						<input
 							ref={dateInput}
 							type="date"
@@ -62,19 +62,20 @@ export default function WeekProgress({ tasks, selected, onSelect }: Props) {
 			</div>
 
 			<div
-				className="mt-16 h-[8px] w-full overflow-hidden rounded-50 bg-[#D9D9D9]"
+				className="mt-14 h-6 w-full overflow-hidden rounded-50 bg-[rgba(255,255,255,0.10)]"
 				role="progressbar"
 				aria-valuenow={percent}
 				aria-valuemin={0}
 				aria-valuemax={100}>
-				<div className="h-full rounded-50 bg-primaryColor transition-[width] duration-500 ease-out" style={{ width: `${percent}%` }} />
+				<div className="h-full rounded-50 bg-[#c6ff4d] transition-[width] duration-500 ease-out" style={{ width: `${percent}%` }} />
 			</div>
 
-			<p className="mt-20 text-16 text-[#4D4D4D] md:text-18">
-				<span className="font-medium capitalize text-primaryColor">{month}</span>, {day.getFullYear()}
+			<p className="mt-18 text-13 text-[#8c948b]">
+				<span className="font-medium capitalize text-[#c6ff4d]">{month}</span>, {day.getFullYear()}
 			</p>
 
-			<div className="mt-16 flex gap-8 overflow-x-auto pb-6 [scrollbar-width:none] md:gap-10 [&::-webkit-scrollbar]:hidden">
+			{/* Полоска недели: выбранный день залит акцентом, остальные — контурные плитки */}
+			<div className="mt-12 flex gap-8 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 				{week.map((d) => {
 					const key = dayKey(d);
 					const active = key === selected;
@@ -84,11 +85,13 @@ export default function WeekProgress({ tasks, selected, onSelect }: Props) {
 							type="button"
 							aria-pressed={active}
 							onClick={() => onSelect(key)}
-							className={`flex h-[70px] min-w-[60px] flex-1 flex-col items-center justify-center rounded-4 text-18 font-medium leading-tight shadow-custom transition-colors duration-200 md:text-24 ${
-								active ? "bg-primaryColor text-white" : "bg-white text-[#CCCCCC] hover:text-primaryColor"
+							className={`flex h-64 min-w-56 flex-1 flex-col items-center justify-center gap-2 rounded-12 border text-14 font-medium leading-tight transition-colors duration-200 ${
+								active
+									? "border-[#c6ff4d] bg-[#c6ff4d] text-[#0a0c0b]"
+									: "border-inkLine bg-[rgba(255,255,255,0.02)] text-[#8c948b] hover:border-[rgba(255,255,255,0.18)] hover:text-[#f1f4ee]"
 							}`}>
-							<span className="capitalize">{d.toLocaleDateString(tag, { weekday: "short" })}</span>
-							<span>{d.getDate()}</span>
+							<span className="capitalize text-11">{d.toLocaleDateString(tag, { weekday: "short" })}</span>
+							<span className="text-18">{d.getDate()}</span>
 						</button>
 					);
 				})}

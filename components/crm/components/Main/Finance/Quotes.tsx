@@ -2,8 +2,9 @@
 import React, { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdAdd, MdDownload } from "react-icons/md";
+import { TbDownload, TbPlus } from "react-icons/tb";
 import { LineItem, useFinanceStore } from "@/app/store/useFinanceStore";
+import { defaultRateFor } from "@/lib/finance/tax";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
@@ -11,8 +12,9 @@ import { downloadDocumentPdf } from "./download";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
 
-const STATUS_COLOR: Record<string, string> = { draft: "#B3B3B3", sent: "#5EA8F5", accepted: "#0A8A2E", declined: "#EB5757", expired: "#999999" };
-const EMPTY_ITEM: LineItem = { description: "", qty: 1, unitPrice: 0, taxRate: 0 };
+const STATUS_COLOR: Record<string, string> = { draft: "#8c948b", sent: "#5EA8F5", accepted: "#c6ff4d", declined: "#eb5757", expired: "#9AA396" };
+// Пустая строка предложения: не жёсткий 0, а ставка фирмы по умолчанию (lib/finance/tax.ts) — страна из настроек или 0 у освобождённых
+const emptyItem = (taxRate: number): LineItem => ({ description: "", qty: 1, unitPrice: 0, taxRate });
 
 export interface QuotePrefill { dealId: string; customerName: string; contact?: string; company?: string }
 
@@ -22,9 +24,10 @@ export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: str
 	const t = useTranslations("finance");
 	const locale = useLocale();
 	const { quotes, products, loadQuotes, loadProducts, createQuote, updateQuote, sendQuote, decideQuote, quoteToOrder, settings } = useFinanceStore();
+	const defaultTaxRate = defaultRateFor(settings ?? {});
 	const [open, setOpen] = useState(false);
 	const [customerName, setCustomerName] = useState("");
-	const [items, setItems] = useState<LineItem[]>([{ ...EMPTY_ITEM }]);
+	const [items, setItems] = useState<LineItem[]>([emptyItem(defaultTaxRate)]);
 	const [busy, setBusy] = useState<string | null>(null);
 	const [dealLink, setDealLink] = useState<{ deal?: string; contact?: string; company?: string }>({});
 	const [historyOpen, setHistoryOpen] = useState<Set<string>>(new Set());
@@ -34,6 +37,12 @@ export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: str
 	const toggleHistory = (id: string) => setHistoryOpen((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
 	useEffect(() => { loadQuotes(); loadProducts(); }, [loadQuotes, loadProducts]);
+	// Настройки бухгалтерии приходят асинхронно (их грузит раздел Finance): нетронутую первую строку досеиваем
+	// ставкой фирмы, когда они загрузятся, — предложение из карточки сделки открывается сразу, ещё до ответа настроек
+	useEffect(() => {
+		if (!settings) return;
+		setItems((cur) => cur.map((it) => (!it.description && !it.product && !it.unitPrice ? { ...it, taxRate: defaultRateFor(settings) } : it)));
+	}, [settings]);
 
 	// пришли из карточки сделки (CRM → Deal → "Create Quote") — открываем форму сразу заполненной и со связью на сделку
 	useEffect(() => {
@@ -51,7 +60,7 @@ export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: str
 		const err = await createQuote({ customerName: customerName.trim(), items: cleanItems, currency: settings?.currency || "EUR", ...dealLink } as any);
 		if (err) return toast.error(err);
 		toast.success(t("saved"));
-		setOpen(false); setCustomerName(""); setItems([{ ...EMPTY_ITEM }]); setDealLink({});
+		setOpen(false); setCustomerName(""); setItems([emptyItem(defaultTaxRate)]); setDealLink({});
 	}
 	async function send(id: string, to?: string) {
 		setBusy(id);
@@ -84,58 +93,61 @@ export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: str
 
 	return (
 		<div>
-			<div className="mb-20 flex justify-end">
-				<button type="button" onClick={() => setOpen(true)} className="flex h-[44px] items-center gap-6 rounded-8 bg-primaryColor px-20 text-16 font-medium text-white shadow-custom hover:opacity-80">
-					<MdAdd size={20} /> {t("newQuote")}
+			<div className="mb-16 flex justify-end">
+				<button type="button" onClick={() => setOpen(true)} className="fs-btn fs-btn-primary h-40">
+					<TbPlus size={16} /> {t("newQuote")}
 				</button>
 			</div>
 			{quotes.length === 0 ? (
-				<p className="rounded-16 bg-[#F5F7FC] p-30 text-center text-16 text-[#999999]">{t("empty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("empty")}</p>
 			) : (
-				<ul className="flex flex-col gap-12">
+				<ul className="flex flex-col gap-10">
 					{quotes.map((q) => (
-						<li key={q.id} className="rounded-16 bg-white p-16 shadow-heroImage md:p-20">
+						<li key={q.id} className="fs-card p-14 md:p-18">
 							<div className="flex flex-wrap items-start justify-between gap-12">
 								<div className="min-w-0">
-									<p className="flex items-center gap-10 text-16 font-semibold text-[#333333]">
+									<p className="flex flex-wrap items-center gap-8 text-14 font-semibold text-[#f1f4ee]">
 										{q.number}
-										<span className="rounded-4 px-8 py-2 text-12 font-medium text-white" style={{ background: STATUS_COLOR[q.status] }}>{t(`qstatus_${q.status}`)}</span>
+										<span className="fs-chip h-22 gap-6 px-8 text-10">
+											<span className="h-6 w-6 rounded-50" style={{ background: STATUS_COLOR[q.status] }} />
+											{t(`qstatus_${q.status}`)}
+										</span>
 										{q.version > 1 && (
-											<button type="button" onClick={() => toggleHistory(q.id)} className="rounded-4 border border-[#E6E6E6] px-8 py-2 text-12 font-medium text-[#999999] hover:text-primaryColor">
+											<button type="button" onClick={() => toggleHistory(q.id)} className="fs-chip h-22 px-8 text-10 transition-colors hover:border-[rgba(255,255,255,0.20)] hover:text-[#f1f4ee]">
 												v{q.version} · {t("history")}
 											</button>
 										)}
 									</p>
-									<p className="mt-[4px] text-14 text-[#666666]">{q.customerName} · {t("validUntil")}: {q.validUntil}</p>
+									<p className="mt-[4px] text-12 text-[#8c948b]">{q.customerName} · {t("validUntil")}: {q.validUntil}</p>
 								</div>
-								<p className="text-18 font-semibold text-[#333333]">{money(q.totals.gross, q.currency, locale)}</p>
+								<p className="text-15 font-semibold text-[#f1f4ee]">{money(q.totals.gross, q.currency, locale)}</p>
 							</div>
 							{historyOpen.has(q.id) && q.versions.length > 0 && (
-								<ul className="mt-10 flex flex-col gap-6 rounded-8 bg-[#F5F7FC] p-10">
+								<ul className="mt-10 flex flex-col gap-6 rounded-10 border border-inkLineSoft bg-[rgba(255,255,255,0.02)] p-10">
 									{[...q.versions].reverse().map((v) => (
-										<li key={v.version} className="flex items-center justify-between text-12 text-[#999999]">
+										<li key={v.version} className="flex items-center justify-between text-11 text-[#9AA396]">
 											<span>v{v.version} · {v.customerName} · {new Date(v.savedAt).toLocaleString(locale === "ua" ? "uk" : locale)}</span>
-											<span className="font-medium text-[#666666]">{money(v.totals.gross, v.currency, locale)}</span>
+											<span className="font-medium text-[#8c948b]">{money(v.totals.gross, v.currency, locale)}</span>
 										</li>
 									))}
 								</ul>
 							)}
-							<div className="mt-14 flex flex-wrap items-center gap-10">
-								{q.status === "draft" && <button type="button" disabled={busy === q.id} onClick={() => send(q.id)} className="rounded-8 bg-primaryColor px-16 py-8 text-14 font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-[0.5]">{t("send")}</button>}
-								<button type="button" onClick={() => downloadPdf(q.id, q.number)} className="flex items-center gap-6 rounded-8 border border-[#E6E6E6] px-16 py-8 text-14 font-medium text-[#666666] transition-opacity hover:opacity-80">
-									<MdDownload size={16} /> {t("downloadPdf")}
+							<div className="mt-12 flex flex-wrap items-center gap-8">
+								{q.status === "draft" && <button type="button" disabled={busy === q.id} onClick={() => send(q.id)} className="fs-btn fs-btn-primary h-34 disabled:opacity-[0.5]">{t("send")}</button>}
+								<button type="button" onClick={() => downloadPdf(q.id, q.number)} className="fs-btn fs-btn-ghost h-34">
+									<TbDownload size={15} /> {t("downloadPdf")}
 								</button>
 								<DocumentTemplateButton kind="quotes" id={q.id} number={q.number} template={q.template} onSave={updateQuote} />
 								{q.status === "sent" && (
 									<>
-										<button type="button" disabled={busy === q.id} onClick={() => decide(q.id, true)} className="rounded-8 border border-[#0A8A2E] px-16 py-8 text-14 font-medium text-[#0A8A2E] transition-opacity hover:opacity-80 disabled:opacity-[0.5]">{t("markAccepted")}</button>
-										<button type="button" disabled={busy === q.id} onClick={() => decide(q.id, false)} className="rounded-8 border border-danger px-16 py-8 text-14 font-medium text-danger transition-opacity hover:opacity-80 disabled:opacity-[0.5]">{t("markDeclined")}</button>
+										<button type="button" disabled={busy === q.id} onClick={() => decide(q.id, true)} className="fs-btn fs-btn-ghost h-34 border-[rgba(198,255,77,0.4)] text-[#c6ff4d] disabled:opacity-[0.5]">{t("markAccepted")}</button>
+										<button type="button" disabled={busy === q.id} onClick={() => decide(q.id, false)} className="fs-btn fs-btn-ghost h-34 border-[rgba(235,87,87,0.35)] text-danger disabled:opacity-[0.5]">{t("markDeclined")}</button>
 									</>
 								)}
 								{q.status === "accepted" && !q.order && (
-									<button type="button" disabled={busy === q.id} onClick={() => toOrder(q.id)} className="rounded-8 border border-[#5EA8F5] px-16 py-8 text-14 font-medium text-primaryColor transition-opacity hover:opacity-80 disabled:opacity-[0.5]">{t("makeOrder")}</button>
+									<button type="button" disabled={busy === q.id} onClick={() => toOrder(q.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]">{t("makeOrder")}</button>
 								)}
-								{q.order && <button type="button" onClick={() => onOpenOrder(q.order)} className="text-14 font-medium text-primaryColor hover:underline">{t("viewOrder")}</button>}
+								{q.order && <button type="button" onClick={() => onOpenOrder(q.order)} className="fs-link">{t("viewOrder")}</button>}
 							</div>
 						</li>
 					))}
@@ -143,16 +155,16 @@ export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: str
 			)}
 
 			<Modal open={open} onClose={() => { setOpen(false); setDealLink({}); }} label={t("newQuote")} className="w-full max-w-[640px]">
-				<form onSubmit={submit} className="max-h-[90vh] overflow-y-auto rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
-					<h2 className="mb-16 text-20 font-medium text-black">{t("newQuote")}</h2>
-					{dealLink.deal && <p className="mb-16 rounded-8 bg-[#F5F7FC] px-12 py-8 text-14 text-[#666666]">{t("linkedToDeal")}</p>}
+				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
+					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("newQuote")}</h2>
+					{dealLink.deal && <p className="mb-14 rounded-10 border border-inkLineSoft bg-[rgba(255,255,255,0.02)] px-12 py-8 text-12 text-[#8c948b]">{t("linkedToDeal")}</p>}
 					<div className="mb-16">
 						<FormField label={t("customer")} value={customerName} onChange={(e) => setCustomerName(e.target.value)} maxLength={200} autoFocus />
 					</div>
 					<LineItemsEditor items={items} onChange={setItems} products={products.filter((p) => !p.archived)} currency={settings?.currency ?? "EUR"} />
-					<div className="mt-24 flex justify-end gap-12">
-						<button type="button" onClick={() => { setOpen(false); setDealLink({}); }} className="h-[44px] rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] hover:bg-gray">{t("cancel")}</button>
-						<button type="submit" className="h-[44px] rounded-8 bg-primaryColor px-24 text-16 font-medium text-white shadow-custom hover:opacity-80">{t("save")}</button>
+					<div className="mt-20 flex justify-end gap-10">
+						<button type="button" onClick={() => { setOpen(false); setDealLink({}); }} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
+						<button type="submit" className="fs-btn fs-btn-primary h-40">{t("save")}</button>
 					</div>
 				</form>
 			</Modal>

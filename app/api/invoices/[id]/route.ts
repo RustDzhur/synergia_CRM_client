@@ -36,6 +36,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (b.template === "") inv.template = "";
     else if (isTemplate(b.template)) inv.template = b.template;
     if (typeof b.dueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.dueDate)) inv.dueDate = b.dueDate;
+    // Дата/период оказания услуг (§14 Abs. 4 Nr. 6 UStG); пустая строка стирает поле — в черновике дату надо уметь и убрать
+    if (typeof b.supplyDate === "string" && (b.supplyDate === "" || /^\d{4}-\d{2}-\d{2}$/.test(b.supplyDate))) inv.supplyDate = b.supplyDate;
+    if (typeof b.supplyPeriodFrom === "string" && (b.supplyPeriodFrom === "" || /^\d{4}-\d{2}-\d{2}$/.test(b.supplyPeriodFrom))) inv.supplyPeriodFrom = b.supplyPeriodFrom;
+    if (typeof b.supplyPeriodTo === "string" && (b.supplyPeriodTo === "" || /^\d{4}-\d{2}-\d{2}$/.test(b.supplyPeriodTo))) inv.supplyPeriodTo = b.supplyPeriodTo;
     await inv.save();
     return NextResponse.json(toInvoiceDTO(inv));
 }

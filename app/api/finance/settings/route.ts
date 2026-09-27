@@ -19,13 +19,25 @@ function toDTO(s: any) {
         legalName: s.legalName ?? "",
         address: s.address ?? "",
         taxId: s.taxId ?? "",
+        vatId: s.vatId ?? "",
+        phone: s.phone ?? "",
+        email: s.email ?? "",
+        website: s.website ?? "",
+        registerNumber: s.registerNumber ?? "",
+        managingDirector: s.managingDirector ?? "",
+        logo: s.logo ?? "",
+        footerText: s.footerText ?? "",
         iban: s.iban ?? "",
         bic: s.bic ?? "",
         paymentTermsDays: s.paymentTermsDays ?? 14,
         invoicePrefix: s.invoicePrefix ?? "RE",
         quotePrefix: s.quotePrefix ?? "AN",
         creditNotePrefix: s.creditNotePrefix ?? "GS",
+        deliveryNotePrefix: s.deliveryNotePrefix ?? "LS",
         reminderIntervalDays: s.reminderIntervalDays ?? 7,
+        dunningFees: Array.isArray(s.dunningFees) && s.dunningFees.length ? s.dunningFees.map((n: unknown) => Number(n) || 0) : [0, 0, 2.5, 5, 10],
+        dunningInterestRate: Number(s.dunningInterestRate) || 0,
+        dunningPaymentDays: Number(s.dunningPaymentDays) || 7,
         template: isTemplate(s.template) ? s.template : "classic",
         paymentQr: s.paymentQr !== false,
     };
@@ -50,9 +62,15 @@ export async function PATCH(req: Request) {
     if (typeof b.country === "string") set.country = COUNTRY_CODES.includes(b.country) ? b.country : "";
     const currency = str(b.currency, 6); if (currency !== undefined) set.currency = currency.toUpperCase();
     if (typeof b.smallBusiness === "boolean") set.smallBusiness = b.smallBusiness;
-    for (const k of ["legalName", "address", "taxId", "iban", "bic", "invoicePrefix", "quotePrefix", "creditNotePrefix"] as const) {
-        const v = str(b[k], k === "address" ? 500 : 100);
+    // footerText — длинный текст, остальные реквизиты короткие
+    for (const k of ["legalName", "address", "taxId", "vatId", "phone", "email", "website", "registerNumber", "managingDirector", "footerText", "iban", "bic", "invoicePrefix", "quotePrefix", "creditNotePrefix", "deliveryNotePrefix"] as const) {
+        const v = str(b[k], k === "address" ? 500 : k === "footerText" ? 1200 : 100);
         if (v !== undefined) set[k] = v;
+    }
+    // Логотип приходит data-URL из того же ресайза, что и аватар (app/utils/avatar.ts):
+    // принимаем только картинку и только до 400 КБ, чтобы PDF не раздувался.
+    if (typeof b.logo === "string") {
+        set.logo = b.logo.startsWith("data:image/") && b.logo.length <= 400_000 ? b.logo : "";
     }
     if (b.paymentTermsDays !== undefined) {
         const n = Number(b.paymentTermsDays);
@@ -63,6 +81,16 @@ export async function PATCH(req: Request) {
     if (b.reminderIntervalDays !== undefined) {
         const n = Number(b.reminderIntervalDays);
         if (Number.isFinite(n) && n >= 1 && n <= 90) set.reminderIntervalDays = Math.round(n);
+    }
+    // Манаведение: сборы по ступеням (0..4) и проценты за просрочку
+    if (Array.isArray(b.dunningFees)) set.dunningFees = b.dunningFees.slice(0, 5).map((n: unknown) => Math.max(0, Number(n) || 0));
+    if (b.dunningInterestRate !== undefined) {
+        const n = Number(b.dunningInterestRate);
+        if (Number.isFinite(n) && n >= 0 && n <= 30) set.dunningInterestRate = n;
+    }
+    if (b.dunningPaymentDays !== undefined) {
+        const n = Number(b.dunningPaymentDays);
+        if (Number.isFinite(n) && n >= 1 && n <= 60) set.dunningPaymentDays = Math.round(n);
     }
     const s = await FinanceSettings.findOneAndUpdate({ org: user.id }, { $set: set }, { upsert: true, new: true });
     return NextResponse.json(toDTO(s));

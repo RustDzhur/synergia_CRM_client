@@ -7,6 +7,7 @@
 import { computeTotals } from "./totals";
 
 export const toOrderDTO = (o: any) => ({
+    deliveryNoteNumber: o.deliveryNoteNumber ?? "", deliveryDate: o.deliveryDate ?? "",
     id: String(o._id), number: o.number, status: o.status,
     contact: o.contact ? String(o.contact) : "", company: o.company ? String(o.company) : "", customerName: o.customerName,
     deal: o.deal ? String(o.deal) : "", contract: o.contract ? String(o.contract) : "",
@@ -25,8 +26,11 @@ export const toInvoiceDTO = (inv: any) => ({
     items: (inv.items ?? []).map((it: any) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice, taxRate: it.taxRate, product: it.product ? String(it.product) : "" })),
     currency: inv.currency, smallBusinessNote: !!inv.smallBusinessNote,
     issueDate: inv.issueDate, dueDate: inv.dueDate, notes: inv.notes, template: inv.template || "",
+    supplyDate: inv.supplyDate ?? "", supplyPeriodFrom: inv.supplyPeriodFrom ?? "", supplyPeriodTo: inv.supplyPeriodTo ?? "",
     status: inv.status, sentAt: inv.sentAt ? inv.sentAt.toISOString() : "", sentTo: inv.sentTo ?? "", paidAt: inv.paidAt ? inv.paidAt.toISOString() : "", paidAmount: inv.paidAmount,
     reminderCount: inv.reminderCount ?? 0, lastReminderAt: inv.lastReminderAt ? inv.lastReminderAt.toISOString() : "",
+    dunningLevel: inv.dunningLevel ?? 0, dunningFee: inv.dunningFee ?? 0,
+    dunningLog: (inv.dunningLog ?? []).map((e: any) => ({ level: e.level, sentAt: e.sentAt ? e.sentAt.toISOString() : "", fee: e.fee ?? 0, dueDate: e.dueDate ?? "", method: e.method ?? "" })),
     recurringSource: inv.recurringSource ? String(inv.recurringSource) : "",
     totals: computeTotals(inv.items ?? []),
     createdAt: inv.createdAt.toISOString(), updatedAt: inv.updatedAt.toISOString(),

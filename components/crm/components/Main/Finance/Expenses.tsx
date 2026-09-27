@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdAdd, MdDelete, MdDocumentScanner } from "react-icons/md";
+import { TbPlus, TbScan, TbTrash } from "react-icons/tb";
 import { useFinanceStore } from "@/app/store/useFinanceStore";
 import { authHeaders } from "@/app/store/crmApi";
 import Modal from "../shared/Modal";
@@ -68,29 +68,29 @@ export default function Expenses() {
 
 	return (
 		<div>
-			<div className="mb-20 flex justify-end gap-12">
+			<div className="mb-16 flex justify-end gap-10">
 				<input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) scanReceipt(f); }} aria-label={t("scanReceipt")} />
-				<button type="button" disabled={scanning} onClick={() => fileRef.current?.click()} className="flex h-[44px] items-center gap-6 rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] transition-opacity hover:opacity-80 disabled:opacity-[0.5]">
-					<MdDocumentScanner size={20} /> {t("scanReceipt")}
+				<button type="button" disabled={scanning} onClick={() => fileRef.current?.click()} className="fs-btn fs-btn-ghost h-40 disabled:opacity-[0.5]">
+					<TbScan size={16} /> {t("scanReceipt")}
 				</button>
-				<button type="button" onClick={() => { setForm(EMPTY); setOpen(true); }} className="flex h-[44px] items-center gap-6 rounded-8 bg-primaryColor px-20 text-16 font-medium text-white shadow-custom hover:opacity-80">
-					<MdAdd size={20} /> {t("newExpense")}
+				<button type="button" onClick={() => { setForm(EMPTY); setOpen(true); }} className="fs-btn fs-btn-primary h-40">
+					<TbPlus size={16} /> {t("newExpense")}
 				</button>
 			</div>
 			{expenses.length === 0 ? (
-				<p className="rounded-16 bg-[#F5F7FC] p-30 text-center text-16 text-[#999999]">{t("empty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("empty")}</p>
 			) : (
-				<div className="overflow-x-auto rounded-16 bg-white shadow-heroImage">
-					<table className="w-full min-w-[560px] text-left text-14">
-						<thead><tr className="text-12 text-[#999999]"><th className="px-16 py-12 font-normal">{t("colDate")}</th><th className="px-10 py-12 font-normal">{t("colVendor")}</th><th className="px-10 py-12 font-normal">{t("colCategory")}</th><th className="px-10 py-12 text-right font-normal">{t("colAmount")}</th><th className="px-10 py-12" /></tr></thead>
+				<div className="fs-card overflow-x-auto">
+					<table className="fs-table min-w-[560px] text-left">
+						<thead><tr><th className="px-16">{t("colDate")}</th><th className="px-10">{t("colVendor")}</th><th className="px-10">{t("colCategory")}</th><th className="px-10 text-right">{t("colAmount")}</th><th className="px-10" /></tr></thead>
 						<tbody>
 							{expenses.map((ex) => (
-								<tr key={ex.id} className="border-t border-[#F0F0F0]">
-									<td className="px-16 py-12 text-[#999999]">{ex.date}</td>
-									<td className="px-10 py-12 font-medium text-[#333333]">{ex.vendor}</td>
-									<td className="px-10 py-12 text-[#999999]">{ex.category || "—"}</td>
-									<td className="px-10 py-12 text-right">{money(ex.amount, ex.currency || settings?.currency || "EUR", locale)}</td>
-									<td className="px-10 py-12 text-right"><button type="button" onClick={() => setToDelete(ex.id)} aria-label={t("delete")} className="text-[#B3B3B3] hover:text-danger"><MdDelete size={18} /></button></td>
+								<tr key={ex.id}>
+									<td className="px-16 text-13 text-[#8c948b]">{ex.date}</td>
+									<td className="px-10 text-13 font-medium text-[#f1f4ee]">{ex.vendor}</td>
+									<td className="px-10 text-13 text-[#8c948b]">{ex.category || "—"}</td>
+									<td className="px-10 text-right text-13">{money(ex.amount, ex.currency || settings?.currency || "EUR", locale)}</td>
+									<td className="px-10 text-right"><button type="button" onClick={() => setToDelete(ex.id)} aria-label={t("delete")} className="text-[#9AA396] transition-colors hover:text-danger"><TbTrash size={16} /></button></td>
 								</tr>
 							))}
 						</tbody>
@@ -99,13 +99,13 @@ export default function Expenses() {
 			)}
 
 			<Modal open={open} onClose={() => setOpen(false)} label={t("newExpense")} className="w-full max-w-[440px]">
-				<form onSubmit={submit} className="rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
-					<h2 className="mb-16 text-20 font-medium text-black">{t("newExpense")}</h2>
-					{form.receipt && <p className="mb-16 rounded-8 bg-[#EAF6FF] px-14 py-10 text-14 text-[#333333]">{t("scannedFromReceipt")}</p>}
-					<div className="flex flex-col gap-14">
+				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
+					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("newExpense")}</h2>
+					{form.receipt && <p className="mb-14 rounded-10 border border-[rgba(198,255,77,0.22)] bg-[rgba(198,255,77,0.06)] px-12 py-8 text-12 text-[#cfd4cb]">{t("scannedFromReceipt")}</p>}
+					<div className="flex flex-col gap-12">
 						<FormField label={t("colVendor")} value={form.vendor} onChange={(e) => setForm({ ...form, vendor: e.target.value })} maxLength={200} autoFocus />
 						<FormField label={t("colCategory")} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} maxLength={100} />
-						<div className="grid grid-cols-2 gap-14">
+						<div className="grid grid-cols-2 gap-12">
 							<FormField label={t("colAmount")} type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
 							<FormField label={t("itemTax")} type="number" step="0.1" value={form.taxRate} onChange={(e) => setForm({ ...form, taxRate: e.target.value })} />
 						</div>
@@ -114,9 +114,9 @@ export default function Expenses() {
 						)}
 						<FormField label={t("colDate")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
 					</div>
-					<div className="mt-24 flex justify-end gap-12">
-						<button type="button" onClick={() => setOpen(false)} className="h-[44px] rounded-8 border border-[#E6E6E6] px-20 text-16 font-medium text-[#666666] hover:bg-gray">{t("cancel")}</button>
-						<button type="submit" className="h-[44px] rounded-8 bg-primaryColor px-24 text-16 font-medium text-white shadow-custom hover:opacity-80">{t("save")}</button>
+					<div className="mt-20 flex justify-end gap-10">
+						<button type="button" onClick={() => setOpen(false)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
+						<button type="submit" className="fs-btn fs-btn-primary h-40">{t("save")}</button>
 					</div>
 				</form>
 			</Modal>

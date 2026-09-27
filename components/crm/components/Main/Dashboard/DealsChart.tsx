@@ -102,9 +102,9 @@ export default function DealsChart({ deals, stages }: Props) {
 	const shown = hover ?? peak;
 
 	return (
-		<section className="rounded-16 border border-[#F0F0F0] bg-white p-20 shadow-[0_2px_8px_rgba(0,0,0,0.16)] lg:p-25">
+		<section className="fs-card p-16 md:p-20">
 			<header className="flex items-center justify-between gap-12">
-				<h2 className="shrink-0 text-20 font-medium text-[#4D4D4D] lg:text-24">{t("dealsTitle")}</h2>
+				<h2 className="shrink-0 text-14 font-semibold text-[#f1f4ee]">{t("dealsTitle")}</h2>
 				<PeriodSelect<Period>
 					value={period}
 					onChange={setPeriod}
@@ -116,7 +116,7 @@ export default function DealsChart({ deals, stages }: Props) {
 				/>
 			</header>
 
-			<p className="mt-16 flex items-center gap-8 text-16 font-medium text-[#999999]">
+			<p className="mt-14 flex items-center gap-8 text-12 text-[#8c948b]">
 				{t("closedDeals")}
 				<span className="inline-block h-[10px] w-[10px] rounded-50 border-2 border-primaryColor" />
 			</p>
@@ -124,24 +124,24 @@ export default function DealsChart({ deals, stages }: Props) {
 			<svg viewBox={`0 0 ${W} ${H}`} className="mt-8 w-full" role="img" aria-label={t("closedDeals")} onMouseLeave={() => setHover(null)}>
 				<defs>
 					<linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-						<stop offset="0%" stopColor="#8CB5E1" />
-						<stop offset="100%" stopColor="#EDF4FA" />
+						<stop offset="0%" stopColor="#C6FF4D" stopOpacity="0.35" />
+						<stop offset="100%" stopColor="#C6FF4D" stopOpacity="0" />
 					</linearGradient>
 				</defs>
 
 				{Array.from({ length: 5 }, (_, i) => i * step).map((tick) => (
 					<g key={tick}>
-						<line x1={M.left - 4} x2={W - M.right} y1={y(tick)} y2={y(tick)} stroke="#666666" strokeOpacity="0.7" strokeDasharray="6 6" strokeWidth="1" />
-						<text x={M.left - 12} y={y(tick) + 5} textAnchor="end" fontSize="15" fill="#999999">{tick}</text>
+						<line x1={M.left - 4} x2={W - M.right} y1={y(tick)} y2={y(tick)} stroke="#FFFFFF" strokeOpacity="0.10" strokeDasharray="6 6" strokeWidth="1" />
+						<text x={M.left - 12} y={y(tick) + 5} textAnchor="end" fontSize="13" fill="#9AA396">{tick}</text>
 					</g>
 				))}
 
 				{area && <path d={area} fill={`url(#${gradientId})`} />}
-				{line && max > 0 && <path d={line} fill="none" stroke="#6FA1DA" strokeWidth="1.5" />}
+				{line && max > 0 && <path d={line} fill="none" stroke="#C6FF4D" strokeWidth="2" />}
 
 				{tickIdx.map((i) => (
 					// крайние подписи выравниваем внутрь графика, иначе последняя обрезается по краю
-					<text key={i} x={x(i)} y={H - 8} textAnchor={i === 0 ? "start" : i === values.length - 1 ? "end" : "middle"} fontSize="14" fill="#999999">{labels[i]}</text>
+					<text key={i} x={x(i)} y={H - 8} textAnchor={i === 0 ? "start" : i === values.length - 1 ? "end" : "middle"} fontSize="12" fill="#9AA396">{labels[i]}</text>
 				))}
 
 				{/* невидимые колонки для наведения: показывают значение точки под курсором */}
@@ -161,14 +161,14 @@ export default function DealsChart({ deals, stages }: Props) {
 
 				{shown >= 0 && max > 0 && (
 					<g pointerEvents="none">
-						<circle cx={x(shown)} cy={y(values[shown])} r="4.5" fill="#ffffff" stroke="#5EA8F5" strokeWidth="2" />
-						<text x={Math.min(Math.max(x(shown), M.left + 20), W - M.right - 20)} y={y(values[shown]) - 12} textAnchor="middle" fontSize="14" fontWeight="600" fill="#4D4D4D">
+						<circle cx={x(shown)} cy={y(values[shown])} r="4" fill="#0A0C0B" stroke="#C6FF4D" strokeWidth="2" />
+						<text x={Math.min(Math.max(x(shown), M.left + 20), W - M.right - 20)} y={y(values[shown]) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fill="#F1F4EE">
 							{values[shown]}
 						</text>
 					</g>
 				)}
 			</svg>
-			{max === 0 && <p className="text-center text-14 text-[#999999]">{t("noData")}</p>}
+			{max === 0 && <p className="text-center text-12 text-[#8c948b]">{t("noData")}</p>}
 		</section>
 	);
 }

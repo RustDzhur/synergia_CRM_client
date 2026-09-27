@@ -31,6 +31,10 @@ const OrderSchema = new Schema(
         currency: { type: String, default: "EUR" },
 
         status: { type: String, enum: ["draft", "confirmed", "fulfilled", "invoiced", "closed", "cancelled"], default: "draft" },
+        // Накладная (Lieferschein): номер присваивается один раз при первой выписке, чтобы повторная
+        // печать давала тот же документ, и дата фактической поставки.
+        deliveryNoteNumber: { type: String, default: "" },
+        deliveryDate: { type: String, default: "" },
         invoice: { type: Schema.Types.ObjectId, ref: "Invoice" }, // счёт, выставленный по этому заказу
 
         notes: { type: String, default: "" },

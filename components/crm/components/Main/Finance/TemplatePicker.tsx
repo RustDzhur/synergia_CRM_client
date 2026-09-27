@@ -38,7 +38,7 @@ function Rows({ accent, rows = 3 }: { accent: string; rows?: number }) {
 
 function Qr({ accent, size = 14 }: { accent: string; size?: number }) {
 	return (
-		<div className="grid grid-cols-4 grid-rows-4 gap-[1px] rounded-[1px] bg-white p-[2px]" style={{ width: size, height: size, border: `0.5px solid ${accent}33` }}>
+		<div className="grid grid-cols-4 grid-rows-4 gap-[1px] rounded-[1px] bg-[#f1f4ee] p-[2px]" style={{ width: size, height: size, border: `0.5px solid ${accent}33` }}>
 			{[1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1].map((on, i) => (
 				<div key={i} style={{ background: on ? accent : "transparent", opacity: on ? 0.75 : 0 }} />
 			))}
@@ -49,7 +49,7 @@ function Qr({ accent, size = 14 }: { accent: string; size?: number }) {
 // Схема документа для каждого варианта расположения блоков
 function Preview({ t }: { t: TemplateDef }) {
 	const { accent, tint, variant } = t;
-	const paper = "relative flex h-[86px] w-full flex-col overflow-hidden bg-white";
+	const paper = "relative flex h-[86px] w-full flex-col overflow-hidden bg-[#f1f4ee]";
 	const pad = "px-[8px] py-[6px]";
 
 	if (variant === "sidebar") {
@@ -124,7 +124,7 @@ function Preview({ t }: { t: TemplateDef }) {
 	}
 	if (variant === "compact") {
 		return (
-			<div className="relative flex h-[86px] w-full flex-col gap-[4px] overflow-hidden bg-white px-[8px] py-[6px]">
+			<div className="relative flex h-[86px] w-full flex-col gap-[4px] overflow-hidden bg-[#f1f4ee] px-[8px] py-[6px]">
 				<div className="flex items-start justify-between">
 					<Bar w="52%" color={accent} h={4} />
 					<Lines n={2} w="34px" />
@@ -157,7 +157,7 @@ function Preview({ t }: { t: TemplateDef }) {
 			</div>
 		);
 		return (
-			<div className="relative flex h-[86px] w-full flex-col gap-[5px] overflow-hidden bg-white px-[8px] py-[6px]">
+			<div className="relative flex h-[86px] w-full flex-col gap-[5px] overflow-hidden bg-[#f1f4ee] px-[8px] py-[6px]">
 				<div className="flex items-start justify-between">
 					<Bar w="30%" color="#999999" h={3} />
 					<Bar w="34%" color={accent} h={6} />
@@ -170,7 +170,7 @@ function Preview({ t }: { t: TemplateDef }) {
 	}
 	if (variant === "plain") {
 		return (
-			<div className="relative flex h-[86px] w-full flex-col gap-[6px] overflow-hidden bg-white px-[12px] py-[9px]">
+			<div className="relative flex h-[86px] w-full flex-col gap-[6px] overflow-hidden bg-[#f1f4ee] px-[12px] py-[9px]">
 				<Lines n={1} w="52%" />
 				<Bar w="26%" color={accent} h={3} />
 				<Bar w="42%" color="#C9C9C9" h={5} />
@@ -195,7 +195,7 @@ function Preview({ t }: { t: TemplateDef }) {
 // Сетка из десяти миниатюр. value — id выбранного шаблона, "" означает «как в настройках бухгалтерии»:
 // тогда пунктиром помечается шаблон из настроек (inherit), чтобы было видно, что напечатается.
 export default function TemplatePicker({ value, onChange, allowDefault = false, columns = 5, inherit = "" }: { value: string; onChange: (id: string) => void; allowDefault?: boolean; columns?: number; inherit?: string }) {
-	const options = allowDefault ? [{ id: "", accent: "#B3B3B3", tint: "#F7F7F7", margin: 50, variant: "classic" as const }, ...TEMPLATES] : TEMPLATES;
+	const options = allowDefault ? [{ id: "", accent: "#B3B3B3", tint: "#E4E7E0", margin: 50, variant: "classic" as const }, ...TEMPLATES] : TEMPLATES;
 	return (
 		<div className="grid gap-10" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
 			{options.map((t) => {
@@ -209,8 +209,8 @@ export default function TemplatePicker({ value, onChange, allowDefault = false, 
 						aria-pressed={active}
 						title={inherited ? `${t.id} (${inherit})` : t.id}
 						aria-label={t.id || "default"}
-						className="overflow-hidden rounded-8 bg-white p-[3px] text-left transition-shadow"
-						style={{ border: `2px ${inherited ? "dashed" : "solid"} ${active || inherited ? t.accent : "#E6E6E6"}`, boxShadow: active ? `0 0 0 3px ${t.accent}22` : "none" }}
+						className="overflow-hidden rounded-10 bg-[rgba(255,255,255,0.03)] p-[3px] text-left transition-[border-color,box-shadow]"
+						style={{ border: `1.5px ${inherited ? "dashed" : "solid"} ${active || inherited ? t.accent : "rgba(255,255,255,0.12)"}`, boxShadow: active ? `0 0 0 3px ${t.accent}22` : "none" }}
 					>
 						<div className="overflow-hidden rounded-[5px]">
 							<Preview t={t} />

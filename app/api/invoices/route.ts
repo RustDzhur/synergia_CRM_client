@@ -4,7 +4,8 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
-import { cleanItems, computeTotals } from "@/lib/finance/totals";
+import { cleanItems } from "@/lib/finance/totals";
+import { applyTaxPolicy } from "@/lib/finance/tax";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal } from "@/lib/deals";
@@ -33,13 +34,15 @@ export async function POST(req: Request) {
     const b = await req.json().catch(() => null);
     const customerName = typeof b?.customerName === "string" ? b.customerName.trim().slice(0, 200) : "";
     if (!customerName) return badRequest("customerName is required");
-    const items = cleanItems(b.items);
-    if (!items.length) return badRequest("At least one line item is required");
+    const rawItems = cleanItems(b.items);
+    if (!rawItems.length) return badRequest("At least one line item is required");
     await connectDB();
     const [settings, author, contact, company, deal] = await Promise.all([
         financeSettings(user.id), User.findById(user.userId).select("firstname lastname"),
         ownedContact(b.contact, user.id), ownedCompany(b.company, user.id), ownedDeal(b.deal, user.id),
     ]);
+    // ставку определяет фирма, а не браузер: освобождённая — 0 % во всех строках, иначе страна по умолчанию
+    const items = applyTaxPolicy(rawItems, settings);
     const number = await nextNumber(user.id, settings.invoicePrefix || "RE");
     const today = new Date().toISOString().slice(0, 10);
     const due = new Date(Date.now() + (settings.paymentTermsDays ?? 14) * 86400000).toISOString().slice(0, 10);
@@ -52,6 +55,10 @@ export async function POST(req: Request) {
         smallBusinessNote: !!settings.smallBusiness,
         issueDate: typeof b.issueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.issueDate) ? b.issueDate : today,
         dueDate: typeof b.dueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.dueDate) ? b.dueDate : due,
+        // Дата/период оказания услуг (§14 Abs. 4 Nr. 6 UStG) — необязательные, но если пришли, то только как дата
+        supplyDate: typeof b.supplyDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.supplyDate) ? b.supplyDate : "",
+        supplyPeriodFrom: typeof b.supplyPeriodFrom === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.supplyPeriodFrom) ? b.supplyPeriodFrom : "",
+        supplyPeriodTo: typeof b.supplyPeriodTo === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.supplyPeriodTo) ? b.supplyPeriodTo : "",
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
         template: isTemplate(b.template) ? b.template : "",
         createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
