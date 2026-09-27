@@ -24,11 +24,14 @@ export class CalDavAuthError extends Error {}
 const authHeader = (user: string, password: string) =>
     "Basic " + Buffer.from(`${user}:${password}`, "utf8").toString("base64");
 
-async function dav(user: string, password: string, path: string, method: string, body?: string, depth = "0"): Promise<string> {
+async function dav(user: string, password: string, path: string, method: string, body?: string, depth = "0", step = ""): Promise<string> {
     const res = await fetchProvider(`${base()}${path}`, {
         method,
         headers: {
             Authorization: authHeader(user, password),
+            // Как у обычного календарного клиента: Apple одинаково принимает и без него, но с ним
+            // запрос выглядит как поддерживаемое приложение, а не как безымянный скрипт
+            "User-Agent": "Firmspace CRM calendar sync",
             ...(body ? { "Content-Type": "application/xml; charset=utf-8" } : {}),
             Depth: depth,
         },
@@ -37,7 +40,8 @@ async function dav(user: string, password: string, path: string, method: string,
 
     const text = await res.text();
     if (res.status === 401 || res.status === 403) throw new CalDavAuthError("Apple rejected the Apple ID or the app-specific password");
-    if (res.status >= 400) throw new Error(`CalDAV error ${res.status}`);
+    // Шаг важен: без него в окне было бы просто «ошибка 400», и непонятно, что именно Apple не приняла
+    if (res.status >= 400) throw new Error(`iCloud refused the request (HTTP ${res.status}${step ? `, ${step}` : ""})`);
     return text;
 }
 
@@ -59,19 +63,19 @@ const responses = (xml: string) => xml.split(/<[^>]*:?response[\s>]/i).slice(1);
  */
 export async function discoverCalendars(user: string, password: string): Promise<CalDavCalendar[]> {
     const principalXml = await dav(user, password, "/", "PROPFIND",
-        `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="${DAV}"><d:prop><d:current-user-principal/></d:prop></d:propfind>`);
+        `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="${DAV}"><d:prop><d:current-user-principal/></d:prop></d:propfind>`, "0", "sign-in");
     // principal приходит как <d:href>/123456789/principal/</d:href>
     const principal = /<[^>]*current-user-principal[^>]*>[\s\S]*?<[^>]*href[^>]*>([^<]+)</i.exec(principalXml)?.[1];
     if (!principal) throw new CalDavAuthError("Apple did not return a calendar principal for this account");
 
     const homeXml = await dav(user, password, principal, "PROPFIND",
-        `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="${DAV}" xmlns:c="${CALDAV}"><d:prop><c:calendar-home-set/></d:prop></d:propfind>`);
+        `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="${DAV}" xmlns:c="${CALDAV}"><d:prop><c:calendar-home-set/></d:prop></d:propfind>`, "0", "address of the calendars");
     const home = /<[^>]*calendar-home-set[^>]*>[\s\S]*?<[^>]*href[^>]*>([^<]+)</i.exec(homeXml)?.[1];
     if (!home) throw new CalDavAuthError("Apple did not return a calendar home for this account");
 
     const listXml = await dav(user, password, home, "PROPFIND",
         `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="${DAV}" xmlns:c="${CALDAV}" xmlns:cs="http://calendarserver.org/ns/"><d:prop><d:displayname/><d:resourcetype/><cs:calendar-color/></d:prop></d:propfind>`,
-        "1");
+        "1", "calendar list");
 
     const out: CalDavCalendar[] = [];
     for (const block of responses(listXml)) {
@@ -107,7 +111,7 @@ export async function fetchCalendarEvents(
   </c:comp-filter></c:comp-filter></c:filter>
 </c:calendar-query>`;
 
-    const xml = await dav(user, password, calendarHref, "REPORT", body, "1");
+    const xml = await dav(user, password, calendarHref, "REPORT", body, "1", "events of one calendar");
     const out: IcalOccurrence[] = [];
     for (const block of responses(xml)) {
         const data = /<[^>]*calendar-data[^>]*>([\s\S]*?)<\/[^>]*calendar-data>/i.exec(block)?.[1];

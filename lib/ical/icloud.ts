@@ -22,16 +22,39 @@ interface IcloudSecrets { password?: string }
  */
 export async function connectIcloud(owner: string, appleId: string, password: string) {
     const user = appleId.trim().toLowerCase();
-    const pass = password.replace(/\s+/g, "");
+    const entered = password.replace(/\s+/g, "");
     if (!/^\S+@\S+\.\S+$/.test(user)) throw new ProviderError("Enter the Apple ID (e-mail)");
-    if (!pass) throw new ProviderError("Enter the app-specific password");
-    let calendars;
-    try {
-        calendars = await discoverCalendars(user, pass);
-    } catch (e) {
-        if (e instanceof CalDavAuthError) throw new ProviderError(e.message);
+    if (!entered) throw new ProviderError("Enter the app-specific password");
+
+    // Apple показывает пароль приложения группами через дефис. Одни клиенты принимают его как есть,
+    // другие — без дефисов, и заранее неизвестно, какой случай наш. Пробуем оба варианта и запоминаем
+    // тот, с которым Apple пустила: иначе человек видел бы «неверный пароль» при верном пароле.
+    const candidates = entered.includes("-") ? [entered, entered.replace(/-/g, "")] : [entered];
+    let calendars: Awaited<ReturnType<typeof discoverCalendars>> = [];
+    let pass = entered;
+    let failure: unknown = null;
+    for (const candidate of candidates) {
+        try {
+            calendars = await discoverCalendars(user, candidate);
+            pass = candidate;
+            failure = null;
+            break;
+        } catch (e) {
+            failure = e;
+            // Второй вариант помогает только при отказе в доступе; на любой другой ошибке повторять незачем
+            if (!(e instanceof CalDavAuthError)) break;
+        }
+    }
+
+    if (failure) {
+        if (failure instanceof CalDavAuthError) throw new ProviderError(failure.message);
+        // Ошибку сети и отказ Apple показываем как есть: в ней есть шаг и код ответа,
+        // по которым понятно, на чём именно всё встало
+        if (failure instanceof Error) throw new ProviderError(failure.message);
         throw new ProviderError("Could not reach iCloud. Check the connection and try again.");
     }
+    // Подключение без календарей выглядело бы рабочим, но синхронизировать было бы нечего
+    if (!calendars.length) throw new ProviderError("Apple returned no calendars for this account. Check that Calendar is switched on in iCloud settings.");
 
     const doc = (await findIcloud(owner)) ?? new Integration({ owner, type: "icloud", token: `icloud-${owner}-${Date.now()}` });
     doc.config = { appleId: user, calendars: calendars.map((c) => ({ href: c.href, name: c.name, enabled: true })) };
