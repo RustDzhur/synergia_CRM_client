@@ -43,7 +43,8 @@ export default function RecordModal({ open, config, tab, record, preset, fieldOp
 	}, [open, record, preset, fields]);
 
 	const set = (key: string, value: string) => setValues((v) => ({ ...v, [key]: value }));
-	const name = t(`s_${tab}`);
+	// у вкладок с собственным содержимым (например, Start в Marketing) своей подписи нет — окно для них не открывается
+	const name = config.customTabs?.includes(tab) ? "" : t(`s_${tab}`);
 
 	function submit(e: React.FormEvent) {
 		e.preventDefault();
