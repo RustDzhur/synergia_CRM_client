@@ -22,7 +22,11 @@ interface IcloudSecrets { password?: string }
  */
 export async function connectIcloud(owner: string, appleId: string, password: string) {
     const user = appleId.trim().toLowerCase();
-    const entered = password.replace(/\s+/g, "");
+    // Пароль приложения Apple — 16 строчных букв и цифр, показанные четырьмя группами. Приводим введённое
+    // к этому виду: убираем пробелы, невидимые символы и «неправильные» дефисы из буфера обмена.
+    // Иначе скопированный из браузера пароль отвергался бы как неверный из-за одного невидимого знака,
+    // а человек был бы уверен, что ввёл его правильно.
+    const entered = password.replace(/[^A-Za-z0-9-]/g, "").toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(user)) throw new ProviderError("Enter the Apple ID (e-mail)");
     if (!entered) throw new ProviderError("Enter the app-specific password");
 

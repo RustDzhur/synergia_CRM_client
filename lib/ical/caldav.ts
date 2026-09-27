@@ -44,6 +44,10 @@ export interface CalDavCalendar {
 
 export class CalDavAuthError extends Error {}
 
+// Отказ в доступе, который не лечится другим видом пароля: Apple отвечает так, когда запросов
+// было слишком много. Отдельный класс — чтобы не повторять попытку и не усугублять.
+export class CalDavRefusal extends Error {}
+
 const authHeader = (user: string, password: string) =>
     "Basic " + Buffer.from(`${user}:${password}`, "utf8").toString("base64");
 
@@ -62,7 +66,10 @@ async function dav(user: string, password: string, path: string, method: string,
     }, 20000);
 
     const text = await res.text();
-    if (res.status === 401 || res.status === 403) throw new CalDavAuthError("Apple rejected the Apple ID or the app-specific password");
+    // Код ответа называем прямо: по нему видно, это неверный пароль или Apple придерживает запросы
+    if (res.status === 401) throw new CalDavAuthError("Apple rejected the Apple ID or the app-specific password (HTTP 401)");
+    if (res.status === 403) throw new CalDavRefusal("Apple refused access for this account (HTTP 403). If the password is right, Apple is limiting sign-in attempts — try again in a few minutes.");
+    if (res.status === 429) throw new CalDavRefusal("Apple is limiting sign-in attempts (HTTP 429). Try again in a few minutes.");
     // Шаг важен: без него в окне было бы просто «ошибка 400», и непонятно, что именно Apple не приняла
     if (res.status >= 400) throw new Error(`iCloud refused the request (HTTP ${res.status}${step ? `, ${step}` : ""})`);
     return text;
