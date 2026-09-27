@@ -82,8 +82,12 @@ export async function connectGcal(owner: string, tokens: Tokens) {
         email = list.find((c) => c.primary)?.id ?? "";
         // Отметки «синхронизировать» не трогаем, если список уже был: их расставил человек
         if (!Array.isArray(calendars) || !calendars.length) calendars = toCalendarEntries(list);
-    } catch {
-        // Список не критичен: его можно загрузить из окна «Календари», имя аккаунта останется общим
+    } catch (e) {
+        // Календарный API в проекте Google Cloud включается отдельно от Drive и почты. Пока он выключен,
+        // подключение бесполезно, и сказать об этом нужно сразу — со ссылкой на включение, которую
+        // присылает сам Google. Прочие сбои списка не критичны: его можно загрузить из окна «Календари».
+        const message = e instanceof Error ? e.message : "";
+        if (/has not been used in project|is disabled|accessNotConfigured/i.test(message)) throw new ProviderError(message);
     }
     // Выбранные календари и календарь для записи сохраняем при переподключении: человек их уже отметил.
     // scopes — то, что Google выдал на самом деле: по ним видно, можно ли писать в календарь.
