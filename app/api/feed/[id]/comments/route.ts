@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
-import { announceComment, toFeedDTO, userName } from "@/lib/feed";
+import { announceComment, feedAvatars, toFeedDTO, userName } from "@/lib/feed";
 import FeedPost from "@/models/FeedPost";
 
 // POST /api/feed/:id/comments — { text }
@@ -25,5 +25,5 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!post) return notFound();
     const added = post.comments[post.comments.length - 1];
     await announceComment(user.id, before, String(added._id), user.userId, authorName, text);
-    return NextResponse.json(toFeedDTO(post, user.userId), { status: 201 });
+    return NextResponse.json(toFeedDTO(post, user.userId, await feedAvatars([post])), { status: 201 });
 }
