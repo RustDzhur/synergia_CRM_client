@@ -1,5 +1,6 @@
 "use client";
 import React, { useRef } from "react";
+import toast from "react-hot-toast";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { MdAccessAlarm, MdAutoMode, MdCallMissed, MdChat, MdMail, MdNotifications, MdPersonAdd } from "react-icons/md";
@@ -30,6 +31,11 @@ export default function Notification({ align = "down" }: { align?: "down" | "up"
 	const { items, unread, open, toggle, close, markRead, markAll } = useNotificationStore();
 	const ref = useRef<HTMLDivElement>(null);
 	useClickOutside(ref, open, close);
+
+	// Если сервер отметку не подтвердил, стор возвращает состояние к настоящему — говорим об этом, а не молчим
+	const onMarkAll = async () => {
+		if (!(await markAll())) toast.error(t("markFailed"));
+	};
 
 	const row = (n: Notif) => {
 		const Icon = ICON[n.type] ?? MdNotifications;
@@ -67,7 +73,7 @@ export default function Notification({ align = "down" }: { align?: "down" | "up"
 				<div className="overflow-hidden rounded-16 border border-[#E2F1F5] bg-white shadow-heroImage">
 					<div className="flex items-center justify-between border-b border-[#EFEFEF] px-16 py-10">
 						<span className="text-16 font-medium text-[#333333]">{t("title")}</span>
-						{unread > 0 && <button type="button" onClick={markAll} className="text-14 text-primaryColor hover:underline">{t("markAll")}</button>}
+						{unread > 0 && <button type="button" onClick={onMarkAll} className="text-14 text-primaryColor hover:underline">{t("markAll")}</button>}
 					</div>
 					{/* никогда не просит больше половины высоты экрана — на невысоких телефонах список остаётся виден целиком со своим скроллом */}
 					<div className="max-h-[420px] overflow-y-auto [max-height:min(420px,55vh)]">

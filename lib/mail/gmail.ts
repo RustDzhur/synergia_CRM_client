@@ -1,6 +1,6 @@
 import MailComposer from "nodemailer/lib/mail-composer";
 import { ProviderError, fetchProvider } from "@/lib/http";
-import type { Fetched } from "./types";
+import type { Fetched, MailAttachment } from "./types";
 
 const base = () => (process.env.GMAIL_API_URL || "https://gmail.googleapis.com/gmail/v1/users/me").replace(/\/+$/, "");
 
@@ -66,7 +66,8 @@ export async function fetchGmail(token: string, known: Set<string>, limit = 30):
     return out;
 }
 
-export async function sendGmail(token: string, msg: { from: string; to: string; subject: string; text: string }) {
+export async function sendGmail(token: string, msg: { from: string; to: string; subject: string; text: string; attachments?: MailAttachment[] }) {
+    // MailComposer собирает MIME целиком, включая вложения (raw — то, что ждёт /messages/send)
     const raw: Buffer = await new Promise((resolve, reject) =>
         new MailComposer(msg).compile().build((err, buf) => (err ? reject(err) : resolve(buf)))
     );

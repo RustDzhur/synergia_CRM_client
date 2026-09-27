@@ -45,6 +45,7 @@ const InvoiceSchema = new Schema(
 
         status: { type: String, enum: ["draft", "sent", "paid", "overdue", "cancelled"], default: "draft" },
         sentAt: { type: Date },
+        sentTo: { type: String, default: "" }, // адрес, на который счёт ушёл письмом (кнопка «Отправить») — для истории
         paidAt: { type: Date },
         paidAmount: { type: Number, default: 0 },
 

@@ -25,7 +25,7 @@ export const toInvoiceDTO = (inv: any) => ({
     items: (inv.items ?? []).map((it: any) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice, taxRate: it.taxRate, product: it.product ? String(it.product) : "" })),
     currency: inv.currency, smallBusinessNote: !!inv.smallBusinessNote,
     issueDate: inv.issueDate, dueDate: inv.dueDate, notes: inv.notes,
-    status: inv.status, sentAt: inv.sentAt ? inv.sentAt.toISOString() : "", paidAt: inv.paidAt ? inv.paidAt.toISOString() : "", paidAmount: inv.paidAmount,
+    status: inv.status, sentAt: inv.sentAt ? inv.sentAt.toISOString() : "", sentTo: inv.sentTo ?? "", paidAt: inv.paidAt ? inv.paidAt.toISOString() : "", paidAmount: inv.paidAmount,
     reminderCount: inv.reminderCount ?? 0, lastReminderAt: inv.lastReminderAt ? inv.lastReminderAt.toISOString() : "",
     recurringSource: inv.recurringSource ? String(inv.recurringSource) : "",
     totals: computeTotals(inv.items ?? []),
@@ -52,7 +52,7 @@ export const toQuoteDTO = (q: any) => ({
     deal: q.deal ? String(q.deal) : "", order: q.order ? String(q.order) : "",
     items: (q.items ?? []).map(toItemDTO),
     currency: q.currency, issueDate: q.issueDate, validUntil: q.validUntil, notes: q.notes,
-    sentAt: q.sentAt ? q.sentAt.toISOString() : "",
+    sentAt: q.sentAt ? q.sentAt.toISOString() : "", sentTo: q.sentTo ?? "",
     version: q.version ?? 1,
     versions: (q.versions ?? []).map((v: any) => ({
         version: v.version, customerName: v.customerName, currency: v.currency,

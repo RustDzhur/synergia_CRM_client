@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
-import { notify } from "@/lib/notify";
+import { notify, unreadFor, visibleTo } from "@/lib/notify";
 import Deal from "@/models/Deal";
 import Notification from "@/models/Notification";
 import Task from "@/models/Task";
@@ -17,10 +17,10 @@ export async function GET(req: Request) {
     await connectDB();
     // отложенные действия автоматизации выполняются, пока кто-то из фирмы работает в CRM (этот запрос приходит каждые 30 секунд)
     await (await import("@/lib/automation")).runDueJobs(user.id).catch(() => undefined);
-    const mine = { org: user.id, $or: [{ user: { $exists: false } }, { user: null }, { user: user.userId }] };
+    const mine = visibleTo(user.id, user.userId);
     const [items, unread] = await Promise.all([
         Notification.find(mine).sort({ createdAt: -1 }).limit(50),
-        Notification.countDocuments({ ...mine, readBy: { $ne: user.userId } }),
+        Notification.countDocuments(unreadFor(user.id, user.userId)),
     ]);
     return NextResponse.json({
         unread,

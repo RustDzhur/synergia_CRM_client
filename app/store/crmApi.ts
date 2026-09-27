@@ -28,19 +28,21 @@ export async function api<T>(url: string, method = "GET", body?: unknown): Promi
     }
 }
 
-// То же, но с текстом ошибки сервера (для форм подключения, где пользователю нужно знать, что именно не так)
-export async function apiCall<T>(url: string, method = "GET", body?: unknown): Promise<{ ok: boolean; data: T | null; message: string; status: number }> {
+// То же, но с текстом ошибки сервера (для форм подключения, где пользователю нужно знать, что именно не так).
+// opts.cache — для опроса сервера: там нужен no-store, иначе браузер может отдать ответ из кэша.
+export async function apiCall<T>(url: string, method = "GET", body?: unknown, opts: { cache?: RequestCache } = {}): Promise<{ ok: boolean; data: T | null; message: string; code: string; status: number }> {
     try {
         const res = await fetch(url, {
             method,
             headers: authHeaders(),
             body: body === undefined ? undefined : JSON.stringify(body),
+            cache: opts.cache,
         });
         const json = res.status === 204 ? null : await res.json().catch(() => null);
-        if (!res.ok) return { ok: false, data: null, message: json?.message ?? `Error ${res.status}`, status: res.status };
-        return { ok: true, data: json as T, message: "", status: res.status };
+        if (!res.ok) return { ok: false, data: null, message: json?.message ?? `Error ${res.status}`, code: json?.code ?? "", status: res.status };
+        return { ok: true, data: json as T, message: "", code: "", status: res.status };
     } catch {
-        return { ok: false, data: null, message: "Network error", status: 0 };
+        return { ok: false, data: null, message: "Network error", code: "", status: 0 };
     }
 }
 

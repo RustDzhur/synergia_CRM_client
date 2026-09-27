@@ -2,11 +2,12 @@
 import React, { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdAdd } from "react-icons/md";
+import { MdAdd, MdDownload } from "react-icons/md";
 import { useFinanceStore } from "@/app/store/useFinanceStore";
 import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
+import { downloadDocumentPdf } from "./download";
 import { money } from "./format";
 
 const STATUS_COLOR: Record<string, string> = { draft: "#B3B3B3", active: "#0A8A2E", completed: "#5EA8F5", cancelled: "#EB5757" };
@@ -35,6 +36,9 @@ export default function Contracts() {
 		setOpen(false); setForm(EMPTY);
 	}
 	async function act(id: string, fn: (id: string) => Promise<string | null>) { setBusy(id); const err = await fn(id); setBusy(null); if (err) toast.error(err); }
+	async function downloadContractPdf(id: string, number: string) {
+		if (!(await downloadDocumentPdf("contracts", id, number, locale))) toast.error(t("pdfFailed"));
+	}
 
 	return (
 		<div>
@@ -73,6 +77,9 @@ export default function Contracts() {
 									</>
 								)}
 								{c.status === "active" && c.signedAt && <span className="text-14 text-[#999999]">{t("signedOn", { date: new Date(c.signedAt).toLocaleDateString(locale) })}</span>}
+								<button type="button" onClick={() => downloadContractPdf(c.id, c.number)} className="flex items-center gap-6 rounded-8 border border-[#E6E6E6] px-16 py-8 text-14 font-medium text-[#666666] transition-opacity hover:opacity-80">
+									<MdDownload size={16} /> {t("downloadPdf")}
+								</button>
 							</div>
 						</li>
 					))}

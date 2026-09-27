@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 import { randomToken } from "@/lib/crypto";
 import { ProviderError } from "@/lib/http";
 import { assertPublicHost } from "./hosts";
-import type { Fetched } from "./types";
+import type { Fetched, MailAttachment } from "./types";
 
 export interface ImapSmtpConfig {
     email: string;
@@ -91,12 +91,12 @@ const addressText = (a?: AddressObject | AddressObject[]) =>
         .filter(Boolean)
         .join(", ");
 
-export async function sendSmtp(c: ImapSmtpConfig, msg: { to: string; subject: string; text: string }) {
+export async function sendSmtp(c: ImapSmtpConfig, msg: { to: string; subject: string; text: string; attachments?: MailAttachment[] }) {
     await assertPublicHost(c.smtpHost);
     const domain = c.email.split("@")[1] || "localhost";
     const messageId = `<${randomToken(12)}@${domain}>`;
     try {
-        await smtp(c).sendMail({ from: c.email, to: msg.to, subject: msg.subject, text: msg.text, messageId });
+        await smtp(c).sendMail({ from: c.email, to: msg.to, subject: msg.subject, text: msg.text, messageId, attachments: msg.attachments });
     } catch (e) {
         throw mailError(e, "SMTP");
     }
