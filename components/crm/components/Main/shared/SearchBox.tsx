@@ -1,31 +1,29 @@
 import React from "react";
-import { MdSearch, MdTune } from "react-icons/md";
+import { TbAdjustments, TbSearch } from "react-icons/tb";
 
 interface Props {
 	value: string;
 	onChange: (value: string) => void;
 	placeholder: string;
-	// показывать значок фильтра «≡» справа от лупы
+	// показывать значок фильтра справа от лупы
 	withFilter?: boolean;
 	className?: string;
 }
 
-// Поле поиска из макета: белое, рамка 2px #E6E6E6 (в фокусе синяя), справа лупа и значок фильтра.
+// Поле поиска раздела: лупа слева, тёмная заливка и тонкая рамка (в фокусе — салатовая).
+// Высота 46px — как в образце, где поиск стоит отдельной строкой над списком.
 export default function SearchBox({ value, onChange, placeholder, withFilter = true, className = "" }: Props) {
 	return (
-		<div
-			className={`flex h-[50px] items-center justify-between rounded-8 border-2 border-[#E6E6E6] bg-white px-16 shadow-custom transition-colors focus-within:border-[#5EA8F5] ${className}`}>
+		<div className={`fs-field flex h-46 items-center gap-10 rounded-10 px-14 transition-colors ${className}`}>
+			<TbSearch size={17} className="shrink-0 text-[#9AA396]" />
 			<input
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
 				placeholder={placeholder}
 				aria-label={placeholder}
-				className="w-full min-w-0 text-16 text-[#666666] outline-none placeholder:text-[#CCCCCC] lg:text-18"
+				className="w-full min-w-0 bg-transparent text-14 text-[#f1f4ee] outline-none placeholder:text-[#9AA396]"
 			/>
-			<div className="flex shrink-0 items-center gap-10 text-[#CCCCCC]">
-				<MdSearch size={20} />
-				{withFilter && <MdTune size={20} />}
-			</div>
+			{withFilter && <TbAdjustments size={17} className="shrink-0 text-[#9AA396]" />}
 		</div>
 	);
 }

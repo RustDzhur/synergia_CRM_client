@@ -2,9 +2,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
-import { RiArrowDownSLine } from "react-icons/ri";
+import { TbChevronDown, TbLogout, TbSettings, TbShieldCog } from "react-icons/tb";
 import Link from "next/link";
-import { MdAdminPanelSettings, MdLogout, MdSettings } from "react-icons/md";
 import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
 import useAuthStore from "@/app/store/useAuthStore";
 import Loader from "@/app/utils/Loader";
@@ -44,14 +43,14 @@ export default function CurrentUser({ showAvatar = false }: Props) {
 	};
 
 	if (isLoading) {
-		return <Loader color="#5EA8F5" width="50" height="10" radius="9" />;
+		return <Loader color="#c6ff4d" width="50" height="10" radius="9" />;
 	}
 
 	if (!user) return null;
 
 	const initials = `${user.firstname?.[0] ?? ""}${user.lastname?.[0] ?? ""}`.toUpperCase();
 	const menuItem =
-		"flex w-full items-center gap-12 px-16 py-12 text-left text-16 font-medium text-[#666666] transition-colors duration-150 hover:bg-gray";
+		"fs-popover-row flex w-full items-center gap-10 px-14 py-10 text-left text-13 font-medium transition-colors duration-150";
 
 	return (
 		<div ref={rootRef} className="relative">
@@ -67,13 +66,12 @@ export default function CurrentUser({ showAvatar = false }: Props) {
 					size={50}
 					className={`${showAvatar ? "flex" : "hidden mp:flex"} mr-10 text-16 shadow-circleShadow`}
 				/>
-				<p className="max-w-[100px] lg:max-w-[130px] truncate text-16 lg:text-18 font-medium text-black whitespace-nowrap">
+				<p className="max-w-[100px] lg:max-w-[130px] truncate text-13 lg:text-14 font-medium text-[#f1f4ee] whitespace-nowrap">
 					{user.firstname} {user.lastname}
 				</p>
-				<RiArrowDownSLine
-					size={24}
-					color="#4D4D4D"
-					className={`ml-6 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+				<TbChevronDown
+					size={16}
+					className={`ml-6 shrink-0 text-[#8c948b] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
 				/>
 			</button>
 
@@ -82,23 +80,23 @@ export default function CurrentUser({ showAvatar = false }: Props) {
 				className={`w-[200px] ${
 					showAvatar ? "bottom-full left-0 mb-[8px] origin-bottom" : "right-0 top-full mt-[8px]"
 				}`}>
-				<div className="overflow-hidden rounded-8 border border-[#E2F1F5] bg-white shadow-custom">
+				<div className="fs-popover overflow-hidden">
 					<button type="button" onClick={() => { closeMenu(); openProfile(); }} className={menuItem}>
-						<MdSettings size={20} className="text-iconColor" />
+						<TbSettings size={17} className="shrink-0 text-[#8c948b]" />
 						{t("currentUser.settings")}
 					</button>
 					{user.isAdmin && (
 						<>
-							<div className="border-t border-[#E2F1F5]" />
+							<div className="border-t border-inkLine" />
 							<Link href={`/${locale}/crm/admin`} onClick={closeMenu} className={menuItem}>
-								<MdAdminPanelSettings size={20} className="text-iconColor" />
+								<TbShieldCog size={17} className="shrink-0 text-[#8c948b]" />
 								{t("adminCabinet")}
 							</Link>
 						</>
 					)}
-					<div className="border-t border-[#E2F1F5]" />
+					<div className="border-t border-inkLine" />
 					<button type="button" onClick={handleLogout} className={menuItem}>
-						<MdLogout size={20} className="text-iconColor" />
+						<TbLogout size={17} className="shrink-0 text-[#8c948b]" />
 						{t("currentUser.logout")}
 					</button>
 				</div>

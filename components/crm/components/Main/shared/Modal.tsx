@@ -40,7 +40,7 @@ export default function Modal({ open, onClose, children, className = "", align =
 		<div
 			onMouseDown={(e) => e.target === e.currentTarget && onClose()}
 			style={{ zIndex }}
-			className={`fixed inset-0 flex justify-center overflow-y-auto bg-modalBG ${flushOnMobile ? "p-0 md:p-16" : "p-16"} transition-opacity duration-300 motion-reduce:transition-none ${
+			className={`fs-overlay fixed inset-0 flex justify-center overflow-y-auto ${flushOnMobile ? "p-0 md:p-16" : "p-16"} transition-opacity duration-300 motion-reduce:transition-none ${
 				align === "center" ? "items-center" : "items-start"
 			} ${visible ? "opacity-100" : "opacity-0"}`}>
 			<div

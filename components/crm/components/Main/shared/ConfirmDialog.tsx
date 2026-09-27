@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useTranslations } from "next-intl";
-import { MdClose } from "react-icons/md";
+import { TbX } from "react-icons/tb";
 import Modal from "./Modal";
 
 interface Props {
@@ -13,27 +13,24 @@ interface Props {
 	confirmLabel?: string;
 }
 
-// Диалог подтверждения из макета: синяя шапка с крестиком, текст по центру, Cancel / Continue.
+// Диалог подтверждения: заголовок с крестиком, текст по центру, отмена и основное действие.
 export default function ConfirmDialog({ open, title, text, onCancel, onConfirm, confirmLabel }: Props) {
 	const t = useTranslations("crm");
 	return (
 		<Modal open={open} onClose={onCancel} label={title} zIndex={80} className="w-full max-w-[400px]">
-			<div className="overflow-hidden rounded-16 bg-white shadow-heroImage">
-				<div className="flex items-center justify-between bg-primaryColor px-20 py-12">
-					<h2 className="text-20 font-medium text-white">{title}</h2>
-					<button type="button" onClick={onCancel} aria-label={t("close")} className="text-white transition-opacity hover:opacity-80">
-						<MdClose size={22} />
+			<div className="fs-popover overflow-hidden">
+				<div className="flex items-center justify-between border-b border-inkLine px-16 py-12">
+					<h2 className="text-14 font-semibold text-[#f1f4ee]">{title}</h2>
+					<button type="button" onClick={onCancel} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+						<TbX size={18} />
 					</button>
 				</div>
-				<p className="px-30 pb-30 pt-24 text-center text-16 text-[#666666]">{text}</p>
-				<div className="flex items-center justify-center gap-24 pb-24">
-					<button type="button" onClick={onCancel} className="px-16 py-10 text-16 font-medium text-[#999999] transition-colors hover:text-black">
+				<p className="px-20 pb-20 pt-18 text-center text-13 text-[#8c948b]">{text}</p>
+				<div className="flex items-center justify-center gap-10 border-t border-inkLine px-16 py-12">
+					<button type="button" onClick={onCancel} className="fs-btn fs-btn-ghost h-36">
 						{t("cancel")}
 					</button>
-					<button
-						type="button"
-						onClick={onConfirm}
-						className="rounded-4 bg-primaryColor px-24 py-10 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80">
+					<button type="button" onClick={onConfirm} className="fs-btn fs-btn-primary h-36">
 						{confirmLabel ?? t("continue")}
 					</button>
 				</div>

@@ -12,7 +12,8 @@ import Checkbox from "../Checkbox";
 import ConfirmDialog from "../ConfirmDialog";
 import ListToolbar from "../ListToolbar";
 import SearchBox from "../SearchBox";
-import { TAB_BAR } from "../tabBar";
+import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../tabBar";
+import PageHeader from "@/components/crm/components/shared/PageHeader";
 import { Field, FieldOption, RecordItem, SectionConfig, STATUS_COLORS } from "./config";
 import RecordModal from "./RecordModal";
 
@@ -150,40 +151,40 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 
 	const allChecked = rows.length > 0 && rows.every((r) => selected.includes(r.id));
 	const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
-	const th = "border-l border-[#F0F0F0] px-10 py-16 text-center text-16 font-medium text-[#999999] md:text-18";
+	const th = "px-10 text-center";
 	const name = isCustom ? "" : t(`s_${tab}`);
 
 	return (
-		<div className="p-16 pt-0 md:p-30">
-			<div className="mb-20 flex flex-col gap-16 md:mb-30 md:flex-row md:items-center md:justify-between md:gap-30">
-				<div className="relative min-w-0 md:flex-1 lg:flex-none">
-					<div ref={barRef} role="tablist" className={`${TAB_BAR} gap-6 overflow-x-auto ${HIDE_SCROLLBAR}`}>
-						{config.tabs.map((key) => (
+		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
+			<PageHeader right={<span className="fs-chip">{rows.length}</span>}>
+				<div className="flex flex-col gap-16 md:flex-row md:items-center md:justify-between">
+					<div className="relative min-w-0">
+						<div ref={barRef} role="tablist" className={`${TAB_BAR} overflow-x-auto ${HIDE_SCROLLBAR}`}>
+							{config.tabs.map((key) => (
+								<button
+									key={key}
+									type="button"
+									role="tab"
+									aria-selected={tab === key}
+									onClick={() => changeTab(key)}
+									className={`${TAB_ITEM} ${tab === key ? TAB_ITEM_ACTIVE : TAB_ITEM_IDLE}`}>
+									{t(`tab_${key}`)}
+								</button>
+							))}
+						</div>
+						{canScrollRight && (
 							<button
-								key={key}
 								type="button"
-								role="tab"
-								aria-selected={tab === key}
-								onClick={() => changeTab(key)}
-								className={`shrink-0 whitespace-nowrap rounded-4 px-16 py-10 text-16 font-medium tracking-[0.32px] transition-colors duration-200 ${
-									tab === key ? "bg-primaryColor text-white" : "text-[#CCCCCC] hover:text-[#999999]"
-								}`}>
-								{t(`tab_${key}`)}
+								aria-label={tr("scrollTabs")}
+								onClick={() => barRef.current?.scrollBy({ left: 160, behavior: "smooth" })}
+								className="absolute right-0 top-1/2 hidden h-34 w-34 -translate-y-1/2 items-center justify-center rounded-50 bg-[rgba(255,255,255,0.06)] text-[#8c948b] transition-colors hover:text-[#f1f4ee] md:flex">
+								<MdChevronRight size={20} />
 							</button>
-						))}
+						)}
 					</div>
-					{canScrollRight && (
-						<button
-							type="button"
-							aria-label={tr("scrollTabs")}
-							onClick={() => barRef.current?.scrollBy({ left: 160, behavior: "smooth" })}
-							className="absolute right-10 top-1/2 hidden h-[36px] w-[36px] -translate-y-1/2 items-center justify-center rounded-50 bg-[#F2F2F2] text-[#999999] transition-colors hover:text-primaryColor md:flex">
-							<MdChevronRight size={26} />
-						</button>
-					)}
+					<SearchBox value={query} onChange={setQuery} placeholder={tr("search")} className="w-full shrink-0 md:w-[300px]" />
 				</div>
-				<SearchBox value={query} onChange={setQuery} placeholder={tr("search")} className="w-full md:w-[220px] lg:w-[300px]" />
-			</div>
+			</PageHeader>
 
 			{isCustom ? (
 				renderCustom?.(tab, { query, create: (tb, preset) => openModal(tb, null, preset), edit: (tb, record) => openModal(tb, record) })
@@ -198,27 +199,27 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 						onDelete={() => setToDelete({ tab, ids: selected })}
 					/>
 
-					<div className="min-h-[360px] overflow-x-auto rounded-16 bg-white shadow-heroImage md:min-h-[420px] lg:min-h-[500px]">
-						<table className="w-full min-w-[820px] table-fixed border-collapse">
+					<div className="fs-card min-h-[360px] overflow-x-auto md:min-h-[420px] lg:min-h-[500px]">
+						<table className="fs-table min-w-[820px] table-fixed">
 							<thead>
-								<tr className="bg-[#FAFCFF]">
-									<th className="w-[46px] py-16 pl-16 text-left">
+								<tr>
+									<th className="w-[46px] pl-16">
 										<Checkbox checked={allChecked} onChange={(v) => setSelected(v ? rows.map((r) => r.id) : [])} label={tc("selectAll")} />
 									</th>
-									<th className="w-[60px] py-16 text-center">
+									<th className="w-[52px]">
 										<div ref={gearRef} className="relative inline-block">
-											<button type="button" onClick={() => setGearOpen(!gearOpen)} aria-expanded={gearOpen} aria-label={tr("columns")} className="text-[#999999] transition-colors hover:text-primaryColor">
-												<MdSettings size={24} className={`transition-transform duration-300 ${gearOpen ? "rotate-90" : ""}`} />
+											<button type="button" onClick={() => setGearOpen(!gearOpen)} aria-expanded={gearOpen} aria-label={tr("columns")} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
+												<MdSettings size={20} className={`transition-transform duration-300 ${gearOpen ? "rotate-90" : ""}`} />
 											</button>
 											<Dropdown open={gearOpen} className="left-0 top-full mt-8 min-w-[220px]">
-												<div className="rounded-8 border border-[#E2F1F5] bg-white p-12 text-left shadow-custom">
-													<p className="mb-8 text-14 text-[#B3B3B3]">{tr("columns")}</p>
+												<div className="fs-popover p-12 text-left">
+													<p className="mb-8 text-12 text-[#8c948b]">{tr("columns")}</p>
 													{fields.map((f) => (
 														// строка кликабельна целиком; флажок сам обрабатывает нажатие, поэтому его обёртка гасит всплытие
 														<div
 															key={f.key}
 															onClick={() => f.key !== "name" && toggleColumn(f.key)}
-															className={`flex items-center gap-10 py-6 text-16 text-[#666666] ${f.key === "name" ? "opacity-60" : "cursor-pointer"}`}>
+															className={`flex items-center gap-10 py-6 text-13 text-[#cfd4cb] ${f.key === "name" ? "opacity-60" : "cursor-pointer"}`}>
 															<span onClick={(e) => e.stopPropagation()}>
 																<Checkbox
 																	checked={f.key === "name" || !hiddenKeys.includes(f.key)}
@@ -240,9 +241,9 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 												<button
 													type="button"
 													onClick={() => setSort(active && sort!.dir === -1 ? null : { key: f.key, dir: active ? -1 : 1 })}
-													className={`inline-flex max-w-full items-center gap-6 transition-colors hover:text-primaryColor ${active ? "text-primaryColor" : ""}`}>
+													className={`inline-flex max-w-full items-center gap-6 transition-colors hover:text-[#c6ff4d] ${active ? "text-[#c6ff4d]" : ""}`}>
 													<span className="truncate">{t(`f_${f.key}`)}</span>
-													{active && (sort!.dir === 1 ? <MdArrowUpward size={16} /> : <MdArrowDownward size={16} />)}
+													{active && (sort!.dir === 1 ? <MdArrowUpward size={14} /> : <MdArrowDownward size={14} />)}
 												</button>
 											</th>
 										);
@@ -256,19 +257,19 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 										<tr
 											key={r.id}
 											onClick={() => openModal(tab, r)}
-											className={`h-[60px] animate-fade-in cursor-pointer border-b border-[#F0F0F0] transition-colors duration-150 hover:bg-[#F7F9FF] ${checked ? "bg-[#F5F9FF]" : ""}`}>
+											className={`animate-fade-in cursor-pointer transition-colors duration-150 ${checked ? "bg-[rgba(198,255,77,0.06)]" : ""}`}>
 											<td className="pl-16" onClick={(e) => e.stopPropagation()}>
 												<Checkbox checked={checked} onChange={() => toggle(r.id)} label={tc("selectRow")} />
 											</td>
 											<td className="text-center">
-												<button type="button" aria-label={tr("editRow")} onClick={(e) => { e.stopPropagation(); openModal(tab, r); }} className="text-[#B3B3B3] transition-colors hover:text-primaryColor">
-													<MdEdit size={20} />
+												<button type="button" aria-label={tr("editRow")} onClick={(e) => { e.stopPropagation(); openModal(tab, r); }} className="text-[#9AA396] transition-colors hover:text-[#c6ff4d]">
+													<MdEdit size={17} />
 												</button>
 											</td>
 											{columns.map((f) => {
 												const value = r.values[f.key] ?? "";
 												return (
-													<td key={f.key} className="truncate px-10 text-center text-16 text-[#999999] md:text-18">
+													<td key={f.key} className="truncate text-13">
 														{f.key === "status" && value ? (
 															<span className="inline-flex items-center gap-8">
 																<span className="h-8 w-8 rounded-50" style={{ background: statusColors[value] ?? "#999999" }} />
@@ -285,7 +286,7 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 								})}
 							</tbody>
 						</table>
-						{rows.length === 0 && <p className="py-40 text-center text-16 text-[#999999]">{query ? tr("nothingFound") : tr("empty")}</p>}
+						{rows.length === 0 && <p className="py-40 text-center text-14 text-[#8c948b]">{query ? tr("nothingFound") : tr("empty")}</p>}
 					</div>
 				</>
 			)}

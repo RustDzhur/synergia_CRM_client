@@ -60,16 +60,16 @@ export default function RecordModal({ open, config, tab, record, preset, fieldOp
 
 	return (
 		<Modal open={open} onClose={onClose} label={name} className="w-full max-w-[560px]">
-			<form onSubmit={submit} className="relative max-h-[90vh] overflow-y-auto rounded-16 border border-[#E2F1F5] bg-white p-24 shadow-heroImage">
-				<button type="button" onClick={onClose} aria-label={tr("cancel")} className="absolute right-16 top-16 text-iconColor transition-colors hover:text-black">
+			<form onSubmit={submit} className="fs-popover fs-scroll relative max-h-[90vh] overflow-y-auto p-20">
+				<button type="button" onClick={onClose} aria-label={tr("cancel")} className="absolute right-16 top-16 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
 					<MdClose size={24} />
 				</button>
-				<h2 className="mb-20 pr-30 text-24 font-medium text-black">{record ? tr("edit", { name }) : tr("add", { name })}</h2>
+				<h2 className="mb-20 pr-30 text-18 font-semibold text-[#f1f4ee]">{record ? tr("edit", { name }) : tr("add", { name })}</h2>
 				<div className="grid grid-cols-1 gap-16 md:grid-cols-2">
 					{fields.map((f) =>
 						f.type === "select" ? (
 							<label key={f.key} className="block">
-								<span className="mb-6 block text-16 text-[#999999]">{t(`f_${f.key}`)}</span>
+								<span className="mb-6 block text-12 text-[#8c948b]">{t(`f_${f.key}`)}</span>
 								<select value={values[f.key] ?? ""} onChange={(e) => set(f.key, e.target.value)} className={`${fieldClass} cursor-pointer`}>
 									{optionsFor(f.key, f.options).map((o) => (
 										<option key={o.value} value={o.value}>{o.label}</option>
@@ -93,14 +93,14 @@ export default function RecordModal({ open, config, tab, record, preset, fieldOp
 				</div>
 				<div className="mt-24 flex flex-wrap items-center justify-end gap-12">
 					{record && (
-						<button type="button" onClick={() => onDelete(record)} className="mr-auto px-8 py-10 text-16 font-medium text-danger transition-opacity hover:opacity-80">
+						<button type="button" onClick={() => onDelete(record)} className="mr-auto px-8 py-10 text-13 font-semibold text-danger transition-opacity hover:opacity-80">
 							{tr("delete")}
 						</button>
 					)}
-					<button type="button" onClick={onClose} className="h-50 rounded-8 border border-[#E6E6E6] px-24 text-16 font-medium text-[#666666] transition-colors hover:bg-gray">
+					<button type="button" onClick={onClose} className="fs-btn fs-btn-ghost h-40">
 						{tr("cancel")}
 					</button>
-					<button type="submit" className="h-50 rounded-8 bg-primaryColor px-30 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80">
+					<button type="submit" className="fs-btn fs-btn-primary h-40">
 						{record ? tr("save") : tr("create")}
 					</button>
 				</div>

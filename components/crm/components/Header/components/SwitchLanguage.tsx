@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
-import { RiArrowDownSLine } from "react-icons/ri";
+import { TbChevronDown } from "react-icons/tb";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { languages, crmFlagUrl } from "@/app/languages/languages";
 import { Language } from "@/app/types/languageType";
@@ -44,22 +44,21 @@ export default function SwitchLanguage() {
 				aria-label="Language"
 				aria-expanded={isOpenDropDown}
 				onClick={() => setIsOpenDropDown(!isOpenDropDown)}
-				className="flex items-center cursor-pointer">
+				className="flex items-center gap-2 cursor-pointer">
 				<Image
 					src={crmFlagUrl(selectedLanguage.code)}
 					alt={t(`lang.${selectedLanguage.code}`)}
-					width={25}
-					height={18}
-					className="w-25 h-[18px] rounded-4 object-cover"
+					width={22}
+					height={16}
+					className="w-22 h-16 rounded-4 object-cover"
 				/>
-				<RiArrowDownSLine
-					size={24}
-					color="#999999"
-					className={`transition-transform duration-200 ${isOpenDropDown ? "rotate-180" : ""}`}
+				<TbChevronDown
+					size={15}
+					className={`text-[#8c948b] transition-transform duration-200 ${isOpenDropDown ? "rotate-180" : ""}`}
 				/>
 			</button>
 			<Dropdown open={isOpenDropDown} className="left-[-8px] top-full mt-[8px]">
-				<ul className="flex flex-col gap-4 rounded-8 border border-[#E2F1F5] bg-white p-8 shadow-custom">
+				<ul className="fs-popover flex flex-col gap-4 p-8">
 					{otherLanguages.map((lang) => (
 						<li key={lang.code}>
 							<button
@@ -70,9 +69,9 @@ export default function SwitchLanguage() {
 								<Image
 									src={crmFlagUrl(lang.code)}
 									alt=""
-									width={25}
-									height={18}
-									className="w-25 h-[18px] rounded-4 object-cover"
+									width={22}
+									height={16}
+									className="w-22 h-16 rounded-4 object-cover"
 								/>
 							</button>
 						</li>

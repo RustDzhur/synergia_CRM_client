@@ -50,10 +50,10 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
     // личную фирму заблокировал администратор платформы — работать нельзя, пока он не снимет блокировку
     if (activeOrg?.blocked) {
         return (
-            <div className="flex min-h-screen items-center justify-center p-24 text-center">
-                <div className="max-w-[420px] rounded-16 bg-white p-30 shadow-heroImage">
-                    <h1 className="mb-10 text-24 font-semibold text-[#333333]">Firmspace CRM</h1>
-                    <p className="text-16 text-[#666666]">{locale === "de" ? "Dieses Konto wurde gesperrt. Bitte wenden Sie sich an den Support." : locale === "ua" ? "Цей акаунт заблоковано. Зверніться до підтримки." : "This account has been blocked. Please contact support."}</p>
+            <div className="bg-ink flex min-h-screen items-center justify-center p-24 text-center">
+                <div className="fs-card max-w-[420px] p-24">
+                    <h1 className="mb-10 text-18 font-semibold text-[#f1f4ee]">Firmspace AI</h1>
+                    <p className="text-13 text-[#8c948b]">{locale === "de" ? "Dieses Konto wurde gesperrt. Bitte wenden Sie sich an den Support." : locale === "ua" ? "Цей акаунт заблоковано. Зверніться до підтримки." : "This account has been blocked. Please contact support."}</p>
                 </div>
             </div>
         );
@@ -61,16 +61,21 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
 
     return (
         <>
-            {/* Шапка из Figma: 82px на телефоне, 110px на планшете и desktop */}
-            <header className="bg-headerBackground">
-                <div className="flex items-center h-[82px] md:h-[110px] px-16 md:px-24 lg:px-32 lg:max-w-screen-lg m-auto">
-                    <Header />
-                </div>
-            </header>
-            <MobilePageBar />
-            <div className="flex lg:max-w-screen-lg m-auto min-h-[calc(100vh-82px)] md:min-h-[calc(100vh-110px)]">
+            {/* Каркас кабинета: сайдбар во всю высоту слева, справа — закреплённая шапка и содержимое раздела.
+                Прокручивается документ целиком (а не отдельная область), поэтому выпадающие списки и модальные окна
+                ведут себя как раньше. */}
+            <div className="flex min-h-screen bg-ink">
                 <Sidebar />
-                <main className="flex-1 min-w-0 bg-white pb-[80px]">{locked ? <Upgrade /> : children}</main>
+                <div className="flex min-w-0 flex-1 flex-col">
+                    {/* Шапка: 56px на телефоне, 64px от планшета */}
+                    <header className="sticky top-0 z-40 border-b border-inkLine bg-[rgba(10,12,11,0.86)] backdrop-blur-md">
+                        <div className="flex h-56 items-center px-16 md:h-64 md:px-24 lg:px-32">
+                            <Header />
+                        </div>
+                    </header>
+                    <MobilePageBar />
+                    <main className="min-w-0 flex-1 pb-[80px]">{locked ? <Upgrade /> : children}</main>
+                </div>
             </div>
             <ModalNavigation />
             <ProfileModal />

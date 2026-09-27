@@ -40,11 +40,11 @@ export default function ModalMenu() {
 			ref={modalRef}
 			onClick={handleCloseModal}
 			aria-hidden={!mobileMenu}
-			className={`fixed inset-x-0 bottom-0 top-[82px] md:inset-0 z-50 flex items-start justify-end bg-modalBG transition-[opacity,visibility] duration-300 motion-reduce:transition-none ${
+			className={`fs-overlay fixed inset-x-0 bottom-0 top-[56px] md:inset-0 z-50 flex items-start justify-end transition-[opacity,visibility] duration-300 motion-reduce:transition-none ${
 				mobileMenu ? "visible opacity-100" : "invisible opacity-0 pointer-events-none"
 			}`}>
 			<div
-				className={`relative h-full w-full md:w-auto overflow-y-auto bg-secondaryColor md:bg-white md:p-20 md:pt-50 md:pb-50 transition-transform duration-300 ease-out motion-reduce:transition-none ${
+				className={`fs-scroll relative h-full w-full overflow-y-auto bg-inkDeep md:w-auto md:border-l md:border-inkLine md:p-20 md:pt-50 md:pb-50 transition-transform duration-300 ease-out motion-reduce:transition-none ${
 					mobileMenu
 						? "translate-y-0 md:translate-x-0"
 						: "-translate-y-[16px] md:translate-y-0 md:translate-x-full"

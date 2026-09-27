@@ -105,9 +105,9 @@ export default function EntityEditPage<T extends Entity>({
 
 	if (missing) {
 		return (
-			<div className="p-30">
-				<p className="mb-20 text-18 text-[#666666]">{t("notFound")}</p>
-				<button type="button" onClick={() => router.push(backHref)} className="text-18 font-semibold text-primaryColor">
+			<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
+				<p className="mb-20 text-13 text-[#8c948b]">{t("notFound")}</p>
+				<button type="button" onClick={() => router.push(backHref)} className="text-13 font-semibold text-[#c6ff4d]">
 					{t("back")}
 				</button>
 			</div>
@@ -115,14 +115,14 @@ export default function EntityEditPage<T extends Entity>({
 	}
 
 	return (
-		<div className="grid animate-fade-in grid-cols-1 gap-30 p-16 md:p-30 mp:grid-cols-[300px_minmax(0,1fr)]">
+		<div className="grid animate-fade-in grid-cols-1 gap-20 px-16 py-20 md:px-24 md:py-24 mp:grid-cols-[320px_minmax(0,1fr)] lg:px-32">
 			<form
 				onSubmit={(e) => {
 					e.preventDefault();
 					save();
 				}}>
 				<div className="mb-16 flex flex-wrap items-center justify-between gap-12">
-					<h1 className="text-24 font-medium text-black">{isNew ? titleNew : titleEdit}</h1>
+					<h1 className="text-20 font-semibold tracking-[-0.4px] text-[#f1f4ee]">{isNew ? titleNew : titleEdit}</h1>
 					{!isNew && entity && <AiSummaryButton kind={tab === "contacts" ? "contact" : "company"} name={String(entity.name ?? "")} />}
 				</div>
 				<div className="flex flex-col gap-16">
@@ -141,13 +141,13 @@ export default function EntityEditPage<T extends Entity>({
 					<button
 						type="button"
 						onClick={() => router.push(backHref)}
-						className="flex-1 py-12 text-18 font-semibold text-[#999999] transition-colors hover:text-black">
+						className="fs-btn fs-btn-ghost h-40 flex-1">
 						{t("back")}
 					</button>
 					<button
 						type="submit"
 						disabled={saving}
-						className="h-[50px] flex-1 rounded-4 bg-primaryColor text-18 font-semibold text-white shadow-custom transition-opacity hover:opacity-80 disabled:opacity-60">
+						className="fs-btn fs-btn-primary h-40 flex-1 disabled:opacity-60">
 						{t("save")}
 					</button>
 				</div>
@@ -155,7 +155,7 @@ export default function EntityEditPage<T extends Entity>({
 
 			<div className="min-w-0">
 				{isNew || !entity ? (
-					<p className="rounded-16 bg-[#F5F7FC] p-24 text-16 text-[#999999]">{t("saveFirst")}</p>
+					<p className="fs-card p-20 text-13 text-[#8c948b]">{t("saveFirst")}</p>
 				) : (
 					<>
 						<ActivityComposer

@@ -100,8 +100,8 @@ export default function Softphone() {
 	const noProvider = state === "off" && providers.length === 0;
 	const inCall = state === "dialing" || state === "incoming" || state === "active";
 	const open = dialerOpen || inCall;
-	const round = "flex h-[52px] w-[52px] items-center justify-center rounded-50 text-white shadow-custom transition-opacity hover:opacity-80";
-	const dot = link === "ready" ? "bg-[#009A2B]" : link === "connecting" ? "bg-[#F4A100]" : "bg-[#BDBDBD]";
+	const round = "flex h-52 w-52 items-center justify-center rounded-50 text-[#0a0c0b] transition-opacity hover:opacity-80";
+	const dot = link === "ready" ? "bg-[#c6ff4d]" : link === "connecting" ? "bg-[#F4A100]" : "bg-[#8c948b]";
 
 	if (!open) {
 		return (
@@ -109,28 +109,28 @@ export default function Softphone() {
 				type="button"
 				onClick={() => openDialer()}
 				aria-label={t("dialerOpen")}
-				className="fixed bottom-16 right-16 z-[70] flex h-[56px] w-[56px] items-center justify-center rounded-50 bg-primaryColor text-white shadow-heroImage transition-opacity hover:opacity-80">
+				className="fixed bottom-16 right-16 z-[70] flex h-52 w-52 items-center justify-center rounded-50 bg-[#c6ff4d] text-[#0a0c0b] shadow-[0_10px_28px_rgba(0,0,0,0.5)] transition-opacity hover:opacity-80">
 				<MdDialpad size={26} />
-				<span className={`absolute right-2 top-2 h-[12px] w-[12px] rounded-50 border-2 border-[#FFFFFF] ${dot}`} />
+				<span className={`absolute right-2 top-2 h-[12px] w-[12px] rounded-50 border-2 border-[#0a0c0b] ${dot}`} />
 			</button>
 		);
 	}
 
 	if (noProvider) {
 		return (
-			<div role="dialog" aria-label={t("dialerTitle")} className="fixed bottom-16 right-16 z-[70] w-[300px] max-w-[calc(100vw-32px)] animate-fade-in rounded-16 border border-[#E2F1F5] bg-white shadow-heroImage">
-				<div className="flex items-center gap-8 border-b border-[#EFEFEF] px-16 py-10">
+			<div role="dialog" aria-label={t("dialerTitle")} className="fs-popover fixed bottom-16 right-16 z-[70] w-300 max-w-[calc(100vw-32px)] animate-fade-in">
+				<div className="flex items-center gap-8 border-b border-inkLine px-16 py-10">
 					<span className="h-[10px] w-[10px] shrink-0 rounded-50 bg-[#BDBDBD]" />
-					<span className="min-w-0 flex-1 truncate text-14 font-medium text-[#333333]">{t("dialerTitle")}</span>
-					<button type="button" onClick={closeDialer} aria-label={t("dialerClose")} className="text-[#999999] transition-colors hover:text-[#333333]">
+					<span className="min-w-0 flex-1 truncate text-13 font-semibold text-[#f1f4ee]">{t("dialerTitle")}</span>
+					<button type="button" onClick={closeDialer} aria-label={t("dialerClose")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
 						<MdClose size={20} />
 					</button>
 				</div>
 				<div className="flex flex-col items-center px-20 py-24 text-center">
 					<MdDialpad size={40} className="mb-12 text-[#BDBDBD]" aria-hidden />
-					<p className="mb-6 text-16 font-medium text-[#333333]">{t("dialerConnectTitle")}</p>
-					<p className="mb-16 text-14 text-[#666666]">{t("dialerNoProvider")}</p>
-					<Link href={`/${locale}/crm/settings/integration`} onClick={closeDialer} className="flex h-[44px] w-full items-center justify-center rounded-8 bg-primaryColor px-16 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80">
+					<p className="mb-6 text-13 font-semibold text-[#f1f4ee]">{t("dialerConnectTitle")}</p>
+					<p className="mb-16 text-13 text-[#8c948b]">{t("dialerNoProvider")}</p>
+					<Link href={`/${locale}/crm/settings/integration`} onClick={closeDialer} className="fs-btn fs-btn-primary h-40 w-full">
 						{t("dialerConnectButton")}
 					</Link>
 				</div>
@@ -154,16 +154,16 @@ export default function Softphone() {
 					type="button"
 					onClick={() => pressKey(d)}
 					aria-label={d}
-					className="flex h-[52px] flex-col items-center justify-center rounded-10 bg-[#F5F8FA] text-[#333333] transition-colors hover:bg-[#E8F0F6] active:bg-[#DCE8F1]">
+					className="flex h-52 flex-col items-center justify-center rounded-10 border border-inkLine bg-[rgba(255,255,255,0.03)] text-[#f1f4ee] transition-colors hover:bg-[rgba(255,255,255,0.08)] active:bg-[rgba(255,255,255,0.12)]">
 					<span className="text-20 font-medium leading-none">{d}</span>
-					{letters && <span className="mt-2 text-[9px] leading-none tracking-[1px] text-[#999999]">{letters}</span>}
+					{letters && <span className="mt-2 text-9 leading-none tracking-[1px] text-[#8c948b]">{letters}</span>}
 				</button>
 			))}
 		</div>
 	);
 
 	return (
-		<div role="dialog" aria-label={t("dialerTitle")} className="fixed bottom-16 right-16 z-[70] w-[300px] max-w-[calc(100vw-32px)] animate-fade-in rounded-16 border border-[#E2F1F5] bg-white shadow-heroImage">
+		<div role="dialog" aria-label={t("dialerTitle")} className="fs-popover fixed bottom-16 right-16 z-[70] w-300 max-w-[calc(100vw-32px)] animate-fade-in">
 			<div className="flex items-center gap-8 border-b border-[#EFEFEF] px-16 py-10">
 				<span className={`h-[10px] w-[10px] shrink-0 rounded-50 ${dot}`} title={link === "ready" ? t("linkReady") : link === "connecting" ? t("linkConnecting") : t("linkOffline")} />
 				{providers.length > 1 ? (
@@ -172,14 +172,14 @@ export default function Softphone() {
 						disabled={inCall}
 						onChange={(e) => selectProvider(e.target.value)}
 						aria-label={t("dialerProvider")}
-						className="min-w-0 flex-1 truncate bg-transparent text-14 font-medium text-[#333333] outline-none disabled:opacity-60">
+						className="min-w-0 flex-1 truncate bg-transparent text-13 font-medium text-[#f1f4ee] outline-none disabled:opacity-60">
 						{providers.map((p) => <option key={p.integrationId} value={p.integrationId}>{providerLabel(p.type, p.brand)} · {p.name}</option>)}
 					</select>
 				) : (
-					<span className="min-w-0 flex-1 truncate text-14 font-medium text-[#333333]">{provider ? `${providerLabel(provider.type, provider.brand)} · ${provider.name}` : t("dialerTitle")}</span>
+					<span className="min-w-0 flex-1 truncate text-13 font-medium text-[#f1f4ee]">{provider ? `${providerLabel(provider.type, provider.brand)} · ${provider.name}` : t("dialerTitle")}</span>
 				)}
 				{!inCall && (
-					<button type="button" onClick={closeDialer} aria-label={t("dialerClose")} className="text-[#999999] transition-colors hover:text-[#333333]">
+					<button type="button" onClick={closeDialer} aria-label={t("dialerClose")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
 						<MdClose size={20} />
 					</button>
 				)}
@@ -187,9 +187,9 @@ export default function Softphone() {
 
 			{!inCall && (
 				<div className="p-16">
-					<div className="mb-12 flex rounded-8 bg-[#F5F8FA] p-2" role="tablist">
+					<div className="mb-12 flex rounded-10 border border-inkLine bg-[rgba(255,255,255,0.03)] p-2" role="tablist">
 						{(["keys", "recent"] as const).map((k) => (
-							<button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`h-[30px] flex-1 rounded-6 text-14 font-medium transition-colors ${tab === k ? "bg-white text-primaryColor shadow-custom" : "text-[#999999]"}`}>
+							<button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`h-30 flex-1 rounded-8 text-12 font-medium transition-colors ${tab === k ? "bg-[rgba(255,255,255,0.08)] text-[#f1f4ee]" : "text-[#8c948b]"}`}>
 								{k === "keys" ? t("dialerKeypad") : t("dialerRecent")}
 							</button>
 						))}
@@ -197,7 +197,7 @@ export default function Softphone() {
 
 					{tab === "keys" ? (
 						<>
-							<div className="mb-12 flex items-center gap-6 border-b border-[#EFEFEF] pb-6">
+							<div className="mb-12 flex items-center gap-6 border-b border-inkLine pb-6">
 								<input
 									ref={inputRef}
 									type="text"
@@ -208,9 +208,9 @@ export default function Softphone() {
 									placeholder={t("dialerNumber")}
 									aria-label={t("dialerNumber")}
 									autoComplete="off"
-									className="h-[36px] min-w-0 flex-1 bg-transparent text-center text-24 tracking-[1px] text-[#333333] outline-none placeholder:text-16 placeholder:tracking-normal placeholder:text-[#BDBDBD]"
+									className="h-36 min-w-0 flex-1 bg-transparent text-center text-22 tracking-[1px] text-[#f1f4ee] outline-none placeholder:text-15 placeholder:tracking-normal placeholder:text-[#9AA396]"
 								/>
-								<button type="button" onClick={() => setNumber(number.slice(0, -1))} aria-label={t("dialerBackspace")} disabled={!number} className="text-[#999999] transition-colors hover:text-[#333333] disabled:opacity-20">
+								<button type="button" onClick={() => setNumber(number.slice(0, -1))} aria-label={t("dialerBackspace")} disabled={!number} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee] disabled:opacity-20">
 									<MdBackspace size={22} />
 								</button>
 							</div>
@@ -226,20 +226,20 @@ export default function Softphone() {
 						</>
 					) : (
 						<ul className="max-h-[340px] overflow-y-auto">
-							{history.length === 0 && <li className="py-24 text-center text-14 text-[#999999]">{t("dialerNoCalls")}</li>}
+							{history.length === 0 && <li className="py-24 text-center text-13 text-[#8c948b]">{t("dialerNoCalls")}</li>}
 							{history.map((c) => {
 								const missed = c.direction === "in" && c.status !== "completed";
 								const Icon = missed ? MdCallMissed : c.direction === "in" ? MdCallReceived : MdCallMade;
 								const label = c.status === "completed" ? mmss(c.duration * 1000) : c.status === "busy" ? t("dialerBusy") : c.status === "failed" ? t("dialerFailed") : c.direction === "in" ? t("dialerMissed") : t("dialerNoAnswer");
 								return (
 									<li key={c.id}>
-										<button type="button" onClick={() => { setNumber(c.peer); setTab("keys"); }} className="flex w-full items-center gap-10 rounded-8 px-8 py-8 text-left transition-colors hover:bg-[#F5F8FA]">
+										<button type="button" onClick={() => { setNumber(c.peer); setTab("keys"); }} className="flex w-full items-center gap-10 rounded-8 px-8 py-8 text-left transition-colors hover:bg-[rgba(255,255,255,0.05)]">
 											<Icon size={20} className={missed || c.status === "failed" ? "text-danger" : "text-[#009A2B]"} />
 											<span className="min-w-0 flex-1">
-												<span className="block truncate text-14 font-medium text-[#333333]">{c.name && c.name !== c.peer ? c.name : c.peer}</span>
-												<span className="block truncate text-12 text-[#999999]">{c.name && c.name !== c.peer ? `${c.peer} · ` : ""}{label}</span>
+												<span className="block truncate text-13 font-medium text-[#f1f4ee]">{c.name && c.name !== c.peer ? c.name : c.peer}</span>
+												<span className="block truncate text-11 text-[#8c948b]">{c.name && c.name !== c.peer ? `${c.peer} · ` : ""}{label}</span>
 											</span>
-											<span className="shrink-0 text-12 text-[#999999]">{shortTime(c.at)}</span>
+											<span className="shrink-0 text-11 text-[#8c948b]">{shortTime(c.at)}</span>
 										</button>
 									</li>
 								);
@@ -251,12 +251,12 @@ export default function Softphone() {
 
 			{inCall && (
 				<div role="status" aria-live="polite" className="p-16">
-					<p className="text-14 text-[#999999]">{statusText}</p>
-					<p className="mb-2 truncate text-20 font-semibold text-[#333333]">{peer}</p>
+					<p className="text-13 text-[#8c948b]">{statusText}</p>
+					<p className="mb-2 truncate text-18 font-semibold text-[#f1f4ee]">{peer}</p>
 					{state === "active" && startedAt ? <p className="mb-12 text-16 tabular-nums text-primaryColor">{mmss(Date.now() - startedAt)}</p> : <div className="mb-12" />}
 					{state === "active" && dtmfOpen && (
 						<div className="mb-12">
-							<p className="mb-6 h-[20px] truncate text-center text-16 tracking-[2px] text-[#666666]">{sent}</p>
+							<p className="mb-6 h-20 truncate text-center text-15 tracking-[2px] text-[#f1f4ee]">{sent}</p>
 							{keypad}
 						</div>
 					)}

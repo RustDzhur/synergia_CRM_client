@@ -3,7 +3,8 @@ import React, { useCallback, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { MdAccessAlarm, MdAutoMode, MdCallMissed, MdChat, MdMail, MdNotifications, MdPersonAdd } from "react-icons/md";
+import { MdAccessAlarm, MdAutoMode, MdCallMissed, MdChat, MdMail, MdPersonAdd } from "react-icons/md";
+import { TbBell } from "react-icons/tb";
 import { useNotificationStore, type Notif } from "@/app/store/useNotificationStore";
 import Dropdown from "@/app/utils/Dropdown";
 import { notifText } from "@/app/utils/notifText";
@@ -43,18 +44,18 @@ export default function Notification({ align = "down" }: { align?: "down" | "up"
 	};
 
 	const row = (n: Notif) => {
-		const Icon = ICON[n.type] ?? MdNotifications;
+		const Icon = ICON[n.type] ?? TbBell;
 		const body = (
 			<>
-				<Icon size={22} className={`mt-2 shrink-0 ${n.type === "deadline" ? "text-[#F4A100]" : "text-primaryColor"}`} />
+				<Icon size={18} className={`mt-2 shrink-0 ${n.type === "deadline" ? "text-[#F4A100]" : "text-[#c6ff4d]"}`} />
 				<span className="min-w-0 flex-1">
-					<span className={`block text-14 ${n.read ? "text-[#999999]" : "font-medium text-[#333333]"}`}>{notifText(t, n)}</span>
-					<span className="block text-12 text-[#B3B3B3]">{ago(n.at)}</span>
+					<span className={`block text-13 ${n.read ? "text-[#8c948b]" : "font-medium text-[#f1f4ee]"}`}>{notifText(t, n)}</span>
+					<span className="block text-11 text-[#9AA396]">{ago(n.at)}</span>
 				</span>
-				{!n.read && <span className="mt-6 h-[8px] w-[8px] shrink-0 rounded-[50%] bg-primaryColor" aria-hidden />}
+				{!n.read && <span className="mt-6 h-6 w-6 shrink-0 rounded-50 bg-[#c6ff4d]" aria-hidden />}
 			</>
 		);
-		const cls = "flex w-full items-start gap-10 px-16 py-10 text-left transition-colors hover:bg-gray";
+		const cls = "fs-popover-row flex w-full items-start gap-10 px-14 py-10 text-left transition-colors";
 		return n.link ? (
 			<Link key={n.id} href={`/${locale}${n.link}`} onClick={() => { markRead([n.id]); close(); }} className={cls}>{body}</Link>
 		) : (
@@ -64,25 +65,30 @@ export default function Notification({ align = "down" }: { align?: "down" | "up"
 
 	return (
 		<div ref={ref} className="relative">
-			<button type="button" aria-label={t("title")} aria-expanded={open} onClick={() => setOpen((v) => !v)} className="relative flex">
-				<MdNotifications size={24} color={unread > 0 ? "#5EA8F5" : "#B3B3B3"} />
+			<button
+				type="button"
+				aria-label={t("title")}
+				aria-expanded={open}
+				onClick={() => setOpen((v) => !v)}
+				className="relative flex h-34 w-34 items-center justify-center rounded-9 transition-colors hover:bg-[rgba(255,255,255,0.06)]">
+				<TbBell size={19} className={unread > 0 ? "text-[#c6ff4d]" : "text-[#8c948b]"} />
 				{unread > 0 && (
-					<span className="absolute -right-6 -top-6 flex h-[18px] min-w-[18px] items-center justify-center rounded-[9px] bg-danger px-4 text-[11px] font-semibold leading-none text-white">
+					<span className="absolute -right-3 -top-3 flex h-16 min-w-16 items-center justify-center rounded-50 bg-[#c6ff4d] px-4 text-10 font-bold leading-none text-[#0a0c0b]">
 						{unread > 99 ? "99+" : unread}
 					</span>
 				)}
 			</button>
 			<Dropdown
 				open={open}
-				className={`right-0 z-[60] w-[340px] max-w-[calc(100vw-32px)] ${align === "up" ? "bottom-full mb-12 origin-bottom" : "top-full mt-12"}`}>
-				<div className="overflow-hidden rounded-16 border border-[#E2F1F5] bg-white shadow-heroImage">
-					<div className="flex items-center justify-between border-b border-[#EFEFEF] px-16 py-10">
-						<span className="text-16 font-medium text-[#333333]">{t("title")}</span>
-						{unread > 0 && <button type="button" onClick={onMarkAll} className="text-14 text-primaryColor hover:underline">{t("markAll")}</button>}
+				className={`right-0 z-[60] w-340 max-w-[calc(100vw-32px)] ${align === "up" ? "bottom-full mb-12 origin-bottom" : "top-full mt-12"}`}>
+				<div className="fs-popover overflow-hidden">
+					<div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.07)] px-14 py-10">
+						<span className="text-14 font-semibold text-[#f1f4ee]">{t("title")}</span>
+						{unread > 0 && <button type="button" onClick={onMarkAll} className="text-12 text-[#c6ff4d] hover:underline">{t("markAll")}</button>}
 					</div>
 					{/* никогда не просит больше половины высоты экрана — на невысоких телефонах список остаётся виден целиком со своим скроллом */}
-					<div className="max-h-[420px] overflow-y-auto [max-height:min(420px,55vh)]">
-						{items.length === 0 ? <p className="px-16 py-24 text-center text-14 text-[#999999]">{t("empty")}</p> : items.map(row)}
+					<div className="fs-scroll max-h-[420px] overflow-y-auto [max-height:min(420px,55vh)]">
+						{items.length === 0 ? <p className="px-14 py-24 text-center text-13 text-[#8c948b]">{t("empty")}</p> : items.map(row)}
 					</div>
 				</div>
 			</Dropdown>

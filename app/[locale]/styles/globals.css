@@ -1,6 +1,250 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+	/* ---------- Поверхности ---------- */
+	/* Карточка: почти прозрачная заливка на фоне страницы + тонкая светлая рамка.
+	   Тень не нужна — глубину даёт рамка, как в образце. */
+	.fs-card {
+		background-color: rgba(255, 255, 255, 0.030);
+		border: 1px solid rgba(255, 255, 255, 0.09);
+		border-radius: 14px;
+	}
+
+	/* Всплывающая поверхность: меню, выпадающие списки, модальные окна — заметно светлее страницы */
+	.fs-popover {
+		background-color: #1D2320;
+		border: 1px solid rgba(255, 255, 255, 0.11);
+		border-radius: 14px;
+		box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+	}
+
+	/* Затемнённая подложка модального окна */
+	.fs-overlay {
+		background-color: rgba(6, 9, 8, 0.72);
+		backdrop-filter: blur(3px);
+	}
+
+	/* Метка над заголовком: «IHR ARBEITSBEREICH», «KI-TEAM» — мелкая, разряженная, салатовая */
+	.fs-eyebrow {
+		font-size: 11px;
+		font-weight: 600;
+		line-height: 1;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: #c6ff4d;
+	}
+
+	/* Точка перед меткой (в образце она есть у каждой метки) */
+	.fs-eyebrow-dot::before {
+		content: "";
+		display: inline-block;
+		width: 5px;
+		height: 5px;
+		margin-right: 8px;
+		border-radius: 50%;
+		background-color: currentColor;
+		vertical-align: middle;
+	}
+
+	/* Подписи групп в сайдбаре: «ARBEITSBEREICH», «VERWALTUNG» */
+	.fs-nav-group {
+		font-size: 9px;
+		font-weight: 600;
+		line-height: 1;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: #8c948b;
+	}
+
+	/* Плитка с иконкой — квадрат со скруглением под цвет акцента (иконка раздела, агента, карточки) */
+	.fs-icon-tile {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background-color: rgba(198, 255, 77, 0.10);
+		border: 1px solid rgba(198, 255, 77, 0.22);
+		color: #c6ff4d;
+		border-radius: 9px;
+	}
+
+	/* Пилюля-статус в шапке: «Geschützt», «8 Agenten» — рамка без заливки */
+	.fs-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		height: 28px;
+		padding: 0 12px;
+		border: 1px solid rgba(255, 255, 255, 0.10);
+		border-radius: 999px;
+		font-size: 12px;
+		font-weight: 500;
+		color: #cfd4cb;
+		white-space: nowrap;
+	}
+
+	/* Кнопки. Основная — салатовая с тёмным текстом, вторая — контурная.
+	   Высоту задаёт вызывающий код (h-40 по умолчанию не проставляется, чтобы её можно было менять). */
+	.fs-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 0 18px;
+		border-radius: 10px;
+		font-size: 13.5px;
+		font-weight: 600;
+		transition: background-color 0.15s, border-color 0.15s, opacity 0.15s;
+	}
+	.fs-btn-primary {
+		background-color: #c6ff4d;
+		color: #0a0c0b;
+	}
+	.fs-btn-primary:hover {
+		background-color: #d4ff70;
+	}
+	.fs-btn-ghost {
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		color: #f1f4ee;
+	}
+	.fs-btn-ghost:hover {
+		background-color: rgba(255, 255, 255, 0.05);
+	}
+
+	/* ---------- Таблицы ---------- */
+	/* Строки отделяются тонкой линией, шапка — приглушённая, в верхнем регистре */
+	.fs-table {
+		width: 100%;
+		border-collapse: separate;
+		border-spacing: 0;
+	}
+	.fs-table thead th {
+		padding: 10px 16px;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: #8c948b;
+		text-align: left;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+		white-space: nowrap;
+	}
+	.fs-table tbody td {
+		padding: 14px 16px;
+		font-size: 14px;
+		color: #f1f4ee;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+		vertical-align: middle;
+	}
+	.fs-table tbody tr:hover td {
+		background-color: rgba(255, 255, 255, 0.025);
+	}
+	.fs-table tbody tr:last-child td {
+		border-bottom: 0;
+	}
+
+	/* Строка меню и выпадающего списка */
+	.fs-popover-row {
+		color: #cfd4cb;
+	}
+	.fs-popover-row:hover {
+		background-color: rgba(255, 255, 255, 0.05);
+	}
+
+	/* Разделитель внутри панелей */
+	.fs-divider {
+		border-top: 1px solid rgba(255, 255, 255, 0.07);
+	}
+
+	/* Ссылка-действие: «Organisation prüfen →» */
+	.fs-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+		font-weight: 600;
+		color: #c6ff4d;
+		transition: opacity 0.15s;
+	}
+	.fs-link:hover {
+		opacity: 0.75;
+	}
+
+	/* Ряд «подпись слева — значение справа» с разделителем (карточка организации) */
+	.fs-kv {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		padding: 9px 0;
+		font-size: 12.5px;
+	}
+	.fs-kv + .fs-kv {
+		border-top: 1px solid rgba(255, 255, 255, 0.05);
+	}
+	.fs-kv dt {
+		color: #8c948b;
+	}
+	.fs-kv dd {
+		color: #e6eae2;
+		font-weight: 500;
+	}
+
+	/* Полоса прокрутки в тон интерфейсу */
+	.fs-scroll {
+		scrollbar-width: thin;
+		scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+	}
+	.fs-scroll::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+	.fs-scroll::-webkit-scrollbar-thumb {
+		background-color: rgba(255, 255, 255, 0.16);
+		border-radius: 999px;
+	}
+	.fs-scroll::-webkit-scrollbar-track {
+		background: transparent;
+	}
+}
+
+/* ---------- Поля ввода ----------
+   Селектор длиннее, чем `.dark input` в crm-dark.css, — иначе общее правило тёмной темы
+   перекрашивает поле поверх этих классов.
+   Стиль намеренно НЕ проваливается во вложенные input: класс вешают и на обёртку
+   (тогда поле внутри должно остаться без своей рамки), и на сам input. */
+html.dark .fs-field,
+html.dark input.fs-field,
+html.dark select.fs-field,
+html.dark textarea.fs-field {
+	background-color: rgba(255, 255, 255, 0.03);
+	border: 1px solid rgba(255, 255, 255, 0.09);
+	border-radius: 10px;
+	color: #f1f4ee;
+}
+html.dark .fs-field::placeholder,
+html.dark input.fs-field::placeholder,
+html.dark textarea.fs-field::placeholder {
+	color: #9AA396;
+}
+html.dark .fs-field:focus,
+html.dark .fs-field:focus-within,
+html.dark input.fs-field:focus,
+html.dark select.fs-field:focus,
+html.dark textarea.fs-field:focus {
+	border-color: rgba(198, 255, 77, 0.5);
+	outline: none;
+}
+/* Выпадающий список select: системная стрелка на тёмном фоне не читается — рисуем свою */
+html.dark select.fs-field {
+	appearance: none;
+	background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238C948B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 12px center;
+	padding-right: 34px;
+}
+
 html {
 	overflow-x: hidden;
 }

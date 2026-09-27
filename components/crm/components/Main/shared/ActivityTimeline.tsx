@@ -37,50 +37,50 @@ export default function ActivityTimeline({ activities, onDelete, withFilter = fa
 					<button
 						type="button"
 						onClick={() => setTodayOnly(!todayOnly)}
-						className="rounded-50 bg-primaryColor px-24 py-4 text-16 font-medium text-white shadow-custom transition-opacity hover:opacity-80">
+						className="fs-btn fs-btn-primary h-34">
 						{todayOnly ? t("today") : t("allTime")}
 					</button>
-					<MdTune size={20} className="text-[#999999]" />
+					<MdTune size={18} className="text-[#8c948b]" />
 				</div>
 			)}
 
 			{sorted.length === 0 ? (
-				<p className="py-24 text-center text-14 text-[#999999]">{t("notesEmpty")}</p>
+				<p className="py-24 text-center text-13 text-[#8c948b]">{t("notesEmpty")}</p>
 			) : (
-				<ul className="flex flex-col gap-16">
+				<ul className="flex flex-col gap-10">
 					{sorted.map((a) => (
-						<li key={a._id} className="group animate-fade-in-up rounded-16 bg-white p-16 shadow-custom">
+						<li key={a._id} className="group animate-fade-in-up fs-card p-14">
 							<div className="flex items-start justify-between gap-12">
 								<div className="flex flex-wrap items-baseline gap-10">
-									<h3 className="text-16 font-medium text-[#666666]">{t(TITLE_KEY[a.type] ?? "typeNote")}</h3>
-									<span className="text-14 text-[#B3B3B3]">{formatTime(a.createdAt, locale)}</span>
+									<h3 className="text-13 font-semibold text-[#f1f4ee]">{t(TITLE_KEY[a.type] ?? "typeNote")}</h3>
+									<span className="text-11 text-[#9AA396]">{formatTime(a.createdAt, locale)}</span>
 								</div>
 								{onDelete && a.type !== "stage" && a.type !== "created" && (
 									<button
 										type="button"
 										onClick={() => onDelete(a._id)}
 										aria-label={t("deleteActivity")}
-										className="text-[#B3B3B3] opacity-0 transition-[opacity,color] duration-150 hover:text-black focus:opacity-100 group-hover:opacity-100">
+										className="text-[#9AA396] opacity-0 transition-[opacity,color] duration-150 hover:text-[#f1f4ee] focus:opacity-100 group-hover:opacity-100">
 										<MdClose size={18} />
 									</button>
 								)}
 							</div>
 
 							{a.type === "activity" && a.meta && (
-								<p className="mt-8 flex items-center gap-8 text-14 text-[#666666]">
-									<MdAccessTimeFilled size={16} className="text-[#999999]" />
+								<p className="mt-8 flex items-center gap-8 text-12 text-[#8c948b]">
+									<MdAccessTimeFilled size={14} className="text-[#9AA396]" />
 									{formatDateTime(a.meta, locale)}
 								</p>
 							)}
 
 							{a.type === "stage" ? (
-								<span className="mt-10 inline-block rounded-50 bg-[#F0F0F0] px-16 py-6 text-14 text-[#666666]">{a.text}</span>
+								<span className="mt-10 inline-block rounded-50 border border-inkLine px-14 py-5 text-12 text-[#cfd4cb]">{a.text}</span>
 							) : a.type === "created" ? (
-								<p className="mt-10 px-16 text-16 text-[#666666]">{a.text}</p>
+								<p className="mt-10 px-16 text-13 text-[#cfd4cb]">{a.text}</p>
 							) : a.type === "activity" || a.type === "task" ? (
-								<p className="mt-10 rounded-8 border border-[#E6E6E6] px-16 py-12 text-16 text-[#666666]">{a.text}</p>
+								<p className="mt-10 rounded-10 border border-inkLine px-14 py-10 text-13 text-[#cfd4cb]">{a.text}</p>
 							) : (
-								<p className="mt-10 whitespace-pre-wrap break-words text-16 text-[#666666]">{a.text}</p>
+								<p className="mt-10 whitespace-pre-wrap break-words text-13 text-[#cfd4cb]">{a.text}</p>
 							)}
 						</li>
 					))}

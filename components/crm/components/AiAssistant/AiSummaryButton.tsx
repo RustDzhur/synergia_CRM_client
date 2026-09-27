@@ -20,7 +20,7 @@ export default function AiSummaryButton({ kind, name, className = "" }: { kind: 
 		send(t(`summarize_${kind}`, { name }), { locale, page: path });
 	}
 	return (
-		<button type="button" onClick={run} className={`flex shrink-0 items-center gap-6 rounded-8 border border-[#D6E6FA] bg-[#F5F9FF] px-12 py-6 text-14 font-medium text-primaryColor transition-colors hover:bg-[#EAF2FE] ${className}`}>
+		<button type="button" onClick={run} className={`flex shrink-0 items-center gap-6 rounded-10 border border-inkLine bg-[rgba(255,255,255,0.03)] px-12 py-6 text-12 font-medium text-[#c6ff4d] transition-colors hover:bg-[rgba(198,255,77,0.08)] ${className}`}>
 			<MdAutoAwesome size={16} aria-hidden />
 			{t("summary")}
 		</button>

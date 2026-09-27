@@ -23,26 +23,24 @@ interface Props<T> {
 	emptyText: string;
 }
 
-// Таблица списков из макета: карточка со скруглением и тенью, чекбоксы, серые заголовки.
+// Таблица списков: карточка с рамкой, чекбоксы, приглушённые заголовки в верхнем регистре.
 export default function EntityTable<T>({ rows, columns, getId, selected, onToggle, onToggleAll, isLoading, emptyText }: Props<T>) {
 	const t = useTranslations("crm");
 	const allChecked = rows.length > 0 && rows.every((r) => selected.includes(getId(r)));
 
 	return (
-		<div className="overflow-x-auto rounded-16 bg-white shadow-custom">
-			<table className="w-full min-w-[760px] table-fixed border-collapse">
+		<div className="fs-card overflow-x-auto">
+			<table className="fs-table min-w-[760px] table-fixed">
 				<thead>
-					<tr className="border-b border-[#EFEFEF]">
-						<th className="w-[46px] py-16 pl-16 text-left">
+					<tr>
+						<th className="w-[46px] pl-16 text-left">
 							<Checkbox checked={allChecked} onChange={onToggleAll} label={t("selectAll")} />
 						</th>
 						{columns.map((c) => (
 							<th
 								key={c.key}
 								style={{ width: c.width }}
-								className={`border-l border-[#F0F0F0] px-10 py-16 text-18 font-medium text-[#999999] ${
-									c.align === "left" ? "text-left" : "text-center"
-								}`}>
+								className={`px-10 ${c.align === "left" ? "text-left" : "text-center"}`}>
 								{c.header}
 							</th>
 						))}
@@ -55,16 +53,14 @@ export default function EntityTable<T>({ rows, columns, getId, selected, onToggl
 						return (
 							<tr
 								key={id}
-								className={`h-[60px] animate-fade-in transition-colors duration-150 hover:bg-[#F7F9FF] ${
-									checked ? "bg-[#F5F9FF]" : ""
-								}`}>
+								className={`animate-fade-in transition-colors duration-150 ${checked ? "bg-[rgba(198,255,77,0.06)]" : ""}`}>
 								<td className="pl-16">
 									<Checkbox checked={checked} onChange={() => onToggle(id)} label={t("selectRow")} />
 								</td>
 								{columns.map((c) => (
 									<td
 										key={c.key}
-										className={`truncate px-10 text-18 text-[#999999] ${c.align === "left" ? "text-left" : "text-center"}`}>
+										className={`truncate text-13 ${c.align === "left" ? "text-left" : "text-center"}`}>
 										{c.render(row)}
 									</td>
 								))}
@@ -73,9 +69,8 @@ export default function EntityTable<T>({ rows, columns, getId, selected, onToggl
 					})}
 				</tbody>
 			</table>
-			{isLoading && rows.length === 0 && <p className="py-40 text-center text-16 text-[#999999]">{t("loading")}</p>}
-			{!isLoading && rows.length === 0 && <p className="py-40 text-center text-16 text-[#999999]">{emptyText}</p>}
-			<div className="h-[16px]" />
+			{isLoading && rows.length === 0 && <p className="py-40 text-center text-14 text-[#8c948b]">{t("loading")}</p>}
+			{!isLoading && rows.length === 0 && <p className="py-40 text-center text-14 text-[#8c948b]">{emptyText}</p>}
 		</div>
 	);
 }

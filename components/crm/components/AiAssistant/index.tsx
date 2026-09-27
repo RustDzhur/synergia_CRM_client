@@ -37,7 +37,7 @@ function ActionCard({ message, action }: { message: AiMessage; action: AiAction 
 	const done = action.state === "done";
 
 	return (
-		<div className={`mt-10 rounded-16 border p-16 ${done ? "border-[#BFE6C8] bg-[#F3FBF5]" : action.state === "failed" ? "border-[#F3C5C5] bg-[#FFF6F6]" : "border-[#D6E6FA] bg-[#F5F9FF]"} ${action.state === "cancelled" ? "opacity-[0.6]" : ""}`}>
+		<div className={`mt-10 rounded-12 border p-14 ${done ? "border-[rgba(198,255,77,0.28)] bg-[rgba(198,255,77,0.06)]" : action.state === "failed" ? "border-[rgba(235,87,87,0.30)] bg-[rgba(235,87,87,0.07)]" : "border-inkLine bg-[rgba(255,255,255,0.02)]"} ${action.state === "cancelled" ? "opacity-[0.6]" : ""}`}>
 			<p className="flex items-center gap-8 text-16 font-medium text-[#334A74]">
 				<MdAutoAwesome size={18} className="shrink-0 text-primaryColor" aria-hidden />
 				{t(`act_${action.tool}`)}{action.target ? `: ${action.target}` : ""}
@@ -45,13 +45,13 @@ function ActionCard({ message, action }: { message: AiMessage; action: AiAction 
 			<dl className="mt-10 grid gap-x-12 gap-y-6 text-14 md:grid-cols-[auto_minmax(0,1fr)]">
 				{fields.map(([k, v]) => (
 					<React.Fragment key={k}>
-						<dt className="text-[#999999]">{t(`f_${k}`)}</dt>
-						<dd className="min-w-0 break-words text-[#4D4D4D]">
+						<dt className="text-[#8c948b]">{t(`f_${k}`)}</dt>
+						<dd className="min-w-0 break-words text-[#cfd4cb]">
 							{editable.includes(k) && action.state === "pending" ? (
 								k === "body" ? (
-									<textarea rows={6} value={edits[k] ?? String(v)} onChange={(e) => setEdits({ ...edits, [k]: e.target.value })} className="w-full resize-y rounded-8 border border-[#E6E6E6] bg-white px-10 py-8 text-14 outline-none focus:border-[#5EA8F5]" />
+									<textarea rows={6} value={edits[k] ?? String(v)} onChange={(e) => setEdits({ ...edits, [k]: e.target.value })} className="fs-field w-full resize-y px-10 py-8 text-13 outline-none" />
 								) : (
-									<input value={edits[k] ?? String(v)} onChange={(e) => setEdits({ ...edits, [k]: e.target.value })} className="w-full rounded-8 border border-[#E6E6E6] bg-white px-10 py-6 text-14 outline-none focus:border-[#5EA8F5]" />
+									<input value={edits[k] ?? String(v)} onChange={(e) => setEdits({ ...edits, [k]: e.target.value })} className="fs-field w-full px-10 py-6 text-13 outline-none" />
 								)
 							) : (
 								<span className="whitespace-pre-wrap">{shown(k, v)}</span>
@@ -62,13 +62,13 @@ function ActionCard({ message, action }: { message: AiMessage; action: AiAction 
 			</dl>
 			{action.state === "pending" || action.state === "running" ? (
 				<div className="mt-14 flex gap-10">
-					<button type="button" disabled={action.state === "running"} onClick={() => confirm(message.id, action.id, { ...action.args, ...edits })} className="rounded-8 bg-primaryColor px-20 py-8 text-16 font-medium text-white transition-opacity hover:opacity-80 disabled:cursor-default disabled:opacity-[0.5]">
+					<button type="button" disabled={action.state === "running"} onClick={() => confirm(message.id, action.id, { ...action.args, ...edits })} className="fs-btn fs-btn-primary h-34 disabled:cursor-default disabled:opacity-[0.5]">
 						{t(action.tool === "send_email" ? "send" : "confirm")}
 					</button>
-					<button type="button" disabled={action.state === "running"} onClick={() => cancel(message.id, action.id)} className="rounded-8 border border-[#E6E6E6] bg-white px-16 py-8 text-16 text-[#666666] transition-colors hover:bg-gray disabled:opacity-[0.5]">{t("cancel")}</button>
+					<button type="button" disabled={action.state === "running"} onClick={() => cancel(message.id, action.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]">{t("cancel")}</button>
 				</div>
 			) : (
-				<p className={`mt-12 flex flex-wrap items-center gap-8 text-14 ${done ? "text-[#0A8A2E]" : action.state === "failed" ? "text-danger" : "text-[#999999]"}`}>
+				<p className={`mt-12 flex flex-wrap items-center gap-8 text-14 ${done ? "text-[#0A8A2E]" : action.state === "failed" ? "text-danger" : "text-[#8c948b]"}`}>
 					{done && <MdCheckCircle size={18} aria-hidden />}
 					{action.state === "failed" && <MdErrorOutline size={18} aria-hidden />}
 					{done ? t(`done_${action.tool}`, action.params ?? {}) : action.state === "failed" ? action.message : t("cancelled")}
@@ -83,12 +83,12 @@ function ActionCard({ message, action }: { message: AiMessage; action: AiAction 
 
 function Bubble({ m }: { m: AiMessage }) {
 	const t = useTranslations("ai");
-	if (m.role === "user") return <div className="ml-auto max-w-[85%] whitespace-pre-wrap break-words rounded-16 bg-primaryColor px-16 py-10 text-16 text-white">{m.text}</div>;
+	if (m.role === "user") return <div className="ml-auto max-w-[85%] whitespace-pre-wrap break-words rounded-14 bg-[rgba(198,255,77,0.14)] px-14 py-10 text-13 text-[#f1f4ee]">{m.text}</div>;
 	return (
-		<div className="max-w-[95%] break-words text-16 text-[#4D4D4D]">
+		<div className="max-w-[95%] break-words text-13 text-[#cfd4cb]">
 			{!!m.steps?.length && (
 				<p className="mb-6 flex flex-wrap gap-6">
-					{m.steps.map((s) => <span key={s} className="flex items-center gap-[4px] rounded-8 bg-[#F5F7FC] px-10 py-[2px] text-12 text-[#999999]"><MdSearch size={12} aria-hidden />{t(`step_${s}`)}</span>)}
+					{m.steps.map((s) => <span key={s} className="flex items-center gap-[4px] rounded-8 border border-inkLine px-10 py-[2px] text-11 text-[#8c948b]"><MdSearch size={12} aria-hidden />{t(`step_${s}`)}</span>)}
 				</p>
 			)}
 			{m.error ? <p className="flex items-start gap-8 text-danger"><MdErrorOutline size={20} className="mt-[2px] shrink-0" aria-hidden />{m.text}</p> : <Markdown text={m.text} />}
@@ -141,34 +141,34 @@ export default function AiAssistant() {
 
 	return (
 		<Modal open={open} onClose={hide} align="top" label={t("title")} zIndex={90} className="mt-[6vh] w-full max-w-[720px]">
-			<div className="flex max-h-[84vh] flex-col overflow-hidden rounded-16 bg-white shadow-heroImage">
-				<header className="flex items-center gap-10 border-b border-[#F0F0F0] px-20 py-14">
+			<div className="fs-popover flex max-h-[84vh] flex-col overflow-hidden">
+				<header className="flex items-center gap-10 border-b border-inkLine px-16 py-12">
 					<MdAutoAwesome size={22} className="text-primaryColor" aria-hidden />
 					<h2 className="whitespace-nowrap text-18 font-medium text-[#334A74]">{t("title")}</h2>
-					{status?.configured && <span className="ml-auto hidden text-12 text-[#999999] md:inline">{t("remaining", { n: status.remaining })}</span>}
-					<button type="button" onClick={reset} disabled={empty} className={`${status?.configured ? "max-md:ml-auto" : "ml-auto"} whitespace-nowrap text-14 text-[#999999] transition-colors hover:text-primaryColor disabled:opacity-[0.4]`}>{t("newChat")}</button>
-					<button type="button" onClick={hide} aria-label={t("close")} className="text-[#999999] transition-colors hover:text-black"><MdClose size={22} /></button>
+					{status?.configured && <span className="ml-auto hidden text-11 text-[#8c948b] md:inline">{t("remaining", { n: status.remaining })}</span>}
+					<button type="button" onClick={reset} disabled={empty} className={`${status?.configured ? "max-md:ml-auto" : "ml-auto"} whitespace-nowrap text-12 text-[#8c948b] transition-colors hover:text-[#c6ff4d] disabled:opacity-[0.4]`}>{t("newChat")}</button>
+					<button type="button" onClick={hide} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><MdClose size={18} /></button>
 				</header>
 
 				<div className="min-h-[160px] flex-1 overflow-y-auto px-20 py-16">
 					{blocked ? (
-						<p className="rounded-16 bg-[#F5F7FC] p-20 text-16 text-[#666666]">{t("notConfigured")}</p>
+						<p className="fs-card p-18 text-13 text-[#8c948b]">{t("notConfigured")}</p>
 					) : empty ? (
 						<div>
-							<p className="mb-12 text-16 text-[#666666]">{t("intro")}</p>
-							{status && !status.canWrite && <p className="mb-12 text-14 text-[#999999]">{t("readOnly")}</p>}
+							<p className="mb-12 text-13 text-[#cfd4cb]">{t("intro")}</p>
+							{status && !status.canWrite && <p className="mb-12 text-12 text-[#8c948b]">{t("readOnly")}</p>}
 							<ul className="flex flex-col gap-8">
 								{suggestions.map((s) => (
 									<li key={s.key}>
-										<button type="button" onClick={() => pick(t(s.key), s.send)} className="w-full rounded-8 border border-[#E6E6E6] px-14 py-10 text-left text-16 text-[#4D4D4D] transition-colors hover:border-[#5EA8F5] hover:bg-[#F5F9FF]">{t(s.key)}</button>
+										<button type="button" onClick={() => pick(t(s.key), s.send)} className="w-full rounded-10 border border-inkLine px-14 py-10 text-left text-13 text-[#cfd4cb] transition-colors hover:border-[rgba(198,255,77,0.5)] hover:bg-[rgba(198,255,77,0.06)]">{t(s.key)}</button>
 									</li>
 								))}
 							</ul>
 							{recent.length > 0 && (
 								<>
-									<p className="mb-6 mt-20 text-12 uppercase tracking-[0.5px] text-[#999999]">{t("recent")}</p>
+									<p className="fs-eyebrow mb-6 mt-20 text-[#8C948B]">{t("recent")}</p>
 									<ul className="flex flex-col gap-[4px]">
-										{recent.map((r) => <li key={r}><button type="button" onClick={() => pick(r, false)} className="w-full truncate text-left text-14 text-[#666666] hover:text-primaryColor">↺ {r}</button></li>)}
+										{recent.map((r) => <li key={r}><button type="button" onClick={() => pick(r, false)} className="w-full truncate text-left text-12 text-[#8c948b] transition-colors hover:text-[#c6ff4d]">↺ {r}</button></li>)}
 									</ul>
 								</>
 							)}
@@ -176,13 +176,13 @@ export default function AiAssistant() {
 					) : (
 						<div className="flex flex-col gap-16">
 							{messages.map((m) => <Bubble key={m.id} m={m} />)}
-							{busy && <p className="animate-pulse text-14 text-[#999999]">{t("thinking")}</p>}
+							{busy && <p className="animate-pulse text-12 text-[#8c948b]">{t("thinking")}</p>}
 							<div ref={endRef} />
 						</div>
 					)}
 				</div>
 
-				<form onSubmit={(e) => { e.preventDefault(); submit(); }} className="border-t border-[#F0F0F0] px-20 py-14">
+				<form onSubmit={(e) => { e.preventDefault(); submit(); }} className="border-t border-inkLine px-16 py-12">
 					<div className="flex items-end gap-10">
 						<textarea
 							ref={inputRef}
@@ -194,9 +194,9 @@ export default function AiAssistant() {
 							disabled={blocked}
 							placeholder={t("placeholder")}
 							aria-label={t("placeholder")}
-							className="min-h-[50px] flex-1 resize-none rounded-[12px] border border-[#E6E6E6] px-16 py-10 text-16 text-[#4D4D4D] outline-none transition-colors placeholder:text-[#CCCCCC] focus:border-[#5EA8F5] disabled:bg-[#F5F7FC]"
+							className="fs-field min-h-50 flex-1 resize-none px-14 py-10 text-13 outline-none transition-colors"
 						/>
-						<button type="submit" disabled={!draft.trim() || busy || blocked} className="h-[50px] rounded-8 bg-primaryColor px-20 text-16 font-medium text-white transition-opacity hover:opacity-80 disabled:cursor-default disabled:opacity-[0.4]">{t("ask")}</button>
+						<button type="submit" disabled={!draft.trim() || busy || blocked} className="fs-btn fs-btn-primary h-50 shrink-0 disabled:cursor-default disabled:opacity-[0.4]">{t("ask")}</button>
 					</div>
 					<p className="mt-8 text-12 text-[#B3B3B3]">{t("disclaimer")}</p>
 				</form>

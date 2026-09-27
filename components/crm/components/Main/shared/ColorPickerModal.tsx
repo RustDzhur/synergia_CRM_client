@@ -20,9 +20,9 @@ export default function ColorPickerModal({ open, value, onChange, onClose }: Pro
 
 	return (
 		<Modal open={open} onClose={onClose} label={t("chooseColor")} zIndex={80} className="w-full max-w-[480px]">
-			<div className="rounded-24 bg-white p-20 shadow-heroImage">
+			<div className="fs-popover p-20">
 				<div className="flex justify-end">
-					<button type="button" onClick={onClose} aria-label={t("close")} className="text-[#4D4D4D] transition-colors hover:text-black">
+					<button type="button" onClick={onClose} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
 						<MdClose size={28} />
 					</button>
 				</div>
@@ -35,17 +35,17 @@ export default function ColorPickerModal({ open, value, onChange, onClose }: Pro
 							onClick={() => onChange(color)}
 							style={{ backgroundColor: color }}
 							className={`h-20 w-20 rounded-4 border transition-transform duration-150 hover:scale-125 ${
-								current === color ? "border-[#4D4D4D] ring-2 ring-[#CCCCCC]" : "border-[#E6E6E6]"
+								current === color ? "border-[#c6ff4d] ring-2 ring-[rgba(198,255,77,0.35)]" : "border-inkLine"
 							}`}
 						/>
 					))}
 				</div>
 				<div className="mt-24 flex items-center justify-between">
-					<div style={{ backgroundColor: value }} className="h-30 w-60 rounded-4 border border-[#E6E6E6] transition-colors duration-200" />
+					<div style={{ backgroundColor: value }} className="h-30 w-60 rounded-8 border border-inkLine transition-colors duration-200" />
 					<button
 						type="button"
 						onClick={() => customRef.current?.click()}
-						className="text-16 font-medium text-[#4D4D4D] transition-colors hover:text-primaryColor">
+						className="fs-btn fs-btn-primary h-34">
 						{t("customColor")}
 					</button>
 					<input

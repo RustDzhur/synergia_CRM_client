@@ -69,7 +69,7 @@ export default function NotificationCenter() {
 
 	if (!banner) return null;
 	return (
-		<div role="alert" className="fixed inset-x-0 top-0 z-[90] flex items-center justify-center gap-12 bg-[#FFF4D6] px-16 py-10 shadow-heroImage">
+		<div role="alert" className="fixed inset-x-0 top-0 z-[90] flex items-center justify-center gap-12 border-b border-[rgba(244,161,0,0.3)] bg-[#1A1509] px-16 py-10 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
 			<MdAccessAlarm size={26} className="shrink-0 animate-bounce text-[#F4A100]" aria-hidden />
 			<p className="min-w-0 text-16 font-medium text-[#6B4E00]">{notifText(t, banner)}</p>
 			<Link href={`/${locale}${banner.link}`} onClick={() => { markRead([banner.id]); setBanner(null); }} className="shrink-0 rounded-8 bg-[#F4A100] px-16 py-6 text-14 font-medium text-white transition-opacity hover:opacity-80">{t("open")}</Link>

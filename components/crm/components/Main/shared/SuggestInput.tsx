@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useState } from "react";
-import { MdSearch } from "react-icons/md";
+import { TbSearch } from "react-icons/tb";
 import Dropdown from "@/app/utils/Dropdown";
 import { useClickOutside } from "@/app/utils/useClickOutside";
 import { fieldClass } from "./FormField";
@@ -40,9 +40,9 @@ export default function SuggestInput({ value, onChange, onPick, options, placeho
 				className={`${fieldClass} ${showSearchIcon ? "pr-36" : ""} ${className}`}
 				autoComplete="off"
 			/>
-			{showSearchIcon && <MdSearch size={18} className="pointer-events-none absolute right-10 top-[11px] text-[#B3B3B3]" />}
-			<Dropdown open={open && options.length > 0} className="left-0 right-0 top-full">
-				<ul className="max-h-[220px] overflow-y-auto rounded-b-8 border border-[#EFEFEF] bg-[#F5F5F5] shadow-custom">
+			{showSearchIcon && <TbSearch size={16} className="pointer-events-none absolute right-11 top-[12px] text-[#9AA396]" />}
+			<Dropdown open={open && options.length > 0} className="left-0 right-0 top-full mt-6">
+				<ul className="fs-popover fs-scroll max-h-[240px] overflow-y-auto">
 					{options.slice(0, 6).map((o) => (
 						<li key={o.key}>
 							<button
@@ -52,10 +52,10 @@ export default function SuggestInput({ value, onChange, onPick, options, placeho
 									onPick(o);
 									setOpen(false);
 								}}
-								className="block w-full px-10 py-8 text-left transition-colors duration-150 hover:bg-[#EBEEF8]">
-								<span className="block text-14 font-medium text-[#666666]">{o.title}</span>
+								className="fs-popover-row block w-full px-12 py-8 text-left transition-colors duration-150">
+								<span className="block text-13 font-medium text-[#f1f4ee]">{o.title}</span>
 								{o.lines?.filter(Boolean).map((line, i) => (
-									<span key={i} className="block text-14 text-[#999999]">{line}</span>
+									<span key={i} className="block text-12 text-[#8c948b]">{line}</span>
 								))}
 							</button>
 						</li>

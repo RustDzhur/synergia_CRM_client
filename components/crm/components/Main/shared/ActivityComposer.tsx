@@ -54,12 +54,12 @@ export default function ActivityComposer({ tabs, onSubmit, submitLabel }: Props)
 		requestAnimationFrame(() => el?.focus());
 	}
 
-	const toolbarButton = "flex items-center gap-4 text-14 text-[#999999]";
+	const toolbarButton = "flex items-center gap-4 text-12 text-[#8c948b]";
 	const disabledTip = t("soon");
 
 	return (
-		<div className="rounded-16 bg-white shadow-custom">
-			<div role="tablist" className="flex overflow-x-auto overflow-y-hidden border-b border-[#EFEFEF] px-4">
+		<div className="fs-card overflow-hidden">
+			<div role="tablist" className="flex overflow-x-auto overflow-y-hidden border-b border-inkLine px-4">
 				{tabs.map((x) => (
 					<button
 						key={x.key}
@@ -67,12 +67,12 @@ export default function ActivityComposer({ tabs, onSubmit, submitLabel }: Props)
 						role="tab"
 						aria-selected={x.key === active}
 						onClick={() => setActive(x.key)}
-						className={`relative shrink-0 px-16 py-12 text-16 font-medium transition-colors duration-200 ${
-							x.key === active ? "text-primaryColor" : "text-[#666666] hover:text-black"
+						className={`relative shrink-0 px-16 py-10 text-13 font-medium transition-colors duration-200 ${
+							x.key === active ? "text-[#c6ff4d]" : "text-[#8c948b] hover:text-[#f1f4ee]"
 						}`}>
 						{x.label}
 						<span
-							className={`absolute inset-x-0 bottom-[-1px] h-[2px] bg-primaryColor transition-transform duration-200 ${
+							className={`absolute inset-x-0 bottom-[-1px] h-[2px] bg-[#c6ff4d] transition-transform duration-200 ${
 								x.key === active ? "scale-x-100" : "scale-x-0"
 							}`}
 						/>
@@ -88,7 +88,7 @@ export default function ActivityComposer({ tabs, onSubmit, submitLabel }: Props)
 							onChange={(e) => setText(e.target.value)}
 							onKeyDown={(e) => e.key === "Enter" && submit()}
 							placeholder={tab.placeholder}
-							className="h-[50px] w-full rounded-8 border border-[#E6E6E6] px-16 text-16 text-[#666666] outline-none transition-colors placeholder:text-[#CCCCCC] focus:border-[#5EA8F5]"
+							className="fs-field h-40 w-full px-12 text-13 outline-none transition-colors"
 						/>
 						{text.trim() !== "" && (
 							<div className="flex animate-fade-in-up flex-wrap items-center justify-end gap-12">
@@ -97,31 +97,31 @@ export default function ActivityComposer({ tabs, onSubmit, submitLabel }: Props)
 										type="datetime-local"
 										value={when}
 										onChange={(e) => setWhen(e.target.value)}
-										className="h-[40px] rounded-8 border border-[#E6E6E6] px-10 text-14 text-[#666666] outline-none focus:border-[#5EA8F5]"
+										className="fs-field h-34 px-10 text-12 outline-none"
 									/>
 								)}
-								<button type="button" onClick={() => setText("")} className="px-12 py-8 text-14 text-[#999999] hover:text-black">
+								<button type="button" onClick={() => setText("")} className="px-12 py-8 text-12 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
 									{t("cancel")}
 								</button>
 								<button
 									type="button"
 									onClick={submit}
 									disabled={busy}
-									className="rounded-4 bg-primaryColor px-20 py-8 text-14 font-medium text-white shadow-custom disabled:opacity-60">
+									className="fs-btn fs-btn-primary h-34 disabled:opacity-60">
 									{submitLabel}
 								</button>
 							</div>
 						)}
 					</div>
 				) : (
-					<div className="rounded-8 border border-[#E6E6E6] p-16 transition-colors focus-within:border-[#5EA8F5]">
+					<div className="fs-field p-14 transition-colors">
 						<textarea
 							ref={areaRef}
 							value={text}
 							onChange={(e) => setText(e.target.value)}
 							placeholder={tab.placeholder}
 							rows={5}
-							className="w-full resize-none text-16 text-[#666666] outline-none placeholder:text-[#CCCCCC]"
+							className="w-full resize-none bg-transparent text-13 text-[#f1f4ee] outline-none placeholder:text-[#9AA396]"
 						/>
 						<div className="mt-10 flex flex-wrap items-center justify-between gap-12">
 							<div className="flex flex-wrap items-center gap-16">
@@ -139,14 +139,14 @@ export default function ActivityComposer({ tabs, onSubmit, submitLabel }: Props)
 								</button>
 							</div>
 							<div className="flex items-center gap-16">
-								<button type="button" onClick={() => setText("")} className="text-14 text-[#999999] hover:text-black">
+								<button type="button" onClick={() => setText("")} className="text-12 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
 									{t("cancel")}
 								</button>
 								<button
 									type="button"
 									onClick={submit}
 									disabled={busy || !text.trim()}
-									className="rounded-4 bg-primaryColor px-20 py-8 text-14 font-medium text-white shadow-custom transition-opacity disabled:opacity-60">
+									className="fs-btn fs-btn-primary h-34 disabled:opacity-60">
 									{submitLabel}
 								</button>
 							</div>

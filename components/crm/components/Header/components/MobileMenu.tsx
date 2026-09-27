@@ -1,12 +1,11 @@
 "use client";
 import React from "react";
-import { MdMenu, MdMoreHoriz } from "react-icons/md";
+import { TbMenu2 } from "react-icons/tb";
 import { useToggleMenuState } from "@/app/store/useToggleMenuState";
 
-// Figma: на телефоне (375) — «≡», на планшете (768) — «⋯». Активное состояние — синий.
+// Кнопка разделов на телефоне: сайдбар там скрыт, разделы открываются панелью поверх страницы.
 export default function MobileMenu() {
 	const { mobileMenu, toggleMobileMenu } = useToggleMenuState();
-	const color = mobileMenu ? "#5EA8F5" : "#4D4D4D";
 
 	return (
 		<button
@@ -14,9 +13,8 @@ export default function MobileMenu() {
 			aria-label="Menu"
 			aria-expanded={mobileMenu}
 			onClick={toggleMobileMenu}
-			className="flex cursor-pointer">
-			<MdMenu size={30} color={color} className="md:hidden" />
-			<MdMoreHoriz size={30} color={color} className="hidden md:block" />
+			className="flex h-34 w-34 items-center justify-center rounded-9 text-[#cfd4cb] transition-colors hover:bg-[rgba(255,255,255,0.06)]">
+			<TbMenu2 size={20} />
 		</button>
 	);
 }

@@ -1,47 +1,49 @@
+"use client";
 import React from "react";
-import Logo from "./components/Logo";
+import { useTranslations } from "next-intl";
+import BrandMark from "@/components/crm/components/shared/BrandMark";
+import Breadcrumb from "./components/Breadcrumb";
 import Search from "./components/Search";
-import SwitchCompany from "./components/SwitchCompany";
 import SwitchLanguage from "./components/SwitchLanguage";
 import Notification from "./components/Notification";
 import AiButton from "./components/AiButton";
-import CurrentUser from "./components/CurrentUser";
 import MobileMenu from "./components/MobileMenu";
-import BurgerMenu from "../Sidebar/components/BurgerMenu";
 
-// Раскладка из Figma (шапка 110px, отступы по краям 32px на desktop, 24px на tablet):
-//  desktop: [≡ 40] 35 [Logo] 36 [Search 350] 30 [Switch Company 387] ...вправо... [Язык] 30 [🔔 25 Аватар Имя]
-//  tablet:  [Logo] 54 [Search 300] ...вправо... [Имя ⌄] [🔔] [⋯]
-//  mobile:  [Logo] ...вправо... [✨] [≡]   (всё остальное — внутри мобильного меню)
+// Шапка кабинета (64px): слева — где мы находимся, справа — поиск, помощник, язык, уведомления, статус доступа.
+// Имя пользователя, фирма и выход живут в подвале сайдбара, поэтому здесь их нет.
+// На телефоне сайдбара не видно — вместо крошек стоят знак бренда и кнопка меню.
 function Layout() {
+	const t = useTranslations("navBar");
 	return (
-		<div className="flex items-center w-full">
-			<div className="flex items-center shrink-0 lg:gap-35">
+		<div className="flex w-full items-center gap-16">
+			{/* Телефон: знак бренда и название продукта — сайдбара с логотипом тут нет */}
+			<div className="flex min-w-0 items-center gap-10 md:hidden">
+				<BrandMark size={26} />
+				<span className="truncate text-15 font-semibold tracking-[-0.2px] text-[#f1f4ee]">
+					Firmspace <span className="text-[#c6ff4d]">AI</span>
+				</span>
+			</div>
+
+			<div className="hidden min-w-0 md:block">
+				<Breadcrumb />
+			</div>
+
+			<div className="ml-auto flex shrink-0 items-center gap-14">
 				<div className="hidden lg:block">
-					<BurgerMenu size={40} />
+					<Search />
 				</div>
-				<Logo />
-			</div>
-			<div className="hidden md:block shrink-0 md:ml-[49px] lg:ml-[36px]">
-				<Search />
-			</div>
-			{/* 387px — ширина из макета; если справа не хватает места (длинное имя), блок сжимается, но не залезает на язык */}
-			<div className="hidden lg:block min-w-[200px] lg:ml-30 lg:w-[387px] lg:mr-30 shrink">
-				<SwitchCompany />
-			</div>
-			<div className="flex items-center shrink-0 ml-auto gap-30">
-				<div className="hidden lg:block shrink-0">
+				<AiButton />
+				<div className="hidden md:block">
 					<SwitchLanguage />
 				</div>
-				<div className="hidden md:flex items-center gap-25 md:flex-row-reverse lg:flex-row">
-					<AiButton />
-					<Notification />
-					<CurrentUser />
-				</div>
-				<div className="flex items-center gap-20 lg:hidden">
-					<div className="md:hidden">
-						<AiButton />
-					</div>
+				<Notification />
+				{/* Индикатор защищённого контура: в макете стоит справа в шапке */}
+				<span className="fs-chip hidden lg:inline-flex">
+					<span className="h-6 w-6 rounded-50 bg-[#c6ff4d]" aria-hidden />
+					{t("protectedArea")}
+				</span>
+				{/* На планшете и телефоне узкий сайдбар не помещается в экран — разделы открываются этой кнопкой */}
+				<div className="md:hidden">
 					<MobileMenu />
 				</div>
 			</div>
