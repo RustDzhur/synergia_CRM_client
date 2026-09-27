@@ -29,7 +29,7 @@ export default function TasksFeed({ tasks, selected, isLoading }: Props) {
 	return (
 		<section>
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-16">
-				<h2 className="text-32 font-medium text-[#666666] md:text-40">{t("tasksTitle")}</h2>
+				<h2 className="text-20 font-medium text-[#666666] md:text-24">{t("tasksTitle")}</h2>
 				<div className="flex h-[50px] w-full items-center justify-between rounded-8 border-2 border-[#E6E6E6] bg-white px-16 shadow-custom transition-colors focus-within:border-[#5EA8F5] sm:w-[350px]">
 					<input
 						value={query}

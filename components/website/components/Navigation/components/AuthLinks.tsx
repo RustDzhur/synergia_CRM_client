@@ -42,12 +42,12 @@ export default function AuthLinks() {
 		<ul className="flex items-center gap-16 sm:justify-between sm:px-20 lg:gap-20 lg:px-0">
 			<li
 				onClick={handleToggleSignin}
-				className="cursor-pointer lg:text-white sm:text-menu sm:text-24 sm:font-medium hover:text-accentGreen lg:text-18 lg:font-medium lg:tracking-[0.4px]">
+				className="cursor-pointer lg:text-white sm:text-menu sm:text-16 sm:font-medium hover:text-accentGreen lg:text-15 lg:font-medium lg:tracking-[0.3px]">
 				{t("signin")}
 			</li>
 			<li
 				onClick={handleToggleSignup}
-				className="cursor-pointer rounded-300 bg-accentGreen px-20 py-10 text-14 font-medium text-[#0A0A0A] transition-opacity hover:opacity-80 sm:text-24 lg:text-16 lg:tracking-[0.4px]">
+				className="cursor-pointer rounded-300 border border-accentGreen px-18 py-8 text-14 font-medium text-accentGreen transition-colors hover:bg-[rgba(198,255,77,0.1)] sm:text-16 lg:text-15 lg:tracking-[0.3px]">
 				{t("signup")}
 			</li>
 		</ul>

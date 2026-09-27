@@ -165,7 +165,7 @@ export default function Feed() {
 	return (
 		<div className="p-16 md:p-30">
 			<div className="mb-20 flex flex-col gap-16 md:mb-30 md:flex-row md:items-center md:justify-between">
-				<h1 className="text-32 font-medium text-[#4D4D4D] md:text-34">{t("feedTitle")}</h1>
+				<h1 className="text-24 font-medium text-[#4D4D4D] md:text-25">{t("feedTitle")}</h1>
 				<SearchBox value={query} onChange={setQuery} placeholder={t("filterSearch")} className="w-full md:w-[250px] lg:w-[350px]" />
 			</div>
 			<form onSubmit={submitPost} className="mb-30 flex flex-col gap-10 rounded-24 bg-white p-16 shadow-heroImage md:p-18">
