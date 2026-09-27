@@ -20,7 +20,7 @@ const NEEDED: Record<string, Needed[]> = {
 	sms: ["twilio"],
 	voice: ["twilio", "sip"],
 	audio_call: ["twilio", "sip"],
-	messengers: ["telegram", "viber", "messenger", "webchat"],
+	messengers: ["telegram", "viber", "whatsapp", "messenger", "webchat"],
 };
 
 // Названия провайдеров берём из Settings → Integration, чтобы одно и то же подключение называлось одинаково.
@@ -30,6 +30,7 @@ const LABEL: Record<Needed, string> = {
 	sip: "intProviderSip",
 	telegram: "intTelegram",
 	viber: "intViber",
+	whatsapp: "intWhatsapp",
 	messenger: "intMessenger",
 	webchat: "intOnlineChat",
 };

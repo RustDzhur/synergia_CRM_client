@@ -1,7 +1,7 @@
 // Типы, общие для сервера (API) и клиента (Settings → Integration, Chat and Calls, Web Mails)
 
-export type IntegrationType = "twilio" | "sip" | "telegram" | "viber" | "messenger" | "webchat" | "mail";
-export type MessagingChannel = "twilio" | "sip" | "telegram" | "viber" | "messenger" | "webchat";
+export type IntegrationType = "twilio" | "sip" | "telegram" | "viber" | "whatsapp" | "messenger" | "webchat" | "mail";
+export type MessagingChannel = "twilio" | "sip" | "telegram" | "viber" | "whatsapp" | "messenger" | "webchat";
 
 export interface IntegrationDTO {
     id: string;

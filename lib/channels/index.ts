@@ -11,6 +11,7 @@ import { sendMessenger } from "./messenger";
 import { sendSms, TwilioSecrets } from "./twilio";
 import { sendTelegram } from "./telegram";
 import { sendViber } from "./viber";
+import { sendWhatsApp } from "./whatsapp";
 
 type Doc = HydratedDocument<any>;
 
@@ -47,8 +48,9 @@ export const samePhone = (a?: string, b?: string) => {
 };
 
 // Если номер собеседника совпал с телефоном контакта из CRM — беседа подписывается именем контакта
+// (номера приходят в Twilio, SIP и WhatsApp)
 async function matchContact(owner: string, channel: string, externalId: string) {
-    if (channel !== "twilio" && channel !== "sip") return null;
+    if (channel !== "twilio" && channel !== "sip" && channel !== "whatsapp") return null;
     const contacts = await Contact.find({ owner, phone: { $exists: true, $ne: "" } }).select("name phone").lean();
     return contacts.find((c: { phone?: string }) => samePhone(c.phone, externalId)) ?? null;
 }
@@ -151,6 +153,16 @@ export async function recordMessage(integration: Doc, input: MessageInput) {
     return { conversation, message, duplicate: false };
 }
 
+// Отчёт о доставке от WhatsApp: его присылают отдельным вебхуком уже после отправки, поэтому отмечаем сообщение задним числом
+export async function markMessageFailed(integration: Doc, externalId: string, error: string) {
+    if (!externalId) return false;
+    const res = await Message.updateOne(
+        { integration: integration._id, externalId, direction: "out" },
+        { $set: { status: "failed", meta: { error } } }
+    );
+    return res.modifiedCount > 0;
+}
+
 // Отправка ответа оператора: провайдер отправляет, и только потом сообщение попадает в беседу
 export async function sendToConversation(integration: Doc, conversation: Doc, text: string) {
     let externalId: string | undefined;
@@ -163,6 +175,9 @@ export async function sendToConversation(integration: Doc, conversation: Doc, te
             break;
         case "messenger":
             externalId = await sendMessenger(secretsOf(integration).pageAccessToken, conversation.externalId, text);
+            break;
+        case "whatsapp":
+            externalId = await sendWhatsApp(secretsOf(integration).accessToken, integration.config.phoneNumberId, conversation.externalId, text);
             break;
         case "twilio":
             externalId = await sendSms(secretsOf<TwilioSecrets>(integration), integration.config.phone, conversation.externalId, text);

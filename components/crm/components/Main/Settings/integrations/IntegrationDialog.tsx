@@ -37,6 +37,12 @@ const FIELDS: Record<Real, FieldDef[]> = {
 		{ key: "pageAccessToken", label: "intfPageToken", secret: true },
 		{ key: "appSecret", label: "intfAppSecret", secret: true },
 	],
+	whatsapp: [
+		{ key: "phoneNumberId", label: "intfWaPhoneId", placeholder: "123456789012345" },
+		{ key: "accessToken", label: "intfWaToken", secret: true },
+		{ key: "appSecret", label: "intfAppSecret", secret: true },
+		{ key: "wabaId", label: "intfWaWabaId", optional: true, placeholder: "123456789012345" },
+	],
 	webchat: [
 		{ key: "title", label: "intfChatTitle", placeholder: "Chat with us" },
 		{ key: "greeting", label: "intfGreeting", placeholder: "Hello! How can we help?" },
@@ -256,6 +262,14 @@ export default function IntegrationDialog({ type, title, onClose, providerSwitch
 							<>
 								<CopyField label={t("intCallbackUrl")} value={current.webhookUrl} />
 								<CopyField label={t("intVerifyToken")} value={current.config.verifyToken ?? ""} />
+							</>
+						)}
+						{/* WhatsApp адрес у Meta задаётся вручную: подставляем оба значения, которые нужно вписать в кабинете */}
+						{current && shown === "whatsapp" && (
+							<>
+								<CopyField label={t("intCallbackUrl")} value={current.webhookUrl} />
+								<CopyField label={t("intVerifyToken")} value={current.config.verifyToken ?? ""} />
+								<p className="text-12 text-[#999999]">{t("intWaWebhookHelp")}</p>
 							</>
 						)}
 						{current && shown === "twilio" && <p className="text-14 text-[#666666]">{t("intTwilioAuto")}</p>}
