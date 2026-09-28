@@ -4,6 +4,7 @@ import { safeEqual } from "@/lib/crypto";
 import { findByToken, secretsOf } from "@/lib/integrations";
 import { recordMessage } from "@/lib/channels";
 import { parseTelegramUpdate, sendTelegram } from "@/lib/channels/telegram";
+import { reportError } from "@/lib/reportError";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,10 @@ export async function POST(req: Request, { params }: { params: { token: string }
         integration.config = { ...(integration.config ?? {}), errorChatId: message.externalId };
         integration.markModified("config");
         await integration.save();
-        await sendTelegram(secretsOf(integration).botToken, message.externalId, "Готово: сюда будут приходить отчёты об ошибках приложения. Отвязать — команда /errors_off");
+        // Сразу отправляем проверочное сообщение тем же путём, что и настоящие отчёты: человек видит
+        // и что адрес принят, и как выглядит отчёт. Иначе пришлось бы ждать первой настоящей поломки,
+        // чтобы понять, работает ли настройка.
+        await reportError(new Error("Проверка отчётов: бот может писать в этот чат, отчёты об ошибках настроены."), { where: "проверка" });
         return NextResponse.json({ ok: true });
     }
     if (message && /^\/errors_off(?:@\w+)?\s*$/i.test(message.text.trim())) {
