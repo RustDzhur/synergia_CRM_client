@@ -35,6 +35,15 @@ export async function POST(req: Request) {
     const botToken = String(b.botToken ?? "").trim();
     const chatId = String(b.chatId ?? "").trim();
     try {
+        // «проверить»: отправляет проверочное сообщение тем же путём, что и настоящие отчёты.
+        // Текст с временем — чтобы проверку можно было повторять: одинаковые сообщения придерживаются.
+        if (action === "test") {
+            const bot = await errorBot();
+            if (!bot.botToken || !bot.chatId) return badRequest("Бот отчётов не настроен");
+            await reportError(new Error(`Проверка отчётов (${new Date().toISOString().slice(11, 19)}): бот на связи, отчёты об ошибках настроены.`), { where: "проверка" });
+            return NextResponse.json({ ok: true });
+        }
+
         // «найти чат»: забираем последнее сообщение, отправленное боту, и запоминаем, откуда оно
         if (action === "find-chat") {
             const current = await errorBot();

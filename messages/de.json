@@ -2091,6 +2091,8 @@
         "errSave": "Speichern",
         "errFound": "Chat gefunden",
         "errFromEnvHelp": "TELEGRAM_BOT_TOKEN und TELEGRAM_ERROR_CHAT_ID sind in den Umgebungsvariablen gesetzt — es gelten diese Werte.",
+        "errTest": "Prüfen",
+        "errSent": "Testmeldung gesendet",
         "sys_database": "Datenbank",
         "sys_appUrl": "Seitenadresse (APP_URL)",
         "sys_stripe": "Stripe-Zahlungen",

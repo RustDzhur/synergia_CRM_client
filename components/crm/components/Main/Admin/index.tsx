@@ -97,6 +97,15 @@ export default function AdminPanel() {
 		toast.success(t("saved"));
 		loadErrors();
 	}
+
+	// Проверка отчётов: сообщение уходит тем же путём, что и настоящие — иначе непонятно, работает ли настройка
+	async function testErrors() {
+		setErrBusy(true);
+		const res = await apiCall("/api/admin/settings/errors", "POST", { action: "test" });
+		setErrBusy(false);
+		if (!res.ok) return void toast.error(res.message);
+		toast.success(t("errSent"));
+	}
 	async function runCheck() {
 		setChecking(true);
 		const res = await apiCall<Check[]>("/api/admin/system");
@@ -197,11 +206,14 @@ export default function AdminPanel() {
 			<div className="fs-card mb-24 p-16">
 				<div className="flex flex-wrap items-center justify-between gap-12">
 					<div><p className="text-14 font-medium text-[#f1f4ee]">{t("errTitle")}</p><p className="text-12 text-[#8c948b]">{t("errHelp")}</p></div>
-					{errFromEnv ? (
-						<span className="fs-chip h-24 px-10 text-10">{t("metaFromEnv")}</span>
-					) : (
-						<button type="button" onClick={saveErrors} disabled={errBusy || !errChat} className="fs-btn fs-btn-primary h-36 disabled:opacity-60">{errBusy ? "…" : t("errSave")}</button>
-					)}
+					<div className="flex items-center gap-10">
+						{errFromEnv && <span className="fs-chip h-24 px-10 text-10">{t("metaFromEnv")}</span>}
+						{/* Проверка нужна в обоих случаях: значения могли задать давно, и надо видеть, что они рабочие */}
+						<button type="button" onClick={testErrors} disabled={errBusy} className="fs-btn fs-btn-ghost h-34 disabled:opacity-60">{t("errTest")}</button>
+						{!errFromEnv && (
+							<button type="button" onClick={saveErrors} disabled={errBusy || !errChat} className="fs-btn fs-btn-primary h-36 disabled:opacity-60">{errBusy ? "…" : t("errSave")}</button>
+						)}
+					</div>
 				</div>
 				{!errFromEnv && (
 					<div className="mt-12 flex flex-wrap items-end gap-12">

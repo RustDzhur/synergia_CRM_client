@@ -2091,6 +2091,8 @@
         "errSave": "Зберегти",
         "errFound": "Чат знайдено",
         "errFromEnvHelp": "TELEGRAM_BOT_TOKEN і TELEGRAM_ERROR_CHAT_ID задані у змінних оточення — використовуються ці значення.",
+        "errTest": "Перевірити",
+        "errSent": "Тестове повідомлення надіслано",
         "sys_database": "База даних",
         "sys_appUrl": "Адреса сайту (APP_URL)",
         "sys_stripe": "Платежі Stripe",
