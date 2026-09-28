@@ -22,6 +22,23 @@ async function graph<T>(path: string, accessToken: string, init: RequestInit = {
 
 export const getPage = (accessToken: string) => graph<{ id: string; name: string }>("/me?fields=id,name", accessToken);
 
+/**
+ * Проверка формы реквизитов до запроса к Meta. В кабинете токен страницы, токен пользователя и секрет
+ * приложения лежат рядом и внешне не отличаются, а Meta на подмену отвечает невнятным «Cannot parse
+ * access token» — по нему не понять, что именно вставили не туда. Возвращает текст проблемы или пустую строку.
+ */
+export function messengerCredentialsProblem(pageAccessToken: string, appSecret: string): string {
+    if (!pageAccessToken) return "Enter the Page access token";
+    // секрет приложения — ровно 32 шестнадцатеричных знака, токен страницы в разы длиннее
+    if (/^[0-9a-f]{32}$/i.test(pageAccessToken)) return "This is the App secret, not the Page access token: the token is much longer. In Meta open Messenger → Settings → Access tokens and copy the Page token.";
+    if (pageAccessToken.length < 60 || !/^[A-Za-z0-9_\-|.]+$/.test(pageAccessToken))
+        return "The Page access token looks incomplete. Copy it whole from Meta → Messenger → Settings → Access tokens — it is a long string, over 60 characters.";
+    if (!appSecret) return "Enter the App secret";
+    // обратная путаница: в поле секрета попал токен
+    if (appSecret.length > 60 || appSecret.includes("|")) return "This looks like a token, not the App secret: the secret is 32 characters (0–9, a–f) from Meta → Settings → Basic.";
+    return "";
+}
+
 export async function sendMessenger(accessToken: string, psid: string, text: string) {
     const res = await graph<{ message_id: string }>("/me/messages", accessToken, {
         method: "POST",

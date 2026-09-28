@@ -6,7 +6,7 @@ import { ProviderError } from "@/lib/http";
 import Conversation from "@/models/Conversation";
 import Integration from "@/models/Integration";
 import Message from "@/models/Message";
-import { getPage } from "./messenger";
+import { getPage, messengerCredentialsProblem } from "./messenger";
 import { verifyPlivo } from "./plivo";
 import { parseSip } from "./sip";
 import { verifyTelnyx } from "./telnyx";
@@ -93,8 +93,11 @@ export async function connectIntegration(owner: string, type: string, input: Inp
             break;
         }
         case "messenger": {
-            const pageAccessToken = need(str(input.pageAccessToken, 500), "Page access token");
-            const appSecret = need(str(input.appSecret, 200), "App secret");
+            // переносы строк из буфера обмена убираем: токен их не содержит, а Meta на них отвечает отказом
+            const pageAccessToken = str(input.pageAccessToken, 500).replace(/\s+/g, "");
+            const appSecret = str(input.appSecret, 200).replace(/\s+/g, "");
+            const problem = messengerCredentialsProblem(pageAccessToken, appSecret);
+            if (problem) throw new ProviderError(problem);
             const page = await getPage(pageAccessToken);
             name = page.name;
             config = { pageId: page.id, verifyToken: randomToken(8) };
