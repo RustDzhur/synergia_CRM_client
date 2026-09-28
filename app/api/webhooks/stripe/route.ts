@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { applySubscription, type StripeSubscription } from "@/lib/billing";
 import { stripe, verifyStripeSignature } from "@/lib/stripe";
+import { reportError } from "@/lib/reportError";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,10 @@ export async function POST(req: Request) {
             if (subId) await applySubscription(await stripe<StripeSubscription>("GET", `/subscriptions/${subId}`));
         }
         return NextResponse.json({ received: true });
-    } catch {
-        return NextResponse.json({ message: "Processing failed" }, { status: 500 }); // Stripe повторит доставку
+    } catch (e) {
+        // Stripe повторит доставку, но узнать о сбое нужно сейчас: иначе платежное событие,
+        // которое мы не смогли обработать, останется только в журнале
+        void reportError(e, { where: "вебхук Stripe" });
+        return NextResponse.json({ message: "Processing failed" }, { status: 500 });
     }
 }

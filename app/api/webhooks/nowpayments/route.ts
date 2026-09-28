@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { verifyIpn } from "@/lib/nowpayments";
+import { reportError } from "@/lib/reportError";
 import CryptoPayment from "@/models/CryptoPayment";
 import Organization from "@/models/Organization";
 
@@ -43,7 +44,9 @@ export async function POST(req: Request) {
         }
         await payment.save();
         return NextResponse.json({ received: true });
-    } catch {
-        return NextResponse.json({ message: "Processing failed" }, { status: 500 }); // NOWPayments повторит доставку
+    } catch (e) {
+        // Провайдер повторит доставку, но о сбое сообщаем сразу — как и в вебхуке Stripe
+        void reportError(e, { where: "вебхук NOWPayments" });
+        return NextResponse.json({ message: "Processing failed" }, { status: 500 });
     }
 }

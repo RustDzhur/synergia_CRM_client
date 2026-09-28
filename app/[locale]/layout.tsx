@@ -7,6 +7,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { notFound } from "next/navigation";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import ErrorReporter from "@/components/crm/components/shared/ErrorReporter";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -40,6 +41,9 @@ export default async function RootLayout({
 				{/* Vercel Web Analytics и Speed Insights: собирают данные только на развёрнутом сайте, после включения в панели Vercel */}
 				<Analytics />
 				<SpeedInsights />
+				{/* Исключения в браузере с любой страницы — и публичной, и кабинета — уходят на /api/client-error,
+				    а оттуда владельцу в Telegram (lib/reportError.ts). Здесь, а не в кабинете: так покрыты обе части сайта. */}
+				<ErrorReporter />
 			</body>
 		</html>
 	);

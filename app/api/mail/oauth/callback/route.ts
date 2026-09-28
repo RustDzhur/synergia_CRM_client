@@ -5,6 +5,7 @@ import { connectAds } from "@/lib/ads";
 import { connectDrive, connectGcal } from "@/lib/google";
 import { connectOAuthAccount, syncAccount } from "@/lib/mail";
 import { exchangeCode, readState } from "@/lib/mail/oauth";
+import { reportError } from "@/lib/reportError";
 import { ProviderError } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +52,8 @@ export async function GET(req: Request) {
         await syncAccount(account).catch(() => undefined); // первое наполнение; при ошибке пользователь увидит статус ящика
         return back("connected");
     } catch (e) {
+        // Ответ провайдера человек увидит в разделе, а неожиданный сбой иначе остался бы без следа
+        if (!(e instanceof ProviderError)) void reportError(e, { where: "подключение внешнего сервиса" });
         return back("error", e instanceof ProviderError ? e.message : "Connection failed");
     }
 }

@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { appOrigin } from "@/lib/appUrl";
 import { ProviderError } from "@/lib/http";
 import { connectAds, metaExchange, metaRedirectUri, readMetaState } from "@/lib/ads";
+import { reportError } from "@/lib/reportError";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -27,6 +28,7 @@ export async function GET(req: Request) {
         await connectAds(state.sub, "meta", await metaExchange(code, metaRedirectUri(origin)));
         return back("connected");
     } catch (e) {
+        if (!(e instanceof ProviderError)) void reportError(e, { where: "подключение рекламного кабинета" });
         return back("error", e instanceof ProviderError ? e.message : "Connection failed");
     }
 }
