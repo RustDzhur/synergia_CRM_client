@@ -6,7 +6,7 @@ import { ProviderError } from "@/lib/http";
 import Conversation from "@/models/Conversation";
 import Integration from "@/models/Integration";
 import Message from "@/models/Message";
-import { getPage, looksLikeUserToken, messengerCredentialsProblem } from "./messenger";
+import { exchangeMessengerCode, getPage, listUserPages, longLivedUserToken, looksLikeUserToken, messengerCredentialsProblem, messengerOauthUrl, subscribeMessengerPage } from "./messenger";
 import { verifyPlivo } from "./plivo";
 import { parseSip } from "./sip";
 import { verifyTelnyx } from "./telnyx";
@@ -14,7 +14,7 @@ import { verifyVonage } from "./vonage";
 import { connectTwilio, normalizePhone } from "./twilio";
 import { deleteWebhook, getMe, getWebhookInfo, setWebhook } from "./telegram";
 import { getAccount, removeViberWebhook, setViberWebhook } from "./viber";
-import { getPhoneNumber, subscribeApp } from "./whatsapp";
+import { discoverWhatsAppNumbers, exchangeWhatsAppCode, getPhoneNumber, longLivedWhatsAppToken, subscribeApp, whatsappOauthUrl } from "./whatsapp";
 
 type Doc = HydratedDocument<any>;
 type Input = Record<string, unknown>;
@@ -25,6 +25,119 @@ const need = (v: string, label: string) => {
 };
 
 export interface ConnectResult { doc: Doc; warning?: string }
+
+// ── Вход через Facebook (Messenger и WhatsApp) ────────────────────────────────────────────────────────
+// Вместо копирования длинных токенов человек выбирает страницу или номер в окне самого Facebook, а
+// токены мы получаем сами: код → короткий токен → долгий токен → страницы (или номера) с их токенами.
+//
+// App id не секрет — он идёт в адрес окна входа; app secret хранится зашифрованным (им же проверяется
+// подпись вебхуков). Оба нужны на шаге возврата, поэтому до него лежат рядом с остальными секретами
+// под именами pending*, а рабочее подключение не трогается: если человек передумает, прежнее останется.
+
+export type MetaKind = "messenger" | "whatsapp";
+const metaRedirect = (kind: MetaKind) => `/api/${kind}/oauth/callback`;
+// секреты интеграции: строки плюс карты «id страницы (или номера) → токен», собранные на шаге возврата
+type MetaSecrets = {
+    appId?: string;
+    appSecret?: string;
+    pendingAppId?: string;
+    pendingAppSecret?: string;
+    pageAccessToken?: string;
+    accessToken?: string;
+    pageTokens?: Record<string, string>;
+    numberTokens?: Record<string, string>;
+};
+
+/** Начало входа: проверяем реквизиты приложения, запоминаем секрет и отдаём адрес окна Facebook */
+export async function startMetaOauth(owner: string, kind: MetaKind, appId: string, appSecret: string, origin: string, state: string): Promise<string> {
+    if (!/^\d{6,20}$/.test(appId)) throw new ProviderError("The App ID is a number — copy it from Meta → Settings → Basic");
+    if (appSecret.length < 20 || appSecret.length > 60) throw new ProviderError("The App Secret is a 32-character string — copy it from Meta → Settings → Basic");
+    const doc = (await Integration.findOne({ owner, type: kind })) ?? new Integration({ owner, type: kind, token: randomToken() });
+    doc.secrets = packSecrets({ ...secretsOf<MetaSecrets>(doc), pendingAppId: appId, pendingAppSecret: appSecret });
+    await doc.save();
+    const redirect = `${origin}${metaRedirect(kind)}`;
+    return kind === "messenger" ? messengerOauthUrl(appId, redirect, state) : whatsappOauthUrl(appId, redirect, state);
+}
+
+/** Возврат из Facebook: получаем токены и выясняем, что доступно для подключения */
+export async function completeMetaOauth(owner: string, kind: MetaKind, code: string, origin: string): Promise<{ options: Array<{ id: string; name: string }> }> {
+    const doc = await Integration.findOne({ owner, type: kind });
+    const secrets = doc ? secretsOf<MetaSecrets>(doc) : {};
+    const appId = secrets.pendingAppId ?? String(doc?.config?.appId ?? "");
+    const appSecret = secrets.pendingAppSecret ?? secrets.appSecret ?? "";
+    if (!doc || !appId || !appSecret) throw new ProviderError("Start the connection again");
+    const redirect = `${origin}${metaRedirect(kind)}`;
+
+    // короткий токен годится только на один шаг, поэтому сразу меняем его на долгий
+    const short = kind === "messenger" ? await exchangeMessengerCode(appId, appSecret, redirect, code) : await exchangeWhatsAppCode(appId, appSecret, redirect, code);
+    const long = kind === "messenger" ? await longLivedUserToken(appId, appSecret, short) : await longLivedWhatsAppToken(appId, appSecret, short);
+
+    let options: Array<{ id: string; name: string }> = [];
+    const next: MetaSecrets = { ...secrets, appSecret };
+    delete next.pendingAppSecret;
+    if (kind === "messenger") {
+        const pages = await listUserPages(long);
+        if (!pages.length) throw new ProviderError("Facebook вернул пустой список страниц: проверьте, что страница есть и доступ к ней выдан в окне входа");
+        next.pageTokens = Object.fromEntries(pages.map((p) => [p.id, p.access_token]));
+        options = pages.map((p) => ({ id: p.id, name: p.name }));
+    } else {
+        const numbers = await discoverWhatsAppNumbers(long);
+        if (!numbers.length) throw new ProviderError("В этом аккаунте не нашлось номера WhatsApp Business: проверьте, что номер добавлен в аккаунт WhatsApp Business");
+        next.numberTokens = Object.fromEntries(numbers.map((n) => [n.phoneNumberId, long]));
+        options = numbers.map((n) => ({ id: n.phoneNumberId, name: n.verifiedName ? `${n.display} (${n.verifiedName})` : n.display }));
+        doc.set("config", { ...(doc.config ?? {}), appId, wabaIds: Object.fromEntries(numbers.map((n) => [n.phoneNumberId, n.wabaId])), numbers: options });
+    }
+    doc.secrets = packSecrets(next);
+    if (kind === "messenger") doc.set("config", { ...(doc.config ?? {}), appId, pages: options });
+    doc.markModified("config");
+    await doc.save();
+    return { options };
+}
+
+/** Подключение выбранного: токен выбранной страницы (или номера) уже лежит в секретах после возврата */
+export async function connectMetaChoice(owner: string, kind: MetaKind, id: string): Promise<{ name: string; warning?: string }> {
+    const doc = await Integration.findOne({ owner, type: kind });
+    if (!doc) throw new ProviderError("Start the connection again");
+    const secrets = secretsOf<MetaSecrets>(doc);
+    const appId = String(doc.config?.appId ?? "");
+    const appSecret = secrets.appSecret ?? "";
+    if (!appId || !appSecret) throw new ProviderError("Start the connection again");
+
+    if (kind === "messenger") {
+        const token = secrets.pageTokens?.[id];
+        if (!token) throw new ProviderError("This page is no longer available — start the connection again");
+        const page = await getPage(token);
+        // подписка страницы на приложение: без неё Meta не доставляет события, и переписка не приходит
+        const warning = await subscribeMessengerPage(page.id, token).then(() => "").catch((e) => (e instanceof ProviderError ? e.message : "Could not subscribe the page to the app"));
+        doc.set({
+            name: page.name,
+            config: { ...(doc.config ?? {}), appId, pageId: page.id, verifyToken: doc.config?.verifyToken || randomToken(8) },
+            secrets: packSecrets({ pageAccessToken: token, appSecret }),
+            status: "connected",
+            error: "",
+        });
+        doc.markModified("config");
+        await doc.save();
+        return { name: page.name, ...(warning ? { warning } : {}) };
+    }
+
+    const token = secrets.numberTokens?.[id];
+    const wabaId = String((doc.config?.wabaIds ?? {})[id] ?? "");
+    if (!token || !wabaId) throw new ProviderError("This number is no longer available — start the connection again");
+    const phone = await getPhoneNumber(id, token);
+    const name = phone.display_phone_number || phone.verified_name || id;
+    const warning = await subscribeApp(wabaId, token).then(() => "").catch((e) => (e instanceof ProviderError ? e.message : "Could not subscribe the app to the WhatsApp Business account"));
+    doc.set({
+        name,
+        config: { ...(doc.config ?? {}), appId, wabaId, phoneNumberId: id, verifyToken: doc.config?.verifyToken || randomToken(8), ...(phone.verified_name ? { botName: phone.verified_name } : {}) },
+        secrets: packSecrets({ accessToken: token, appSecret }),
+        status: "connected",
+        error: "",
+    });
+    doc.markModified("config");
+    await doc.save();
+    return { name, ...(warning ? { warning } : {}) };
+}
 
 // Регистрирует вебхук у Telegram / Viber. На localhost провайдеры до нас не достучатся — тогда подключение
 // сохраняется, а вместо ошибки возвращается предупреждение (адрес можно перерегистрировать позже).

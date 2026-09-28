@@ -4,9 +4,9 @@ import { safeEqual } from "@/lib/crypto";
 
 const base = () => (process.env.GRAPH_API_URL || "https://graph.facebook.com/v19.0").replace(/\/+$/, "");
 
-async function graph<T>(path: string, accessToken: string, init: RequestInit = {}): Promise<T> {
-    const sep = path.includes("?") ? "&" : "?";
-    const res = await fetchProvider(`${base()}${path}${sep}access_token=${encodeURIComponent(accessToken)}`, init);
+/** Запрос к Graph API без токена доступа: он нужен шагам входа, где токен ещё только получаем */
+async function graphRaw<T>(path: string, init: RequestInit = {}): Promise<T> {
+    const res = await fetchProvider(`${base()}${path}`, init);
     const json = (await res.json().catch(() => null)) as (T & { error?: { message: string } }) | null;
     if (!res.ok || !json || json.error) {
         const message = json?.error?.message ?? `Facebook error ${res.status}`;
@@ -20,7 +20,51 @@ async function graph<T>(path: string, accessToken: string, init: RequestInit = {
     return json;
 }
 
+async function graph<T>(path: string, accessToken: string, init: RequestInit = {}): Promise<T> {
+    const sep = path.includes("?") ? "&" : "?";
+    return graphRaw<T>(`${path}${sep}access_token=${encodeURIComponent(accessToken)}`, init);
+}
+
 export const getPage = (accessToken: string) => graph<{ id: string; name: string }>("/me?fields=id,name", accessToken);
+
+// ── Вход через Facebook ───────────────────────────────────────────────────────────────────────────────
+// Вместо копирования длинных токенов вручную человек выбирает страницу в окне самого Facebook, а токен
+// страницы мы получаем сами: код → короткий токен пользователя → долгий токен → список страниц с их
+// токенами. Токены страниц, полученные от долгого токена, не истекают — это и нужно для переписки.
+
+const version = () => new URL(base()).pathname.replace(/^\/+/, ""); // «v19.0» из адреса Graph API
+
+/** Адрес окна входа: человек выбирает страницу, нам возвращается код */
+export function messengerOauthUrl(appId: string, redirectUri: string, state: string) {
+    const scope = ["pages_show_list", "pages_messaging", "pages_manage_metadata"].join(",");
+    const q = new URLSearchParams({ client_id: appId, redirect_uri: redirectUri, state, response_type: "code", scope });
+    return `https://www.facebook.com/${version()}/dialog/oauth?${q}`;
+}
+
+export async function exchangeMessengerCode(appId: string, appSecret: string, redirectUri: string, code: string): Promise<string> {
+    const q = new URLSearchParams({ client_id: appId, client_secret: appSecret, redirect_uri: redirectUri, code });
+    const r = await graphRaw<{ access_token?: string }>(`/oauth/access_token?${q}`);
+    if (!r.access_token) throw new ProviderError("Facebook did not return an access token");
+    return r.access_token;
+}
+
+/** Короткий токен меняем на долгий: только от него токены страниц не истекают */
+export async function longLivedUserToken(appId: string, appSecret: string, shortToken: string): Promise<string> {
+    const q = new URLSearchParams({ grant_type: "fb_exchange_token", client_id: appId, client_secret: appSecret, fb_exchange_token: shortToken });
+    const r = await graphRaw<{ access_token?: string }>(`/oauth/access_token?${q}`);
+    return r.access_token || shortToken; // Meta не всегда продлевает — тогда работаем с тем, что дали
+}
+
+/** Страницы пользователя вместе с их токенами */
+export async function listUserPages(userToken: string): Promise<Array<{ id: string; name: string; access_token: string }>> {
+    const r = await graph<{ data?: Array<{ id: string; name: string; access_token: string }> }>("/me/accounts?fields=id,name,access_token&limit=100", userToken);
+    return (r.data ?? []).filter((p) => p.id && p.access_token);
+}
+
+/** Подписка страницы на приложение: без неё Meta не доставляет события, и переписка не приходит */
+export async function subscribeMessengerPage(pageId: string, pageToken: string) {
+    await graph<{ success?: boolean }>(`/${pageId}/subscribed_apps`, pageToken, { method: "POST" });
+}
 
 /**
  * Похоже ли, что вставили токен пользователя, а не страницы. Различить их по виду нельзя, зато можно

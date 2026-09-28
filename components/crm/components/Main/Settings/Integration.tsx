@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
@@ -49,7 +50,20 @@ export default function IntegrationSettings() {
 	const [enabled, setEnabled] = useState<string[]>([]);
 	const [dialog, setDialog] = useState<Integration | null>(null);
 	const { items, load } = useIntegrationsStore();
+	const params = useSearchParams();
 	useEffect(() => { load(); }, [load]);
+
+	// Возврат из окна Facebook: колбэк приводит сюда с ?messenger=connected|choose|error
+	useEffect(() => {
+		const status = params?.get("messenger") ?? params?.get("whatsapp");
+		if (!status) return;
+		const message = params?.get("message") ?? "";
+		window.history.replaceState(null, "", window.location.pathname);
+		if (status === "connected") toast.success(t("intFbReady"));
+		else if (status === "choose") toast(t("intFbChoose"));
+		else toast.error(message || t("intFailed"));
+		load();
+	}, [params, t, load]);
 
 	useEffect(() => {
 		try {

@@ -16,6 +16,68 @@ async function graph<T extends object>(path: string, accessToken: string, init: 
     return json;
 }
 
+// ── Вход через Facebook ───────────────────────────────────────────────────────────────────────────────
+// Тот же вход, что у Messenger, но права другие: человек выбирает бизнес-аккаунт в окне Facebook,
+// а аккаунт WhatsApp Business и номер мы находим сами — искать phone number id вручную не нужно.
+
+const version = () => new URL(base()).pathname.replace(/^\/+/, ""); // «v21.0» из адреса Graph API
+
+export function whatsappOauthUrl(appId: string, redirectUri: string, state: string) {
+    const scope = ["business_management", "whatsapp_business_management", "whatsapp_business_messaging"].join(",");
+    const q = new URLSearchParams({ client_id: appId, redirect_uri: redirectUri, state, response_type: "code", scope });
+    return `https://www.facebook.com/${version()}/dialog/oauth?${q}`;
+}
+
+/** Запрос без токена: нужен шагам входа, где токен ещё только получаем */
+async function graphRaw<T extends object>(path: string): Promise<T> {
+    const res = await fetchProvider(`${base()}${path}`);
+    const json = (await res.json().catch(() => null)) as (T & { error?: { message?: string } }) | null;
+    if (!res.ok || !json || json.error) throw new ProviderError(json?.error?.message ?? `WhatsApp error ${res.status}`);
+    return json;
+}
+
+export async function exchangeWhatsAppCode(appId: string, appSecret: string, redirectUri: string, code: string): Promise<string> {
+    const q = new URLSearchParams({ client_id: appId, client_secret: appSecret, redirect_uri: redirectUri, code });
+    const r = await graphRaw<{ access_token?: string }>(`/oauth/access_token?${q}`);
+    if (!r.access_token) throw new ProviderError("Facebook did not return an access token");
+    return r.access_token;
+}
+
+/** Короткий токен меняем на долгий: он живёт около 60 дней, за это время переподключение не понадобится */
+export async function longLivedWhatsAppToken(appId: string, appSecret: string, shortToken: string): Promise<string> {
+    const q = new URLSearchParams({ grant_type: "fb_exchange_token", client_id: appId, client_secret: appSecret, fb_exchange_token: shortToken });
+    const r = await graphRaw<{ access_token?: string }>(`/oauth/access_token?${q}`);
+    return r.access_token || shortToken;
+}
+
+export interface WaNumber { wabaId: string; phoneNumberId: string; display: string; verifiedName: string }
+
+const list = async <T extends object>(path: string, token: string): Promise<T[]> => {
+    const r = await graph<{ data?: T[] }>(path, token).catch(() => ({ data: [] as T[] }));
+    return r.data ?? [];
+};
+
+/**
+ * Номера WhatsApp Business, доступные этому входу. Идём по цепочке Meta: бизнес-портфели →
+ * аккаунты WhatsApp Business → номера. Если портфелей не видно (у части аккаунтов так), спрашиваем
+ * аккаунты WhatsApp Business напрямую — так подключение работает и без Business Manager.
+ */
+export async function discoverWhatsAppNumbers(userToken: string): Promise<WaNumber[]> {
+    const wabas: string[] = [];
+    for (const b of await list<{ id: string }>("/me/businesses?limit=50", userToken)) {
+        for (const w of await list<{ id: string }>(`/${b.id}/owned_whatsapp_business_accounts?limit=50`, userToken)) wabas.push(w.id);
+    }
+    if (!wabas.length) for (const w of await list<{ id: string }>("/me/whatsapp_business_accounts?limit=50", userToken)) wabas.push(w.id);
+
+    const out: WaNumber[] = [];
+    for (const wabaId of wabas) {
+        for (const n of await list<{ id: string; display_phone_number?: string; verified_name?: string }>(`/${wabaId}/phone_numbers?limit=50`, userToken)) {
+            out.push({ wabaId, phoneNumberId: n.id, display: n.display_phone_number ?? n.id, verifiedName: n.verified_name ?? "" });
+        }
+    }
+    return out;
+}
+
 // Реквизиты номера: заодно проверяем, что id номера и токен доступа подходят друг другу
 export const getPhoneNumber = (phoneNumberId: string, accessToken: string) =>
     graph<{ id: string; display_phone_number?: string; verified_name?: string }>(`/${phoneNumberId}?fields=display_phone_number,verified_name`, accessToken);

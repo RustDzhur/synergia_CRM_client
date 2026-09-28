@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { toIntegrationDTO } from "@/lib/integrations";
-import { connectIntegration, healWebhooks } from "@/lib/channels/connect";
+import { connectIntegration, connectMetaChoice, healWebhooks } from "@/lib/channels/connect";
 import Integration from "@/models/Integration";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +29,15 @@ export async function POST(req: Request) {
     try {
         await connectDB();
         const origin = appOrigin(req);
+        // Выбор страницы (или номера) после входа через Facebook: токен уже получен на шаге возврата
+        // и лежит в секретах, поэтому здесь достаточно указать, что подключаем.
+        const chosen = body.type === "messenger" ? String(body.pageId ?? "") : body.type === "whatsapp" ? String(body.numberId ?? "") : "";
+        if (chosen) {
+            const result = await connectMetaChoice(user.id, body.type as "messenger" | "whatsapp", chosen);
+            const doc = await Integration.findOne({ owner: user.id, type: body.type });
+            if (!doc) return badRequest("Start the connection again");
+            return NextResponse.json({ integration: toIntegrationDTO(doc, origin), warning: result.warning ?? "" }, { status: 201 });
+        }
         const { doc, warning } = await connectIntegration(user.id, body.type, body, origin);
         return NextResponse.json({ integration: toIntegrationDTO(doc, origin), warning: warning ?? "" }, { status: 201 });
     } catch (e) {

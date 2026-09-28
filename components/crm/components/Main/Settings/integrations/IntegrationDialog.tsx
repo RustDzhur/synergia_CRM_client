@@ -1,9 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbCopy, TbX } from "react-icons/tb";
 import { useCallStore } from "@/app/store/useCallStore";
+import { apiCall } from "@/app/store/crmApi";
 import { CALL_PROVIDERS, type CallProviderId } from "@/app/config/callProviders";
 import { SMS_PROVIDERS } from "@/app/config/smsProviders";
 import { testSipRegistration } from "@/app/store/phone/sipEngine";
@@ -99,12 +100,17 @@ interface Props { type: Real | null; title: string; onClose: () => void; provide
 // Окно подключения канала (Settings → Integration): форма реквизитов, а у подключённого канала — статус, адреса и «Отключить».
 export default function IntegrationDialog({ type, title, onClose, providerKind }: Props) {
 	const t = useTranslations("settings");
+	const locale = useLocale(); // для возврата из окна Facebook на свою языковую версию страницы
 	const { items, connect, patch, remove } = useIntegrationsStore();
 	const [values, setValues] = useState<Record<string, string>>({});
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
 	const [confirm, setConfirm] = useState(false);
 	const [testing, setTesting] = useState(false);
+	// вход через Facebook: id и секрет приложения (не секрет и секрет соответственно), чтобы получить токены самим
+	const [fbId, setFbId] = useState("");
+	const [fbSecret, setFbSecret] = useState("");
+	const [fbBusy, setFbBusy] = useState(false);
 	const [preset, setPreset] = useState<string | null>(null); // выбранная плитка провайдера (звонки и СМС)
 	// пока окно закрывается, type уже null — держим последний, чтобы содержимое не пропадало посреди анимации
 	const [shown, setShown] = useState<Real | null>(type);
@@ -129,6 +135,8 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 		setError("");
 		const cfg = items.find((i) => i.type === type)?.config;
 		setValues(type === "webchat" ? { title: cfg?.title ?? "", greeting: cfg?.greeting ?? "", color: cfg?.color ?? "#5EA8F5" } : {});
+		setFbId("");
+		setFbSecret("");
 		// открываем плитку уже подключённого провайдера, а если ничего нет — показываем выбор
 		if (providerKind === "sms") setPreset(SMS_PROVIDERS.find((p) => items.some((i) => i.type === p.type && i.status === "connected"))?.id ?? null);
 		else if (providerKind === "call") setPreset(type === "sip" ? sipBrand(cfg) : items.some((i) => i.type === "twilio") ? "twilio" : null);
@@ -155,6 +163,12 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 	const fields = FIELDS[shown];
 	const isWebchat = shown === "webchat";
 	const editable = isWebchat || !current;
+	// Messenger и WhatsApp подключаются входом через Facebook; ручные поля остаются запасным путём
+	const isMeta = shown === "messenger" || shown === "whatsapp";
+	const connectedNow = current?.status === "connected";
+	const fbForm = isMeta && !connectedNow;
+	// список страниц (или номеров), полученный на шаге возврата: config приходит с сервера как несекретные настройки
+	const fbOptions = (isMeta && !connectedNow ? ((current?.config?.pages ?? current?.config?.numbers) as unknown as Array<{ id: string; name: string }>) : undefined) ?? [];
 
 	async function submit(e: React.FormEvent) {
 		e.preventDefault();
@@ -185,6 +199,32 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 		if (res.warning) toast(res.warning, { duration: 6000 });
 		else toast.success(current ? t("intSaved") : t("intConnectedToast", { name: title }));
 		if (!isWebchat) setValues({});
+	}
+
+	// Вход через Facebook: получаем адрес окна Meta и уходим в него. Токены страницы (или номера)
+	// приедут на наш адрес возврата — человеку не нужно ничего копировать вручную.
+	async function startFacebook() {
+		if (fbBusy || !shown) return;
+		setFbBusy(true);
+		setError("");
+		const route = shown === "messenger" ? "/api/messenger/oauth" : "/api/whatsapp/oauth";
+		const res = await apiCall<{ url?: string }>(route, "POST", { appId: fbId.trim(), appSecret: fbSecret.trim(), locale });
+		setFbBusy(false);
+		if (!res.ok || !res.data?.url) return setError(res.message || t("intFailed"));
+		window.location.href = res.data.url;
+	}
+
+	// Выбор страницы (или номера) после возврата: токен уже получен и лежит в секретах интеграции
+	async function chooseFacebook(id: string) {
+		if (!shown) return;
+		setBusy(true);
+		setError("");
+		const res = await connect(shown, shown === "messenger" ? { pageId: id } : { numberId: id });
+		setBusy(false);
+		if (!res.ok) return setError(res.message);
+		if (res.warning) toast(res.warning, { duration: 6000 });
+		else toast.success(t("intConnectedToast", { name: title }));
+		onClose();
 	}
 
 	async function retryWebhook() {
@@ -266,6 +306,32 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 						{current?.type === "telegram" && current.config.polling === "1" && <p className="text-12 text-[#8c948b]">{t("intPollingInfo")}</p>}
 						{current?.status === "error" && current.error && <p className="rounded-10 bg-[rgba(244,161,0,0.10)] p-12 text-12 text-[#F4A100]">{current.error.startsWith("Webhooks need a public https address") ? t("intErrNeedHttps") : current.error}</p>}
 
+						{/* Вход через Facebook: страницу (или номер) человек выбирает в окне Meta, а токены мы получаем
+						    сами — копировать длинные строки не нужно. Ручной ввод остаётся ниже, для особых случаев. */}
+						{fbForm && (
+							<div className="flex flex-col gap-10 rounded-12 border border-inkLine bg-[rgba(255,255,255,0.02)] p-14">
+								<span className="text-13 font-medium text-[#f1f4ee]">{t("intFbTitle")}</span>
+								<p className="text-11 text-[#8c948b]">{t("intFbHint")}</p>
+								<FormField label={t("intfAppId")} value={fbId} onChange={(e) => setFbId(e.target.value)} autoComplete="off" placeholder="1098409499579046" maxLength={40} />
+								<FormField label={t("intfAppSecret")} value={fbSecret} onChange={(e) => setFbSecret(e.target.value)} type="password" autoComplete="off" maxLength={80} />
+								<button type="button" disabled={fbBusy || !fbId.trim() || !fbSecret.trim()} onClick={startFacebook} className="fs-btn fs-btn-primary h-40 self-start disabled:opacity-50">
+									{fbBusy ? "…" : t("intFbConnect")}
+								</button>
+							</div>
+						)}
+						{/* Возврат из Facebook, когда страниц или номеров несколько: остаётся выбрать, что подключать */}
+						{fbOptions.length > 0 && !connectedNow && (
+							<div className="flex flex-col gap-6">
+								<span className="text-12 text-[#8c948b]">{t("intFbChoose")}</span>
+								{fbOptions.map((o) => (
+									<button key={o.id} type="button" onClick={() => chooseFacebook(o.id)} className="fs-popover-row w-full rounded-8 px-10 py-8 text-left text-13">
+										{o.name}
+									</button>
+								))}
+							</div>
+						)}
+
+						{editable && !chooserOnly && fbForm && <p className="text-11 text-[#9AA396]">{t("intFbOrManual")}</p>}
 						{editable && !chooserOnly &&
 							fields.map((f) =>
 								f.type === "color" ? (
