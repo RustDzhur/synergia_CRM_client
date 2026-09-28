@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/admin";
 import { badRequest, serverError } from "@/lib/api";
-import { getUpdates } from "@/lib/channels/telegram";
+import { getUpdates, sendTelegram } from "@/lib/channels/telegram";
 import { errorBot, setErrorBot } from "@/lib/platformSettings";
 import { reportError } from "@/lib/reportError";
 
@@ -40,7 +40,13 @@ export async function POST(req: Request) {
         if (action === "test") {
             const bot = await errorBot();
             if (!bot.botToken || !bot.chatId) return badRequest("Бот отчётов не настроен");
-            await reportError(new Error(`Проверка отчётов (${new Date().toISOString().slice(11, 19)}): бот на связи, отчёты об ошибках настроены.`), { where: "проверка" });
+            // Отправляем напрямую и про саму отправку сообщаем как есть: отчёты об ошибках глотают сбой
+            // (они не должны ломать запрос), поэтому «отправлено» на слово было бы неправдой
+            try {
+                await sendTelegram(bot.botToken, bot.chatId, `🔴 Проверка отчётов: бот на связи, отчёты об ошибках настроены.\n\nвремя: ${new Date().toISOString()}`);
+            } catch (e) {
+                return badRequest(`Telegram отказал: ${e instanceof Error ? e.message : "неизвестная ошибка"}`);
+            }
             return NextResponse.json({ ok: true });
         }
 
