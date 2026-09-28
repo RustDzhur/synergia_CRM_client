@@ -1,6 +1,8 @@
 import { connectDB } from "@/lib/mongodb";
 import { findByToken } from "@/lib/integrations";
 import { corsJson, corsPreflight } from "@/lib/channels/webchat";
+import { getAccount } from "@/lib/channels/viber";
+import { secretsOf } from "@/lib/integrations";
 import { CHATBOT_FAQ } from "@/app/content/chatbotFaq";
 import { tx } from "@/app/content/i18n";
 import Integration from "@/models/Integration";
@@ -30,6 +32,21 @@ export async function GET(req: Request, { params }: { params: { token: string } 
         Integration.findOne({ owner, type: "whatsapp", status: "connected" }).lean().catch(() => null),
     ]);
     const configOf = (doc: unknown) => ((doc as { config?: Record<string, string> } | null)?.config ?? {}) as Record<string, string>;
+
+    // У подключений, сделанных до появления адреса аккаунта, uri не сохранён: спрашиваем его у Viber
+    // один раз и запоминаем — иначе кнопка Viber в виджете не появится, хотя канал подключён
+    if (viber && !configOf(viber).uri) {
+        try {
+            const acc = await getAccount(secretsOf(viber).authToken);
+            if (acc.uri) {
+                await Integration.updateOne({ _id: viber._id }, { $set: { "config.uri": acc.uri } });
+                configOf(viber).uri = acc.uri;
+            }
+        } catch {
+            // не получилось — кнопки не будет, сам канал от этого не ломается
+        }
+    }
+
     const links = {
         telegram: configOf(telegram).username ? `https://t.me/${configOf(telegram).username}` : "",
         viber: configOf(viber).uri ? `viber://pa?chatURI=${encodeURIComponent(configOf(viber).uri)}` : "",
