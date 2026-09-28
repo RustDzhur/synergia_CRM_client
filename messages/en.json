@@ -823,6 +823,7 @@
     "intfAppId": "App ID",
     "intFbTitle": "Connect via Facebook",
     "intFbHint": "Enter the App ID and App Secret from Meta → Settings → Basic. Facebook will then ask which page (or WhatsApp number) to connect — the tokens are taken automatically.",
+    "intFbSiteApp": "The Meta app is already configured for this site — just press Connect.",
     "intFbConnect": "Connect with Facebook",
     "intFbChoose": "Choose what to connect",
     "intFbReady": "Connected — the tokens were taken automatically",

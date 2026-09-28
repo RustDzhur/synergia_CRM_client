@@ -48,8 +48,18 @@ type MetaSecrets = {
     numberTokens?: Record<string, string>;
 };
 
-/** Начало входа: проверяем реквизиты приложения, запоминаем секрет и отдаём адрес окна Facebook */
-export async function startMetaOauth(owner: string, kind: MetaKind, appId: string, appSecret: string, origin: string, state: string): Promise<string> {
+/**
+ * Приложение Meta у платформы одно — то же самое, что используется для рекламных кабинетов
+ * (META_APP_ID и META_APP_SECRET). Когда оно настроено на сайте, Messenger и WhatsApp подключаются
+ * одной кнопкой, без полей с ключами: вводить их вручную нужно только там, где переменных нет.
+ */
+export const metaAppConfigured = () => !!(process.env.META_APP_ID && process.env.META_APP_SECRET);
+
+/** Начало входа: берём реквизиты приложения (свои или платформенные), запоминаем секрет и отдаём адрес окна Facebook */
+export async function startMetaOauth(owner: string, kind: MetaKind, enteredAppId: string, enteredSecret: string, origin: string, state: string): Promise<string> {
+    const appId = enteredAppId || process.env.META_APP_ID || "";
+    const appSecret = enteredSecret || process.env.META_APP_SECRET || "";
+    if (!appId) throw new ProviderError("Add META_APP_ID and META_APP_SECRET to the site's environment variables, or enter the App ID and App Secret here");
     if (!/^\d{6,20}$/.test(appId)) throw new ProviderError("The App ID is a number — copy it from Meta → Settings → Basic");
     if (appSecret.length < 20 || appSecret.length > 60) throw new ProviderError("The App Secret is a 32-character string — copy it from Meta → Settings → Basic");
     const doc = (await Integration.findOne({ owner, type: kind })) ?? new Integration({ owner, type: kind, token: randomToken() });

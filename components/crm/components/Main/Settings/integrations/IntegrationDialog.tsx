@@ -111,6 +111,8 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 	const [fbId, setFbId] = useState("");
 	const [fbSecret, setFbSecret] = useState("");
 	const [fbBusy, setFbBusy] = useState(false);
+	// настроено ли на сайте приложение Meta: тогда ключи в окне не нужны вовсе
+	const [siteApp, setSiteApp] = useState(false);
 	const [preset, setPreset] = useState<string | null>(null); // выбранная плитка провайдера (звонки и СМС)
 	// пока окно закрывается, type уже null — держим последний, чтобы содержимое не пропадало посреди анимации
 	const [shown, setShown] = useState<Real | null>(type);
@@ -129,6 +131,15 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 		const d = catalog.find((p) => p.id === id);
 		return d?.type === "sip" ? { server: d.server ?? "", domain: d.domain ?? "" } : {};
 	};
+
+	useEffect(() => {
+		if (type !== "messenger" && type !== "whatsapp") return;
+		let alive = true;
+		void apiCall<{ configured: boolean }>("/api/integrations/meta", "GET").then((r) => {
+			if (alive && r.ok && r.data) setSiteApp(r.data.configured);
+		});
+		return () => { alive = false; };
+	}, [type]);
 
 	useEffect(() => {
 		if (!type) return;
@@ -311,10 +322,12 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 						{fbForm && (
 							<div className="flex flex-col gap-10 rounded-12 border border-inkLine bg-[rgba(255,255,255,0.02)] p-14">
 								<span className="text-13 font-medium text-[#f1f4ee]">{t("intFbTitle")}</span>
-								<p className="text-11 text-[#8c948b]">{t("intFbHint")}</p>
-								<FormField label={t("intfAppId")} value={fbId} onChange={(e) => setFbId(e.target.value)} autoComplete="off" placeholder="1098409499579046" maxLength={40} />
-								<FormField label={t("intfAppSecret")} value={fbSecret} onChange={(e) => setFbSecret(e.target.value)} type="password" autoComplete="off" maxLength={80} />
-								<button type="button" disabled={fbBusy || !fbId.trim() || !fbSecret.trim()} onClick={startFacebook} className="fs-btn fs-btn-primary h-40 self-start disabled:opacity-50">
+								<p className="text-11 text-[#8c948b]">{siteApp ? t("intFbSiteApp") : t("intFbHint")}</p>
+								{/* Приложение Meta настроено на сайте (те же переменные, что у рекламных кабинетов) —
+								    ключи не спрашиваем, иначе их пришлось бы искать в кабинете Meta без нужды */}
+								{!siteApp && <FormField label={t("intfAppId")} value={fbId} onChange={(e) => setFbId(e.target.value)} autoComplete="off" placeholder="1098409499579046" maxLength={40} />}
+								{!siteApp && <FormField label={t("intfAppSecret")} value={fbSecret} onChange={(e) => setFbSecret(e.target.value)} type="password" autoComplete="off" maxLength={80} />}
+								<button type="button" disabled={fbBusy || (!siteApp && (!fbId.trim() || !fbSecret.trim()))} onClick={startFacebook} className="fs-btn fs-btn-primary h-40 self-start disabled:opacity-50">
 									{fbBusy ? "…" : t("intFbConnect")}
 								</button>
 							</div>
