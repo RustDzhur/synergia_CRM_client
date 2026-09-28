@@ -341,10 +341,22 @@ export async function connectIntegration(owner: string, type: string, input: Inp
 
 export function webchatConfig(input: Input) {
     const color = str(input.color, 9);
+    const time = (v: unknown, fallback: string) => (/^([01]\d|2[0-3]):[0-5]\d$/.test(str(v, 5)) ? str(v, 5) : fallback);
+    const tz = Number(input.tzOffset);
+    const url = str(input.ctaUrl, 300);
     return {
         title: str(input.title, 60) || "Chat with us",
         greeting: str(input.greeting, 200) || "Hello! How can we help?",
         color: /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#5EA8F5",
+        // Часы работы: по ним виджет честно говорит «ответим утром», а не оставляет человека ждать.
+        // Дни — как в календаре JavaScript: 0 — воскресенье, 1–5 — будни.
+        hoursFrom: time(input.hoursFrom, "09:00"),
+        hoursTo: time(input.hoursTo, "18:00"),
+        hoursDays: /^[0-6](-[0-6])?$/.test(str(input.hoursDays, 5)) ? str(input.hoursDays, 5) : "1-5",
+        tzOffset: String(Number.isFinite(tz) ? Math.max(-840, Math.min(840, Math.round(tz))) : 0),
+        // кнопка действия в окне — «начать бесплатно» и подобное
+        ctaLabel: str(input.ctaLabel, 40),
+        ctaUrl: /^https?:\/\//i.test(url) ? url : "",
     };
 }
 

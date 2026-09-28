@@ -64,6 +64,13 @@ const FIELDS: Record<Real, FieldDef[]> = {
 		{ key: "title", label: "intfChatTitle", placeholder: "Chat with us" },
 		{ key: "greeting", label: "intfGreeting", placeholder: "Hello! How can we help?" },
 		{ key: "color", label: "intfColor", type: "color" },
+		// часы работы: вне них виджет честно говорит «ответим утром» и предлагает оставить контакт
+		{ key: "hoursFrom", label: "intfHoursFrom", optional: true, placeholder: "09:00" },
+		{ key: "hoursTo", label: "intfHoursTo", optional: true, placeholder: "18:00" },
+		{ key: "hoursDays", label: "intfHoursDays", optional: true, placeholder: "1-5" },
+		// кнопка действия в окне: текст и ссылка — чтобы её не искали на странице
+		{ key: "ctaLabel", label: "intfCtaLabel", optional: true, placeholder: "Start free" },
+		{ key: "ctaUrl", label: "intfCtaUrl", optional: true, placeholder: "https://…" },
 	],
 };
 
@@ -203,7 +210,9 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 			setTesting(false);
 			if (!test.ok) { setBusy(false); return setError(test.message); }
 		}
-		const res = current && isWebchat ? await patch(current.id, values) : await connect(shown, shown === "sip" ? { ...values, provider: preset ?? "custom" } : values);
+		// Пояс фирмы для часов работы виджета: берём из браузера того, кто настраивает, — сервер его не знает
+		const withTz = (v: Record<string, string>) => (shown === "webchat" ? { ...v, tzOffset: String(-new Date().getTimezoneOffset()) } : v);
+		const res = current && isWebchat ? await patch(current.id, withTz(values)) : await connect(shown, withTz(shown === "sip" ? { ...values, provider: preset ?? "custom" } : values));
 		setBusy(false);
 		if (!res.ok) return setError(res.message);
 		if (shown === "twilio" || shown === "sip") { // реквизиты новые — переподключаем софтфон

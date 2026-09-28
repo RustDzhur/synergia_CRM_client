@@ -11,9 +11,30 @@
   var api = new URL(script.src).origin + "/api/webchat/" + encodeURIComponent(token);
   var lang = (navigator.language || "en").slice(0, 2);
   var T = {
-    de: { ph: "Nachricht schreiben…", send: "Senden", err: "Nachricht nicht gesendet. Bitte erneut versuchen.", close: "Schließen", quick: "Häufige Fragen", write: "Oder schreiben Sie uns — wir antworten persönlich.", more: "Auch erreichbar über" },
-    uk: { ph: "Напишіть повідомлення…", send: "Надіслати", err: "Не вдалося надіслати. Спробуйте ще раз.", close: "Закрити", quick: "Часті питання", write: "Або напишіть нам — відповімо особисто.", more: "Також пишіть у" },
-  }[lang] || { ph: "Type a message…", send: "Send", err: "Message was not sent. Try again.", close: "Close", quick: "Common questions", write: "Or write to us — a person will answer.", more: "Also reachable in" };
+    de: {
+      ph: "Nachricht schreiben…", send: "Senden", err: "Nachricht nicht gesendet. Bitte erneut versuchen.", close: "Schließen",
+      quick: "Häufige Fragen", write: "Oder schreiben Sie uns — wir antworten persönlich.", more: "Auch erreichbar über",
+      cta: "Kostenlos starten", offline: "Gerade ist niemand im Dienst. Hinterlassen Sie Ihren Kontakt — wir melden uns.",
+      contactTitle: "Wie erreichen wir Sie?", contactHint: "E-Mail oder Telefonnummer — wir melden uns, falls es im Chat nicht klappt.",
+      contactSend: "Senden", contactBad: "Bitte prüfen Sie die E-Mail oder Nummer.", contactThanks: "Danke! Wir melden uns bei Ihnen.",
+      rateUp: "Hat geholfen", rateDown: "Hat nicht geholfen",
+    },
+    uk: {
+      ph: "Напишіть повідомлення…", send: "Надіслати", err: "Не вдалося надіслати. Спробуйте ще раз.", close: "Закрити",
+      quick: "Часті питання", write: "Або напишіть нам — відповімо особисто.", more: "Також пишіть у",
+      cta: "Почати безкоштовно", offline: "Зараз неробочий час. Залиште контакт — ми звʼяжемося.",
+      contactTitle: "Як з вами звʼязатися?", contactHint: "Пошта або телефон — напишемо, якщо не встигнемо в чаті.",
+      contactSend: "Надіслати", contactBad: "Перевірте пошту або номер.", contactThanks: "Дякуємо! Ми звʼяжемося з вами.",
+      rateUp: "Допомогло", rateDown: "Не допомогло",
+    },
+  }[lang] || {
+    ph: "Type a message…", send: "Send", err: "Message was not sent. Try again.", close: "Close",
+    quick: "Common questions", write: "Or write to us — a person will answer.", more: "Also reachable in",
+    cta: "Start free", offline: "Nobody is online right now. Leave your contact — we will get back to you.",
+    contactTitle: "How can we reach you?", contactHint: "E-mail or phone — we will write back if the chat does not work out.",
+    contactSend: "Send", contactBad: "Please check the e-mail or number.", contactThanks: "Thank you! We will get in touch.",
+    rateUp: "It helped", rateDown: "It did not help",
+  };
 
   var storeKey = "synergia_visitor_" + token;
   var visitor = null;
@@ -25,7 +46,7 @@
     try { localStorage.setItem(storeKey, visitor); } catch (e) {}
   }
 
-  var cfg = { title: "Chat with us", greeting: "Hello! How can we help?", color: "#5EA8F5", quick: [], links: {} };
+  var cfg = { title: "Chat with us", greeting: "Hello! How can we help?", color: "#5EA8F5", quick: [], links: {}, hours: null, cta: null };
   var open = false, messages = [], seen = 0, timer = null;
 
   var host = document.createElement("div");
@@ -55,13 +76,29 @@
     ".links i{font-style:normal;font-size:12px;color:#8a8a8a;width:100%}" +
     ".links a{display:flex;align-items:center;gap:6px;font-size:12px;text-decoration:none;color:#555;border:1px solid #e6e6e6;border-radius:99px;padding:5px 10px}" +
     ".links a:hover{border-color:#bbb;color:#111}" +
+    ".note{display:none;padding:8px 12px;background:#fff7e6;color:#8a6a1f;font-size:12px;line-height:1.4}" +
+    ".note.on{display:block}" +
+    ".cta{display:none;margin:0 12px 10px;padding:10px;border-radius:10px;text-align:center;font-size:14px;font-weight:600;text-decoration:none}" +
+    ".cta.on{display:block}" +
+    ".ask{display:none;flex-direction:column;gap:6px;padding:10px 12px;border-top:1px solid #e6e6e6}" +
+    ".ask.on{display:flex}" +
+    ".ask b{font-size:12px;color:#333}" +
+    ".ask i{font-style:normal;font-size:11px;color:#8a8a8a}" +
+    ".ask div{display:flex;gap:6px}" +
+    ".ask input{flex:1;min-width:0;height:34px;border:1px solid #e0e0e0;border-radius:8px;padding:0 10px;font-size:13px;outline:none}" +
+    ".ask button{border:0;border-radius:8px;padding:0 12px;font-size:13px;font-weight:600;color:#fff;cursor:pointer}" +
+    ".rate{display:flex;gap:6px;margin-top:4px}" +
+    ".rate button{border:0;background:none;cursor:pointer;font-size:14px;opacity:.45;padding:0 2px}" +
+    ".rate button.on{opacity:1}" +
     "form{display:flex;gap:8px;padding:10px;border-top:1px solid #e6e6e6}" +
     "input{flex:1;min-width:0;height:40px;border:1px solid #e0e0e0;border-radius:20px;padding:0 14px;font-size:14px;outline:none}" +
     "input:focus{border-color:#5ea8f5}" +
     "form button{border:0;border-radius:20px;padding:0 16px;color:#fff;font-weight:600;cursor:pointer}" +
     "</style>" +
     '<div class="panel" role="dialog"><div class="head"><span class="title"></span><button type="button" class="x" aria-label="' + T.close + '">×</button></div>' +
-    '<div class="list"></div><div class="quick"></div><div class="links"></div>' +
+    '<div class="note"></div><div class="list"></div><div class="quick"></div>' +
+    '<div class="ask"><b>' + T.contactTitle + "</b><i>" + T.contactHint + '</i><div><input maxlength="120" aria-label="' + T.contactTitle + '"><button type="button">' + T.contactSend + "</button></div></div>" +
+    '<div class="links"></div><a class="cta" target="_blank" rel="noopener"></a>' +
     '<form><input maxlength="1000" placeholder="' + T.ph + '" aria-label="' + T.ph + '"><button type="submit">' + T.send + "</button></form></div>" +
     '<button class="btn" type="button" aria-label="Chat"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg><span class="dot"></span></button>';
 
@@ -108,6 +145,80 @@
       lLabel.textContent = T.more;
       links.insertBefore(lLabel, links.firstChild);
     }
+
+    // кнопка действия: «начать бесплатно» и подобное — чтобы её не искали на странице
+    var cta = $(".cta");
+    if (cfg.cta && cfg.cta.url) {
+      cta.href = cfg.cta.url;
+      cta.textContent = cfg.cta.label || T.cta;
+      cta.style.background = cfg.color;
+      cta.style.color = "#fff";
+      cta.classList.add("on");
+    } else {
+      cta.classList.remove("on");
+    }
+  }
+
+  // Часы работы фирмы: время считаем в её поясе (сдвиг приходит с сервера), а не в поясе посетителя,
+  // иначе ночной посетитель из другого города увидел бы «мы на связи» в закрытое время
+  function isOffline() {
+    var h = cfg.hours;
+    if (!h) return false;
+    var now = new Date(Date.now() + (Number(h.tzOffset) || 0) * 60000);
+    var range = String(h.days || "1-5").split("-");
+    var first = Number(range[0]);
+    var last = Number(range[1] === undefined ? range[0] : range[1]);
+    var day = now.getUTCDay();
+    var inDays = first <= last ? day >= first && day <= last : day >= first || day <= last;
+    if (!inDays) return true;
+    var from = String(h.from || "00:00").split(":");
+    var to = String(h.to || "23:59").split(":");
+    var minutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+    return minutes < Number(from[0]) * 60 + Number(from[1]) || minutes >= Number(to[0]) * 60 + Number(to[1]);
+  }
+
+  function showOffline() {
+    var note = $(".note");
+    var off = isOffline();
+    note.textContent = off ? T.offline : "";
+    note.classList.toggle("on", off);
+  }
+
+  // Форма контакта: показываем, когда человек нужен, — вне рабочих часов или когда бот не нашёл ответа
+  var contactWanted = false;
+  function revealContact(show) {
+    if (show) contactWanted = true;
+    $(".ask").classList.toggle("on", !!show || contactWanted);
+  }
+
+  function sendContact() {
+    var field = $(".ask input");
+    var value = (field.value || "").trim();
+    if (!value) return;
+    request("/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitor: visitor, value: value }),
+    }).then(function (r) {
+      if (r && r.ok) {
+        $(".ask").classList.remove("on");
+        addBubble("ag", T.contactThanks);
+      } else {
+        addBubble("err", T.contactBad);
+      }
+    }).catch(function () { addBubble("err", T.contactBad); });
+  }
+
+  // Оценка ответа бота: «не помогло» уходит команде вместе с вопросом — видно, какую тему дописать
+  function rate(messageId, value, row) {
+    var buttons = row.querySelectorAll("button");
+    for (var i = 0; i < buttons.length; i++) buttons[i].classList.remove("on");
+    (value === "up" ? buttons[0] : buttons[1]).classList.add("on");
+    request("/rate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitor: visitor, messageId: messageId, rating: value }),
+    }).catch(function () {});
   }
 
   // Быстрые вопросы показываем, пока посетитель сам ничего не написал: дальше начинается живая переписка
@@ -117,19 +228,45 @@
     $(".links").classList.toggle("on", true);
   }
 
+  // Пузырь в списке сообщений. Объявлен снаружи отрисовки: им пользуется и форма контакта
+  function addBubble(cls, text, bg) {
+    var d = document.createElement("div");
+    d.className = "m " + cls;
+    if (bg) d.style.background = bg;
+    d.textContent = text;
+    list.appendChild(d);
+    list.scrollTop = list.scrollHeight;
+    return d;
+  }
+
   function render() {
     list.textContent = "";
-    var add = function (cls, text, bg) {
-      var d = document.createElement("div");
-      d.className = "m " + cls;
-      if (bg) d.style.background = bg;
-      d.textContent = text;
-      list.appendChild(d);
-    };
+    var add = addBubble;
     add("ag", cfg.greeting);
-    messages.forEach(function (m) { m.direction === "in" ? add("me", m.text, cfg.color) : add("ag", m.text); });
+    messages.forEach(function (m) {
+      if (m.direction === "in") return add("me", m.text, cfg.color);
+      add("ag", m.text);
+      // под ответом бота — оценка: по ней видно, каких тем не хватает в базе знаний
+      if (m.meta && m.meta.bot) {
+        var row = document.createElement("div");
+        row.className = "rate";
+        row.style.alignSelf = "flex-start";
+        [["up", "👍", T.rateUp], ["down", "👎", T.rateDown]].forEach(function (r) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.textContent = r[1];
+          b.title = r[2];
+          b.setAttribute("aria-label", r[2]);
+          if (m.meta.rating === r[0]) b.classList.add("on");
+          b.addEventListener("click", function () { rate(m.id, r[0], row); });
+          row.appendChild(b);
+        });
+        list.appendChild(row);
+      }
+    });
     list.scrollTop = list.scrollHeight;
     showQuick();
+    showOffline();
   }
 
   function request(path, init) {
@@ -157,7 +294,7 @@
   function toggle(v) {
     open = v;
     panel.classList.toggle("on", open);
-    if (open) { render(); poll(); input.focus(); }
+    if (open) { render(); poll(); input.focus(); revealContact(isOffline()); }
     schedule();
   }
 
@@ -171,8 +308,12 @@
     request("/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ visitor: visitor, text: text, lang: lang }),
-    }).then(function () { poll(); }).catch(function () {
+      body: JSON.stringify({ visitor: visitor, text: text, lang: lang, page: location.href }),
+    }).then(function (r) {
+      // готового ответа нет — значит нужен человек: сразу предлагаем оставить контакт, чтобы не потерять
+      if (r && !r.reply) revealContact(true);
+      poll();
+    }).catch(function () {
       var d = document.createElement("div");
       d.className = "m err";
       d.textContent = T.err;
@@ -182,6 +323,8 @@
 
   btn.addEventListener("click", function () { toggle(!open); });
   $(".x").addEventListener("click", function () { toggle(false); });
+  $(".ask button").addEventListener("click", sendContact);
+  $(".ask input").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); sendContact(); } });
   root.querySelector("form").addEventListener("submit", function (e) {
     e.preventDefault();
     var text = input.value.trim();
@@ -191,8 +334,17 @@
   });
 
   request("?lang=" + encodeURIComponent(lang)).then(function (c) {
-    cfg = { title: c.title || cfg.title, greeting: c.greeting || cfg.greeting, color: c.color || cfg.color, quick: c.quick || [], links: c.links || {} };
+    cfg = {
+      title: c.title || cfg.title,
+      greeting: c.greeting || cfg.greeting,
+      color: c.color || cfg.color,
+      quick: c.quick || [],
+      links: c.links || {},
+      hours: c.hours || null,
+      cta: c.cta || null,
+    };
     paint();
+    showOffline();
   }).catch(function () { paint(); });
   paint();
   document.body.appendChild(host);

@@ -16,7 +16,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     await connectDB();
     const integration = await findByToken("webchat", params.token);
     if (!integration) return corsJson({ message: "Not found" }, 404);
-    const { title, greeting, color } = integration.config;
+    const { title, greeting, color, hoursFrom, hoursTo, hoursDays, tzOffset, ctaLabel, ctaUrl } = integration.config;
     const lang = new URL(req.url).searchParams.get("lang") ?? "en";
 
     // быстрые вопросы — те же готовые тексты, по которым отвечает бот (app/content/chatbotFaq.ts)
@@ -36,5 +36,9 @@ export async function GET(req: Request, { params }: { params: { token: string } 
         whatsapp: configOf(whatsapp).phone ? `https://wa.me/${configOf(whatsapp).phone.replace(/\D/g, "")}` : "",
     };
 
-    return corsJson({ title, greeting, color, quick, links });
+    // Часы работы нужны виджету, чтобы честно сказать «ответим утром»; кнопка действия — чтобы посетителю
+    // не искать «начать бесплатно» на странице
+    const hours = { from: hoursFrom ?? "09:00", to: hoursTo ?? "18:00", days: hoursDays ?? "1-5", tzOffset: Number(tzOffset) || 0 };
+    const cta = ctaUrl ? { label: ctaLabel ?? "", url: ctaUrl } : null;
+    return corsJson({ title, greeting, color, quick, links, hours, cta });
 }
