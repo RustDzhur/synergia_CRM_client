@@ -70,6 +70,8 @@
   var INK = "#131715", INK_DEEP = "#101412", PANEL = "#1d2320", LINE = "rgba(255,255,255,.10)", TEXT = "#f1f4ee", MUTED = "#8c948b", DARK = "#0a0c0b";
 
   var host = document.createElement("div");
+  // пометка нужна, чтобы виджет можно было убрать при переходе в кабинет (см. components/website/components/ChatWidget.tsx)
+  host.setAttribute("data-firmspace-chat", "1");
   host.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:2147483000;display:flex;flex-direction:column;align-items:flex-end";
   var root = host.attachShadow ? host.attachShadow({ mode: "open" }) : host;
   root.innerHTML =
@@ -82,7 +84,10 @@
     ".launcher .lbl{font-size:11px;color:" + MUTED + ";margin-right:4px;align-self:flex-end}" +
     ".btn{width:56px;height:56px;border-radius:50%;border:0;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;color:" + DARK + ";box-shadow:0 8px 22px rgba(0,0,0,.5)}" +
     ".dot{position:absolute;top:2px;right:2px;min-width:14px;height:14px;border-radius:7px;background:#e5484d;border:2px solid " + INK + ";display:none}" +
-    ".panel{display:none;flex-direction:column;width:340px;max-width:calc(100vw - 32px);height:460px;max-height:calc(100vh - 120px);margin-bottom:12px;background:" + INK + ";border:1px solid " + LINE + ";border-radius:16px;overflow:hidden;box-shadow:0 16px 44px rgba(0,0,0,.6);color:" + TEXT + "}" +
+    // Высота окна ограничена так, чтобы оно всегда висело над пузырём, а не уезжало к верху экрана
+    // (две строки height: вторая с dvh — на телефонах адресная строка меняет высоту окна)
+    ".panel{display:none;flex-direction:column;width:340px;max-width:calc(100vw - 32px);height:440px;max-height:calc(100vh - 200px);margin-bottom:10px;background:" + INK + ";border:1px solid " + LINE + ";border-radius:16px;overflow:hidden;box-shadow:0 16px 44px rgba(0,0,0,.6);color:" + TEXT + "}" +
+    ".panel{height:min(440px, calc(100dvh - 200px))}" +
     ".panel.on{display:flex}" +
     ".head{padding:14px 16px;font-weight:600;font-size:16px;display:flex;justify-content:space-between;align-items:center;color:" + DARK + "}" +
     ".head button{background:none;border:0;color:" + DARK + ";font-size:22px;line-height:1;cursor:pointer;opacity:.75}" +
@@ -385,6 +390,15 @@
       list.appendChild(d);
     });
   }
+
+  // Нажатие мимо окна закрывает и переписку, и список каналов. composedPath нужен потому, что внутри
+  // теневого дерева обычный target показывает сам узел, а не контейнер.
+  document.addEventListener("pointerdown", function (e) {
+    if (!host || !host.isConnected) return;
+    var path = typeof e.composedPath === "function" ? e.composedPath() : [];
+    if (path.indexOf(host) >= 0) return;
+    if (open || $(".launcher").classList.contains("on")) closeAll();
+  }, true);
 
   btn.addEventListener("click", function () {
     if (open) return closeAll();
