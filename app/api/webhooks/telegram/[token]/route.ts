@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { safeEqual } from "@/lib/crypto";
 import { findByToken, secretsOf } from "@/lib/integrations";
 import { recordMessage } from "@/lib/channels";
-import { parseTelegramUpdate } from "@/lib/channels/telegram";
+import { parseTelegramUpdate, sendTelegram } from "@/lib/channels/telegram";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +16,22 @@ export async function POST(req: Request, { params }: { params: { token: string }
     if (!safeEqual(secret, secretsOf(integration).webhookSecret)) return NextResponse.json({ message: "Forbidden" }, { status: 403 });
 
     const message = parseTelegramUpdate(await req.json().catch(() => ({})));
+    // Команда /errors привязывает этот чат для отчётов об ошибках приложения (lib/reportError.ts).
+    // Её отправляет человек сам, поэтому чужая переписка адресом отчётов стать не может.
+    if (message && /^\/errors(?:@\w+)?\s*$/i.test(message.text.trim())) {
+        integration.config = { ...(integration.config ?? {}), errorChatId: message.externalId };
+        integration.markModified("config");
+        await integration.save();
+        await sendTelegram(secretsOf(integration).botToken, message.externalId, "Готово: сюда будут приходить отчёты об ошибках приложения. Отвязать — команда /errors_off");
+        return NextResponse.json({ ok: true });
+    }
+    if (message && /^\/errors_off(?:@\w+)?\s*$/i.test(message.text.trim())) {
+        integration.config = { ...(integration.config ?? {}), errorChatId: "" };
+        integration.markModified("config");
+        await integration.save();
+        await sendTelegram(secretsOf(integration).botToken, message.externalId, "Отчёты об ошибках больше не приходят в этот чат.");
+        return NextResponse.json({ ok: true });
+    }
     if (message) await recordMessage(integration, message);
     return NextResponse.json({ ok: true });
 }

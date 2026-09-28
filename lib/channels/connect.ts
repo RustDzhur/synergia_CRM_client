@@ -7,7 +7,10 @@ import Conversation from "@/models/Conversation";
 import Integration from "@/models/Integration";
 import Message from "@/models/Message";
 import { getPage } from "./messenger";
+import { verifyPlivo } from "./plivo";
 import { parseSip } from "./sip";
+import { verifyTelnyx } from "./telnyx";
+import { verifyVonage } from "./vonage";
 import { connectTwilio, normalizePhone } from "./twilio";
 import { deleteWebhook, getMe, getWebhookInfo, setWebhook } from "./telegram";
 import { getAccount, removeViberWebhook, setViberWebhook } from "./viber";
@@ -107,6 +110,38 @@ export async function connectIntegration(owner: string, type: string, input: Inp
             name = linked.phone; // номер в том виде, как его хранит Twilio
             config = { phone: linked.phone };
             secrets = { ...linked.secrets };
+            break;
+        }
+        case "vonage": {
+            const apiKey = need(str(input.apiKey, 100), "API key");
+            const apiSecret = need(str(input.apiSecret, 200), "API secret");
+            // У Vonage отправителем может быть буквенное имя, поэтому номер не приводим к формату
+            const sender = need(str(input.phone, 30), "Sender name or number");
+            await verifyVonage({ apiKey, apiSecret });
+            name = sender;
+            config = { phone: sender };
+            secrets = { apiKey, apiSecret };
+            break;
+        }
+        case "plivo": {
+            const authId = need(str(input.authId, 64), "Auth ID");
+            const authToken = need(str(input.authToken, 200), "Auth token");
+            const phone = normalizePhone(str(input.phone, 30));
+            if (!phone) throw new ProviderError("Enter the phone number in international format, e.g. +4915123456789");
+            await verifyPlivo({ authId, authToken });
+            name = phone;
+            config = { phone };
+            secrets = { authId, authToken };
+            break;
+        }
+        case "telnyx": {
+            const apiKey = need(str(input.apiKey, 200), "API key");
+            const phone = normalizePhone(str(input.phone, 30));
+            if (!phone) throw new ProviderError("Enter the phone number in international format, e.g. +4915123456789");
+            await verifyTelnyx({ apiKey });
+            name = phone;
+            config = { phone };
+            secrets = { apiKey };
             break;
         }
         case "sip": {

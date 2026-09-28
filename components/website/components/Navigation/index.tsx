@@ -4,6 +4,7 @@ import NavLinks from "./components/NavLinks";
 import AuthLinks from "./components/AuthLinks";
 import Logo from "./components/Logo";
 import ModalMenu from "../Modal/components/ModalMenu";
+import ChatWidget from "../ChatWidget";
 
 export default function Navigation() {
 	return (
@@ -24,6 +25,9 @@ export default function Navigation() {
 					<ModalMenu/>
 				</div>
 			</div>
+			{/* Чат посетителя: навигация есть на всех публичных страницах, а в кабинете её нет —
+			    поэтому виджет подключается отсюда и в CRM не попадает */}
+			<ChatWidget />
 		</div>
 	);
 }

@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { sweepEventReminders } from "@/lib/calendar/reminders";
 import { runDueJobs } from "@/lib/automation";
 import { syncCalendars } from "@/lib/calendar/sync";
+import { reportError } from "@/lib/reportError";
 import Event from "@/models/Event";
 import Integration from "@/models/Integration";
 
@@ -39,10 +40,18 @@ export async function GET(req: Request) {
         const id = String(org);
         // throttle 0: сюда мы попадаем по расписанию, а не из опроса браузера
         // Синхронизация идёт внутри обхода напоминаний; отдельный вызов здесь не нужен,
-        // но для фирм без событий её всё равно надо запустить
-        await syncCalendars(id).catch(() => undefined);
-        reminders += await sweepEventReminders(id, 0, 0).catch(() => 0);
-        jobs += await runDueJobs(id).catch(() => 0);
+        // но для фирм без событий её всё равно надо запустить.
+        // Сбой здесь иначе остался бы только в журнале Vercel, поэтому о нём сообщаем в Telegram:
+        // по расписанию работает то, чего пользователь не видит и о чём сам не пожалуется
+        await syncCalendars(id).catch((e) => reportError(e, { where: "синхронизация календарей по расписанию", org: id }));
+        reminders += await sweepEventReminders(id, 0, 0).catch((e) => {
+            void reportError(e, { where: "напоминания о событиях по расписанию", org: id });
+            return 0;
+        });
+        jobs += await runDueJobs(id).catch((e) => {
+            void reportError(e, { where: "отложенные действия автоматизации по расписанию", org: id });
+            return 0;
+        });
     }
 
     return NextResponse.json({ orgs: orgs.length, reminders, jobs });

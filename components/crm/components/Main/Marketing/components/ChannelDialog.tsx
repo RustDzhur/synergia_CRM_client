@@ -17,7 +17,7 @@ type Needed = Connectable | "mail";
 const NEEDED: Record<string, Needed[]> = {
 	email_campaign: ["mail"],
 	email: ["mail"],
-	sms: ["twilio"],
+	sms: ["twilio", "vonage", "plivo", "telnyx"],
 	voice: ["twilio", "sip"],
 	audio_call: ["twilio", "sip"],
 	messengers: ["telegram", "viber", "whatsapp", "messenger", "webchat"],
@@ -27,6 +27,9 @@ const NEEDED: Record<string, Needed[]> = {
 const LABEL: Record<Needed, string> = {
 	mail: "intMailbox",
 	twilio: "intSms",
+	vonage: "intVonage",
+	plivo: "intPlivo",
+	telnyx: "intTelnyx",
 	sip: "intProviderSip",
 	telegram: "intTelegram",
 	viber: "intViber",

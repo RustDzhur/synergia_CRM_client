@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { TbCopy, TbX } from "react-icons/tb";
 import { useCallStore } from "@/app/store/useCallStore";
 import { CALL_PROVIDERS, type CallProviderId } from "@/app/config/callProviders";
+import { SMS_PROVIDERS } from "@/app/config/smsProviders";
 import { testSipRegistration } from "@/app/store/phone/sipEngine";
 import { useIntegrationsStore } from "@/app/store/useIntegrationsStore";
 import type { IntegrationType } from "@/app/types/integrations";
@@ -21,6 +22,21 @@ const FIELDS: Record<Real, FieldDef[]> = {
 	twilio: [
 		{ key: "accountSid", label: "intfAccountSid", placeholder: "AC…" },
 		{ key: "authToken", label: "intfAuthToken", secret: true },
+		{ key: "phone", label: "intfPhone", placeholder: "+4915123456789" },
+	],
+	// Остальные СМС-провайдеры: у каждого свои реквизиты и свой отправщик (lib/channels/vonage.ts и соседние)
+	vonage: [
+		{ key: "apiKey", label: "intfVonageKey" },
+		{ key: "apiSecret", label: "intfVonageSecret", secret: true },
+		{ key: "phone", label: "intfSender", placeholder: "Firmspace" },
+	],
+	plivo: [
+		{ key: "authId", label: "intfPlivoId", placeholder: "MA…" },
+		{ key: "authToken", label: "intfPlivoToken", secret: true },
+		{ key: "phone", label: "intfPhone", placeholder: "+4915123456789" },
+	],
+	telnyx: [
+		{ key: "apiKey", label: "intfTelnyxKey", secret: true, placeholder: "KEY…" },
 		{ key: "phone", label: "intfPhone", placeholder: "+4915123456789" },
 	],
 	sip: [
@@ -76,10 +92,12 @@ function CopyField({ label, value }: { label: string; value: string }) {
 // «Call Provider» — провайдер звонков выбирается плитками с логотипами (app/config/callProviders.ts); одно SIP-подключение на пользователя
 const sipBrand = (cfg?: Record<string, string>) => (cfg?.provider || "custom") as CallProviderId;
 
-interface Props { type: Real | null; title: string; onClose: () => void; providerSwitch?: boolean }
+// Провайдер выбирается плитками: у звонков это способ подключения (Twilio или SIP), у СМС — конкретный сервис.
+// Обе карточки устроены одинаково, отличается только каталог плиток.
+interface Props { type: Real | null; title: string; onClose: () => void; providerKind?: "call" | "sms" }
 
 // Окно подключения канала (Settings → Integration): форма реквизитов, а у подключённого канала — статус, адреса и «Отключить».
-export default function IntegrationDialog({ type, title, onClose, providerSwitch }: Props) {
+export default function IntegrationDialog({ type, title, onClose, providerKind }: Props) {
 	const t = useTranslations("settings");
 	const { items, connect, patch, remove } = useIntegrationsStore();
 	const [values, setValues] = useState<Record<string, string>>({});
@@ -87,17 +105,22 @@ export default function IntegrationDialog({ type, title, onClose, providerSwitch
 	const [error, setError] = useState("");
 	const [confirm, setConfirm] = useState(false);
 	const [testing, setTesting] = useState(false);
-	const [preset, setPreset] = useState<CallProviderId | null>(null); // выбранная плитка провайдера (только у Call Provider)
+	const [preset, setPreset] = useState<string | null>(null); // выбранная плитка провайдера (звонки и СМС)
 	// пока окно закрывается, type уже null — держим последний, чтобы содержимое не пропадало посреди анимации
 	const [shown, setShown] = useState<Real | null>(type);
 	useEffect(() => { if (type) setShown(type); }, [type]);
 
+	const providerSwitch = !!providerKind;
+	// плитки: у звонков — каталог звонков, у СМС — каталог СМС
+	const catalog: Array<{ id: string; name: string; type: string; server?: string; domain?: string; serverPlaceholder?: string; domainPlaceholder?: string }> =
+		providerKind === "sms" ? SMS_PROVIDERS : CALL_PROVIDERS;
+
 	const sipItem = items.find((i) => i.type === "sip");
 	// SIP один на пользователя: подключённым считаем его только на плитке своего провайдера, на другой плитке подключение заменяется
 	const current = !shown ? undefined : providerSwitch && shown === "sip" ? (sipItem && sipBrand(sipItem.config) === preset ? sipItem : undefined) : items.find((i) => i.type === shown);
-	const replacing = providerSwitch && shown === "sip" && sipItem && !current ? sipItem : undefined;
-	const presetValues = (id: CallProviderId): Record<string, string> => {
-		const d = CALL_PROVIDERS.find((p) => p.id === id);
+	const replacing = providerKind === "call" && shown === "sip" && sipItem && !current ? sipItem : undefined;
+	const presetValues = (id: string): Record<string, string> => {
+		const d = catalog.find((p) => p.id === id);
 		return d?.type === "sip" ? { server: d.server ?? "", domain: d.domain ?? "" } : {};
 	};
 
@@ -106,25 +129,29 @@ export default function IntegrationDialog({ type, title, onClose, providerSwitch
 		setError("");
 		const cfg = items.find((i) => i.type === type)?.config;
 		setValues(type === "webchat" ? { title: cfg?.title ?? "", greeting: cfg?.greeting ?? "", color: cfg?.color ?? "#5EA8F5" } : {});
-		// у Call Provider открываем плитку уже подключённого провайдера, а если ничего нет — показываем выбор
-		if (providerSwitch) setPreset(type === "sip" ? sipBrand(cfg) : items.some((i) => i.type === "twilio") ? "twilio" : null);
+		// открываем плитку уже подключённого провайдера, а если ничего нет — показываем выбор
+		if (providerKind === "sms") setPreset(SMS_PROVIDERS.find((p) => items.some((i) => i.type === p.type && i.status === "connected"))?.id ?? null);
+		else if (providerKind === "call") setPreset(type === "sip" ? sipBrand(cfg) : items.some((i) => i.type === "twilio") ? "twilio" : null);
 		else setPreset(null);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [type]);
 
 	if (!shown) return null;
-	function pickProvider(id: CallProviderId) {
+	function pickProvider(id: string) {
 		if (busy || id === preset) return;
-		const def = CALL_PROVIDERS.find((p) => p.id === id)!;
-		setShown(def.type);
+		const def = catalog.find((p) => p.id === id)!;
+		setShown(def.type as Real);
 		setPreset(id);
 		setValues(presetValues(id));
 		setError("");
 	}
-	const chooserOnly = !!providerSwitch && preset === null;
-	const sipDef = CALL_PROVIDERS.find((p) => p.id === preset);
-	const tileConnected = (id: CallProviderId) =>
-		id === "twilio" ? items.some((i) => i.type === "twilio" && i.status === "connected") : !!sipItem && sipItem.status === "connected" && sipBrand(sipItem.config) === id;
+	const chooserOnly = providerSwitch && preset === null;
+	const sipDef = providerKind === "call" ? CALL_PROVIDERS.find((p) => p.id === preset) : undefined;
+	const tileConnected = (id: string) => {
+		// у СМС каждый провайдер — своё подключение, поэтому плитка зелёная, если подключён её тип
+		if (providerKind === "sms") return items.some((i) => i.type === catalog.find((p) => p.id === id)?.type && i.status === "connected");
+		return id === "twilio" ? items.some((i) => i.type === "twilio" && i.status === "connected") : !!sipItem && sipItem.status === "connected" && sipBrand(sipItem.config) === id;
+	};
 	const fields = FIELDS[shown];
 	const isWebchat = shown === "webchat";
 	const editable = isWebchat || !current;
@@ -209,7 +236,7 @@ export default function IntegrationDialog({ type, title, onClose, providerSwitch
 					<form onSubmit={submit} className="flex flex-col gap-14 p-20">
 						{providerSwitch && (
 							<ul className="grid grid-cols-2 gap-10 sm:grid-cols-3" aria-label={t("intProviders")}>
-								{CALL_PROVIDERS.map((p) => (
+								{catalog.map((p) => (
 									<li key={p.id}>
 										<button
 											type="button"
@@ -224,8 +251,11 @@ export default function IntegrationDialog({ type, title, onClose, providerSwitch
 								))}
 							</ul>
 						)}
-						{chooserOnly && <p className="text-12 text-[#8c948b]">{t("intChooseProvider")}</p>}
-						{!chooserOnly && <p className="text-12 text-[#8c948b]">{providerSwitch && shown === "sip" && preset && preset !== "custom" ? t(`provHelp_${preset}`) : t(`intHelp_${shown}`)}</p>}
+						{chooserOnly && <p className="text-12 text-[#8c948b]">{providerKind === "sms" ? t("intChooseProviderSms") : t("intChooseProvider")}</p>}
+						{!chooserOnly && <p className="text-12 text-[#8c948b]">{providerKind === "call" && shown === "sip" && preset && preset !== "custom" ? t(`provHelp_${preset}`) : t(`intHelp_${shown}`)}</p>}
+						{/* Входящие СМС принимает только Twilio: у остальных своя подпись вебхука, а без её проверки
+						    в беседу мог бы написать кто угодно. Об этом честно сказано у каждой такой плитки */}
+						{providerKind === "sms" && shown !== "twilio" && !chooserOnly && <p className="text-11 text-[#9AA396]">{t("intSmsInboundNote")}</p>}
 						{replacing && <p className="rounded-10 bg-[rgba(244,161,0,0.10)] p-12 text-12 text-[#F4A100]">{t("intSipReplaces", { name: replacing.name })}</p>}
 
 						{current && (

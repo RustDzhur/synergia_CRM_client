@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
 import { FaFacebook, FaFacebookMessenger, FaTelegram, FaViber, FaWhatsapp } from "react-icons/fa";
 import { TbCode, TbDeviceMobileMessage, TbHeadset, TbPhone, TbRobot } from "react-icons/tb";
+import { SMS_PROVIDER_TYPES } from "@/app/config/smsProviders";
 import { useIntegrationsStore } from "@/app/store/useIntegrationsStore";
 import type { IntegrationType } from "@/app/types/integrations";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
@@ -18,12 +19,16 @@ interface Integration {
 	// настоящее подключение (Twilio, Telegram…); у карточек без него включатель остаётся демонстрационным
 	real?: Exclude<IntegrationType, "mail">;
 	alt?: Exclude<IntegrationType, "mail">; // второй возможный провайдер той же карточки: у «Call Provider» — SIP
+	// все подключения этой карточки: у SMS — Twilio, Vonage, Plivo и Telnyx
+	providers?: string[];
+	// карточка с выбором провайдера плитками: у звонков и у СМС
+	providerKind?: "call" | "sms";
 }
 
 // Порядок как на десктопе в Figma: три колонки по три карточки.
 const INTEGRATIONS: Integration[] = [
-	{ id: "call", key: "intCall", icon: TbPhone, real: "twilio", alt: "sip" }, // звонки: Twilio или любой SIP-провайдер; SMS — только Twilio
-	{ id: "sms", key: "intSms", icon: TbDeviceMobileMessage, real: "twilio" },
+	{ id: "call", key: "intCall", icon: TbPhone, real: "twilio", alt: "sip", providerKind: "call" }, // звонки: Twilio или любой SIP-провайдер
+	{ id: "sms", key: "intSms", icon: TbDeviceMobileMessage, real: "twilio", providers: SMS_PROVIDER_TYPES, providerKind: "sms" },
 	{ id: "viber", key: "intViber", icon: FaViber, real: "viber" },
 	{ id: "telegram", key: "intTelegram", icon: FaTelegram, real: "telegram" },
 	{ id: "messenger", key: "intMessenger", icon: FaFacebookMessenger, real: "messenger" },
@@ -55,6 +60,11 @@ export default function IntegrationSettings() {
 
 	function press(item: Integration) {
 		if (item.real) {
+			// у СМС открываем плитку подключённого провайдера — иначе человек видел бы выбор там, где уже всё выбрано
+			if (item.providers) {
+				const linked = items.find((i) => item.providers!.includes(i.type) && i.status === "connected");
+				if (linked) return setDialog({ ...item, real: linked.type as Exclude<IntegrationType, "mail"> });
+			}
 			// у «Call Provider» открываем ту вкладку, где провайдер уже подключён (иначе — Twilio)
 			const sipOnly = item.alt && items.some((i) => i.type === item.alt && i.status === "connected") && !items.some((i) => i.type === item.real);
 			return setDialog(sipOnly ? { ...item, real: item.alt } : item);
@@ -73,7 +83,8 @@ export default function IntegrationSettings() {
 				<SettingsTabs className="shrink-0 md:self-start" />
 				<ul className="grid min-w-0 flex-1 grid-cols-2 gap-12 md:gap-16 lg:grid-cols-3 lg:gap-16">
 					{INTEGRATIONS.map((item) => {
-						const linkedAll = item.real ? items.filter((i) => i.type === item.real || i.type === item.alt) : [];
+						const kinds = item.providers ?? [item.real, item.alt].filter(Boolean) as string[];
+						const linkedAll = kinds.length ? items.filter((i) => kinds.includes(i.type)) : [];
 						const on = item.real ? linkedAll.some((i) => i.status === "connected") : enabled.includes(item.id);
 						const warn = !on && linkedAll.some((i) => i.status === "error");
 						const color = warn ? "text-[#F4A100]" : on ? "text-[#c6ff4d]" : "text-[#9AA396]";
@@ -96,7 +107,7 @@ export default function IntegrationSettings() {
 					})}
 				</ul>
 			</div>
-			<IntegrationDialog type={dialog?.real ?? null} title={dialog ? t(dialog.key) : ""} providerSwitch={dialog?.id === "call"} onClose={() => setDialog(null)} />
+			<IntegrationDialog type={dialog?.real ?? null} title={dialog ? t(dialog.key) : ""} providerKind={dialog?.providerKind} onClose={() => setDialog(null)} />
 		</div>
 	);
 }

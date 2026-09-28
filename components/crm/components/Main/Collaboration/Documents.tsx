@@ -16,6 +16,7 @@ import PageHeader from "@/components/crm/components/shared/PageHeader";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import Modal from "../shared/Modal";
 import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tabBar";
+import SearchBox from "../shared/SearchBox";
 import FileTypeIcon from "./FileTypeIcon";
 
 type Layout = "list" | "grid" | "tile";
@@ -80,6 +81,8 @@ export default function Documents() {
 	const [status, setStatus] = useState<StatusFilter>("active");
 	const [statusOpen, setStatusOpen] = useState(false);
 	const [sortAsc, setSortAsc] = useState(true);
+	const [query, setQuery] = useState("");
+	const [filters, setFilters] = useState<Record<string, string>>({});
 	const [current, setCurrent] = useState<string | null>(null);
 	const [nameMode, setNameMode] = useState<NameMode | null>(null);
 	const [name, setName] = useState("");
@@ -120,10 +123,53 @@ export default function Documents() {
 		return out;
 	}, [current, byId]);
 
-	const subfolders = useMemo(() => folders.filter((f) => f.parent === current).sort((a, b) => (sortAsc ? 1 : -1) * collator.compare(a.name, b.name)), [folders, current, sortAsc, collator]);
+	// Поиск идёт по имени и по папкам, и по файлам: человек ищет файл, а не «список файлов»
+	const q = query.trim().toLowerCase();
+	const subfolders = useMemo(
+		() => folders.filter((f) => f.parent === current && (!q || f.name.toLowerCase().includes(q))).sort((a, b) => (sortAsc ? 1 : -1) * collator.compare(a.name, b.name)),
+		[folders, current, sortAsc, collator, q]
+	);
 	const docs = useMemo(
-		() => (state?.docs ?? []).filter((d) => d.folder === current && (status === "all" || (status === "archived") === d.archived)).sort((a, b) => (sortAsc ? 1 : -1) * collator.compare(a.name, b.name)),
-		[state, current, status, sortAsc, collator]
+		() =>
+			(state?.docs ?? [])
+				.filter((d) => d.folder === current && (status === "all" || (status === "archived") === d.archived))
+				.filter((d) => !q || d.name.toLowerCase().includes(q))
+				.filter((d) => !filters.kind || d.kind === filters.kind)
+				.filter((d) => !filters.source || (filters.source === "drive" ? !!d.imported : !d.imported))
+				.filter((d) => !filters.createdBy || d.createdBy === filters.createdBy)
+				.sort((a, b) => (sortAsc ? 1 : -1) * collator.compare(a.name, b.name)),
+		[state, current, status, sortAsc, collator, q, filters]
+	);
+
+	// Фильтры — по столбцам списка, как в других разделах: тип, источник и автор
+	const creators = useMemo(() => Array.from(new Set((state?.docs ?? []).map((d) => d.createdBy).filter(Boolean))).sort(), [state]);
+	const filterDefs = useMemo(
+		() => [
+			{
+				key: "kind",
+				label: t("fileKind"),
+				options: [
+					{ value: "", label: `${t("all")} — ${t("fileKind")}` },
+					{ value: "gdoc", label: t("kind_gdoc") },
+					{ value: "gsheet", label: t("kind_gsheet") },
+					{ value: "gslide", label: t("kind_gslide") },
+					{ value: "file", label: t("kind_file") },
+				],
+			},
+			{
+				key: "source",
+				label: t("fileSource"),
+				options: [
+					{ value: "", label: `${t("all")} — ${t("fileSource")}` },
+					{ value: "drive", label: t("fileFromDrive") },
+					{ value: "crm", label: t("fileInCrm") },
+				],
+			},
+			...(creators.length
+				? [{ key: "createdBy", label: t("createdBy"), options: [{ value: "", label: `${t("all")} — ${t("createdBy")}` }, ...creators.map((c) => ({ value: c, label: c }))] }]
+				: []),
+		],
+		[t, creators]
 	);
 
 	const drive = state?.drive;
@@ -343,7 +389,16 @@ export default function Documents() {
 							</button>
 						))}
 					</div>
-					<div className="flex items-center gap-12">
+					<div className="flex flex-wrap items-center gap-12">
+						<SearchBox
+							value={query}
+							onChange={setQuery}
+							placeholder={t("filterSearch")}
+							filters={filterDefs}
+							active={filters}
+							onFilter={(key, value) => setFilters((f) => ({ ...f, [key]: value }))}
+							className="w-full shrink-0 sm:w-[280px] lg:w-[340px]"
+						/>
 						<button type="button" onClick={() => load(true)} aria-label={t("refresh")} title={t("refresh")} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
 							<TbRefresh size={18} className={loading ? "animate-spin" : ""} />
 						</button>

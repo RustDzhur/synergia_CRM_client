@@ -78,7 +78,13 @@ export default function Layout() {
 			}`}>
 			{/* Логотип и сворачивание меню */}
 			<div className={`flex h-68 shrink-0 items-center ${menu ? "gap-10 px-16" : "justify-center px-12"}`}>
-				<Link href={`/${locale}/crm`} aria-label="Firmspace AI" className="flex min-w-0 items-center gap-10">
+				<Link
+					href={`/${locale}/crm`}
+					aria-label="Firmspace AI"
+					// Находясь уже в кабинете, нажатие на знак открывало ту же страницу заново: браузер
+					// при этом никуда не прокручивает, и страница оставалась на прежнем месте
+					onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+					className="flex min-w-0 items-center gap-10">
 					<BrandMark />
 					{menu && (
 						<span className="truncate text-15 font-semibold tracking-[-0.2px] text-[#f1f4ee]">

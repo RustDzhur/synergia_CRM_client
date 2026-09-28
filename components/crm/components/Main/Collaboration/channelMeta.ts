@@ -10,6 +10,9 @@ export const CHANNEL_ICON: Record<MessagingChannel, IconType> = {
 	whatsapp: FaWhatsapp,
 	messenger: FaFacebookMessenger,
 	twilio: MdSms,
+	vonage: MdSms,
+	plivo: MdSms,
+	telnyx: MdSms,
 	sip: MdDialpad,
 	webchat: MdSensors,
 };
@@ -20,6 +23,9 @@ export const CHANNEL_COLOR: Record<MessagingChannel, string> = {
 	whatsapp: "#25D366",
 	messenger: "#0084FF",
 	twilio: "#F22F46",
+	vonage: "#6C4BF4",
+	plivo: "#00A99D",
+	telnyx: "#0FA958",
 	sip: "#009A2B",
 	webchat: "#5EA8F5",
 };

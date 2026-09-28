@@ -8,7 +8,10 @@ import Contact from "@/models/Contact";
 import Conversation from "@/models/Conversation";
 import Message from "@/models/Message";
 import { sendMessenger } from "./messenger";
+import { sendSms as sendPlivoSms, type PlivoSecrets } from "./plivo";
+import { sendSms as sendTelnyxSms, type TelnyxSecrets } from "./telnyx";
 import { sendSms, TwilioSecrets } from "./twilio";
+import { sendSms as sendVonageSms, type VonageSecrets } from "./vonage";
 import { fetchMedia, mediaLabel, mediaUrl, telegramMedia, type MediaRef, type OutgoingMedia, type StoredMedia } from "./media";
 import { sendTelegram, sendTelegramMedia } from "./telegram";
 import { sendViber, sendViberMedia } from "./viber";
@@ -211,6 +214,16 @@ export async function sendToConversation(integration: Doc, conversation: Doc, te
             break;
         case "twilio":
             externalId = await sendSms(secretsOf<TwilioSecrets>(integration), integration.config.phone, conversation.externalId, text);
+            break;
+        // Остальные СМС-провайдеры: у каждого свой небольшой адаптер (lib/channels/vonage.ts и соседние)
+        case "vonage":
+            externalId = await sendVonageSms(secretsOf<VonageSecrets>(integration), integration.config.phone, conversation.externalId, text);
+            break;
+        case "plivo":
+            externalId = await sendPlivoSms(secretsOf<PlivoSecrets>(integration), integration.config.phone, conversation.externalId, text);
+            break;
+        case "telnyx":
+            externalId = await sendTelnyxSms(secretsOf<TelnyxSecrets>(integration), integration.config.phone, conversation.externalId, text);
             break;
         case "sip":
             throw new ProviderError("SIP provider has calls only — text messages are not supported");
