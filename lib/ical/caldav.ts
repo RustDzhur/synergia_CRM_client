@@ -110,16 +110,27 @@ export async function discoverCalendars(user: string, password: string): Promise
         `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="${DAV}" xmlns:c="${CALDAV}" xmlns:cs="http://calendarserver.org/ns/"><d:prop><d:displayname/><d:resourcetype/><cs:calendar-color/></d:prop></d:propfind>`,
         "1", "calendar list");
 
+    // Сам дом календарей тоже приходит в выдаче, и на части серверов помечен как календарь. Запрос
+    // событий к нему Apple отвергает (403 на шаге «events of one calendar»), а календари лежат ниже:
+    // не «/123/calendars/», а «/123/calendars/home/». Поэтому дом пропускаем, а адреса календарей
+    // сохраняем уже разобранными — чтобы дальше не зависеть от того, в каком виде их отдали.
+    const homeUrl = endpoint(home);
+    const homePath = new URL(homeUrl).pathname;
     const out: CalDavCalendar[] = [];
     for (const block of responses(listXml)) {
-        // берём только те записи, что помечены как календарь: в выдаче есть и служебные узлы
-        if (!/calendar[^>]*\/?>|:calendar[\s/>]/i.test(block)) continue;
+        // Календарь опознаём по типу ресурса, а не по всему ответу: в адресах служебных коллекций
+        // («/123456789/calendars/inbox/») тоже есть слово «calendars», и по нему в список попадали
+        // входящие и прочие служебные узлы — запрос событий к ним Apple отвергает (403)
+        const resourcetype = /<[^>]*resourcetype[^>]*>([\s\S]*?)<\/[^>]*resourcetype>/i.exec(block)?.[1] ?? "";
+        if (!/<[^>]*:?calendar[\s/>]/i.test(resourcetype)) continue;
         const href = tag(block, "href");
-        if (!href || !/\/$/.test(href)) continue;
-        const name = tag(block, "displayname") || href.replace(/\/$/, "").split("/").pop() || "Calendar";
+        if (!href) continue;
+        const resolved = new URL(href, homeUrl);
+        if (resolved.pathname === homePath || !resolved.pathname.startsWith(homePath)) continue;
+        const name = tag(block, "displayname") || resolved.pathname.replace(/\/$/, "").split("/").pop() || "Calendar";
         // цвет приходит как #RRGGBBAA — берём первые семь символов
         const color = (tag(block, "calendar-color") || "").slice(0, 7);
-        out.push({ href, name, color: /^#[0-9a-f]{6}$/i.test(color) ? color : "" });
+        out.push({ href: resolved.toString(), name, color: /^#[0-9a-f]{6}$/i.test(color) ? color : "" });
     }
     return out;
 }
@@ -131,7 +142,8 @@ export async function fetchCalendarEvents(
     calendarHref: string,
     from: string,
     to: string,
-    tzOffsetMinutes = 0
+    tzOffsetMinutes = 0,
+    label = ""
 ): Promise<IcalOccurrence[]> {
     // Границы окна — в формате UTC: CalDAV ждёт время по Гринвичу, поэтому прибавляем обратный сдвиг
     const start = `${from.replace(/-/g, "")}T000000Z`;
@@ -144,7 +156,8 @@ export async function fetchCalendarEvents(
   </c:comp-filter></c:comp-filter></c:filter>
 </c:calendar-query>`;
 
-    const xml = await dav(user, password, calendarHref, "REPORT", body, "1", "events of one calendar");
+    // Название календаря в шаге: если Apple отказала, по сообщению сразу видно, какой это календарь
+    const xml = await dav(user, password, calendarHref, "REPORT", body, "1", `events of one calendar${label ? ` «${label}»` : ""}`);
     const out: IcalOccurrence[] = [];
     for (const block of responses(xml)) {
         const data = /<[^>]*calendar-data[^>]*>([\s\S]*?)<\/[^>]*calendar-data>/i.exec(block)?.[1];

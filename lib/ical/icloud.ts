@@ -90,7 +90,7 @@ export async function setIcloudCalendars(owner: string, enabledHrefs: string[]) 
  * Переносит события выбранных календарей в календарь фирмы.
  * Идемпотентно: запись идёт по (org, source, externalId), см. lib/calendar/sources.ts.
  */
-export async function icloudSync(org: string, from: string, to: string): Promise<{ created: number; updated: number; removed: number }> {
+export async function icloudSync(org: string, from: string, to: string): Promise<{ created: number; updated: number; removed: number; warning?: string }> {
     const doc = await findIcloud(org);
     if (!doc || doc.status !== "connected") return { created: 0, updated: 0, removed: 0 };
 
@@ -102,8 +102,21 @@ export async function icloudSync(org: string, from: string, to: string): Promise
     const tz = await ownerOffset(org);
     const events: ExternalEvent[] = [];
     const chosen = icloudCalendars(doc).filter((c) => c.enabled);
+    // Календари, которые ответили: по ним можно удалять пропавшие события, по остальным — нельзя,
+    // иначе события непокорённого календаря исчезли бы из CRM как «пропавшие у провайдера»
+    const answered: string[] = [];
+    const refused: string[] = [];
     for (const calendar of chosen) {
-        const items = await fetchCalendarEvents(appleId, password, calendar.href, from, to, tz);
+        let items;
+        try {
+            items = await fetchCalendarEvents(appleId, password, calendar.href, from, to, tz, calendar.name);
+        } catch (e) {
+            // Один календарь не должен останавливать остальные: Apple отвечает отказом на служебные
+            // коллекции, и из-за одной такой синхронизация не должна пропадать целиком
+            refused.push(calendar.name || calendar.href);
+            continue;
+        }
+        answered.push(calendar.href);
         for (const it of items) {
             const day = it.start.slice(0, 10);
             // У события «на весь день» конец в iCalendar исключающий (RFC 5545), а форма хранит последний
@@ -125,9 +138,15 @@ export async function icloudSync(org: string, from: string, to: string): Promise
             });
         }
     }
-    // Обойденные календари передаём в базу: событие выключенного календаря не удаляется —
-    // человек отказался от обновления, а не от самих событий
-    return upsertExternalEvents(org, "icloud", events, from, to, chosen.map((c) => c.href));
+    // Ни один календарь не ответил — значит сломалось что-то общее (доступ, пароль), и об этом
+    // нужно сказать как об ошибке подключения
+    if (!answered.length && refused.length) throw new ProviderError(`iCloud refused every calendar: ${refused.join(", ")}`);
+
+    // В удаление передаём только ответившие календари: событие выключенного или непокорённого календаря
+    // удалять нельзя — человек отказался от обновления, а не от самих событий
+    const result = await upsertExternalEvents(org, "icloud", events, from, to, answered);
+    // Часть календарей отказала: синхронизация состоялась, но об этом стоит сказать в окне настроек
+    return refused.length ? { ...result, warning: `iCloud did not return events for: ${refused.join(", ")}` } : result;
 }
 
 /** Часовой пояс фирмы: у события в календаре он берётся с профиля владельца, иначе +0 */

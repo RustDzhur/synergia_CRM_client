@@ -54,7 +54,13 @@ export async function syncCalendars(org: string, opts: { force?: boolean; now?: 
 
     if (icloud && icloud.status === "connected") {
         try {
-            result.icloud = await icloudSync(org, from, to);
+            const { warning, ...counts } = await icloudSync(org, from, to);
+            result.icloud = counts;
+            // Отказ по части календарей — не повод считать подключение сломанным: остальные
+            // синхронизируются, а причину показываем в окне настроек.
+            // Статус «error» здесь не ставим — с ним синхронизация прекратилась бы совсем.
+            if (warning) result.errors.push(`iCloud: ${warning}`);
+            await Integration.updateOne({ _id: icloud._id }, { $set: { error: warning ?? "" } }).catch(() => undefined);
         } catch (e) {
             const message = e instanceof Error ? e.message : "iCloud sync failed";
             result.errors.push(`iCloud: ${message}`);
