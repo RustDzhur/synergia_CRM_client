@@ -23,6 +23,21 @@ async function graph<T>(path: string, accessToken: string, init: RequestInit = {
 export const getPage = (accessToken: string) => graph<{ id: string; name: string }>("/me?fields=id,name", accessToken);
 
 /**
+ * Похоже ли, что вставили токен пользователя, а не страницы. Различить их по виду нельзя, зато можно
+ * спросить у Meta список страниц: у пользователя он есть, у страницы такого ребра нет вовсе.
+ * Отказ (нет прав, другая ошибка) считаем «не пользователь» — предупреждать зря не нужно.
+ * Возвращает true, только когда Meta уверенно ответила списком страниц.
+ */
+export async function looksLikeUserToken(accessToken: string): Promise<boolean> {
+    try {
+        const r = await graph<{ data?: unknown[] }>("/me/accounts?limit=1", accessToken);
+        return Array.isArray(r.data);
+    } catch {
+        return false;
+    }
+}
+
+/**
  * Проверка формы реквизитов до запроса к Meta. В кабинете токен страницы, токен пользователя и секрет
  * приложения лежат рядом и внешне не отличаются, а Meta на подмену отвечает невнятным «Cannot parse
  * access token» — по нему не понять, что именно вставили не туда. Возвращает текст проблемы или пустую строку.

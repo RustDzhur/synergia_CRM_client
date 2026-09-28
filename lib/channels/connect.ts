@@ -6,7 +6,7 @@ import { ProviderError } from "@/lib/http";
 import Conversation from "@/models/Conversation";
 import Integration from "@/models/Integration";
 import Message from "@/models/Message";
-import { getPage, messengerCredentialsProblem } from "./messenger";
+import { getPage, looksLikeUserToken, messengerCredentialsProblem } from "./messenger";
 import { verifyPlivo } from "./plivo";
 import { parseSip } from "./sip";
 import { verifyTelnyx } from "./telnyx";
@@ -60,6 +60,8 @@ export async function connectIntegration(owner: string, type: string, input: Inp
     let name = "";
     let config: Record<string, string> = {};
     let secrets: Record<string, string> = {};
+    // предупреждение, которое возвращается вызывающему (интерфейс показывает его как подсказку)
+    let messengerWarning = "";
 
     switch (type) {
         case "telegram": {
@@ -102,6 +104,11 @@ export async function connectIntegration(owner: string, type: string, input: Inp
             name = page.name;
             config = { pageId: page.id, verifyToken: randomToken(8) };
             secrets = { pageAccessToken, appSecret };
+            // Токен пользователя подключается без ошибки, но переписка в CRM не приходит: Meta доставляет
+            // события только по странице. Подключение не отменяем — предупреждаем, что именно не так.
+            if (await looksLikeUserToken(pageAccessToken)) {
+                messengerWarning = "This is a user token, not a page token: incoming messages will not arrive. Use the Page access token (Meta → Messenger → Access tokens → Page, or «me/accounts» in the Graph API Explorer).";
+            }
             break;
         }
         case "twilio": {
@@ -169,7 +176,7 @@ export async function connectIntegration(owner: string, type: string, input: Inp
     await doc.save();
     // подписка на аккаунт WhatsApp Business: без неё Meta не станет присылать события, но подключение уже рабочее для отправки
     const subscribeWarning = config.wabaId ? await subscribeApp(config.wabaId, secrets.accessToken).then(() => "").catch((e) => (e instanceof ProviderError ? e.message : "Could not subscribe the app to the WhatsApp Business account")) : "";
-    const warning = (type === "telegram" || type === "viber" ? await registerWebhook(doc, origin) : undefined) || subscribeWarning || undefined;
+    const warning = (type === "telegram" || type === "viber" ? await registerWebhook(doc, origin) : undefined) || subscribeWarning || messengerWarning || undefined;
     if (warning) {
         doc.status = "error";
         doc.error = warning;
