@@ -8,7 +8,15 @@ async function graph<T>(path: string, accessToken: string, init: RequestInit = {
     const sep = path.includes("?") ? "&" : "?";
     const res = await fetchProvider(`${base()}${path}${sep}access_token=${encodeURIComponent(accessToken)}`, init);
     const json = (await res.json().catch(() => null)) as (T & { error?: { message: string } }) | null;
-    if (!res.ok || !json || json.error) throw new ProviderError(json?.error?.message ?? `Facebook error ${res.status}`);
+    if (!res.ok || !json || json.error) {
+        const message = json?.error?.message ?? `Facebook error ${res.status}`;
+        // Самая частая причина отказа — не тот токен: в кабинете Meta рядом лежат токены пользователя,
+        // страницы и приложения, и внешне они не отличаются. Говорим прямо, какой нужен.
+        const hint = /invalid oauth|expired|parse access token|session has been invalidated/i.test(message)
+            ? " — use the Page access token of the page (Meta also shows user and app tokens, they will not work)"
+            : "";
+        throw new ProviderError(`${message}${hint}`);
+    }
     return json;
 }
 
