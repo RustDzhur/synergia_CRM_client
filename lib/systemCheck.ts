@@ -4,6 +4,7 @@ import { adminEmails } from "@/lib/admin";
 import { ProviderError } from "@/lib/http";
 import { stripe, stripeConfigured } from "@/lib/stripe";
 import { checkBucket, storageProblem } from "@/lib/storage/firebase";
+import { metaApp } from "@/lib/platformSettings";
 
 export interface Check { id: string; ok: boolean; message: string }
 
@@ -51,6 +52,12 @@ export async function systemCheck(): Promise<Check[]> {
         attempt("cron", async () => {
             if (!process.env.CRON_SECRET) throw new Error("CRON_SECRET is not set");
             return "Daily automation job is protected";
+        }),
+        attempt("meta", async () => {
+            const app = await metaApp();
+            if (!app.appId) throw new Error("The Meta app is not set (Messenger and WhatsApp sign-in needs it; add it in the admin panel)");
+            if (!app.appSecret) throw new Error("The App Secret is missing — add it in the admin panel (Messenger and WhatsApp sign-in needs it)");
+            return `Meta app ${app.appId} is set (pages and WhatsApp numbers connect by Facebook sign-in)`;
         }),
     ]);
 }

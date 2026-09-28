@@ -2,6 +2,7 @@ import type { HydratedDocument } from "mongoose";
 import { webhookPath, packSecrets, secretsOf } from "@/lib/integrations";
 import { isPublicHttps } from "@/lib/appUrl";
 import { randomToken } from "@/lib/crypto";
+import { metaApp } from "@/lib/platformSettings";
 import { ProviderError } from "@/lib/http";
 import Conversation from "@/models/Conversation";
 import Integration from "@/models/Integration";
@@ -49,21 +50,27 @@ type MetaSecrets = {
 };
 
 /**
- * Приложение Meta у платформы одно — то же самое, что используется для рекламных кабинетов
- * (META_APP_ID и META_APP_SECRET). Когда оно настроено на сайте, Messenger и WhatsApp подключаются
- * одной кнопкой, без полей с ключами: вводить их вручную нужно только там, где переменных нет.
+ * Приложение Meta — одно на платформу: ключи задаются администратором в кабинете (или переменными
+ * META_APP_ID и META_APP_SECRET, как у рекламных кабинетов). Когда оно настроено, Messenger и WhatsApp
+ * подключаются одной кнопкой, без полей с ключами — у клиента своего приложения Meta нет.
  */
-export const metaAppConfigured = () => !!(process.env.META_APP_ID && process.env.META_APP_SECRET);
+export const metaAppConfigured = async () => {
+    const a = await metaApp();
+    return !!(a.appId && a.appSecret);
+};
 
-/** Начало входа: берём реквизиты приложения (свои или платформенные), запоминаем секрет и отдаём адрес окна Facebook */
+/** Начало входа: берём реквизиты приложения (введённые или платформенные), запоминаем секрет и отдаём адрес окна Facebook */
 export async function startMetaOauth(owner: string, kind: MetaKind, enteredAppId: string, enteredSecret: string, origin: string, state: string): Promise<string> {
-    const appId = enteredAppId || process.env.META_APP_ID || "";
-    const appSecret = enteredSecret || process.env.META_APP_SECRET || "";
-    if (!appId) throw new ProviderError("Add META_APP_ID and META_APP_SECRET to the site's environment variables, or enter the App ID and App Secret here");
+    const platform = await metaApp();
+    const appId = enteredAppId || platform.appId;
+    const appSecret = enteredSecret || platform.appSecret;
+    if (!appId) throw new ProviderError("The Meta app is not configured: add the App ID and App Secret in the admin panel, or enter them here");
     if (!/^\d{6,20}$/.test(appId)) throw new ProviderError("The App ID is a number — copy it from Meta → Settings → Basic");
     if (appSecret.length < 20 || appSecret.length > 60) throw new ProviderError("The App Secret is a 32-character string — copy it from Meta → Settings → Basic");
     const doc = (await Integration.findOne({ owner, type: kind })) ?? new Integration({ owner, type: kind, token: randomToken() });
-    doc.secrets = packSecrets({ ...secretsOf<MetaSecrets>(doc), pendingAppId: appId, pendingAppSecret: appSecret });
+    // у ещё не подключённой интеграции секретов нет — читаем их только когда они есть
+    const existing: MetaSecrets = doc.secrets ? secretsOf<MetaSecrets>(doc) : {};
+    doc.secrets = packSecrets({ ...existing, pendingAppId: appId, pendingAppSecret: appSecret });
     await doc.save();
     const redirect = `${origin}${metaRedirect(kind)}`;
     return kind === "messenger" ? messengerOauthUrl(appId, redirect, state) : whatsappOauthUrl(appId, redirect, state);

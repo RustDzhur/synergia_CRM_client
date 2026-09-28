@@ -10,5 +10,5 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    return NextResponse.json({ configured: metaAppConfigured() });
+    return NextResponse.json({ configured: await metaAppConfigured() });
 }
