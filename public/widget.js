@@ -18,6 +18,7 @@
       contactTitle: "Wie erreichen wir Sie?", contactHint: "E-Mail oder Telefonnummer — wir melden uns, falls es im Chat nicht klappt.",
       contactSend: "Senden", contactBad: "Bitte prüfen Sie die E-Mail oder Nummer.", contactThanks: "Danke! Wir melden uns bei Ihnen.",
       rateUp: "Hat geholfen", rateDown: "Hat nicht geholfen",
+      file: "Datei anhängen", fileBad: "Die Datei konnte nicht gesendet werden (max. 4 MB).",
     },
     uk: {
       ph: "Напишіть повідомлення…", send: "Надіслати", err: "Не вдалося надіслати. Спробуйте ще раз.", close: "Закрити",
@@ -26,6 +27,7 @@
       contactTitle: "Як з вами звʼязатися?", contactHint: "Пошта або телефон — напишемо, якщо не встигнемо в чаті.",
       contactSend: "Надіслати", contactBad: "Перевірте пошту або номер.", contactThanks: "Дякуємо! Ми звʼяжемося з вами.",
       rateUp: "Допомогло", rateDown: "Не допомогло",
+      file: "Прикріпити файл", fileBad: "Не вдалося надіслати файл (до 4 МБ).",
     },
   }[lang] || {
     ph: "Type a message…", send: "Send", err: "Message was not sent. Try again.", close: "Close",
@@ -34,6 +36,7 @@
     contactTitle: "How can we reach you?", contactHint: "E-mail or phone — we will write back if the chat does not work out.",
     contactSend: "Send", contactBad: "Please check the e-mail or number.", contactThanks: "Thank you! We will get in touch.",
     rateUp: "It helped", rateDown: "It did not help",
+    file: "Attach a file", fileBad: "The file could not be sent (max 4 MB).",
   };
 
   var storeKey = "synergia_visitor_" + token;
@@ -94,16 +97,19 @@
     "input{flex:1;min-width:0;height:40px;border:1px solid #e0e0e0;border-radius:20px;padding:0 14px;font-size:14px;outline:none}" +
     "input:focus{border-color:#5ea8f5}" +
     "form button{border:0;border-radius:20px;padding:0 16px;color:#fff;font-weight:600;cursor:pointer}" +
+    "form .clip{background:none;border:0;font-size:18px;line-height:1;cursor:pointer;padding:0 2px;border-radius:0}" +
     "</style>" +
     '<div class="panel" role="dialog"><div class="head"><span class="title"></span><button type="button" class="x" aria-label="' + T.close + '">×</button></div>' +
     '<div class="note"></div><div class="list"></div><div class="quick"></div>' +
     '<div class="ask"><b>' + T.contactTitle + "</b><i>" + T.contactHint + '</i><div><input maxlength="120" aria-label="' + T.contactTitle + '"><button type="button">' + T.contactSend + "</button></div></div>" +
     '<div class="links"></div><a class="cta" target="_blank" rel="noopener"></a>' +
-    '<form><input maxlength="1000" placeholder="' + T.ph + '" aria-label="' + T.ph + '"><button type="submit">' + T.send + "</button></form></div>" +
+    '<form><button class="clip" type="button" aria-label="' + T.file + '" title="' + T.file + '">📎</button>' +
+    '<input class="text" maxlength="1000" placeholder="' + T.ph + '" aria-label="' + T.ph + '"><input class="file" type="file" hidden>' +
+    '<button type="submit">' + T.send + "</button></form></div>" +
     '<button class="btn" type="button" aria-label="Chat"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg><span class="dot"></span></button>';
 
   var $ = function (s) { return root.querySelector(s); };
-  var panel = $(".panel"), list = $(".list"), input = $("input"), btn = $(".btn"), dot = $(".dot");
+  var panel = $(".panel"), list = $(".list"), input = $("input.text"), btn = $(".btn"), dot = $(".dot");
 
   function paint() {
     $(".head").style.background = cfg.color;
@@ -325,6 +331,23 @@
   $(".x").addEventListener("click", function () { toggle(false); });
   $(".ask button").addEventListener("click", sendContact);
   $(".ask input").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); sendContact(); } });
+
+  // Вложение: файл уходит в хранилище фирмы, в переписке появляется сообщением с файлом
+  var clip = $(".clip"), fileInput = $("input.file");
+  clip.addEventListener("click", function () { fileInput.click(); });
+  fileInput.addEventListener("change", function () {
+    var file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    fileInput.value = "";
+    if (file.size > 4 * 1024 * 1024) return addBubble("err", T.fileBad);
+    var form = new FormData();
+    form.append("visitor", visitor);
+    form.append("file", file);
+    addBubble("me", "📎 " + file.name, cfg.color);
+    fetch(api + "/upload", { method: "POST", body: form })
+      .then(function (r) { if (!r.ok) throw new Error(String(r.status)); poll(); })
+      .catch(function () { addBubble("err", T.fileBad); });
+  });
   root.querySelector("form").addEventListener("submit", function (e) {
     e.preventDefault();
     var text = input.value.trim();
