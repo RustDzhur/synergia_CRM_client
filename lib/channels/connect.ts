@@ -15,7 +15,7 @@ import { verifyVonage } from "./vonage";
 import { connectTwilio, normalizePhone } from "./twilio";
 import { deleteWebhook, getMe, getWebhookInfo, setWebhook } from "./telegram";
 import { getAccount, removeViberWebhook, setViberWebhook } from "./viber";
-import { discoverWhatsAppNumbers, exchangeWhatsAppCode, getPhoneNumber, longLivedWhatsAppToken, subscribeApp, whatsappOauthUrl } from "./whatsapp";
+import { discoverWhatsAppNumbers, exchangeWhatsAppCode, getPhoneNumber, longLivedWhatsAppToken, setWhatsAppAppWebhook, subscribeApp, whatsappOauthUrl } from "./whatsapp";
 
 type Doc = HydratedDocument<any>;
 type Input = Record<string, unknown>;
@@ -155,17 +155,28 @@ export async function connectMetaChoice(owner: string, kind: MetaKind, id: strin
     if (!token || !wabaId) throw new ProviderError("This number is no longer available — start the connection again");
     const phone = await getPhoneNumber(id, token);
     const name = phone.display_phone_number || phone.verified_name || id;
-    const warning = await subscribeApp(wabaId, token).then(() => "").catch((e) => (e instanceof ProviderError ? e.message : "Could not subscribe the app to the WhatsApp Business account"));
+    const verifyToken = String(doc.config?.verifyToken || randomToken(8));
     doc.set({
         name,
-        config: { ...(doc.config ?? {}), appId, wabaId, phoneNumberId: id, verifyToken: doc.config?.verifyToken || randomToken(8), ...(phone.verified_name ? { botName: phone.verified_name } : {}) },
+        config: { ...(doc.config ?? {}), appId, wabaId, phoneNumberId: id, verifyToken, ...(phone.verified_name ? { botName: phone.verified_name } : {}) },
         secrets: packSecrets({ accessToken: token, appSecret }),
         status: "connected",
         error: "",
     });
     doc.markModified("config");
+
+    // Подписка аккаунта на приложение и адрес вебхука: без них Meta не присылает сообщения.
+    // Как и у Messenger, настраиваем сами — в кабинете Meta этот шаг делают руками и легко путают поля.
+    const warnings: string[] = [];
+    const subscribed = await subscribeApp(wabaId, token).then(() => "").catch((e) => (e instanceof ProviderError ? e.message : "Could not subscribe the app to the WhatsApp Business account"));
+    if (subscribed) warnings.push(subscribed);
+    const webhook = await setWhatsAppAppWebhook(appId, appSecret, `${origin}${webhookPath("whatsapp", String(doc.token))}`, verifyToken)
+        .then(() => "")
+        .catch((e) => (e instanceof ProviderError ? e.message : "Could not register the webhook in Meta"));
+    if (webhook) warnings.push(`${webhook} — впишите адрес вебхука и маркер подтверждения из этого окна в Meta вручную`);
+
     await doc.save();
-    return { name, ...(warning ? { warning } : {}) };
+    return { name, ...(warnings.length ? { warning: warnings.join("; ") } : {}) };
 }
 
 // Регистрирует вебхук у Telegram / Viber. На localhost провайдеры до нас не достучатся — тогда подключение

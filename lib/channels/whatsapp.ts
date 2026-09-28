@@ -29,8 +29,8 @@ export function whatsappOauthUrl(appId: string, redirectUri: string, state: stri
 }
 
 /** Запрос без токена: нужен шагам входа, где токен ещё только получаем */
-async function graphRaw<T extends object>(path: string): Promise<T> {
-    const res = await fetchProvider(`${base()}${path}`);
+async function graphRaw<T extends object>(path: string, init: RequestInit = {}): Promise<T> {
+    const res = await fetchProvider(`${base()}${path}`, init);
     const json = (await res.json().catch(() => null)) as (T & { error?: { message?: string } }) | null;
     if (!res.ok || !json || json.error) throw new ProviderError(json?.error?.message ?? `WhatsApp error ${res.status}`);
     return json;
@@ -85,6 +85,17 @@ export const getPhoneNumber = (phoneNumberId: string, accessToken: string) =>
 // Приложение подписывается на аккаунт WhatsApp Business: без этой подписки Meta не присылает вебхуки
 export const subscribeApp = (wabaId: string, accessToken: string) =>
     graph<{ success?: boolean }>(`/${wabaId}/subscribed_apps`, accessToken, { method: "POST" });
+
+/**
+ * Адрес вебхука и маркер подтверждения для WhatsApp — тот же шаг, что и у Messenger: в кабинете Meta
+ * рядом стоят поля для ссылки на страницу CRM и для произвольной строки, и в них легко вписать не то.
+ * Meta принимает значения и через API (токеном «app-id|app-secret»), сама проверяя адрес.
+ */
+export async function setWhatsAppAppWebhook(appId: string, appSecret: string, callbackUrl: string, verifyToken: string) {
+    const token = `${appId}|${appSecret}`;
+    const q = new URLSearchParams({ object: "whatsapp_business_account", callback_url: callbackUrl, verify_token: verifyToken, fields: "messages", access_token: token });
+    await graphRaw<{ success?: boolean }>(`/${appId}/subscriptions?${q}`, { method: "POST" });
+}
 
 export async function sendWhatsApp(accessToken: string, phoneNumberId: string, to: string, text: string) {
     const res = await graph<{ messages?: { id?: string }[] }>(`/${phoneNumberId}/messages`, accessToken, {
