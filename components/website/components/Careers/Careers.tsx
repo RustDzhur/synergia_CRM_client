@@ -23,15 +23,15 @@ export default function Careers() {
 			<h2 className="mb-16 text-24 font-medium text-[#f1f4ee]">{tx(CAREERS.openTitle, locale)}</h2>
 			<ul className="space-y-12">
 				{CAREERS.positions.map((p, i) => (
-					<li key={i} className="flex flex-col gap-12 rounded-16 bg-gray p-20 md:flex-row md:items-center md:justify-between">
+					<li key={i} className="flex flex-col gap-12 rounded-16 border border-[rgba(255,255,255,0.10)] bg-[rgba(255,255,255,0.03)] p-20 md:flex-row md:items-center md:justify-between">
 						<div className="flex items-center gap-12">
 							<MdWorkOutline size={26} className="shrink-0 text-authBtn" />
 							<div>
 								<p className="text-18 font-medium tracking-[0.4px] text-[#f1f4ee]">{tx(p.title, locale)}</p>
-								<p className="text-14 text-[#999999]">{tx(p.meta, locale)}</p>
+								<p className="text-14 text-[#8c948b]">{tx(p.meta, locale)}</p>
 							</div>
 						</div>
-						<a href={`mailto:hello@firmspace.example?subject=${encodeURIComponent(tx(p.title, "en"))}`} className="self-start rounded-4 bg-authBtn px-24 py-10 text-16 font-medium text-[#0A0A0A] transition-opacity hover:opacity-80 md:self-auto">
+						<a href={`/${locale}/contacts`} className="self-start rounded-4 bg-authBtn px-24 py-10 text-16 font-medium text-[#0A0A0A] transition-opacity hover:opacity-80 md:self-auto">
 							{tx(CAREERS.apply, locale)}
 						</a>
 					</li>

@@ -4,9 +4,11 @@ import { useLocale } from "next-intl";
 import { tx } from "@/app/content/i18n";
 import { CONTACT } from "@/app/content/sitePages";
 
-const field = "block w-full rounded-4 border-2 border-[#999999] bg-white px-12 text-16 text-[#4D4D4D] outline-none placeholder:text-[#B3B3B3] transition-colors focus:border-primaryColor";
+const field = "block w-full rounded-4 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] px-12 text-16 text-[#f1f4ee] outline-none placeholder:text-[#8c948b] transition-colors focus:border-[rgba(198,255,77,0.55)]";
 
-// Contact: слева тёмная карточка с розовым кругом, справа форма. Форма отправляет обращение на /api/contact.
+// Contact: слева карточка с акцентным кругом и реквизитами, справа форма. Обращение уходит на /api/contact.
+// Круг раньше был розовым (#E91E9B) — на тёмном сайте это единственное яркое пятно не из палитры,
+// теперь он лаймовый, как остальные акценты.
 export default function ContactsPage() {
 	const locale = useLocale();
 	const [values, setValues] = useState({ name: "", email: "", phone: "", message: "" });
@@ -30,7 +32,7 @@ export default function ContactsPage() {
 	return (
 		<div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto sm:px-12 md:px-20 lg:px-100 sm:pb-50 lg:pb-[100px]">
 			<div className="flex flex-col gap-30 md:flex-row md:gap-[40px] lg:gap-[40px]">
-				<div className="relative overflow-hidden rounded-16 bg-aboutUsBackground px-24 pt-24 pb-[220px] text-center text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)] md:w-[45%] lg:w-[504px] lg:h-[605px] lg:shrink-0">
+				<div className="relative overflow-hidden rounded-16 border border-[rgba(255,255,255,0.10)] bg-[rgba(255,255,255,0.03)] px-24 pt-24 pb-[220px] text-center text-[#f1f4ee] md:w-[45%] lg:w-[504px] lg:h-[605px] lg:shrink-0">
 					<h1 className="text-32 lg:text-36 font-medium tracking-[1px] leading-[1.3]">{tx(CONTACT.title, locale)}</h1>
 					<p className="mt-8 text-16 lg:text-20 font-medium tracking-[0.4px]">{tx(CONTACT.subtitle, locale)}</p>
 					<ul className="relative z-10 mt-30 space-y-16 text-left text-16 tracking-[0.3px]">
@@ -41,7 +43,7 @@ export default function ContactsPage() {
 							</li>
 						))}
 					</ul>
-					<div className="absolute -bottom-[10px] -right-[10px] h-[300px] w-[300px] rounded-[50%] bg-[#E91E9B] lg:h-[360px] lg:w-[360px] lg:-bottom-[40px] lg:-right-[30px]" aria-hidden />
+					<div className="absolute -bottom-[10px] -right-[10px] h-[300px] w-[300px] rounded-[50%] bg-[rgba(198,255,77,0.10)] lg:h-[360px] lg:w-[360px] lg:-bottom-[40px] lg:-right-[30px]" aria-hidden />
 				</div>
 
 				<form onSubmit={submit} className="flex-1 lg:max-w-[400px]">
@@ -65,7 +67,7 @@ export default function ContactsPage() {
 						<button type="submit" disabled={state === "sending"} className="h-[52px] rounded-4 bg-authBtn px-[30px] text-18 font-medium tracking-[0.4px] text-[#0A0A0A] transition-opacity hover:opacity-80 disabled:opacity-60">
 							{tx(state === "sending" ? CONTACT.sending : CONTACT.send, locale)}
 						</button>
-						{state === "sent" && <p role="status" className="self-stretch text-14 text-[#009A2B]">{tx(CONTACT.sent, locale)}</p>}
+						{state === "sent" && <p role="status" className="self-stretch text-14 text-[#5FBF3C]">{tx(CONTACT.sent, locale)}</p>}
 						{state === "error" && <p role="alert" className="self-stretch text-14 text-danger">{tx(CONTACT.failed, locale)}</p>}
 					</div>
 				</form>

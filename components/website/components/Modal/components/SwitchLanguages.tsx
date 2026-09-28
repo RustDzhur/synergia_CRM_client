@@ -52,7 +52,7 @@ export default function SwitchLanguage() {
 					}`}>
 					<p
 						className={`text-24 font-medium cursor-pointer transition-colors duration-200 ${
-							isOpenDropDown ? "text-activeMenu active-link" : "text-menu"
+							isOpenDropDown ? "text-[#c6ff4d] active-link" : "text-[#8c948b]"
 						} `}>
 						{t(`lang.${selectedLanguage.code}`)}
 					</p>
@@ -81,7 +81,7 @@ export default function SwitchLanguage() {
 								className={`lg:mt-6 cursor-pointer flex items-center justify-between ${
 									index !== availableLanguages.length - 1 ? "mb-20" : ""
 								}`}>
-								<p className="text-24 text-menu font-medium transition-colors duration-150 hover:text-black">{t(`lang.${lang.code}`)}</p>
+								<p className="text-24 text-[#8c948b] font-medium transition-colors duration-150 hover:text-[#c6ff4d]">{t(`lang.${lang.code}`)}</p>
 								<Image
 									src={languageCodeToProperties(lang.code).flagUrl}
 									alt={lang.code}

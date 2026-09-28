@@ -70,7 +70,7 @@ export default function SwitchLanguage() {
 			</button>
 
 			<Dropdown open={isOpenDropDown} className="left-0 top-full mt-[12px]">
-				<ul className="rounded-8 border border-[#E2F1F5] bg-white p-12 shadow-custom">
+				<ul className="rounded-8 border border-[rgba(255,255,255,0.11)] bg-[#1D2320] p-12 shadow-custom">
 					{languages.map((lang, index) => (
 						<li
 							onClick={() => handleLanguageChange(lang)}
@@ -85,7 +85,7 @@ export default function SwitchLanguage() {
 								height={languageCodeToProperties(lang.code).height}
 								className="w-40 mr-20 rounded-4"
 							/>
-							<p className="font-medium lg:text-18 text-[#4D4D4D] whitespace-nowrap transition-colors duration-150 hover:text-activeMenu">
+							<p className="font-medium lg:text-18 text-[#f1f4ee] whitespace-nowrap transition-colors duration-150 hover:text-[#c6ff4d]">
 								{t(`lang.${lang.code}`)}
 							</p>
 						</li>

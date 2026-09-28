@@ -15,8 +15,8 @@ export default function NavLink({ href, children }: NavLinkProps) {
 	return (
 		<Link
 			href={href}
-			className={` hover:text-activeMenu ${
-				isActive ? "text-activeMenu active-link" : "text-menu"
+			className={` hover:text-[#c6ff4d] ${
+				isActive ? "text-[#c6ff4d] active-link" : "text-[#8c948b]"
 			}`}>
 			{children}
 		</Link>

@@ -75,11 +75,13 @@ export default function ModalMenu() {
 				<div
 					ref={modalRef}
 					onClick={handleCloseModal}
-					className={`fixed inset-0 flex justify-start lg:justify-center lg:items-center  z-50 bg-modalBG transition-opacity duration-300 motion-reduce:transition-none ${
+					className={`fixed inset-0 flex justify-start lg:justify-center lg:items-center  z-50 bg-[rgba(6,9,8,0.72)] transition-opacity duration-300 motion-reduce:transition-none ${
 						visible ? "opacity-100" : "opacity-0"
 					}`}>
+					{/* панель тёмная, поэтому светлый цвет текста задаём здесь: без него подписи и поля формы
+					    наследуют чёрный цвет браузера и становятся невидимыми (фон страницы тёмный) */}
 					<div
-						className={` sm:bg-secondaryColor sm:p-20 w-full lg:h-auto lg:mb-40 lg:rounded-24 lg:w-auto md:w-375  overflow-y-auto scroll-hide-scrollbar transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none ${
+						className={` sm:bg-ink sm:p-20 w-full lg:h-auto lg:mb-40 lg:rounded-24 lg:w-auto md:w-375  overflow-y-auto scroll-hide-scrollbar text-[#f1f4ee] transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none ${
 							visible ? "translate-y-0 opacity-100" : "-translate-y-[16px] opacity-0"
 						}`}>
 						<div className="flex justify-between mb-60 lg:mb-20 items-center">

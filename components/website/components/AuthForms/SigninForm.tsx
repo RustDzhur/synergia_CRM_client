@@ -88,11 +88,11 @@ export default function SignInForm() {
 									placeholder={t("username")}
 									type="email"
 									id="email"
-									className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
+									className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 								/>
 								<div className="absolute top-17 left-20">
 									<IconContext.Provider
-										value={{ size: "22px", color: "#666666" }}>
+										value={{ size: "22px", color: "#8c948b" }}>
 										<FaUser />
 									</IconContext.Provider>
 								</div>
@@ -114,11 +114,11 @@ export default function SignInForm() {
 									placeholder={t("password")}
 									type={passwordVisible ? "text" : "password"}
 									id="password"
-									className="pl-50 pr-50 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
+									className="pl-50 pr-50 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 								/>
 								<div className="absolute top-17 left-20">
 									<IconContext.Provider
-										value={{ size: "22px", color: "#666666" }}>
+										value={{ size: "22px", color: "#8c948b" }}>
 										{passwordVisible ? <IoIosUnlock /> : <IoIosLock />}
 									</IconContext.Provider>
 								</div>
@@ -126,7 +126,7 @@ export default function SignInForm() {
 									onClick={() => setPasswordVisible(!passwordVisible)}
 									className="absolute top-17 right-20 cursor-pointer">
 									<IconContext.Provider
-										value={{ size: "22px", color: "#666666" }}>
+										value={{ size: "22px", color: "#8c948b" }}>
 										{passwordVisible ? <BsEye /> : <BsEyeSlash />}
 									</IconContext.Provider>
 								</div>
@@ -134,10 +134,10 @@ export default function SignInForm() {
 						)}
 					/>
 				</div>
-				<div className="text-left text-16 text-[#4D4D4D] sm:mb-30 mb-60">
+				<div className="text-left text-16 text-[#8c948b] sm:mb-30 mb-60">
 					{t("haveaccount.no")}{" "}
 					<span
-						className="text-primaryColor cursor-pointer"
+						className="text-[#c6ff4d] cursor-pointer"
 						onClick={handleChangeForm}>
 						{t("signup")}
 					</span>

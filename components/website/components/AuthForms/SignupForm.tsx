@@ -77,13 +77,13 @@ function SignupForm() {
 					className={`${
 						activeTab === "company"
 							? "bg-authBtn text-[#0A0A0A]"
-							: "#ffffff text-[#4D4D4D]"
-					} px-20 py-14 rounded-8 border-authTabBtn flex items-center`}>
+							: "text-[#c6ff4d]"
+					} border border-authTabBtn px-20 py-14 rounded-8 flex items-center`}>
 					<div className="mr-8">
 						<IconContext.Provider
 							value={{
 								size: "22px",
-								color: `${activeTab === "company" ? "#0A0A0A" : "#ccc"}`,
+								color: `${activeTab === "company" ? "#0A0A0A" : "#c6ff4d"}`,
 							}}>
 							<BsFillBuildingsFill />
 						</IconContext.Provider>
@@ -95,13 +95,13 @@ function SignupForm() {
 					className={`${
 						activeTab === "personal"
 							? "bg-authBtn text-[#0A0A0A]"
-							: "#ffffff text-[#4D4D4D]"
-					} px-20 py-14 rounded-8 border-authTabBtn flex items-center`}>
+							: "text-[#c6ff4d]"
+					} border border-authTabBtn px-20 py-14 rounded-8 flex items-center`}>
 					<div className="mr-8">
 						<IconContext.Provider
 							value={{
 								size: "22px",
-								color: `${activeTab === "personal" ? "#0A0A0A" : "#ccc"}`,
+								color: `${activeTab === "personal" ? "#0A0A0A" : "#c6ff4d"}`,
 							}}>
 							<MdOutlinePersonalInjury />
 						</IconContext.Provider>
@@ -122,11 +122,11 @@ function SignupForm() {
 										{...field}
 										type="text"
 										placeholder={t('companyname')}
-										className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
+										className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 									/>
 									<div className="absolute top-17 left-20">
 										<IconContext.Provider
-											value={{ size: "22px", color: "#666666" }}>
+											value={{ size: "22px", color: "#8c948b" }}>
 											<AiFillBank />
 										</IconContext.Provider>
 									</div>
@@ -144,11 +144,11 @@ function SignupForm() {
 										{...field}
 										type="text"
 										placeholder={t('taxnumber')}
-										className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
+										className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 									/>
 									<div className="absolute top-17 left-20">
 										<IconContext.Provider
-											value={{ size: "22px", color: "#666666" }}>
+											value={{ size: "22px", color: "#8c948b" }}>
 											<TbReceiptTax />
 										</IconContext.Provider>
 									</div>
@@ -166,11 +166,11 @@ function SignupForm() {
 										{...field}
 										type="text"
 										placeholder={t("companyphone")}
-										className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
+										className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 									/>
 									<div className="absolute top-17 left-20">
 										<IconContext.Provider
-											value={{ size: "22px", color: "#666666" }}>
+											value={{ size: "22px", color: "#8c948b" }}>
 											<BsFillTelephoneFill />
 										</IconContext.Provider>
 									</div>
@@ -188,11 +188,11 @@ function SignupForm() {
 										{...field}
 										type="email"
 										placeholder={t("companyemail")}
-										className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
+										className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 									/>
 									<div className="absolute top-17 left-20">
 										<IconContext.Provider
-											value={{ size: "22px", color: "#666666" }}>
+											value={{ size: "22px", color: "#8c948b" }}>
 											<AiOutlineMail />
 										</IconContext.Provider>
 									</div>
@@ -210,11 +210,11 @@ function SignupForm() {
 										{...field}
 										type="text"
 										placeholder={t("companyaddress")}
-										className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
+										className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 									/>
 									<div className="absolute top-17 left-20">
 										<IconContext.Provider
-											value={{ size: "22px", color: "#666666" }}>
+											value={{ size: "22px", color: "#8c948b" }}>
 											<BiSolidBuildingHouse />
 										</IconContext.Provider>
 									</div>
@@ -232,11 +232,11 @@ function SignupForm() {
 										{...field}
 										type="password"
 										placeholder={t("companypassword")}
-										className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
+										className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 									/>
 									<div className="absolute top-17 left-20">
 										<IconContext.Provider
-											value={{ size: "22px", color: "#666666" }}>
+											value={{ size: "22px", color: "#8c948b" }}>
 											{passwordVisible ? <IoIosUnlock /> : <IoIosLock />}
 										</IconContext.Provider>
 									</div>
@@ -244,7 +244,7 @@ function SignupForm() {
 										onClick={() => setPasswordVisible(!passwordVisible)}
 										className="absolute top-17 right-20 cursor-pointer">
 										<IconContext.Provider
-											value={{ size: "22px", color: "#666666" }}>
+											value={{ size: "22px", color: "#8c948b" }}>
 											{passwordVisible ? <BsEye /> : <BsEyeSlash />}
 										</IconContext.Provider>
 									</div>
@@ -259,7 +259,7 @@ function SignupForm() {
 								<div className="text-left">
 									<label>
 										<input {...field} type="checkbox" className="mr-8" />
-										<span className="text-16 font-normal text-[#4D4D4D]">
+										<span className="text-16 font-normal text-[#8c948b]">
                                         {t('agreement')}
 										</span>
 									</label>
@@ -279,11 +279,11 @@ function SignupForm() {
 										{...field}
 										type="text"
 										placeholder={t('firstname')}
-										className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
+										className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 									/>
 									<div className="absolute top-17 left-20">
 										<IconContext.Provider
-											value={{ size: "22px", color: "#666666" }}>
+											value={{ size: "22px", color: "#8c948b" }}>
 											<BsFillPersonLinesFill />
 										</IconContext.Provider>
 									</div>
@@ -301,11 +301,11 @@ function SignupForm() {
 										{...field}
 										type="text"
 										placeholder={t('lastname')}
-										className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
+										className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 									/>
 									<div className="absolute top-17 left-20">
 										<IconContext.Provider
-											value={{ size: "22px", color: "#666666" }}>
+											value={{ size: "22px", color: "#8c948b" }}>
 											<BsFillPersonLinesFill />
 										</IconContext.Provider>
 									</div>
@@ -323,11 +323,11 @@ function SignupForm() {
 										{...field}
 										type="text"
 										placeholder={t('personalphone')}
-										className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
+										className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 									/>
 									<div className="absolute top-17 left-20">
 										<IconContext.Provider
-											value={{ size: "22px", color: "#666666" }}>
+											value={{ size: "22px", color: "#8c948b" }}>
 											<BsFillTelephoneFill />
 										</IconContext.Provider>
 									</div>
@@ -345,11 +345,11 @@ function SignupForm() {
 										{...field}
 										type="email"
 										placeholder={t('personalemail')}
-										className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
+										className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 									/>
 									<div className="absolute top-17 left-20">
 										<IconContext.Provider
-											value={{ size: "22px", color: "#666666" }}>
+											value={{ size: "22px", color: "#8c948b" }}>
 											<AiOutlineMail />
 										</IconContext.Provider>
 									</div>
@@ -367,11 +367,11 @@ function SignupForm() {
 										{...field}
 										type="text"
 										placeholder={t("personaladdress")}
-										className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
+										className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 									/>
 									<div className="absolute top-17 left-20">
 										<IconContext.Provider
-											value={{ size: "22px", color: "#666666" }}>
+											value={{ size: "22px", color: "#8c948b" }}>
 											<BiSolidBuildingHouse />
 										</IconContext.Provider>
 									</div>
@@ -389,11 +389,11 @@ function SignupForm() {
 										{...field}
 										type="password"
 										placeholder={t('personalpassword')}
-										className="pl-50 pr-20 py-14 w-[100%] rounded-8 shadow-custom border-authFormsUnFocus focus:border-authFormsFocus focus:outline-none mb-18"
+										className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 									/>
 									<div className="absolute top-17 left-20">
 										<IconContext.Provider
-											value={{ size: "22px", color: "#666666" }}>
+											value={{ size: "22px", color: "#8c948b" }}>
 											{passwordVisible ? <IoIosUnlock /> : <IoIosLock />}
 										</IconContext.Provider>
 									</div>
@@ -401,7 +401,7 @@ function SignupForm() {
 										onClick={() => setPasswordVisible(!passwordVisible)}
 										className="absolute top-17 right-20 cursor-pointer">
 										<IconContext.Provider
-											value={{ size: "22px", color: "#666666" }}>
+											value={{ size: "22px", color: "#8c948b" }}>
 											{passwordVisible ? <BsEye /> : <BsEyeSlash />}
 										</IconContext.Provider>
 									</div>
@@ -416,7 +416,7 @@ function SignupForm() {
 								<div className="text-left">
 									<label>
 										<input {...field} type="checkbox" className="mr-8" />
-										<span className="text-16 font-normal text-[#4D4D4D]">
+										<span className="text-16 font-normal text-[#8c948b]">
 											{t('agreement')}
 										</span>
 									</label>
@@ -425,10 +425,10 @@ function SignupForm() {
 						/>
 					</div>
 				)}
-				<div className="text-left text-16 text-[#4D4D4D] sm:mb-30 mb-40">
+				<div className="text-left text-16 text-[#8c948b] sm:mb-30 mb-40">
 					{t('haveaccount.yes')}{" "}
 					<span
-						className="text-primaryColor cursor-pointer"
+						className="text-[#c6ff4d] cursor-pointer"
 						onClick={handleChangeForm}>
 						{t('login')}
 					</span>
