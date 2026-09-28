@@ -113,6 +113,9 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 	const [fbBusy, setFbBusy] = useState(false);
 	// настроено ли на сайте приложение Meta: тогда ключи в окне не нужны вовсе
 	const [siteApp, setSiteApp] = useState(false);
+	// адрес сайта нужен для адреса возврата: Meta требует, чтобы он был разрешён в настройках приложения
+	const [origin, setOrigin] = useState("");
+	useEffect(() => { setOrigin(window.location.origin); }, []);
 	const [preset, setPreset] = useState<string | null>(null); // выбранная плитка провайдера (звонки и СМС)
 	// пока окно закрывается, type уже null — держим последний, чтобы содержимое не пропадало посреди анимации
 	const [shown, setShown] = useState<Real | null>(type);
@@ -327,6 +330,14 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 								    ключи не спрашиваем, иначе их пришлось бы искать в кабинете Meta без нужды */}
 								{!siteApp && <FormField label={t("intfAppId")} value={fbId} onChange={(e) => setFbId(e.target.value)} autoComplete="off" placeholder="1098409499579046" maxLength={40} />}
 								{!siteApp && <FormField label={t("intfAppSecret")} value={fbSecret} onChange={(e) => setFbSecret(e.target.value)} type="password" autoComplete="off" maxLength={80} />}
+								{/* Meta не пустит на наш адрес возврата, пока он не разрешён в настройках приложения —
+								    показываем его готовым, чтобы не искать и не набирать вручную */}
+								{origin && (
+									<CopyField
+										label={t("intFbRedirect")}
+										value={`${origin}${shown === "messenger" ? "/api/messenger/oauth/callback" : "/api/whatsapp/oauth/callback"}`}
+									/>
+								)}
 								<button type="button" disabled={fbBusy || (!siteApp && (!fbId.trim() || !fbSecret.trim()))} onClick={startFacebook} className="fs-btn fs-btn-primary h-40 self-start disabled:opacity-50">
 									{fbBusy ? "…" : t("intFbConnect")}
 								</button>

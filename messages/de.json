@@ -824,6 +824,7 @@
     "intFbTitle": "Verbindung über Facebook",
     "intFbHint": "Geben Sie App-ID und App Secret aus Meta → Einstellungen → Grundlegendes ein. Facebook fragt dann, welche Seite (oder welcher WhatsApp-Nummer) verbunden werden soll — die Token werden automatisch übernommen.",
     "intFbSiteApp": "Das Meta-App dieser Website ist bereits eingerichtet — klicken Sie einfach auf Verbinden.",
+    "intFbRedirect": "Adresse für die Rückkehr — tragen Sie sie in Meta → Facebook Login → Einstellungen als gültige OAuth-Umleitungs-URI ein",
     "intFbConnect": "Mit Facebook verbinden",
     "intFbChoose": "Wählen Sie, was verbunden wird",
     "intFbReady": "Verbunden — die Token wurden automatisch übernommen",
