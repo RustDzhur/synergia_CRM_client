@@ -4,6 +4,7 @@ import { safeEqual } from "@/lib/crypto";
 import { findByToken, secretsOf } from "@/lib/integrations";
 import { recordMessage } from "@/lib/channels";
 import { messengerUserName, parseMessengerBody, verifyMetaSignature } from "@/lib/channels/messenger";
+import { reportError } from "@/lib/reportError";
 
 export const dynamic = "force-dynamic";
 
@@ -28,13 +29,21 @@ export async function POST(req: Request, { params }: { params: { token: string }
 
     const raw = await req.text();
     if (!verifyMetaSignature(raw, req.headers.get("x-hub-signature-256"), secrets.appSecret)) {
+        // Meta события доставляет, но подпись не сходится: почти всегда это сменившийся секрет приложения,
+        // который в CRM не обновили. Без сообщения об этом переписка просто пропадала бы без следа.
+        void reportError(new Error("Messenger: подпись события не сходится — секрет приложения в CRM отличается от того, что в Meta"), { where: "вебхук Messenger", org: String(integration.owner) });
         return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
     let body;
     try { body = JSON.parse(raw); } catch { return NextResponse.json({ message: "Bad request" }, { status: 400 }); }
     for (const event of parseMessengerBody(body)) {
-        const name = (await messengerUserName(secrets.pageAccessToken, event.externalId)) || `Messenger ${event.externalId.slice(-4)}`;
-        await recordMessage(integration, { ...event, name });
+        try {
+            const name = (await messengerUserName(secrets.pageAccessToken, event.externalId)) || `Messenger ${event.externalId.slice(-4)}`;
+            await recordMessage(integration, { ...event, name });
+        } catch (e) {
+            // Сбой на одном сообщении не должен терять остальные — и не должен остаться незамеченным
+            void reportError(e, { where: "обработка сообщения Messenger", org: String(integration.owner), detail: { от_кого: event.externalId } });
+        }
     }
     return NextResponse.json({ ok: true });
 }
