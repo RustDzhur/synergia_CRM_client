@@ -11,9 +11,9 @@
   var api = new URL(script.src).origin + "/api/webchat/" + encodeURIComponent(token);
   var lang = (navigator.language || "en").slice(0, 2);
   var T = {
-    de: { ph: "Nachricht schreiben…", send: "Senden", err: "Nachricht nicht gesendet. Bitte erneut versuchen.", close: "Schließen" },
-    uk: { ph: "Напишіть повідомлення…", send: "Надіслати", err: "Не вдалося надіслати. Спробуйте ще раз.", close: "Закрити" },
-  }[lang] || { ph: "Type a message…", send: "Send", err: "Message was not sent. Try again.", close: "Close" };
+    de: { ph: "Nachricht schreiben…", send: "Senden", err: "Nachricht nicht gesendet. Bitte erneut versuchen.", close: "Schließen", quick: "Häufige Fragen", write: "Oder schreiben Sie uns — wir antworten persönlich.", more: "Auch erreichbar über" },
+    uk: { ph: "Напишіть повідомлення…", send: "Надіслати", err: "Не вдалося надіслати. Спробуйте ще раз.", close: "Закрити", quick: "Часті питання", write: "Або напишіть нам — відповімо особисто.", more: "Також пишіть у" },
+  }[lang] || { ph: "Type a message…", send: "Send", err: "Message was not sent. Try again.", close: "Close", quick: "Common questions", write: "Or write to us — a person will answer.", more: "Also reachable in" };
 
   var storeKey = "synergia_visitor_" + token;
   var visitor = null;
@@ -25,7 +25,7 @@
     try { localStorage.setItem(storeKey, visitor); } catch (e) {}
   }
 
-  var cfg = { title: "Chat with us", greeting: "Hello! How can we help?", color: "#5EA8F5" };
+  var cfg = { title: "Chat with us", greeting: "Hello! How can we help?", color: "#5EA8F5", quick: [], links: {} };
   var open = false, messages = [], seen = 0, timer = null;
 
   var host = document.createElement("div");
@@ -45,13 +45,24 @@
     ".me{align-self:flex-end;color:#fff;border-bottom-right-radius:4px}" +
     ".ag{align-self:flex-start;background:#fff;color:#333;border-bottom-left-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.08)}" +
     ".err{align-self:center;font-size:12px;color:#e5484d}" +
+    ".quick{padding:0 12px 10px;display:none;flex-direction:column;gap:6px}" +
+    ".quick.on{display:flex}" +
+    ".quick i{font-style:normal;font-size:12px;color:#8a8a8a}" +
+    ".quick button{text-align:left;border:1px solid #e0e0e0;background:#fff;border-radius:10px;padding:8px 10px;font-size:13px;color:#333;cursor:pointer}" +
+    ".quick button:hover{border-color:#bbb}" +
+    ".links{padding:8px 12px 0;display:none;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px solid #e6e6e6}" +
+    ".links.on{display:flex}" +
+    ".links i{font-style:normal;font-size:12px;color:#8a8a8a;width:100%}" +
+    ".links a{display:flex;align-items:center;gap:6px;font-size:12px;text-decoration:none;color:#555;border:1px solid #e6e6e6;border-radius:99px;padding:5px 10px}" +
+    ".links a:hover{border-color:#bbb;color:#111}" +
     "form{display:flex;gap:8px;padding:10px;border-top:1px solid #e6e6e6}" +
     "input{flex:1;min-width:0;height:40px;border:1px solid #e0e0e0;border-radius:20px;padding:0 14px;font-size:14px;outline:none}" +
     "input:focus{border-color:#5ea8f5}" +
     "form button{border:0;border-radius:20px;padding:0 16px;color:#fff;font-weight:600;cursor:pointer}" +
     "</style>" +
     '<div class="panel" role="dialog"><div class="head"><span class="title"></span><button type="button" class="x" aria-label="' + T.close + '">×</button></div>' +
-    '<div class="list"></div><form><input maxlength="1000" placeholder="' + T.ph + '" aria-label="' + T.ph + '"><button type="submit">' + T.send + "</button></form></div>" +
+    '<div class="list"></div><div class="quick"></div><div class="links"></div>' +
+    '<form><input maxlength="1000" placeholder="' + T.ph + '" aria-label="' + T.ph + '"><button type="submit">' + T.send + "</button></form></div>" +
     '<button class="btn" type="button" aria-label="Chat"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg><span class="dot"></span></button>';
 
   var $ = function (s) { return root.querySelector(s); };
@@ -62,6 +73,48 @@
     btn.style.background = cfg.color;
     $("form button").style.background = cfg.color;
     $(".title").textContent = cfg.title;
+
+    // быстрые вопросы бота: готовые ответы приходят с сервера теми же текстами, что и раньше на лендинге
+    var quick = $(".quick");
+    quick.textContent = "";
+    (cfg.quick || []).forEach(function (item) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = item.text;
+      b.addEventListener("click", function () { send(item.text); });
+      quick.appendChild(b);
+    });
+    if (quick.childNodes.length) {
+      var qLabel = document.createElement("i");
+      qLabel.textContent = T.quick;
+      quick.insertBefore(qLabel, quick.firstChild);
+    }
+
+    // кнопки мессенджеров — только те каналы, что фирма действительно подключила
+    var links = $(".links");
+    links.textContent = "";
+    [["telegram", "Telegram"], ["viber", "Viber"], ["whatsapp", "WhatsApp"]].forEach(function (ch) {
+      var url = (cfg.links || {})[ch[0]];
+      if (!url) return;
+      var a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = ch[1];
+      links.appendChild(a);
+    });
+    if (links.childNodes.length) {
+      var lLabel = document.createElement("i");
+      lLabel.textContent = T.more;
+      links.insertBefore(lLabel, links.firstChild);
+    }
+  }
+
+  // Быстрые вопросы показываем, пока посетитель сам ничего не написал: дальше начинается живая переписка
+  function showQuick() {
+    var hasOwn = messages.some(function (m) { return m.direction === "in"; });
+    $(".quick").classList.toggle("on", !hasOwn);
+    $(".links").classList.toggle("on", true);
   }
 
   function render() {
@@ -76,6 +129,7 @@
     add("ag", cfg.greeting);
     messages.forEach(function (m) { m.direction === "in" ? add("me", m.text, cfg.color) : add("ag", m.text); });
     list.scrollTop = list.scrollHeight;
+    showQuick();
   }
 
   function request(path, init) {
@@ -107,6 +161,25 @@
     schedule();
   }
 
+  // Отправка сообщения: и из поля ввода, и кнопкой быстрого вопроса. Язык передаём, чтобы бот ответил
+  // на языке посетителя (готовые ответы лежат на трёх языках, см. app/content/chatbotFaq.ts).
+  function send(text) {
+    text = String(text || "").trim();
+    if (!text) return;
+    messages.push({ direction: "in", text: text });
+    render();
+    request("/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitor: visitor, text: text, lang: lang }),
+    }).then(function () { poll(); }).catch(function () {
+      var d = document.createElement("div");
+      d.className = "m err";
+      d.textContent = T.err;
+      list.appendChild(d);
+    });
+  }
+
   btn.addEventListener("click", function () { toggle(!open); });
   $(".x").addEventListener("click", function () { toggle(false); });
   root.querySelector("form").addEventListener("submit", function (e) {
@@ -114,21 +187,13 @@
     var text = input.value.trim();
     if (!text) return;
     input.value = "";
-    messages.push({ direction: "in", text: text });
-    render();
-    request("/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ visitor: visitor, text: text }),
-    }).catch(function () {
-      var d = document.createElement("div");
-      d.className = "m err";
-      d.textContent = T.err;
-      list.appendChild(d);
-    });
+    send(text);
   });
 
-  request("").then(function (c) { cfg = { title: c.title || cfg.title, greeting: c.greeting || cfg.greeting, color: c.color || cfg.color }; paint(); }).catch(function () { paint(); });
+  request("?lang=" + encodeURIComponent(lang)).then(function (c) {
+    cfg = { title: c.title || cfg.title, greeting: c.greeting || cfg.greeting, color: c.color || cfg.color, quick: c.quick || [], links: c.links || {} };
+    paint();
+  }).catch(function () { paint(); });
   paint();
   document.body.appendChild(host);
   poll();

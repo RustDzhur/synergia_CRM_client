@@ -10,7 +10,6 @@ import { AiOutlineInstagram } from "react-icons/ai";
 import { ImLinkedin2 } from "react-icons/im";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { useTranslations } from "next-intl";
-import Chatbot from "../Chatbot/Chatbot";
 
 // slanted — скошенный верх футера (по макету только на главной странице)
 export default function Footer({ slanted = false }: { slanted?: boolean }) {
@@ -181,8 +180,9 @@ export default function Footer({ slanted = false }: { slanted?: boolean }) {
 				</div>
 			</div>
 		</div>
-		{/* Вне блока с clip-path (slanted): фиксированная кнопка чат-бота не должна зависеть от скошенной формы футера на главной */}
-		<Chatbot />
+		{/* Лендинговый чат-бот заменён виджетом онлайн-чата (components/website/components/ChatWidget.tsx):
+		    теперь это одно окно — готовые ответы бота, переписка с человеком и переход в мессенджеры.
+		    Две кнопки в углу накладывались друг на друга, поэтому прежнюю убрали. */}
 		</>
 	);
 }

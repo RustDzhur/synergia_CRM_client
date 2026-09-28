@@ -229,7 +229,8 @@ export async function connectIntegration(owner: string, type: string, input: Inp
             const authToken = need(str(input.authToken, 200), "Auth token");
             const acc = await getAccount(authToken);
             name = acc.name;
-            config = { botName: acc.name };
+            // uri — адрес публичного аккаунта: по нему посетитель открывает бота из виджета на сайте
+            config = { botName: acc.name, uri: acc.uri ?? "" };
             secrets = { authToken };
             break;
         }

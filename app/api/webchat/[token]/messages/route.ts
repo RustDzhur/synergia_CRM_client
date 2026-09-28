@@ -1,5 +1,7 @@
 import { connectDB } from "@/lib/mongodb";
 import { rateLimited } from "@/lib/rateLimit";
+import { tx } from "@/app/content/i18n";
+import { matchFaq } from "@/lib/chatbotMatch";
 import { findByToken } from "@/lib/integrations";
 import { recordMessage, toMessageDTO } from "@/lib/channels";
 import { corsJson, corsPreflight, validVisitor } from "@/lib/channels/webchat";
@@ -37,6 +39,22 @@ export async function POST(req: Request, { params }: { params: { token: string }
     const integration = await findByToken("webchat", params.token);
     if (!integration) return corsJson({ message: "Not found" }, 404);
     const name = typeof body.name === "string" && body.name.trim() ? body.name.trim().slice(0, 60) : `Visitor ${body.visitor.slice(-4)}`;
+    const lang = typeof body.lang === "string" ? body.lang.slice(0, 2) : "en";
     const { message } = await recordMessage(integration, { externalId: body.visitor, name, text });
-    return corsJson(message ? toMessageDTO(message) : null, 201);
+
+    // Готовый ответ бота: те же тексты, что были в чатботе на лендинге (app/content/chatbotFaq.ts).
+    // Ответ записываем в переписку, чтобы человек в CRM видел, что посетителю уже сказали, — и отвечаем сразу.
+    const hit = matchFaq(text);
+    let reply: ReturnType<typeof toMessageDTO> | null = null;
+    if (hit) {
+        const { message: botMessage } = await recordMessage(integration, {
+            externalId: body.visitor,
+            name: "Bot",
+            direction: "out",
+            meta: { bot: 1 },
+            text: tx(hit.a, lang),
+        });
+        if (botMessage) reply = toMessageDTO(botMessage);
+    }
+    return corsJson({ message: message ? toMessageDTO(message) : null, reply }, 201);
 }
