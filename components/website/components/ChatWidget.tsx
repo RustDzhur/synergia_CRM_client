@@ -1,12 +1,20 @@
 "use client";
 import { useEffect } from "react";
+import { useLocale } from "next-intl";
 
 // Чат на публичных страницах: тот же виджет, что CRM выдаёт в Settings → Integration → Online Chat.
-// В кабинет он попадать не должен, а лендинг переходит туда без перезагрузки страницы — поэтому одного
-// тега <script> мало: при уходе с публичной части виджет убирается вместе со своим окном, а при возврате
-// поднимается заново. Токен не секрет — он всё равно виден в разметке страницы, — но привязан к фирме.
+//
+// Виджет живёт в document.body и переживает переходы внутри приложения (лендинг → кабинет и обратно, смена
+// языка — всё без перезагрузки страницы), поэтому ставим и снимаем его сами: при смене языка страницы окно
+// поднимается заново и говорит на новом языке, а в кабинет виджет не попадает вовсе.
+//
+// Версия в адресе скрипта — чтобы браузер после обновления сайта не подставил старый виджет из кэша.
 const WIDGET_TOKEN = "d206c7942ee379b931c9d5d58692f2942084";
-const WIDGET_SRC = "https://www.firmspace.de/widget.js";
+const WIDGET_BASE = "https://www.firmspace.de/widget.js";
+const VERSION = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ?? "dev";
+
+// Окно виджета одно на страницу, а компонентов может оказаться несколько — считаем их сами
+let mounts = 0;
 
 const forget = () => {
 	// виджет защищается от повторного запуска глобальным флагом; снимаем его, чтобы подключение работало снова
@@ -17,23 +25,31 @@ const forget = () => {
 	}
 };
 
+const removeWidget = () => {
+	document.querySelectorAll("script[data-firmspace-chat], div[data-firmspace-chat]").forEach((el) => el.remove());
+	forget();
+};
+
 export default function ChatWidget() {
+	const locale = useLocale();
 	useEffect(() => {
-		document.querySelectorAll("script[data-firmspace-chat]").forEach((el) => el.remove());
-		forget();
-		const s = document.createElement("script");
-		s.src = WIDGET_SRC;
-		s.setAttribute("data-token", WIDGET_TOKEN);
-		s.setAttribute("data-firmspace-chat", "1");
-		s.async = true;
-		document.body.appendChild(s);
+		mounts++;
+		removeWidget();
+		const script = document.createElement("script");
+		script.src = `${WIDGET_BASE}?v=${VERSION}`;
+		script.setAttribute("data-token", WIDGET_TOKEN);
+		// язык берём у страницы, а не у браузера: на немецком сайте окно должно быть немецким
+		script.setAttribute("data-lang", locale);
+		script.setAttribute("data-firmspace-chat", "1");
+		script.async = true;
+		document.body.appendChild(script);
 
 		return () => {
-			// окно виджета живёт в document.body и переживает переход внутри приложения — убираем его вместе со скриптом
-			document.querySelectorAll("script[data-firmspace-chat], div[data-firmspace-chat]").forEach((el) => el.remove());
-			forget();
+			// снимаем виджет только когда уходит последний экземпляр компонента
+			if (--mounts > 0) return;
+			removeWidget();
 		};
-	}, []);
+	}, [locale]);
 
 	return null;
 }
