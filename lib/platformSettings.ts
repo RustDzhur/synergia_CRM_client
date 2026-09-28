@@ -8,6 +8,32 @@ import PlatformSettings from "@/models/PlatformSettings";
 // и на сервере, где они заданы, настройка из кабинета не нужна.
 
 const KEY = "metaApp";
+const ERROR_KEY = "errorBot";
+
+// Бот для отчётов об ошибках: свой отдельный бот платформы (не бот фирмы для переписки с клиентами).
+// Чат ищется сам — бот получает сообщение, мы забираем его через getUpdates и запоминаем чат,
+// поэтому искать числовой id вручную не нужно.
+
+export interface ErrorBot { botToken: string; chatId: string }
+
+export async function errorBot(): Promise<ErrorBot> {
+    const fromEnv = { botToken: process.env.TELEGRAM_BOT_TOKEN ?? "", chatId: process.env.TELEGRAM_ERROR_CHAT_ID ?? "" };
+    if (fromEnv.botToken && fromEnv.chatId) return fromEnv;
+    const doc = await connectDB().then(() => PlatformSettings.findOne({ key: ERROR_KEY })).catch(() => null);
+    if (!doc) return fromEnv;
+    const secrets = doc.secrets ? decryptJSON<{ botToken?: string }>(doc.secrets) : {};
+    return { botToken: String(secrets.botToken || fromEnv.botToken), chatId: String(doc.value || fromEnv.chatId) };
+}
+
+/** Сохраняет бота и чат. Пустой токен оставляет прежний: его не показываем и не переписываем зря. */
+export async function setErrorBot(botToken: string, chatId: string): Promise<void> {
+    await connectDB();
+    await PlatformSettings.updateOne(
+        { key: ERROR_KEY },
+        { $set: { value: chatId.trim(), ...(botToken.trim() ? { secrets: encryptJSON({ botToken: botToken.trim() }) } : {}) } },
+        { upsert: true }
+    );
+}
 
 export interface MetaApp { appId: string; appSecret: string }
 

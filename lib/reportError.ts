@@ -1,5 +1,6 @@
 import { sendTelegram } from "@/lib/channels/telegram";
 import { secretsOf } from "@/lib/integrations";
+import { errorBot } from "@/lib/platformSettings";
 import { connectDB } from "@/lib/mongodb";
 import Integration from "@/models/Integration";
 
@@ -69,9 +70,9 @@ function describe(error: unknown, ctx: ErrorContext): string {
 
 /** Куда отправить: явные переменные окружения, иначе бот фирмы с привязанным чатом */
 async function targetChat(org?: string): Promise<{ botToken: string; chatId: string } | null> {
-    const envToken = process.env.TELEGRAM_BOT_TOKEN ?? "";
-    const envChat = process.env.TELEGRAM_ERROR_CHAT_ID ?? "";
-    if (envToken && envChat) return { botToken: envToken, chatId: envChat };
+    // Сначала отдельный бот отчётов: он задаётся в админке (или переменными окружения)
+    const dedicated = await errorBot();
+    if (dedicated.botToken && dedicated.chatId) return { botToken: dedicated.botToken, chatId: dedicated.chatId };
 
     if (!(await connectDB().then(() => true).catch(() => false))) return null;
     const linked = { type: "telegram", "config.errorChatId": { $exists: true, $nin: ["", null] } };
