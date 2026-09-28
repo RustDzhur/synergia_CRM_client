@@ -18,7 +18,8 @@ export interface ErrorBot { botToken: string; chatId: string }
 
 export async function errorBot(): Promise<ErrorBot> {
     const fromEnv = { botToken: process.env.TELEGRAM_BOT_TOKEN ?? "", chatId: process.env.TELEGRAM_ERROR_CHAT_ID ?? "" };
-    if (fromEnv.botToken && fromEnv.chatId) return fromEnv;
+    // Настройка из кабинета важнее переменных окружения: там чат находится сам, а в переменных легко
+    // ошибиться — например, вписать id бота, которому Telegram писать не разрешает.
     const doc = await connectDB().then(() => PlatformSettings.findOne({ key: ERROR_KEY })).catch(() => null);
     if (!doc) return fromEnv;
     const secrets = doc.secrets ? decryptJSON<{ botToken?: string }>(doc.secrets) : {};

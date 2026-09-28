@@ -215,20 +215,20 @@ export default function AdminPanel() {
 						)}
 					</div>
 				</div>
-				{!errFromEnv && (
-					<div className="mt-12 flex flex-wrap items-end gap-12">
-						<label className="flex flex-col gap-6">
-							<span className="text-11 text-[#8c948b]">{t("errToken")}</span>
-							<input value={errToken} onChange={(e) => setErrToken(e.target.value)} type="password" autoComplete="off" maxLength={120} placeholder={errHasToken ? t("metaKeepSecret") : "123456:ABC…"} className={input} />
-						</label>
-						<button type="button" onClick={findErrorChat} disabled={errBusy} className="fs-btn fs-btn-ghost h-34 disabled:opacity-60">{t("errFindChat")}</button>
-						{errChat && (
-							<span className="text-12 text-[#8c948b]">
-								{t("errChat")}: <span className="text-[#f1f4ee]">{errName || errChat}</span>
-							</span>
-						)}
-					</div>
-				)}
+				{/* Поля показываем всегда: настройка из кабинета важнее переменных окружения, а в переменных
+				    легко ошибиться — например, вписать id бота, которому Telegram писать не разрешает */}
+				<div className="mt-12 flex flex-wrap items-end gap-12">
+					<label className="flex flex-col gap-6">
+						<span className="text-11 text-[#8c948b]">{t("errToken")}</span>
+						<input value={errToken} onChange={(e) => setErrToken(e.target.value)} type="password" autoComplete="off" maxLength={120} placeholder={errHasToken ? t("metaKeepSecret") : "123456:ABC…"} className={input} />
+					</label>
+					<button type="button" onClick={findErrorChat} disabled={errBusy} className="fs-btn fs-btn-ghost h-34 disabled:opacity-60">{t("errFindChat")}</button>
+					{errChat && (
+						<span className="text-12 text-[#8c948b]">
+							{t("errChat")}: <span className="text-[#f1f4ee]">{errName || errChat}</span>
+						</span>
+					)}
+				</div>
 				{errFromEnv && <p className="mt-8 text-11 text-[#8c948b]">{t("errFromEnvHelp")}</p>}
 			</div>
 			{summary && (

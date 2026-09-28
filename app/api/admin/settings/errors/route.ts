@@ -20,7 +20,8 @@ export async function GET(req: Request) {
         return NextResponse.json({
             hasToken: !!bot.botToken,
             chatId: bot.chatId,
-            fromEnv: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_ERROR_CHAT_ID),
+            // из переменных окружения значения берутся, только пока в кабинете ничего не сохранено
+            fromEnv: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_ERROR_CHAT_ID) && !bot.chatId,
         });
     } catch (e) {
         return serverError(e);
