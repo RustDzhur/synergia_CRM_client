@@ -67,6 +67,17 @@ export async function subscribeMessengerPage(pageId: string, pageToken: string) 
 }
 
 /**
+ * Адрес вебхука и маркер подтверждения в кабинете Meta — тот шаг, где легко ошибиться: рядом лежат
+ * поля для ссылки на страницу CRM и для произвольной строки, а нужны именно наши значения.
+ * Meta принимает их и через API — токеном вида «app-id|app-secret», — и сама проверяет адрес.
+ */
+export async function setMessengerAppWebhook(appId: string, appSecret: string, callbackUrl: string, verifyToken: string) {
+    const token = `${appId}|${appSecret}`;
+    const q = new URLSearchParams({ object: "page", callback_url: callbackUrl, verify_token: verifyToken, fields: "messages,messaging_postbacks", access_token: token });
+    await graphRaw<{ success?: boolean }>(`/${appId}/subscriptions?${q}`, { method: "POST" });
+}
+
+/**
  * Похоже ли, что вставили токен пользователя, а не страницы. Различить их по виду нельзя, зато можно
  * спросить у Meta список страниц: у пользователя он есть, у страницы такого ребра нет вовсе.
  * Отказ (нет прав, другая ошибка) считаем «не пользователь» — предупреждать зря не нужно.

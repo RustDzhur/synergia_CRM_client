@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         // и лежит в секретах, поэтому здесь достаточно указать, что подключаем.
         const chosen = body.type === "messenger" ? String(body.pageId ?? "") : body.type === "whatsapp" ? String(body.numberId ?? "") : "";
         if (chosen) {
-            const result = await connectMetaChoice(user.id, body.type as "messenger" | "whatsapp", chosen);
+            const result = await connectMetaChoice(user.id, body.type as "messenger" | "whatsapp", chosen, origin);
             const doc = await Integration.findOne({ owner: user.id, type: body.type });
             if (!doc) return badRequest("Start the connection again");
             return NextResponse.json({ integration: toIntegrationDTO(doc, origin), warning: result.warning ?? "" }, { status: 201 });

@@ -7,7 +7,7 @@ import { ProviderError } from "@/lib/http";
 import Conversation from "@/models/Conversation";
 import Integration from "@/models/Integration";
 import Message from "@/models/Message";
-import { exchangeMessengerCode, getPage, listUserPages, longLivedUserToken, looksLikeUserToken, messengerCredentialsProblem, messengerOauthUrl, subscribeMessengerPage } from "./messenger";
+import { exchangeMessengerCode, getPage, listUserPages, longLivedUserToken, looksLikeUserToken, messengerCredentialsProblem, messengerOauthUrl, setMessengerAppWebhook, subscribeMessengerPage } from "./messenger";
 import { verifyPlivo } from "./plivo";
 import { parseSip } from "./sip";
 import { verifyTelnyx } from "./telnyx";
@@ -112,7 +112,7 @@ export async function completeMetaOauth(owner: string, kind: MetaKind, code: str
 }
 
 /** Подключение выбранного: токен выбранной страницы (или номера) уже лежит в секретах после возврата */
-export async function connectMetaChoice(owner: string, kind: MetaKind, id: string): Promise<{ name: string; warning?: string }> {
+export async function connectMetaChoice(owner: string, kind: MetaKind, id: string, origin: string): Promise<{ name: string; warning?: string }> {
     const doc = await Integration.findOne({ owner, type: kind });
     if (!doc) throw new ProviderError("Start the connection again");
     const secrets = secretsOf<MetaSecrets>(doc);
@@ -124,18 +124,30 @@ export async function connectMetaChoice(owner: string, kind: MetaKind, id: strin
         const token = secrets.pageTokens?.[id];
         if (!token) throw new ProviderError("This page is no longer available — start the connection again");
         const page = await getPage(token);
-        // подписка страницы на приложение: без неё Meta не доставляет события, и переписка не приходит
-        const warning = await subscribeMessengerPage(page.id, token).then(() => "").catch((e) => (e instanceof ProviderError ? e.message : "Could not subscribe the page to the app"));
+        const verifyToken = String(doc.config?.verifyToken || randomToken(8));
         doc.set({
             name: page.name,
-            config: { ...(doc.config ?? {}), appId, pageId: page.id, verifyToken: doc.config?.verifyToken || randomToken(8) },
+            config: { ...(doc.config ?? {}), appId, pageId: page.id, verifyToken },
             secrets: packSecrets({ pageAccessToken: token, appSecret }),
             status: "connected",
             error: "",
         });
         doc.markModified("config");
+
+        // Подписка страницы на приложение: без неё Meta не доставляет события, и переписка не приходит.
+        // Адрес вебхука и маркер подтверждения задаём тем же ходом через API — в кабинете Meta этот шаг
+        // делают руками и легко вписывают туда ссылку на страницу CRM вместо нашего адреса.
+        const warnings: string[] = [];
+        const pageSubscription = await subscribeMessengerPage(page.id, token).catch((e) => (e instanceof ProviderError ? e.message : "Could not subscribe the page to the app"));
+        if (pageSubscription) warnings.push(pageSubscription);
+        const webhook = await setMessengerAppWebhook(appId, appSecret, `${origin}${webhookPath("messenger", String(doc.token))}`, verifyToken)
+            .then(() => "")
+            .catch((e) => (e instanceof ProviderError ? e.message : "Could not register the webhook in Meta"));
+        // Если Meta не приняла настройку сама, значения остаются в окне — их можно вписать вручную
+        if (webhook) warnings.push(`${webhook} — впишите адрес вебхука и маркер подтверждения из этого окна в Meta → Messenger → Webhooks вручную`);
+
         await doc.save();
-        return { name: page.name, ...(warning ? { warning } : {}) };
+        return { name: page.name, ...(warnings.length ? { warning: warnings.join("; ") } : {}) };
     }
 
     const token = secrets.numberTokens?.[id];
