@@ -92,6 +92,25 @@ Google Calendar подключён по OAuth с правами `calendar.readon
 Одинаковые сообщения отправляются не чаще раза в десять минут: одна и та же поломка не должна заваливать чат.
 Если отправлять некуда, ошибка остаётся в журнале Vercel, а запрос, который её вызвал, работает как обычно.
 
+
+## Уведомления о сборках (Vercel и GitHub)
+
+Сломанный деплой должен приходить туда же, куда ошибки приложения, — в Telegram бота отчётов.
+Для этого есть маршрут `/api/hooks/deploy`: он принимает вебхуки Vercel и GitHub, разбирает только
+неудачи (успешные сборки игнорируются) и отправляет их в тот же чат.
+
+1. Задайте секрет: `vercel env add DEPLOY_HOOK_SECRET production` (любая случайная строка,
+   например из `openssl rand -hex 24`), затем пересоберите прод. Без этой переменной маршрут
+   выключен — публичная ручка без секрета хуже, чем её отсутствие.
+2. **Vercel**: Project → Settings → Webhooks → создать вебхук на событие `deployment.error`,
+   адрес `https://www.firmspace.de/api/hooks/deploy?secret=<значение DEPLOY_HOOK_SECRET>`.
+3. **GitHub**: репозиторий → Settings → Webhooks → Add webhook, Payload URL тот же,
+   Content type `application/json`, события: `Workflow runs` и `Deployment statuses`.
+   Если сборки настроены через GitHub Actions, будет достаточно `Workflow runs`.
+4. Проверить: `curl -X POST 'https://www.firmspace.de/api/hooks/deploy?secret=<секрет>' -H 'Content-Type: application/json'
+   -d '{"type":"deployment.error","payload":{"url":"https://example.vercel.app","target":"production"}}'` —
+   в Telegram должно прийти сообщение о неудачной сборке.
+
 ## Переменные окружения (новые)
 
 `ADMIN_EMAILS`, `CRON_SECRET`, а также `STRIPE_*`, `FIREBASE_*` из docs/PAYMENTS.md и docs/DOCUMENTS.md.

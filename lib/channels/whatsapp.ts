@@ -3,7 +3,9 @@ import { safeEqual } from "@/lib/crypto";
 import { verifyMetaSignature } from "./messenger";
 
 // WHATSAPP_API_URL нужен для собственного прокси Graph API и для локальных проверок без настоящего номера Meta
-const base = () => (process.env.WHATSAPP_API_URL || "https://graph.facebook.com/v21.0").replace(/\/+$/, "");
+import { graphBase } from "@/lib/meta";
+
+const base = () => process.env.WHATSAPP_API_URL?.replace(/\/+$/, "") || graphBase();
 
 // Токен передаём заголовком Authorization, а не строкой запроса: так он не попадает в логи прокси
 async function graph<T extends object>(path: string, accessToken: string, init: RequestInit = {}): Promise<T> {

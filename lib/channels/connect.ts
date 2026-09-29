@@ -94,12 +94,16 @@ export async function completeMetaOauth(owner: string, kind: MetaKind, code: str
     delete next.pendingAppSecret;
     if (kind === "messenger") {
         const pages = await listUserPages(long);
-        if (!pages.length) throw new ProviderError("Facebook вернул пустой список страниц: проверьте, что страница есть и доступ к ней выдан в окне входа");
+        if (!pages.length) throw new ProviderError(
+            "Facebook не вернул ни одной страницы. Проверьте по порядку: приложение Meta переведено в режим Live (в режиме Development вход работает только у администраторов и тестеров приложения); в окне входа отмечены все запрашиваемые права; ваша учётная запись — администратор нужной страницы"
+        );
         next.pageTokens = Object.fromEntries(pages.map((p) => [p.id, p.access_token]));
         options = pages.map((p) => ({ id: p.id, name: p.name }));
     } else {
         const numbers = await discoverWhatsAppNumbers(long);
-        if (!numbers.length) throw new ProviderError("В этом аккаунте не нашлось номера WhatsApp Business: проверьте, что номер добавлен в аккаунт WhatsApp Business");
+        if (!numbers.length) throw new ProviderError(
+            "В аккаунте WhatsApp Business нет ни одного номера. Проверьте: номер добавлен в аккаунт WhatsApp Business (Meta → WhatsApp → Настройки аккаунта → Номера); у приложения есть доступ к управлению WhatsApp Business (право whatsapp_business_management); бизнес-аккаунт принадлежит тому же портфолио, под которым вы входите"
+        );
         next.numberTokens = Object.fromEntries(numbers.map((n) => [n.phoneNumberId, long]));
         options = numbers.map((n) => ({ id: n.phoneNumberId, name: n.verifiedName ? `${n.display} (${n.verifiedName})` : n.display }));
         doc.set("config", { ...(doc.config ?? {}), appId, wabaIds: Object.fromEntries(numbers.map((n) => [n.phoneNumberId, n.wabaId])), numbers: options });

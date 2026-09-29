@@ -2,7 +2,9 @@ import { createHmac } from "crypto";
 import { fetchProvider, ProviderError } from "@/lib/http";
 import { safeEqual } from "@/lib/crypto";
 
-const base = () => (process.env.GRAPH_API_URL || "https://graph.facebook.com/v19.0").replace(/\/+$/, "");
+import { graphBase } from "@/lib/meta";
+
+const base = () => process.env.GRAPH_API_URL?.replace(/\/+$/, "") || graphBase();
 
 /** Запрос к Graph API без токена доступа: он нужен шагам входа, где токен ещё только получаем */
 async function graphRaw<T>(path: string, init: RequestInit = {}): Promise<T> {

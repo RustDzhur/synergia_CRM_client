@@ -1,12 +1,12 @@
 import { ProviderError, fetchProvider } from "@/lib/http";
 import type { AdsAccount, AdsInsights } from "./types";
+import { graphBase, oauthDialog } from "@/lib/meta";
 
 // Meta (Facebook + Instagram) Marketing API. Нужно приложение Meta с правом ads_read (META_APP_ID / META_APP_SECRET).
 // Токен пользователя долгоживущий (~60 дней), автоматически не обновляется: по истечении нужно войти заново.
 export const META_SCOPE = "ads_read";
-const VER = () => process.env.META_GRAPH_VERSION || "v23.0";
-const graph = () => (process.env.META_GRAPH_URL || `https://graph.facebook.com/${VER()}`).replace(/\/+$/, "");
-export const metaAuthUrl = () => process.env.META_OAUTH_URL || `https://www.facebook.com/${VER()}/dialog/oauth`;
+const graph = () => process.env.META_GRAPH_URL?.replace(/\/+$/, "") || graphBase();
+export const metaAuthUrl = () => process.env.META_OAUTH_URL || oauthDialog();
 export const metaConfigured = () => !!(process.env.META_APP_ID && process.env.META_APP_SECRET);
 
 async function get<T>(path: string, params: Record<string, string>): Promise<T> {
