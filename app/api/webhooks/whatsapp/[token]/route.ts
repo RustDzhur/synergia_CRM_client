@@ -2,9 +2,14 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { findByToken, secretsOf } from "@/lib/integrations";
 import { markMessageFailed, recordMessage } from "@/lib/channels";
-import { parseWhatsAppWebhook, verifyWhatsAppChallenge, verifyWhatsAppSignature } from "@/lib/channels/whatsapp";
+import { WaIncoming, WaStatus, parseWhatsAppWebhookByNumber, verifyWhatsAppChallenge, verifyWhatsAppSignature } from "@/lib/channels/whatsapp";
+import Integration from "@/models/Integration";
 
 export const dynamic = "force-dynamic";
+
+// Старый адрес вебхука — с маркером отдельной фирмы. Оставлен для установок, настроенных до появления
+// общего адреса (/api/webhooks/whatsapp/app): в Meta адрес вебхука один на приложение, и переставить
+// его можно не сразу. Фирму определяем по номеру из события, а маркер в адресе — только запасной путь.
 
 // GET — проверка адреса при настройке вебхука в кабинете Meta (verify token виден в окне интеграции)
 export async function GET(req: Request, { params }: { params: { token: string } }) {
@@ -28,9 +33,20 @@ export async function POST(req: Request, { params }: { params: { token: string }
     }
     let body;
     try { body = JSON.parse(raw); } catch { return NextResponse.json({ message: "Bad request" }, { status: 400 }); }
-    const { messages, statuses } = parseWhatsAppWebhook(body);
-    for (const message of messages) await recordMessage(integration, message);
-    // недоставленное сообщение помечаем в беседе: Meta сообщает об этом отдельным событием
-    for (const s of statuses) if (s.status === "failed") await markMessageFailed(integration, s.id, s.error);
+
+    // Событие разбираем по номерам: если Meta прислала его сюда, а номер принадлежит другой фирме,
+    // сообщение всё равно попадёт своему кабинету
+    const groups = parseWhatsAppWebhookByNumber(body);
+    let fallback: { messages: WaIncoming[]; statuses: WaStatus[] } = { messages: [], statuses: [] };
+    for (const [phoneNumberId, group] of Array.from(groups.entries())) {
+        const target = phoneNumberId ? await Integration.findOne({ type: "whatsapp", status: "connected", "config.phoneNumberId": phoneNumberId }) : null;
+        const doc = target ?? integration;
+        if (!phoneNumberId) fallback = group;
+        for (const message of group.messages) await recordMessage(doc, message);
+        for (const s of group.statuses) if (s.status === "failed") await markMessageFailed(doc, s.id, s.error);
+    }
+    // Событие без номера (например, отчёты о доставке старых сообщений) — отдаём фирме из адреса
+    for (const message of fallback.messages) await recordMessage(integration, message);
+    for (const s of fallback.statuses) if (s.status === "failed") await markMessageFailed(integration, s.id, s.error);
     return NextResponse.json({ ok: true });
 }
