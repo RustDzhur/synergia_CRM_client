@@ -1,5 +1,5 @@
 import "react";
-import BlogPage from "@/components/website/components/Blog";
+import BlogPage from "@/components/website/Blog";
 import { Footer, Navigation } from "../../../components/website";
 
 export default function Blog() {

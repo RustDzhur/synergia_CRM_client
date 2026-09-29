@@ -180,7 +180,7 @@ export default function Footer({ slanted = false }: { slanted?: boolean }) {
 				</div>
 			</div>
 		</div>
-		{/* Лендинговый чат-бот заменён виджетом онлайн-чата (components/website/components/ChatWidget.tsx):
+		{/* Лендинговый чат-бот заменён виджетом онлайн-чата (components/website/ChatWidget.tsx):
 		    теперь это одно окно — готовые ответы бота, переписка с человеком и переход в мессенджеры.
 		    Две кнопки в углу накладывались друг на друга, поэтому прежнюю убрали. */}
 		</>

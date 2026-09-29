@@ -1,5 +1,5 @@
 import "react";
-import AboutUs from "../../../components/website/components/AboutUs";
+import AboutUs from "../../../components/website/AboutUs";
 import { Footer, Navigation } from "../../../components/website";
 
 export default function About() {

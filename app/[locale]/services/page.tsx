@@ -1,5 +1,5 @@
 import "react";
-import ServicesPage from "../../../components/website/components/Services";
+import ServicesPage from "../../../components/website/Services";
 import { Footer, Navigation } from "../../../components/website";
 
 export default function Services() {

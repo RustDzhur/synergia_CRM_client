@@ -1,4 +1,5 @@
-import MainPage from "./components/MainPage";
-import Navigation from "./components/Navigation";
-import Footer from "./components/Footer";
-export {Navigation, MainPage, Footer}
+import MainPage from "./MainPage";
+import Navigation from "./Navigation";
+import Footer from "./Footer";
+
+export { Navigation, MainPage, Footer };

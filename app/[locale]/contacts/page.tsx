@@ -1,5 +1,5 @@
 import "react";
-import ContactsPage from "../../../components/website/components/Contacts";
+import ContactsPage from "../../../components/website/Contacts";
 import { Footer, Navigation } from "../../../components/website";
 
 export default function Contacts() {

@@ -1,5 +1,5 @@
 import { Footer, Navigation } from "@/components/website";
-import Careers from "@/components/website/components/Careers/Careers";
+import Careers from "@/components/website/Careers/Careers";
 import "react";
 
 export default function page() {

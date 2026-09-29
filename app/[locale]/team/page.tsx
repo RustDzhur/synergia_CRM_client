@@ -1,5 +1,5 @@
 import { Footer, Navigation } from "@/components/website";
-import Team from "@/components/website/components/Team/Team";
+import Team from "@/components/website/Team/Team";
 import "react";
 
 export default function page() {
