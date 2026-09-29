@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { apiCall } from "@/store/crmApi";
 import { FinanceSettings, Invoice, useFinanceStore } from "@/store/useFinanceStore";
 import { money } from "./format";
-import { ReportLoading } from "./reportParts";
+import { ReportLoading, Stat } from "./reportParts";
 
 // Mahnwesen: список просроченных счетов фирмы и ручная отправка напоминаний. Ступень и сбор считает сервер
 // (POST /api/invoices/:id/remind → lib/finance/dunning.ts); клиент только показывает состояние и перечитывает
@@ -32,15 +32,6 @@ function daysOverdue(dueDate: string, today = new Date()): number {
 function interestFor(gross: number, rate: number, days: number): number {
 	if (!rate || !days) return 0;
 	return round2(gross * (rate / 100) * (days / 365));
-}
-
-function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
-	return (
-		<div className="fs-card p-16">
-			<p className="text-12 text-[#8c948b]">{label}</p>
-			<p className="mt-6 text-20 font-semibold" style={{ color: color ?? "#f1f4ee" }}>{value}</p>
-		</div>
-	);
 }
 
 // Экран вкладки «Mahnungen» раздела Finance — открывается и по ссылке ?tab=dunning (см. index.tsx)

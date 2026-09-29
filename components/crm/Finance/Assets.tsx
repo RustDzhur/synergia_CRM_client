@@ -10,8 +10,9 @@ import type { AssetsSummary } from "@/lib/finance/assets";
 import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
-import { PeriodSwitch, ReportLoading } from "./reportParts";
-import type { PeriodKind } from "@/lib/finance/reports";
+import { PeriodSwitch, ReportLoading, Stat } from "./reportParts";
+import { periodRange } from "@/lib/finance/reportMath";
+import type { PeriodKind } from "@/lib/finance/reportMath";
 import { money } from "./format";
 
 // Anlagen (основные средства, Anlagegüter): список с амортизацией за период. Цифры считает сервер
@@ -38,31 +39,6 @@ interface AssetRow {
 
 const today = () => new Date().toISOString().slice(0, 10);
 const EMPTY = { name: "", category: "", acquiredDate: today(), cost: "", usefulLifeYears: "", residualValue: "", notes: "" };
-
-// Границы периода (месяц/квартал/год) — та же формула, что в lib/finance/reports.ts для отчётов;
-// модуль тянет mongoose, на клиент его импортировать нельзя, поэтому расчёт повторён здесь.
-const iso = (d: Date) => d.toISOString().slice(0, 10);
-function periodRange(kind: PeriodKind): { from: string; to: string } {
-	const now = new Date();
-	const y = now.getFullYear();
-	const m = now.getMonth();
-	if (kind === "year") return { from: `${y}-01-01`, to: `${y}-12-31` };
-	if (kind === "quarter") {
-		const q = Math.floor(m / 3);
-		return { from: iso(new Date(Date.UTC(y, q * 3, 1))), to: iso(new Date(Date.UTC(y, q * 3 + 3, 0))) };
-	}
-	return { from: iso(new Date(Date.UTC(y, m, 1))), to: iso(new Date(Date.UTC(y, m + 1, 0))) };
-}
-
-// Плитка сводки — как на дашборде и в Mahnwesen: подпись сверху, крупная цифра снизу.
-function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
-	return (
-		<div className="fs-card p-16">
-			<p className="text-12 text-[#8c948b]">{label}</p>
-			<p className="mt-6 text-20 font-semibold" style={{ color: color ?? "#f1f4ee" }}>{value}</p>
-		</div>
-	);
-}
 
 // Экран вкладки «Anlagen» раздела Finance — открывается и по ссылке ?tab=assets (см. index.tsx)
 export default function Assets() {

@@ -1,4 +1,5 @@
 import { computeTotals, taxBreakdown } from "./totals";
+import { formatMoney } from "./money";
 import { epcPayload, qrMatrix } from "./qr";
 import { templateDef } from "./templates";
 export { TEMPLATES, TEMPLATE_IDS, isTemplate, templateDef } from "./templates";
@@ -23,11 +24,6 @@ import type { TemplateDef } from "./templates";
 import type { DocKind, PdfDocumentData, PdfLineItem, PdfParty, PdfSettings } from "./pdf";
 
 export type { DocKind, PdfDocumentData, PdfLineItem, PdfParty, PdfSettings };
-
-const fmt = (n: number, currency: string) => {
-    try { return new Intl.NumberFormat("de-DE", { style: "currency", currency, maximumFractionDigits: 2 }).format(n); }
-    catch { return `${n.toFixed(2)} ${currency}`; }
-};
 
 type Doc = PDFKit.PDFDocument;
 type L = Record<string, string>;
@@ -368,10 +364,10 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
         text(doc, it.description, cols.desc, ty, { size, color: "#333333", width: cols.qty - o.x - 6 });
         text(doc, String(it.qty), cols.qty, ty, { size, color: "#333333", width: widths.qty, align: "right" });
         if (!o.noPrices) {
-            text(doc, fmt(it.unitPrice, d.currency), cols.price, ty, { size, color: "#333333", width: widths.price, align: "right" });
+            text(doc, formatMoney(it.unitPrice, d.currency), cols.price, ty, { size, color: "#333333", width: widths.price, align: "right" });
             // у документа без налога в колонке ставки стоит прочерк: печатать там 19 % при нулевом налоге — противоречие
             text(doc, d.smallBusinessNote ? "—" : `${it.taxRate}%`, cols.tax, ty, { size, color: "#333333", width: widths.tax, align: "right" });
-            text(doc, fmt(it.qty * it.unitPrice, d.currency), cols.total, ty, { size, color: "#333333", width: widths.total, align: "right" });
+            text(doc, formatMoney(it.qty * it.unitPrice, d.currency), cols.total, ty, { size, color: "#333333", width: widths.total, align: "right" });
         }
         top += h;
         row++;
@@ -382,18 +378,18 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
 
 // Итоги: нетто, налог (кроме пометки малого бизнеса) и итог. В рамке, на подложке или просто справа — по шаблону.
 function totalsRows(d: PdfDocumentData, L: L, totals: ReturnType<typeof computeTotals>): [string, string, boolean][] {
-    const rows: [string, string, boolean][] = [[L.net, fmt(totals.net, d.currency), false]];
+    const rows: [string, string, boolean][] = [[L.net, formatMoney(totals.net, d.currency), false]];
     // Освобождённый документ: строки налога нет вовсе, итог равен нетто (считает computeTotals).
     // Документ с налогом: печатаем сумму по КАЖДОЙ ставке — при смешанных 19 % и 7 % одной общей
     // цифры недостаточно, этого требует §14 Abs. 4 Nr. 8 UStG.
     if (!totals.exempt) {
         const breakdown = taxBreakdown(d.items, { exempt: totals.exempt });
-        if (breakdown.length <= 1) rows.push([L.taxTotal, fmt(totals.tax, d.currency), false]);
-        else for (const b of breakdown) rows.push([`${L.taxTotal} ${b.rate}% ${L.taxOn} ${fmt(b.net, d.currency)}`, fmt(b.tax, d.currency), false]);
+        if (breakdown.length <= 1) rows.push([L.taxTotal, formatMoney(totals.tax, d.currency), false]);
+        else for (const b of breakdown) rows.push([`${L.taxTotal} ${b.rate}% ${L.taxOn} ${formatMoney(b.net, d.currency)}`, formatMoney(b.tax, d.currency), false]);
     }
     const dunningFee = Number(d.dunningFee) || 0;
-    if (dunningFee > 0) rows.push([L.dunningFee, fmt(dunningFee, d.currency), false]);
-    rows.push([L.gross, fmt(totals.gross + dunningFee, d.currency), true]);
+    if (dunningFee > 0) rows.push([L.dunningFee, formatMoney(dunningFee, d.currency), false]);
+    rows.push([L.gross, formatMoney(totals.gross + dunningFee, d.currency), true]);
     return rows;
 }
 
@@ -459,7 +455,7 @@ const classic: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 6, totalsHeight(doc, d, L, totals, 200));
         y = totalsBlock(doc, d, L, totals, x + w - 200, y + 6, 200, { accent: t.accent, tint: t.tint });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
+    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
     band.draw();
 };
 
@@ -489,7 +485,7 @@ const modern: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true, zebra: true, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 8, totalsHeight(doc, d, L, totals, 210));
         y = totalsBlock(doc, d, L, totals, x + w - 210, y + 8, 210, { accent: t.accent, tint: t.tint, boxed: true, size: 10 });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
+    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
     band.draw();
 };
 
@@ -514,7 +510,7 @@ const minimal: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 10, rowPad: 9, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 10, totalsHeight(doc, d, L, totals, 190));
         y = totalsBlock(doc, d, L, totals, x + w - 190, y + 10, 190, { accent: t.accent, tint: t.tint, size: 10 });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
+    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
     band.draw();
 };
 
@@ -563,7 +559,7 @@ const boxed: Layout = (doc, d, s, L, t, totals, qr) => {
         y = totalsBlock(doc, d, L, totals, x + w - 210, y + 8, 210, { accent: t.accent, tint: t.tint, boxed: true, grid: true });
     } else if (d.kind === "contract") {
         box(doc, x, y, 250, 40, { fill: t.tint, stroke: "#DCDCDC" });
-        text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x + 12, y + 14, { size: 12, color: "#333333", width: 226 });
+        text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x + 12, y + 14, { size: 12, color: "#333333", width: 226 });
         y += 50;
     }
     band.draw();
@@ -602,7 +598,7 @@ const sidebar: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 9.5, headerFill: true, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 8, totalsHeight(doc, d, L, totals, 190));
         y = totalsBlock(doc, d, L, totals, x + w - 190, y + 8, 190, { accent: t.accent, tint: t.tint });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12 });
+    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12 });
     band.draw();
 };
 
@@ -634,7 +630,7 @@ const banner: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 8, totalsHeight(doc, d, L, totals, 205));
         y = totalsBlock(doc, d, L, totals, x + w - 205, y + 8, 205, { accent: t.accent, tint: t.tint });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12 });
+    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12 });
     band.draw();
 };
 
@@ -687,7 +683,7 @@ const twocol: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true, zebra: true, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 8, totalsHeight(doc, d, L, totals, 205));
         y = totalsBlock(doc, d, L, totals, x + w - 205, y + 8, 205, { accent: t.accent, tint: t.tint, boxed: true });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
+    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
     band.draw();
 };
 
@@ -710,7 +706,7 @@ const compact: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 8.5, rowPad: 3, zebra: true, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 4, totalsHeight(doc, d, L, totals, 180, 8.5));
         y = totalsBlock(doc, d, L, totals, x + w - 180, y + 4, 180, { accent: t.accent, tint: t.tint, size: 8.5 });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 10, width: hw });
+    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 10, width: hw });
     band.draw();
 };
 
@@ -743,7 +739,7 @@ const elegant: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 10, rowPad: 8, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 12, totalsHeight(doc, d, L, totals, 210));
         y = totalsBlock(doc, d, L, totals, x + w - 210, y + 12, 210, { accent: t.accent, tint: t.tint, size: 10 });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: w, align: "center" });
+    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: w, align: "center" });
     band.draw();
 };
 
@@ -777,7 +773,7 @@ const swiss: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 9.5, rowPad: 5, border: "#111111", bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 6, totalsHeight(doc, d, L, totals, 220, 9.5));
         y = totalsBlock(doc, d, L, totals, x + w - 220, y + 6, 220, { accent: t.accent, tint: t.tint, grid: true, size: 9.5 });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${fmt(Number(d.value) || 0, d.currency)}`, x + labelW, y, { size: 12, color: "#111111", width: w - labelW });
+    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x + labelW, y, { size: 12, color: "#111111", width: w - labelW });
     band.draw();
 };
 

@@ -1,4 +1,5 @@
 import { isValidObjectId } from "mongoose";
+import { formatMoney } from "./money";
 import { sendFromAccount } from "@/lib/mail";
 import Contact from "@/models/Contact";
 import Company from "@/models/Company";
@@ -56,11 +57,6 @@ const T = {
     ua: { hello: "Вітаємо", attached: "у вкладенні — наш документ у форматі PDF.", total: "Разом", due: "Термін оплати", valid: "Дійсний до", value: "Сума договору", question: "Якщо виникнуть питання, просто дайте відповідь на цей лист.", regards: "З повагою" },
 };
 
-const money = (n: number, currency: string) => {
-    try { return new Intl.NumberFormat("de-DE", { style: "currency", currency, maximumFractionDigits: 2 }).format(n); }
-    catch { return `${n.toFixed(2)} ${currency}`; }
-};
-
 export interface DocumentMail {
     kind: DocKind;
     number: string;
@@ -89,7 +85,7 @@ export function documentMail(m: DocumentMail): { subject: string; text: string; 
         "",
         `${title} ${m.number}: ${t.attached}`,
         "",
-        `${amountLabel}: ${money(Number(m.amount) || 0, m.currency)}`,
+        `${amountLabel}: ${formatMoney(Number(m.amount) || 0, m.currency)}`,
     ];
     if (m.kind === "invoice" && m.dueDate) lines.push(`${t.due}: ${m.dueDate}`);
     if (m.kind === "quote" && m.validUntil) lines.push(`${t.valid}: ${m.validUntil}`);

@@ -66,7 +66,6 @@ export interface TrialBalanceRow { account: string; name: string; debit: number;
 export interface TrialBalance { from: string; to: string; rows: TrialBalanceRow[]; debitTotal: number; creditTotal: number }
 
 const round = (n: number) => Math.round(n * 100) / 100;
-const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 // ── UStVA: налог на добавленную стоимость за период ────────────────────────────────────────────────────────
 // Обороты берём по дате выставления счёта (Soll-Versteuerung — обычный вариант для большинства фирм).
@@ -257,20 +256,6 @@ export async function trialBalance(org: string, from: string, to: string): Promi
     return { from, to, rows, debitTotal, creditTotal };
 }
 
-// Границы периода по умолчанию: месяц, квартал или год — то, за что обычно отчитываются
-export type PeriodKind = "month" | "quarter" | "year";
-
-export function periodRange(kind: PeriodKind, today = new Date()): { from: string; to: string } {
-    const y = today.getFullYear();
-    const m = today.getMonth();
-    if (kind === "year") return { from: `${y}-01-01`, to: `${y}-12-31` };
-    if (kind === "quarter") {
-        const q = Math.floor(m / 3);
-        const start = new Date(Date.UTC(y, q * 3, 1));
-        const end = new Date(Date.UTC(y, q * 3 + 3, 0));
-        return { from: iso(start), to: iso(end) };
-    }
-    const start = new Date(Date.UTC(y, m, 1));
-    const end = new Date(Date.UTC(y, m + 1, 0));
-    return { from: iso(start), to: iso(end) };
-}
+// Границы периода лежат в reportMath (без mongoose) — их берёт и клиентский код
+export { periodRange } from "./reportMath";
+export type { PeriodKind } from "./reportMath";

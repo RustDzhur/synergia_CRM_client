@@ -90,3 +90,19 @@ export function incomeOf(paidInvoices: ReportDoc[], creditNotes: ReportDoc[]): n
     const credited = creditNotes.reduce((s, cn) => s + sumNet(cn.items), 0);
     return round(paid - credited);
 }
+
+// Границы периода по умолчанию: месяц, квартал или год — то, за что обычно отчитываются
+export type PeriodKind = "month" | "quarter" | "year";
+
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+
+export function periodRange(kind: PeriodKind, today = new Date()): { from: string; to: string } {
+    const y = today.getFullYear();
+    const m = today.getMonth();
+    if (kind === "year") return { from: `${y}-01-01`, to: `${y}-12-31` };
+    if (kind === "quarter") {
+        const q = Math.floor(m / 3);
+        return { from: iso(new Date(Date.UTC(y, q * 3, 1))), to: iso(new Date(Date.UTC(y, q * 3 + 3, 0))) };
+    }
+    return { from: iso(new Date(Date.UTC(y, m, 1))), to: iso(new Date(Date.UTC(y, m + 1, 0))) };
+}

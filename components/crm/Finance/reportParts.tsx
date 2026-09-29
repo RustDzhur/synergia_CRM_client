@@ -4,12 +4,22 @@ import { useLocale, useTranslations } from "next-intl";
 import { TbAlertTriangle, TbSparkles } from "react-icons/tb";
 import { apiCall } from "@/store/crmApi";
 import { TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tabBar";
-import type { PeriodKind } from "@/lib/finance/reports";
+import type { PeriodKind } from "@/lib/finance/reportMath";
 
 // Общие детали отчётов Steuern (UStVA, EÜR) и Auswertungen (BWA, SuSa): переключатель периода, запрос отчёта
 // у сервера и разбор от ИИ. Оба экрана пользуются ими, чтобы не дублировать разметку и запросы.
 
 export type ReportKind = "vat" | "eur" | "bwa" | "susa";
+
+// Плитка сводки: подпись сверху, крупная цифра снизу (дашборд, Anlagen, Bank, Mahnwesen)
+export function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
+	return (
+		<div className="fs-card p-16">
+			<p className="text-12 text-[#8c948b]">{label}</p>
+			<p className="mt-6 text-20 font-semibold" style={{ color: color ?? "#f1f4ee" }}>{value}</p>
+		</div>
+	);
+}
 
 // Те же периоды, что понимает /api/finance/reports (lib/finance/reports.ts): месяц, квартал, год.
 const PERIODS: PeriodKind[] = ["month", "quarter", "year"];
