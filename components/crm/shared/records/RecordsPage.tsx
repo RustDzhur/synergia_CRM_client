@@ -17,6 +17,7 @@ import TabBar from "./recordsParts/TabBar";
 // Стабильные «пустые» значения: новый [] или {} на каждом рендере сбрасывал бы кэш useMemo ниже
 const NO_KEYS: string[] = [];
 const NO_FILTERS: Record<string, string> = {};
+const NO_RECORDS: RecordItem[] = [];
 
 // Что страница отдаёт вкладке с собственным содержимым (customTabs): поисковый запрос и способ открыть окно новой записи
 export interface CustomTabApi {
@@ -65,7 +66,7 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 	const fields = useMemo(() => config.fields[tab] ?? [], [config, tab]);
 	const hiddenKeys = hidden[dataKey(tab)] ?? NO_KEYS;
 	const columns = useMemo(() => fields.filter((f) => !hiddenKeys.includes(f.key)), [fields, hiddenKeys]);
-	const list = data[dataKey(tab)] ?? config.seed[tab] ?? [];
+	const list = data[dataKey(tab)] ?? config.seed[tab] ?? NO_RECORDS;
 	const statusColors = { ...STATUS_COLORS, ...config.statusColors };
 	// Фильтры для поля поиска: по одному на каждую колонку-список текущей вкладки.
 	// Берём только видимые колонки — фильтр по скрытой колонке сбивал бы с толку.
