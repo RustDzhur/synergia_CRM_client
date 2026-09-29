@@ -1,0 +1,64 @@
+import type { CallProviderId } from "@/config/callProviders";
+import type { IntegrationType } from "@/types/integrations";
+
+export type Real = Exclude<IntegrationType, "mail">;
+export interface FieldDef { key: string; label: string; secret?: boolean; optional?: boolean; placeholder?: string; type?: "color" }
+
+// Реквизиты каждого канала. Секретные поля после подключения не показываются — сервер хранит их зашифрованными.
+export const FIELDS: Record<Real, FieldDef[]> = {
+	twilio: [
+		{ key: "accountSid", label: "intfAccountSid", placeholder: "AC…" },
+		{ key: "authToken", label: "intfAuthToken", secret: true },
+		{ key: "phone", label: "intfPhone", placeholder: "+4915123456789" },
+	],
+	// Остальные СМС-провайдеры: у каждого свои реквизиты и свой отправщик (lib/channels/vonage.ts и соседние)
+	vonage: [
+		{ key: "apiKey", label: "intfVonageKey" },
+		{ key: "apiSecret", label: "intfVonageSecret", secret: true },
+		{ key: "phone", label: "intfSender", placeholder: "Firmspace" },
+	],
+	plivo: [
+		{ key: "authId", label: "intfPlivoId", placeholder: "MA…" },
+		{ key: "authToken", label: "intfPlivoToken", secret: true },
+		{ key: "phone", label: "intfPhone", placeholder: "+4915123456789" },
+	],
+	telnyx: [
+		{ key: "apiKey", label: "intfTelnyxKey", secret: true, placeholder: "KEY…" },
+		{ key: "phone", label: "intfPhone", placeholder: "+4915123456789" },
+	],
+	sip: [
+		{ key: "server", label: "intfSipServer", placeholder: "wss://sip.example.com:7443" },
+		{ key: "domain", label: "intfSipDomain", placeholder: "sip.example.com" },
+		{ key: "username", label: "intfSipUser", placeholder: "1001" },
+		{ key: "authUser", label: "intfSipAuthUser", optional: true },
+		{ key: "password", label: "intfSipPassword", secret: true },
+		{ key: "displayName", label: "intfSipName", optional: true, placeholder: "Firmspace CRM" },
+	],
+	telegram: [{ key: "botToken", label: "intfBotToken", secret: true, placeholder: "123456:ABC…" }],
+	viber: [{ key: "authToken", label: "intfViberToken", secret: true }],
+	messenger: [
+		{ key: "pageAccessToken", label: "intfPageToken", secret: true },
+		{ key: "appSecret", label: "intfAppSecret", secret: true },
+	],
+	whatsapp: [
+		{ key: "phoneNumberId", label: "intfWaPhoneId", placeholder: "123456789012345" },
+		{ key: "accessToken", label: "intfWaToken", secret: true },
+		{ key: "appSecret", label: "intfAppSecret", secret: true },
+		{ key: "wabaId", label: "intfWaWabaId", optional: true, placeholder: "123456789012345" },
+	],
+	webchat: [
+		{ key: "title", label: "intfChatTitle", placeholder: "Chat with us" },
+		{ key: "greeting", label: "intfGreeting", placeholder: "Hello! How can we help?" },
+		{ key: "color", label: "intfColor", type: "color" },
+		// часы работы: вне них виджет честно говорит «ответим утром» и предлагает оставить контакт
+		{ key: "hoursFrom", label: "intfHoursFrom", optional: true, placeholder: "09:00" },
+		{ key: "hoursTo", label: "intfHoursTo", optional: true, placeholder: "18:00" },
+		{ key: "hoursDays", label: "intfHoursDays", optional: true, placeholder: "1-5" },
+		// кнопка действия в окне: текст и ссылка — чтобы её не искали на странице
+		{ key: "ctaLabel", label: "intfCtaLabel", optional: true, placeholder: "Start free" },
+		{ key: "ctaUrl", label: "intfCtaUrl", optional: true, placeholder: "https://…" },
+	],
+};
+
+// «Call Provider» — провайдер звонков выбирается плитками с логотипами (app/config/callProviders.ts); одно SIP-подключение на пользователя
+export const sipBrand = (cfg?: Record<string, string>) => (cfg?.provider || "custom") as CallProviderId;

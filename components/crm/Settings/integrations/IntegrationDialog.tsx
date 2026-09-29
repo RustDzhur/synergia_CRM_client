@@ -2,103 +2,22 @@
 import React, { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { TbCopy, TbX } from "react-icons/tb";
+import { TbX } from "react-icons/tb";
 import { useCallStore } from "@/store/useCallStore";
 import { apiCall } from "@/store/crmApi";
-import { type CallProviderId, CALL_PROVIDERS } from "@/config/callProviders";
+import { CALL_PROVIDERS } from "@/config/callProviders";
 import { SMS_PROVIDERS } from "@/config/smsProviders";
 import { testSipRegistration } from "@/store/phone/sipEngine";
 import { useIntegrationsStore } from "@/store/useIntegrationsStore";
-import type { IntegrationType } from "@/types/integrations";
 import ConfirmDialog from "../../shared/ConfirmDialog";
 import FormField from "../../shared/FormField";
 import Modal from "../../shared/Modal";
-import ProviderLogo from "./ProviderLogo";
-
-type Real = Exclude<IntegrationType, "mail">;
-interface FieldDef { key: string; label: string; secret?: boolean; optional?: boolean; placeholder?: string; type?: "color" }
-
-// Реквизиты каждого канала. Секретные поля после подключения не показываются — сервер хранит их зашифрованными.
-const FIELDS: Record<Real, FieldDef[]> = {
-	twilio: [
-		{ key: "accountSid", label: "intfAccountSid", placeholder: "AC…" },
-		{ key: "authToken", label: "intfAuthToken", secret: true },
-		{ key: "phone", label: "intfPhone", placeholder: "+4915123456789" },
-	],
-	// Остальные СМС-провайдеры: у каждого свои реквизиты и свой отправщик (lib/channels/vonage.ts и соседние)
-	vonage: [
-		{ key: "apiKey", label: "intfVonageKey" },
-		{ key: "apiSecret", label: "intfVonageSecret", secret: true },
-		{ key: "phone", label: "intfSender", placeholder: "Firmspace" },
-	],
-	plivo: [
-		{ key: "authId", label: "intfPlivoId", placeholder: "MA…" },
-		{ key: "authToken", label: "intfPlivoToken", secret: true },
-		{ key: "phone", label: "intfPhone", placeholder: "+4915123456789" },
-	],
-	telnyx: [
-		{ key: "apiKey", label: "intfTelnyxKey", secret: true, placeholder: "KEY…" },
-		{ key: "phone", label: "intfPhone", placeholder: "+4915123456789" },
-	],
-	sip: [
-		{ key: "server", label: "intfSipServer", placeholder: "wss://sip.example.com:7443" },
-		{ key: "domain", label: "intfSipDomain", placeholder: "sip.example.com" },
-		{ key: "username", label: "intfSipUser", placeholder: "1001" },
-		{ key: "authUser", label: "intfSipAuthUser", optional: true },
-		{ key: "password", label: "intfSipPassword", secret: true },
-		{ key: "displayName", label: "intfSipName", optional: true, placeholder: "Firmspace CRM" },
-	],
-	telegram: [{ key: "botToken", label: "intfBotToken", secret: true, placeholder: "123456:ABC…" }],
-	viber: [{ key: "authToken", label: "intfViberToken", secret: true }],
-	messenger: [
-		{ key: "pageAccessToken", label: "intfPageToken", secret: true },
-		{ key: "appSecret", label: "intfAppSecret", secret: true },
-	],
-	whatsapp: [
-		{ key: "phoneNumberId", label: "intfWaPhoneId", placeholder: "123456789012345" },
-		{ key: "accessToken", label: "intfWaToken", secret: true },
-		{ key: "appSecret", label: "intfAppSecret", secret: true },
-		{ key: "wabaId", label: "intfWaWabaId", optional: true, placeholder: "123456789012345" },
-	],
-	webchat: [
-		{ key: "title", label: "intfChatTitle", placeholder: "Chat with us" },
-		{ key: "greeting", label: "intfGreeting", placeholder: "Hello! How can we help?" },
-		{ key: "color", label: "intfColor", type: "color" },
-		// часы работы: вне них виджет честно говорит «ответим утром» и предлагает оставить контакт
-		{ key: "hoursFrom", label: "intfHoursFrom", optional: true, placeholder: "09:00" },
-		{ key: "hoursTo", label: "intfHoursTo", optional: true, placeholder: "18:00" },
-		{ key: "hoursDays", label: "intfHoursDays", optional: true, placeholder: "1-5" },
-		// кнопка действия в окне: текст и ссылка — чтобы её не искали на странице
-		{ key: "ctaLabel", label: "intfCtaLabel", optional: true, placeholder: "Start free" },
-		{ key: "ctaUrl", label: "intfCtaUrl", optional: true, placeholder: "https://…" },
-	],
-};
-
-function CopyField({ label, value }: { label: string; value: string }) {
-	const t = useTranslations("settings");
-	async function copy() {
-		try {
-			await navigator.clipboard.writeText(value);
-			toast.success(t("intCopied"));
-		} catch {
-			toast.error(t("intCopyFailed"));
-		}
-	}
-	return (
-		<div>
-			<span className="mb-6 block text-12 text-[#8c948b]">{label}</span>
-			<div className="flex items-stretch gap-8">
-				<input readOnly value={value} onFocus={(e) => e.currentTarget.select()} aria-label={label} className="fs-field h-40 min-w-0 flex-1 px-12 text-13 outline-none" />
-				<button type="button" onClick={copy} aria-label={t("intCopy")} className="flex w-40 shrink-0 items-center justify-center rounded-10 border border-inkLine text-[#8c948b] transition-colors hover:border-[rgba(198,255,77,0.35)] hover:text-[#c6ff4d]">
-					<TbCopy size={17} />
-				</button>
-			</div>
-		</div>
-	);
-}
-
-// «Call Provider» — провайдер звонков выбирается плитками с логотипами (app/config/callProviders.ts); одно SIP-подключение на пользователя
-const sipBrand = (cfg?: Record<string, string>) => (cfg?.provider || "custom") as CallProviderId;
+import CopyField from "./integrationParts/CopyField";
+import FacebookChoice from "./integrationParts/FacebookChoice";
+import FacebookForm from "./integrationParts/FacebookForm";
+import ProviderTiles from "./integrationParts/ProviderTiles";
+import { FIELDS, sipBrand } from "./integrationParts/model";
+import type { Real } from "./integrationParts/model";
 
 // Провайдер выбирается плитками: у звонков это способ подключения (Twilio или SIP), у СМС — конкретный сервис.
 // Обе карточки устроены одинаково, отличается только каталог плиток.
@@ -297,23 +216,7 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 					</div>
 
 					<form onSubmit={submit} className="flex flex-col gap-14 p-20">
-						{providerSwitch && (
-							<ul className="grid grid-cols-2 gap-10 sm:grid-cols-3" aria-label={t("intProviders")}>
-								{catalog.map((p) => (
-									<li key={p.id}>
-										<button
-											type="button"
-											onClick={() => pickProvider(p.id)}
-											aria-pressed={preset === p.id}
-											className={`relative flex h-80 w-full flex-col items-center justify-center gap-6 rounded-12 border px-6 text-center text-12 font-medium transition-colors ${preset === p.id ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.08)] text-[#c6ff4d]" : "border-inkLine bg-transparent text-[#8c948b] hover:border-[rgba(255,255,255,0.20)]"}`}>
-											<ProviderLogo id={p.id} size={30} />
-											<span className="leading-[1.15]">{p.id === "custom" ? t("provCustom") : p.name}</span>
-											{tileConnected(p.id) && <span className="absolute right-6 top-6 h-8 w-8 rounded-50 bg-[#2DDEB6]" title={t("intStatusShort")} />}
-										</button>
-									</li>
-								))}
-							</ul>
-						)}
+						{providerSwitch && <ProviderTiles catalog={catalog} preset={preset} onPick={pickProvider} isConnected={tileConnected} />}
 						{chooserOnly && <p className="text-12 text-[#8c948b]">{providerKind === "sms" ? t("intChooseProviderSms") : t("intChooseProvider")}</p>}
 						{!chooserOnly && <p className="text-12 text-[#8c948b]">{providerKind === "call" && shown === "sip" && preset && preset !== "custom" ? t(`provHelp_${preset}`) : t(`intHelp_${shown}`)}</p>}
 						{/* Входящие СМС принимает только Twilio: у остальных своя подпись вебхука, а без её проверки
@@ -329,40 +232,20 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 						{current?.type === "telegram" && current.config.polling === "1" && <p className="text-12 text-[#8c948b]">{t("intPollingInfo")}</p>}
 						{current?.status === "error" && current.error && <p className="rounded-10 bg-[rgba(244,161,0,0.10)] p-12 text-12 text-[#F4A100]">{current.error.startsWith("Webhooks need a public https address") ? t("intErrNeedHttps") : current.error}</p>}
 
-						{/* Вход через Facebook: страницу (или номер) человек выбирает в окне Meta, а токены мы получаем
-						    сами — копировать длинные строки не нужно. Ручной ввод остаётся ниже, для особых случаев. */}
 						{fbForm && (
-							<div className="flex flex-col gap-10 rounded-12 border border-inkLine bg-[rgba(255,255,255,0.02)] p-14">
-								<span className="text-13 font-medium text-[#f1f4ee]">{t("intFbTitle")}</span>
-								<p className="text-11 text-[#8c948b]">{siteApp ? t("intFbSiteApp") : t("intFbHint")}</p>
-								{/* Приложение Meta настроено на сайте (те же переменные, что у рекламных кабинетов) —
-								    ключи не спрашиваем, иначе их пришлось бы искать в кабинете Meta без нужды */}
-								{!siteApp && <FormField label={t("intfAppId")} value={fbId} onChange={(e) => setFbId(e.target.value)} autoComplete="off" placeholder="1098409499579046" maxLength={40} />}
-								{!siteApp && <FormField label={t("intfAppSecret")} value={fbSecret} onChange={(e) => setFbSecret(e.target.value)} type="password" autoComplete="off" maxLength={80} />}
-								{/* Meta не пустит на наш адрес возврата, пока он не разрешён в настройках приложения —
-								    показываем его готовым, чтобы не искать и не набирать вручную */}
-								{origin && (
-									<CopyField
-										label={t("intFbRedirect")}
-										value={`${origin}${shown === "messenger" ? "/api/messenger/oauth/callback" : "/api/whatsapp/oauth/callback"}`}
-									/>
-								)}
-								<button type="button" disabled={fbBusy || (!siteApp && (!fbId.trim() || !fbSecret.trim()))} onClick={startFacebook} className="fs-btn fs-btn-primary h-40 self-start disabled:opacity-50">
-									{fbBusy ? "…" : t("intFbConnect")}
-								</button>
-							</div>
+							<FacebookForm
+								channel={shown as "messenger" | "whatsapp"}
+								siteApp={siteApp}
+								origin={origin}
+								appId={fbId}
+								appSecret={fbSecret}
+								onAppId={setFbId}
+								onAppSecret={setFbSecret}
+								busy={fbBusy}
+								onStart={startFacebook}
+							/>
 						)}
-						{/* Возврат из Facebook, когда страниц или номеров несколько: остаётся выбрать, что подключать */}
-						{fbOptions.length > 0 && !connectedNow && (
-							<div className="flex flex-col gap-6">
-								<span className="text-12 text-[#8c948b]">{t("intFbChoose")}</span>
-								{fbOptions.map((o) => (
-									<button key={o.id} type="button" onClick={() => chooseFacebook(o.id)} className="fs-popover-row w-full rounded-8 px-10 py-8 text-left text-13">
-										{o.name}
-									</button>
-								))}
-							</div>
-						)}
+						{fbOptions.length > 0 && !connectedNow && <FacebookChoice options={fbOptions} onChoose={chooseFacebook} />}
 
 						{editable && !chooserOnly && fbForm && <p className="text-11 text-[#9AA396]">{t("intFbOrManual")}</p>}
 						{editable && !chooserOnly &&
