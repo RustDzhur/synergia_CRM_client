@@ -25,6 +25,10 @@ export async function PATCH(req: Request, { params }: { params: { userId: string
         if (!ASSIGNABLE_ROLES.includes(body.role as Role)) return badRequest("Invalid role");
         if (body.role === "admin" && user.role !== "owner") return forbidden("Only the owner can add administrators");
         m.role = body.role;
+        // Персональный набор разделов — снимок прав роли на момент выдачи: если роль меняют, старый
+        // снимок перестаёт соответствовать новой роли, и человек не получает её разделы (например,
+        // повышенный до manager — «Мою фирму»). Сбрасываем, если клиент не передал набор явно.
+        if (!("modules" in body)) m.modules = [];
     }
     if ("modules" in body) m.modules = Array.isArray(body.modules) ? body.modules.filter((x: unknown) => typeof x === "string" && ((GRANTABLE as string[]).includes(x) || x === NO_MODULES)) : [];
     await m.save();
