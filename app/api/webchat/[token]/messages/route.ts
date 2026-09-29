@@ -48,7 +48,8 @@ export async function POST(req: Request, { params }: { params: { token: string }
 
     // Готовый ответ бота: те же тексты, что были в чатботе на лендинге (app/content/chatbotFaq.ts).
     // Ответ записываем в переписку, чтобы человек в CRM видел, что посетителю уже сказали, — и отвечаем сразу.
-    const hit = matchFaq(text);
+    // Бота можно выключить в настройках канала: тогда сообщение просто ждёт человека
+    const hit = integration.config.botEnabled === "0" ? null : matchFaq(text);
     let reply: ReturnType<typeof toMessageDTO> | null = null;
     if (hit) {
         const { message: botMessage } = await recordMessage(integration, {

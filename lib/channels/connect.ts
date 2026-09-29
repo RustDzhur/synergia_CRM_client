@@ -357,6 +357,9 @@ export function webchatConfig(input: Input) {
         // кнопка действия в окне — «начать бесплатно» и подобное
         ctaLabel: str(input.ctaLabel, 40),
         ctaUrl: /^https?:\/\//i.test(url) ? url : "",
+        // Отвечать ли посетителю готовыми ответами бота. «0» — выключено, всё остальное — включено:
+        // так же хранит выключатели автоматизация (см. enabled !== "0").
+        botEnabled: str(input.botEnabled, 2) === "0" ? "0" : "1",
     };
 }
 

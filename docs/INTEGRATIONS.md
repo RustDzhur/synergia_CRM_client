@@ -30,8 +30,7 @@
 | **Telegram** | Токен бота от @BotFather | Вызывает `setWebhook` с секретом. Пишут боту — сообщения появляются в Chat and Calls |
 | **Viber** | Токен бота (partners.viber.com) | Вызывает `set_webhook`. Подпись каждого запроса проверяется |
 | **Messenger** | Page access token и App secret из Meta for Developers | После подключения показывает Callback URL и Verify token — их нужно один раз внести в Webhooks приложения Meta и подписаться на `messages` |
-| **Online Chat / Widget For Website** | Ничего внешнего | Показывает готовый код `<script src="…/widget.js" data-token="…">` для вашего сайта |
-| Comments, Chat Bot | — | Пока демонстрационные |
+| **Online Chat / Widget For Website** | Ничего внешнего | Показывает готовый код `<script src="…/widget.js" data-token="…">` для вашего сайта; в том же окне настраиваются заголовок, приветствие, цвет, часы работы, кнопка действия и выключатель бота с готовыми ответами |
 
 Если вебхук зарегистрировать не удалось (например, `APP_URL` ещё не задан), канал получает статус «Needs attention»
 и кнопку **Register webhook** — её достаточно нажать после исправления `APP_URL`.

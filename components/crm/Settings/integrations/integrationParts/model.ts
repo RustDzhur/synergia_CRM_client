@@ -2,7 +2,7 @@ import type { CallProviderId } from "@/config/callProviders";
 import type { IntegrationType } from "@/types/integrations";
 
 export type Real = Exclude<IntegrationType, "mail">;
-export interface FieldDef { key: string; label: string; secret?: boolean; optional?: boolean; placeholder?: string; type?: "color" }
+export interface FieldDef { key: string; label: string; secret?: boolean; optional?: boolean; placeholder?: string; type?: "color" | "bool" }
 
 // Реквизиты каждого канала. Секретные поля после подключения не показываются — сервер хранит их зашифрованными.
 export const FIELDS: Record<Real, FieldDef[]> = {
@@ -50,6 +50,8 @@ export const FIELDS: Record<Real, FieldDef[]> = {
 		{ key: "title", label: "intfChatTitle", placeholder: "Chat with us" },
 		{ key: "greeting", label: "intfGreeting", placeholder: "Hello! How can we help?" },
 		{ key: "color", label: "intfColor", type: "color" },
+		// Бот отвечает посетителю готовыми ответами на частые вопросы (app/content/chatbotFaq.ts)
+		{ key: "botEnabled", label: "intfBot", type: "bool" },
 		// часы работы: вне них виджет честно говорит «ответим утром» и предлагает оставить контакт
 		{ key: "hoursFrom", label: "intfHoursFrom", optional: true, placeholder: "09:00" },
 		{ key: "hoursTo", label: "intfHoursTo", optional: true, placeholder: "18:00" },

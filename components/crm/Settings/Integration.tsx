@@ -4,8 +4,8 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
-import { FaFacebook, FaFacebookMessenger, FaTelegram, FaViber, FaWhatsapp } from "react-icons/fa";
-import { TbCode, TbDeviceMobileMessage, TbHeadset, TbPhone, TbRobot } from "react-icons/tb";
+import { FaFacebookMessenger, FaTelegram, FaViber, FaWhatsapp } from "react-icons/fa";
+import { TbCode, TbDeviceMobileMessage, TbHeadset, TbPhone } from "react-icons/tb";
 import { SMS_PROVIDER_TYPES } from "@/config/smsProviders";
 import { useIntegrationsStore } from "@/store/useIntegrationsStore";
 import type { IntegrationType } from "@/types/integrations";
@@ -34,8 +34,6 @@ const INTEGRATIONS: Integration[] = [
 	{ id: "telegram", key: "intTelegram", icon: FaTelegram, real: "telegram" },
 	{ id: "messenger", key: "intMessenger", icon: FaFacebookMessenger, real: "messenger" },
 	{ id: "whatsapp", key: "intWhatsapp", icon: FaWhatsapp, real: "whatsapp" },
-	{ id: "comments", key: "intComments", icon: FaFacebook },
-	{ id: "chatbot", key: "intChatBot", icon: TbRobot },
 	{ id: "onlinechat", key: "intOnlineChat", icon: TbHeadset, real: "webchat" },
 	{ id: "widget", key: "intWidget", icon: TbCode, real: "webchat" }, // код для сайта — в окне онлайн-чата
 ];

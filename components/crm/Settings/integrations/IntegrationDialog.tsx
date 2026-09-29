@@ -74,7 +74,7 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 		if (!type) return;
 		setError("");
 		const cfg = items.find((i) => i.type === type)?.config;
-		setValues(type === "webchat" ? { title: cfg?.title ?? "", greeting: cfg?.greeting ?? "", color: cfg?.color ?? "#C6FF4D" } : {});
+		setValues(type === "webchat" ? { title: cfg?.title ?? "", greeting: cfg?.greeting ?? "", color: cfg?.color ?? "#C6FF4D", botEnabled: cfg?.botEnabled ?? "1" } : {});
 		setFbId("");
 		setFbSecret("");
 		// открываем плитку уже подключённого провайдера, а если ничего нет — показываем выбор
@@ -251,7 +251,17 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 						{editable && !chooserOnly && fbForm && <p className="text-11 text-[#9AA396]">{t("intFbOrManual")}</p>}
 						{editable && !chooserOnly &&
 							fields.map((f) =>
-								f.type === "color" ? (
+								f.type === "bool" ? (
+									<label key={f.key} className="flex cursor-pointer items-center gap-10">
+										<input
+											type="checkbox"
+											checked={(values[f.key] ?? "1") !== "0"}
+											onChange={(e) => setValues({ ...values, [f.key]: e.target.checked ? "1" : "0" })}
+											className="h-16 w-16 accent-[#c6ff4d]"
+										/>
+										<span className="text-12 text-[#8c948b]">{t(f.label)}</span>
+									</label>
+								) : f.type === "color" ? (
 									<label key={f.key} className="block">
 										<span className="mb-6 block text-12 text-[#8c948b]">{t(f.label)}</span>
 										<input type="color" value={values[f.key] ?? "#C6FF4D"} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} className="fs-field h-40 w-80 cursor-pointer p-4" />
