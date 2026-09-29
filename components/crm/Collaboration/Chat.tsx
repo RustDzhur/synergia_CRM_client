@@ -1,163 +1,24 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { TbArrowLeft, TbDots, TbFile, TbMessages, TbMicrophone, TbPaperclip, TbPhone, TbPhoneIncoming, TbPhoneOutgoing, TbPhoneX, TbPlayerStop } from "react-icons/tb";
+import { TbArrowLeft, TbDots, TbMessages, TbMicrophone, TbPaperclip, TbPhone, TbPlayerStop } from "react-icons/tb";
 import { apiCall, authHeaders } from "@/store/crmApi";
 import { useCallStore } from "@/store/useCallStore";
-import type { AttachmentDTO, ConversationDTO, MessageDTO, MessagingChannel } from "@/types/integrations";
+import type { ConversationDTO, MessageDTO } from "@/types/integrations";
 import Dropdown from "@/utils/Dropdown";
 import { useClickOutside } from "@/utils/useClickOutside";
 import { usePolling } from "@/utils/usePolling";
 import { useScrollLock } from "@/utils/useScrollLock";
-import Avatar from "../shared/Avatar";
 import ConfirmDialog from "../shared/ConfirmDialog";
-import { CHANNEL_COLOR, CHANNEL_ICON } from "./channelMeta";
 import ChatEmpty from "./ChatEmpty";
-import { formatChatDate, hhmm, initialsOf } from "./format";
-
-const mmss = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
-
-function ChannelBadge({ channel, size = 16 }: { channel: MessagingChannel; size?: number }) {
-	const t = useTranslations("collab");
-	const Icon = CHANNEL_ICON[channel];
-	return <span title={t(`ch_${channel}`)} aria-label={t(`ch_${channel}`)} style={{ color: CHANNEL_COLOR[channel] }} className="shrink-0"><Icon size={size} /></span>;
-}
-
-// Строка о звонке в переписке: направление, итог, длительность
-function CallEntry({ m }: { m: MessageDTO }) {
-	const t = useTranslations("collab");
-	const status = String(m.meta.status ?? "");
-	const duration = Number(m.meta.duration) || 0;
-	const done = status === "completed";
-	let label: string;
-	let Icon = m.direction === "in" ? TbPhoneIncoming : TbPhoneOutgoing;
-	if (m.direction === "in") {
-		label = done ? t("callLogIn", { duration: mmss(duration) }) : t("callLogMissed");
-		if (!done) Icon = TbPhoneX;
-	} else {
-		label = done ? t("callLogOut", { duration: mmss(duration) }) : status === "no-answer" ? t("callLogNoAnswer") : status === "busy" ? t("callLogBusy") : t("callLogFailed");
-	}
-	return (
-		<div className="flex animate-fade-in items-center justify-center gap-8 text-12 text-[#8c948b]">
-			<Icon size={16} className={done ? "text-[#c6ff4d]" : "text-danger"} />
-			<span>{label}</span>
-			<span>{hhmm(new Date(m.at))}</span>
-		</div>
-	);
-}
-
-// Каналы, в которые можно отправлять фото, файлы и голосовые (совпадает с серверным списком)
-const MEDIA_CHANNELS: MessagingChannel[] = ["telegram", "viber"];
-
-const sizeLabel = (bytes: number) => (bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`);
-
-// Расширение записи: Chrome пишет WebM, Safari — MP4 (m4a). Имя должно совпадать с содержимым,
-// иначе и Telegram, и наш сервер определят тип файла неправильно.
-function voiceExt(mimeType: string) {
-	const m = (mimeType || "").toLowerCase();
-	if (m.includes("mp4")) return "m4a";
-	if (m.includes("ogg")) return "ogg";
-	if (m.includes("mpeg")) return "mp3";
-	return "webm";
-}
-
-// Вложение сообщения: фото показываем, звук проигрываем, остальное отдаём карточкой файла со скачиванием
-function AttachmentView({ a, url, mine }: { a: AttachmentDTO; url?: string; mine: boolean }) {
-	const t = useTranslations("collab");
-	const frame = `overflow-hidden rounded-14 border border-inkLine ${mine ? "bg-[rgba(198,255,77,0.14)]" : "bg-[rgba(255,255,255,0.05)]"}`;
-	if (!url) return <div className={`${frame} px-16 py-10 text-13 text-[#8c948b]`}>{t("attachmentLoading")}</div>;
-	if (a.kind === "image")
-		return (
-			<a href={url} target="_blank" rel="noreferrer" title={a.name} className="block max-w-[85%] transition-transform duration-150 hover:scale-[1.01] motion-reduce:transform-none">
-				<img src={url} alt={a.name} className="max-h-[320px] w-auto max-w-full rounded-14 border border-inkLine" />
-			</a>
-		);
-	if (a.kind === "voice")
-		return (
-			<div className={`${frame} flex items-center gap-12 px-14 py-8`}>
-				<audio controls src={url} className="h-[34px] w-[220px]" aria-label={t("mediaVoice")} />
-			</div>
-		);
-	return (
-		<a href={url} download={a.name} className={`${frame} flex max-w-[85%] items-center gap-10 px-14 py-10`}>
-			<span className="shrink-0 text-[#c6ff4d]"><TbFile size={24} /></span>
-			<span className="min-w-0">
-				<span className="block truncate text-13 text-[#f1f4ee]">{a.name}</span>
-				<span className="block text-11 text-[#8c948b]">{sizeLabel(a.size)}</span>
-			</span>
-		</a>
-	);
-}
-
-// Вложения подгружаются с авторизацией, поэтому в <img>/<audio> попадают ссылки на уже полученные файлы
-function useAttachmentUrls(messages: MessageDTO[]) {
-	const [urls, setUrls] = useState<Record<string, string>>({});
-	const made = useRef<Record<string, string>>({});
-	useEffect(() => {
-		const pending = messages.filter((m) => m.attachment && !made.current[m.id]);
-		if (pending.length === 0) return;
-		let stop = false;
-		(async () => {
-			for (const m of pending) {
-				try {
-					const res = await fetch(`/api/messages/${m.id}/attachment`, { headers: authHeaders(false) });
-					if (!res.ok) continue;
-					const url = URL.createObjectURL(await res.blob());
-					if (stop) return void URL.revokeObjectURL(url);
-					made.current[m.id] = url;
-					setUrls((u) => ({ ...u, [m.id]: url }));
-				} catch {
-					// файл не отдался — сообщение останется без вложения, переписка не ломается
-				}
-			}
-		})();
-		return () => { stop = true; };
-	}, [messages]);
-	useEffect(() => () => { Object.values(made.current).forEach((u) => URL.revokeObjectURL(u)); made.current = {}; }, []);
-	return urls;
-}
-
-function ChatList({ chats, activeId, onSelect }: { chats: ConversationDTO[]; activeId: string | null; onSelect: (id: string) => void }) {
-	const t = useTranslations("collab");
-	const locale = useLocale();
-	if (chats.length === 0) return <p className="p-30 text-center text-13 text-[#8c948b]">{t("chatsEmpty")}</p>;
-	return (
-		<ul>
-			{chats.map((c) => {
-				const active = c.id === activeId;
-				return (
-					<li key={c.id}>
-						<button
-							type="button"
-							onClick={() => onSelect(c.id)}
-							aria-current={active ? "true" : undefined}
-							className={`flex w-full items-center gap-12 border-b border-inkLineSoft px-14 py-14 text-left transition-colors duration-150 last:border-b-0 ${active ? "bg-[rgba(198,255,77,0.08)]" : "hover:bg-[rgba(255,255,255,0.04)]"}`}>
-							<Avatar initials={initialsOf(c.name)} size={44} className="flex text-14" />
-							<div className="min-w-0 flex-1">
-								<div className="flex items-start justify-between gap-8">
-									<p className="flex min-w-0 items-center gap-6 text-13 font-semibold text-[#f1f4ee]">
-											<ChannelBadge channel={c.channel} />
-											<span className="truncate">{c.name}</span>
-										</p>
-									<p className="shrink-0 whitespace-nowrap text-11 text-[#8C948B] md:max-lg:hidden">{formatChatDate(c.lastAt, locale)}</p>
-								</div>
-								<div className="mt-2 flex items-end justify-between gap-8">
-									<p className="truncate text-12 text-[#8c948b]">{c.lastText}</p>
-									{c.unread > 0 && (
-										<span className="flex h-20 min-w-22 shrink-0 items-center justify-center rounded-50 bg-[#c6ff4d] px-6 text-11 font-semibold text-[#0a0c0b]">
-											{c.unread}
-										</span>
-									)}
-								</div>
-							</div>
-						</button>
-					</li>
-				);
-			})}
-		</ul>
-	);
-}
+import { hhmm } from "./format";
+import AttachmentView from "./chatParts/AttachmentView";
+import CallEntry from "./chatParts/CallEntry";
+import ChannelBadge from "./chatParts/ChannelBadge";
+import ChatList from "./chatParts/ChatList";
+import useAttachmentUrls from "./chatParts/useAttachmentUrls";
+import { MEDIA_CHANNELS, voiceExt } from "./chatParts/model";
 
 // Chat and Calls (/crm/collaboration/chat-and-calls). Беседы из подключённых каналов (Settings → Integration):
 // Telegram, Viber, Messenger, SMS/звонки Twilio, онлайн-чат сайта. Новые сообщения подтягиваются опросом сервера.
