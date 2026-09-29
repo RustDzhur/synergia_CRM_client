@@ -91,7 +91,9 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
             {softphone && <Softphone />}
             {aiAssistant && <AiAssistant />}
             <NotificationCenter />
-            <Toaster />
+            {/* Длинный текст (адрес, id, ответ провайдера) не должен вылезать за плашку: переносим
+                и по словам, и внутри длинного слова, а ширину ограничиваем шириной экрана */}
+            <Toaster toastOptions={{ style: { maxWidth: "min(560px, calc(100vw - 32px))", wordBreak: "break-word", overflowWrap: "anywhere" } }} />
         </>
     );
 }

@@ -225,7 +225,7 @@ export default function WebMails() {
 						</label>
 					</div>
 					{active.status === "error" && (
-						<p role="alert" className="mb-16 rounded-10 border border-[rgba(235,87,87,0.25)] bg-[rgba(235,87,87,0.08)] p-12 text-12 text-danger">{t("mailAccountError", { message: active.error })}</p>
+						<p role="alert" className="mb-16 rounded-10 border border-[rgba(235,87,87,0.25)] bg-[rgba(235,87,87,0.08)] p-12 text-12 text-danger [overflow-wrap:anywhere]">{t("mailAccountError", { message: active.error })}</p>
 					)}
 					<div className="mb-20 flex flex-col gap-16 md:flex-row md:items-center md:justify-between">
 						<SearchBox value={query} onChange={setQuery} placeholder={t("filterSearchMail")} className="w-full md:w-[250px] lg:w-[350px]" />

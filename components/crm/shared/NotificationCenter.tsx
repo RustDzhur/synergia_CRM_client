@@ -81,9 +81,15 @@ export default function NotificationCenter() {
 			{isEvent
 				? <TbCalendarEvent size={24} className="shrink-0 animate-bounce text-[#c6ff4d]" aria-hidden />
 				: <MdAccessAlarm size={26} className="shrink-0 animate-bounce text-[#F4A100]" aria-hidden />}
-			<p className={`min-w-0 text-16 font-medium ${isEvent ? "text-[#f1f4ee]" : "text-[#6B4E00]"}`}>{notifText(t, banner)}</p>
-			<Link href={`/${locale}${banner.link}`} onClick={() => { markRead([banner.id]); setBanner(null); }} className={`shrink-0 rounded-8 px-16 py-6 text-14 font-medium transition-opacity hover:opacity-80 ${isEvent ? "bg-[#c6ff4d] text-[#0a0c0b]" : "bg-[#F4A100] text-white"}`}>{t("open")}</Link>
-			<button type="button" aria-label={t("dismiss")} onClick={() => { markRead([banner.id]); setBanner(null); }} className={`shrink-0 transition-opacity hover:opacity-70 ${isEvent ? "text-[#c6ff4d]" : "text-[#6B4E00]"}`}><MdClose size={22} /></button>
+			{/* Длинный текст (адрес события, длинное имя, ссылка) переносится и внутри слова и не занимает
+			    весь экран: плашка показывает две строки, полный текст — в подсказке при наведении */}
+			<p
+				title={notifText(t, banner)}
+				className={`min-w-0 line-clamp-2 [overflow-wrap:anywhere] text-16 font-medium ${isEvent ? "text-[#f1f4ee]" : "text-[#F4A100]"}`}>
+				{notifText(t, banner)}
+			</p>
+			<Link href={`/${locale}${banner.link}`} onClick={() => { markRead([banner.id]); setBanner(null); }} className={`shrink-0 rounded-8 px-16 py-6 text-14 font-medium transition-opacity hover:opacity-80 ${isEvent ? "bg-[#c6ff4d] text-[#0a0c0b]" : "bg-[#F4A100] text-[#1A1509]"}`}>{t("open")}</Link>
+			<button type="button" aria-label={t("dismiss")} onClick={() => { markRead([banner.id]); setBanner(null); }} className={`shrink-0 transition-opacity hover:opacity-70 ${isEvent ? "text-[#c6ff4d]" : "text-[#F4A100]"}`}><MdClose size={22} /></button>
 		</div>
 	);
 }

@@ -304,7 +304,7 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 							</div>
 						)}
 
-						{error && <p role="alert" className="text-13 text-danger">{error}</p>}
+						{error && <p role="alert" className="text-13 text-danger [overflow-wrap:anywhere]">{error}</p>}
 
 						<div className="mt-8 flex flex-wrap items-center justify-end gap-12">
 							{current && (

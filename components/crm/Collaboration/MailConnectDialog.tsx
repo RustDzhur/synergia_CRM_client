@@ -114,7 +114,7 @@ export default function MailConnectDialog({ provider, oauth, onClose, onConnecte
 							</div>
 						</form>
 					)}
-					{error && <p role="alert" className="text-12 text-danger">{error}</p>}
+					{error && <p role="alert" className="text-12 text-danger [overflow-wrap:anywhere]">{error}</p>}
 				</div>
 			</div>
 		</Modal>
