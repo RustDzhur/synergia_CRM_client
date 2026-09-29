@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { MdBackspace, MdCall, MdCallEnd, MdCallMade, MdCallMissed, MdCallReceived, MdClose, MdDialpad, MdMic, MdMicOff } from "react-icons/md";
 import { providerLabel } from "@/config/callProviders";
 import { useCallStore } from "@/store/useCallStore";
+import { useActiveOrg, useOrgStore } from "@/store/useOrgStore";
 
 const mmss = (ms: number) => {
 	const s = Math.max(0, Math.floor(ms / 1000));
@@ -68,15 +69,19 @@ export default function Softphone() {
 	const locale = useLocale();
 	const {
 		state, peer, muted, startedAt, error, link, providers, provider, dialerOpen, number, history,
-		init, answer, decline, hangup, toggleMute, sendDigit, openDialer, closeDialer, setNumber, startCall, selectProvider,
+		init, destroy, answer, decline, hangup, toggleMute, sendDigit, openDialer, closeDialer, setNumber, startCall, selectProvider,
 	} = useCallStore();
+	// Без раздела «каналы» в тарифе сервер отвечает 403 на реквизиты и журнал звонков, поэтому звонилку не запускаем
+	const org = useActiveOrg();
+	const orgLoaded = useOrgStore((s) => s.loaded);
+	const channelsOn = orgLoaded && org?.features?.channels !== false;
 	const [, tick] = useState(0);
 	const [tab, setTab] = useState<"keys" | "recent">("keys");
 	const [dtmfOpen, setDtmfOpen] = useState(false);
 	const [sent, setSent] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	useEffect(() => { init(); }, [init]);
+	useEffect(() => { if (channelsOn) init(); else if (orgLoaded) destroy(); }, [channelsOn, orgLoaded, init, destroy]);
 	useRingtone(state === "incoming");
 
 	useEffect(() => {
