@@ -5,6 +5,7 @@ import { effectivePlan } from "@/lib/billing";
 import { oauthAvailable } from "@/lib/mail/oauth";
 import { storageConfigured } from "@/lib/storage/firebase";
 import { findDrive } from "@/lib/google";
+import { findOnedrive } from "@/lib/onedrive";
 import DocFolder from "@/models/DocFolder";
 import DocItem from "@/models/DocItem";
 import Organization from "@/models/Organization";
@@ -22,31 +23,40 @@ export async function quotaBytes(org: string): Promise<number> {
 
 export const toFolderDTO = (f: Doc): FolderDTO => ({ id: f._id.toString(), name: f.name, parent: f.parent ? f.parent.toString() : null });
 
-export const toDocDTO = (d: Doc): DocItemDTO => ({
-    id: d._id.toString(),
-    kind: d.kind,
-    name: d.name,
-    folder: d.folder ? d.folder.toString() : null,
-    archived: !!d.archived,
-    createdBy: d.createdByName,
-    url: d.url,
-    mime: d.mime,
-    size: d.size,
-    imported: !!d.imported,
-    // onDrive — документ живёт в Google (создан там или перенесён оттуда), а не в хранилище CRM:
-    // по этому признаку раздел делится на две вкладки — своё хранилище и подключённое
-    onDrive: !!d.driveId,
-    modifiedAt: ((d.modifiedAt as Date | undefined) ?? d.updatedAt ?? d.createdAt).toISOString(),
-    createdAt: d.createdAt.toISOString(),
-});
+export const toDocDTO = (d: Doc): DocItemDTO => {
+    // Внешнее хранилище документа. У записей, заведённых до появления OneDrive, поле cloud пустое,
+    // но driveId заполнен — это Google Drive, и такие документы должны попадать в свою вкладку.
+    const cloud: DocItemDTO["cloud"] = d.cloud === "onedrive" ? "onedrive" : d.driveId ? "google" : "";
+    return {
+        id: d._id.toString(),
+        kind: d.kind,
+        name: d.name,
+        folder: d.folder ? d.folder.toString() : null,
+        archived: !!d.archived,
+        createdBy: d.createdByName,
+        url: d.url,
+        mime: d.mime,
+        size: d.size,
+        imported: !!d.imported,
+        // cloud — где живёт документ: "google", "onedrive" или у нас (""). По этому признаку
+        // раздел делится на вкладки — своё хранилище и каждое подключённое
+        cloud,
+        onDrive: cloud !== "",
+        modifiedAt: ((d.modifiedAt as Date | undefined) ?? d.updatedAt ?? d.createdAt).toISOString(),
+        createdAt: d.createdAt.toISOString(),
+    };
+};
 
 export async function docsState(owner: string): Promise<DocsState> {
-    const [folders, docs, drive, quota] = await Promise.all([
+    const [folders, docs, drive, onedrive, quota] = await Promise.all([
         DocFolder.find({ owner }).sort({ name: 1 }),
         DocItem.find({ owner }).sort({ createdAt: -1 }),
         findDrive(owner),
+        findOnedrive(owner),
         quotaBytes(owner),
     ]);
+    const isGoogle = (d: Doc) => (d.cloud === "onedrive" ? false : !!d.driveId);
+    const isOnedrive = (d: Doc) => d.cloud === "onedrive";
     return {
         folders: folders.map(toFolderDTO),
         docs: docs.map(toDocDTO),
@@ -56,14 +66,20 @@ export async function docsState(owner: string): Promise<DocsState> {
             email: drive?.config?.email ?? "",
             // сколько документов ссылаются на файлы Google: при отключении аккаунта они остаются
             // в списке (файлы не удаляем), и об этом честно предупреждаем в интерфейсе
-            googleDocs: docs.filter((d) => d.driveId).length,
+            googleDocs: docs.filter(isGoogle).length,
+        },
+        onedrive: {
+            configured: oauthAvailable().microsoft,
+            connected: !!onedrive && onedrive.status === "connected",
+            email: onedrive?.config?.email ?? "",
+            docs: docs.filter(isOnedrive).length,
         },
         storage: {
             configured: storageConfigured(),
             maxMb: MAX_UPLOAD_MB, // предел одного файла
             quotaMb: Math.round(quota / 1024 / 1024), // выделено тарифом
-            // занято файлами, которые лежат у нас: документы Google и перенесённые с Диска занимают
-            // место в Google, а не в тарифе, поэтому в занятое не входят
+            // занято файлами, которые лежат у нас: документы Google и OneDrive занимают место у своих
+            // сервисов, а не в тарифе, поэтому в занятое не входят
             usedMb: Math.round(docs.reduce((sum, d) => sum + (d.kind === "file" && !d.driveId ? Number(d.size) || 0 : 0), 0) / 1024 / 1024),
         },
     };

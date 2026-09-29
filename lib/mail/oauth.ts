@@ -28,15 +28,19 @@ const CONFIG = {
 export const oauthAvailable = () => ({ google: !!(CONFIG.google.id() && CONFIG.google.secret()), microsoft: !!(CONFIG.microsoft.id() && CONFIG.microsoft.secret()) });
 export const redirectUri = (origin: string) => `${origin}/api/mail/oauth/callback`;
 
+// Права на файлы OneDrive: читать и записывать файлы пользователя плюс адрес аккаунта.
+// Отдельно от почты — согласие на файлы спрашивается только при подключении Online Documents
+export const ONEDRIVE_SCOPE = "offline_access Files.ReadWrite User.Read";
+
 // state защищает от подделки запроса: подписан, живёт 10 минут и содержит пользователя, провайдера и язык страницы
-export type OAuthPurpose = "mail" | "drive" | "ads" | "gcal";
+export type OAuthPurpose = "mail" | "drive" | "ads" | "gcal" | "onedrive";
 export function makeState(userId: string, vendor: Vendor, locale: string, purpose: OAuthPurpose = "mail") {
     return jwt.sign({ sub: userId, v: vendor, l: locale, p: purpose }, process.env.JWT_SECRET as string, { expiresIn: "10m" });
 }
 export function readState(state: string) {
     try {
         const s = jwt.verify(state, process.env.JWT_SECRET as string) as { sub: string; v: Vendor; l: string; p?: OAuthPurpose };
-        const purpose: OAuthPurpose = s.p === "drive" || s.p === "ads" || s.p === "gcal" ? s.p : "mail";
+        const purpose: OAuthPurpose = s.p === "drive" || s.p === "ads" || s.p === "gcal" || s.p === "onedrive" ? s.p : "mail";
         return CONFIG[s.v] ? { ...s, p: purpose } : null;
     } catch {
         return null;

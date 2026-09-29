@@ -16,7 +16,8 @@ import ConfirmDialog from "../shared/ConfirmDialog";
 import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tabBar";
 import SearchBox from "../shared/SearchBox";
 import CreateTiles from "./documentsParts/CreateTiles";
-import DriveBanner from "./documentsParts/DriveBanner";
+import CloudBanner from "./documentsParts/CloudBanner";
+import OnedrivePicker from "./documentsParts/OnedrivePicker";
 import VolumeLine from "./documentsParts/VolumeLine";
 import EntriesGrid from "./documentsParts/EntriesGrid";
 import EntriesTable from "./documentsParts/EntriesTable";
@@ -24,6 +25,10 @@ import MoveDialog from "./documentsParts/MoveDialog";
 import NameDialog from "./documentsParts/NameDialog";
 import { INLINE_TYPES, fmtSize } from "./documentsParts/model";
 import type { Action, GoogleKind, Layout, NameMode, StatusFilter, Target } from "./documentsParts/model";
+
+// Вкладки раздела: своё хранилище и подключённые. В каждой — только свои документы и свой объём.
+type CloudTab = "crm" | "google" | "onedrive";
+const TABS: CloudTab[] = ["crm", "google", "onedrive"];
 
 // Online Documents (/crm/collaboration/online-documents): Google Docs / Sheets / Slides создаются на Google Drive пользователя
 // (редактируются в Google в новой вкладке и сохраняются там сами), файлы и фото хранятся в Firebase Storage. Всё раскладывается по папкам.
@@ -35,12 +40,14 @@ export default function Documents() {
 	const { show: showAi, send: sendAi, status: aiStatus, loadStatus: loadAiStatus } = useAiStore();
 	useEffect(() => { if (!useAiStore.getState().status) loadAiStatus(); }, [loadAiStatus]);
 	const canAnalyzeDocs = !!aiStatus?.configured && (aiStatus.tools.some((x) => x.name === "read_document"));
-	const { state, loading, load, createFolder, patchFolder, deleteFolder, createDoc, patchDoc, deleteDoc, upload, connectDrive, importDrive, disconnectDrive } = useDocsStore();
+	const { state, loading, load, createFolder, patchFolder, deleteFolder, createDoc, patchDoc, deleteDoc, upload, connectDrive, importDrive, disconnectDrive, connectOnedrive, disconnectOnedrive } = useDocsStore();
 
-	// Две вкладки: своё хранилище CRM (загруженные файлы) и подключённый Google Диск.
-	// Файлы, живущие в Google, лежат не у нас, поэтому и объём у этих двух хранилищ разный
-	const [tab, setTab] = useState<"crm" | "drive">("crm");
+	// Вкладки раздела: своё хранилище CRM (загруженные файлы) и каждое подключённое — Google Диск, OneDrive.
+	// Файлы подключённых хранилищ лежат не у нас, поэтому и объём у них свой
+	const [tab, setTab] = useState<CloudTab>("crm");
 	const [driveQuota, setDriveQuota] = useState<{ usedBytes: number; limitBytes: number } | null>(null);
+	const [odQuota, setOdQuota] = useState<{ usedBytes: number; limitBytes: number } | null>(null);
+	const [pickerOpen, setPickerOpen] = useState(false);
 	const [layout, setLayout] = useState<Layout>("list");
 	const [status, setStatus] = useState<StatusFilter>("active");
 	const [sortAsc, setSortAsc] = useState(true);
@@ -59,12 +66,14 @@ export default function Documents() {
 	// возврат с Google после подключения Диска: ?drive=connected|denied|error
 	useEffect(() => {
 		const q = new URLSearchParams(window.location.search);
-		const result = q.get("drive");
-		if (result) {
+		const google = q.get("drive");
+		const od = q.get("onedrive");
+		if (google || od) {
 			window.history.replaceState(null, "", window.location.pathname);
-			if (result === "connected") toast.success(t("driveConnectedToast"));
-			else if (result === "denied") toast(t("driveDenied"));
-			else toast.error(t("driveError", { message: q.get("message") ?? "" }));
+			const name = od ? "OneDrive" : "Google Drive";
+			if (google === "connected" || od === "connected") toast.success(t("cloudConnectedToast", { name }));
+			else if (google === "denied" || od === "denied") toast(t("driveDenied"));
+			else toast.error(t("cloudConnectError", { name, message: q.get("message") ?? "" }));
 		}
 		load(true);
 	}, [load, t]);
@@ -92,7 +101,7 @@ export default function Documents() {
 		const mine = new Map<string, boolean>(); // в папке (или ниже) есть файлы этой вкладки
 		const any = new Map<string, boolean>(); // в папке (или ниже) есть хоть что-нибудь
 		for (const d of state?.docs ?? []) {
-			const isMine = tab === "drive" ? d.onDrive : !d.onDrive;
+			const isMine = tab === "crm" ? d.cloud === "" : d.cloud === tab;
 			let id: string | null = d.folder;
 			for (let depth = 0; id && depth < 20; depth += 1) {
 				any.set(id, true);
@@ -110,7 +119,7 @@ export default function Documents() {
 	const docs = useMemo(
 		() =>
 			(state?.docs ?? [])
-				.filter((d) => (tab === "drive" ? d.onDrive : !d.onDrive))
+				.filter((d) => (tab === "crm" ? d.cloud === "" : d.cloud === tab))
 				.filter((d) => d.folder === current && (status === "all" || (status === "archived") === d.archived))
 				.filter((d) => !q || d.name.toLowerCase().includes(q))
 				.filter((d) => !filters.kind || d.kind === filters.kind)
@@ -152,12 +161,13 @@ export default function Documents() {
 	);
 
 	const drive = state?.drive;
+	const onedrive = state?.onedrive;
 	const storage = state?.storage;
 
-	// Объём подключённого хранилища спрашиваем у Google один раз на вкладку и при смене аккаунта
+	// Объём подключённого хранилища спрашиваем у провайдера один раз на вкладку и при смене аккаунта
 	// (подключили другой — объём другого аккаунта, а не прежний)
 	useEffect(() => {
-		if (tab !== "drive" || !drive?.connected) return;
+		if (tab !== "google" || !drive?.connected) return;
 		let alive = true;
 		setDriveQuota(null);
 		void apiCall<{ connected: boolean; usedBytes?: number; limitBytes?: number }>("/api/drive/quota").then((res) => {
@@ -166,10 +176,30 @@ export default function Documents() {
 		return () => { alive = false; };
 	}, [tab, drive?.connected, drive?.email]);
 
+	useEffect(() => {
+		if (tab !== "onedrive" || !onedrive?.connected) return;
+		let alive = true;
+		setOdQuota(null);
+		void apiCall<{ connected: boolean; usedBytes?: number; limitBytes?: number }>("/api/onedrive/quota").then((res) => {
+			if (alive && res.ok && res.data?.connected) setOdQuota({ usedBytes: res.data.usedBytes ?? 0, limitBytes: res.data.limitBytes ?? 0 });
+		});
+		return () => { alive = false; };
+	}, [tab, onedrive?.connected, onedrive?.email]);
+
 	// Кнопка подключения Диска: ошибку (например, не настроены ключи Google) показываем, а не молчим
 	async function connect() {
 		const res = await connectDrive(locale);
 		if (!res.ok) toast.error(res.message);
+	}
+
+	// OneDrive: подключение, отключение и перенос выбранных файлов (выбор — в отдельном окне)
+	async function connectOd() {
+		const res = await connectOnedrive(locale);
+		if (!res.ok) toast.error(res.message);
+	}
+	async function disconnectOd() {
+		await disconnectOnedrive();
+		toast.success(t("onedriveDisconnectedToast"));
 	}
 
 	// Перенос файлов, которые уже лежат на Диске: если Диск подключён до расширения прав, сервер просит
@@ -339,7 +369,8 @@ export default function Documents() {
 	}
 
 	// у импортированных файлов размер не запрашивается — вместо «1 KB» показываем, откуда файл
-	const kindLabel = (d: DocItemDTO): string => (d.kind === "file" ? (d.imported ? t("fileFromDrive") : fmtSize(d.size)) : t(`kind_${d.kind}`));
+	const kindLabel = (d: DocItemDTO): string =>
+		d.kind === "file" ? (d.imported ? t(d.cloud === "onedrive" ? "fileFromOneDrive" : "fileFromDrive") : fmtSize(d.size)) : t(`kind_${d.kind}`);
 	const dateLabel = (iso: string) => new Date(iso).toLocaleDateString(localeTag(locale));
 	const folderActions = (f: FolderDTO): Action[] => [
 		{ label: t("open"), onClick: () => setCurrent(f.id) },
@@ -398,11 +429,11 @@ export default function Documents() {
 				</div>
 			</PageHeader>
 
-			{/* Две вкладки: что лежит у нас и что лежит в подключённом хранилище. Объём у них разный,
-			    и путать их нельзя: файлы Google занимают место в Google, а не в тарифе CRM */}
+			{/* Вкладки: что лежит у нас и что лежит в каждом подключённом хранилище. Объём у них разный,
+			    и путать их нельзя: файлы Google и OneDrive занимают место у своих сервисов, а не в тарифе CRM */}
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-12">
 				<div className="flex items-center gap-6" role="tablist" aria-label={t("document")}>
-					{(["crm", "drive"] as const).map((key) => (
+					{TABS.map((key) => (
 						<button
 							key={key}
 							type="button"
@@ -410,20 +441,41 @@ export default function Documents() {
 							aria-selected={tab === key}
 							onClick={() => setTab(key)}
 							className={`fs-btn h-34 px-16 text-13 ${tab === key ? "fs-btn-primary" : "fs-btn-ghost"}`}>
-							{key === "crm" ? t("tabCrmStorage") : t("tabDriveStorage")}
+							{key === "crm" ? t("tabCrmStorage") : key === "google" ? t("tabDriveStorage") : t("tabOnedriveStorage")}
 						</button>
 					))}
 				</div>
 				<VolumeLine
-					label={tab === "crm" ? t("storageOwn") : t("storageDrive")}
-					used={tab === "crm" ? (storage?.usedMb ?? 0) : driveQuota ? Math.round(driveQuota.usedBytes / 1024 / 1024) : null}
-					limit={tab === "crm" ? (storage?.quotaMb ?? 0) : Math.round((driveQuota?.limitBytes ?? 0) / 1024 / 1024)}
-					hint={tab === "crm" && !storage?.configured ? t("storageNotConfigured") : tab === "drive" && !drive?.connected ? t("driveNotConnected") : ""}
+					label={tab === "crm" ? t("storageOwn") : tab === "google" ? t("storageDrive") : t("storageOnedrive")}
+					used={tab === "crm" ? (storage?.usedMb ?? 0) : tab === "google" ? (driveQuota ? Math.round(driveQuota.usedBytes / 1024 / 1024) : null) : odQuota ? Math.round(odQuota.usedBytes / 1024 / 1024) : null}
+					limit={tab === "crm" ? (storage?.quotaMb ?? 0) : tab === "google" ? Math.round((driveQuota?.limitBytes ?? 0) / 1024 / 1024) : Math.round((odQuota?.limitBytes ?? 0) / 1024 / 1024)}
+					hint={
+						tab === "crm" && !storage?.configured ? t("storageNotConfigured")
+						: (tab === "google" && !drive?.connected) || (tab === "onedrive" && !onedrive?.connected) ? t("cloudNotConnected", { name: tab === "google" ? "Google Drive" : "OneDrive" })
+						: ""
+					}
 				/>
 			</div>
-			{tab === "drive" && drive && <DriveBanner drive={drive} importing={importing} googleDocs={drive.googleDocs ?? 0} onConnect={connect} onImport={startImport} onDisconnect={() => disconnectDrive()} />}
+			{tab === "google" && drive && <CloudBanner provider="google" cloud={drive} busy={importing} docs={drive.googleDocs ?? 0} onConnect={connect} onImport={startImport} onDisconnect={() => disconnectDrive()} />}
+			{tab === "onedrive" && onedrive && (
+				<CloudBanner provider="onedrive" cloud={onedrive} busy={false} docs={onedrive.docs ?? 0} onConnect={connectOd} onImport={() => (onedrive.connected ? setPickerOpen(true) : connectOd())} onDisconnect={disconnectOd} />
+			)}
 
-			<CreateTiles tab={tab} driveConnected={!!drive?.connected} storageConfigured={!!storage?.configured} fileRef={fileRef} onCreate={startCreate} onUpload={startUpload} onFiles={onFiles} />
+			{/* Плитки создания: документы Google — на вкладке Диска, загрузка файла — на вкладке хранилища.
+			    На вкладке OneDrive создавать нечего: файлы туда попадают только переносом */}
+			{tab !== "onedrive" && (
+				<CreateTiles
+					tab={tab === "crm" ? "crm" : "drive"}
+					driveConnected={!!drive?.connected}
+					storageConfigured={!!storage?.configured}
+					fileRef={fileRef}
+					onCreate={startCreate}
+					onUpload={startUpload}
+					onFiles={onFiles}
+				/>
+			)}
+
+			<OnedrivePicker open={pickerOpen} onClose={() => setPickerOpen(false)} onImported={() => void load()} />
 
 			<nav aria-label={t("breadcrumbs")} className="mt-16 flex flex-wrap items-center gap-x-8 gap-y-2 text-13">
 				<button type="button" onClick={() => setCurrent(null)} className={current === null ? "font-medium text-[#f1f4ee]" : "text-[#c6ff4d] hover:underline"}>{t("rootFolder")}</button>

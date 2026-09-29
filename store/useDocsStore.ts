@@ -19,6 +19,8 @@ interface DocsStore {
     connectDrive: (locale: string) => Promise<Result>;
     importDrive: () => Promise<ImportResult>;
     disconnectDrive: () => Promise<void>;
+    connectOnedrive: (locale: string) => Promise<Result>;
+    disconnectOnedrive: () => Promise<void>;
 }
 
 export const useDocsStore = create<DocsStore>()((set, get) => {
@@ -102,6 +104,16 @@ export const useDocsStore = create<DocsStore>()((set, get) => {
         disconnectDrive: async () => {
             await apiCall("/api/drive", "DELETE");
             patchState((s) => ({ ...s, drive: { ...s.drive, connected: false, email: "" } }));
+        },
+
+        connectOnedrive: async (locale) => {
+            const res = await apiCall<{ url: string }>("/api/onedrive/oauth", "POST", { locale });
+            if (res.ok && res.data?.url) window.location.href = res.data.url;
+            return { ok: res.ok, message: res.message };
+        },
+        disconnectOnedrive: async () => {
+            await apiCall("/api/onedrive", "DELETE");
+            patchState((s) => ({ ...s, onedrive: { ...s.onedrive, connected: false, email: "" } }));
         },
     };
 });

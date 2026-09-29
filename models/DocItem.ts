@@ -11,9 +11,11 @@ const DocItemSchema = new Schema(
         folder: { type: Schema.Types.ObjectId, ref: "DocFolder", default: null, index: true },
         archived: { type: Boolean, default: false },
         createdByName: { type: String, default: "" },
-        // Google
-        driveId: { type: String, default: "" },
-        url: { type: String, default: "" }, // ссылка «открыть в Google»
+        // Внешнее хранилище: "google" — Google Drive, "onedrive" — OneDrive, пусто — файл лежит у нас.
+        // У документов, заведённых до появления OneDrive, поле пустое, но driveId заполнен — это Google.
+        cloud: { type: String, enum: ["", "google", "onedrive"], default: "" },
+        driveId: { type: String, default: "" }, // идентификатор файла во внешнем хранилище
+        url: { type: String, default: "" }, // ссылка «открыть в Google» / «открыть в OneDrive»
         modifiedAt: { type: Date },
         // Импортированный с Диска файл: он был там до CRM, и прав на запись к нему у приложения нет —
         // CRM правит только свою запись, а не файл на Диске.
