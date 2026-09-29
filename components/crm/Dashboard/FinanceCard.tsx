@@ -25,7 +25,7 @@ export default function FinanceCard() {
 		<section className="fs-card p-16 md:p-20">
 			<header className="flex flex-wrap items-center justify-between gap-12">
 				<h2 className="shrink-0 text-14 font-semibold text-[#f1f4ee]">{t("title")}</h2>
-				<Link href={`/${locale}/crm/inventory`} className="text-12 font-semibold text-[#c6ff4d] transition-opacity hover:opacity-80">{t("details")}</Link>
+				<Link href={`/${locale}/crm/finance`} className="text-12 font-semibold text-[#c6ff4d] transition-opacity hover:opacity-80">{t("details")}</Link>
 			</header>
 			{nothingYet ? (
 				<p className="mt-14 text-13 text-[#8c948b]">{t("dashboardEmpty")}</p>

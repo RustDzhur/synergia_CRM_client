@@ -28,7 +28,7 @@ export default function DealQuotes({ dealId, customerName, contact, company }: {
 		const params = new URLSearchParams({ tab: "quotes", newFromDeal: dealId, customerName: customerName || "" });
 		if (contact) params.set("contact", contact);
 		if (company) params.set("company", company);
-		router.push(`/${locale}/crm/inventory?${params.toString()}`);
+		router.push(`/${locale}/crm/finance?${params.toString()}`);
 	}
 
 	return (

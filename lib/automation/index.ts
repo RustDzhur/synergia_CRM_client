@@ -121,10 +121,10 @@ async function clientEmail(org: string, ev: AutoEvent) {
 const LINKS: [string, string][] = [
     ["/crm/crm", "deal"],
     ["/crm/tasks", "task"],
-    ["/crm/inventory?tab=invoices", "invoice"],
-    ["/crm/inventory?tab=orders", "order"],
-    ["/crm/inventory?tab=quotes", "quote"],
-    ["/crm/inventory?tab=contracts", "contract"],
+    ["/crm/finance?tab=invoices", "invoice"],
+    ["/crm/finance?tab=orders", "order"],
+    ["/crm/finance?tab=quotes", "quote"],
+    ["/crm/finance?tab=contracts", "contract"],
 ];
 function eventLink(ev: AutoEvent) {
     const bucket = eventBucket(ev.type);

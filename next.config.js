@@ -3,6 +3,14 @@ const nextConfig = {
   images: {
     remotePatterns: [{ protocol: "https", hostname: "avataaars.io" }],
   },
+  // Раздел «Финансы» раньше жил по адресу /crm/inventory: старые закладки и ссылки в уведомлениях ведут на новый.
+  // Параметры (?tab=…) Next переносит сам. Без префикса — язык по умолчанию (de).
+  async redirects() {
+    return [
+      { source: "/crm/inventory", destination: "/crm/finance", permanent: true },
+      { source: "/:locale(ua|en|de)/crm/inventory", destination: "/:locale/crm/finance", permanent: true },
+    ];
+  },
   webpack: (config) => {
     // Шрифт документов (assets/fonts/*.ttf) кладём в бандл как data-URI: у pdfkit данные его собственной
     // гарнитуры подгружаются в рантайме через createRequire("#standard-fonts/...") относительно

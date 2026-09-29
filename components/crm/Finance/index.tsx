@@ -40,7 +40,7 @@ import FinanceSettingsTab from "./Settings";
 import Taxes from "./Taxes";
 import Reports from "./Reports";
 
-// Finance (/crm/inventory — адрес не меняли, чтобы не ломать ссылки; раздел в сайдбаре называется «Finance»): счета,
+// Finance (/crm/finance; старый адрес /crm/inventory перенаправляется в next.config.js): счета,
 // заказы, товары/склад, расходы, налоги и отчёты — бухгалтерия фирмы, встроенная в остальную CRM через движок
 // автоматизации (события order_created/order_status/invoice_sent/invoice_paid/invoice_overdue, см. lib/automation).
 

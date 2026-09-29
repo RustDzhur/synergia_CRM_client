@@ -60,7 +60,7 @@ export const menuItems: MenuItem[] = [
 	// и рядом они читались как одно и то же.
 	{ key: "company", icon: TbBuildingSkyscraper, href: "/crm/company", feature: "company", module: "company", group: "organization" },
 	{ key: "tasks_projects", icon: TbCheckbox, href: "/crm/tasks", feature: "tasks", module: "tasks", group: "operations" },
-	{ key: "inventory_management", icon: TbCoin, href: "/crm/inventory", feature: "inventory", module: "inventory", group: "operations" },
+	{ key: "inventory_management", icon: TbCoin, href: "/crm/finance", feature: "inventory", module: "inventory", group: "operations" },
 	{ key: "marketing", icon: TbSpeakerphone, href: "/crm/marketing", feature: "marketing", module: "marketing", group: "operations" },
 	{ key: "automation", icon: TbSettingsAutomation, href: "/crm/automation", feature: "automation", module: "automation", group: "operations" },
 	{ key: "upgrade_plan", icon: TbArrowUpCircle, href: "/crm/upgrade", module: "billing", group: "administration" },
