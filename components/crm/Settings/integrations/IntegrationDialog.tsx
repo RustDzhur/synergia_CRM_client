@@ -287,11 +287,13 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 								<CopyField label={t("intVerifyToken")} value={current.config.verifyToken ?? ""} />
 							</>
 						)}
-						{/* WhatsApp адрес у Meta задаётся вручную: подставляем оба значения, которые нужно вписать в кабинете */}
+						{/* WhatsApp адрес у Meta задаётся вручную: подставляем оба значения, которые нужно вписать в кабинете.
+						    Адрес и маркер общие на всю платформу — Meta разрешает приложению только один адрес вебхука,
+						    а фирму мы определяем по номеру из самого события */}
 						{current && shown === "whatsapp" && (
 							<>
 								<CopyField label={t("intCallbackUrl")} value={current.webhookUrl} />
-								<CopyField label={t("intVerifyToken")} value={current.config.verifyToken ?? ""} />
+								<CopyField label={t("intVerifyToken")} value={current.platformVerifyToken ?? ""} />
 								<p className="text-11 text-[#8c948b]">{t("intWaWebhookHelp")}</p>
 							</>
 						)}

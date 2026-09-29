@@ -2,7 +2,7 @@ import type { HydratedDocument } from "mongoose";
 import { webhookPath, packSecrets, secretsOf } from "@/lib/integrations";
 import { isPublicHttps } from "@/lib/appUrl";
 import { randomToken } from "@/lib/crypto";
-import { metaApp } from "@/lib/platformSettings";
+import { metaApp, whatsappVerifyToken } from "@/lib/platformSettings";
 import { ProviderError } from "@/lib/http";
 import Conversation from "@/models/Conversation";
 import Integration from "@/models/Integration";
@@ -15,7 +15,11 @@ import { verifyVonage } from "./vonage";
 import { connectTwilio, normalizePhone } from "./twilio";
 import { deleteWebhook, getMe, getWebhookInfo, setWebhook } from "./telegram";
 import { getAccount, removeViberWebhook, setViberWebhook } from "./viber";
-import { discoverWhatsAppNumbers, exchangeWhatsAppCode, getPhoneNumber, longLivedWhatsAppToken, setWhatsAppAppWebhook, subscribeApp, whatsappOauthUrl } from "./whatsapp";
+import { appSubscriptions, discoverWhatsAppNumbers, exchangeWhatsAppCode, getPhoneNumber, longLivedWhatsAppToken, setWhatsAppAppWebhook, subscribeApp, whatsappOauthUrl } from "./whatsapp";
+
+// Общий адрес вебхука WhatsApp на всю платформу: Meta разрешает только один адрес на приложение,
+// поэтому фирма определяется по номеру из события (см. app/api/webhooks/whatsapp/app)
+const PLATFORM_WA_WEBHOOK = "/api/webhooks/whatsapp/app";
 
 type Doc = HydratedDocument<any>;
 type Input = Record<string, unknown>;
@@ -174,10 +178,12 @@ export async function connectMetaChoice(owner: string, kind: MetaKind, id: strin
     const warnings: string[] = [];
     const subscribed = await subscribeApp(wabaId, token).then(() => "").catch((e) => (e instanceof ProviderError ? e.message : "Could not subscribe the app to the WhatsApp Business account"));
     if (subscribed) warnings.push(subscribed);
-    const webhook = await setWhatsAppAppWebhook(appId, appSecret, `${origin}${webhookPath("whatsapp", String(doc.token))}`, verifyToken)
+    // Вебхук у приложения один на платформу, поэтому ставим общий адрес: он сам разбирает, какой фирме
+    // адресовано событие (по номеру телефона, см. app/api/webhooks/whatsapp/app)
+    const webhook = await setWhatsAppAppWebhook(appId, appSecret, `${origin}${PLATFORM_WA_WEBHOOK}`, await whatsappVerifyToken())
         .then(() => "")
         .catch((e) => (e instanceof ProviderError ? e.message : "Could not register the webhook in Meta"));
-    if (webhook) warnings.push(`${webhook} — впишите адрес вебхука и маркер подтверждения из этого окна в Meta вручную`);
+    if (webhook) warnings.push(`${webhook} — впишите в Meta адрес ${origin}${PLATFORM_WA_WEBHOOK} и маркер подтверждения ${await whatsappVerifyToken()} вручную`);
 
     await doc.save();
     return { name, ...(warnings.length ? { warning: warnings.join("; ") } : {}) };
@@ -403,12 +409,35 @@ export async function checkIntegration(doc: Doc, origin: string) {
 // Не чаще раза в минуту на канал, чтобы не бить по провайдерам при повторной ошибке.
 export async function healWebhooks(owner: string, origin: string) {
     if (!isPublicHttps(origin)) return;
-    const docs = await Integration.find({ owner, type: { $in: ["telegram", "viber"] } });
+    const docs = await Integration.find({ owner, type: { $in: ["telegram", "viber", "whatsapp"] } });
     for (const d of docs) {
+        if (d.type === "whatsapp") {
+            await ensureWhatsAppWebhook(d, origin).catch(() => undefined);
+            continue;
+        }
         const stale = d.status === "error" || (d.type === "telegram" && d.config.polling === "1") || d.config.webhookOrigin !== origin;
         const recent = Date.now() - ((d as { updatedAt?: Date }).updatedAt?.getTime() ?? 0) < 60_000;
         if (stale && !recent) await reRegisterWebhook(d, origin).catch(() => undefined);
     }
+}
+
+// Адрес вебхука WhatsApp один на всё приложение Meta: его мог переписать другой кабинет (или он
+// остался от прежней установки), и тогда события уходят не к нам — сообщения просто не приходят.
+// Проверяем и при необходимости ставим свой адрес; чаще раза в 15 минут к Meta не ходим.
+const WA_WEBHOOK_CHECK_MS = 15 * 60 * 1000;
+async function ensureWhatsAppWebhook(doc: Doc, origin: string) {
+    const appId = String(doc.config?.appId ?? "");
+    const appSecret = String(secretsOf(doc).appSecret ?? "");
+    if (!appId || !appSecret) return;
+    const checkedAt = Number(doc.config?.webhookCheckedAt ?? 0);
+    if (Date.now() - checkedAt < WA_WEBHOOK_CHECK_MS) return;
+    const url = `${origin}${PLATFORM_WA_WEBHOOK}`;
+    const subs = await appSubscriptions(appId, appSecret).catch(() => []);
+    const fine = subs.some((s) => s.callback_url === url && s.active !== false);
+    if (!fine) await setWhatsAppAppWebhook(appId, appSecret, url, await whatsappVerifyToken());
+    doc.set("config", { ...doc.config, webhookCheckedAt: Date.now() });
+    doc.markModified("config");
+    await doc.save();
 }
 
 export async function reRegisterWebhook(doc: Doc, origin: string) {

@@ -1,4 +1,4 @@
-import { decryptJSON, encryptJSON } from "@/lib/crypto";
+import { decryptJSON, encryptJSON, randomToken } from "@/lib/crypto";
 import { connectDB } from "@/lib/mongodb";
 import PlatformSettings from "@/models/PlatformSettings";
 
@@ -37,6 +37,23 @@ export async function setErrorBot(botToken: string, chatId: string): Promise<voi
         { $set: { value: chatId.trim(), ...(botToken.trim() ? { secrets: encryptJSON({ botToken: botToken.trim() }) } : {}) } },
         { upsert: true }
     );
+}
+
+// ── Вебхук WhatsApp ───────────────────────────────────────────────────────────────────────────────────
+// Адрес вебхука у приложения Meta один на всю платформу, поэтому и маркер подтверждения общий:
+// его вписывают в Meta один раз, в поле проверки адреса.
+
+const WA_KEY = "whatsappWebhook";
+
+export async function whatsappVerifyToken(): Promise<string> {
+    const fromEnv = process.env.WHATSAPP_VERIFY_TOKEN ?? "";
+    if (fromEnv) return fromEnv;
+    const doc = await connectDB().then(() => PlatformSettings.findOne({ key: WA_KEY })).catch(() => null);
+    if (doc?.value) return String(doc.value);
+    // маркер создаётся сам при первом обращении, чтобы его не приходилось придумывать вручную
+    const token = randomToken(8);
+    await PlatformSettings.updateOne({ key: WA_KEY }, { $set: { value: token } }, { upsert: true });
+    return token;
 }
 
 export interface MetaApp { appId: string; appSecret: string }

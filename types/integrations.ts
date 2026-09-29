@@ -13,6 +13,8 @@ export interface IntegrationDTO {
     config: Record<string, string>;
     // адреса, которые нужно указать у провайдера вручную (если он не настраивается автоматически)
     webhookUrl: string;
+    // у WhatsApp адрес вебхука один на платформу: маркер подтверждения тоже общий (см. lib/platformSettings)
+    platformVerifyToken?: string;
     createdAt: string;
 }
 

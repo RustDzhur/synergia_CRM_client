@@ -12,6 +12,9 @@ export function webhookPath(type: IntegrationType, token: string) {
 }
 
 export function toIntegrationDTO(doc: Doc, origin: string): IntegrationDTO {
+    // У WhatsApp адрес вебхука один на всё приложение Meta (фирма определяется по номеру из события),
+    // поэтому в окне показываем именно его, а не адрес с маркером этой фирмы
+    const url = doc.type === "whatsapp" ? `${origin}/api/webhooks/whatsapp/app` : `${origin}${webhookPath(doc.type, doc.token)}`;
     return {
         id: doc._id.toString(),
         type: doc.type,
@@ -19,7 +22,7 @@ export function toIntegrationDTO(doc: Doc, origin: string): IntegrationDTO {
         status: doc.status,
         error: doc.error,
         config: doc.config ?? {},
-        webhookUrl: `${origin}${webhookPath(doc.type, doc.token)}`,
+        webhookUrl: url,
         createdAt: doc.createdAt?.toISOString?.() ?? "",
     };
 }

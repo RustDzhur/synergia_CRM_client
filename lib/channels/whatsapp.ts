@@ -145,6 +145,8 @@ interface WaMessage {
 interface WaChange {
     field?: string;
     value?: {
+        // номер, которому адресовано событие: по нему находится фирма (адрес вебхука один на приложение)
+        metadata?: { phone_number_id?: string; display_phone_number?: string };
         contacts?: { wa_id?: string; profile?: { name?: string } }[];
         messages?: WaMessage[];
         statuses?: { id?: string; status?: string; errors?: { title?: string; message?: string }[] }[];
@@ -176,30 +178,54 @@ function incomingText(m: WaMessage) {
 }
 
 // События вебхука: входящие сообщения и отчёты о доставке наших сообщений (Meta присылает и то, и другое сюда)
-export function parseWhatsAppWebhook(body: { object?: string; entry?: WaChange extends never ? never : { changes?: WaChange[] }[] }) {
-    const messages: { externalId: string; name: string; text: string; messageId?: string }[] = [];
-    const statuses: { id: string; status: string; error: string }[] = [];
-    if (body.object !== "whatsapp_business_account") return { messages, statuses };
+export interface WaIncoming { externalId: string; name?: string; text: string; messageId?: string }
+export interface WaStatus { id: string; status: string; error: string }
+
+/** События вебхука, разложенные по номеру, которому они адресованы: Meta кладёт phone_number_id
+ *  в каждое изменение, и по нему находится фирма — это надёжнее адреса вебхука, который один на приложение. */
+export function parseWhatsAppWebhookByNumber(body: WaBody) {
+    const out = new Map<string, { messages: WaIncoming[]; statuses: WaStatus[] }>();
+    if (body.object !== "whatsapp_business_account") return out;
     for (const entry of body.entry ?? []) {
         for (const change of entry.changes ?? []) {
             if (change.field !== "messages" || !change.value) continue;
             const value = change.value;
+            const phoneNumberId = String(value.metadata?.phone_number_id ?? "");
+            const group = out.get(phoneNumberId) ?? { messages: [], statuses: [] };
             // имя собеседника Meta присылает один раз, в том же событии, где пришло сообщение
             const names = new Map((value.contacts ?? []).map((c) => [c.wa_id ?? "", c.profile?.name ?? ""]));
             for (const m of value.messages ?? []) {
                 if (!m.from) continue;
-                messages.push({
-                    externalId: m.from,
-                    name: names.get(m.from) || m.from,
-                    text: incomingText(m),
-                    messageId: m.id,
-                });
+                group.messages.push({ externalId: m.from, name: names.get(m.from) || m.from, text: incomingText(m), messageId: m.id });
             }
-            for (const s of value.statuses ?? []) {
-                if (!s.id) continue;
-                statuses.push({ id: s.id, status: s.status ?? "", error: s.errors?.[0]?.title ?? s.errors?.[0]?.message ?? "" });
+            for (const st of value.statuses ?? []) {
+                if (!st.id) continue;
+                group.statuses.push({ id: st.id, status: st.status ?? "", error: st.errors?.[0]?.title ?? st.errors?.[0]?.message ?? "" });
             }
+            out.set(phoneNumberId, group);
         }
     }
+    return out;
+}
+
+type WaBody = { object?: string; entry?: { changes?: WaChange[] }[] };
+
+export function parseWhatsAppWebhook(body: WaBody) {
+    const messages: WaIncoming[] = [];
+    const statuses: WaStatus[] = [];
+    parseWhatsAppWebhookByNumber(body).forEach((group) => {
+        messages.push(...group.messages);
+        statuses.push(...group.statuses);
+    });
     return { messages, statuses };
+}
+
+/** Куда приложение Meta сейчас шлёт события WhatsApp: адрес один на приложение, поэтому его мог
+ *  переписать другой кабинет — по этому списку видно, наш там адрес или чужой. */
+export async function appSubscriptions(appId: string, appSecret: string) {
+    const token = `${appId}|${appSecret}`;
+    const res = await graphRaw<{ data?: { object?: string; callback_url?: string; active?: boolean }[] }>(
+        `/${appId}/subscriptions?access_token=${encodeURIComponent(token)}`
+    );
+    return (res.data ?? []).filter((s) => s.object === "whatsapp_business_account");
 }

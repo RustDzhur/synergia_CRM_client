@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { toIntegrationDTO } from "@/lib/integrations";
+import { whatsappVerifyToken } from "@/lib/platformSettings";
 import { connectIntegration, connectMetaChoice, healWebhooks } from "@/lib/channels/connect";
 import Integration from "@/models/Integration";
 
@@ -17,7 +18,11 @@ export async function GET(req: Request) {
     await healWebhooks(user.id, appOrigin(req)).catch(() => undefined);
     const list = await Integration.find({ owner: user.id, type: { $nin: ["mail", "gdrive", "gcal", "ads", "icloud"] } }).sort({ createdAt: 1 });
     const origin = appOrigin(req);
-    return NextResponse.json(list.map((d) => toIntegrationDTO(d, origin)));
+    // WhatsApp настраивается в Meta вручную: отдаём общий маркер подтверждения, чтобы его было
+    // откуда скопировать в кабинет Meta
+    const whatsapp = list.some((d) => d.type === "whatsapp");
+    const verifyToken = whatsapp ? await whatsappVerifyToken() : "";
+    return NextResponse.json(list.map((d) => ({ ...toIntegrationDTO(d, origin), ...(d.type === "whatsapp" ? { platformVerifyToken: verifyToken } : {}) })));
 }
 
 // POST /api/integrations — { type: "telegram" | "viber" | "messenger" | "twilio" | "webchat", ...реквизиты }
