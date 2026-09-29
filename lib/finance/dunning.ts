@@ -3,6 +3,7 @@ import { financeSettings } from "./settings";
 import { emit } from "@/lib/automation/emit";
 import { logAudit } from "@/lib/audit";
 import { computeTotals } from "./totals";
+import { type DunningMail, emailDunning } from "./dunningMail";
 
 // Манаведение (Mahnwesen): ступени напоминаний по просроченному счёту.
 // Ступень повышается вручную или автоматическим обходом (lib/finance/reminders.ts), каждая ступень
@@ -69,8 +70,8 @@ export async function dunningState(org: string, inv: any, today = new Date()): P
 }
 
 // Отправка напоминания: поднимает ступень, начисляет сбор, пишет историю и отдаёт событие автоматизации
-// (правило фирмы на invoice_reminder решает, каким письмом это уйдёт клиенту).
-export async function sendDunning(org: string, invoiceId: string, byName: string): Promise<{ ok: true; level: number; fee: number } | { ok: false; message: string }> {
+// и отправляет клиенту письмо с PDF счёта из ящика фирмы (если у фирмы нет своего правила «письмо» на invoice_reminder).
+export async function sendDunning(org: string, invoiceId: string, byName: string, locale?: string): Promise<{ ok: true; level: number; fee: number; mail: DunningMail; to?: string } | { ok: false; message: string }> {
     const inv = await Invoice.findOne({ _id: invoiceId, org });
     if (!inv) return { ok: false, message: "Invoice not found" };
     if (inv.kind !== "invoice") return { ok: false, message: "Only invoices can be reminded" };
@@ -104,5 +105,6 @@ export async function sendDunning(org: string, invoiceId: string, byName: string
         org, userName: byName || "—", action: "invoice.dunning_sent", entityType: "invoice", entityId: String(inv._id),
         summary: `Reminder level ${level} sent for invoice ${inv.number}${fee ? ` (fee ${fee})` : ""}`,
     });
-    return { ok: true, level, fee };
+    const mail = await emailDunning(org, invoiceId, level, state.paymentDueDate, locale);
+    return { ok: true, level, fee, mail: mail.status, to: mail.to };
 }

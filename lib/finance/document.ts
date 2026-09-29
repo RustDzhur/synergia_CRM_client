@@ -87,7 +87,7 @@ export async function invoicePdfBuffer(org: string, inv: any, locale: string, te
             // Ступень манаведения и начисленный сбор попадают и в заголовок документа, и в сумму к оплате
             dunningLevel: Number(inv.dunningLevel) || 0,
             dunningFee: Number(inv.dunningFee) || 0,
-            dunningNewDue: Number(inv.dunningLevel) > 0 ? new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10) : undefined,
+            dunningNewDue: Number(inv.dunningLevel) > 0 ? (inv.dunningLog?.length ? String(inv.dunningLog[inv.dunningLog.length - 1].dueDate || "") : "") || new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10) : undefined,
             notes: inv.notes,
             template: template ?? pdfTemplate(inv.template),
         },

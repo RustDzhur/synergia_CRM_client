@@ -8,7 +8,7 @@ import User from "@/models/User";
 export const dynamic = "force-dynamic";
 
 // POST /api/invoices/:id/remind — отправить напоминание об оплате: поднять ступень манаведения,
-// начислить сбор за неё и отдать событие automation (правило фирмы шлёт клиенту письмо).
+// начислить сбор за неё, отдать событие automation и отправить клиенту письмо с PDF счёта из ящика фирмы.
 // Изменение данных — только владелец/администратор (модуль inventory проверяется в requireUser).
 export async function POST(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
@@ -18,7 +18,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const author = await User.findById(user.userId).select("firstname lastname");
     const name = author ? `${author.firstname} ${author.lastname}`.trim() : "";
 
-    const result = await sendDunning(user.id, params.id, name);
+    const b = (await req.json().catch(() => null)) as { locale?: unknown } | null;
+    const result = await sendDunning(user.id, params.id, name, typeof b?.locale === "string" ? b.locale : undefined);
     if (!result.ok) return badRequest(result.message);
-    return NextResponse.json({ ok: true, level: result.level, fee: result.fee });
+    return NextResponse.json({ ok: true, level: result.level, fee: result.fee, mail: result.mail, to: result.to });
 }

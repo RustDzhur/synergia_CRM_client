@@ -3,11 +3,12 @@ import { financeSettings } from "./settings";
 import { emit } from "@/lib/automation/emit";
 import { logAudit } from "@/lib/audit";
 import { feeForLevel, round2 } from "./dunning";
+import { emailDunning } from "./dunningMail";
 
 // Автоматический обход напоминаний: раз в reminderIntervalDays (настройка фирмы, по умолчанию 7 дней)
 // от последнего напоминания — или от даты просрочки, если их ещё не было — поднимает ступень
-// манаведения, начисляет сбор за неё и отдаёт событие invoice_reminder. Само письмо клиенту шлёт
-// правило автоматизации фирмы на это событие: система не решает за неё, что писать клиенту.
+// манаведения, начисляет сбор за неё и отдаёт событие invoice_reminder. Письмо клиенту уходит из ящика фирмы
+// (если у фирмы нет своего правила «письмо» на это событие — тогда его шлёт правило).
 //
 // Ступени выше 4 (letzte Mahnung) автоматически не поднимаются: дальше начинается правовая стадия,
 // и решение о ней принимает человек.
@@ -46,6 +47,7 @@ export async function sweepPaymentReminders() {
             }
         );
         await emit(org, { type: "invoice_reminder", data: { id: String(inv._id), number: inv.number, customerName: inv.customerName, level: String(nextLevel), fee: fee ? String(fee) : "" } });
+        await emailDunning(org, String(inv._id), nextLevel, due);
         await logAudit({
             org, userName: "Automation", action: "invoice.reminder_sent", entityType: "invoice", entityId: String(inv._id),
             summary: `Payment reminder level ${nextLevel} sent for invoice ${inv.number} (${inv.customerName})${fee ? ` (fee ${fee})` : ""}`,

@@ -70,11 +70,15 @@ export default function Dunning() {
 	async function remind(inv: Invoice) {
 		setBusy(inv.id);
 		setNotice(null);
-		const r = await apiCall<{ ok: boolean; level: number; fee: number }>(`/api/invoices/${inv.id}/remind`, "POST", {});
+		const r = await apiCall<{ ok: boolean; level: number; fee: number; mail: string; to?: string }>(`/api/invoices/${inv.id}/remind`, "POST", { locale });
 		setBusy(null);
 		if (r.ok && r.data) {
 			await loadInvoices(); // ступень и сбор уже в базе — список перечитываем, а не правим на месте
-			toast.success(t("dunningSent", { level: t(`level_${Math.min(4, r.data.level)}`) }));
+			const level = t(`level_${Math.min(4, r.data.level)}`);
+			const { mail, to } = r.data;
+			if (mail === "sent") toast.success(t("dunningSentMail", { level, to: to ?? "" }));
+			else if (mail === "by_rule") toast.success(t("dunningSent", { level }));
+			else toast(t(mail === "no_recipient" ? "dunningMailNoRecipient" : mail === "no_mailbox" ? "dunningMailNoMailbox" : "dunningMailFailed", { level }), { duration: 7000 });
 			return;
 		}
 		// Отказ сервера (400) — это объяснение, а не поломка: показываем спокойной строкой под строкой счёта,
