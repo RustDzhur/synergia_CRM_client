@@ -23,6 +23,13 @@ const OrganizationSchema = new Schema(
         // разделы сверх тарифа: администратор платформы включает их вручную (ключи из app/config/plans.ts)
         featureOverrides: { type: Schema.Types.Mixed, default: {} },
         blocked: { type: Boolean, default: false }, // фирму заблокировал администратор платформы
+        // Бот фирмы для рабочих уведомлений (посетитель написал, оставил контакт, пришло письмо).
+        // Свой у каждой фирмы: уведомления о клиентах одной фирмы не должны попадать в чат другой
+        // или владельцу платформы. Токен хранится зашифрованным (lib/crypto.ts), как и прочие секреты.
+        notify: {
+            botToken: { type: String, default: "" },
+            chatId: { type: String, default: "" },
+        },
     },
     { timestamps: true }
 );

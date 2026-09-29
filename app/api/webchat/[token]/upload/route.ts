@@ -44,6 +44,6 @@ export async function POST(req: Request, { params }: { params: { token: string }
     const conversation = await Conversation.findOne({ integration: integration._id, externalId: visitor });
     const name = conversation?.name || `Visitor ${String(visitor).slice(-4)}`;
     const { message } = await recordMessage(integration, { externalId: String(visitor), name, text: "", attachment: saved });
-    void notifyTeamTelegram(["📎 Посетитель прислал файл в чате на сайте", `От: ${name}`, `Файл: ${saved.name}`, `Вид: ${mediaLabel(saved) || "файл"}`].join("\n"));
+    void notifyTeamTelegram(owner, ["📎 Посетитель прислал файл в чате на сайте", `От: ${name}`, `Файл: ${saved.name}`, `Вид: ${mediaLabel(saved) || "файл"}`].join("\n"));
     return corsJson({ message: message ? toMessageDTO(message) : null }, 201);
 }

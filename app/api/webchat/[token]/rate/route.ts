@@ -38,7 +38,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
     if (rating === "down") {
         // вопрос, на который бот ответил плохо: без него непонятно, какую тему дописывать
         const question = await Message.findOne({ conversation: conversation._id, direction: "in", createdAt: { $lt: message.createdAt } }).sort({ createdAt: -1 });
-        void notifyTeamTelegram(
+        void notifyTeamTelegram(String(integration.owner), 
             [
                 "👎 Ответ бота не помог посетителю",
                 `Вопрос: ${String(question?.text ?? "").slice(0, 200)}`,

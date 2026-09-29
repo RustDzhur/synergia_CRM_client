@@ -8,7 +8,7 @@ import { inputClass } from "./model";
 // Бот платформы в Telegram: отчёты об ошибках (kind="error") или рабочие уведомления (kind="notify").
 // Пишем боту любое сообщение, нажимаем «Найти чат» — числовой id искать не нужно, а после сохранения
 // уходит проверочное сообщение тем же путём, что и настоящие.
-export default function BotCard({ kind = "error" }: { kind?: "error" | "notify" }) {
+export default function ErrorsCard() {
 	const t = useTranslations("admin");
 	const [errToken, setErrToken] = useState("");
 	const [errChat, setErrChat] = useState("");
@@ -18,17 +18,17 @@ export default function BotCard({ kind = "error" }: { kind?: "error" | "notify" 
 	const [errBusy, setErrBusy] = useState(false);
 
 	const loadErrors = useCallback(async () => {
-		const res = await apiCall<{ hasToken: boolean; chatId: string; fromEnv: boolean }>(`/api/admin/settings/errors?kind=${kind}`);
+		const res = await apiCall<{ hasToken: boolean; chatId: string; fromEnv: boolean }>("/api/admin/settings/errors");
 		if (!res.data) return;
 		setErrHasToken(res.data.hasToken);
 		setErrChat(res.data.chatId);
 		setErrFromEnv(res.data.fromEnv);
-	}, [kind]);
+	}, []);
 	useEffect(() => { void loadErrors(); }, [loadErrors]);
 
 	async function findErrorChat() {
 		setErrBusy(true);
-		const res = await apiCall<{ chatId: string; name: string }>("/api/admin/settings/errors", "POST", { action: "find-chat", botToken: errToken.trim(), kind });
+		const res = await apiCall<{ chatId: string; name: string }>("/api/admin/settings/errors", "POST", { action: "find-chat", botToken: errToken.trim() });
 		setErrBusy(false);
 		if (!res.ok || !res.data) return void toast.error(res.message);
 		setErrChat(res.data.chatId);
@@ -38,7 +38,7 @@ export default function BotCard({ kind = "error" }: { kind?: "error" | "notify" 
 
 	async function saveErrors() {
 		setErrBusy(true);
-		const res = await apiCall("/api/admin/settings/errors", "POST", { action: "save", botToken: errToken.trim(), chatId: errChat, kind });
+		const res = await apiCall("/api/admin/settings/errors", "POST", { action: "save", botToken: errToken.trim(), chatId: errChat });
 		setErrBusy(false);
 		if (!res.ok) return void toast.error(res.message);
 		setErrToken("");
@@ -49,7 +49,7 @@ export default function BotCard({ kind = "error" }: { kind?: "error" | "notify" 
 	// Проверка отчётов: сообщение уходит тем же путём, что и настоящие — иначе непонятно, работает ли настройка
 	async function testErrors() {
 		setErrBusy(true);
-		const res = await apiCall("/api/admin/settings/errors", "POST", { action: "test", kind });
+		const res = await apiCall("/api/admin/settings/errors", "POST", { action: "test" });
 		setErrBusy(false);
 		if (!res.ok) return void toast.error(res.message);
 		toast.success(t("errSent"));
@@ -58,7 +58,7 @@ export default function BotCard({ kind = "error" }: { kind?: "error" | "notify" 
 	return (
 		<div className="fs-card mb-24 p-16">
 			<div className="flex flex-wrap items-center justify-between gap-12">
-				<div><p className="text-14 font-medium text-[#f1f4ee]">{kind === "notify" ? t("notifyTitle") : t("errTitle")}</p><p className="text-12 text-[#8c948b]">{kind === "notify" ? t("notifyHelp") : t("errHelp")}</p></div>
+				<div><p className="text-14 font-medium text-[#f1f4ee]">{t("errTitle")}</p><p className="text-12 text-[#8c948b]">{t("errHelp")}</p></div>
 				<div className="flex items-center gap-10">
 					{errFromEnv && <span className="fs-chip h-24 px-10 text-10">{t("metaFromEnv")}</span>}
 					{/* Проверка нужна в обоих случаях: значения могли задать давно, и надо видеть, что они рабочие */}

@@ -44,7 +44,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
         { $push: { activities: { type: "note", text: `Контакт оставлен в чате на сайте${conversation.lastText ? `: ${conversation.lastText}` : ""}` } } }
     ).catch(() => undefined);
 
-    void notifyTeamTelegram(
+    void notifyTeamTelegram(owner, 
         [
             "📇 Посетитель оставил контакт в чате на сайте",
             `Имя: ${name}`,

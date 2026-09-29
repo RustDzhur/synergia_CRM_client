@@ -65,7 +65,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
     // Команде — в Telegram (в CRM уведомление создаётся само, при записи сообщения). Пишем в двух случаях:
     // первое сообщение посетителя и вопрос, на который у бота нет ответа, — то есть когда нужен человек
     if (first || !hit) {
-        void notifyTeamTelegram(
+        void notifyTeamTelegram(String(integration.owner), 
             [
                 first ? "💬 Новое обращение в чат на сайте" : "💬 Вопрос без готового ответа (нужен человек)",
                 `От: ${name}`,

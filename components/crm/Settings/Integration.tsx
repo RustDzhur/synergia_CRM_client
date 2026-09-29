@@ -12,6 +12,7 @@ import type { IntegrationType } from "@/types/integrations";
 import PageHeader from "@/components/crm/shared/PageHeader";
 import IntegrationDialog from "./integrations/IntegrationDialog";
 import SettingsTabs from "./SettingsTabs";
+import NotifyBotCard from "./NotifyBotCard";
 
 interface Integration {
 	id: string;
@@ -91,6 +92,8 @@ export default function IntegrationSettings() {
 	return (
 		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
 			<PageHeader />
+			{/* Бот уведомлений — над плитками каналов: это про то, куда приходят сообщения о клиентах */}
+			<NotifyBotCard />
 			<div className="flex flex-col gap-20 lg:flex-row">
 				<SettingsTabs className="shrink-0 md:self-start" />
 				<ul className="grid min-w-0 flex-1 grid-cols-2 gap-12 md:gap-16 lg:grid-cols-3 lg:gap-16">

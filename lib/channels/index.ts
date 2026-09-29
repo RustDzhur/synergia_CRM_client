@@ -164,7 +164,7 @@ export async function recordMessage(integration: Doc, input: MessageInput) {
             // (там есть страница и признак «вопрос без ответа»), поэтому здесь его пропускаем — иначе
             // на одно сообщение приходило бы два. Бот для этих уведомлений — свой, не бот ошибок.
             if (channel !== "webchat") {
-                void notifyTeamTelegram([
+                void notifyTeamTelegram(owner, [
                     `💬 Новое сообщение — ${CHANNEL_LABELS[channel] ?? channel}`,
                     `От: ${conversation.name || input.externalId}`,
                     preview ? `Текст: ${preview.slice(0, 300)}` : "",

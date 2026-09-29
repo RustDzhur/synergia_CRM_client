@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/admin";
 import { badRequest, serverError } from "@/lib/api";
 import { getUpdates, sendTelegram } from "@/lib/channels/telegram";
-import { type BotKind, botConfiguredFromEnv, setTelegramBot, telegramBot } from "@/lib/platformSettings";
-import { notifyTeamTelegram } from "@/lib/notifyTeam";
+import { errorBot, setErrorBot } from "@/lib/platformSettings";
 import { reportError } from "@/lib/reportError";
 
 export const dynamic = "force-dynamic";
@@ -15,24 +14,18 @@ export const dynamic = "force-dynamic";
 // Вид бота приходит в параметре kind; по умолчанию — бот ошибок.
 // Только для администратора платформы.
 
-const kindOf = (value: unknown): BotKind => (value === "notify" ? "notify" : "error");
-// Проверочное сообщение: у каждого бота своя подпись, чтобы в чате было понятно, что именно проверяли
-const testText = (kind: BotKind) =>
-    kind === "notify"
-        ? `🟢 Проверка уведомлений: бот на связи, рабочие уведомления настроены.\n\nвремя: ${new Date().toISOString()}`
-        : `🔴 Проверка отчётов: бот на связи, отчёты об ошибках настроены.\n\nвремя: ${new Date().toISOString()}`;
+const testText = () => `🔴 Проверка отчётов: бот на связи, отчёты об ошибках настроены.\n\nвремя: ${new Date().toISOString()}`;
 
 export async function GET(req: Request) {
     const admin = await requirePlatformAdmin(req);
     if (!admin) return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-    const kind = kindOf(new URL(req.url).searchParams.get("kind"));
     try {
-        const bot = await telegramBot(kind);
+        const bot = await errorBot();
         return NextResponse.json({
             hasToken: !!bot.botToken,
             chatId: bot.chatId,
             // из переменных окружения значения берутся, только пока в кабинете ничего не сохранено
-            fromEnv: botConfiguredFromEnv(kind) && !bot.chatId,
+            fromEnv: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_ERROR_CHAT_ID) && !bot.chatId,
         });
     } catch (e) {
         return serverError(e);
@@ -44,19 +37,18 @@ export async function POST(req: Request) {
     if (!admin) return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const action = String(b.action ?? "");
-    const kind = kindOf(b.kind);
     const botToken = String(b.botToken ?? "").trim();
     const chatId = String(b.chatId ?? "").trim();
     try {
         // «проверить»: сообщение уходит тем же путём, что и настоящие. Текст со временем — чтобы проверку
         // можно было повторять: одинаковые сообщения придерживаются (lib/reportError.ts).
         if (action === "test") {
-            const bot = await telegramBot(kind);
+            const bot = await errorBot();
             if (!bot.botToken || !bot.chatId) return badRequest("Бот не настроен");
             // Отправляем напрямую и про саму отправку сообщаем как есть: рабочие пути глотают сбой
             // (они не должны ломать запрос), поэтому «отправлено» на слово было бы неправдой
             try {
-                await sendTelegram(bot.botToken, bot.chatId, testText(kind));
+                await sendTelegram(bot.botToken, bot.chatId, testText());
             } catch (e) {
                 return badRequest(`Telegram отказал: ${e instanceof Error ? e.message : "неизвестная ошибка"}`);
             }
@@ -65,7 +57,7 @@ export async function POST(req: Request) {
 
         // «найти чат»: забираем последнее сообщение, отправленное боту, и запоминаем, откуда оно
         if (action === "find-chat") {
-            const current = await telegramBot(kind);
+            const current = await errorBot();
             const token = botToken || current.botToken;
             if (!token) return badRequest("Сначала вставьте токен бота от @BotFather");
             const updates = await getUpdates(token, 0);
@@ -80,10 +72,9 @@ export async function POST(req: Request) {
 
         if (action === "save") {
             if (!chatId) return badRequest("Не найден чат: напишите боту сообщение и нажмите «Найти чат»");
-            await setTelegramBot(kind, botToken, chatId);
+            await setErrorBot(botToken, chatId);
             // Проверочное сообщение уходит тем же путём, что и настоящие: иначе непонятно, работает ли настройка
-            if (kind === "notify") await notifyTeamTelegram(testText("notify"));
-            else await reportError(new Error("Проверка отчётов: бот на связи, отчёты об ошибках настроены."), { where: "проверка" });
+            await reportError(new Error("Проверка отчётов: бот на связи, отчёты об ошибках настроены."), { where: "проверка" });
             return NextResponse.json({ ok: true });
         }
 

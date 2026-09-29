@@ -1,16 +1,16 @@
 import { sendTelegram } from "@/lib/channels/telegram";
-import { errorBot, notifyBot } from "@/lib/platformSettings";
+import { firmNotifyBot } from "@/lib/firmNotify";
 
-// Уведомление команде в Telegram: посетитель написал в чат на сайте, оставил контакт, прислал файл,
-// поставил оценку — и то же самое для Viber, Telegram, WhatsApp, SMS и почты (см. lib/channels).
+// Уведомление команде в Telegram о входящем: посетитель написал в чат на сайте, оставил контакт,
+// прислал файл, поставил оценку — и то же самое для Viber, Telegram, WhatsApp, SMS и почты.
 //
-// Идёт отдельному боту уведомлений: у ошибок свой бот, и смешивать их нельзя — в чате с ошибками
-// рабочие сообщения теряются, а в рабочем чате шумят падения. Пока второй бот не настроен,
-// уведомления идут боту ошибок — так ничего не пропадёт до настройки.
-export async function notifyTeamTelegram(text: string): Promise<void> {
+// Бот у каждой фирмы СВОЙ (Настройки → Интеграции → «Уведомления команде»): уведомления о клиентах
+// одной фирмы не должны попадать ни другой фирме, ни владельцу платформы. Если фирма бота не
+// настроила — молча выходим: уведомление всё равно создано в кабинете (lib/notify.ts), а чужой бот
+// здесь не годится как запасной. Сбой отправки не должен ломать приём сообщения.
+export async function notifyTeamTelegram(org: string, text: string): Promise<void> {
     try {
-        let bot = await notifyBot();
-        if (!bot.botToken || !bot.chatId) bot = await errorBot();
+        const bot = await firmNotifyBot(org);
         if (!bot.botToken || !bot.chatId) return;
         await sendTelegram(bot.botToken, bot.chatId, text);
     } catch {

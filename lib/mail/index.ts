@@ -97,9 +97,9 @@ export async function syncAccount(d: Doc) {
             // То же в Telegram: о первых письмах подробно, об остальных — одной строкой, чтобы пачка
             // из сотни писем после долгой паузы не превратилась в сотню сообщений
             for (const m of incoming.slice(0, 3)) {
-                void notifyTeamTelegram([`✉️ Новое письмо — ${d.config.email ?? ""}`, `От: ${String(m.from).replace(/<.*>/, "").trim() || m.from}`, `Тема: ${m.subject || "—"}`].join("\n"));
+                void notifyTeamTelegram(owner, [`✉️ Новое письмо — ${d.config.email ?? ""}`, `От: ${String(m.from).replace(/<.*>/, "").trim() || m.from}`, `Тема: ${m.subject || "—"}`].join("\n"));
             }
-            if (incoming.length > 3) void notifyTeamTelegram(`✉️ Ещё ${incoming.length - 3} новых письма на ${d.config.email ?? "почту"}`);
+            if (incoming.length > 3) void notifyTeamTelegram(owner, `✉️ Ещё ${incoming.length - 3} новых письма на ${d.config.email ?? "почту"}`);
         }
         if (firstRun) {
             d.set("config", { ...d.config, leadsSince: new Date().toISOString() });
