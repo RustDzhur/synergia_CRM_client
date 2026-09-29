@@ -12,8 +12,6 @@ const PROVIDERS: Provider[] = [
 	{ id: "yahoo", label: "Yahoo", logo: YAHOO },
 	{ id: "icloud", label: "iCloud", logo: <SiIcloud size={42} color="#3D9EEE" /> },
 	{ id: "office365", label: "Office 365", logo: <SiMicrosoftoffice size={42} color="#D83B01" /> },
-	{ id: "icloud", label: "iCloud", logo: <SiIcloud size={42} color="#3D9EEE" /> },
-	{ id: "yahoo", label: "Yahoo", logo: YAHOO },
 	{ id: "imap", label: "IMAP", logo: <span className="font-serif text-14 tracking-[1px] text-[#8c948b]">IMAP</span> },
 ];
 

@@ -15,9 +15,9 @@ export const COLLAB_MAIL: DocSection[] = [
 				title: t3("Connecting a mailbox", "Postfach verbinden", "Підключення скриньки"),
 				steps: [
 					t3(
-						"While no mailbox is connected, the page shows a grid of provider tiles: Outlook, Google Mail, Yahoo, iCloud, Office 365 and IMAP (Yahoo and iCloud appear twice; both tiles do the same). Click the tile of your provider — a window with its name opens. The cross at the top right (or a click outside) closes it.",
-						"Solange kein Postfach verbunden ist, zeigt die Seite ein Raster mit Anbieter-Kacheln: Outlook, Google Mail, Yahoo, iCloud, Office 365 und IMAP (Yahoo und iCloud erscheinen doppelt; beide Kacheln tun dasselbe). Klicken Sie die Kachel Ihres Anbieters an — ein Fenster mit seinem Namen öffnet sich. Das Kreuz oben rechts (oder ein Klick daneben) schließt es.",
-						"Поки жодної скриньки не підключено, сторінка показує сітку плиток провайдерів: Outlook, Google Mail, Yahoo, iCloud, Office 365 та IMAP (Yahoo й iCloud показано двічі; обидві плитки роблять те саме). Клацніть плитку свого провайдера — відкривається вікно з його назвою. Хрестик угорі праворуч (або клік поза вікном) закриває його.",
+						"While no mailbox is connected, the page shows a grid of provider tiles: Outlook, Google Mail, Yahoo, iCloud, Office 365 and IMAP. Click the tile of your provider — a window with its name opens. The cross at the top right (or a click outside) closes it.",
+						"Solange kein Postfach verbunden ist, zeigt die Seite ein Raster mit Anbieter-Kacheln: Outlook, Google Mail, Yahoo, iCloud, Office 365 und IMAP. Klicken Sie die Kachel Ihres Anbieters an — ein Fenster mit seinem Namen öffnet sich. Das Kreuz oben rechts (oder ein Klick daneben) schließt es.",
+						"Поки жодної скриньки не підключено, сторінка показує сітку плиток провайдерів: Outlook, Google Mail, Yahoo, iCloud, Office 365 та IMAP. Клацніть плитку свого провайдера — відкривається вікно з його назвою. Хрестик угорі праворуч (або клік поза вікном) закриває його.",
 					),
 					t3(
 						"At the top of the window a grey text explains the way for this provider. For Gmail: sign in with Google, or turn on 2-step verification in your Google account, create an app password and enter it. For Outlook and Office 365: sign in with Microsoft, or enter an app password if the account allows it. For Yahoo, iCloud and IMAP an app password is needed (for iCloud it is created at appleid.apple.com, your usual Apple ID password will not work).",
@@ -45,9 +45,9 @@ export const COLLAB_MAIL: DocSection[] = [
 						"Для плитки IMAP форма має ще чотири поля: [[collab.mailImapHost]] та його [[collab.mailPort]] (за замовчуванням 993), [[collab.mailSmtpHost]] та його [[collab.mailPort]] (за замовчуванням 465); підказки показують imap.example.com і smtp.example.com. Yahoo, iCloud та інші використовують готові налаштування. Адреси серверів, що вказують у приватну мережу (localhost, 10.x, 192.168.x тощо), з міркувань безпеки відхиляються.",
 					),
 					t3(
-						"After a successful connection by password the window closes, the new mailbox is selected and a green message with its address appears (the tail of this message, which mentions a demo, is a leftover text and can be ignored — the mailbox is real).",
-						"Nach erfolgreicher Verbindung per Passwort schließt sich das Fenster, das neue Postfach ist ausgewählt und eine grüne Meldung mit seiner Adresse erscheint (der Schluss dieser Meldung, der eine Demo erwähnt, ist ein Überbleibsel und kann ignoriert werden — das Postfach ist echt).",
-						"Після успішного підключення за паролем вікно закривається, нову скриньку вибрано й з’являється зелене повідомлення з її адресою (кінець цього повідомлення, що згадує демо, — залишок тексту, його можна ігнорувати: скринька справжня).",
+						"After a successful connection by password the window closes, the new mailbox is selected and a green message with its address appears.",
+						"Nach erfolgreicher Verbindung per Passwort schließt sich das Fenster, das neue Postfach ist ausgewählt und eine grüne Meldung mit seiner Adresse erscheint.",
+						"Після успішного підключення за паролем вікно закривається, нову скриньку вибрано й з’являється зелене повідомлення з її адресою.",
 					),
 				],
 			},
