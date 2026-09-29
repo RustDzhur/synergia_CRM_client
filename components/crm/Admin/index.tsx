@@ -7,7 +7,7 @@ import { useCurrentUserStore } from "@/store/useCurrentUserStore";
 import { type FeatureKey, planFor } from "@/config/plans";
 import PageHeader from "@/components/crm/shared/PageHeader";
 import BlogAdmin from "./BlogAdmin";
-import ErrorsCard from "./adminParts/ErrorsCard";
+import BotCard from "./adminParts/ErrorsCard";
 import FeaturesModal from "./adminParts/FeaturesModal";
 import MetaCard from "./adminParts/MetaCard";
 import OrgsTable from "./adminParts/OrgsTable";
@@ -80,7 +80,8 @@ export default function AdminPanel() {
 			<h1 className="mb-16 text-20 font-semibold text-[#f1f4ee]">{t("title")}</h1>
 			<SystemCheckCard />
 			<MetaCard />
-			<ErrorsCard />
+			<BotCard kind="error" />
+			<BotCard kind="notify" />
 			{summary && <StatsGrid summary={summary} />}
 			{newRequests.length > 0 && <RequestsList requests={newRequests} onActivate={activate} onDismiss={dismiss} />}
 			<OrgsTable orgs={orgs} query={q} onQuery={setQ} onPatch={patch} onFeatures={setFeaturesFor} onCancel={cancel} />

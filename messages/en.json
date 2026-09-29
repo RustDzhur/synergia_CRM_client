@@ -2105,6 +2105,8 @@
         "metaFromEnv": "From environment variables",
         "metaFromEnvHelp": "META_APP_ID and META_APP_SECRET are set in the environment variables — those values are used.",
         "errTitle": "Error reports in Telegram",
+        "notifyTitle": "Work notifications in Telegram",
+        "notifyHelp": "A second platform bot for what the team must see right away: a visitor wrote in the website chat, left a contact, sent a file — and the same for Viber, Telegram, WhatsApp, SMS and mail. Errors go to the bot above, not here.",
         "errHelp": "A dedicated platform bot, not the firm's own bot: send it any message and press “Find chat” — you do not need to look up the numeric id.",
         "errToken": "Bot token (from @BotFather)",
         "errFindChat": "Find chat",

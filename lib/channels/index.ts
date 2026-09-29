@@ -3,6 +3,7 @@ import type { ConversationDTO, MessageDTO, MessagingChannel } from "@/types/inte
 import { ProviderError } from "@/lib/http";
 import { emit } from "@/lib/automation/emit";
 import { notify } from "@/lib/notify";
+import { notifyTeamTelegram } from "@/lib/notifyTeam";
 import { secretsOf } from "@/lib/integrations";
 import Contact from "@/models/Contact";
 import Conversation from "@/models/Conversation";
@@ -159,6 +160,16 @@ export async function recordMessage(integration: Doc, input: MessageInput) {
         } else {
             await emit(owner, { type: "message_received", data: { from: conversation.name || input.externalId, text: preview, channel } });
             await notify(owner, { type: "message", params: { name: conversation.name || input.externalId, channel, text: preview.slice(0, 80) }, link: "/crm/collaboration/chat-and-calls", key: `msg:${message._id}` });
+            // Команде в Telegram: посетитель написал в канал. Веб-чат уведомляет сам из своего маршрута
+            // (там есть страница и признак «вопрос без ответа»), поэтому здесь его пропускаем — иначе
+            // на одно сообщение приходило бы два. Бот для этих уведомлений — свой, не бот ошибок.
+            if (channel !== "webchat") {
+                void notifyTeamTelegram([
+                    `💬 Новое сообщение — ${CHANNEL_LABELS[channel] ?? channel}`,
+                    `От: ${conversation.name || input.externalId}`,
+                    preview ? `Текст: ${preview.slice(0, 300)}` : "",
+                ].filter(Boolean).join("\n"));
+            }
         }
     }
     // каждый звонок фиксируется и в ленте активности контакта (карточка контакта → «Activity»)
@@ -180,6 +191,20 @@ export async function markMessageFailed(integration: Doc, externalId: string, er
     );
     return res.modifiedCount > 0;
 }
+
+// Названия каналов для уведомлений команде: пишем так, как человек их называет
+const CHANNEL_LABELS: Record<string, string> = {
+    telegram: "Telegram",
+    viber: "Viber",
+    whatsapp: "WhatsApp",
+    messenger: "Messenger",
+    twilio: "SMS",
+    sms: "SMS",
+    vonage: "SMS",
+    plivo: "SMS",
+    telnyx: "SMS",
+    webchat: "чат на сайте",
+};
 
 // Каналы, через которые можно отправлять фото, файлы и голосовые (у остальных таких методов нет)
 export const MEDIA_CHANNELS: MessagingChannel[] = ["telegram", "viber"];

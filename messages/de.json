@@ -2105,6 +2105,8 @@
         "metaFromEnv": "Aus Umgebungsvariablen",
         "metaFromEnvHelp": "META_APP_ID und META_APP_SECRET sind in den Umgebungsvariablen gesetzt — es gelten diese Werte.",
         "errTitle": "Fehlerberichte in Telegram",
+        "notifyTitle": "Arbeitsbenachrichtigungen in Telegram",
+        "notifyHelp": "Ein zweiter Bot der Plattform für das, was das Team sofort sehen muss: Ein Besucher hat im Website-Chat geschrieben, einen Kontakt hinterlassen oder eine Datei geschickt — dasselbe für Viber, Telegram, WhatsApp, SMS und E-Mail. Fehler gehen an den Bot oben, nicht hierher.",
         "errHelp": "Eigener Bot der Plattform, nicht der Bot der Firma: Schreiben Sie ihm eine beliebige Nachricht und drücken Sie „Chat finden“ — die Nummer müssen Sie nicht suchen.",
         "errToken": "Bot-Token (von @BotFather)",
         "errFindChat": "Chat finden",

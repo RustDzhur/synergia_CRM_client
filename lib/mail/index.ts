@@ -6,6 +6,7 @@ import { randomToken } from "@/lib/crypto";
 import Integration from "@/models/Integration";
 import { createLeadsFromMail } from "@/lib/leads";
 import { notify } from "@/lib/notify";
+import { notifyTeamTelegram } from "@/lib/notifyTeam";
 import MailMessage from "@/models/MailMessage";
 import { fetchGmail, gmailEmail, sendGmail } from "./gmail";
 import { ImapSmtpConfig, fetchImap, sendSmtp, verifyImapSmtp } from "./imap";
@@ -93,6 +94,12 @@ export async function syncAccount(d: Doc) {
             const incoming = fresh.filter((m) => m.folder === "inbox");
             for (const m of incoming.slice(0, 5)) await notify(owner, { type: "mail", params: { from: m.from.replace(/<.*>/, "").trim() || m.from, subject: m.subject || "" }, link: "/crm/collaboration/web-mails", key: `mail:${d._id}:${m.externalId}` });
             if (incoming.length > 5) await notify(owner, { type: "mail_many", params: { count: incoming.length }, link: "/crm/collaboration/web-mails", key: `mail-many:${d._id}:${incoming[0].externalId}` });
+            // То же в Telegram: о первых письмах подробно, об остальных — одной строкой, чтобы пачка
+            // из сотни писем после долгой паузы не превратилась в сотню сообщений
+            for (const m of incoming.slice(0, 3)) {
+                void notifyTeamTelegram([`✉️ Новое письмо — ${d.config.email ?? ""}`, `От: ${String(m.from).replace(/<.*>/, "").trim() || m.from}`, `Тема: ${m.subject || "—"}`].join("\n"));
+            }
+            if (incoming.length > 3) void notifyTeamTelegram(`✉️ Ещё ${incoming.length - 3} новых письма на ${d.config.email ?? "почту"}`);
         }
         if (firstRun) {
             d.set("config", { ...d.config, leadsSince: new Date().toISOString() });

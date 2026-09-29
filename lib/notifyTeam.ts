@@ -1,13 +1,16 @@
 import { sendTelegram } from "@/lib/channels/telegram";
-import { errorBot } from "@/lib/platformSettings";
+import { errorBot, notifyBot } from "@/lib/platformSettings";
 
-// Уведомление команде в Telegram: посетитель написал в чат на сайте, оставил контакт или поставил оценку.
-// Идёт в тот же чат, что и отчёты об ошибках, — он задаётся в админке. Отдельного «рабочего» бота у платформы
-// нет, а заводить второго ради этих сообщений — лишние настройки. Если чат не задан, молча выходим:
-// уведомление не должно ломать приём сообщения.
+// Уведомление команде в Telegram: посетитель написал в чат на сайте, оставил контакт, прислал файл,
+// поставил оценку — и то же самое для Viber, Telegram, WhatsApp, SMS и почты (см. lib/channels).
+//
+// Идёт отдельному боту уведомлений: у ошибок свой бот, и смешивать их нельзя — в чате с ошибками
+// рабочие сообщения теряются, а в рабочем чате шумят падения. Пока второй бот не настроен,
+// уведомления идут боту ошибок — так ничего не пропадёт до настройки.
 export async function notifyTeamTelegram(text: string): Promise<void> {
     try {
-        const bot = await errorBot();
+        let bot = await notifyBot();
+        if (!bot.botToken || !bot.chatId) bot = await errorBot();
         if (!bot.botToken || !bot.chatId) return;
         await sendTelegram(bot.botToken, bot.chatId, text);
     } catch {
