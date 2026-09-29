@@ -1349,7 +1349,6 @@
       "yes": "Ja",
       "no": "Nein",
       "disclaimer": "KI kann Fehler machen. Prüfen Sie wichtige Angaben, bevor Sie danach handeln.",
-      "needsUpgrade": "Werbeleistung erfordert den Tarif Professional.",
     "notConfigured": "Der KI-Assistent ist auf dieser Seite noch nicht aktiviert. Der Administrator muss einen KI-Schlüssel hinterlegen (siehe docs/AI.md).",
       "readOnly": "Sie haben nur Leserechte: Ich kann nachschlagen, aber keine Daten ändern.",
       "s_stale": "Kunden anzeigen, mit denen ich seit 30 Tagen nicht gesprochen habe",
@@ -1813,6 +1812,7 @@
       "bankErrExpenseNotFound": "Die Ausgabe wurde nicht gefunden."
     },
   "ads": {
+      "needsUpgrade": "Werbeleistung erfordert den Tarif Professional.",
       "title": "Werbung",
       "platforms": "Werbeplattformen",
       "performance": "Werbeleistung",

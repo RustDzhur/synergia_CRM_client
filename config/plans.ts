@@ -60,6 +60,9 @@ export const PLANS: PlanDef[] = [
 		id: "standard",
 		priceMonth: 20,
 		users: 50,
+		// Правила, ИИ и хранилище у Standard есть в матрице, но разделы автоматизации, ИИ и документов
+		// этому тарифу закрыты — числа остаются ориентиром на будущее и в интерфейсе не показываются
+		// (см. limitParts ниже)
 		automationRules: 30,
 		aiDailyRequests: 100,
 		storageMb: 2000,

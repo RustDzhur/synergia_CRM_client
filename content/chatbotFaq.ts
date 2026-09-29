@@ -21,9 +21,9 @@ export const CHATBOT_FAQ: FaqEntry[] = [
 		id: "pricing",
 		q: t3("How much does it cost?", "Was kostet es?", "Скільки це коштує?"),
 		a: t3(
-			"There are three plans: Free (1 user, sales pipeline and tasks), Standard (€20/month, up to 50 users, adds team features, documents, finance, marketing and ads performance) and Professional (€53/month, unlimited users, adds the autonomous AI automation step and the highest limits). Paying yearly gives you 2 months free. See the exact feature list under Choose Plan on this page.",
-			"Es gibt drei Tarife: Free (1 Benutzer, Vertriebspipeline und Aufgaben), Standard (20 €/Monat, bis 50 Benutzer, dazu Teamfunktionen, Dokumente, Finanzen, Marketing und Ad-Performance) und Professional (53 €/Monat, unbegrenzte Benutzer, dazu der autonome KI-Automatisierungsschritt und die höchsten Limits). Bei jährlicher Zahlung erhalten Sie 2 Monate gratis. Die genaue Funktionsliste finden Sie unter Choose Plan auf dieser Seite.",
-			"Є три тарифи: Free (1 користувач, воронка продажів і завдання), Standard (20 €/міс, до 50 користувачів, плюс командні функції, документи, фінанси, маркетинг і ефективність реклами) і Professional (53 €/міс, необмежена кількість користувачів, плюс автономний крок AI-автоматизації та найвищі ліміти). При річній оплаті — 2 місяці безкоштовно. Повний список функцій — у розділі Choose Plan на цій сторінці."
+			"There are three plans: Free (1 user, sales pipeline and tasks), Standard (€20/month, up to 50 users, adds the team part: employees and knowledge base, feed, calendar, several firms) and Professional (€53/month, unlimited users, adds the autonomous AI automation step and the highest limits). Paying yearly gives you 2 months free. See the exact feature list under Choose Plan on this page.",
+			"Es gibt drei Tarife: Free (1 Benutzer, Vertriebspipeline und Aufgaben), Standard (20 €/Monat, bis 50 Benutzer, dazu der Team-Teil: Mitarbeiter und Wissensbasis, Feed, Kalender, mehrere Firmen) und Professional (53 €/Monat, unbegrenzte Benutzer, dazu der autonome KI-Automatisierungsschritt und die höchsten Limits). Bei jährlicher Zahlung erhalten Sie 2 Monate gratis. Die genaue Funktionsliste finden Sie unter Choose Plan auf dieser Seite.",
+			"Є три тарифи: Free (1 користувач, воронка продажів і завдання), Standard (20 €/міс, до 50 користувачів, плюс командна частина: співробітники та база знань, стрічка, календар, кілька фірм) і Professional (53 €/міс, необмежена кількість користувачів, плюс автономний крок AI-автоматизації та найвищі ліміти). При річній оплаті — 2 місяці безкоштовно. Повний список функцій — у розділі Choose Plan на цій сторінці."
 		),
 		keywords: ["price", "cost", "pricing", "plan", "tariff", "subscription", "how much", "preis", "kosten", "tarif", "abo", "ціна", "тариф", "вартість", "план", "підписка"],
 	},
@@ -31,9 +31,11 @@ export const CHATBOT_FAQ: FaqEntry[] = [
 		id: "free_trial",
 		q: t3("Is there a free plan or trial?", "Gibt es einen kostenlosen Tarif oder eine Testphase?", "Чи є безкоштовний тариф або пробний період?"),
 		a: t3(
-			"Yes — the Free plan is free forever for up to 5 users, with the core CRM (deals, contacts, tasks, feed, calendar, web mail, automation). No credit card is needed to sign up.",
-			"Ja — der Free-Tarif ist dauerhaft kostenlos, aber auf einen Benutzer beschränkt: Vertriebspipeline (Deals, Kontakte, Firmen) und Aufgaben. Teamfunktionen wie Feed, Kalender, Chat, Dokumente und Finanzen beginnen mit dem Tarif Standard. Für die Registrierung ist keine Kreditkarte nötig.",
-			"Так — тариф Free безкоштовний назавжди для до 5 користувачів, із базовим CRM (угоди, контакти, завдання, стрічка, календар, веб-пошта, автоматизація). Кредитна картка для реєстрації не потрібна."
+			// Числа сверены с config/plans.ts: Free — один пользователь и только CRM с задачами;
+			// компания, лента и календарь начинаются со Standard, остальное — с Professional
+			"Yes, and no credit card is needed to sign up. Free covers one user and the core CRM (deals, contacts, companies and tasks). Standard at €20 a month adds the team part — employees and knowledge base, the feed, the calendar and several firms — for up to 50 users. Professional at €53 a month removes the user limit and adds everything else: chat and calls, documents and Drive, finance, marketing and ads, automation and the AI assistant. Paying yearly gives two months free.",
+			"Ja, für die Registrierung ist keine Kreditkarte nötig. Free deckt einen Benutzer und den Kern ab (Deals, Kontakte, Firmen, Aufgaben). Standard für 20 € im Monat ergänzt den Team-Teil — Mitarbeiter und Wissensbasis, Feed, Kalender und mehrere Firmen — für bis zu 50 Benutzer. Professional für 53 € im Monat hebt die Benutzergrenze auf und ergänzt alles Weitere: Chat und Anrufe, Dokumente und Drive, Finanzen, Marketing und Werbung, Automatisierung und den KI-Assistenten. Bei jährlicher Zahlung sind zwei Monate gratis.",
+			"Так, кредитна картка для реєстрації не потрібна. Free покриває одного користувача й основу (угоди, контакти, фірми, завдання). Standard за 20 € на місяць додає командну частину — співробітники та база знань, стрічка, календар і кілька фірм — до 50 користувачів. Professional за 53 € на місяць знімає обмеження на користувачів і додає все інше: чат і дзвінки, документи й Drive, фінанси, маркетинг і рекламу, автоматизацію та AI-асистента. При річній оплаті — два місяці безкоштовно."
 		),
 		keywords: ["free", "trial", "demo", "no cost", "kostenlos", "test", "gratis", "безкоштовн", "пробн", "демо"],
 	},

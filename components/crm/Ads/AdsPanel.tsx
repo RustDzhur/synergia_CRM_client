@@ -104,7 +104,9 @@ export default function AdsPanel() {
 
 	async function onConnect(platform: AdsPlatform) {
 		const error = await connect(platform, locale);
-		if (error) toast.error(error);
+		if (!error) return;
+		// «Не на вашем тарифе» — свой текст: сервер не знает языка интерфейса
+		toast.error(error.code === "plan_limit" ? t("needsUpgrade") : error.message);
 	}
 	async function onChoose(id: string, accountId: string) {
 		const error = await choose(id, accountId);

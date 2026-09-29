@@ -14,7 +14,8 @@ export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     await connectDB();
-    if (!(await adsPlanOk(user.id))) return NextResponse.json({ message: "Ad performance (Google Ads / Meta Ads) needs the Standard plan or higher.", code: "plan_limit" }, { status: 402 });
+    // Имя тарифа в сообщении не называем: текст для пользователя берётся из переводов по коду plan_limit
+    if (!(await adsPlanOk(user.id))) return NextResponse.json({ message: "Ad performance is not available on your plan.", code: "plan_limit" }, { status: 402 });
     const b = await req.json().catch(() => ({}));
     const locale = ["en", "de", "ua"].includes(b?.locale) ? b.locale : "en";
     const origin = appOrigin(req);

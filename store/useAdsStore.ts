@@ -11,7 +11,9 @@ interface AdsStore {
 	loading: boolean;
 	loadStatus: () => Promise<void>;
 	loadInsights: (days?: number) => Promise<void>;
-	connect: (platform: "google" | "meta", locale: string) => Promise<string | null>; // ошибка или null (тогда браузер уходит на страницу входа)
+	// Ошибка подключения (текст и её код, чтобы интерфейс мог подставить свой перевод) или null — тогда
+	// браузер уходит на страницу входа провайдера
+	connect: (platform: "google" | "meta", locale: string) => Promise<{ message: string; code: string } | null>;
 	choose: (id: string, accountId: string) => Promise<string | null>;
 	disconnect: (id: string) => Promise<void>;
 }
@@ -34,7 +36,7 @@ export const useAdsStore = create<AdsStore>()((set, get) => ({
 	},
 	connect: async (platform, locale) => {
 		const res = await apiCall<{ url: string }>("/api/ads/oauth", "POST", { platform, locale });
-		if (!res.ok || !res.data) return res.message;
+		if (!res.ok || !res.data) return { message: res.message, code: res.code };
 		window.location.href = res.data.url;
 		return null;
 	},

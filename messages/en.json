@@ -1349,7 +1349,6 @@
       "yes": "Yes",
       "no": "No",
       "disclaimer": "AI can make mistakes. Check important facts before you act on them.",
-      "needsUpgrade": "Ad performance needs the Professional plan.",
     "notConfigured": "The AI assistant is not switched on for this site yet. The site administrator needs to add an AI key (see docs/AI.md).",
       "readOnly": "Your access is read-only: I can look things up, but not change data.",
       "s_stale": "Show customers I haven’t contacted for 30 days",
@@ -1813,6 +1812,7 @@
       "bankErrExpenseNotFound": "The expense could not be found."
     },
   "ads": {
+      "needsUpgrade": "Ad performance needs the Professional plan.",
       "title": "Advertising",
       "platforms": "Ad platforms",
       "performance": "Ad performance",
