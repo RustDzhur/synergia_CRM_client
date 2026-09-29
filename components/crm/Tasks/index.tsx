@@ -87,6 +87,8 @@ export default function Tasks() {
             .filter((task) => !responsible || task.responsible === responsible)
             .filter((task) => !q || [task.title, task.responsible, task.createdBy].some((v) => v?.toLowerCase().includes(q)))
             .sort((a, b) => Number(b.pinned) - Number(a.pinned));
+        // now в зависимости не входит: он новый на каждый рендер и обнулил бы мемо. Цена — статус «просрочено»
+        // при открытой странице обновляется вместе с данными или фильтром, а не по часам.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tasks, search, statusFilter, responsible]);
 

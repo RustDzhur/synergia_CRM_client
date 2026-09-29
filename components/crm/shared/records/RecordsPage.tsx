@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdArrowDownward, MdArrowUpward, MdChevronRight, MdEdit, MdSettings } from "react-icons/md";
@@ -18,6 +18,9 @@ import { Field, FieldOption, RecordItem, SectionConfig, STATUS_COLORS } from "./
 import RecordModal from "./RecordModal";
 
 const HIDE_SCROLLBAR = "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
+// Стабильные «пустые» значения: новый [] или {} на каждом рендере сбрасывал бы кэш useMemo ниже
+const NO_KEYS: string[] = [];
+const NO_FILTERS: Record<string, string> = {};
 
 // Что страница отдаёт вкладке с собственным содержимым (customTabs): поисковый запрос и способ открыть окно новой записи
 export interface CustomTabApi {
@@ -43,7 +46,7 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 	const tc = useTranslations("crm");
 	const locale = useLocale();
 	const tag = localeTag(locale);
-	useRecordsHydration(config.tabs.filter((tb) => !(config.customTabs ?? []).includes(tb) || true).map((tb) => `${config.section}:${tb}`));
+	useRecordsHydration(config.tabs.map((tb) => `${config.section}:${tb}`));
 	const { data, hidden, saveRecord, deleteRecords, setHidden } = useRecordsStore();
 
 	// ?tab=… открывает конкретную вкладку (те же ссылки, что и в «Финансах»: пришли из уведомления — попали на нужную вкладку)
@@ -53,7 +56,7 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 	});
 	useEffect(() => {
 		if (openTabOnParam && new URLSearchParams(window.location.search).has(openTabOnParam.param)) setTab(openTabOnParam.tab);
-	}, [openTabOnParam?.param, openTabOnParam?.tab]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [openTabOnParam?.param, openTabOnParam?.tab]); // eslint-disable-line react-hooks/exhaustive-deps -- срабатывает только при смене параметра, а сам объект openTabOnParam приходит новым на каждый рендер
 	const [query, setQuery] = useState("");
 	const [sort, setSort] = useState<{ key: string; dir: 1 | -1 } | null>(null);
 	const [selected, setSelected] = useState<string[]>([]);
@@ -70,8 +73,8 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 	const isCustom = config.customTabs?.includes(tab) ?? false;
 	const dataKey = (tb: string) => `${config.section}:${tb}`;
 	const fields = useMemo(() => config.fields[tab] ?? [], [config, tab]);
-	const hiddenKeys = hidden[dataKey(tab)] ?? [];
-	const columns = fields.filter((f) => !hiddenKeys.includes(f.key));
+	const hiddenKeys = hidden[dataKey(tab)] ?? NO_KEYS;
+	const columns = useMemo(() => fields.filter((f) => !hiddenKeys.includes(f.key)), [fields, hiddenKeys]);
 	const list = data[dataKey(tab)] ?? config.seed[tab] ?? [];
 	const statusColors = { ...STATUS_COLORS, ...config.statusColors };
 	// Фильтры для поля поиска: по одному на каждую колонку-список текущей вкладки.
@@ -82,20 +85,19 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 			label: t(`f_${f.key}`),
 			options: [{ value: "", label: `${tr("filterAll")} — ${t(`f_${f.key}`)}` }, ...(f.options ?? []).map((o) => ({ value: o, label: t(`o_${o}`) }))],
 		})),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[columns, t, tr],
 	);
-	const activeFilters = filters[tab] ?? {};
+	const activeFilters = filters[tab] ?? NO_FILTERS;
 	const setFilter = (key: string, value: string) => setFilters((f) => ({ ...f, [tab]: { ...(f[tab] ?? {}), [key]: value } }));
 
 	// текст ячейки на текущем языке: значения списков переводятся, даты как в макете, числа с разделителями
-	const display = (f: Field, value: string): string => {
+	const display = useCallback((f: Field, value: string): string => {
 		if (!value) return "";
 		if (f.type === "select") return t(`o_${value}`);
 		if (f.type === "date") return formatDate(value);
 		if (f.type === "number") return Number(value).toLocaleString(tag);
 		return value;
-	};
+	}, [t, tag]);
 
 	const rows = useMemo(() => {
 		const q = query.trim().toLowerCase();
@@ -117,8 +119,7 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 			if (f.type === "date") return sort.dir * av.localeCompare(bv);
 			return sort.dir * display(f, av).localeCompare(display(f, bv), tag, { numeric: true });
 		});
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [list, query, sort, fields, locale, activeFilters]);
+	}, [list, query, sort, fields, tag, activeFilters, display]);
 
 	function changeTab(next: string) {
 		setTab(next);

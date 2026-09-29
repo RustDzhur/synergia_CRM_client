@@ -81,6 +81,7 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 		if (providerKind === "sms") setPreset(SMS_PROVIDERS.find((p) => items.some((i) => i.type === p.type && i.status === "connected"))?.id ?? null);
 		else if (providerKind === "call") setPreset(type === "sip" ? sipBrand(cfg) : items.some((i) => i.type === "twilio") ? "twilio" : null);
 		else setPreset(null);
+		// форму сбрасываем только при открытии другого канала: items обновляются опросом, и без этого набранное стиралось бы
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [type]);
 

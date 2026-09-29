@@ -90,6 +90,7 @@ export function useRecordsHydration(keys: string[] = []) {
 	useEffect(() => {
 		useRecordsStore.persist.rehydrate();
 		keys.forEach((k) => useRecordsStore.getState().load(k));
+		// keys каждый раз новый массив, поэтому зависимость — его содержимое, склеенное в строку
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [keys.join("|")]);
 }

@@ -87,6 +87,7 @@ export default function Upgrade() {
 		if (billing.plan === pendingAutoPlan && subscribed) return; // уже на этом тарифе
 		if (!billing.configured) return; // тост "оплата не настроена" и так покажет карточка
 		subscribe(pendingAutoPlan);
+		// subscribe пересоздаётся на каждый рендер; запуск одноразовый — pendingAutoPlan обнуляется в начале эффекта
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [pendingAutoPlan, billing]);
 

@@ -109,6 +109,7 @@ export default function WebMails() {
 		else if (status === "denied") toast(t("mailOauthDenied"));
 		else toast.error(t("mailOauthFailed", { message: params.get("message") ?? "" }));
 		router.replace(pathname);
+		// один раз при заходе: после replace параметр из адреса исчезает, повторный запуск показал бы тост заново
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 

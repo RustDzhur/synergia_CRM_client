@@ -68,6 +68,7 @@ export default function EntityEditPage<T extends Entity>({
 			setLoading(false);
 		});
 		return () => { cancelled = true; };
+		// запись грузим при смене id; load, fields и prepareForm — пропсы, приходящие новыми на каждый рендер родителя
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [id]);
 

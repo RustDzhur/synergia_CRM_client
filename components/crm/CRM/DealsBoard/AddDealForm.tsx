@@ -28,6 +28,7 @@ export default function AddDealForm({ onSubmit, onCancel, autoFocus }: Props) {
 		if (!autoFocus) return;
 		if (contacts.length === 0) fetchContacts();
 		if (companies.length === 0) fetchCompanies();
+		// нужен только момент открытия формы: реагировать на изменение списков значило бы грузить их снова и снова
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [autoFocus]);
 
