@@ -13,6 +13,7 @@ import { shrinkImage } from "@/utils/imageResize";
 import { stripLocale } from "@/utils/locale";
 import { useClickOutside } from "@/utils/useClickOutside";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
+import { localeTag } from "@/utils/dateHelpers";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import Modal from "../shared/Modal";
 import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tabBar";
@@ -110,7 +111,7 @@ export default function Documents() {
 
 	const folders = useMemo(() => state?.folders ?? [], [state]);
 	const byId = useMemo(() => new Map(folders.map((f) => [f.id, f])), [folders]);
-	const collator = useMemo(() => new Intl.Collator(locale === "ua" ? "uk" : locale), [locale]);
+	const collator = useMemo(() => new Intl.Collator(localeTag(locale)), [locale]);
 
 	// цепочка папок от корня до текущей (хлебные крошки)
 	const path = useMemo(() => {
@@ -349,7 +350,7 @@ export default function Documents() {
 
 	// у импортированных файлов размер не запрашивается — вместо «1 KB» показываем, откуда файл
 	const kindLabel = (d: DocItemDTO): string => (d.kind === "file" ? (d.imported ? t("fileFromDrive") : fmtSize(d.size)) : t(`kind_${d.kind}`));
-	const dateLabel = (iso: string) => new Date(iso).toLocaleDateString(locale === "ua" ? "uk" : locale);
+	const dateLabel = (iso: string) => new Date(iso).toLocaleDateString(localeTag(locale));
 	const folderActions = (f: FolderDTO): Action[] => [
 		{ label: t("open"), onClick: () => setCurrent(f.id) },
 		{ label: t("rename"), onClick: () => { setName(f.name); setNameMode({ kind: "folder-rename", folder: f }); } },

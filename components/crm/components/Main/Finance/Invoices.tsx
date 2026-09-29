@@ -5,17 +5,19 @@ import toast from "react-hot-toast";
 import { TbCopy, TbDownload, TbPlus, TbReceipt } from "react-icons/tb";
 import { LineItem, useFinanceStore } from "@/store/useFinanceStore";
 import { defaultRateFor } from "@/lib/finance/tax";
+import { STATUS_COLORS } from "@/utils/statusColors";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
 import { downloadDocumentPdf } from "./download";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
+import { emptyItem, useDefaultTaxRate } from "./lineItems";
 
-const STATUS_COLOR: Record<string, string> = { draft: "#8c948b", sent: "#5EA8F5", paid: "#c6ff4d", overdue: "#eb5757", cancelled: "#9AA396" };
-// Пустая строка счёта: не жёсткий 0, а ставка фирмы по умолчанию (lib/finance/tax.ts) — страна из настроек или 0 у освобождённых
-const emptyItem = (taxRate: number): LineItem => ({ description: "", qty: 1, unitPrice: 0, taxRate });
-
+const STATUS_COLOR: Record<string, string> = {
+	draft: STATUS_COLORS.neutral, sent: STATUS_COLORS.info, paid: STATUS_COLORS.success,
+	overdue: STATUS_COLORS.danger, cancelled: STATUS_COLORS.stale,
+};
 // Счета: по заказу (тогда попадает сюда автоматически) или сами по себе — например разовая услуга без отдельного заказа.
 // Номер — последовательный (RE-2026-1, RE-2026-2…), выдаётся один раз и не переиспользуется. Кредит-ноты (kind
 // "credit_note") живут в этом же списке — это отдельный юридический документ, а не правка счёта.
@@ -37,12 +39,7 @@ export default function Invoices({ openId }: { openId?: string | null }) {
 	const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
 	useEffect(() => { loadInvoices(); loadProducts(); }, [loadInvoices, loadProducts]);
-	// Настройки бухгалтерии приходят асинхронно (их грузит раздел Finance): нетронутую первую строку досеиваем
-	// ставкой фирмы, когда они загрузятся, — иначе счёт, открытый сразу по ссылке, уходил бы с нулевым налогом
-	useEffect(() => {
-		if (!settings) return;
-		setItems((cur) => cur.map((it) => (!it.description && !it.product && !it.unitPrice ? { ...it, taxRate: defaultRateFor(settings) } : it)));
-	}, [settings]);
+	useDefaultTaxRate(settings, setItems);
 	useEffect(() => {
 		if (openId && rowRefs.current[openId]) rowRefs.current[openId]?.scrollIntoView({ behavior: "smooth", block: "center" });
 	}, [openId, invoices]);

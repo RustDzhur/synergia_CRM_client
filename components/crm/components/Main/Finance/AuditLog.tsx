@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { apiCall } from "@/store/crmApi";
+import { localeTag } from "@/utils/dateHelpers";
 
 interface Entry { id: string; action: string; entityType: string; summary: string; userName: string; createdAt: string }
 
@@ -24,7 +25,7 @@ export default function AuditLog() {
 			{entries.map((e) => (
 				<li key={e.id} className="flex flex-wrap items-center justify-between gap-8 fs-card px-16 py-12">
 					<p className="text-13 text-[#cfd4cb]">{e.summary}</p>
-					<p className="shrink-0 text-11 text-[#9AA396]">{e.userName || "—"} · {new Date(e.createdAt).toLocaleString(locale === "ua" ? "uk" : locale)}</p>
+					<p className="shrink-0 text-11 text-[#9AA396]">{e.userName || "—"} · {new Date(e.createdAt).toLocaleString(localeTag(locale))}</p>
 				</li>
 			))}
 		</ul>

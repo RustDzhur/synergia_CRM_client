@@ -10,9 +10,7 @@ import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
 import { money } from "./format";
-
-// Пустая строка шаблона: не жёсткий 0, а ставка фирмы по умолчанию (lib/finance/tax.ts) — страна из настроек или 0 у освобождённых
-const emptyItem = (taxRate: number): LineItem => ({ description: "", qty: 1, unitPrice: 0, taxRate });
+import { emptyItem, useDefaultTaxRate } from "./lineItems";
 const today = () => new Date().toISOString().slice(0, 10);
 
 // Шаблоны повторяющихся счетов: раз в месяц/год крон создаёт из шаблона новый счёт (черновик или сразу отправленный —
@@ -33,12 +31,7 @@ export default function RecurringInvoices() {
 	const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
 	useEffect(() => { loadRecurringInvoices(); loadProducts(); }, [loadRecurringInvoices, loadProducts]);
-	// Настройки бухгалтерии приходят асинхронно (их грузит раздел Finance): нетронутую первую строку досеиваем
-	// ставкой фирмы, когда они загрузятся, — иначе шаблон, открытый сразу по ссылке, уходил бы с нулевым налогом
-	useEffect(() => {
-		if (!settings) return;
-		setItems((cur) => cur.map((it) => (!it.description && !it.product && !it.unitPrice ? { ...it, taxRate: defaultRateFor(settings) } : it)));
-	}, [settings]);
+	useDefaultTaxRate(settings, setItems);
 
 	async function submit(e: React.FormEvent) {
 		e.preventDefault();

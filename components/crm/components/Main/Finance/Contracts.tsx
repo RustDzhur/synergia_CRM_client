@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbDownload, TbPlus } from "react-icons/tb";
 import { useFinanceStore } from "@/store/useFinanceStore";
+import { STATUS_COLORS } from "@/utils/statusColors";
 import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
@@ -11,7 +12,10 @@ import { downloadDocumentPdf } from "./download";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
 
-const STATUS_COLOR: Record<string, string> = { draft: "#8c948b", active: "#c6ff4d", completed: "#5EA8F5", cancelled: "#eb5757" };
+const STATUS_COLOR: Record<string, string> = {
+	draft: STATUS_COLORS.neutral, active: STATUS_COLORS.success,
+	completed: STATUS_COLORS.info, cancelled: STATUS_COLORS.danger,
+};
 const EMPTY = { customerName: "", value: "0", currency: "EUR", startDate: "", endDate: "", notes: "" };
 
 // Договоры: метаданные + статус (draft → active когда клиент подписал — событие contract_signed, на него можно

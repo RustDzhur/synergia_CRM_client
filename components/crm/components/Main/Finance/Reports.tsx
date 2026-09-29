@@ -5,6 +5,7 @@ import { useFinanceStore } from "@/store/useFinanceStore";
 import { money } from "./format";
 import { AiAnalysis, PeriodSwitch, ReportDisclaimer, ReportFailed, ReportLoading, useReport } from "./reportParts";
 import type { BusinessAnalysis, PeriodKind, TrialBalance } from "@/lib/finance/reports";
+import { localeTag } from "@/utils/dateHelpers";
 
 // Auswertungen: BWA (выручка, затраты и результат по месяцам) и SuSa (управленческая оборотно-сальдовая ведомость).
 // Цифры считает сервер (lib/finance/reports.ts → /api/finance/reports); клиент только показывает их и период.
@@ -13,7 +14,7 @@ import type { BusinessAnalysis, PeriodKind, TrialBalance } from "@/lib/finance/r
 // Дату собираем в местном времени, чтобы месяц не съезжал на день назад.
 const monthLabel = (period: string, locale: string, withYear = true) => {
 	const [y, m] = period.split("-");
-	const tag = locale === "ua" ? "uk" : locale;
+	const tag = localeTag(locale);
 	return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString(tag, withYear ? { month: "short", year: "numeric" } : { month: "short" });
 };
 

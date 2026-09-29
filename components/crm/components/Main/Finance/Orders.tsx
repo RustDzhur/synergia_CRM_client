@@ -10,18 +10,20 @@ import {
 } from "react-icons/tb";
 import { LineItem, useFinanceStore } from "@/store/useFinanceStore";
 import { defaultRateFor } from "@/lib/finance/tax";
+import { STATUS_COLORS } from "@/utils/statusColors";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
 import { downloadDeliveryNote, downloadDocumentPdf } from "./download";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
+import { emptyItem, useDefaultTaxRate } from "./lineItems";
 
-const STATUS_COLOR: Record<string, string> = { draft: "#8c948b", confirmed: "#5EA8F5", fulfilled: "#f4a100", invoiced: "#8a6fe8", closed: "#c6ff4d", cancelled: "#eb5757" };
+const STATUS_COLOR: Record<string, string> = {
+	draft: STATUS_COLORS.neutral, confirmed: STATUS_COLORS.info, fulfilled: STATUS_COLORS.warning,
+	invoiced: STATUS_COLORS.special, closed: STATUS_COLORS.success, cancelled: STATUS_COLORS.danger,
+};
 const NEXT: Record<string, string | null> = { draft: "confirmed", confirmed: "fulfilled", fulfilled: null, invoiced: null, closed: null, cancelled: null };
-// Пустая строка заказа: не жёсткий 0, а ставка фирмы по умолчанию (lib/finance/tax.ts) — страна из настроек или 0 у освобождённых
-const emptyItem = (taxRate: number): LineItem => ({ description: "", qty: 1, unitPrice: 0, taxRate });
-
 // Заказы — сердце раздела: «оформили контракт → создали заказ → выполнили (списывается склад) → выставили счёт».
 // Каждая смена статуса — событие автоматизации (order_created/order_status), от него можно завести уведомление, задачу
 // или сдвинуть сделку по воронке — это настраивается в Automation, не зашито здесь намертво.
@@ -38,12 +40,7 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 	const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
 	useEffect(() => { loadOrders(); loadProducts(); }, [loadOrders, loadProducts]);
-	// Настройки бухгалтерии приходят асинхронно (их грузит раздел Finance): нетронутую первую строку досеиваем
-	// ставкой фирмы, когда они загрузятся, — иначе заказ, открытый сразу по ссылке, уходил бы с нулевым налогом
-	useEffect(() => {
-		if (!settings) return;
-		setItems((cur) => cur.map((it) => (!it.description && !it.product && !it.unitPrice ? { ...it, taxRate: defaultRateFor(settings) } : it)));
-	}, [settings]);
+	useDefaultTaxRate(settings, setItems);
 	useEffect(() => {
 		if (openId && rowRefs.current[openId]) rowRefs.current[openId]?.scrollIntoView({ behavior: "smooth", block: "center" });
 	}, [openId, orders]);

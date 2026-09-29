@@ -3,10 +3,14 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { apiCall } from "@/store/crmApi";
+import { STATUS_COLORS } from "@/utils/statusColors";
 
 interface QuoteRow { id: string; number: string; status: string; customerName: string; currency: string; totals: { gross: number } }
 
-const STATUS_COLOR: Record<string, string> = { draft: "#8c948b", sent: "#5EA8F5", accepted: "#c6ff4d", declined: "#eb5757", expired: "#9AA396" };
+const STATUS_COLOR: Record<string, string> = {
+	draft: STATUS_COLORS.neutral, sent: STATUS_COLORS.info, accepted: STATUS_COLORS.success,
+	declined: STATUS_COLORS.danger, expired: STATUS_COLORS.stale,
+};
 
 // Предложения (Quotes), связанные с этой сделкой (Opportunity → Quote, ТЗ Phase 2) — показываются прямо на карточке
 // сделки, а не только в разделе Finance. "Create Quote" переносит клиента/контакт/компанию сделки в новое предложение.

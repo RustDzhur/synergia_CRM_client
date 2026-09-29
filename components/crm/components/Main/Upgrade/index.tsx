@@ -8,6 +8,7 @@ import { SiApplepay, SiGooglepay, SiKlarna, SiMastercard, SiPaypal, SiVisa } fro
 import { FEATURE_KEYS, PLANS, PlanId, YEAR_MONTHS } from "@/config/plans";
 import { apiCall } from "@/store/crmApi";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
+import { localeTag } from "@/utils/dateHelpers";
 import Modal from "../shared/Modal";
 
 const ICONS: Record<PlanId, IconType> = { free: TbChartBar, standard: TbInfoCircle, professional: TbFileText };
@@ -120,7 +121,7 @@ export default function Upgrade() {
 
 	const current = billing?.plan ?? "free";
 	const subscribed = billing?.hasCustomer && ["active", "trialing", "past_due"].includes(billing.status);
-	const date = billing?.currentPeriodEnd ? new Date(billing.currentPeriodEnd).toLocaleDateString(locale === "ua" ? "uk" : locale) : "";
+	const date = billing?.currentPeriodEnd ? new Date(billing.currentPeriodEnd).toLocaleDateString(localeTag(locale)) : "";
 	const seg = (on: boolean) => `h-34 rounded-50 px-16 text-13 font-medium transition-colors ${on ? "bg-[#c6ff4d] text-[#0a0c0b]" : "text-[#8c948b] hover:text-[#f1f4ee]"}`;
 
 	return (
@@ -184,7 +185,7 @@ export default function Upgrade() {
 							{plan.id === "professional" && <p className="mb-16 text-12 font-medium text-[#2DDEB6]">{t("fullAccess")}</p>}
 
 							{isCurrent && !subscribed && billing?.prepaidUntil && plan.priceMonth > 0 && (
-								<p className="mb-12 text-center text-12 text-[#8c948b]">{t("paidUntil", { date: new Date(billing.prepaidUntil).toLocaleDateString(locale === "ua" ? "uk" : locale) })}</p>
+								<p className="mb-12 text-center text-12 text-[#8c948b]">{t("paidUntil", { date: new Date(billing.prepaidUntil).toLocaleDateString(localeTag(locale)) })}</p>
 							)}
 							{isCurrent && subscribed && billing?.currentPeriodEnd && plan.priceMonth > 0 && (
 								<p className="mb-12 text-center text-12 text-[#8c948b]">{billing.cancelAtPeriodEnd ? t("endsOn", { date }) : t("renewsOn", { date })}</p>

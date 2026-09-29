@@ -5,17 +5,20 @@ import toast from "react-hot-toast";
 import { TbDownload, TbPlus } from "react-icons/tb";
 import { LineItem, useFinanceStore } from "@/store/useFinanceStore";
 import { defaultRateFor } from "@/lib/finance/tax";
+import { STATUS_COLORS } from "@/utils/statusColors";
+import { localeTag } from "@/utils/dateHelpers";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
 import { downloadDocumentPdf } from "./download";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
+import { emptyItem, useDefaultTaxRate } from "./lineItems";
 
-const STATUS_COLOR: Record<string, string> = { draft: "#8c948b", sent: "#5EA8F5", accepted: "#c6ff4d", declined: "#eb5757", expired: "#9AA396" };
-// Пустая строка предложения: не жёсткий 0, а ставка фирмы по умолчанию (lib/finance/tax.ts) — страна из настроек или 0 у освобождённых
-const emptyItem = (taxRate: number): LineItem => ({ description: "", qty: 1, unitPrice: 0, taxRate });
-
+const STATUS_COLOR: Record<string, string> = {
+	draft: STATUS_COLORS.neutral, sent: STATUS_COLORS.info, accepted: STATUS_COLORS.success,
+	declined: STATUS_COLORS.danger, expired: STATUS_COLORS.stale,
+};
 export interface QuotePrefill { dealId: string; customerName: string; contact?: string; company?: string }
 
 // Коммерческое предложение (Angebot): черновик → отправлено → клиент принял/отклонил. Принятое предложение можно одним
@@ -37,12 +40,7 @@ export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: str
 	const toggleHistory = (id: string) => setHistoryOpen((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
 	useEffect(() => { loadQuotes(); loadProducts(); }, [loadQuotes, loadProducts]);
-	// Настройки бухгалтерии приходят асинхронно (их грузит раздел Finance): нетронутую первую строку досеиваем
-	// ставкой фирмы, когда они загрузятся, — предложение из карточки сделки открывается сразу, ещё до ответа настроек
-	useEffect(() => {
-		if (!settings) return;
-		setItems((cur) => cur.map((it) => (!it.description && !it.product && !it.unitPrice ? { ...it, taxRate: defaultRateFor(settings) } : it)));
-	}, [settings]);
+	useDefaultTaxRate(settings, setItems);
 
 	// пришли из карточки сделки (CRM → Deal → "Create Quote") — открываем форму сразу заполненной и со связью на сделку
 	useEffect(() => {
@@ -126,7 +124,7 @@ export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: str
 								<ul className="mt-10 flex flex-col gap-6 rounded-10 border border-inkLineSoft bg-[rgba(255,255,255,0.02)] p-10">
 									{[...q.versions].reverse().map((v) => (
 										<li key={v.version} className="flex items-center justify-between text-11 text-[#9AA396]">
-											<span>v{v.version} · {v.customerName} · {new Date(v.savedAt).toLocaleString(locale === "ua" ? "uk" : locale)}</span>
+											<span>v{v.version} · {v.customerName} · {new Date(v.savedAt).toLocaleString(localeTag(locale))}</span>
 											<span className="font-medium text-[#8c948b]">{money(v.totals.gross, v.currency, locale)}</span>
 										</li>
 									))}

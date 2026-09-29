@@ -6,6 +6,7 @@ import { apiCall } from "@/store/crmApi";
 import { useCurrentUserStore } from "@/store/useCurrentUserStore";
 import { FEATURE_KEYS, planFor, type FeatureKey } from "@/config/plans";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
+import { localeTag } from "@/utils/dateHelpers";
 import Modal from "../shared/Modal";
 import BlogAdmin from "./BlogAdmin";
 
@@ -284,7 +285,7 @@ export default function AdminPanel() {
 								<td className="px-12 py-10"><span className="fs-chip h-24 border-[rgba(198,255,77,0.30)] px-8 text-10 text-[#c6ff4d]">{o.plan}</span></td>
 								<td className="px-12 py-10 text-13 text-[#8c948b]">
 									{o.status ? `${o.stripePlan} · ${o.status}${o.interval ? ` · ${o.interval === "year" ? t("year") : t("month")}` : ""}` : "—"}
-									{o.periodEnd && <span className="block text-12 text-[#9AA396]">{o.cancelAtPeriodEnd ? t("endsOn") : t("renewsOn")} {new Date(o.periodEnd).toLocaleDateString(locale === "ua" ? "uk" : locale)}</span>}
+									{o.periodEnd && <span className="block text-12 text-[#9AA396]">{o.cancelAtPeriodEnd ? t("endsOn") : t("renewsOn")} {new Date(o.periodEnd).toLocaleDateString(localeTag(locale))}</span>}
 								</td>
 								<td className="px-12 py-10">
 									<div className="flex flex-wrap items-center gap-6">

@@ -5,6 +5,7 @@ import { TbPlus, TbTrash } from "react-icons/tb";
 import { LineItem, Product, useFinanceStore } from "@/store/useFinanceStore";
 import { defaultRateFor } from "@/lib/finance/tax";
 import { computeTotals } from "./format";
+import { emptyItem as emptyLine } from "./lineItems";
 
 const cell = "fs-field h-40 w-full px-10 text-13 outline-none";
 
@@ -16,10 +17,9 @@ export default function LineItemsEditor({ items, onChange, products, currency }:
 	const t = useTranslations("finance");
 	const settings = useFinanceStore((s) => s.settings);
 	const defaultTaxRate = defaultRateFor(settings ?? {});
-	const emptyItem = (): LineItem => ({ description: "", qty: 1, unitPrice: 0, taxRate: defaultTaxRate });
 	const set = (i: number, patch: Partial<LineItem>) => onChange(items.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
 	const remove = (i: number) => onChange(items.filter((_, idx) => idx !== i));
-	const add = () => onChange([...items, emptyItem()]);
+	const add = () => onChange([...items, emptyLine(defaultTaxRate)]);
 	const pickProduct = (i: number, productId: string) => {
 		const p = products.find((x) => x.id === productId);
 		if (!p) return set(i, { product: undefined });
