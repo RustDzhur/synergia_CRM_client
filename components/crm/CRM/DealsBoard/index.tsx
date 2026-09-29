@@ -42,6 +42,13 @@ export default function DealsBoard({ search }: Props) {
     useEffect(() => { fetchAll(); }, [fetchAll]);
     useEffect(() => { if (isAddingStage) stageInputRef.current?.focus(); }, [isAddingStage]);
     useClickOutside(moreRef, moreOpen, () => setMoreOpen(false));
+    // Переключились в другое окно посреди переноса — зоны «выиграна» и «корзина» прячем: иначе они
+    // остались бы висеть на доске (DragDropContext в этом случае onDragEnd не вызывает)
+    useEffect(() => {
+        const reset = () => setDragging(false);
+        window.addEventListener("blur", reset);
+        return () => window.removeEventListener("blur", reset);
+    }, []);
 
     const sortedStages = [...stages].sort((a, b) => a.order - b.order);
     const q = search.trim().toLowerCase();
@@ -62,7 +69,7 @@ export default function DealsBoard({ search }: Props) {
 
     async function handleDragEnd(result: DropResult) {
         const { destination, source, draggableId, type } = result;
-        setDragging(false);
+        setDragging(false); // зоны «выиграна» и «корзина» снова прячутся
         if (!destination) return;
 
         // перенос целого столбца влево/вправо
@@ -172,7 +179,7 @@ export default function DealsBoard({ search }: Props) {
             </div>
 
             {view === "kanban" ? (
-                <DragDropContext onDragStart={() => setDragging(true)} onDragEnd={handleDragEnd}>
+                <DragDropContext onDragStart={(start) => setDragging(start.type === "DEAL")} onDragEnd={handleDragEnd}>
                     <Droppable droppableId="board" type="COLUMN" direction="horizontal">
                         {(boardProvided) => (
                             <div
@@ -180,10 +187,9 @@ export default function DealsBoard({ search }: Props) {
                                 {...boardProvided.droppableProps}
                                 className="fs-scroll flex items-start overflow-x-auto pb-16 pr-[24px]"
                             >
-                                {/* Корзина слева от воронки: уронив сюда карточку, её удаляют (после подтверждения).
-								    Зона видна всегда, но приглушена — во время переноса она проявляется: постоянные
-								    зоны не ломают перетаскивание, а появляющиеся посреди жеста — ломают */}
-                                <div className={dragging ? "opacity-100" : "opacity-40"}>
+                                {/* Корзина слева от воронки: появляется, только пока тянут карточку, — в обычной
+								    работе доска остаётся как была. Уронив сюда карточку, её удаляют (после подтверждения) */}
+                                {dragging && (
                                     <Droppable droppableId={TRASH_ZONE} type="DEAL">
                                         {(provided, snapshot) => (
                                             <div className="w-[132px] shrink-0 pr-8">
@@ -204,7 +210,7 @@ export default function DealsBoard({ search }: Props) {
                                             </div>
                                         )}
                                     </Droppable>
-                                </div>
+                                )}
 
                                 {sortedStages.map((stage, index) => (
                                     <Draggable key={stage._id} draggableId={`stage-${stage._id}`} index={index}>
@@ -222,6 +228,33 @@ export default function DealsBoard({ search }: Props) {
                                     </Draggable>
                                 ))}
                                 {boardProvided.placeholder}
+
+                                {/* «Выиграна»: сразу за последним столбцом и только пока тянут карточку — в обычной
+								    работе доска остаётся как была. Сделка, вытянутая сюда, считается прошедшей всю
+								    воронку: карточка переезжает в последний этап с отметкой о выигрыше */}
+                                {dragging && (
+                                    <Droppable droppableId={WON_ZONE} type="DEAL">
+                                        {(provided, snapshot) => (
+                                            <div className="w-[168px] shrink-0 px-8">
+                                                <div className="h-[54px]" aria-hidden />
+                                                <div
+                                                    ref={provided.innerRef}
+                                                    {...provided.droppableProps}
+                                                    className={`mt-8 flex min-h-[420px] flex-col items-center justify-center gap-10 rounded-12 border border-dashed p-12 text-center transition-colors duration-200 ${
+                                                        snapshot.isDraggingOver
+                                                            ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.12)] text-[#c6ff4d]"
+                                                            : "border-[rgba(198,255,77,0.35)] text-[#8c948b]"
+                                                    }`}
+                                                >
+                                                    <TbTrophy size={26} />
+                                                    <span className="text-12 font-medium">{t("dropToWin")}</span>
+                                                    <span className="text-11 text-[#8c948b]">{t("dropToWinHint")}</span>
+                                                    {provided.placeholder}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </Droppable>
+                                )}
 
                                 {/* Кнопка новой колонки стоит там, где стояла бы следующая стрелка: острие
                                     последней заходит сюда на ARROW_OVERHANG, поэтому слева остаётся место под
@@ -256,31 +289,6 @@ export default function DealsBoard({ search }: Props) {
                                     </div>
                                 </div>
 
-                                {/* «Выиграна»: зона сразу за последним столбцом. Сделка, вытянутая сюда,
-								    считается прошедшей всю воронку — карточка переезжает в последний этап с отметкой */}
-                                <div className={dragging ? "opacity-100" : "opacity-40"}>
-                                    <Droppable droppableId={WON_ZONE} type="DEAL">
-                                        {(provided, snapshot) => (
-                                            <div className="w-[168px] shrink-0 pl-8">
-                                                <div className="h-[54px]" aria-hidden />
-                                                <div
-                                                    ref={provided.innerRef}
-                                                    {...provided.droppableProps}
-                                                    className={`mt-8 flex min-h-[420px] flex-col items-center justify-center gap-10 rounded-12 border border-dashed p-12 text-center transition-colors duration-200 ${
-                                                        snapshot.isDraggingOver
-                                                            ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.12)] text-[#c6ff4d]"
-                                                            : "border-[rgba(198,255,77,0.35)] text-[#8c948b]"
-                                                    }`}
-                                                >
-                                                    <TbTrophy size={26} />
-                                                    <span className="text-12 font-medium">{t("dropToWin")}</span>
-                                                    <span className="text-11 text-[#8c948b]">{t("dropToWinHint")}</span>
-                                                    {provided.placeholder}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </Droppable>
-                                </div>
                             </div>
                         )}
                     </Droppable>
