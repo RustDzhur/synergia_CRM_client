@@ -27,7 +27,7 @@ export default function SignupField({ field: def, placeholder, control, password
 				<div className="relative">
 					<input
 						{...field}
-						type={def.type}
+						type={isPassword && passwordVisible ? "text" : def.type}
 						placeholder={placeholder}
 						className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
 					/>
