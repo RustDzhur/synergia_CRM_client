@@ -1,11 +1,21 @@
 import { create } from "zustand";
 import toast from "react-hot-toast";
 
-interface SignUpFormData {
+// Данные фирмы при регистрации по вкладке «Company»: имя человека там не спрашивают,
+// поэтому аккаунт называется именем фирмы, а реквизиты уходят в настройки бухгалтерии
+export interface SignUpCompany {
+	name: string;
+	taxNumber?: string;
+	phone?: string;
+	address?: string;
+}
+
+export interface SignUpFormData {
 	firstname: string;
 	lastname: string;
 	email: string;
 	password: string;
+	company?: SignUpCompany;
 }
 
 interface SignInFormData {

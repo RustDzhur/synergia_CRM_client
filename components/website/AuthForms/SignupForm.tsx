@@ -6,7 +6,8 @@ import { useTranslations } from "next-intl";
 import useAuthStore from "@/store/useAuthStore";
 import SignupField from "./signupParts/SignupField";
 import SignupTabs from "./signupParts/SignupTabs";
-import { COMPANY_FIELDS, PERSONAL_FIELDS, SignUpFormData, SignupTab } from "./signupParts/model";
+import { COMPANY_FIELDS, PERSONAL_FIELDS, SignupTab } from "./signupParts/model";
+import { signupPayload } from "./signupParts/payload";
 
 function SignupForm() {
 	const { isLoading, signUp } = useAuthStore();
@@ -19,8 +20,7 @@ function SignupForm() {
 	const { isSignInFormOpen, isSignUpFormOpen, toggleSignInForm, toggleSignUpForm } = useAuthFormStore();
 
 	const onSubmit: SubmitHandler<FieldValues> = async (data) => {
-		const { firstname, lastname, email, password } = data as SignUpFormData;
-		const success = await signUp({ firstname, lastname, email, password });
+		const success = await signUp(signupPayload(activeTab, data));
 		if (success) {
 			toggleSignUpForm();
 			toggleSignInForm(); // открыть форму входа

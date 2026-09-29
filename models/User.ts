@@ -4,7 +4,8 @@ import { registerModel } from "@/lib/registerModel";
 const UserSchema = new Schema(
     {
         firstname: { type: String, required: true, trim: true },
-        lastname: { type: String, required: true, trim: true },
+        // у аккаунта, заведённого по вкладке «Company», фамилии нет: имя — название фирмы
+        lastname: { type: String, default: "", trim: true },
         email: { type: String, required: true, unique: true, lowercase: true, trim: true },
         // Администратор платформы: доступ к кабинету администратора. Выдаётся из самого кабинета
         // или переменной окружения ADMIN_EMAILS (см. lib/admin.ts)

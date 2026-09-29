@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { TbChevronLeft, TbChevronRight, TbDots, TbPlus, TbSettings } from "react-icons/tb";
 import { Employee, useEmployeeStore } from "@/store/useEmployeeStore";
 import Dropdown from "@/utils/Dropdown";
@@ -12,6 +12,7 @@ import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tab
 import RecordsPage from "../shared/records/RecordsPage";
 import SearchBox from "../shared/SearchBox";
 import { KNOWLEDGE } from "./knowledge";
+import { knowledgeSeed } from "./knowledgeSeed";
 import Avatar from "../shared/Avatar";
 
 const initials = (e: Employee) => `${e.firstname[0] ?? ""}${e.lastname[0] ?? ""}`.toUpperCase();
@@ -19,7 +20,10 @@ const initials = (e: Employee) => `${e.firstname[0] ?? ""}${e.lastname[0] ?? ""}
 // Меню строки: «Edit / Delete» (значок «≡» слева в строке таблицы)
 // Вкладка «База знаний»: отдельный раздел записей со своей шапкой и таблицей.
 function KnowledgeTab() {
-    return <RecordsPage config={KNOWLEDGE} />;
+    const locale = useLocale();
+    // Стартовые статьи — на языке интерфейса: пока фирма не добавила свои, база знаний показывает их
+    const config = useMemo(() => ({ ...KNOWLEDGE, seed: knowledgeSeed(locale) }), [locale]);
+    return <RecordsPage config={config} />;
 }
 
 function RowMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
