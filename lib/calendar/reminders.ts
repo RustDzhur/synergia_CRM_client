@@ -86,7 +86,7 @@ export async function sweepEventReminders(org: string, tzOffsetMinutes = 0, thro
                 event.description ? `\n${event.description}` : "",
                 "",
                 "Diese Erinnerung wurde in Firmspace AI erstellt.",
-            ].filter(Boolean).join("\n"));
+            ].filter(Boolean).join("\n"), tzOffsetMinutes);
         }
     }
     return sent;

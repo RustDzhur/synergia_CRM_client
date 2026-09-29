@@ -3,6 +3,7 @@ import { packSecrets, secretsOf } from "@/lib/integrations";
 import { shiftDay } from "@/lib/events";
 import { type ExternalEvent, upsertExternalEvents } from "@/lib/calendar/sources";
 import type { HydratedDocument } from "mongoose";
+import { tzOffsetOf } from "@/lib/timezone";
 import Integration from "@/models/Integration";
 
 type Doc = HydratedDocument<any>;
@@ -153,7 +154,6 @@ export async function icloudSync(org: string, from: string, to: string): Promise
 async function ownerOffset(org: string): Promise<number> {
     const User = (await import("@/models/User")).default;
     const owner = await User.findById(org).select("timezone").lean<{ timezone?: string }>().catch(() => null);
-    // timezone в профиле — свободный текст, поэтому доверяем только числу минут
-    const n = Number(owner?.timezone);
-    return Number.isFinite(n) ? Math.max(-840, Math.min(840, n)) : 0;
+    // timezone в профиле — свободный текст, поэтому доверяем только числу минут (lib/timezone.ts)
+    return tzOffsetOf(owner?.timezone) ?? 0;
 }
