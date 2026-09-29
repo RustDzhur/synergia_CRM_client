@@ -68,7 +68,7 @@ export function featureForPage(path: string): FeatureKey | null {
         case "crm": return "crm";
         case "tasks": return "tasks";
         case "company": return "company";
-        case "inventory": return "inventory";
+        case "inventory": case "finance": return "inventory";
         case "marketing": return "marketing";
         case "automation": return "automation";
         default: return null; // дашборд, настройки, оплата, админ-кабинет

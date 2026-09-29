@@ -12,9 +12,8 @@ import Softphone from "@/components/crm/shared/Softphone";
 import "@/app/[locale]/styles/crm-dark.css";
 import useAuthStore from "@/store/useAuthStore";
 import { useThemeStore } from "@/store/useThemeStore";
-import { useActiveOrg, useFeature } from "@/store/useOrgStore";
+import { useActiveOrg, useFeature, useOrgStore } from "@/store/useOrgStore";
 import { featureForPage } from "@/lib/features";
-import Upgrade from "@/components/crm/Upgrade";
 import Loader from "@/utils/Loader";
 
 export default function CrmLayout({ children }: { children: React.ReactNode }) {
@@ -26,6 +25,7 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
     // раздел, который открывает страница: если его нет в тарифе фирмы, вместо раздела показываем выбор тарифа
     const path = pathname?.startsWith(`/${locale}/`) ? pathname.slice(locale.length + 1) : pathname ?? "";
     const needed = featureForPage(path);
+    const orgLoaded = useOrgStore((s) => s.loaded);
     const locked = !!needed && activeOrg?.features?.[needed] === false;
     const softphone = useFeature("channels");
     const aiAssistant = useFeature("aiAssistant");
@@ -38,6 +38,10 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (authChecked && !isAuthenticated) router.replace(`/${locale}`);
     }, [authChecked, isAuthenticated, router, locale]);
+    // закрытый тарифом раздел по прямой ссылке: ведём на выбор тарифа, там объясняем, что сначала нужно сменить тариф
+    useEffect(() => {
+        if (needed && locked) router.replace(`/${locale}/crm/upgrade?locked=${needed}`);
+    }, [needed, locked, router, locale]);
 
     if (!authChecked || !isAuthenticated) {
         return (
@@ -74,7 +78,12 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
                         </div>
                     </header>
                     <MobilePageBar />
-                    <main className="min-w-0 flex-1 pb-[80px]">{locked ? <Upgrade /> : children}</main>
+                    <main className="min-w-0 flex-1 pb-[80px]">
+                        {/* пока не известен тариф, закрытый раздел не монтируем: иначе он успел бы запросить данные и получить 403 */}
+                        {needed && (!orgLoaded || locked) ? (
+                            <div className="flex items-center justify-center py-80"><Loader color="#5EA8F5" width="50" height="10" radius="9" /></div>
+                        ) : children}
+                    </main>
                 </div>
             </div>
             <ModalNavigation />

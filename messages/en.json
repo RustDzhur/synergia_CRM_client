@@ -909,6 +909,7 @@
     "checkoutSuccess": "Payment received. Your plan is active.",
     "checkoutPending": "Thank you! We are confirming your payment, the plan will switch on in a moment.",
     "checkoutCancel": "Payment was cancelled. Nothing was charged.",
+    "lockedNotice": "“{feature}” is not included in your current plan. Please change your plan first.",
     "securePayment": "Secure checkout by Stripe. We never see or store your card details.",
     "payCrypto": "or pay with crypto",
     "cryptoNotConfigured": "Crypto payments are not switched on yet.",

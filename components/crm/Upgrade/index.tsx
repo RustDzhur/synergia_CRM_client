@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
 import { TbChartBar, TbCircle, TbCircleCheck, TbFileText, TbInfoCircle, TbLock } from "react-icons/tb";
 import { SiApplepay, SiGooglepay, SiKlarna, SiMastercard, SiPaypal, SiVisa } from "react-icons/si";
-import { FEATURE_KEYS, PLANS, PlanId, YEAR_MONTHS } from "@/config/plans";
+import { FEATURE_KEYS, FeatureKey, PLANS, PlanId, YEAR_MONTHS } from "@/config/plans";
 import { apiCall } from "@/store/crmApi";
 import PageHeader from "@/components/crm/shared/PageHeader";
 import { localeTag } from "@/utils/dateHelpers";
@@ -37,6 +37,8 @@ export default function Upgrade() {
 	const [invoiceOpen, setInvoiceOpen] = useState(false);
 	const [inv, setInv] = useState({ plan: "standard", company: "", vatId: "", note: "" });
 	const [pendingAutoPlan, setPendingAutoPlan] = useState<PlanId | null>(null);
+	// раздел, в который пытались зайти по прямой ссылке, но которого нет в тарифе (?locked=… ставит layout CRM)
+	const [lockedFeature, setLockedFeature] = useState<FeatureKey | null>(null);
 
 	const load = useCallback(async () => {
 		const res = await apiCall<Billing>("/api/billing");
@@ -52,7 +54,9 @@ export default function Upgrade() {
 		// Stripe Checkout для него автоматически, не заставляя нажимать "Buy" второй раз
 		const startPlan = q.get("startPlan");
 		const startInterval = q.get("interval");
-		if (result || q.get("crypto") || startPlan) window.history.replaceState(null, "", window.location.pathname);
+		const locked = q.get("locked");
+		if (locked && (FEATURE_KEYS as readonly string[]).includes(locked)) setLockedFeature(locked as FeatureKey);
+		if (result || q.get("crypto") || startPlan || locked) window.history.replaceState(null, "", window.location.pathname);
 		if (startPlan === "standard" || startPlan === "professional") {
 			if (startInterval === "year") setInterval("year");
 			setPendingAutoPlan(startPlan);
@@ -135,6 +139,7 @@ export default function Upgrade() {
 						{t("yearly")} <span className="ml-6 text-11 opacity-80">{t("twoMonthsFree", { count: 12 - YEAR_MONTHS })}</span>
 					</button>
 				</div>
+				{lockedFeature && <p role="alert" className="rounded-10 bg-[rgba(244,161,0,0.10)] px-16 py-10 text-center text-13 text-[#F4A100]">{t("lockedNotice", { feature: t(lockedFeature) })}</p>}
 				{billing && billing.status === "past_due" && <p role="alert" className="rounded-10 bg-[rgba(244,161,0,0.10)] px-16 py-10 text-12 text-[#F4A100]">{t("pastDue")}</p>}
 				{billing && !billing.configured && <p className="rounded-10 border border-inkLine bg-[rgba(255,255,255,0.03)] px-16 py-10 text-12 text-[#8c948b]">{t("paymentsNotConfigured")}</p>}
 			</div>

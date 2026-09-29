@@ -909,6 +909,7 @@
     "checkoutSuccess": "Zahlung erhalten. Ihr Tarif ist aktiv.",
     "checkoutPending": "Vielen Dank! Wir bestätigen Ihre Zahlung, der Tarif wird gleich aktiviert.",
     "checkoutCancel": "Die Zahlung wurde abgebrochen. Es wurde nichts abgebucht.",
+    "lockedNotice": "Der Bereich „{feature}“ ist in Ihrem aktuellen Tarif nicht enthalten. Bitte wechseln Sie zuerst Ihren Tarif.",
     "securePayment": "Sichere Zahlung über Stripe. Ihre Kartendaten sehen und speichern wir nie.",
     "payCrypto": "oder mit Krypto zahlen",
     "cryptoNotConfigured": "Krypto-Zahlungen sind noch nicht aktiviert.",
