@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbAlertTriangle } from "react-icons/tb";
 import { useFinanceStore } from "@/store/useFinanceStore";

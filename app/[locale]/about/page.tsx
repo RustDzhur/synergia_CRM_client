@@ -1,4 +1,4 @@
-import React from "react";
+import "react";
 import AboutUs from "../../../components/website/components/AboutUs";
 import { Footer, Navigation } from "../../../components/website";
 

@@ -8,7 +8,7 @@ import { useToggleMenuState } from "@/store/useToggleMenuState";
 import { useNotificationStore } from "@/store/useNotificationStore";
 import { stripLocale } from "@/utils/locale";
 import Collapse from "@/utils/Collapse";
-import { isActivePath, type MenuGroup, type MenuItem, type SubMenuItem } from "../menuItems";
+import { type SubMenuItem, type MenuItem, type MenuGroup, isActivePath } from "../menuItems";
 import { useVisibleMenu } from "../useVisibleMenu";
 import BrandMark from "@/components/crm/components/shared/BrandMark";
 import OrgSwitcher from "./OrgSwitcher";

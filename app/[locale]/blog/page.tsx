@@ -1,4 +1,4 @@
-import React from "react";
+import "react";
 import BlogPage from "@/components/website/components/Blog";
 import { Footer, Navigation } from "../../../components/website";
 

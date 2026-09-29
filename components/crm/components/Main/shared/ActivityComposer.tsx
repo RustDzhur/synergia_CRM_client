@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { MdAlternateEmail, MdAttachFile, MdInsertDriveFile } from "react-icons/md";
 import { NewActivity } from "@/store/crmApi";

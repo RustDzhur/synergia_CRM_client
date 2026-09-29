@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { useTranslations } from "next-intl";
 import { TbPlus, TbTrash } from "react-icons/tb";
 import { LineItem, Product, useFinanceStore } from "@/store/useFinanceStore";

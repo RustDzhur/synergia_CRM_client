@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useLocale } from "next-intl";
@@ -7,7 +7,7 @@ import { tx } from "@/content/i18n";
 import { BLOG } from "@/content/sitePages";
 import { withLocale } from "@/utils/locale";
 import PageShell from "../PageShell";
-import { blogImage, type BlogPostDTO } from "./index";
+import { type BlogPostDTO, blogImage } from "./index";
 
 // Страница статьи блога: /blog/<slug> — статья приходит из БД (/api/blog/:slug)
 export default function BlogPost({ slug }: { slug: string }) {

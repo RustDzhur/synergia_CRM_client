@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, failure, unauthorized } from "@/lib/api";
-import { amountCents, isPaidPlan, type Interval } from "@/lib/billing";
+import { type Interval, amountCents, isPaidPlan } from "@/lib/billing";
 import { stripe, stripeConfigured } from "@/lib/stripe";
 import Organization from "@/models/Organization";
 import User from "@/models/User";

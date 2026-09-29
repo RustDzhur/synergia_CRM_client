@@ -33,7 +33,7 @@ function ActionCard({ message, action }: { message: AiMessage; action: AiAction 
 	const [edits, setEdits] = useState<Record<string, string>>({});
 	const editable = EDITABLE[action.tool] ?? [];
 	const fields = Object.entries(action.args).filter(([k, v]) => k !== "id" && !k.endsWith("_id") && v !== "" && v !== undefined);
-	const shown = (k: string, v: unknown) => (typeof v === "boolean" ? t(v ? "yes" : "no") : String(v).replace("T", " "));
+	const shown = (v: unknown) => (typeof v === "boolean" ? t(v ? "yes" : "no") : String(v).replace("T", " "));
 	const done = action.state === "done";
 
 	return (
@@ -54,7 +54,7 @@ function ActionCard({ message, action }: { message: AiMessage; action: AiAction 
 									<input value={edits[k] ?? String(v)} onChange={(e) => setEdits({ ...edits, [k]: e.target.value })} className="fs-field w-full px-10 py-6 text-13 outline-none" />
 								)
 							) : (
-								<span className="whitespace-pre-wrap">{shown(k, v)}</span>
+								<span className="whitespace-pre-wrap">{shown(v)}</span>
 							)}
 						</dd>
 					</React.Fragment>
@@ -102,7 +102,7 @@ export default function AiAssistant() {
 	const t = useTranslations("ai");
 	const locale = useLocale();
 	const pathname = usePathname();
-	const { open, messages, busy, status, draft, setDraft, show, hide, reset, send } = useAiStore();
+	const { open, messages, busy, status, draft, setDraft, hide, reset, send } = useAiStore();
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const endRef = useRef<HTMLDivElement>(null);
 	const [recent, setRecent] = useState<string[]>([]);

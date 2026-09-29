@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
-import { ASSIGNABLE_ROLES, GRANTABLE, type Role } from "@/lib/access";
+import { type Role, ASSIGNABLE_ROLES, GRANTABLE } from "@/lib/access";
 import Membership from "@/models/Membership";
 
 export const dynamic = "force-dynamic";

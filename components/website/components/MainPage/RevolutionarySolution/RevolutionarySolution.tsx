@@ -1,6 +1,6 @@
 "use client";
 import { withLocale } from "@/utils/locale";
-import React from "react";
+import "react";
 import Link from "next/link";
 import dock from "@/assets/images/dockPort.jpg";
 import Logo from "../../Navigation/components/Logo";

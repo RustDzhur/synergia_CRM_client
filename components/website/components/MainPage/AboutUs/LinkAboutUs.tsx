@@ -3,7 +3,7 @@ import { useLanguageStore } from "@/store/useLanguageStore";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { withLocale } from "@/utils/locale";
-import React from "react";
+import "react";
 
 export default function LinkAboutUs() {
 	const { selectedLanguage } = useLanguageStore();

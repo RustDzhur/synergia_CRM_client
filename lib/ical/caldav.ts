@@ -1,5 +1,5 @@
 import { fetchProvider } from "@/lib/http";
-import { parseIcal, type IcalOccurrence } from "./parse";
+import { type IcalOccurrence, parseIcal } from "./parse";
 
 // Клиент CalDAV. Так отдают календари iCloud (и большинство корпоративных серверов): обычный HTTP
 // с методами PROPFIND и REPORT и XML в теле. Библиотеки для этого в проекте нет и поставить нечего,

@@ -1,4 +1,3 @@
-import type PDFDocument from "pdfkit";
 import { computeTotals, taxBreakdown } from "./totals";
 import { epcPayload, qrMatrix } from "./qr";
 import { templateDef } from "./templates";

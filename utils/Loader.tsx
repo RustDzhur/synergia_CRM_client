@@ -1,4 +1,4 @@
-import React from "react";
+import "react";
 import { ThreeDots } from "react-loader-spinner";
 
 interface LoaderProps {

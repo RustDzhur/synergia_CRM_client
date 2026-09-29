@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useLocale } from "next-intl";

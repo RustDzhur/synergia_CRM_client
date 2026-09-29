@@ -1,5 +1,5 @@
 import { fetchProvider, ProviderError } from "@/lib/http";
-import { mediaKind, type MediaRef } from "./media";
+import { type MediaRef, mediaKind } from "./media";
 
 // TELEGRAM_API_URL нужен для собственного Bot API сервера и для локальных проверок без настоящего бота
 const base = () => (process.env.TELEGRAM_API_URL || "https://api.telegram.org").replace(/\/+$/, "");

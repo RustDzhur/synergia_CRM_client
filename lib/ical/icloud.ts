@@ -1,7 +1,7 @@
 import { ProviderError } from "@/lib/http";
 import { packSecrets, secretsOf } from "@/lib/integrations";
 import { shiftDay } from "@/lib/events";
-import { upsertExternalEvents, type ExternalEvent } from "@/lib/calendar/sources";
+import { type ExternalEvent, upsertExternalEvents } from "@/lib/calendar/sources";
 import type { HydratedDocument } from "mongoose";
 import Integration from "@/models/Integration";
 

@@ -1,10 +1,10 @@
 "use client";
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { apiCall } from "@/store/crmApi";
 import { useCurrentUserStore } from "@/store/useCurrentUserStore";
-import { FEATURE_KEYS, planFor, type FeatureKey } from "@/config/plans";
+import { type FeatureKey, FEATURE_KEYS, planFor } from "@/config/plans";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
 import { localeTag } from "@/utils/dateHelpers";
 import Modal from "../shared/Modal";

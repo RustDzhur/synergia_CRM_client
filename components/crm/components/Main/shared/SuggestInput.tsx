@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { TbSearch } from "react-icons/tb";
 import Dropdown from "@/utils/Dropdown";
 import { useClickOutside } from "@/utils/useClickOutside";

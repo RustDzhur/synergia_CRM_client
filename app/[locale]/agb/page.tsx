@@ -1,6 +1,6 @@
 import { Footer, Navigation } from "@/components/website";
 import Terms from "@/components/website/components/Terms/Terms";
-import React from "react";
+import "react";
 
 export default function page() {
 	return (

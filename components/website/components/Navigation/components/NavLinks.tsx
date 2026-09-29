@@ -1,6 +1,6 @@
 "use client";
 import { withLocale } from "@/utils/locale";
-import React from "react";
+import "react";
 import NavLink from "./NavLink";
 import SwitchLanguage from "./SwitchLanguage";
 import { useTranslations } from "next-intl";

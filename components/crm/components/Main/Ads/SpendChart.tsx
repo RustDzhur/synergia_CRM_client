@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import { useState } from "react";
 import { useLocale } from "next-intl";
 import type { AdsDay } from "@/lib/ads/types";
 import { count, money } from "./adsFormat";

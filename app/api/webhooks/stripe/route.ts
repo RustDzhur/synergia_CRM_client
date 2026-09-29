@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { applySubscription, type StripeSubscription } from "@/lib/billing";
+import { type StripeSubscription, applySubscription } from "@/lib/billing";
 import { stripe, verifyStripeSignature } from "@/lib/stripe";
 import { reportError } from "@/lib/reportError";
 

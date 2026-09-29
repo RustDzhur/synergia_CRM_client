@@ -1,4 +1,4 @@
-import { CHATBOT_FAQ, type FaqEntry } from "@/content/chatbotFaq";
+import { type FaqEntry, CHATBOT_FAQ } from "@/content/chatbotFaq";
 import { tx } from "@/content/i18n";
 
 // Простой подбор ответа по ключевым словам — без обращения к языковой модели (осознанный выбор для публичного

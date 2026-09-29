@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbCalendarEvent } from "react-icons/tb";
 import { Task } from "@/store/useTaskStore";

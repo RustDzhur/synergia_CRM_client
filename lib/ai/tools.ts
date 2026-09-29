@@ -1,4 +1,4 @@
-import { canAccess, type Module, type Role } from "@/lib/access";
+import { type Role, type Module, canAccess } from "@/lib/access";
 import { contactFullName, escapeRegex } from "@/lib/crmFields";
 import { postTask } from "@/lib/feed";
 import { emit, emitDeal } from "@/lib/automation/emit";

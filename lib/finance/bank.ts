@@ -180,8 +180,6 @@ export function suggestMatches(
         const db = Date.parse(`${b}T00:00:00Z`);
         return Number.isFinite(da) && Number.isFinite(db) ? Math.abs(da - db) / 86400000 : 999;
     };
-    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-
     for (const t of transactions) {
         // приход сверяем со счетами (клиент заплатил), расход — с расходами
         const pool = candidates.filter((c) => (t.amount > 0 ? c.amount > 0 : c.amount < 0));

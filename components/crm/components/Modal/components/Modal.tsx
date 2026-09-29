@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import "react";
 import {ModalProps} from '@/types/Modal'
 
 const Modal = ({ isOpen, onClose, children }: ModalProps) => {

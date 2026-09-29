@@ -25,8 +25,6 @@ export interface LegacyEvent {
 	externalId: string;
 }
 
-const text = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
-
 // События из сохранённого состояния; всё лишнее приводим к тем же значениям, что проверяет /api/events
 export function readLegacyEvents(): LegacyEvent[] {
 	try {

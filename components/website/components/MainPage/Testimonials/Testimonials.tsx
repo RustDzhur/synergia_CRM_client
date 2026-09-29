@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef } from "react";
+import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import { IconContext } from "react-icons";
 import { TbBolt, TbChartHistogram, TbMessages, TbReceipt2, TbShieldCheck, TbUsersGroup } from "react-icons/tb";

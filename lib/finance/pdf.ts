@@ -1,6 +1,6 @@
 import PDFDocument from "pdfkit";
 import notoSansUrl from "@/assets/fonts/NotoSans-Regular.ttf";
-import { isTemplate, renderLayout } from "./layouts";
+import { renderLayout } from "./layouts";
 export { TEMPLATES, TEMPLATE_IDS, isTemplate, templateDef } from "./templates";
 export type { TemplateDef, TemplateVariant } from "./templates";
 

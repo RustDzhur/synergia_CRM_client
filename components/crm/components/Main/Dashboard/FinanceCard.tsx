@@ -1,8 +1,8 @@
 "use client";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { useFinanceStore, type FinanceDashboard } from "@/store/useFinanceStore";
+import { type FinanceDashboard, useFinanceStore } from "@/store/useFinanceStore";
 import { useFeature, useOrgStore } from "@/store/useOrgStore";
 import { money } from "../Finance/format";
 import { Kpi } from "../Ads/AdsPanel";

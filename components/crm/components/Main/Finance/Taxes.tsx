@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbAlertTriangle, TbInfoCircle } from "react-icons/tb";
 import { useFinanceStore } from "@/store/useFinanceStore";

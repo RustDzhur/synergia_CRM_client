@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbMail, TbMessageCircle, TbPhone } from "react-icons/tb";
 import { Deal } from "@/store/useCrmStore";

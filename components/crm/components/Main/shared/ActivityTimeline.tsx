@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { MdAccessTimeFilled, MdClose, MdTune } from "react-icons/md";
 import type { Activity } from "@/types/crm";

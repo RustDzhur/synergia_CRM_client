@@ -1,5 +1,5 @@
 "use client";
-import React, { useId, useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Deal, Stage } from "@/store/useCrmStore";
 import { localeTag } from "@/utils/dateHelpers";

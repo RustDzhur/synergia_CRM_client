@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { apiCall } from "@/store/crmApi";
 import { localeTag } from "@/utils/dateHelpers";

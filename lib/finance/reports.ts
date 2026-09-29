@@ -3,7 +3,7 @@ import Expense from "@/models/Expense";
 import { financeSettings } from "./settings";
 import { assetsSummary } from "./assets";
 import Asset from "@/models/Asset";
-import { costsByCategory, incomeOf, inputVatByRate, monthlySeries, salesByRate, sumGross, sumNet, totalNet, totalTax } from "./reportMath";
+import { costsByCategory, incomeOf, inputVatByRate, monthlySeries, salesByRate, sumGross, totalNet, totalTax } from "./reportMath";
 
 // Отчёты для налоговой и для себя: UStVA (декларация по НДС), EÜR (доходы-расходы), BWA (анализ хозяйственной
 // деятельности) и SuSa (оборотно-сальдовая ведомость). Всё считается из уже имеющихся документов — счетов,
@@ -221,7 +221,6 @@ export async function businessAnalysis(org: string, from: string, to: string): P
 // выручка по ставкам, дебиторка по неоплаченным счетам, кредиторка по расходам и налог.
 // Это управленческая, а не финансовая ведомость — для банка или аудитора её ведёт бухгалтер.
 export async function trialBalance(org: string, from: string, to: string): Promise<TrialBalance> {
-    const settings = await financeSettings(org);
     const vat = await vatReturn(org, from, to);
 
     const openInvoices = await Invoice.find({

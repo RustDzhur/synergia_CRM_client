@@ -1,7 +1,7 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { TbAdjustments, TbPencil, TbSearch, TbX } from "react-icons/tb";
+import { TbPencil, TbX } from "react-icons/tb";
 import { Employee, useEmployeeStore } from "@/store/useEmployeeStore";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
 import SearchBox from "../shared/SearchBox";

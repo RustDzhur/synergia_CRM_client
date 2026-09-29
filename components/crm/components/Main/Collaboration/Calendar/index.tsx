@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbChevronDown, TbChevronLeft, TbChevronRight } from "react-icons/tb";
 import { CalEvent, CalendarKind, useCollabHydration, useCollabStore } from "@/store/useCollabStore";

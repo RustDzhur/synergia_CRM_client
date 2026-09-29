@@ -2,7 +2,7 @@
 // (lib/auth.ts) и определяет, что видно и что вообще открывается. Администратор платформы может выдать отдельные
 // разделы сверх тарифа — Organization.featureOverrides главнее тарифа (тумблеры в админ-кабинете).
 // Файл намеренно не тянет ни базу, ни биллинг: те же функции нужны в браузере (меню и страницы).
-import { FEATURE_KEYS, planFor, type FeatureKey, type PlanId } from "@/config/plans";
+import { type PlanId, type FeatureKey, FEATURE_KEYS, planFor } from "@/config/plans";
 
 export type FeatureOverrides = Partial<Record<FeatureKey, boolean>>;
 

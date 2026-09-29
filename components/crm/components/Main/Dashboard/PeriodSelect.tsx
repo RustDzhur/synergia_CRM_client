@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TbChevronDown } from "react-icons/tb";
 import Dropdown from "@/utils/Dropdown";

@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { AiOutlineClose } from "react-icons/ai";
 import { IconContext } from "react-icons";
 import { useSiteMenuState } from "@/store/useSiteMenuState";

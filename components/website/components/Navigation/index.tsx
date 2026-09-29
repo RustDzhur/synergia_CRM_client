@@ -1,4 +1,4 @@
-import React from "react";
+import "react";
 import BurgerMenu from "./components/BurgerMenu";
 import NavLinks from "./components/NavLinks";
 import AuthLinks from "./components/AuthLinks";

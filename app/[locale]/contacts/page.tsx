@@ -1,4 +1,4 @@
-import React from "react";
+import "react";
 import ContactsPage from "../../../components/website/components/Contacts";
 import { Footer, Navigation } from "../../../components/website";
 

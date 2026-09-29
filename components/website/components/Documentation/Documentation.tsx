@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { useLocale, useTranslations } from "next-intl";
 import { tx } from "@/content/i18n";
 import { DOCS } from "@/content/footerPages";

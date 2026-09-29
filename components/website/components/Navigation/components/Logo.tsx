@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import React from "react";
+import "react";
 import { useLocale } from "next-intl";
 import BrandMark from "@/components/crm/components/shared/BrandMark";
 import { withLocale } from "@/utils/locale";

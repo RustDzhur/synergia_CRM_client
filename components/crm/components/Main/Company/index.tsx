@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { TbAdjustments, TbChevronLeft, TbChevronRight, TbDots, TbPlus, TbSearch, TbSettings } from "react-icons/tb";
+import { TbChevronLeft, TbChevronRight, TbDots, TbPlus, TbSettings } from "react-icons/tb";
 import { Employee, useEmployeeStore } from "@/store/useEmployeeStore";
 import Dropdown from "@/utils/Dropdown";
 import { useClickOutside } from "@/utils/useClickOutside";

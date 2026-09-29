@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import Slider from "react-slick";
 import { AiFillCheckCircle } from "react-icons/ai";
 import { useTranslations } from "next-intl";

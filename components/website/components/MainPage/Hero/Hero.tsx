@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { useTranslations } from "next-intl";
 import { TbArrowRight, TbPlayerPlayFilled } from "react-icons/tb";
 import HeroAppFrame from "./HeroAppFrame";

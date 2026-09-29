@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef } from "react";
+import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import { MdClose } from "react-icons/md";
 import { COLOR_PALETTE } from "@/utils/stageColors";

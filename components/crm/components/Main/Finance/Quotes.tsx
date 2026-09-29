@@ -35,8 +35,6 @@ export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: str
 	const [dealLink, setDealLink] = useState<{ deal?: string; contact?: string; company?: string }>({});
 	const [historyOpen, setHistoryOpen] = useState<Set<string>>(new Set());
 	// Окно «введите адрес»: открывается, когда у клиента нет сохранённого e-mail (сервер отвечает no_recipient)
-	const [mailFor, setMailFor] = useState<string | null>(null);
-	const [mailTo, setMailTo] = useState("");
 	const toggleHistory = (id: string) => setHistoryOpen((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
 	useEffect(() => { loadQuotes(); loadProducts(); }, [loadQuotes, loadProducts]);
@@ -60,22 +58,13 @@ export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: str
 		toast.success(t("saved"));
 		setOpen(false); setCustomerName(""); setItems([emptyItem(defaultTaxRate)]); setDealLink({});
 	}
-	async function send(id: string, to?: string) {
+	async function send(id: string) {
 		setBusy(id);
-		const r = await sendQuote(id, to);
+		const r = await sendQuote(id);
 		setBusy(null);
 		if (r.ok) return toast.success(t("sentTo", { email: r.sentTo }));
-		if (r.code === "no_recipient") { if (to) toast.error(r.message); setMailFor(id); setMailTo(to ?? ""); return; }
+		// адреса у клиента нет — сервер объясняет это в message, показываем как есть
 		toast.error(r.message);
-	}
-	async function submitMail(e: React.FormEvent) {
-		e.preventDefault();
-		if (!mailFor) return;
-		const to = mailTo.trim();
-		if (!to) return toast.error(t("emailRequired"));
-		const id = mailFor;
-		setMailFor(null);
-		await send(id, to);
 	}
 	async function downloadPdf(id: string, number: string) {
 		if (!(await downloadDocumentPdf("quotes", id, number, locale))) toast.error(t("pdfFailed"));

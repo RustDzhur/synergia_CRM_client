@@ -2,7 +2,7 @@ import { connectDB } from "@/lib/mongodb";
 import { rateLimited } from "@/lib/rateLimit";
 import { findByToken } from "@/lib/integrations";
 import { corsJson, corsPreflight, validVisitor } from "@/lib/channels/webchat";
-import { mediaLabel, saveMedia, type MediaKind } from "@/lib/channels/media";
+import { type MediaKind, mediaLabel, saveMedia } from "@/lib/channels/media";
 import { recordMessage, toMessageDTO } from "@/lib/channels";
 import { notifyTeamTelegram } from "@/lib/notifyTeam";
 import Conversation from "@/models/Conversation";

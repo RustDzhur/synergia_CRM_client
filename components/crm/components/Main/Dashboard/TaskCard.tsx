@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbCheckbox, TbDots, TbPin, TbX } from "react-icons/tb";
 import { Task, useTaskStore } from "@/store/useTaskStore";

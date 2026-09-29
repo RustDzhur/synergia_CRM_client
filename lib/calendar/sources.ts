@@ -36,8 +36,6 @@ export const SOURCE_COLORS: Record<CalendarSourceKey, string> = {
     icloud: "#8A8FF5",
 };
 
-const str = (v: unknown, max = 300) => (typeof v === "string" ? v.trim().slice(0, max) : "");
-
 // Записывает события провайдера в общий календарь фирмы.
 // Идемпотентно: событие ищется по (org, source, externalId); найденное обновляется,
 // отсутствующее в новой выдаче — удаляется (в Google событие перенесли или отменили).

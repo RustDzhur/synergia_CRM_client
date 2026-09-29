@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { useRouter } from "next/navigation";
 import { TbArrowUpRight } from "react-icons/tb";
 import { useLocale, useTranslations } from "next-intl";

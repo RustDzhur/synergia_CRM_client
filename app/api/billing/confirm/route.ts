@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
-import { applySubscription, type StripeSubscription } from "@/lib/billing";
+import { type StripeSubscription, applySubscription } from "@/lib/billing";
 import { stripe, stripeConfigured } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";

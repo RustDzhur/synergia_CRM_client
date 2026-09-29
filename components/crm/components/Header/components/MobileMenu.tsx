@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { TbMenu2 } from "react-icons/tb";
 import { useToggleMenuState } from "@/store/useToggleMenuState";
 

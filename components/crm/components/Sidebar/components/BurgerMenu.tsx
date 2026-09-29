@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { MdMenu } from "react-icons/md";
 import { useToggleMenuState } from "@/store/useToggleMenuState";
 

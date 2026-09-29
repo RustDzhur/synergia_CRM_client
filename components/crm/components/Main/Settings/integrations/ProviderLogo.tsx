@@ -1,4 +1,4 @@
-import React from "react";
+import "react";
 import { TbPlugConnected } from "react-icons/tb";
 import { SiTwilio } from "react-icons/si";
 import type { CallProviderId } from "@/config/callProviders";

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbAlertTriangle, TbSparkles } from "react-icons/tb";
 import { apiCall } from "@/store/crmApi";

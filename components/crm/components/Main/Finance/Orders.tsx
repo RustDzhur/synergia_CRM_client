@@ -58,7 +58,7 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 
 	// Накладную можно выписать по любому неотменённому заказу: она подтверждает передачу товара,
 	// а не оплату, поэтому доступна и до счёта.
-	async function downloadDelivery(id: string, number: string, noteNumber: string) {
+	async function downloadDelivery(id: string, noteNumber: string) {
 		if (!(await downloadDeliveryNote(id, noteNumber, locale))) toast.error(t("pdfFailed"));
 	}
 
@@ -122,7 +122,7 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 								{/* Накладная (Lieferschein): номер присваивается при первой выписке и дальше не меняется */}
 								<button
 									type="button"
-									onClick={() => downloadDelivery(o.id, o.number, o.deliveryNoteNumber ?? "")}
+									onClick={() => downloadDelivery(o.id, o.deliveryNoteNumber ?? "")}
 									className="fs-btn fs-btn-ghost h-34"
 									title={o.deliveryNoteNumber ? t("deliveryIssued", { number: o.deliveryNoteNumber }) : t("deliveryCreate")}>
 									<TbTruckDelivery size={15} /> {o.deliveryNoteNumber || t("deliveryNote")}

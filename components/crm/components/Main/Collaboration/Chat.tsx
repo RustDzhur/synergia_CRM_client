@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbArrowLeft, TbDots, TbFile, TbMessages, TbMicrophone, TbPaperclip, TbPhone, TbPhoneIncoming, TbPhoneOutgoing, TbPhoneX, TbPlayerStop } from "react-icons/tb";
@@ -165,7 +165,6 @@ function ChatList({ chats, activeId, onSelect }: { chats: ConversationDTO[]; act
 // Планшет: только переписка, список выезжает справа по значку в шапке чата. Телефон: сначала список, по нажатию — переписка.
 export default function Chat() {
 	const t = useTranslations("collab");
-	const locale = useLocale();
 	const [chats, setChats] = useState<ConversationDTO[]>([]);
 	const [loaded, setLoaded] = useState(false);
 	const [messages, setMessages] = useState<MessageDTO[]>([]);

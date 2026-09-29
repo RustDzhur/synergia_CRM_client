@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { useLocale } from "next-intl";
 import type { IconType } from "react-icons";
 import { MdCall, MdContactPage, MdEvent, MdForum, MdInventory2, MdMail, MdCampaign, MdBolt, MdViewKanban } from "react-icons/md";

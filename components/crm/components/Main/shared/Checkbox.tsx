@@ -1,4 +1,4 @@
-import React from "react";
+import "react";
 import { TbCheck } from "react-icons/tb";
 
 interface Props {

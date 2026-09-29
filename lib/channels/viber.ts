@@ -1,7 +1,7 @@
 import { createHmac } from "crypto";
 import { fetchProvider, ProviderError } from "@/lib/http";
 import { safeEqual } from "@/lib/crypto";
-import { mediaKind, mimeByName, type MediaRef } from "./media";
+import { type MediaRef, mediaKind, mimeByName } from "./media";
 
 const base = () => (process.env.VIBER_API_URL || "https://chatapi.viber.com/pa").replace(/\/+$/, "");
 

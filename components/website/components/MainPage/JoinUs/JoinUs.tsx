@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { MdAreaChart, MdHiking } from "react-icons/md";
 import { TbHexagons } from "react-icons/tb";
 import { useTranslations } from "next-intl";

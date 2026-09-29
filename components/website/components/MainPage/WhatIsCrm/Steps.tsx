@@ -1,7 +1,7 @@
 "use client";
 import useStepStore from "@/store/useStepStore";
 import { useTranslations } from "next-intl";
-import React from "react";
+import "react";
 
 // Линия времени слева от карточек (десктоп): точки и звенья светлеют от первого шага к последнему.
 // Координаты — из макета: точки чередуются справа и слева, шаг по вертикали 145px.

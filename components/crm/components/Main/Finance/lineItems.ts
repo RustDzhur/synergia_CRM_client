@@ -1,4 +1,4 @@
-import { useEffect, type Dispatch, type SetStateAction } from "react";
+import { type SetStateAction, type Dispatch, useEffect } from "react";
 import { defaultRateFor } from "@/lib/finance/tax";
 import type { FinanceSettings, LineItem } from "@/store/useFinanceStore";
 

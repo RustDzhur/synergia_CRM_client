@@ -1,6 +1,6 @@
 import { Footer, Navigation } from "@/components/website";
 import PrivacyPolicy from "@/components/website/components/PrivacyPolicy/PrivacyPolicy";
-import React from "react";
+import "react";
 
 export default function page() {
 	return (

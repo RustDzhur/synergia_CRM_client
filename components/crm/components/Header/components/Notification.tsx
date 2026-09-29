@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { MdAccessAlarm, MdAutoMode, MdCallMissed, MdChat, MdMail, MdPersonAdd } from "react-icons/md";
 import { TbBell, TbCalendarEvent } from "react-icons/tb";
-import { useNotificationStore, type Notif } from "@/store/useNotificationStore";
+import { type Notif, useNotificationStore } from "@/store/useNotificationStore";
 import Dropdown from "@/utils/Dropdown";
 import { notifText } from "@/utils/notifText";
 import { useClickOutside } from "@/utils/useClickOutside";

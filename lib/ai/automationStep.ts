@@ -1,7 +1,7 @@
 import { ProviderError } from "@/lib/http";
 import Organization from "@/models/Organization";
 import type { AutoEvent } from "@/lib/automation";
-import { aiConfigured, complete, type Msg } from "./provider";
+import { type Msg, aiConfigured, complete } from "./provider";
 import { dailyLimit, log as logAi, takeQuota } from "./run";
 import { AiCtx, ToolError, allowedTools } from "./tools";
 

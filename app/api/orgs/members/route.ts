@@ -4,7 +4,7 @@ import { effectivePlan } from "@/lib/billing";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
-import { ASSIGNABLE_ROLES, GRANTABLE, effectiveModules, type Role } from "@/lib/access";
+import { type Role, ASSIGNABLE_ROLES, GRANTABLE, effectiveModules } from "@/lib/access";
 import Invitation from "@/models/Invitation";
 import Membership from "@/models/Membership";
 import Organization from "@/models/Organization";

@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { denyPlan, requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
-import { canAccess, type Module } from "@/lib/access";
+import { type Module, canAccess } from "@/lib/access";
 import { randomToken } from "@/lib/crypto";
-import { planFor, type FeatureKey } from "@/config/plans";
+import { type FeatureKey, planFor } from "@/config/plans";
 import SectionRecord from "@/models/SectionRecord";
 
 export const dynamic = "force-dynamic";

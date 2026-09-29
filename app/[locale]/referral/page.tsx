@@ -1,6 +1,6 @@
 import { Footer, Navigation } from "@/components/website";
 import Referral from "@/components/website/components/Referral/Referral";
-import React from "react";
+import "react";
 
 export default function page() {
 	return (

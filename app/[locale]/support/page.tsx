@@ -1,6 +1,6 @@
 import { Footer, Navigation } from "@/components/website";
 import Support from "@/components/website/components/Support/Support";
-import React from "react";
+import "react";
 
 export default function page() {
 	return (

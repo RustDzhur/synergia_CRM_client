@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { RiArrowDownSLine } from "react-icons/ri";
 import { useLanguageStore } from "@/store/useLanguageStore";

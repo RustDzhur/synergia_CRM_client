@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { TEMPLATES, TemplateDef } from "@/lib/finance/templates";
 
 // Выбор оформления документа: та же десятка шаблонов, что и в рендере PDF, показанная миниатюрами.

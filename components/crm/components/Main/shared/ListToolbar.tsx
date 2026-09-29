@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { useTranslations } from "next-intl";
 import { TbPlus } from "react-icons/tb";
 

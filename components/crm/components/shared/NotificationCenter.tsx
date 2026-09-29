@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
@@ -7,7 +7,7 @@ import { MdAccessAlarm, MdClose } from "react-icons/md";
 import { TbCalendarEvent } from "react-icons/tb";
 import { apiCall } from "@/store/crmApi";
 import { useCurrentUserStore } from "@/store/useCurrentUserStore";
-import { useNotificationStore, type Notif } from "@/store/useNotificationStore";
+import { type Notif, useNotificationStore } from "@/store/useNotificationStore";
 import { beep, chime } from "@/utils/beep";
 import { deadlineStage } from "@/utils/deadline";
 import { notifText } from "@/utils/notifText";

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useLocale } from "next-intl";
 import { MdAutoAwesome } from "react-icons/md";

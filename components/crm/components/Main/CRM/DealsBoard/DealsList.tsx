@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Deal, Stage } from "@/store/useCrmStore";
 import { formatDate, relativeTime } from "@/utils/crmFormat";

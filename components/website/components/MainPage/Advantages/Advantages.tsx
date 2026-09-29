@@ -1,6 +1,6 @@
 "use client";
 import { useTranslations } from "next-intl";
-import React, { useState } from "react";
+import { useState } from "react";
 import { MdWorkHistory } from "react-icons/md";
 import { TbHexagon, TbLink, TbLockAccess } from "react-icons/tb";
 

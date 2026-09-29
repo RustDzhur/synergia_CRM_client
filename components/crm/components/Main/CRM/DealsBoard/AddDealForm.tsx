@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useContactStore } from "@/store/useContactStore";
 import { useCompaniesStore } from "@/store/useCompaniesStore";

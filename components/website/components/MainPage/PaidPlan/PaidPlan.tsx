@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AiFillCheckCircle } from "react-icons/ai";
 import free from "@/assets/svgs/plans/free.svg";

@@ -1,6 +1,6 @@
 "use client";
 import useAuthFormStore from "@/store/useAuthFormStore";
-import React, { useState } from "react";
+import { useState } from "react";
 import { FaUser } from "react-icons/fa";
 import { IoIosLock, IoIosUnlock } from "react-icons/io";
 import { BsEyeSlash, BsEye } from "react-icons/bs";
@@ -34,7 +34,7 @@ export default function SignInForm() {
 		toggleSignInForm,
 		toggleSignUpForm,
 	} = useAuthFormStore();
-	const { menu, toggleMenu } = useSiteMenuState();
+	const { toggleMenu } = useSiteMenuState();
 
 	const t = useTranslations("authForms");
 

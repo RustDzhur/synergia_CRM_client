@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { TbCopy, TbX } from "react-icons/tb";
 import { useCallStore } from "@/store/useCallStore";
 import { apiCall } from "@/store/crmApi";
-import { CALL_PROVIDERS, type CallProviderId } from "@/config/callProviders";
+import { type CallProviderId, CALL_PROVIDERS } from "@/config/callProviders";
 import { SMS_PROVIDERS } from "@/config/smsProviders";
 import { testSipRegistration } from "@/store/phone/sipEngine";
 import { useIntegrationsStore } from "@/store/useIntegrationsStore";

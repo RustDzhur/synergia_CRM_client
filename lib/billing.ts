@@ -1,5 +1,5 @@
 import type { HydratedDocument } from "mongoose";
-import { PLANS, YEAR_MONTHS, type PlanId } from "@/config/plans";
+import { type PlanId, PLANS, YEAR_MONTHS } from "@/config/plans";
 import Organization from "@/models/Organization";
 
 // Подписки: состояние берём у Stripe и записываем в пользователя. Функции идемпотентны — повторный вебхук ничего не портит.

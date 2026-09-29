@@ -1,6 +1,6 @@
 "use client";
 import { withLocale } from "@/utils/locale";
-import React from "react";
+import "react";
 import { useSiteMenuState } from "@/store/useSiteMenuState";
 import { IconContext } from "react-icons";
 import { useLanguageStore } from "@/store/useLanguageStore";

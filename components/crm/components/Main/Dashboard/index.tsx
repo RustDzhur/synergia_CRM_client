@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale } from "next-intl";
 import { useCollabHydration } from "@/store/useCollabStore";
 import { useCrmStore } from "@/store/useCrmStore";

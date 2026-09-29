@@ -1,7 +1,7 @@
 import { ProviderError, fetchProvider } from "@/lib/http";
 import { EVENT_TZ_RE, shiftDay } from "@/lib/events";
 import { findGcal, gcalToken } from "@/lib/google";
-import { upsertExternalEvents, type ExternalEvent } from "@/lib/calendar/sources";
+import { type ExternalEvent, upsertExternalEvents } from "@/lib/calendar/sources";
 
 // Google Calendar API v3 без SDK — как и Drive, обычными запросами.
 // Календарь фирмы и календарь Google должны совпадать в обе стороны: события из Google приезжают сюда,

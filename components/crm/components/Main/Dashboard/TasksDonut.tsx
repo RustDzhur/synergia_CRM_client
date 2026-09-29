@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Task, taskStatus } from "@/store/useTaskStore";
 import PeriodSelect from "./PeriodSelect";

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
-import { effectiveModules, type Role } from "@/lib/access";
+import { type Role, effectiveModules } from "@/lib/access";
 import { effectivePlan } from "@/lib/billing";
 import { orgFeatures } from "@/lib/features";
 import Membership from "@/models/Membership";

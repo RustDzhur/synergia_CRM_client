@@ -1,4 +1,4 @@
-import React from "react";
+import "react";
 import ServicesPage from "../../../components/website/components/Services";
 import { Footer, Navigation } from "../../../components/website";
 

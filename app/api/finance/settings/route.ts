@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { COUNTRY_CODES, COUNTRY_TAX } from "@/lib/finance/taxRates";
 import { financeSettings } from "@/lib/finance/settings";
-import { TEMPLATE_IDS, isTemplate } from "@/lib/finance/pdf";
+import { isTemplate } from "@/lib/finance/pdf";
 import FinanceSettings from "@/models/FinanceSettings";
 
 export const dynamic = "force-dynamic";

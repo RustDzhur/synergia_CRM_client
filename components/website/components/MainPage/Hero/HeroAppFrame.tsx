@@ -1,20 +1,7 @@
 "use client";
 import React from "react";
 import { useTranslations } from "next-intl";
-import {
-	TbAddressBook,
-	TbArrowUpCircle,
-	TbBuildingSkyscraper,
-	TbCheck,
-	TbCheckbox,
-	TbCoin,
-	TbLayoutDashboard,
-	TbLayoutGrid,
-	TbSettings,
-	TbSettingsAutomation,
-	TbSpeakerphone,
-	TbSparkles,
-} from "react-icons/tb";
+import { TbAddressBook, TbArrowUpCircle, TbBuildingSkyscraper, TbCheck, TbCheckbox, TbCoin, TbLayoutDashboard, TbLayoutGrid, TbSettings, TbSettingsAutomation, TbSpeakerphone } from "react-icons/tb";
 import BrandMark from "@/components/crm/components/shared/BrandMark";
 
 // Витрина кабинета для лендинга. Это разметка, а не снимок экрана, но повторяет настоящий интерфейс:

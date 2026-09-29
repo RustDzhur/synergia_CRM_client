@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import { MdExpandMore } from "react-icons/md";

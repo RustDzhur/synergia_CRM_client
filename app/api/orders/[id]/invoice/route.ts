@@ -8,7 +8,7 @@ import { financeSettings } from "@/lib/finance/settings";
 import { applyTaxPolicy } from "@/lib/finance/tax";
 import Order from "@/models/Order";
 import Invoice from "@/models/Invoice";
-import { isTemplate } from "@/lib/finance/pdf";
+import "@/lib/finance/pdf";
 import User from "@/models/User";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 

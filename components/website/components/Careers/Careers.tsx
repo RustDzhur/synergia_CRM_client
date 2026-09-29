@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { useLocale } from "next-intl";
 import { AiFillCheckCircle } from "react-icons/ai";
 import { MdWorkOutline } from "react-icons/md";

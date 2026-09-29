@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { stripLocale } from "@/utils/locale";

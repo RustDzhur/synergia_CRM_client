@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbX } from "react-icons/tb";
-import { ASSIGNABLE_ROLES, GRANTABLE, type Module, type Role } from "@/lib/access";
+import { type Role, type Module, ASSIGNABLE_ROLES, GRANTABLE } from "@/lib/access";
 import { apiCall } from "@/store/crmApi";
 import { useActiveOrg } from "@/store/useOrgStore";
 import PageHeader from "@/components/crm/components/shared/PageHeader";

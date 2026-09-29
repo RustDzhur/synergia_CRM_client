@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import { useTranslations } from "next-intl";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { TbSearch } from "react-icons/tb";

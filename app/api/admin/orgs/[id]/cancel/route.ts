@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requirePlatformAdmin } from "@/lib/admin";
 import { failure, notFound, validId } from "@/lib/api";
-import { applySubscription, type StripeSubscription } from "@/lib/billing";
+import { type StripeSubscription, applySubscription } from "@/lib/billing";
 import { stripe, stripeConfigured } from "@/lib/stripe";
 import Organization from "@/models/Organization";
 

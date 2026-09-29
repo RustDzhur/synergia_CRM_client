@@ -5,6 +5,10 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    // Неиспользуемые импорты и переменные — ошибка, а не тихий мусор: правило ловит их на сборке,
+    // без ESLint (в проекте он не установлен). Если параметр нужен по сигнатуре — начните имя с «_».
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",

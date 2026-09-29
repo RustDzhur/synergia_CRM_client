@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
-import { cleanItems, computeTotals } from "@/lib/finance/totals";
+import { cleanItems } from "@/lib/finance/totals";
 import { applyTaxPolicy } from "@/lib/finance/tax";
 import { toQuoteDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";

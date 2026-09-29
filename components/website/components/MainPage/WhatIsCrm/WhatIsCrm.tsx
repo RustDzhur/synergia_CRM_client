@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import "react";
 import Steps from "./Steps";
 import useStepStore from "@/store/useStepStore";
 import { useTranslations } from "next-intl";

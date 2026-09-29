@@ -6,7 +6,7 @@ import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
 import { applyTaxPolicy } from "@/lib/finance/tax";
 import Invoice from "@/models/Invoice";
-import { isTemplate } from "@/lib/finance/pdf";
+import "@/lib/finance/pdf";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 
 // POST /api/invoices/:id/duplicate — новый черновик с теми же клиентом и позициями (повторный/шаблонный счёт без
