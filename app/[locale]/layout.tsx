@@ -7,7 +7,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { notFound } from "next/navigation";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import ErrorReporter from "@/components/crm/components/shared/ErrorReporter";
+import ErrorReporter from "@/components/crm/shared/ErrorReporter";
 
 const inter = Inter({ subsets: ["latin"] });
 

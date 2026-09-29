@@ -77,7 +77,7 @@ Google Calendar подключён по OAuth с правами `calendar.readon
 ## Отчёты об ошибках в Telegram
 
 Неожиданные ошибки приложения уходят владельцу в Telegram (`lib/reportError.ts`): сбой в маршруте API
-(`lib/api.ts` — `failure` и `serverError`), исключение в браузере (`components/crm/components/shared/ErrorReporter.tsx`
+(`lib/api.ts` — `failure` и `serverError`), исключение в браузере (`components/crm/shared/ErrorReporter.tsx`
 шлёт их на `/api/client-error`), ошибки ночного обхода напоминаний и синхронизации календарей. Ошибки провайдеров
 (неверный токен, недоступный сервер) не отправляются: их видно в интерфейсе, и это не наша поломка.
 

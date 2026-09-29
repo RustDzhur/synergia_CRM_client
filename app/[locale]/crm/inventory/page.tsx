@@ -1,4 +1,4 @@
-import Finance from "@/components/crm/components/Main/Finance";
+import Finance from "@/components/crm/Finance";
 
 export default function InventoryPage() {
     return <Finance />;

@@ -1,4 +1,4 @@
-import Marketing from "@/components/crm/components/Main/Marketing";
+import Marketing from "@/components/crm/Marketing";
 
 export default function MarketingPage() {
     return <Marketing />;

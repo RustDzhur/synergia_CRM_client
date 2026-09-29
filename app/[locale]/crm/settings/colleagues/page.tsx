@@ -1,4 +1,4 @@
-import Colleagues from "@/components/crm/components/Main/Settings/Colleagues";
+import Colleagues from "@/components/crm/Settings/Colleagues";
 
 export default function SettingsColleaguesPage() {
     return <Colleagues />;

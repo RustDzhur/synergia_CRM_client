@@ -1,4 +1,4 @@
-import Automation from "@/components/crm/components/Main/Automation";
+import Automation from "@/components/crm/Automation";
 
 export default function AutomationPage() {
     return <Automation />;

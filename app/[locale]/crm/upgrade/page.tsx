@@ -1,4 +1,4 @@
-import Upgrade from "@/components/crm/components/Main/Upgrade";
+import Upgrade from "@/components/crm/Upgrade";
 
 export default function UpgradePage() {
     return <Upgrade />;

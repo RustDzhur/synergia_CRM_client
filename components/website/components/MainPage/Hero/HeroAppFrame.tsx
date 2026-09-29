@@ -2,7 +2,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { TbAddressBook, TbArrowUpCircle, TbBuildingSkyscraper, TbCheck, TbCheckbox, TbCoin, TbLayoutDashboard, TbLayoutGrid, TbSettings, TbSettingsAutomation, TbSpeakerphone } from "react-icons/tb";
-import BrandMark from "@/components/crm/components/shared/BrandMark";
+import BrandMark from "@/components/crm/shared/BrandMark";
 
 // Витрина кабинета для лендинга. Это разметка, а не снимок экрана, но повторяет настоящий интерфейс:
 // те же разделы в том же порядке, та же шапка, тот же заголовок страницы. Раньше здесь была выдуманная
@@ -12,7 +12,7 @@ export type FrameScreen = "overview" | "crm" | "chat" | "finance";
 export default function HeroAppFrame({ screen = "overview" }: { screen?: FrameScreen }) {
 	const t = useTranslations("hero.frame");
 
-	// Разделы ровно те, что в сайдбаре кабинета (components/crm/components/Sidebar/menuItems.ts)
+	// Разделы ровно те, что в сайдбаре кабинета (components/crm/Sidebar/menuItems.ts)
 	const NAV: Array<{ icon: typeof TbLayoutDashboard; label: string; group?: string; screen?: FrameScreen }> = [
 		{ icon: TbLayoutDashboard, label: t("navOverview"), group: t("groupWorkspace") },
 		{ icon: TbLayoutGrid, label: t("navCollab"), group: t("groupCollab") },

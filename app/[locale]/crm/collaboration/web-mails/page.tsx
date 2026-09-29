@@ -1,4 +1,4 @@
-import WebMails from "@/components/crm/components/Main/Collaboration/WebMails";
+import WebMails from "@/components/crm/Collaboration/WebMails";
 
 export default function WebMailsPage() {
     return <WebMails />;

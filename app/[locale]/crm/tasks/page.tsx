@@ -1,4 +1,4 @@
-import Tasks from "@/components/crm/components/Main/Tasks";
+import Tasks from "@/components/crm/Tasks";
 
 export default function TasksPage() {
     return <Tasks />;

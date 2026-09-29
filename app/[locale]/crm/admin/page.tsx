@@ -1,4 +1,4 @@
-import AdminPanel from "@/components/crm/components/Main/Admin";
+import AdminPanel from "@/components/crm/Admin";
 
 export default function AdminPage() {
     return <AdminPanel />;

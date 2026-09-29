@@ -1,5 +1,5 @@
-import { Header } from "@/components/crm/components/Header";
-import { ModalNavigation } from "@/components/crm/components/Modal";
-import { Sidebar } from "@/components/crm/components/Sidebar";
+import { Header } from "@/components/crm/Header";
+import { ModalNavigation } from "@/components/crm/Modal";
+import { Sidebar } from "@/components/crm/Sidebar";
 
 export {Header, ModalNavigation, Sidebar}

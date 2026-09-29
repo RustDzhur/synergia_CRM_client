@@ -1,4 +1,4 @@
-import Notifications from "@/components/crm/components/Main/Settings/Notifications";
+import Notifications from "@/components/crm/Settings/Notifications";
 
 export default function SettingsNotificationsPage() {
     return <Notifications />;

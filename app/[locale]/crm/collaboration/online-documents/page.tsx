@@ -1,4 +1,4 @@
-import Documents from "@/components/crm/components/Main/Collaboration/Documents";
+import Documents from "@/components/crm/Collaboration/Documents";
 
 export default function DocumentsPage() {
     return <Documents />;

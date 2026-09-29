@@ -4,17 +4,17 @@ import { usePathname, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { Toaster } from "react-hot-toast";
 import { Header, ModalNavigation, Sidebar } from "@/components/crm";
-import MobilePageBar from "@/components/crm/components/Header/components/MobilePageBar";
-import ProfileModal from "@/components/crm/components/Header/components/ProfileModal";
-import NotificationCenter from "@/components/crm/components/shared/NotificationCenter";
-import AiAssistant from "@/components/crm/components/AiAssistant";
-import Softphone from "@/components/crm/components/Main/shared/Softphone";
+import MobilePageBar from "@/components/crm/Header/components/MobilePageBar";
+import ProfileModal from "@/components/crm/Header/components/ProfileModal";
+import NotificationCenter from "@/components/crm/shared/NotificationCenter";
+import AiAssistant from "@/components/crm/AiAssistant";
+import Softphone from "@/components/crm/shared/Softphone";
 import "@/app/[locale]/styles/crm-dark.css";
 import useAuthStore from "@/store/useAuthStore";
 import { useThemeStore } from "@/store/useThemeStore";
 import { useActiveOrg, useFeature } from "@/store/useOrgStore";
 import { featureForPage } from "@/lib/features";
-import Upgrade from "@/components/crm/components/Main/Upgrade";
+import Upgrade from "@/components/crm/Upgrade";
 import Loader from "@/utils/Loader";
 
 export default function CrmLayout({ children }: { children: React.ReactNode }) {

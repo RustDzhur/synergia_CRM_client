@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { RecordItem } from "@/components/crm/components/Main/shared/records/config";
+import type { RecordItem } from "@/components/crm/shared/records/config";
 import { apiCall } from "./crmApi";
 
 // Таблицы разделов (Automation, Marketing, Inventory…) хранятся на сервере и общие для сотрудников фирмы (/api/records).

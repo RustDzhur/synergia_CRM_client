@@ -1,4 +1,4 @@
-import Dashboard from "@/components/crm/components/Main/Dashboard";
+import Dashboard from "@/components/crm/Dashboard";
 
 export default function DashboardPage() {
 	return <Dashboard />;
