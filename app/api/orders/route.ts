@@ -9,7 +9,7 @@ import { applyTaxPolicy } from "@/lib/finance/tax";
 import { financeSettings } from "@/lib/finance/settings";
 import { toOrderDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
-import { ownedContact, ownedCompany, ownedDeal, ownedContract } from "@/lib/deals";
+import { ownedContact, ownedCompany, ownedDeal, ownedContract, dealForCustomer } from "@/lib/deals";
 import Order from "@/models/Order";
 import User from "@/models/User";
 
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     const items = applyTaxPolicy(rawItems, settings);
     const order = await Order.create({
         org: user.id, number, customerName, items,
-        contact: contact || undefined, company: company || undefined, deal: deal || undefined, contract: contract || undefined,
+        contact: contact || undefined, company: company || undefined, deal: (deal || (await dealForCustomer(user.id, contact, company, customerName))) || undefined, contract: contract || undefined,
         currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : "EUR",
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
         template: isTemplate(b.template) ? b.template : "",

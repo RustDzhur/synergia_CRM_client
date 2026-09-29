@@ -26,8 +26,8 @@ import PageHeader from "@/components/crm/shared/PageHeader";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import Overview from "./Overview";
 import Quotes, { QuotePrefill } from "./Quotes";
+import Invoices, { InvoicePrefill } from "./Invoices";
 import Orders from "./Orders";
-import Invoices from "./Invoices";
 import RecurringInvoices from "./RecurringInvoices";
 import Dunning from "./Dunning";
 import Contracts from "./Contracts";
@@ -96,17 +96,22 @@ export default function Finance() {
 	const [openInvoiceId, setOpenInvoiceId] = useState<string | null>(null);
 	const [openOrderId, setOpenOrderId] = useState<string | null>(null);
 	const [quotePrefill, setQuotePrefill] = useState<QuotePrefill | null>(null);
+	const [invoicePrefill, setInvoicePrefill] = useState<InvoicePrefill | null>(null);
 
 	// Настройки бухгалтерии нужны всем вкладкам, а не только своей: из них берутся валюта по умолчанию,
 	// оформление документа и адрес с IBAN. Раньше их грузила только вкладка настроек, поэтому счёт,
 	// созданный со вкладки «Счета», всегда получал EUR, даже если в фирме выбрана другая валюта.
 	useEffect(() => { loadSettings(); }, [loadSettings]);
 
-	// пришли по ссылке из карточки сделки (CRM → Deal → "Create Quote", см. DealQuotes.tsx): ?tab=quotes&newFromDeal=...
+	// пришли по ссылке из карточки сделки (CRM → Deal, см. DealsBoard/dealModalParts/DealDocuments.tsx):
+	// ?tab=quotes&newFromDeal=… — сразу новое предложение, ?tab=invoices&newInvoiceFor=… — новый счёт,
+	// ?open=… — открыть уже созданный документ этой вкладки
 	useEffect(() => {
 		const q = new URLSearchParams(window.location.search);
 		const newFromDeal = q.get("newFromDeal");
+		const newInvoiceFor = q.get("newInvoiceFor");
 		const wantedTab = q.get("tab");
+		const open = q.get("open");
 		if (wantedTab && (TABS as readonly string[]).includes(wantedTab)) setTab(wantedTab as Tab);
 		if (newFromDeal) {
 			setQuotePrefill({
@@ -116,7 +121,20 @@ export default function Finance() {
 				company: q.get("company") ?? undefined,
 			});
 		}
-		if (wantedTab || newFromDeal) window.history.replaceState(null, "", window.location.pathname);
+		if (newInvoiceFor) {
+			setTab("invoices");
+			setInvoicePrefill({
+				dealId: newInvoiceFor,
+				customerName: q.get("customerName") ?? "",
+				contact: q.get("contact") ?? undefined,
+				company: q.get("company") ?? undefined,
+			});
+		}
+		if (open) {
+			if (wantedTab === "orders") setOpenOrderId(open);
+			else setOpenInvoiceId(open);
+		}
+		if (wantedTab || newFromDeal || newInvoiceFor || open) window.history.replaceState(null, "", window.location.pathname);
 	}, []);
 
 	function openInvoice(id: string) {
@@ -194,7 +212,7 @@ export default function Finance() {
 					{tab === "overview" && <Overview />}
 					{tab === "quotes" && <Quotes onOpenOrder={openOrder} prefill={quotePrefill} />}
 					{tab === "orders" && <Orders onOpenInvoice={openInvoice} openId={openOrderId} />}
-					{tab === "invoices" && <Invoices openId={openInvoiceId} />}
+					{tab === "invoices" && <Invoices openId={openInvoiceId} prefill={invoicePrefill} />}
 					{tab === "recurring" && <RecurringInvoices />}
 					{tab === "dunning" && <Dunning />}
 					{tab === "contracts" && <Contracts />}

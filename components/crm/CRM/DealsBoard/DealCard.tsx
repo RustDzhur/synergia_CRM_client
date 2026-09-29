@@ -1,7 +1,7 @@
 "use client";
 import "react";
 import { useLocale, useTranslations } from "next-intl";
-import { TbMail, TbMessageCircle, TbPhone } from "react-icons/tb";
+import { TbMail, TbMessageCircle, TbPhone, TbTrophy } from "react-icons/tb";
 import { Deal } from "@/store/useCrmStore";
 import { relativeTime } from "@/utils/crmFormat";
 
@@ -28,12 +28,16 @@ export default function DealCard({ deal, isDragging }: Props) {
 
 	return (
 		<div
-			className={`cursor-pointer rounded-12 border border-inkLine bg-[rgba(255,255,255,0.02)] p-12 transition-[border-color,box-shadow] duration-200 hover:border-[rgba(255,255,255,0.16)] ${
-				isDragging ? "shadow-[0_18px_44px_rgba(0,0,0,0.55)]" : ""
-			}`}>
+			className={`cursor-pointer rounded-12 border bg-[rgba(255,255,255,0.02)] p-12 transition-[border-color,box-shadow] duration-200 hover:border-[rgba(255,255,255,0.16)] ${
+				deal.wonAt ? "border-[rgba(198,255,77,0.4)]" : "border-inkLine"
+			} ${isDragging ? "shadow-[0_18px_44px_rgba(0,0,0,0.55)]" : ""}`}>
 			<div className="flex items-start justify-between gap-8">
 				<div className="min-w-0">
-					<p className="truncate text-13 font-semibold text-[#f1f4ee]">{deal.clientName}</p>
+					<p className="flex items-center gap-6 truncate text-13 font-semibold text-[#f1f4ee]">
+						{/* выигранную сделку видно сразу: кубок и салатовая рамка */}
+						{deal.wonAt && <TbTrophy size={14} className="shrink-0 text-[#c6ff4d]" aria-label={t("dealWon")} />}
+						<span className="truncate">{deal.clientName}</span>
+					</p>
 					{(deal.contactName || deal.companyName) && (
 						<p className="mt-2 truncate text-11 text-[#8c948b]">
 							{[deal.contactName, deal.companyName].filter(Boolean).join(" · ")}

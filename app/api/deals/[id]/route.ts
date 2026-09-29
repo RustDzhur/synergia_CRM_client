@@ -26,6 +26,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (typeof body.availableToAll === "boolean") data.availableToAll = body.availableToAll;
     // какие разделы карточки скрыты: значения ограничены списком, иначе в документ попадёт что угодно
     if (Array.isArray(body.hiddenSections)) data.hiddenSections = body.hiddenSections.filter((s: unknown) => s === "more" || s === "recurring");
+    // выигрыш сделки: карточку вытянули за последний этап воронки; false снимает отметку
+    if (typeof body.won === "boolean") data.wonAt = body.won ? new Date() : null;
 
     await connectDB();
     const existing = await Deal.findOne({ _id: params.id, owner: user.id });
@@ -44,6 +46,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         // смена стадии попадает в ленту активности сделки автоматически (перенос карточкой и выбор в форме)
         if (String(existing.stage) !== String(stage._id)) {
             update.$push = { activities: { type: "stage", text: stage.name } };
+            // карточку вернули в обычный этап — сделка снова в работе, отметка о выигрыше снимается
+            if (typeof body.won !== "boolean") data.wonAt = null;
         }
     }
     update.$set = data;

@@ -11,7 +11,7 @@ import Modal from "../../shared/Modal";
 import ConfirmDialog from "../../shared/ConfirmDialog";
 import ActivityComposer, { ComposerTab } from "../../shared/ActivityComposer";
 import ActivityTimeline from "../../shared/ActivityTimeline";
-import DealQuotes from "./DealQuotes";
+import DealDocuments from "./dealModalParts/DealDocuments";
 import DealTasks from "./dealModalParts/DealTasks";
 import DealHeader from "./dealModalParts/DealHeader";
 import StageArrows from "./dealModalParts/StageArrows";
@@ -31,7 +31,7 @@ interface Props {
 export default function DealModal({ dealId, onClose }: Props) {
 	const t = useTranslations("crm");
 	const locale = useLocale();
-	const { deals, stages, updateDeal, deleteDeal, addActivity, removeActivity, loadChannels, sendChannel } = useCrmStore();
+	const { deals, stages, updateDeal, deleteDeal, addActivity, removeActivity, loadChannels, sendChannel, setWon } = useCrmStore();
 	const { contacts, fetchContacts } = useContactStore();
 	const { companies, fetchCompanies } = useCompaniesStore();
 	const addTask = useTaskStore((s) => s.addTask);
@@ -259,7 +259,7 @@ export default function DealModal({ dealId, onClose }: Props) {
 							companies={companies}
 						/>
 
-						<DealQuotes dealId={deal._id} customerName={deal.contactName || deal.clientName} contact={deal.contact ?? undefined} company={deal.company ?? undefined} />
+						<DealDocuments dealId={deal._id} customerName={deal.contactName || deal.companyName || deal.clientName} contact={deal.contact ?? undefined} company={deal.company ?? undefined} />
 
 						<DealTasks dealId={deal._id} />
 
@@ -305,6 +305,15 @@ export default function DealModal({ dealId, onClose }: Props) {
 							onClick={() => setConfirmDelete(true)}
 							className="self-start text-13 text-[#eb5757] transition-opacity hover:opacity-80">
 							{t("deleteDeal")}
+						</button>
+
+						{/* То же, что перетаскивание карточки за последний этап: сделка выиграна. Кнопка нужна
+						    и тем, кто не тянет карточки мышью */}
+						<button
+							type="button"
+							onClick={() => void setWon(deal._id, !deal.wonAt)}
+							className={`self-start text-13 transition-opacity hover:opacity-80 ${deal.wonAt ? "text-[#8c948b]" : "text-[#c6ff4d]"}`}>
+							{deal.wonAt ? t("dealWonUndo") : t("dealWonMark")}
 						</button>
 					</div>
 

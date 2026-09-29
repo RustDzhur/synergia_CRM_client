@@ -9,7 +9,7 @@ import { cleanItems } from "@/lib/finance/totals";
 import { applyTaxPolicy } from "@/lib/finance/tax";
 import { toQuoteDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
-import { ownedContact, ownedCompany, ownedDeal } from "@/lib/deals";
+import { ownedContact, ownedCompany, ownedDeal, dealForCustomer } from "@/lib/deals";
 import Quote from "@/models/Quote";
 import User from "@/models/User";
 
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     const validUntil = typeof b.validUntil === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.validUntil) ? b.validUntil : new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
     const quote = await Quote.create({
         org: user.id, number, customerName, items,
-        contact: contact || undefined, company: company || undefined, deal: deal || undefined,
+        contact: contact || undefined, company: company || undefined, deal: (deal || (await dealForCustomer(user.id, contact, company, customerName))) || undefined,
         currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : "EUR",
         issueDate: typeof b.issueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.issueDate) ? b.issueDate : today,
         validUntil,

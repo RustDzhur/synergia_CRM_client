@@ -28,13 +28,16 @@ export interface Deal {
     // разделы карточки, убранные кнопкой «Удалить раздел» («more», «recurring»): их данные очищены,
     // сами блоки не показываются, пока их не вернут кнопкой «Добавить раздел»
     hiddenSections?: string[];
+    // время выигрыша: карточку вытянули за последний этап воронки; пусто — сделка ещё в работе
+    wonAt?: string | null;
     activities?: Activity[];
     createdAt?: string;
     updatedAt?: string;
 }
 
 export type NewDeal = Pick<Deal, "clientName" | "contactName" | "companyName" | "contact" | "company" | "startDate" | "endDate">;
-export type DealUpdate = Partial<Omit<Deal, "_id" | "activities" | "createdAt" | "updatedAt">>;
+// won — команда серверу: true ставит отметку о выигрыше, false снимает (в самом Deal хранится wonAt)
+export type DealUpdate = Partial<Omit<Deal, "_id" | "activities" | "createdAt" | "updatedAt">> & { won?: boolean };
 
 interface CrmStore {
     stages: Stage[];
@@ -50,6 +53,8 @@ interface CrmStore {
     addDeal: (stageId: string, data: NewDeal) => Promise<Deal | null>;
     updateDeal: (id: string, data: DealUpdate) => Promise<Deal | null>;
     moveDeal: (dealId: string, toStageId: string, toOrder: number) => Promise<void>;
+    // Выигрыш/возврат сделки: карточку вытянули за последний этап воронки
+    setWon: (dealId: string, won: boolean) => Promise<void>;
     deleteDeal: (id: string) => Promise<void>;
 
     addActivity: (dealId: string, activity: NewActivity) => Promise<void>;
@@ -162,6 +167,21 @@ export const useCrmStore = create<CrmStore>((set, get) => {
             );
             // сервер дописал в ленту сделки запись о смене стадии — подтягиваем свежие документы
             saved.forEach((deal) => deal && replaceDeal(deal));
+        },
+
+        // Карточку вытянули за последний этап воронки: сделка выиграна. Переносим её в последний этап
+        // (место в конце) и ставим отметку времени — по ней карточка помечается как выигранная.
+        setWon: async (dealId, won) => {
+            const deal = get().deals.find((d) => d._id === dealId);
+            if (!deal) return;
+            const last = [...get().stages].sort((a, b) => a.order - b.order).at(-1);
+            const patch: DealUpdate = { won };
+            if (won && last && deal.stage !== last._id) {
+                patch.stage = last._id;
+                patch.order = get().deals.filter((d) => d.stage === last._id && d._id !== dealId).length;
+            }
+            const saved = await api<Deal>(`/api/deals/${dealId}`, "PATCH", patch);
+            if (saved) replaceDeal(saved);
         },
 
         deleteDeal: async (id) => {

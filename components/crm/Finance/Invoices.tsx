@@ -22,7 +22,11 @@ const STATUS_COLOR: Record<string, string> = {
 // Счета: по заказу (тогда попадает сюда автоматически) или сами по себе — например разовая услуга без отдельного заказа.
 // Номер — последовательный (RE-2026-1, RE-2026-2…), выдаётся один раз и не переиспользуется. Кредит-ноты (kind
 // "credit_note") живут в этом же списке — это отдельный юридический документ, а не правка счёта.
-export default function Invoices({ openId }: { openId?: string | null }) {
+// Предзаполнение из карточки сделки: клиент, привязка к сделке и контакту/фирме — счёт,
+// созданный из карточки, сразу виден в ней же
+export interface InvoicePrefill { dealId: string; customerName: string; contact?: string; company?: string }
+
+export default function Invoices({ openId, prefill }: { openId?: string | null; prefill?: InvoicePrefill | null }) {
 	const t = useTranslations("finance");
 	const locale = useLocale();
 	const { invoices, products, loadInvoices, loadProducts, createInvoice, updateInvoice, sendInvoice, payInvoice, duplicateInvoice, issueCreditNote, settings } = useFinanceStore();
@@ -44,13 +48,23 @@ export default function Invoices({ openId }: { openId?: string | null }) {
 	useEffect(() => {
 		if (openId && rowRefs.current[openId]) rowRefs.current[openId]?.scrollIntoView({ behavior: "smooth", block: "center" });
 	}, [openId, invoices]);
+	// пришли из карточки сделки: подставляем клиента и сразу открываем форму нового счёта
+	useEffect(() => {
+		if (!prefill) return;
+		setCustomerName(prefill.customerName);
+		setOpen(true);
+	}, [prefill]);
 
 	async function submit(e: React.FormEvent) {
 		e.preventDefault();
 		if (!customerName.trim()) return toast.error(t("customerRequired"));
 		const cleanItems = items.filter((it) => it.description.trim());
 		if (!cleanItems.length) return toast.error(t("itemsRequired"));
-		const err = await createInvoice({ customerName: customerName.trim(), items: cleanItems, currency: settings?.currency || "EUR", supplyDate: supplyDate || undefined });
+		const err = await createInvoice({
+			customerName: customerName.trim(), items: cleanItems, currency: settings?.currency || "EUR", supplyDate: supplyDate || undefined,
+			// привязка к сделке и клиенту: счёт создаётся из карточки и должен в ней же появиться
+			...(prefill ? { deal: prefill.dealId, contact: prefill.contact, company: prefill.company } : {}),
+		});
 		if (err) return toast.error(err);
 		toast.success(t("saved"));
 		setOpen(false); setCustomerName(""); setSupplyDate(""); setItems([emptyItem(defaultTaxRate)]);
