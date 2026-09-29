@@ -10,6 +10,7 @@ import PageHeader from "@/components/crm/shared/PageHeader";
 import WeekProgress from "./WeekProgress";
 import TasksFeed from "./TasksFeed";
 import DayEvents from "./DayEvents";
+import FeedCard from "./FeedCard";
 import DealsChart from "./DealsChart";
 import TasksDonut from "./TasksDonut";
 import AdsCard from "./AdsCard";
@@ -46,6 +47,8 @@ export default function Dashboard() {
 				<WeekProgress tasks={tasks} selected={selected} onSelect={setSelected} />
 				<TasksFeed tasks={tasks} selected={selected} isLoading={isLoading} />
 			</div>
+			{/* Объявления команды: то, что коллеги написали в ленте, — чтобы не искать их отдельно */}
+			{hasCollab && <div className="mt-16 lg:mt-20"><FeedCard enabled={hasCollab} /></div>}
 			{/* И только потом общая картина: сделки по этапам, задачи по статусам, реклама */}
 			<div className="mt-16 grid gap-16 md:grid-cols-2 lg:mt-20 lg:grid-cols-3 lg:gap-20">
 				<DealsChart deals={deals} stages={stages} />
