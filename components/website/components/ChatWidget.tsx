@@ -10,7 +10,9 @@ import { useLocale } from "next-intl";
 //
 // Версия в адресе скрипта — чтобы браузер после обновления сайта не подставил старый виджет из кэша.
 const WIDGET_TOKEN = "d206c7942ee379b931c9d5d58692f2942084";
-const WIDGET_BASE = "https://www.firmspace.de/widget.js";
+// Виджет берём со своего домена, а не с боевого адреса: на локальной и тестовой сборке должна работать
+// её же версия файла, иначе правки в public/widget.js видны только после заливки на прод
+const WIDGET_BASE = "/widget.js";
 const VERSION = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ?? "dev";
 
 // Окно виджета одно на страницу, а компонентов может оказаться несколько — считаем их сами

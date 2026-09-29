@@ -155,7 +155,7 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 		if (!type) return;
 		setError("");
 		const cfg = items.find((i) => i.type === type)?.config;
-		setValues(type === "webchat" ? { title: cfg?.title ?? "", greeting: cfg?.greeting ?? "", color: cfg?.color ?? "#5EA8F5" } : {});
+		setValues(type === "webchat" ? { title: cfg?.title ?? "", greeting: cfg?.greeting ?? "", color: cfg?.color ?? "#C6FF4D" } : {});
 		setFbId("");
 		setFbSecret("");
 		// открываем плитку уже подключённого провайдера, а если ничего нет — показываем выбор
@@ -370,7 +370,7 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 								f.type === "color" ? (
 									<label key={f.key} className="block">
 										<span className="mb-6 block text-12 text-[#8c948b]">{t(f.label)}</span>
-										<input type="color" value={values[f.key] ?? "#5EA8F5"} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} className="fs-field h-40 w-80 cursor-pointer p-4" />
+										<input type="color" value={values[f.key] ?? "#C6FF4D"} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} className="fs-field h-40 w-80 cursor-pointer p-4" />
 									</label>
 								) : (
 									<FormField
