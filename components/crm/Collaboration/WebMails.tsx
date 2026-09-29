@@ -1,64 +1,27 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import type { IconType } from "react-icons";
-import { TbAlarm, TbCircleCheck, TbInbox, TbNote, TbRefresh, TbStar, TbStarFilled, TbX } from "react-icons/tb";
-import { SiGmail, SiIcloud, SiMicrosoftoffice, SiMicrosoftoutlook } from "react-icons/si";
+import { TbRefresh, TbX } from "react-icons/tb";
 import { apiCall } from "@/store/crmApi";
 import type { MailAccountDTO, MailDTO, MailProviderId } from "@/types/integrations";
-import { localeTag } from "@/utils/dateHelpers";
 import { usePolling } from "@/utils/usePolling";
-import Checkbox from "../shared/Checkbox";
 import ConfirmDialog from "../shared/ConfirmDialog";
-import Modal from "../shared/Modal";
 import SearchBox from "../shared/SearchBox";
-import { formatChatDate } from "./format";
-import AiQuickAsk from "../AiAssistant/AiQuickAsk";
 import MailConnectDialog from "./MailConnectDialog";
-
-type MailView = "inbox" | "starred" | "snoozed" | "sent" | "draft";
-interface Provider { id: MailProviderId; label: string; logo: React.ReactNode }
-
-const YAHOO = <span className="text-[34px] font-extrabold italic leading-none tracking-[-2px] text-[#6001D2]">yahoo!</span>;
-const PROVIDERS: Provider[] = [
-	{ id: "outlook", label: "Outlook", logo: <SiMicrosoftoutlook size={42} color="#0072C6" /> },
-	{ id: "gmail", label: "Google Mail", logo: <SiGmail size={42} color="#EA4335" /> },
-	{ id: "yahoo", label: "Yahoo", logo: YAHOO },
-	{ id: "icloud", label: "iCloud", logo: <SiIcloud size={42} color="#3D9EEE" /> },
-	{ id: "office365", label: "Office 365", logo: <SiMicrosoftoffice size={42} color="#D83B01" /> },
-	{ id: "icloud", label: "iCloud", logo: <SiIcloud size={42} color="#3D9EEE" /> },
-	{ id: "yahoo", label: "Yahoo", logo: YAHOO },
-	{ id: "imap", label: "IMAP", logo: <span className="font-serif text-14 tracking-[1px] text-[#8c948b]">IMAP</span> },
-];
-
-const VIEWS: { key: MailView; icon: IconType }[] = [
-	{ key: "inbox", icon: TbInbox },
-	{ key: "starred", icon: TbStar },
-	{ key: "snoozed", icon: TbAlarm },
-	{ key: "sent", icon: TbCircleCheck },
-	{ key: "draft", icon: TbNote },
-];
-
-function inView(m: MailDTO, view: MailView) {
-	if (view === "starred") return m.starred;
-	if (view === "snoozed") return m.snoozed;
-	if (view === "inbox") return m.folder === "inbox" && !m.snoozed;
-	return m.folder === view;
-}
-
-const LABELS: Record<MailProviderId, string> = { gmail: "Google Mail", outlook: "Outlook", yahoo: "Yahoo", icloud: "iCloud", office365: "Office 365", imap: "IMAP" };
-const EMPTY_DRAFT = { id: "", to: "", subject: "", body: "" };
-const inputClass = "fs-field h-40 w-full px-12 text-13 outline-none";
+import ComposeModal from "./webMailParts/ComposeModal";
+import FolderNav from "./webMailParts/FolderNav";
+import MailTable from "./webMailParts/MailTable";
+import ProviderGrid from "./webMailParts/ProviderGrid";
+import ReadModal from "./webMailParts/ReadModal";
+import { EMPTY_DRAFT, inView, LABELS, MailView } from "./webMailParts/model";
 
 // Web Mails (/crm/collaboration/web-mails): подключение ящика (Gmail / Outlook через OAuth или пароль приложения, Yahoo, iCloud, любой IMAP),
 // затем ящик — Inbox / Starred / Snoozed / Sent / Draft. Письма загружаются с почтового сервера (сервер CRM ходит по IMAP или API провайдера),
 // новые подтягиваются раз в минуту и по кнопке «обновить». Звезда, «отложить» и удаление действуют только в CRM, на почтовом сервере письма остаются.
 export default function WebMails() {
 	const t = useTranslations("collab");
-	const tAi = useTranslations("ai");
-	const locale = useLocale();
 	const router = useRouter();
 	const pathname = usePathname();
 	const params = useSearchParams();
@@ -156,7 +119,6 @@ export default function WebMails() {
 	}
 
 	const rows = mails.filter((m) => inView(m, view));
-	const allChecked = rows.length > 0 && rows.every((m) => selected.includes(m.id));
 	const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 	const unreadInbox = mails.filter((m) => m.folder === "inbox" && !m.snoozed && !m.read).length;
 
@@ -226,19 +188,7 @@ export default function WebMails() {
 				{adding && (
 					<button type="button" onClick={() => setAdding(false)} className="mb-16 text-12 text-[#c6ff4d] transition-opacity hover:opacity-80">← {t("back")}</button>
 				)}
-				<ul className="grid grid-cols-2 gap-16 md:grid-cols-4 md:gap-20">
-					{PROVIDERS.map((p, i) => (
-						<li key={i}>
-							<button
-								type="button"
-								onClick={() => setConnectFor(p.id)}
-								className="fs-card flex h-[124px] w-full flex-col items-center justify-center gap-12 transition-transform duration-200 hover:-translate-y-2 md:h-[92px] md:gap-6 lg:h-[112px] lg:gap-10">
-								<span className="flex h-[52px] items-center md:h-[36px] md:scale-[0.65] lg:h-[52px] lg:scale-90">{p.logo}</span>
-								<span className="text-13 text-[#8c948b] lg:text-14">{p.label}</span>
-							</button>
-						</li>
-					))}
-				</ul>
+				<ProviderGrid onPick={setConnectFor} />
 				<MailConnectDialog provider={connectFor} oauth={oauth} onClose={() => setConnectFor(null)} onConnected={connected} />
 			</div>
 		);
@@ -250,23 +200,7 @@ export default function WebMails() {
 	return (
 		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
 			<div className="flex flex-col gap-20 lg:flex-row">
-				<nav aria-label={t("mailFolders")} className="fs-card w-full shrink-0 self-start p-8 md:w-auto md:min-w-[166px] md:max-w-[280px]">
-					<ul>
-						{VIEWS.map(({ key, icon: Icon }, i) => (
-							<li key={key} className={i > 0 ? "border-t border-inkLineSoft" : ""}>
-								<button
-									type="button"
-									onClick={() => { setView(key); setSelected([]); }}
-									aria-current={view === key ? "page" : undefined}
-									className={`flex h-44 w-full items-center gap-10 rounded-8 px-12 text-left text-13 font-medium transition-colors duration-200 ${view === key ? "bg-[rgba(198,255,77,0.08)] text-[#c6ff4d]" : "text-[#8c948b] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#f1f4ee]"}`}>
-									<Icon size={20} className="shrink-0" />
-									<span className="flex-1 truncate">{t(`folder_${key}`)}</span>
-									{key === "inbox" && unreadInbox > 0 && <span className="text-11 text-[#8C948B]">{unreadInbox}</span>}
-								</button>
-							</li>
-						))}
-					</ul>
-				</nav>
+				<FolderNav view={view} unreadInbox={unreadInbox} onChange={(v) => { setView(v); setSelected([]); }} />
 
 				<section className="min-w-0 flex-1">
 					<div className="mb-16 flex flex-wrap items-center gap-x-12 gap-y-6 text-12 text-[#8c948b]">
@@ -314,77 +248,21 @@ export default function WebMails() {
 						</div>
 					</div>
 
-					<div className="fs-card min-h-[280px] overflow-x-auto">
-						<table className="fs-table min-w-[480px] table-fixed">
-							<thead>
-								<tr>
-									<th className="w-[46px] pl-16"><Checkbox checked={allChecked} onChange={(v) => setSelected(v ? rows.map((m) => m.id) : [])} label={t("selectAll")} /></th>
-									<th className="px-10 text-center">{t("mailName")}</th>
-									<th className="w-[230px] px-10 text-center">{t("mailDate")}</th>
-								</tr>
-							</thead>
-							<tbody>
-								{rows.map((m) => (
-									<tr key={m.id} className={`h-[52px] animate-fade-in transition-colors duration-150 ${selected.includes(m.id) ? "bg-[rgba(198,255,77,0.06)]" : ""}`}>
-										<td className="pl-16"><Checkbox checked={selected.includes(m.id)} onChange={() => toggle(m.id)} label={t("selectRow")} /></td>
-										<td className="px-10">
-											<div className="flex items-center gap-10">
-												<button type="button" aria-pressed={m.starred} aria-label={t("markStar")} onClick={() => patch([m.id], { starred: !m.starred })} className={`shrink-0 transition-colors ${m.starred ? "text-[#f4b942]" : "text-[#8C948B] hover:text-[#8c948b]"}`}>
-													{m.starred ? <TbStarFilled size={18} /> : <TbStar size={18} />}
-												</button>
-												<button type="button" onClick={() => openMail(m)} className={`min-w-0 flex-1 truncate text-left text-13 transition-colors hover:text-[#c6ff4d] ${m.read ? "text-[#8c948b]" : "font-semibold text-[#f1f4ee]"}`}>
-													<span className="font-medium">{view === "sent" || view === "draft" ? m.to || "—" : m.from}</span>
-													<span className={m.read ? "text-[#8C948B]" : "text-[#8c948b]"}> — {m.subject || t("noSubject")}</span>
-												</button>
-											</div>
-										</td>
-										<td className="truncate px-10 text-center text-11 text-[#8c948b]">{formatChatDate(m.at, locale)}</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-						{rows.length === 0 && <p className="py-40 text-center text-13 text-[#8c948b]">{syncing ? t("mailSyncing") : t("mailEmpty")}</p>}
-					</div>
+					<MailTable
+						rows={rows}
+						view={view}
+						selected={selected}
+						syncing={syncing}
+						onSelect={setSelected}
+						onToggle={toggle}
+						onStar={(m) => patch([m.id], { starred: !m.starred })}
+						onOpen={openMail}
+					/>
 				</section>
 			</div>
 
-			<Modal open={composeOpen} onClose={() => setComposeOpen(false)} label={t("newEmail")} className="w-full max-w-[600px]">
-				<form onSubmit={(e) => { e.preventDefault(); saveMail(false); }} className="fs-popover p-24">
-					<h2 className="mb-20 text-16 font-semibold text-[#f1f4ee]">{t("newEmail")}</h2>
-					<div className="flex flex-col gap-12">
-						<input value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} placeholder={t("mailTo")} aria-label={t("mailTo")} maxLength={300} className={inputClass} />
-						<input value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} placeholder={t("mailSubject")} aria-label={t("mailSubject")} maxLength={200} className={inputClass} />
-						<textarea value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} placeholder={t("mailBody")} aria-label={t("mailBody")} rows={7} maxLength={5000} className="fs-field h-auto resize-none p-12 text-13 outline-none" />
-					</div>
-					<div className="mt-20 flex flex-wrap justify-end gap-10">
-						<button type="button" onClick={() => setComposeOpen(false)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
-						<button type="button" disabled={sending} onClick={() => saveMail(true)} className="fs-btn fs-btn-ghost h-40 disabled:opacity-50">{t("saveDraft")}</button>
-						<button type="submit" disabled={sending} className="fs-btn fs-btn-primary h-40 disabled:opacity-50">{sending ? "…" : t("send")}</button>
-					</div>
-				</form>
-			</Modal>
-
-			<Modal open={reading !== null} onClose={() => setReading(null)} label={reading?.subject} className="w-full max-w-[600px]">
-				<div className="fs-popover p-24">
-					<div className="mb-6 flex items-start justify-between gap-16">
-						<h2 className="break-words text-16 font-semibold text-[#f1f4ee]">{reading?.subject || t("noSubject")}</h2>
-						<div className="flex shrink-0 items-center gap-12 pt-[4px]">
-							{reading && (
-								<AiQuickAsk
-									prompt={tAi("analyzeMailPrompt", { subject: reading.subject || t("noSubject"), from: reading.from })}
-									requiredTool="search_mail"
-									label={tAi("analyzeMail")}
-								/>
-							)}
-							<button type="button" onClick={() => setReading(null)} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><TbX size={18} /></button>
-						</div>
-					</div>
-					<p className="mb-20 break-words text-12 text-[#8C948B]">
-						{reading?.from} → {reading?.to} · {reading ? new Date(reading.at).toLocaleString(localeTag(locale)) : ""}
-					</p>
-					<p className="whitespace-pre-wrap break-words text-13 text-[#f1f4ee]">{reading?.body}</p>
-				</div>
-			</Modal>
+			<ComposeModal open={composeOpen} draft={draft} sending={sending} onChange={setDraft} onClose={() => setComposeOpen(false)} onSave={saveMail} />
+			<ReadModal mail={reading} onClose={() => setReading(null)} />
 
 			<ConfirmDialog
 				open={confirmDelete}
