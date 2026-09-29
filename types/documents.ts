@@ -18,6 +18,7 @@ export interface DocItemDTO {
     mime: string;
     size: number;
     imported: boolean; // файл перенесён из Диска и принадлежит пользователю: правка только в CRM
+    onDrive: boolean; // документ живёт в Google, а не в хранилище CRM (по нему делятся вкладки)
     modifiedAt: string;
     createdAt: string;
 }
@@ -28,5 +29,5 @@ export interface DocsState {
     // googleDocs — сколько документов ссылаются на файлы Google: при отключении аккаунта они
     // остаются в списке, поэтому интерфейс предупреждает об этом заранее
     drive: { configured: boolean; connected: boolean; email: string; googleDocs: number };
-    storage: { configured: boolean; maxMb: number; quotaMb: number };
+    storage: { configured: boolean; maxMb: number; quotaMb: number; usedMb: number };
 }

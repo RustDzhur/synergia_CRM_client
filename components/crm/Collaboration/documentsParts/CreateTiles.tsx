@@ -7,6 +7,7 @@ import { GOOGLE_KINDS, ICON_TYPE } from "./model";
 import type { GoogleKind } from "./model";
 
 interface Props {
+	tab: "crm" | "drive";
 	driveConnected: boolean;
 	storageConfigured: boolean;
 	fileRef: RefObject<HTMLInputElement>;
@@ -16,11 +17,13 @@ interface Props {
 }
 
 // Плитки «создать документ Google» и «загрузить файл»; недоступные (нет Диска или хранилища) приглушены
-export default function CreateTiles({ driveConnected, storageConfigured, fileRef, onCreate, onUpload, onFiles }: Props) {
+export default function CreateTiles({ tab, driveConnected, storageConfigured, fileRef, onCreate, onUpload, onFiles }: Props) {
 	const t = useTranslations("collab");
 	return (
-		<ul className="grid grid-cols-2 gap-12 md:grid-cols-4 md:gap-16 lg:gap-20">
-			{GOOGLE_KINDS.map((kind) => (
+		<ul className="grid grid-cols-2 gap-12 md:grid-cols-3 md:gap-16 lg:gap-20 xl:grid-cols-4">
+			{/* Документы Google создаются на Диске, загруженный файл лежит у нас — поэтому набор плиток
+			    зависит от вкладки: смешивать два хранилища в одной сетке и было путаницей */}
+			{tab === "drive" && GOOGLE_KINDS.map((kind) => (
 				<li key={kind}>
 					<button
 						type="button"
@@ -31,7 +34,7 @@ export default function CreateTiles({ driveConnected, storageConfigured, fileRef
 					</button>
 				</li>
 			))}
-			<li>
+			{tab === "crm" && <li>
 				<button
 					type="button"
 					onClick={onUpload}
@@ -40,7 +43,7 @@ export default function CreateTiles({ driveConnected, storageConfigured, fileRef
 					<span className="text-12 font-semibold text-[#8c948b] md:text-13">{t("uploadFile")}</span>
 				</button>
 				<input ref={fileRef} type="file" multiple hidden onChange={(e) => onFiles(e.target.files)} aria-label={t("uploadFile")} />
-			</li>
+			</li>}
 		</ul>
 	);
 }

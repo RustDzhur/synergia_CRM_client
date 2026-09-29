@@ -30,8 +30,10 @@ export async function POST(req: Request) {
         await connectDB();
         const folder = await ownedFolder(user.id, form.get("folder") || null);
         if (folder === undefined) return badRequest("Folder not found");
+        // Занятое считаем только по файлам, которые лежат у нас: строки, ссылающиеся на Google
+        // (документы Google и перенесённые с Диска), места в тарифе не занимают
         const [used, quota] = await Promise.all([
-            DocItem.aggregate([{ $match: { owner: new Types.ObjectId(user.id), kind: "file" } }, { $group: { _id: null, total: { $sum: "$size" } } }]),
+            DocItem.aggregate([{ $match: { owner: new Types.ObjectId(user.id), kind: "file", driveId: { $in: ["", null] } } }, { $group: { _id: null, total: { $sum: "$size" } } }]),
             quotaBytes(user.id),
         ]);
         if ((used[0]?.total ?? 0) + file.size > quota) return NextResponse.json({ message: "Your file storage is full. Upgrade the plan for more space.", code: "plan_limit" }, { status: 413 });

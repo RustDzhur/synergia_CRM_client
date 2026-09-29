@@ -42,6 +42,14 @@ async function drive<T>(token: string, path: string, init: RequestInit = {}): Pr
     return json;
 }
 
+// Сколько места выделено на Диске и сколько занято — по этому раздел показывает объём подключённого
+// хранилища. У бесплатных аккаунтов Google лимит приходит числом, у безлимитных его может не быть.
+export async function driveQuota(token: string): Promise<{ usedBytes: number; limitBytes: number }> {
+    const res = await drive<{ storageQuota?: { usage?: string; limit?: string } }>(token, "/about?fields=storageQuota");
+    const quota = res.storageQuota ?? {};
+    return { usedBytes: Number(quota.usage ?? 0) || 0, limitBytes: Number(quota.limit ?? 0) || 0 };
+}
+
 // Адрес Google-аккаунта, к которому подключён Drive (для подписи «Connected as …»)
 export async function driveUser(token: string) {
     const r = await drive<{ user?: { emailAddress?: string } }>(token, "/about?fields=user(emailAddress)");

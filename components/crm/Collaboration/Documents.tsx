@@ -5,9 +5,9 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbRefresh } from "react-icons/tb";
 import type { DocItemDTO, FolderDTO } from "@/types/documents";
-import { authHeaders } from "@/store/crmApi";
 import { useAiStore } from "@/store/useAiStore";
 import { useDocsStore } from "@/store/useDocsStore";
+import { apiCall, authHeaders } from "@/store/crmApi";
 import { shrinkImage } from "@/utils/imageResize";
 import { stripLocale } from "@/utils/locale";
 import PageHeader from "@/components/crm/shared/PageHeader";
@@ -17,6 +17,7 @@ import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tab
 import SearchBox from "../shared/SearchBox";
 import CreateTiles from "./documentsParts/CreateTiles";
 import DriveBanner from "./documentsParts/DriveBanner";
+import VolumeLine from "./documentsParts/VolumeLine";
 import EntriesGrid from "./documentsParts/EntriesGrid";
 import EntriesTable from "./documentsParts/EntriesTable";
 import MoveDialog from "./documentsParts/MoveDialog";
@@ -36,6 +37,10 @@ export default function Documents() {
 	const canAnalyzeDocs = !!aiStatus?.configured && (aiStatus.tools.some((x) => x.name === "read_document"));
 	const { state, loading, load, createFolder, patchFolder, deleteFolder, createDoc, patchDoc, deleteDoc, upload, connectDrive, importDrive, disconnectDrive } = useDocsStore();
 
+	// Две вкладки: своё хранилище CRM (загруженные файлы) и подключённый Google Диск.
+	// Файлы, живущие в Google, лежат не у нас, поэтому и объём у этих двух хранилищ разный
+	const [tab, setTab] = useState<"crm" | "drive">("crm");
+	const [driveQuota, setDriveQuota] = useState<{ usedBytes: number; limitBytes: number } | null>(null);
 	const [layout, setLayout] = useState<Layout>("list");
 	const [status, setStatus] = useState<StatusFilter>("active");
 	const [sortAsc, setSortAsc] = useState(true);
@@ -81,20 +86,38 @@ export default function Documents() {
 
 	// Поиск идёт по имени и по папкам, и по файлам: человек ищет файл, а не «список файлов»
 	const q = query.trim().toLowerCase();
-	const subfolders = useMemo(
-		() => folders.filter((f) => f.parent === current && (!q || f.name.toLowerCase().includes(q))).sort((a, b) => (sortAsc ? 1 : -1) * collator.compare(a.name, b.name)),
-		[folders, current, sortAsc, collator, q]
-	);
+	// Папку показываем, только если на этой вкладке в ней (или ниже) что-то лежит: папка без файлов
+	// своего хранилища выглядела бы как пустая, хотя в ней документы Google
+	const subfolders = useMemo(() => {
+		const mine = new Map<string, boolean>(); // в папке (или ниже) есть файлы этой вкладки
+		const any = new Map<string, boolean>(); // в папке (или ниже) есть хоть что-нибудь
+		for (const d of state?.docs ?? []) {
+			const isMine = tab === "drive" ? d.onDrive : !d.onDrive;
+			let id: string | null = d.folder;
+			for (let depth = 0; id && depth < 20; depth += 1) {
+				any.set(id, true);
+				if (isMine) mine.set(id, true);
+				id = byId.get(id)?.parent ?? null;
+			}
+		}
+		// Пустую папку показываем всегда — её только что создали, и в неё положат файлы;
+		// папку с файлами другой вкладки скрываем, иначе она ведёт в пустоту
+		return folders
+			.filter((f) => f.parent === current && (mine.has(f.id) || !any.has(f.id)) && (!q || f.name.toLowerCase().includes(q)))
+			.sort((a, b) => (sortAsc ? 1 : -1) * collator.compare(a.name, b.name));
+	}, [folders, state, tab, current, byId, sortAsc, collator, q]);
+	// Файлы текущей вкладки: «своё хранилище» — загруженные в CRM, «Google Диск» — те, что живут в Google
 	const docs = useMemo(
 		() =>
 			(state?.docs ?? [])
+				.filter((d) => (tab === "drive" ? d.onDrive : !d.onDrive))
 				.filter((d) => d.folder === current && (status === "all" || (status === "archived") === d.archived))
 				.filter((d) => !q || d.name.toLowerCase().includes(q))
 				.filter((d) => !filters.kind || d.kind === filters.kind)
 				.filter((d) => !filters.source || (filters.source === "drive" ? !!d.imported : !d.imported))
 				.filter((d) => !filters.createdBy || d.createdBy === filters.createdBy)
 				.sort((a, b) => (sortAsc ? 1 : -1) * collator.compare(a.name, b.name)),
-		[state, current, status, sortAsc, collator, q, filters]
+		[state, tab, current, status, sortAsc, collator, q, filters]
 	);
 
 	// Фильтры — по столбцам списка, как в других разделах: тип, источник и автор
@@ -130,6 +153,18 @@ export default function Documents() {
 
 	const drive = state?.drive;
 	const storage = state?.storage;
+
+	// Объём подключённого хранилища спрашиваем у Google один раз на вкладку и при смене аккаунта
+	// (подключили другой — объём другого аккаунта, а не прежний)
+	useEffect(() => {
+		if (tab !== "drive" || !drive?.connected) return;
+		let alive = true;
+		setDriveQuota(null);
+		void apiCall<{ connected: boolean; usedBytes?: number; limitBytes?: number }>("/api/drive/quota").then((res) => {
+			if (alive && res.ok && res.data?.connected) setDriveQuota({ usedBytes: res.data.usedBytes ?? 0, limitBytes: res.data.limitBytes ?? 0 });
+		});
+		return () => { alive = false; };
+	}, [tab, drive?.connected, drive?.email]);
 
 	// Кнопка подключения Диска: ошибку (например, не настроены ключи Google) показываем, а не молчим
 	async function connect() {
@@ -363,9 +398,32 @@ export default function Documents() {
 				</div>
 			</PageHeader>
 
-			{drive && <DriveBanner drive={drive} importing={importing} googleDocs={drive.googleDocs ?? 0} onConnect={connect} onImport={startImport} onDisconnect={() => disconnectDrive()} />}
+			{/* Две вкладки: что лежит у нас и что лежит в подключённом хранилище. Объём у них разный,
+			    и путать их нельзя: файлы Google занимают место в Google, а не в тарифе CRM */}
+			<div className="mb-16 flex flex-wrap items-center justify-between gap-12">
+				<div className="flex items-center gap-6" role="tablist" aria-label={t("document")}>
+					{(["crm", "drive"] as const).map((key) => (
+						<button
+							key={key}
+							type="button"
+							role="tab"
+							aria-selected={tab === key}
+							onClick={() => setTab(key)}
+							className={`fs-btn h-34 px-16 text-13 ${tab === key ? "fs-btn-primary" : "fs-btn-ghost"}`}>
+							{key === "crm" ? t("tabCrmStorage") : t("tabDriveStorage")}
+						</button>
+					))}
+				</div>
+				<VolumeLine
+					label={tab === "crm" ? t("storageOwn") : t("storageDrive")}
+					used={tab === "crm" ? (storage?.usedMb ?? 0) : driveQuota ? Math.round(driveQuota.usedBytes / 1024 / 1024) : null}
+					limit={tab === "crm" ? (storage?.quotaMb ?? 0) : Math.round((driveQuota?.limitBytes ?? 0) / 1024 / 1024)}
+					hint={tab === "crm" && !storage?.configured ? t("storageNotConfigured") : tab === "drive" && !drive?.connected ? t("driveNotConnected") : ""}
+				/>
+			</div>
+			{tab === "drive" && drive && <DriveBanner drive={drive} importing={importing} googleDocs={drive.googleDocs ?? 0} onConnect={connect} onImport={startImport} onDisconnect={() => disconnectDrive()} />}
 
-			<CreateTiles driveConnected={!!drive?.connected} storageConfigured={!!storage?.configured} fileRef={fileRef} onCreate={startCreate} onUpload={startUpload} onFiles={onFiles} />
+			<CreateTiles tab={tab} driveConnected={!!drive?.connected} storageConfigured={!!storage?.configured} fileRef={fileRef} onCreate={startCreate} onUpload={startUpload} onFiles={onFiles} />
 
 			<nav aria-label={t("breadcrumbs")} className="mt-16 flex flex-wrap items-center gap-x-8 gap-y-2 text-13">
 				<button type="button" onClick={() => setCurrent(null)} className={current === null ? "font-medium text-[#f1f4ee]" : "text-[#c6ff4d] hover:underline"}>{t("rootFolder")}</button>

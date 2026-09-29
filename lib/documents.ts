@@ -33,6 +33,9 @@ export const toDocDTO = (d: Doc): DocItemDTO => ({
     mime: d.mime,
     size: d.size,
     imported: !!d.imported,
+    // onDrive — документ живёт в Google (создан там или перенесён оттуда), а не в хранилище CRM:
+    // по этому признаку раздел делится на две вкладки — своё хранилище и подключённое
+    onDrive: !!d.driveId,
     modifiedAt: ((d.modifiedAt as Date | undefined) ?? d.updatedAt ?? d.createdAt).toISOString(),
     createdAt: d.createdAt.toISOString(),
 });
@@ -55,7 +58,14 @@ export async function docsState(owner: string): Promise<DocsState> {
             // в списке (файлы не удаляем), и об этом честно предупреждаем в интерфейсе
             googleDocs: docs.filter((d) => d.driveId).length,
         },
-        storage: { configured: storageConfigured(), maxMb: MAX_UPLOAD_MB, quotaMb: Math.round(quota / 1024 / 1024) },
+        storage: {
+            configured: storageConfigured(),
+            maxMb: MAX_UPLOAD_MB, // предел одного файла
+            quotaMb: Math.round(quota / 1024 / 1024), // выделено тарифом
+            // занято файлами, которые лежат у нас: документы Google и перенесённые с Диска занимают
+            // место в Google, а не в тарифе, поэтому в занятое не входят
+            usedMb: Math.round(docs.reduce((sum, d) => sum + (d.kind === "file" && !d.driveId ? Number(d.size) || 0 : 0), 0) / 1024 / 1024),
+        },
     };
 }
 
