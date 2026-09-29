@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -178,8 +179,17 @@ export default function DealsBoard({ search }: Props) {
                 <TbDots size={18} className="text-[#9AA396]" />
             </div>
 
+            {/* Зоны «выиграна» и «корзина» монтируются синхронно в onBeforeCapture — до того, как dnd
+                соберёт размеры дропзон (INITIAL_PUBLISH). Если смонтировать их позже (в onDragStart), dnd
+                в конце переноса падает с «Cannot stop drag when no active drag»: карточка виснет на стрелке
+                и страницу приходится перезагружать. flushSync обязателен — обычное обновление состояния
+                React не успело бы отрисоваться до сбора размеров */}
             {view === "kanban" ? (
-                <DragDropContext onDragStart={(start) => setDragging(start.type === "DEAL")} onDragEnd={handleDragEnd}>
+                <DragDropContext
+                    onBeforeCapture={(start) => {
+                        if (deals.some((d) => d._id === start.draggableId)) flushSync(() => setDragging(true));
+                    }}
+                    onDragEnd={handleDragEnd}>
                     <Droppable droppableId="board" type="COLUMN" direction="horizontal">
                         {(boardProvided) => (
                             <div
