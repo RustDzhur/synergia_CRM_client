@@ -4,13 +4,16 @@ import { useTranslations } from "next-intl";
 interface Props {
 	drive: { connected: boolean; configured: boolean; email?: string };
 	importing: boolean;
+	// Сколько документов ссылаются на файлы Google: отключение аккаунта их не удаляет, и об этом
+	// честнее сказать заранее — /api/drive намеренно оставляет документы в CRM
+	googleDocs: number;
 	onConnect: () => void;
 	onImport: () => void;
 	onDisconnect: () => void;
 }
 
 // Состояние Google Drive: предложение подключить либо строка «подключён как …» с действиями
-export default function DriveBanner({ drive, importing, onConnect, onImport, onDisconnect }: Props) {
+export default function DriveBanner({ drive, importing, googleDocs, onConnect, onImport, onDisconnect }: Props) {
 	const t = useTranslations("collab");
 	if (!drive.connected) {
 		return (
@@ -18,6 +21,9 @@ export default function DriveBanner({ drive, importing, onConnect, onImport, onD
 				<div>
 					<p className="text-14 font-medium text-[#f1f4ee]">{t("driveConnectTitle")}</p>
 					<p className="mt-2 text-12 text-[#8c948b]">{drive.configured ? t("driveConnectText") : t("driveNotConfigured")}</p>
+					{/* Документы не удаляются при отключении: ссылки на файлы Google остаются в списке,
+					    и открыть их сможет только аккаунт, под которым они созданы (или тот, с кем поделились) */}
+					{googleDocs > 0 && <p className="mt-6 text-12 text-[#F4A100]">{t("driveKeepNote", { count: googleDocs })}</p>}
 				</div>
 				{drive.configured && <button type="button" onClick={onConnect} className="fs-btn fs-btn-primary h-38 shrink-0">{t("driveConnectButton")}</button>}
 			</div>

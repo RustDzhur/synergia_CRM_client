@@ -1081,6 +1081,7 @@
     "driveError": "Could not connect Google Drive. {message}",
     "driveReconnect": "Reconnect",
     "driveImportButton": "Add files from Drive",
+    "driveKeepNote": "{count} documents here are Google files: they live in the Google account they were created in. Disconnecting does not delete them — to open them later, connect that same account or share the files with the new one.",
     "driveImportRunning": "Importing…",
     "driveImportDone": "Imported from Google Drive: {count}",
     "driveImportEmpty": "No new files found on Google Drive.",

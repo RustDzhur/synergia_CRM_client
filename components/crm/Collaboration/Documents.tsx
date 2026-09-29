@@ -363,7 +363,7 @@ export default function Documents() {
 				</div>
 			</PageHeader>
 
-			{drive && <DriveBanner drive={drive} importing={importing} onConnect={connect} onImport={startImport} onDisconnect={() => disconnectDrive()} />}
+			{drive && <DriveBanner drive={drive} importing={importing} googleDocs={drive.googleDocs ?? 0} onConnect={connect} onImport={startImport} onDisconnect={() => disconnectDrive()} />}
 
 			<CreateTiles driveConnected={!!drive?.connected} storageConfigured={!!storage?.configured} fileRef={fileRef} onCreate={startCreate} onUpload={startUpload} onFiles={onFiles} />
 

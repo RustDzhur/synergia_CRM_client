@@ -1081,6 +1081,7 @@
     "driveError": "Не вдалося підключити Google Drive. {message}",
     "driveReconnect": "Перепідключити",
     "driveImportButton": "Перенести файли з Диска",
+    "driveKeepNote": "{count} документів тут — файли Google: вони живуть в акаунті, у якому створені. Від’єднання їх не видаляє — щоб відкрити їх пізніше, підключіть той самий акаунт або поділіться файлами з новим.",
     "driveImportRunning": "Перенесення…",
     "driveImportDone": "Перенесено з Google Drive: {count}",
     "driveImportEmpty": "На Google Drive не знайдено нових файлів.",

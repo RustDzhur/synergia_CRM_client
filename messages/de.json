@@ -1081,6 +1081,7 @@
     "driveError": "Google Drive konnte nicht verbunden werden. {message}",
     "driveReconnect": "Neu verbinden",
     "driveImportButton": "Dateien aus Drive übernehmen",
+    "driveKeepNote": "{count} Dokumente hier sind Google-Dateien: Sie liegen in dem Google-Konto, in dem sie erstellt wurden. Beim Trennen werden sie nicht gelöscht — zum späteren Öffnen verbinden Sie dasselbe Konto oder geben die Dateien für das neue frei.",
     "driveImportRunning": "Import läuft…",
     "driveImportDone": "Aus Google Drive übernommen: {count}",
     "driveImportEmpty": "Keine neuen Dateien auf Google Drive gefunden.",

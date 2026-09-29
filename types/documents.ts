@@ -25,6 +25,8 @@ export interface DocItemDTO {
 export interface DocsState {
     folders: FolderDTO[];
     docs: DocItemDTO[];
-    drive: { configured: boolean; connected: boolean; email: string };
+    // googleDocs — сколько документов ссылаются на файлы Google: при отключении аккаунта они
+    // остаются в списке, поэтому интерфейс предупреждает об этом заранее
+    drive: { configured: boolean; connected: boolean; email: string; googleDocs: number };
     storage: { configured: boolean; maxMb: number; quotaMb: number };
 }

@@ -47,7 +47,14 @@ export async function docsState(owner: string): Promise<DocsState> {
     return {
         folders: folders.map(toFolderDTO),
         docs: docs.map(toDocDTO),
-        drive: { configured: oauthAvailable().google, connected: !!drive && drive.status === "connected", email: drive?.config?.email ?? "" },
+        drive: {
+            configured: oauthAvailable().google,
+            connected: !!drive && drive.status === "connected",
+            email: drive?.config?.email ?? "",
+            // сколько документов ссылаются на файлы Google: при отключении аккаунта они остаются
+            // в списке (файлы не удаляем), и об этом честно предупреждаем в интерфейсе
+            googleDocs: docs.filter((d) => d.driveId).length,
+        },
         storage: { configured: storageConfigured(), maxMb: MAX_UPLOAD_MB, quotaMb: Math.round(quota / 1024 / 1024) },
     };
 }
