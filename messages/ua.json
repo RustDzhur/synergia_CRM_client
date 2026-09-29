@@ -1538,6 +1538,7 @@
       "send": "Надіслати",
       "markPaid": "Позначити оплаченим",
       "markedPaid": "Позначено оплаченим.",
+      "partiallyPaid": "частково сплачено: {amount}",
       "paidOn": "Оплачено {date}",
       "downloadPdf": "Завантажити PDF",
       "sendTitle": "Надіслати поштою",

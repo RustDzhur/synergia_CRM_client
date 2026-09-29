@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized, validId } from "@/lib/api";
+import { logAudit } from "@/lib/audit";
 import { parseBankCsv, suggestMatches } from "@/lib/finance/bank";
 import { computeTotals } from "@/lib/finance/totals";
 import BankAccount from "@/models/BankAccount";
 import BankTransaction from "@/models/BankTransaction";
+import { applyPayment, statusAfterPayment } from "@/lib/finance/payments";
 import Invoice from "@/models/Invoice";
 import Expense from "@/models/Expense";
 
@@ -165,9 +167,37 @@ export async function PATCH(req: Request) {
     if (matchType === "invoice" && !(await Invoice.exists({ _id: matchId, org: user.id }))) return badRequest("Invoice not found");
     if (matchType === "expense" && !(await Expense.exists({ _id: matchId, org: user.id }))) return badRequest("Expense not found");
 
+    // Привязка движения к счёту — это те же деньги, которых ждёт счёт, поэтому оплату учитываем
+    // здесь же: иначе сверка оставалась бы «бумажной», а счёт вечно вис «к оплате». Снятие привязки
+    // возвращает сумму назад.
+    const wasInvoice = tx.matchType === "invoice" && tx.matchId ? String(tx.matchId) : "";
+    const nowInvoice = matchType === "invoice" ? matchId : "";
+    if (wasInvoice && wasInvoice !== nowInvoice) await bookPayment(user.id, wasInvoice, -Math.abs(tx.amount), user.userId, "unmatched");
+    if (nowInvoice && nowInvoice !== wasInvoice) await bookPayment(user.id, nowInvoice, Math.abs(tx.amount), user.userId, "matched");
+
     tx.matchType = matchType;
     tx.matchId = matchType ? matchId : undefined;
     if (typeof b?.notes === "string") tx.notes = str(b.notes, 1000);
     await tx.save();
     return NextResponse.json(toDTO(tx));
+}
+
+// Учитывает деньги по счёту: приход из выписки закрывает оплату, отвязка — снимает её.
+// Статус и сумма считаются общим правилом (lib/finance/payments.ts), журнал хранит обе операции.
+async function bookPayment(org: string, invoiceId: string, amount: number, userId: string, reason: "matched" | "unmatched") {
+    const inv = await Invoice.findOne({ _id: invoiceId, org });
+    if (!inv) return;
+    // черновик и отменённый счёт деньгами не закрывают: привязка остаётся просто пометкой
+    if (!["sent", "overdue", "paid"].includes(String(inv.status))) return;
+    const { paid, gross, full } = applyPayment(inv, amount);
+    inv.paidAmount = paid;
+    inv.status = statusAfterPayment(String(inv.status), full);
+    if (full) inv.paidAt = new Date();
+    await inv.save();
+    await logAudit({
+        org, userId, action: reason === "matched" ? "invoice.payment_booked" : "invoice.payment_reverted",
+        entityType: "invoice", entityId: String(inv._id),
+        summary: `Invoice ${inv.number}: ${reason === "matched" ? "payment" : "payment removed"} ${amount} ${inv.currency} from the bank statement — ${paid} of ${gross}`,
+        meta: { amount, paid, gross, currency: inv.currency },
+    });
 }

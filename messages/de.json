@@ -1538,6 +1538,7 @@
       "send": "Senden",
       "markPaid": "Als bezahlt markieren",
       "markedPaid": "Als bezahlt markiert.",
+      "partiallyPaid": "teilweise bezahlt: {amount}",
       "paidOn": "Bezahlt am {date}",
       "downloadPdf": "PDF herunterladen",
       "sendTitle": "Per E-Mail senden",

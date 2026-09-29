@@ -11,6 +11,7 @@ import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
 import { downloadDocumentPdf } from "./download";
 import DocumentTemplateButton from "./DocumentTemplateButton";
+import { localeTag } from "@/utils/dateHelpers";
 import { money } from "./format";
 import { emptyItem, useDefaultTaxRate } from "./lineItems";
 
@@ -110,6 +111,10 @@ export default function Invoices({ openId }: { openId?: string | null }) {
 											<span className="h-6 w-6 rounded-50" style={{ background: STATUS_COLOR[inv.status] }} />
 											{t(`istatus_${inv.status}`)}
 										</span>
+										{/* Частичная оплата: счёт ещё не закрыт, но деньги уже приходили */}
+										{inv.status !== "paid" && (inv.paidAmount ?? 0) > 0 && (
+											<span className="fs-chip h-22 px-8 text-10 text-[#F4A100]">{t("partiallyPaid", { amount: money(inv.paidAmount ?? 0, inv.currency, localeTag(locale)) })}</span>
+										)}
 										{(inv.dunningLevel ?? 0) > 0 && (
 											// ступень манаведения рядом со статусом: 4 — «letzte Mahnung», дальше только правовая стадия
 											<span className={`fs-chip h-22 px-8 text-10 ${(inv.dunningLevel ?? 0) >= 4 ? "border-[rgba(235,87,87,0.35)] text-[#EB5757]" : "border-[rgba(244,161,0,0.35)] text-[#f4a100]"}`}>
