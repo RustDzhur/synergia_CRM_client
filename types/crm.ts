@@ -1,7 +1,7 @@
 // Общие типы CRM: запись ленты активности и сущности с ней.
 
 export type ActivityType =
-    | "activity" | "comment" | "task" | "sms" | "whatsapp" | "telegram" | "email" | "note" | "call" | "schedule"
+    | "activity" | "comment" | "task" | "sms" | "viber" | "telegram" | "email" | "note" | "call" | "schedule"
     | "stage" | "created"; // последние два — системные, создаются сервером
 
 export interface Activity {

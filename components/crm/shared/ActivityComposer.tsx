@@ -12,6 +12,8 @@ export interface ComposerTab {
 	mode: "line" | "area";
 	placeholder: string;
 	withDate?: boolean;
+	// Подсказка под полем: например, почему канал сейчас недоступен («нужен SMS-провайдер»)
+	note?: string;
 }
 
 interface Props {
@@ -123,6 +125,10 @@ export default function ActivityComposer({ tabs, onSubmit, submitLabel }: Props)
 							rows={5}
 							className="w-full resize-none bg-transparent text-13 text-[#f1f4ee] outline-none placeholder:text-[#9AA396]"
 						/>
+						{tab.note && (
+							// Почему канал недоступен или что нужно подключить — до нажатия «Send», а не после
+							<p className="mt-10 text-12 leading-[1.5] text-[#F4A100]">{tab.note}</p>
+						)}
 						<div className="mt-10 flex flex-wrap items-center justify-between gap-12">
 							<div className="flex flex-wrap items-center gap-16">
 								<button type="button" disabled title={disabledTip} className={`${toolbarButton} cursor-not-allowed opacity-60`}>

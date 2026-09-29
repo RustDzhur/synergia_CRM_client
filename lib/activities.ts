@@ -8,7 +8,7 @@ import { unauthorized } from "@/lib/api";
 // Записи «ленты активности» у сделки, контакта и компании: заметки, комментарии, звонки, письма и т.д.
 // Типы "stage" и "created" — системные, их создаёт сервер, через API их добавить нельзя.
 export const USER_ACTIVITY_TYPES = [
-    "activity", "comment", "task", "sms", "whatsapp", "telegram", "email", "note", "call", "schedule",
+    "activity", "comment", "task", "sms", "viber", "telegram", "email", "note", "call", "schedule",
 ] as const;
 
 export const ActivitySchema = new Schema({

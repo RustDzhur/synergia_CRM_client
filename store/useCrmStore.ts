@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Activity } from "@/types/crm";
-import { api, addActivityRequest, removeActivityRequest, NewActivity } from "./crmApi";
+import { api, apiCall, addActivityRequest, removeActivityRequest, NewActivity } from "./crmApi";
 
 export interface Stage {
     _id: string;
@@ -51,6 +51,10 @@ interface CrmStore {
 
     addActivity: (dealId: string, activity: NewActivity) => Promise<void>;
     removeActivity: (dealId: string, activityId: string) => Promise<void>;
+    // Доступность каналов связи для сделки: что можно отправить прямо сейчас, а что требует подключения
+    loadChannels: (dealId: string) => Promise<Record<string, string>>;
+    // Отправка SMS, Viber, Telegram или письма из карточки сделки: null — ушло, иначе причина отказа
+    sendChannel: (dealId: string, channel: string, text: string) => Promise<string | null>;
 }
 
 export const useCrmStore = create<CrmStore>((set, get) => {
@@ -164,6 +168,22 @@ export const useCrmStore = create<CrmStore>((set, get) => {
         addActivity: async (dealId, activity) => {
             const deal = await addActivityRequest<Deal>("deals", dealId, activity);
             if (deal) replaceDeal(deal);
+        },
+
+        loadChannels: async (dealId) => {
+            const channels = await api<Record<string, string>>(`/api/deals/${dealId}/channels`);
+            return channels ?? {};
+        },
+
+        sendChannel: async (dealId, channel, text) => {
+            const res = await apiCall<Deal>(`/api/deals/${dealId}/channels`, "POST", { channel, text });
+            if (res.ok && res.data) {
+                replaceDeal(res.data);
+                return null;
+            }
+            // 409 — канал недоступен: у отказа свой код (no_provider, no_conversation…), по нему
+            // интерфейс подставляет понятный текст вместо английского сообщения сервера
+            return res.status === 409 ? res.code || "unavailable" : res.message || "failed";
         },
 
         removeActivity: async (dealId, activityId) => {
