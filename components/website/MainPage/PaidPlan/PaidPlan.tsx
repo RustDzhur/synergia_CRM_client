@@ -9,7 +9,7 @@ import Image from "next/image";
 import useAuthFormStore from "@/store/useAuthFormStore";
 import { useSiteMenuState } from "@/store/useSiteMenuState";
 import { useLocale, useTranslations } from "next-intl";
-import { FEATURE_KEYS, PLANS, PlanId, YEAR_MONTHS } from "@/config/plans";
+import { FEATURE_KEYS, PLANS, PlanId, YEAR_MONTHS, limitsLine } from "@/config/plans";
 import { PENDING_PLAN_KEY } from "@/config/pendingPlan";
 
 const ICONS: Record<PlanId, string> = { free, standard: standart, professional };
@@ -109,8 +109,8 @@ export default function PaidPlan() {
 							<p className={`text-16 leading-[24px] tracking-[0.4px] ${dark ? "text-white" : "text-[#5A5A5A]"}`}>
 								{subTitles[plan.id]}
 							</p>
-							<p className={`text-14 leading-[20px] tracking-[0.4px] mb-[35px] ${dark ? "text-[#C7CDD1]" : "text-[#5A5A5A]"}`}>
-								{t("limitsLine", { rules: plan.automationRules, ai: plan.aiDailyRequests, storage: plan.storageMb >= 1000 ? `${plan.storageMb / 1000} GB` : `${plan.storageMb} MB` })}
+							<p className={`text-14 leading-[20px] tracking-[0.4px] mb-[35px] min-h-[20px] ${dark ? "text-[#C7CDD1]" : "text-[#5A5A5A]"}`}>
+								{limitsLine(plan, t)}
 							</p>
 							<ul className="mb-[34px]">
 								{FEATURE_KEYS.map((key, i) => {

@@ -1,6 +1,6 @@
 "use client";
 import { useTranslations } from "next-intl";
-import { type FeatureKey, FEATURE_KEYS, planFor } from "@/config/plans";
+import { type FeatureKey, FEATURE_KEYS, limitsLine, planFor } from "@/config/plans";
 import Modal from "../../shared/Modal";
 import { inputClass, OrgRow } from "./model";
 
@@ -22,7 +22,7 @@ export default function FeaturesModal({ org, onClose, onToggle }: Props) {
 					<p className="mb-16 text-12 text-[#8c948b]">{t("featuresHelp")}</p>
 					<div className="mb-16 flex flex-wrap items-center gap-8 text-12 text-[#8c948b]">
 						<span className="fs-chip h-24 border-[rgba(198,255,77,0.30)] px-8 text-10 text-[#c6ff4d]">{org.plan}</span>
-						<span>{tf("limitsLine", { rules: planFor(org.plan).automationRules, ai: planFor(org.plan).aiDailyRequests, storage: planFor(org.plan).storageMb >= 1000 ? `${planFor(org.plan).storageMb / 1000} GB` : `${planFor(org.plan).storageMb} MB` })}</span>
+						<span>{limitsLine(planFor(org.plan), tf)}</span>
 					</div>
 					<ul className="mb-20 flex flex-col gap-8">
 						{FEATURE_KEYS.map((key) => {

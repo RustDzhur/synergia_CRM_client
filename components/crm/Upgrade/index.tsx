@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
 import { TbChartBar, TbCircle, TbCircleCheck, TbFileText, TbInfoCircle, TbLock } from "react-icons/tb";
 import { SiApplepay, SiGooglepay, SiKlarna, SiMastercard, SiPaypal, SiVisa } from "react-icons/si";
-import { FEATURE_KEYS, FeatureKey, PLANS, PlanId, YEAR_MONTHS } from "@/config/plans";
+import { FEATURE_KEYS, FeatureKey, PLANS, PlanId, YEAR_MONTHS, limitsLine } from "@/config/plans";
 import { apiCall } from "@/store/crmApi";
 import PageHeader from "@/components/crm/shared/PageHeader";
 import { localeTag } from "@/utils/dateHelpers";
@@ -173,9 +173,7 @@ export default function Upgrade() {
 							<p className="mt-6 text-center text-13 text-[#8c948b]">
 								{plan.users === null ? t("unlimitedUsers") : t("users", { count: plan.users })}
 							</p>
-							<p className="mt-2 text-center text-11 text-[#9AA396]">
-								{t("limitsLine", { rules: plan.automationRules, ai: plan.aiDailyRequests, storage: plan.storageMb >= 1000 ? `${plan.storageMb / 1000} GB` : `${plan.storageMb} MB` })}
-							</p>
+							{limitsLine(plan, t) && <p className="mt-2 text-center text-11 text-[#9AA396]">{limitsLine(plan, t)}</p>}
 
 							<ul className="mb-30 mt-30 flex w-full flex-col gap-8 text-13">
 								{FEATURE_KEYS.map((f) => {

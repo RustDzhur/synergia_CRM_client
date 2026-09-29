@@ -15,14 +15,14 @@ export const BILLING_DOCS: DocSection[] = [
 				title: t3("What each plan contains", "Was jeder Tarif enthält", "Що містить кожен тариф"),
 				steps: [
 					t3(
-						"[[upgrade.free]]: €0. One user; [[upgrade.crm]] and [[upgrade.tasks]]; no automation rules and no AI requests; 500 MB of storage.",
-						"[[upgrade.free]]: 0 €. Ein Benutzer; [[upgrade.crm]] und [[upgrade.tasks]]; keine Automatisierungsregeln und keine KI-Anfragen; 500 MB Speicher.",
-						"[[upgrade.free]]: €0. Один користувач; [[upgrade.crm]] та [[upgrade.tasks]]; без правил автоматизації та без запитів до ШІ; 500 МБ сховища.",
+						"[[upgrade.free]]: €0. One user; [[upgrade.crm]] and [[upgrade.tasks]]; no automation rules, no AI requests and no document storage.",
+						"[[upgrade.free]]: 0 €. Ein Benutzer; [[upgrade.crm]] und [[upgrade.tasks]]; keine Automatisierungsregeln, keine KI-Anfragen und kein Dokumentenspeicher.",
+						"[[upgrade.free]]: €0. Один користувач; [[upgrade.crm]] та [[upgrade.tasks]]; без правил автоматизації, без запитів до ШІ та без сховища документів.",
 					),
 					t3(
-						"[[upgrade.standard]]: €20 per month. Up to 50 users; everything of Free plus [[upgrade.company]], [[upgrade.collab]] and [[upgrade.multiFirm]]; 2000 MB of storage.",
-						"[[upgrade.standard]]: 20 € pro Monat. Bis zu 50 Benutzer; alles aus Free plus [[upgrade.company]], [[upgrade.collab]] und [[upgrade.multiFirm]]; 2000 MB Speicher.",
-						"[[upgrade.standard]]: €20 на місяць. До 50 користувачів; усе з Free плюс [[upgrade.company]], [[upgrade.collab]] та [[upgrade.multiFirm]]; 2000 МБ сховища.",
+						"[[upgrade.standard]]: €20 per month. Up to 50 users; everything of Free plus [[upgrade.company]], [[upgrade.collab]] and [[upgrade.multiFirm]]; no automation, AI assistant or document storage.",
+						"[[upgrade.standard]]: 20 € pro Monat. Bis zu 50 Benutzer; alles aus Free plus [[upgrade.company]], [[upgrade.collab]] und [[upgrade.multiFirm]]; keine Automatisierung, kein KI-Assistent und kein Dokumentenspeicher.",
+						"[[upgrade.standard]]: €20 на місяць. До 50 користувачів; усе з Free плюс [[upgrade.company]], [[upgrade.collab]] та [[upgrade.multiFirm]]; без автоматизації, ШІ-асистента та сховища документів.",
 					),
 					t3(
 						"[[upgrade.professional]]: €53 per month. Unlimited users; all sections, including [[upgrade.documents]], [[upgrade.channels]], [[upgrade.mail]], [[upgrade.inventory]], [[upgrade.automation]], [[upgrade.aiAssistant]], [[upgrade.marketing]], [[upgrade.ads]] and [[upgrade.aiAutomation]]; 10 GB of storage. The card carries the line “[[upgrade.fullAccess]]”.",
@@ -30,9 +30,9 @@ export const BILLING_DOCS: DocSection[] = [
 						"[[upgrade.professional]]: €53 на місяць. Необмежена кількість користувачів; усі розділи, зокрема [[upgrade.documents]], [[upgrade.channels]], [[upgrade.mail]], [[upgrade.inventory]], [[upgrade.automation]], [[upgrade.aiAssistant]], [[upgrade.marketing]], [[upgrade.ads]] та [[upgrade.aiAutomation]]; 10 ГБ сховища. Картка має рядок «[[upgrade.fullAccess]]».",
 					),
 					t3(
-						"The limits of the card (“rules · AI requests/day · storage”) are written on the card itself. Note: the Standard card mentions automation rules and AI requests, but automation and the AI assistant are part of Professional, so those two limits only matter there.",
-						"Die Grenzen der Karte („Regeln · KI-Anfragen/Tag · Speicher“) stehen auf der Karte selbst. Beachten Sie: Die Standard-Karte nennt Automatisierungsregeln und KI-Anfragen, aber Automatisierung und der KI-Assistent gehören zu Professional, diese beiden Grenzen zählen also nur dort.",
-						"Ліміти картки («правила · запити до ШІ/день · сховище») написано на самій картці. Зверніть увагу: картка Standard згадує правила автоматизації та запити до ШІ, але автоматизація й ШІ-асистент входять у Professional, тож ці два ліміти мають значення лише там.",
+						"Under the price the card names the limits that really apply to the plan (“rules · AI requests/day · storage”). Free and Standard show no such line, because automation, the AI assistant and document storage are part of Professional; Professional shows 200 rules, 300 AI requests a day and 10 GB.",
+						"Unter dem Preis nennt die Karte die Grenzen, die für den Tarif wirklich gelten („Regeln · KI-Anfragen/Tag · Speicher“). Free und Standard zeigen keine solche Zeile, weil Automatisierung, KI-Assistent und Dokumentenspeicher zu Professional gehören; Professional zeigt 200 Regeln, 300 KI-Anfragen pro Tag und 10 GB.",
+						"Під ціною картка називає ліміти, що справді діють для тарифу («правила · запити до ШІ/день · сховище»). Free і Standard такого рядка не мають, бо автоматизація, ШІ-асистент і сховище документів входять у Professional; Professional показує 200 правил, 300 запитів до ШІ на день і 10 ГБ.",
 					),
 					t3(
 						"If a section is not in the plan, its menu item is hidden, its data are refused by the server, and an attempt to open it by a direct link leads to this page with an orange notice at the top (see below).",

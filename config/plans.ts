@@ -79,3 +79,24 @@ export const PLANS: PlanDef[] = [
 ];
 
 export const planFor = (id: string): PlanDef => PLANS.find((p) => p.id === id) ?? PLANS[0];
+
+// Лимиты, которые у тарифа реально достижимы: правила и ИИ — только если в тарифе есть автоматизация и ИИ, хранилище — если есть Documents.
+// Иначе строка обещала бы «30 правил» там, где раздел автоматизации закрыт.
+export function limitParts(plan: PlanDef): { rules?: number; ai?: number; storage?: string } {
+	const f = plan.features;
+	return {
+		rules: f.automation ? plan.automationRules : undefined,
+		ai: f.aiAssistant ? plan.aiDailyRequests : undefined,
+		storage: f.documents ? (plan.storageMb >= 1000 ? `${plan.storageMb / 1000} GB` : `${plan.storageMb} MB`) : undefined,
+	};
+}
+
+type Translate = (key: string, values?: Record<string, string | number>) => string;
+export function limitsLine(plan: PlanDef, t: Translate): string {
+	const p = limitParts(plan);
+	const out: string[] = [];
+	if (p.rules !== undefined) out.push(t("limitRules", { count: p.rules }));
+	if (p.ai !== undefined) out.push(t("limitAi", { count: p.ai }));
+	if (p.storage !== undefined) out.push(t("limitStorage", { size: p.storage }));
+	return out.join(" · ");
+}
