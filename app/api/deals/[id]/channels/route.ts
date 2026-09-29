@@ -127,9 +127,14 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const found = await loadDeal(user.id, params.id);
     if (!found) return notFound();
     const contact = found.contact ? { _id: found.contact._id, name: found.contact.name, phone: found.contact.phone } : null;
+    // Ящик, из которого уйдёт письмо: у фирмы их может быть несколько, и знать это нужно до отправки —
+    // письмо уходит из первого подключённого (см. mailAccount)
+    const mailbox = (await mailAccount(user.id))?.config?.email ?? "";
     const entries = await Promise.all(CHANNELS.map(async (channel) => [channel, {
         state: await availability(user.id, channel, contact, found.deal.company),
         connected: await isConnected(user.id, channel),
+        // from — только у почты: подсказка «уйдёт с такого-то адреса» под полем
+        ...(channel === "email" && mailbox ? { from: mailbox } : {}),
     }] as const));
     return NextResponse.json(Object.fromEntries(entries));
 }

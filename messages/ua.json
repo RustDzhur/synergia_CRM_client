@@ -586,7 +586,8 @@
         "doc_order": "Замовлення",
         "doc_contract": "Договір",
         "dealWonMark": "Позначити як виграну",
-        "dealWonUndo": "Зняти позначку «виграно»"
+        "dealWonUndo": "Зняти позначку «виграно»",
+        "chanFromMailbox": "Лист буде надіслано з {email} (Web Mails → Accounts)."
     },
     "dashboard": {
         "date": "Дата",

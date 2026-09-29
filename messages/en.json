@@ -586,7 +586,8 @@
         "doc_order": "Order",
         "doc_contract": "Contract",
         "dealWonMark": "Mark as won",
-        "dealWonUndo": "Remove won mark"
+        "dealWonUndo": "Remove won mark",
+        "chanFromMailbox": "The e-mail will be sent from {email} (Web Mails → Accounts)."
     },
     "dashboard": {
         "date": "Date",

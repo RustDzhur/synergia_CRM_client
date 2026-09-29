@@ -586,7 +586,8 @@
         "doc_order": "Auftrag",
         "doc_contract": "Vertrag",
         "dealWonMark": "Als gewonnen markieren",
-        "dealWonUndo": "Gewonnen-Markierung entfernen"
+        "dealWonUndo": "Gewonnen-Markierung entfernen",
+        "chanFromMailbox": "Die E-Mail wird von {email} gesendet (Web Mails → Konten)."
     },
     "dashboard": {
         "date": "Datum",

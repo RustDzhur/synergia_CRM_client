@@ -56,7 +56,7 @@ export default function DealModal({ dealId, onClose }: Props) {
 	const [confirmDelete, setConfirmDelete] = useState(false);
 	// Что можно отправить из карточки: сервер отвечает по каждому каналу — ready или причину отказа.
 	// Пока ответа нет, вкладки работают и подсказки просто не показываются.
-	const [channels, setChannels] = useState<Record<string, { state: string; connected: boolean }>>({});
+	const [channels, setChannels] = useState<Record<string, { state: string; connected: boolean; from?: string }>>({});
 
 	// при открытии другой сделки подтягиваем данные и сбрасываем режимы редактирования;
 	// зависит только от dealId — fetch* и setState стабильны, а лишний перезапуск дёргал бы сеть
@@ -177,7 +177,16 @@ export default function DealModal({ dealId, onClose }: Props) {
 		{ key: "email", label: t("tabEmail") },
 	] as const)
 		.filter((tab) => channels[tab.key]?.connected)
-		.map((tab) => ({ key: tab.key, label: tab.label, type: tab.key as ComposerTab["type"], mode: "area" as const, placeholder: t("commentPlaceholder"), note: reasonText(channels[tab.key]?.state, tab.key) }));
+		.map((tab) => ({
+			key: tab.key,
+			label: tab.label,
+			type: tab.key as ComposerTab["type"],
+			mode: "area" as const,
+			placeholder: t("commentPlaceholder"),
+			note: reasonText(channels[tab.key]?.state, tab.key),
+			// у почты показываем, из какого ящика уйдёт письмо: у фирмы их может быть несколько
+			hint: tab.key === "email" && channels.email?.state === "ready" && channels.email.from ? t("chanFromMailbox", { email: channels.email.from }) : undefined,
+		}));
 
 	function reasonText(code: string, channel: string): string | undefined {
 		if (!code || code === "ready") return undefined;
