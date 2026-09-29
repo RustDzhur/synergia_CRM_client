@@ -23,7 +23,7 @@ import {
 } from "react-icons/tb";
 import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tabBar";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
-import { useFinanceStore } from "@/app/store/useFinanceStore";
+import { useFinanceStore } from "@/store/useFinanceStore";
 import Overview from "./Overview";
 import Quotes, { QuotePrefill } from "./Quotes";
 import Orders from "./Orders";

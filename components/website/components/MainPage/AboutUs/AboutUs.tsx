@@ -1,7 +1,7 @@
 import React from "react";
 import LinkAboutUs from "./LinkAboutUs";
 import Image from "next/image";
-import aboutUs from "@/app/assets/images/aboutUs.jpg";
+import aboutUs from "@/assets/images/aboutUs.jpg";
 import { useTranslations } from "next-intl";
 
 // Фото с тёмной карточкой поверх (planшет и десктоп) или карточка над фото (телефон).

@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { Task } from "@/app/store/useTaskStore";
+import { Task } from "@/store/useTaskStore";
 import SearchBox from "../shared/SearchBox";
 import TaskCard from "./TaskCard";
 

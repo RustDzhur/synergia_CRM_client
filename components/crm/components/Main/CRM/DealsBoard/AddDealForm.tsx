@@ -1,9 +1,9 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useContactStore } from "@/app/store/useContactStore";
-import { useCompaniesStore } from "@/app/store/useCompaniesStore";
-import { NewDeal } from "@/app/store/useCrmStore";
+import { useContactStore } from "@/store/useContactStore";
+import { useCompaniesStore } from "@/store/useCompaniesStore";
+import { NewDeal } from "@/store/useCrmStore";
 import FormField from "../../shared/FormField";
 import SuggestInput, { SuggestOption } from "../../shared/SuggestInput";
 

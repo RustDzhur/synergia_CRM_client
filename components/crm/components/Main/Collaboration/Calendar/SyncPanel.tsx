@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbCalendarShare, TbChevronDown, TbRefresh, TbX } from "react-icons/tb";
-import { apiCall } from "@/app/store/crmApi";
+import { apiCall } from "@/store/crmApi";
 import Modal from "../../shared/Modal";
 
 // Подключение внешних календарей: Google (обычный вход через Google) и iCloud (Apple ID и пароль

@@ -2,8 +2,8 @@
 import React, { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TbChevronDown } from "react-icons/tb";
-import Dropdown from "@/app/utils/Dropdown";
-import { useClickOutside } from "@/app/utils/useClickOutside";
+import Dropdown from "@/utils/Dropdown";
+import { useClickOutside } from "@/utils/useClickOutside";
 
 interface Option<T extends string> {
 	value: T;

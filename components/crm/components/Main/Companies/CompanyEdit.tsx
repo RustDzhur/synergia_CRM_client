@@ -1,6 +1,6 @@
 "use client";
 import { useTranslations } from "next-intl";
-import { useCompaniesStore, ClientCompany } from "@/app/store/useCompaniesStore";
+import { useCompaniesStore, ClientCompany } from "@/store/useCompaniesStore";
 import EntityEditPage, { FieldDef } from "../shared/EntityEditPage";
 
 export default function CompanyEdit({ id }: { id: string }) {

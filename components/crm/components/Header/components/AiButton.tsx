@@ -2,7 +2,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { TbSparkles } from "react-icons/tb";
-import { useAiStore } from "@/app/store/useAiStore";
+import { useAiStore } from "@/store/useAiStore";
 
 // Кнопка «Firmspace AI» в шапке (то же открывается по Ctrl/⌘ + K)
 export default function AiButton() {

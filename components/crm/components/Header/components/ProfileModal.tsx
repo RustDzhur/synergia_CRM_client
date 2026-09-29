@@ -4,9 +4,9 @@ import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdClose, MdPhotoCamera } from "react-icons/md";
-import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
-import { useScrollLock } from "@/app/utils/useScrollLock";
-import { fileToAvatar, MAX_AVATAR_FILE_BYTES } from "@/app/utils/avatar";
+import { useCurrentUserStore } from "@/store/useCurrentUserStore";
+import { useScrollLock } from "@/utils/useScrollLock";
+import { fileToAvatar, MAX_AVATAR_FILE_BYTES } from "@/utils/avatar";
 import Avatar from "@/components/crm/components/Main/shared/Avatar";
 
 interface FormState {

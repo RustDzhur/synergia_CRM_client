@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { TbDots, TbLogout, TbSettings, TbShieldCog } from "react-icons/tb";
-import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
-import useAuthStore from "@/app/store/useAuthStore";
-import Dropdown from "@/app/utils/Dropdown";
-import { useClickOutside } from "@/app/utils/useClickOutside";
+import { useCurrentUserStore } from "@/store/useCurrentUserStore";
+import useAuthStore from "@/store/useAuthStore";
+import Dropdown from "@/utils/Dropdown";
+import { useClickOutside } from "@/utils/useClickOutside";
 import Avatar from "@/components/crm/components/Main/shared/Avatar";
 
 // Подвал сайдбара: аватар, имя, почта и меню «…» — профиль, кабинет администратора, выход.

@@ -1,7 +1,7 @@
 "use client";
 import React, { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Task, taskStatus } from "@/app/store/useTaskStore";
+import { Task, taskStatus } from "@/store/useTaskStore";
 import PeriodSelect from "./PeriodSelect";
 
 type Period = "month" | "week" | "year";

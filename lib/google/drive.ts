@@ -1,5 +1,5 @@
 import { ProviderError, fetchProvider } from "@/lib/http";
-import type { DocKind } from "@/app/types/documents";
+import type { DocKind } from "@/types/documents";
 
 // Google Drive API v3 без SDK. Два права: drive.file — приложение видит и меняет только те файлы, которые создало само,
 // drive.readonly — читает все файлы пользователя (нужно, чтобы показать в CRM и перенести туда то, что у него уже лежало на Диске).

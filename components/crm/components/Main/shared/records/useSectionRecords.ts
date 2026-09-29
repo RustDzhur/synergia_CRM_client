@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useRecordsStore } from "@/app/store/useRecordsStore";
+import { useRecordsStore } from "@/store/useRecordsStore";
 import type { RecordItem, SectionConfig } from "./config";
 
 const EMPTY: RecordItem[] = [];

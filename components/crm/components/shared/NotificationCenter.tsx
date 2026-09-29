@@ -5,13 +5,13 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdAccessAlarm, MdClose } from "react-icons/md";
 import { TbCalendarEvent } from "react-icons/tb";
-import { apiCall } from "@/app/store/crmApi";
-import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
-import { useNotificationStore, type Notif } from "@/app/store/useNotificationStore";
-import { beep, chime } from "@/app/utils/beep";
-import { deadlineStage } from "@/app/utils/deadline";
-import { notifText } from "@/app/utils/notifText";
-import { usePolling } from "@/app/utils/usePolling";
+import { apiCall } from "@/store/crmApi";
+import { useCurrentUserStore } from "@/store/useCurrentUserStore";
+import { useNotificationStore, type Notif } from "@/store/useNotificationStore";
+import { beep, chime } from "@/utils/beep";
+import { deadlineStage } from "@/utils/deadline";
+import { notifText } from "@/utils/notifText";
+import { usePolling } from "@/utils/usePolling";
 
 interface Item { _id: string; title?: string; clientName?: string; deadline?: string; endDate?: string; completed?: boolean; muted?: boolean }
 

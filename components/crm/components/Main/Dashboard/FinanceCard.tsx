@@ -2,8 +2,8 @@
 import React, { useEffect } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { useFinanceStore, type FinanceDashboard } from "@/app/store/useFinanceStore";
-import { useFeature, useOrgStore } from "@/app/store/useOrgStore";
+import { useFinanceStore, type FinanceDashboard } from "@/store/useFinanceStore";
+import { useFeature, useOrgStore } from "@/store/useOrgStore";
 import { money } from "../Finance/format";
 import { Kpi } from "../Ads/AdsPanel";
 

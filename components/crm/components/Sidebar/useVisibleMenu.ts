@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useActiveOrg } from "@/app/store/useOrgStore";
+import { useActiveOrg } from "@/store/useOrgStore";
 import { menuItems, type MenuItem } from "./menuItems";
 
 // Пункты меню, доступные роли пользователя и тарифу фирмы. Пока фирма не загрузилась, показываем всё

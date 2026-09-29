@@ -1,5 +1,5 @@
 import type { HydratedDocument } from "mongoose";
-import type { ConversationDTO, MessageDTO, MessagingChannel } from "@/app/types/integrations";
+import type { ConversationDTO, MessageDTO, MessagingChannel } from "@/types/integrations";
 import { ProviderError } from "@/lib/http";
 import { emit } from "@/lib/automation/emit";
 import { notify } from "@/lib/notify";

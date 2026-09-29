@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { NotificationPrefs, useCurrentUserStore } from "@/app/store/useCurrentUserStore";
+import { NotificationPrefs, useCurrentUserStore } from "@/store/useCurrentUserStore";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
 import Checkbox from "../shared/Checkbox";
 import SettingsTabs from "./SettingsTabs";

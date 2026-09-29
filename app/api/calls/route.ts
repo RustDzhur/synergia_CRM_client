@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { recordMessage } from "@/lib/channels";
-import type { CallDTO } from "@/app/types/integrations";
+import type { CallDTO } from "@/types/integrations";
 import Integration from "@/models/Integration";
 import Message from "@/models/Message";
 

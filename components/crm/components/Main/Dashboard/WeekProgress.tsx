@@ -2,8 +2,8 @@
 import React, { useMemo, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbCalendarEvent } from "react-icons/tb";
-import { Task } from "@/app/store/useTaskStore";
-import { addDays, dayKey, localeTag, parseDayKey, startOfWeek } from "@/app/utils/dateHelpers";
+import { Task } from "@/store/useTaskStore";
+import { addDays, dayKey, localeTag, parseDayKey, startOfWeek } from "@/utils/dateHelpers";
 
 interface Props {
 	tasks: Task[];

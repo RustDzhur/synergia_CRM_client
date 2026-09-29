@@ -2,8 +2,8 @@
 import React, { useState } from "react";
 import { useLocale } from "next-intl";
 import { MdContentCopy } from "react-icons/md";
-import { tx } from "@/app/content/i18n";
-import { REFERRAL } from "@/app/content/footerPages";
+import { tx } from "@/content/i18n";
+import { REFERRAL } from "@/content/footerPages";
 import PageShell from "../PageShell";
 
 // Referral program: как это работает и ссылка для копирования (ссылка на сайт с языком посетителя)

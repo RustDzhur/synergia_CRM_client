@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
 import { useLocale } from "next-intl";
-import { tx } from "@/app/content/i18n";
-import { IMPRESSUM } from "@/app/content/footerPages";
+import { tx } from "@/content/i18n";
+import { IMPRESSUM } from "@/content/footerPages";
 import PageShell from "../PageShell";
 
 // Шаблон Impressum (§5 TMG) с плейсхолдерами в квадратных скобках — реальные регистрационные данные компании

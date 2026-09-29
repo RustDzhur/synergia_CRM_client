@@ -1,8 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { usePresence } from "@/app/utils/usePresence";
-import { useScrollLock } from "@/app/utils/useScrollLock";
+import { usePresence } from "@/utils/usePresence";
+import { useScrollLock } from "@/utils/useScrollLock";
 
 interface Props {
 	open: boolean;

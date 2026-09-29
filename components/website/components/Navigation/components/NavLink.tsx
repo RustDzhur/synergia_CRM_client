@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
-import { stripLocale } from "@/app/utils/locale";
+import { stripLocale } from "@/utils/locale";
 
 interface NavLinkProps {
 	href: string;

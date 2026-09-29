@@ -1,9 +1,9 @@
 "use client";
-import { withLocale } from "@/app/utils/locale";
+import { withLocale } from "@/utils/locale";
 import React from "react";
-import { useSiteMenuState } from "@/app/store/useSiteMenuState";
+import { useSiteMenuState } from "@/store/useSiteMenuState";
 import { IconContext } from "react-icons";
-import { useLanguageStore } from "@/app/store/useLanguageStore";
+import { useLanguageStore } from "@/store/useLanguageStore";
 import { useTranslations } from "next-intl";
 import NavLink from "./NavLinkStyle";
 

@@ -1,4 +1,4 @@
-import type { MailProviderId } from "@/app/types/integrations";
+import type { MailProviderId } from "@/types/integrations";
 
 export interface MailPreset { imapHost: string; imapPort: number; smtpHost: string; smtpPort: number }
 

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbPencil, TbPlus, TbTrash } from "react-icons/tb";
-import { apiCall } from "@/app/store/crmApi";
+import { apiCall } from "@/store/crmApi";
 import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";

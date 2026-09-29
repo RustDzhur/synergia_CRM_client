@@ -1,10 +1,10 @@
 "use client";
-import { withLocale } from "@/app/utils/locale";
+import { withLocale } from "@/utils/locale";
 import React from "react";
 import NavLink from "./NavLink";
 import SwitchLanguage from "./SwitchLanguage";
 import { useTranslations } from "next-intl";
-import { useLanguageStore } from "@/app/store/useLanguageStore";
+import { useLanguageStore } from "@/store/useLanguageStore";
 
 export default function Links() {
 	const t = useTranslations("navWebsite");

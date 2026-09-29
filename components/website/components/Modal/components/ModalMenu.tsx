@@ -1,16 +1,16 @@
 "use client";
-import { useSiteMenuState } from "@/app/store/useSiteMenuState";
+import { useSiteMenuState } from "@/store/useSiteMenuState";
 import React, { useRef } from "react";
 import ModalNav from "./ModalNav";
 import SwitchLanguage from "./SwitchLanguages";
 import AuthLinks from "../../Navigation/components/AuthLinks";
 import Logo from "../../Navigation/components/Logo";
 import BurgerMenu from "../../Navigation/components/BurgerMenu";
-import useAuthFormStore from "@/app/store/useAuthFormStore";
+import useAuthFormStore from "@/store/useAuthFormStore";
 import { RiArrowGoBackFill } from "react-icons/ri";
 import { IconContext } from "react-icons";
 import { SigninForm, SignupForm } from "../../AuthForms";
-import { usePresence } from "@/app/utils/usePresence";
+import { usePresence } from "@/utils/usePresence";
 
 export default function ModalMenu() {
 	const { menu, toggleMenu } = useSiteMenuState();

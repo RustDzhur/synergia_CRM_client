@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { IntegrationDTO, IntegrationType } from "@/app/types/integrations";
+import type { IntegrationDTO, IntegrationType } from "@/types/integrations";
 import { apiCall } from "./crmApi";
 
 interface Result { ok: boolean; message: string; warning: string }

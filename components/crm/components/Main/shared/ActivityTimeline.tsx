@@ -2,8 +2,8 @@
 import React, { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { MdAccessTimeFilled, MdClose, MdTune } from "react-icons/md";
-import type { Activity } from "@/app/types/crm";
-import { formatDateTime, formatTime } from "@/app/utils/crmFormat";
+import type { Activity } from "@/types/crm";
+import { formatDateTime, formatTime } from "@/utils/crmFormat";
 
 interface Props {
 	activities: Activity[];

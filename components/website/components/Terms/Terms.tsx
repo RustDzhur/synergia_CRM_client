@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
 import { useLocale } from "next-intl";
-import { tx } from "@/app/content/i18n";
-import { TERMS } from "@/app/content/footerPages";
+import { tx } from "@/content/i18n";
+import { TERMS } from "@/content/footerPages";
 import PageShell from "../PageShell";
 
 // Шаблон AGB/условий обслуживания с плейсхолдерами — разделы про оплату/отмену/ответственность нарочно помечены

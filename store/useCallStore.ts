@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { CallDTO, IntegrationDTO } from "@/app/types/integrations";
+import type { CallDTO, IntegrationDTO } from "@/types/integrations";
 import { apiCall } from "./crmApi";
 import { createSipEngine, type SipCreds } from "./phone/sipEngine";
 import { createTwilioEngine } from "./phone/twilioEngine";

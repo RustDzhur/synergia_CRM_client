@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
 import { useLocale } from "next-intl";
-import { tx } from "@/app/content/i18n";
-import { TEAM } from "@/app/content/footerPages";
+import { tx } from "@/content/i18n";
+import { TEAM } from "@/content/footerPages";
 import PageShell from "../PageShell";
 
 const initials = (name: string) => name.split(" ").map((w) => w[0]).slice(0, 2).join("");

@@ -8,13 +8,13 @@ import { emit } from "@/lib/automation/emit";
 import { postTask } from "@/lib/feed";
 import Project from "@/models/Project";
 import Task from "@/models/Task";
+import User from "@/models/User";
 
 // Проект задачи: возвращаем только свой — чужой id из запроса игнорируем
 async function ownedProject(id: unknown, org: string) {
     if (typeof id !== "string" || !id) return null;
     return Project.findOne({ _id: id, owner: org }).select("_id").catch(() => null);
 }
-import User from "@/models/User";
 
 // GET /api/tasks — все задачи текущего пользователя (ближайшие сроки первыми)
 export async function GET(req: Request) {

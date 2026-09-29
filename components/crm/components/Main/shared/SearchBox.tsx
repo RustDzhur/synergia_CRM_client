@@ -2,8 +2,8 @@
 import React, { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TbAdjustments, TbSearch, TbX } from "react-icons/tb";
-import Dropdown from "@/app/utils/Dropdown";
-import { useClickOutside } from "@/app/utils/useClickOutside";
+import Dropdown from "@/utils/Dropdown";
+import { useClickOutside } from "@/utils/useClickOutside";
 
 export interface FilterOption { value: string; label: string }
 export interface FilterDef {

@@ -1,5 +1,5 @@
 "use client";
-import useAuthFormStore from "@/app/store/useAuthFormStore";
+import useAuthFormStore from "@/store/useAuthFormStore";
 import React, { useState } from "react";
 import { FaUser } from "react-icons/fa";
 import { IoIosLock, IoIosUnlock } from "react-icons/io";
@@ -12,11 +12,11 @@ import {
 	FieldValues,
 } from "react-hook-form";
 import { useTranslations, useLocale } from "next-intl";
-import useAuthStore from "@/app/store/useAuthStore";
-import { useSiteMenuState } from "@/app/store/useSiteMenuState";
+import useAuthStore from "@/store/useAuthStore";
+import { useSiteMenuState } from "@/store/useSiteMenuState";
 import { useRouter } from "next/navigation";
-import Loader from "@/app/utils/Loader";
-import { readPendingPlan, clearPendingPlan } from "@/app/config/pendingPlan";
+import Loader from "@/utils/Loader";
+import { readPendingPlan, clearPendingPlan } from "@/config/pendingPlan";
 
 interface SignInFormData {
 	email: string;

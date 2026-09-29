@@ -3,8 +3,8 @@ import { findByToken } from "@/lib/integrations";
 import { corsJson, corsPreflight } from "@/lib/channels/webchat";
 import { getAccount } from "@/lib/channels/viber";
 import { secretsOf } from "@/lib/integrations";
-import { CHATBOT_FAQ } from "@/app/content/chatbotFaq";
-import { tx } from "@/app/content/i18n";
+import { CHATBOT_FAQ } from "@/content/chatbotFaq";
+import { tx } from "@/content/i18n";
 import Integration from "@/models/Integration";
 
 export const dynamic = "force-dynamic";

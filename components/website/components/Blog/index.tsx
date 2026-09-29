@@ -3,9 +3,9 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useLocale } from "next-intl";
-import { tx } from "@/app/content/i18n";
-import { BLOG } from "@/app/content/sitePages";
-import { withLocale } from "@/app/utils/locale";
+import { tx } from "@/content/i18n";
+import { BLOG } from "@/content/sitePages";
+import { withLocale } from "@/utils/locale";
 import PageShell from "../PageShell";
 
 // Картинки постов лежат в public/images/blog, либо это произвольный URL, заданный в админке

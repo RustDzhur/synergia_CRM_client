@@ -3,8 +3,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { MdAutoAwesome, MdCheckCircle, MdClose, MdErrorOutline, MdSearch } from "react-icons/md";
-import { AiAction, AiMessage, useAiStore } from "@/app/store/useAiStore";
-import { stripLocale } from "@/app/utils/locale";
+import { AiAction, AiMessage, useAiStore } from "@/store/useAiStore";
+import { stripLocale } from "@/utils/locale";
 import Modal from "../Main/shared/Modal";
 import Markdown from "./markdown";
 

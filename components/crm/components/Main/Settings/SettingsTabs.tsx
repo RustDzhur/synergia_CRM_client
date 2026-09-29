@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { TbBellPlus, TbHexagon, TbUserCircle, TbUsers, TbUsersGroup } from "react-icons/tb";
-import { stripLocale } from "@/app/utils/locale";
+import { stripLocale } from "@/utils/locale";
 
 export const SETTINGS_TABS = [
 	{ key: "tabAccount", href: "/crm/settings", icon: TbUserCircle },

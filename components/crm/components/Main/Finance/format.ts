@@ -1,4 +1,4 @@
-import type { LineItem } from "@/app/store/useFinanceStore";
+import type { LineItem } from "@/store/useFinanceStore";
 
 // Та же формула, что и на сервере (lib/finance/totals.ts) — только для мгновенного пересчёта в форме, пока не сохранили;
 // итог, который останется в базе, всё равно считает сервер.

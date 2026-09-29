@@ -5,8 +5,8 @@ import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
 import { TbChartBar, TbCircle, TbCircleCheck, TbFileText, TbInfoCircle, TbLock } from "react-icons/tb";
 import { SiApplepay, SiGooglepay, SiKlarna, SiMastercard, SiPaypal, SiVisa } from "react-icons/si";
-import { FEATURE_KEYS, PLANS, PlanId, YEAR_MONTHS } from "@/app/config/plans";
-import { apiCall } from "@/app/store/crmApi";
+import { FEATURE_KEYS, PLANS, PlanId, YEAR_MONTHS } from "@/config/plans";
+import { apiCall } from "@/store/crmApi";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
 import Modal from "../shared/Modal";
 

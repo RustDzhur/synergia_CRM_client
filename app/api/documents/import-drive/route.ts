@@ -7,7 +7,7 @@ import { driveToken, findDrive } from "@/lib/google";
 import { DriveScopeError, MIME, listDriveFiles } from "@/lib/google/drive";
 import DocItem from "@/models/DocItem";
 import User from "@/models/User";
-import type { DocKind } from "@/app/types/documents";
+import type { DocKind } from "@/types/documents";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useFinanceStore } from "@/app/store/useFinanceStore";
+import { useFinanceStore } from "@/store/useFinanceStore";
 import { money } from "./format";
 import { AiAnalysis, PeriodSwitch, ReportDisclaimer, ReportFailed, ReportLoading, useReport } from "./reportParts";
 import type { BusinessAnalysis, PeriodKind, TrialBalance } from "@/lib/finance/reports";

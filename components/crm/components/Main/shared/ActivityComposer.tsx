@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { MdAlternateEmail, MdAttachFile, MdInsertDriveFile } from "react-icons/md";
-import { NewActivity } from "@/app/store/crmApi";
+import { NewActivity } from "@/store/crmApi";
 
 export interface ComposerTab {
 	key: string;

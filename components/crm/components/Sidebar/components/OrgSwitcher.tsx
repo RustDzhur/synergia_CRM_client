@@ -3,9 +3,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbBuildingSkyscraper, TbCheck, TbChevronDown, TbPlus } from "react-icons/tb";
-import { useActiveOrg, useOrgStore } from "@/app/store/useOrgStore";
-import Dropdown from "@/app/utils/Dropdown";
-import { useClickOutside } from "@/app/utils/useClickOutside";
+import { useActiveOrg, useOrgStore } from "@/store/useOrgStore";
+import Dropdown from "@/utils/Dropdown";
+import { useClickOutside } from "@/utils/useClickOutside";
 
 // Карточка «AKTIVE ORGANISATION» в сайдбаре: подпись сверху, название фирмы снизу.
 // По клику — список фирм пользователя, создание новой и переименование текущей.

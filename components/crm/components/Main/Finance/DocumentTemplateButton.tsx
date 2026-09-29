@@ -6,7 +6,7 @@ import { TbDownload, TbPalette } from "react-icons/tb";
 import Modal from "../shared/Modal";
 import TemplatePicker from "./TemplatePicker";
 import { downloadDocumentPdf, DocumentKind } from "./download";
-import { useFinanceStore } from "@/app/store/useFinanceStore";
+import { useFinanceStore } from "@/store/useFinanceStore";
 
 // Оформление конкретного документа: кнопка на строке открывает окно с десяткой шаблонов, выбранный
 // сохраняется в самом документе (PATCH) и дальше печатается именно он — счёт клиенту и договор могут

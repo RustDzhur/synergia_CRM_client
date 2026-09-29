@@ -2,8 +2,8 @@
 import React, { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbX } from "react-icons/tb";
-import { apiCall } from "@/app/store/crmApi";
-import type { MailAccountDTO, MailProviderId } from "@/app/types/integrations";
+import { apiCall } from "@/store/crmApi";
+import type { MailAccountDTO, MailProviderId } from "@/types/integrations";
 import FormField from "../shared/FormField";
 import Modal from "../shared/Modal";
 

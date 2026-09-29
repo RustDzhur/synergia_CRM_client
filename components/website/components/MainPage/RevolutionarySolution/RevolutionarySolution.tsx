@@ -1,10 +1,10 @@
 "use client";
-import { withLocale } from "@/app/utils/locale";
+import { withLocale } from "@/utils/locale";
 import React from "react";
 import Link from "next/link";
-import dock from "@/app/assets/images/dockPort.jpg";
+import dock from "@/assets/images/dockPort.jpg";
 import Logo from "../../Navigation/components/Logo";
-import { useLanguageStore } from "@/app/store/useLanguageStore";
+import { useLanguageStore } from "@/store/useLanguageStore";
 import { useTranslations } from "next-intl";
 
 export default function RevolutionarySolution() {

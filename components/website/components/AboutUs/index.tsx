@@ -2,9 +2,9 @@
 import React from "react";
 import Image from "next/image";
 import { useLocale } from "next-intl";
-import { ABOUT } from "@/app/content/aboutPage";
-import { tx } from "@/app/content/i18n";
-import aboutPhoto from "@/app/assets/images/aboutUs.jpg";
+import { ABOUT } from "@/content/aboutPage";
+import { tx } from "@/content/i18n";
+import aboutPhoto from "@/assets/images/aboutUs.jpg";
 import PageShell from "../PageShell";
 import HeroAppFrame from "../MainPage/Hero/HeroAppFrame";
 

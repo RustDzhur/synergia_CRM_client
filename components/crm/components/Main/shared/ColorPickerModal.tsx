@@ -2,7 +2,7 @@
 import React, { useRef } from "react";
 import { useTranslations } from "next-intl";
 import { MdClose } from "react-icons/md";
-import { COLOR_PALETTE } from "@/app/utils/stageColors";
+import { COLOR_PALETTE } from "@/utils/stageColors";
 import Modal from "./Modal";
 
 interface Props {

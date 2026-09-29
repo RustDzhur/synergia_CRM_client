@@ -2,8 +2,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { useFinanceStore } from "@/app/store/useFinanceStore";
-import { fileToLogo, MAX_AVATAR_FILE_BYTES, MAX_LOGO_CHARS } from "@/app/utils/avatar";
+import { useFinanceStore } from "@/store/useFinanceStore";
+import { fileToLogo, MAX_AVATAR_FILE_BYTES, MAX_LOGO_CHARS } from "@/utils/avatar";
 import FormField from "../shared/FormField";
 import TemplatePicker from "./TemplatePicker";
 

@@ -4,12 +4,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { TbChevronDown } from "react-icons/tb";
-import { useLanguageStore } from "@/app/store/useLanguageStore";
-import { languages, crmFlagUrl } from "@/app/languages/languages";
-import { Language } from "@/app/types/languageType";
-import { stripLocale } from "@/app/utils/locale";
-import Dropdown from "@/app/utils/Dropdown";
-import { useClickOutside } from "@/app/utils/useClickOutside";
+import { useLanguageStore } from "@/store/useLanguageStore";
+import { languages, crmFlagUrl } from "@/languages/languages";
+import { Language } from "@/types/languageType";
+import { stripLocale } from "@/utils/locale";
+import Dropdown from "@/utils/Dropdown";
+import { useClickOutside } from "@/utils/useClickOutside";
 
 // Флаг 25×18 и серая стрелка; список — флаги друг под другом в рамке (Figma: Header).
 export default function SwitchLanguage() {

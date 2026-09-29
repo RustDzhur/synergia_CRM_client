@@ -2,8 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { apiCall } from "@/app/store/crmApi";
-import { FinanceSettings, Invoice, useFinanceStore } from "@/app/store/useFinanceStore";
+import { apiCall } from "@/store/crmApi";
+import { FinanceSettings, Invoice, useFinanceStore } from "@/store/useFinanceStore";
 import { money } from "./format";
 import { ReportLoading } from "./reportParts";
 

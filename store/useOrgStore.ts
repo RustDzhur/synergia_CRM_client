@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Role } from "@/lib/access";
-import type { FeatureKey } from "@/app/config/plans";
+import type { FeatureKey } from "@/config/plans";
 import { ORG_KEY, apiCall } from "./crmApi";
 
 // features — разделы, доступные фирме по тарифу (плюс то, что выдал администратор платформы вручную).

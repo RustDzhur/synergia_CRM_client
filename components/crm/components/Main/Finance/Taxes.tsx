@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbAlertTriangle, TbInfoCircle } from "react-icons/tb";
-import { useFinanceStore } from "@/app/store/useFinanceStore";
+import { useFinanceStore } from "@/store/useFinanceStore";
 import { money } from "./format";
 import { AiAnalysis, PeriodSwitch, ReportDisclaimer, ReportFailed, ReportLoading, useReport } from "./reportParts";
 import type { IncomeSurplus, PeriodKind, VatReturn, VatLine } from "@/lib/finance/reports";

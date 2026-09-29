@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { apiCall } from "@/app/store/crmApi";
+import { apiCall } from "@/store/crmApi";
 
 interface QuoteRow { id: string; number: string; status: string; customerName: string; currency: string; totals: { gross: number } }
 

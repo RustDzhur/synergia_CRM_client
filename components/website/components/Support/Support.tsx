@@ -3,10 +3,10 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import { MdExpandMore } from "react-icons/md";
-import { tx } from "@/app/content/i18n";
-import { SUPPORT } from "@/app/content/footerPages";
-import { withLocale } from "@/app/utils/locale";
-import Collapse from "@/app/utils/Collapse";
+import { tx } from "@/content/i18n";
+import { SUPPORT } from "@/content/footerPages";
+import { withLocale } from "@/utils/locale";
+import Collapse from "@/utils/Collapse";
 import PageShell from "../PageShell";
 
 // Support / FAQ: вопросы раскрываются по нажатию (плавно, по одному)

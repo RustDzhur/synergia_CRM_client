@@ -3,8 +3,8 @@ import React from "react";
 import { useLocale } from "next-intl";
 import type { IconType } from "react-icons";
 import { MdCall, MdContactPage, MdEvent, MdForum, MdInventory2, MdMail, MdCampaign, MdBolt, MdViewKanban } from "react-icons/md";
-import { tx } from "@/app/content/i18n";
-import { FEATURES } from "@/app/content/footerPages";
+import { tx } from "@/content/i18n";
+import { FEATURES } from "@/content/footerPages";
 import PageShell from "../PageShell";
 
 const ICONS: Record<string, IconType> = { deals: MdViewKanban, contacts: MdContactPage, tasks: MdEvent, inbox: MdForum, calls: MdCall, mail: MdMail, auto: MdBolt, marketing: MdCampaign, inventory: MdInventory2 };

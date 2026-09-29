@@ -2,9 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TbAdjustments, TbChevronLeft, TbChevronRight, TbDots, TbPlus, TbSearch, TbSettings } from "react-icons/tb";
-import { Employee, useEmployeeStore } from "@/app/store/useEmployeeStore";
-import Dropdown from "@/app/utils/Dropdown";
-import { useClickOutside } from "@/app/utils/useClickOutside";
+import { Employee, useEmployeeStore } from "@/store/useEmployeeStore";
+import Dropdown from "@/utils/Dropdown";
+import { useClickOutside } from "@/utils/useClickOutside";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import EmployeeModal from "./EmployeeModal";

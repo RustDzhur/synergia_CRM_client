@@ -1,6 +1,6 @@
-import ukraine from "@/app/assets/svgs/ukraine-flag-icon.svg";
-import germany from "@/app/assets/svgs/germany-flag-icon.svg";
-import unitedKingdom from "@/app/assets/svgs/united-kingdom-flag-icon.svg";
+import ukraine from "@/assets/svgs/ukraine-flag-icon.svg";
+import germany from "@/assets/svgs/germany-flag-icon.svg";
+import unitedKingdom from "@/assets/svgs/united-kingdom-flag-icon.svg";
 
 interface Language {
     code: string;

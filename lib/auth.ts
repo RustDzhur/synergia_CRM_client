@@ -3,7 +3,7 @@ import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { canAccess, moduleForPath, type Role } from "@/lib/access";
 import { featureForApi, orgFeatures, orgPlan } from "@/lib/features";
-import type { FeatureKey, PlanId } from "@/app/config/plans";
+import type { FeatureKey, PlanId } from "@/config/plans";
 import User from "@/models/User";
 import Organization from "@/models/Organization";
 import Membership from "@/models/Membership";

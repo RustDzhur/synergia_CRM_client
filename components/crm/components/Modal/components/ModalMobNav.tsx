@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { MdKeyboardArrowDown } from "react-icons/md";
-import { useToggleMenuState } from "@/app/store/useToggleMenuState";
-import { stripLocale } from "@/app/utils/locale";
-import Collapse from "@/app/utils/Collapse";
+import { useToggleMenuState } from "@/store/useToggleMenuState";
+import { stripLocale } from "@/utils/locale";
+import Collapse from "@/utils/Collapse";
 import { isActivePath } from "../../Sidebar/menuItems";
 import { useVisibleMenu } from "../../Sidebar/useVisibleMenu";
 

@@ -1,5 +1,5 @@
 "use client";
-import { withLocale } from "@/app/utils/locale";
+import { withLocale } from "@/utils/locale";
 import React from "react";
 import Link from "next/link";
 import { IconContext } from "react-icons";
@@ -8,7 +8,7 @@ import { FaFacebookF } from "react-icons/fa";
 import { BsTwitter } from "react-icons/bs";
 import { AiOutlineInstagram } from "react-icons/ai";
 import { ImLinkedin2 } from "react-icons/im";
-import { useLanguageStore } from "@/app/store/useLanguageStore";
+import { useLanguageStore } from "@/store/useLanguageStore";
 import { useTranslations } from "next-intl";
 
 // slanted — скошенный верх футера (по макету только на главной странице)

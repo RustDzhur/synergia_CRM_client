@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { tx } from "@/app/content/i18n";
-import { DOCS } from "@/app/content/footerPages";
+import { tx } from "@/content/i18n";
+import { DOCS } from "@/content/footerPages";
 import { menuItems } from "@/components/crm/components/Sidebar/menuItems";
 import PageShell from "../PageShell";
 import HeroAppFrame, { type FrameScreen } from "../MainPage/Hero/HeroAppFrame";

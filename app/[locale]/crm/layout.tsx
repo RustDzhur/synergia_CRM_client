@@ -10,12 +10,12 @@ import NotificationCenter from "@/components/crm/components/shared/NotificationC
 import AiAssistant from "@/components/crm/components/AiAssistant";
 import Softphone from "@/components/crm/components/Main/shared/Softphone";
 import "@/app/[locale]/styles/crm-dark.css";
-import useAuthStore from "@/app/store/useAuthStore";
-import { useThemeStore } from "@/app/store/useThemeStore";
-import { useActiveOrg, useFeature } from "@/app/store/useOrgStore";
+import useAuthStore from "@/store/useAuthStore";
+import { useThemeStore } from "@/store/useThemeStore";
+import { useActiveOrg, useFeature } from "@/store/useOrgStore";
 import { featureForPage } from "@/lib/features";
 import Upgrade from "@/components/crm/components/Main/Upgrade";
-import Loader from "@/app/utils/Loader";
+import Loader from "@/utils/Loader";
 
 export default function CrmLayout({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, authChecked, checkAuth } = useAuthStore();

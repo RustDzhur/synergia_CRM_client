@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbChevronDown, TbX } from "react-icons/tb";
-import { CalendarKind, EventDraft, useCollabStore } from "@/app/store/useCollabStore";
-import Dropdown from "@/app/utils/Dropdown";
-import { useClickOutside } from "@/app/utils/useClickOutside";
+import { CalendarKind, EventDraft, useCollabStore } from "@/store/useCollabStore";
+import Dropdown from "@/utils/Dropdown";
+import { useClickOutside } from "@/utils/useClickOutside";
 import Modal from "../../shared/Modal";
 
 export const EVENT_COLORS = ["#FFB02E", "#34A2E8", "#2DDEB6", "#F04333", "#8A8FF5", "#57CAEF"];

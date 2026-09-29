@@ -1,6 +1,6 @@
 "use client";
-import { useToggleMenuState } from "@/app/store/useToggleMenuState";
-import { useScrollLock } from "@/app/utils/useScrollLock";
+import { useToggleMenuState } from "@/store/useToggleMenuState";
+import { useScrollLock } from "@/utils/useScrollLock";
 import React, { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import ModalMobNav from "./ModalMobNav";

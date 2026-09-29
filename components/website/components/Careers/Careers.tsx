@@ -3,8 +3,8 @@ import React from "react";
 import { useLocale } from "next-intl";
 import { AiFillCheckCircle } from "react-icons/ai";
 import { MdWorkOutline } from "react-icons/md";
-import { tx } from "@/app/content/i18n";
-import { CAREERS } from "@/app/content/footerPages";
+import { tx } from "@/content/i18n";
+import { CAREERS } from "@/content/footerPages";
 import PageShell from "../PageShell";
 
 export default function Careers() {

@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { FaFacebook } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import type { AdsConnectionDTO, AdsPlatform } from "@/lib/ads/types";
-import { AdsItem, useAdsStore } from "@/app/store/useAdsStore";
+import { AdsItem, useAdsStore } from "@/store/useAdsStore";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import SpendChart from "./SpendChart";
 import { count, money, totals } from "./adsFormat";

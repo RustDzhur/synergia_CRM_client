@@ -2,15 +2,15 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AiFillCheckCircle } from "react-icons/ai";
-import free from "@/app/assets/svgs/plans/free.svg";
-import standart from "@/app/assets/svgs/plans/standart.svg";
-import professional from "@/app/assets/svgs/plans/professional.svg";
+import free from "@/assets/svgs/plans/free.svg";
+import standart from "@/assets/svgs/plans/standart.svg";
+import professional from "@/assets/svgs/plans/professional.svg";
 import Image from "next/image";
-import useAuthFormStore from "@/app/store/useAuthFormStore";
-import { useSiteMenuState } from "@/app/store/useSiteMenuState";
+import useAuthFormStore from "@/store/useAuthFormStore";
+import { useSiteMenuState } from "@/store/useSiteMenuState";
 import { useLocale, useTranslations } from "next-intl";
-import { FEATURE_KEYS, PLANS, PlanId, YEAR_MONTHS } from "@/app/config/plans";
-import { PENDING_PLAN_KEY } from "@/app/config/pendingPlan";
+import { FEATURE_KEYS, PLANS, PlanId, YEAR_MONTHS } from "@/config/plans";
+import { PENDING_PLAN_KEY } from "@/config/pendingPlan";
 
 const ICONS: Record<PlanId, string> = { free, standard: standart, professional };
 

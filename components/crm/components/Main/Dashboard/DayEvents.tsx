@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { CalEvent, EventDraft, useCollabStore } from "@/app/store/useCollabStore";
+import { CalEvent, EventDraft, useCollabStore } from "@/store/useCollabStore";
 import EventModal from "../Collaboration/Calendar/EventModal";
 
 interface Props {

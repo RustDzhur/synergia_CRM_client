@@ -2,7 +2,7 @@
 import React from "react";
 import { usePathname } from "next/navigation";
 import { useMessages, useTranslations } from "next-intl";
-import { stripLocale } from "@/app/utils/locale";
+import { stripLocale } from "@/utils/locale";
 import { currentMenuItem } from "../Sidebar/menuItems";
 
 interface Props {

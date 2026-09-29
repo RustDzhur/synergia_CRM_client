@@ -2,9 +2,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { apiCall } from "@/app/store/crmApi";
-import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
-import { FEATURE_KEYS, planFor, type FeatureKey } from "@/app/config/plans";
+import { apiCall } from "@/store/crmApi";
+import { useCurrentUserStore } from "@/store/useCurrentUserStore";
+import { FEATURE_KEYS, planFor, type FeatureKey } from "@/config/plans";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
 import Modal from "../shared/Modal";
 import BlogAdmin from "./BlogAdmin";

@@ -2,11 +2,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbChevronDown, TbChevronLeft, TbChevronRight } from "react-icons/tb";
-import { CalEvent, CalendarKind, useCollabHydration, useCollabStore } from "@/app/store/useCollabStore";
-import { Task, useTaskStore } from "@/app/store/useTaskStore";
-import { addDays, dayKey, localeTag } from "@/app/utils/dateHelpers";
-import Dropdown from "@/app/utils/Dropdown";
-import { useClickOutside } from "@/app/utils/useClickOutside";
+import { CalEvent, CalendarKind, useCollabHydration, useCollabStore } from "@/store/useCollabStore";
+import { Task, useTaskStore } from "@/store/useTaskStore";
+import { addDays, dayKey, localeTag } from "@/utils/dateHelpers";
+import Dropdown from "@/utils/Dropdown";
+import { useClickOutside } from "@/utils/useClickOutside";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
 import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../../shared/tabBar";
 import SearchBox from "../../shared/SearchBox";

@@ -2,8 +2,8 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { useAdsStore } from "@/app/store/useAdsStore";
-import { useFeature, useOrgStore } from "@/app/store/useOrgStore";
+import { useAdsStore } from "@/store/useAdsStore";
+import { useFeature, useOrgStore } from "@/store/useOrgStore";
 import { ItemStats } from "../Ads/AdsPanel";
 
 // Карточка «Advertising» на Dashboard: расход, клики и конверсии по подключённой рекламной платформе за 30 дней.

@@ -1,8 +1,8 @@
 "use client";
 import React, { useRef, useState } from "react";
 import { TbSearch } from "react-icons/tb";
-import Dropdown from "@/app/utils/Dropdown";
-import { useClickOutside } from "@/app/utils/useClickOutside";
+import Dropdown from "@/utils/Dropdown";
+import { useClickOutside } from "@/utils/useClickOutside";
 import { fieldClass } from "./FormField";
 
 export interface SuggestOption {

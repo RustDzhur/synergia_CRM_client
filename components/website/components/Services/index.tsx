@@ -4,8 +4,8 @@ import { useLocale } from "next-intl";
 import type { IconType } from "react-icons";
 import { MdCampaign, MdOutlineIntegrationInstructions, MdSupportAgent, MdTimeline } from "react-icons/md";
 import { TbChartHistogram, TbDatabaseCog } from "react-icons/tb";
-import { tx } from "@/app/content/i18n";
-import { SERVICES } from "@/app/content/sitePages";
+import { tx } from "@/content/i18n";
+import { SERVICES } from "@/content/sitePages";
 import PageShell from "../PageShell";
 
 const ICONS: Record<string, IconType> = {

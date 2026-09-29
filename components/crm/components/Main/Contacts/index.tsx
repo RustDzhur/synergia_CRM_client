@@ -2,8 +2,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useContactStore, Contact } from "@/app/store/useContactStore";
-import { completeness, relativeTime } from "@/app/utils/crmFormat";
+import { useContactStore, Contact } from "@/store/useContactStore";
+import { completeness, relativeTime } from "@/utils/crmFormat";
 import EntityTable, { Column } from "../shared/EntityTable";
 import ListToolbar from "../shared/ListToolbar";
 import ConfirmDialog from "../shared/ConfirmDialog";

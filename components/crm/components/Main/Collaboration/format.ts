@@ -1,4 +1,4 @@
-import { localeTag } from "@/app/utils/dateHelpers";
+import { localeTag } from "@/utils/dateHelpers";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 export const hhmm = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;

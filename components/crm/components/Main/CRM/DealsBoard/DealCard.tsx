@@ -2,8 +2,8 @@
 import React from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbMail, TbMessageCircle, TbPhone } from "react-icons/tb";
-import { Deal } from "@/app/store/useCrmStore";
-import { relativeTime } from "@/app/utils/crmFormat";
+import { Deal } from "@/store/useCrmStore";
+import { relativeTime } from "@/utils/crmFormat";
 
 interface Props {
 	deal: Deal;

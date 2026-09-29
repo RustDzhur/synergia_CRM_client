@@ -1,5 +1,5 @@
-import { CHATBOT_FAQ, type FaqEntry } from "@/app/content/chatbotFaq";
-import { tx } from "@/app/content/i18n";
+import { CHATBOT_FAQ, type FaqEntry } from "@/content/chatbotFaq";
+import { tx } from "@/content/i18n";
 
 // Простой подбор ответа по ключевым словам — без обращения к языковой модели (осознанный выбор для публичного
 // лендингового бота, см. app/content/chatbotFaq.ts). Каждая запись получает очки за каждое своё ключевое слово,

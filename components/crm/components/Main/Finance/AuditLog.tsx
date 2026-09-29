@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { apiCall } from "@/app/store/crmApi";
+import { apiCall } from "@/store/crmApi";
 
 interface Entry { id: string; action: string; entityType: string; summary: string; userName: string; createdAt: string }
 

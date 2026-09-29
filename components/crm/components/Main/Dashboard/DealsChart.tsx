@@ -1,8 +1,8 @@
 "use client";
 import React, { useId, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Deal, Stage } from "@/app/store/useCrmStore";
-import { localeTag } from "@/app/utils/dateHelpers";
+import { Deal, Stage } from "@/store/useCrmStore";
+import { localeTag } from "@/utils/dateHelpers";
 import PeriodSelect from "./PeriodSelect";
 
 type Period = "monthly" | "weekly" | "yearly";

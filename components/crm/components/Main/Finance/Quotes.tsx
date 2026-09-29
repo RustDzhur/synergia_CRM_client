@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbDownload, TbPlus } from "react-icons/tb";
-import { LineItem, useFinanceStore } from "@/app/store/useFinanceStore";
+import { LineItem, useFinanceStore } from "@/store/useFinanceStore";
 import { defaultRateFor } from "@/lib/finance/tax";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";

@@ -3,7 +3,7 @@ import React from "react";
 import { useTranslations } from "next-intl";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { TbSearch } from "react-icons/tb";
-import { useSearchStore } from "@/app/store/useSearchStore";
+import { useSearchStore } from "@/store/useSearchStore";
 
 interface Inputs {
 	search: string;

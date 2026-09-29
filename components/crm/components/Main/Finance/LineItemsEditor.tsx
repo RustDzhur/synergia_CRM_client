@@ -2,7 +2,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { TbPlus, TbTrash } from "react-icons/tb";
-import { LineItem, Product, useFinanceStore } from "@/app/store/useFinanceStore";
+import { LineItem, Product, useFinanceStore } from "@/store/useFinanceStore";
 import { defaultRateFor } from "@/lib/finance/tax";
 import { computeTotals } from "./format";
 

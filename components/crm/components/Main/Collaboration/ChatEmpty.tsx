@@ -3,8 +3,8 @@ import React, { useEffect } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { TbMessages } from "react-icons/tb";
-import { useIntegrationsStore } from "@/app/store/useIntegrationsStore";
-import type { MessagingChannel } from "@/app/types/integrations";
+import { useIntegrationsStore } from "@/store/useIntegrationsStore";
+import type { MessagingChannel } from "@/types/integrations";
 import { CHANNEL_COLOR, CHANNEL_ICON } from "./channelMeta";
 
 // Экран Chat and Calls, пока нет ни одной беседы. Если каналы уже подключены, показываем их и подсказку, что делать дальше

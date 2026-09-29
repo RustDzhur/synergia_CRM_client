@@ -1,6 +1,6 @@
 import { connectDB } from "@/lib/mongodb";
 import { rateLimited } from "@/lib/rateLimit";
-import { tx } from "@/app/content/i18n";
+import { tx } from "@/content/i18n";
 import { matchFaq } from "@/lib/chatbotMatch";
 import { notifyTeamTelegram } from "@/lib/notifyTeam";
 import { findByToken } from "@/lib/integrations";

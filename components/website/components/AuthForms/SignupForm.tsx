@@ -19,9 +19,9 @@ import {
 	BsFillBuildingsFill,
 } from "react-icons/bs";
 import { IconContext } from "react-icons";
-import useAuthFormStore from "@/app/store/useAuthFormStore";
+import useAuthFormStore from "@/store/useAuthFormStore";
 import { useTranslations } from "next-intl";
-import useAuthStore from "@/app/store/useAuthStore";
+import useAuthStore from "@/store/useAuthStore";
 
 interface SignUpFormData {
 	firstname: string;

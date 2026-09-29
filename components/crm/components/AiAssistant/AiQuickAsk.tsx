@@ -3,8 +3,8 @@ import React, { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useLocale } from "next-intl";
 import { MdAutoAwesome } from "react-icons/md";
-import { useAiStore } from "@/app/store/useAiStore";
-import { stripLocale } from "@/app/utils/locale";
+import { useAiStore } from "@/store/useAiStore";
+import { stripLocale } from "@/utils/locale";
 
 // Кнопка-подсказка для ассистента: открывает Firmspace AI и сразу отправляет готовый вопрос (например, «Analyze» на письме
 // или документе). Прячется, если у пользователя нет нужного инструмента (роль без доступа к разделу, ИИ не настроен).

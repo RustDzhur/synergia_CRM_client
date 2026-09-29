@@ -1,5 +1,5 @@
 import type { HydratedDocument } from "mongoose";
-import type { IntegrationDTO, IntegrationType } from "@/app/types/integrations";
+import type { IntegrationDTO, IntegrationType } from "@/types/integrations";
 import { decryptJSON, encryptJSON } from "@/lib/crypto";
 import Integration from "@/models/Integration";
 

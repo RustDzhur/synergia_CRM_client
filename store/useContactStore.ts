@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Activity } from "@/app/types/crm";
+import type { Activity } from "@/types/crm";
 import { api, addActivityRequest, removeActivityRequest, NewActivity } from "./crmApi";
 
 export interface Contact {

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { useCrmStore } from "@/app/store/useCrmStore";
+import { useCrmStore } from "@/store/useCrmStore";
 import RecordsPage from "../shared/records/RecordsPage";
 import { AUTOMATION } from "./config";
 import AutomationRules from "./AutomationRules";

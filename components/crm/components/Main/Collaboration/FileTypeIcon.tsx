@@ -1,5 +1,5 @@
 import React from "react";
-import type { DocType } from "@/app/store/useCollabStore";
+import type { DocType } from "@/store/useCollabStore";
 
 export const DOC_COLORS: Record<DocType, string> = { docx: "#5EA8F5", xlsx: "#7CB305", pptx: "#FAB300" };
 

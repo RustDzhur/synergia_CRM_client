@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import Steps from "./Steps";
-import useStepStore from "@/app/store/useStepStore";
+import useStepStore from "@/store/useStepStore";
 import { useTranslations } from "next-intl";
 
 export default function WhatIsCrm() {

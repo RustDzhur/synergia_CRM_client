@@ -1,7 +1,7 @@
 import type { IconType } from "react-icons";
 import { FaFacebookMessenger, FaTelegram, FaViber, FaWhatsapp } from "react-icons/fa";
 import { MdDialpad, MdSensors, MdSms } from "react-icons/md";
-import type { MessagingChannel } from "@/app/types/integrations";
+import type { MessagingChannel } from "@/types/integrations";
 
 // Значки и фирменные цвета каналов (Chat and Calls: список бесед, шапка беседы, пустое состояние)
 export const CHANNEL_ICON: Record<MessagingChannel, IconType> = {

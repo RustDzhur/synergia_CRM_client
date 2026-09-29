@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbDownload, TbPlus } from "react-icons/tb";
-import { useFinanceStore } from "@/app/store/useFinanceStore";
+import { useFinanceStore } from "@/store/useFinanceStore";
 import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";

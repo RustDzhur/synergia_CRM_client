@@ -2,11 +2,11 @@
 import React, { useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbCheckbox, TbDots, TbPin, TbX } from "react-icons/tb";
-import { Task, useTaskStore } from "@/app/store/useTaskStore";
-import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
-import { localeTag } from "@/app/utils/dateHelpers";
-import Dropdown from "@/app/utils/Dropdown";
-import { useClickOutside } from "@/app/utils/useClickOutside";
+import { Task, useTaskStore } from "@/store/useTaskStore";
+import { useCurrentUserStore } from "@/store/useCurrentUserStore";
+import { localeTag } from "@/utils/dateHelpers";
+import Dropdown from "@/utils/Dropdown";
+import { useClickOutside } from "@/utils/useClickOutside";
 import UserAvatar from "../shared/Avatar";
 
 const initials = (name: string) =>

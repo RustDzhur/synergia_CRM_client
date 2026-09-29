@@ -2,13 +2,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { RiArrowDownSLine } from "react-icons/ri";
-import { useLanguageStore } from "@/app/store/useLanguageStore";
-import { languages } from "@/app/languages/languages";
-import { languageCodeToProperties } from "@/app/languages/languages";
-import { Language } from "@/app/types/languageType";
-import { stripLocale } from "@/app/utils/locale";
-import Dropdown from "@/app/utils/Dropdown";
-import { useClickOutside } from "@/app/utils/useClickOutside";
+import { useLanguageStore } from "@/store/useLanguageStore";
+import { languages } from "@/languages/languages";
+import { languageCodeToProperties } from "@/languages/languages";
+import { Language } from "@/types/languageType";
+import { stripLocale } from "@/utils/locale";
+import Dropdown from "@/utils/Dropdown";
+import { useClickOutside } from "@/utils/useClickOutside";
 import { useTranslations, useLocale } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
 

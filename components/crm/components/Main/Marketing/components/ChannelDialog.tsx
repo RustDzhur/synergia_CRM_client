@@ -3,9 +3,9 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { MdCheckCircle, MdErrorOutline, MdOpenInNew } from "react-icons/md";
-import { apiCall } from "@/app/store/crmApi";
-import { useIntegrationsStore } from "@/app/store/useIntegrationsStore";
-import type { IntegrationDTO, IntegrationType, MailAccountDTO } from "@/app/types/integrations";
+import { apiCall } from "@/store/crmApi";
+import { useIntegrationsStore } from "@/store/useIntegrationsStore";
+import type { IntegrationDTO, IntegrationType, MailAccountDTO } from "@/types/integrations";
 import IntegrationDialog from "../../Settings/integrations/IntegrationDialog";
 import Modal from "../../shared/Modal";
 

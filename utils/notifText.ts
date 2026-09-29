@@ -1,4 +1,4 @@
-import type { Notif } from "@/app/store/useNotificationStore";
+import type { Notif } from "@/store/useNotificationStore";
 
 // Текст уведомления на языке интерфейса: t — useTranslations("notif")
 type T = (key: string, values?: Record<string, string | number>) => string;

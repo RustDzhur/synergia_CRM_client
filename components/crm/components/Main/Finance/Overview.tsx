@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbAlertTriangle } from "react-icons/tb";
-import { useFinanceStore } from "@/app/store/useFinanceStore";
+import { useFinanceStore } from "@/store/useFinanceStore";
 import { money } from "./format";
 
 const Kpi = ({ label, value, color }: { label: string; value: string; color?: string }) => (

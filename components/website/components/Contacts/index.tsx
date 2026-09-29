@@ -1,8 +1,8 @@
 "use client";
 import React, { useState } from "react";
 import { useLocale } from "next-intl";
-import { tx } from "@/app/content/i18n";
-import { CONTACT } from "@/app/content/sitePages";
+import { tx } from "@/content/i18n";
+import { CONTACT } from "@/content/sitePages";
 
 const field = "block w-full rounded-4 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] px-12 text-16 text-[#f1f4ee] outline-none placeholder:text-[#8c948b] transition-colors focus:border-[rgba(198,255,77,0.55)]";
 

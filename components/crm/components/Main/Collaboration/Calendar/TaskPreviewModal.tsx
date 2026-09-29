@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbStar, TbStarFilled, TbX } from "react-icons/tb";
-import { taskStatus, useTaskStore } from "@/app/store/useTaskStore";
+import { taskStatus, useTaskStore } from "@/store/useTaskStore";
 import Modal from "../../shared/Modal";
 
 interface Props {

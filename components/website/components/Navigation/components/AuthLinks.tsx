@@ -3,8 +3,8 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { TbArrowUpRight } from "react-icons/tb";
 import { useLocale, useTranslations } from "next-intl";
-import useAuthFormStore from "@/app/store/useAuthFormStore";
-import { useSiteMenuState } from "@/app/store/useSiteMenuState";
+import useAuthFormStore from "@/store/useAuthFormStore";
+import { useSiteMenuState } from "@/store/useSiteMenuState";
 
 export default function AuthLinks() {
 	const t = useTranslations("navWebsite.auth");

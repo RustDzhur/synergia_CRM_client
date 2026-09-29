@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PLANS, YEAR_MONTHS } from "@/app/config/plans";
+import { PLANS, YEAR_MONTHS } from "@/config/plans";
 import { requirePlatformAdmin } from "@/lib/admin";
 import { effectivePlan } from "@/lib/billing";
 import InvoiceRequest from "@/models/InvoiceRequest";

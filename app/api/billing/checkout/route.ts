@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PLANS } from "@/app/config/plans";
+import { PLANS } from "@/config/plans";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";

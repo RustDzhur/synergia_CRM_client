@@ -1,11 +1,11 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useLocale } from "next-intl";
-import { useCollabHydration } from "@/app/store/useCollabStore";
-import { useCrmStore } from "@/app/store/useCrmStore";
-import { useFeature } from "@/app/store/useOrgStore";
-import { useTaskStore } from "@/app/store/useTaskStore";
-import { dayKey, localeTag } from "@/app/utils/dateHelpers";
+import { useCollabHydration } from "@/store/useCollabStore";
+import { useCrmStore } from "@/store/useCrmStore";
+import { useFeature } from "@/store/useOrgStore";
+import { useTaskStore } from "@/store/useTaskStore";
+import { dayKey, localeTag } from "@/utils/dateHelpers";
 import PageHeader from "@/components/crm/components/shared/PageHeader";
 import WeekProgress from "./WeekProgress";
 import TasksFeed from "./TasksFeed";

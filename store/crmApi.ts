@@ -1,4 +1,4 @@
-import type { Activity, ActivityType } from "@/app/types/crm";
+import type { Activity, ActivityType } from "@/types/crm";
 
 // Фирма, в рамках которой работает пользователь: сервер по этому заголовку выбирает данные (если фирма не подходит — личная)
 export const ORG_KEY = "crm.org";

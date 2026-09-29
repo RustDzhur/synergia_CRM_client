@@ -1,6 +1,6 @@
 import type { HydratedDocument } from "mongoose";
-import type { DocItemDTO, DocsState, FolderDTO } from "@/app/types/documents";
-import { planFor } from "@/app/config/plans";
+import type { DocItemDTO, DocsState, FolderDTO } from "@/types/documents";
+import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
 import { oauthAvailable } from "@/lib/mail/oauth";
 import { storageConfigured } from "@/lib/storage/firebase";

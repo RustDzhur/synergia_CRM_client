@@ -23,7 +23,7 @@ function walk(dir, out = []) {
   }
   return out;
 }
-const files = [...walk(path.join(ROOT, "components/crm")), ...walk(path.join(ROOT, "app/[locale]/crm")), ...walk(path.join(ROOT, "app/utils"))];
+const files = [...walk(path.join(ROOT, "components/crm")), ...walk(path.join(ROOT, "app/[locale]/crm")), ...walk(path.join(ROOT, "utils"))];
 
 const PROP = { bg: "background-color", text: "color", border: "border-color", "border-t": "border-top-color", "border-b": "border-bottom-color", "border-l": "border-left-color", "border-r": "border-right-color", fill: "fill", stroke: "stroke", ring: "--tw-ring-color", divide: "border-color", outline: "outline-color", placeholder: "color" };
 const STATES = { hover: ":hover", focus: ":focus", "focus-within": ":focus-within", active: ":active", disabled: ":disabled" };

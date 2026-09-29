@@ -1,4 +1,4 @@
-import { authHeaders } from "@/app/store/crmApi";
+import { authHeaders } from "@/store/crmApi";
 
 export type DocumentKind = "invoices" | "quotes" | "orders" | "contracts";
 

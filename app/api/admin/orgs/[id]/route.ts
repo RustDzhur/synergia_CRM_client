@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/admin";
 import { badRequest, notFound, validId } from "@/lib/api";
-import { FEATURE_KEYS } from "@/app/config/plans";
+import { FEATURE_KEYS } from "@/config/plans";
 import Organization from "@/models/Organization";
 
 export const dynamic = "force-dynamic";

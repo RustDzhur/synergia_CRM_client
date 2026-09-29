@@ -3,8 +3,8 @@ import React from "react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { MdKeyboardArrowDown } from "react-icons/md";
-import { useToggleMenuState } from "@/app/store/useToggleMenuState";
-import { stripLocale } from "@/app/utils/locale";
+import { useToggleMenuState } from "@/store/useToggleMenuState";
+import { stripLocale } from "@/utils/locale";
 import { menuItems, isActivePath } from "../../Sidebar/menuItems";
 
 // Плашка 46px под шапкой на телефоне: значок и название текущего раздела.

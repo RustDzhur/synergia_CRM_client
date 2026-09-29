@@ -1,5 +1,5 @@
 import type { IconType } from "react-icons";
-import type { FeatureKey } from "@/app/config/plans";
+import type { FeatureKey } from "@/config/plans";
 import {
 	TbLayoutDashboard,
 	TbLayoutGrid,

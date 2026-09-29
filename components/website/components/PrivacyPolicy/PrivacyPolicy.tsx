@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
 import { useLocale } from "next-intl";
-import { tx } from "@/app/content/i18n";
-import { PRIVACY } from "@/app/content/footerPages";
+import { tx } from "@/content/i18n";
+import { PRIVACY } from "@/content/footerPages";
 import PageShell from "../PageShell";
 
 export default function PrivacyPolicy() {

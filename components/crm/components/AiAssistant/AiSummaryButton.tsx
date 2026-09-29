@@ -3,8 +3,8 @@ import React, { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { MdAutoAwesome } from "react-icons/md";
-import { useAiStore } from "@/app/store/useAiStore";
-import { stripLocale } from "@/app/utils/locale";
+import { useAiStore } from "@/store/useAiStore";
+import { stripLocale } from "@/utils/locale";
 
 // «✨ AI summary» в карточке сделки, контакта или компании: открывает ассистента и сразу просит краткую сводку по этой записи
 export default function AiSummaryButton({ kind, name, className = "" }: { kind: "deal" | "contact" | "company"; name: string; className?: string }) {

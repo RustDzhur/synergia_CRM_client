@@ -1,6 +1,6 @@
 "use client";
 import { useTranslations } from "next-intl";
-import { useContactStore, Contact } from "@/app/store/useContactStore";
+import { useContactStore, Contact } from "@/store/useContactStore";
 import EntityEditPage, { FieldDef } from "../shared/EntityEditPage";
 
 export default function ContactEdit({ id }: { id: string }) {

@@ -3,9 +3,9 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbArchive, TbPencil, TbPlus, TbTrash } from "react-icons/tb";
-import { apiCall } from "@/app/store/crmApi";
-import { Task, useTaskStore } from "@/app/store/useTaskStore";
-import { localeTag } from "@/app/utils/dateHelpers";
+import { apiCall } from "@/store/crmApi";
+import { Task, useTaskStore } from "@/store/useTaskStore";
+import { localeTag } from "@/utils/dateHelpers";
 import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
 

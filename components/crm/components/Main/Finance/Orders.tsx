@@ -8,7 +8,7 @@ import {
 	TbReceipt,
 	TbTruckDelivery,
 } from "react-icons/tb";
-import { LineItem, useFinanceStore } from "@/app/store/useFinanceStore";
+import { LineItem, useFinanceStore } from "@/store/useFinanceStore";
 import { defaultRateFor } from "@/lib/finance/tax";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";

@@ -1,5 +1,5 @@
 import type { HydratedDocument } from "mongoose";
-import type { MailAccountDTO, MailDTO, MailProviderId } from "@/app/types/integrations";
+import type { MailAccountDTO, MailDTO, MailProviderId } from "@/types/integrations";
 import { ProviderError } from "@/lib/http";
 import { packSecrets, secretsOf } from "@/lib/integrations";
 import { randomToken } from "@/lib/crypto";

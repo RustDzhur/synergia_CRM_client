@@ -2,8 +2,8 @@
 import React from "react";
 import { AiOutlineClose } from "react-icons/ai";
 import { IconContext } from "react-icons";
-import { useSiteMenuState } from "@/app/store/useSiteMenuState";
-import useAuthFormStore from "@/app/store/useAuthFormStore";
+import { useSiteMenuState } from "@/store/useSiteMenuState";
+import useAuthFormStore from "@/store/useAuthFormStore";
 
 export default function BurgerMenu() {
 	const { menu, toggleMenu } = useSiteMenuState();

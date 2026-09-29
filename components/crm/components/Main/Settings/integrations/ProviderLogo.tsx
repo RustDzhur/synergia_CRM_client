@@ -1,7 +1,7 @@
 import React from "react";
 import { TbPlugConnected } from "react-icons/tb";
 import { SiTwilio } from "react-icons/si";
-import type { CallProviderId } from "@/app/config/callProviders";
+import type { CallProviderId } from "@/config/callProviders";
 
 // Логотипы провайдеров звонков. Настоящие знаки есть у Twilio (react-icons) и Asterisk (Simple Icons, лицензия CC0);
 // для остальных — плитка с буквами: чужие логотипы без файлов от правообладателя не рисуем.

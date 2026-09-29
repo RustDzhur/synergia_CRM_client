@@ -2,9 +2,13 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
 	content: [
-		"./pages/**/*.{js,ts,jsx,tsx,mdx}",
+		"./app/**/*.{js,ts,jsx,tsx,mdx}", // маршруты: страницы кабинета, сайта и api
 		"./components/**/*.{js,ts,jsx,tsx,mdx}",
-		"./app/**/*.{js,ts,jsx,tsx,mdx}",
+		// не только разметка: в этих папках тоже встречаются классы (загрузчики, подсказки, тосты)
+		"./utils/**/*.{js,ts,jsx,tsx,mdx}",
+		"./store/**/*.{js,ts,jsx,tsx,mdx}",
+		"./config/**/*.{js,ts,jsx,tsx,mdx}",
+		"./content/**/*.{js,ts,jsx,tsx,mdx}",
 	],
 	theme: {
 		screens: {

@@ -14,12 +14,12 @@ import {
 	TbX,
 } from "react-icons/tb";
 import toast from "react-hot-toast";
-import { api } from "@/app/store/crmApi";
-import { FeedPost, useFeedStore } from "@/app/store/useFeedStore";
-import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
-import Dropdown from "@/app/utils/Dropdown";
-import { useClickOutside } from "@/app/utils/useClickOutside";
-import { usePolling } from "@/app/utils/usePolling";
+import { api } from "@/store/crmApi";
+import { FeedPost, useFeedStore } from "@/store/useFeedStore";
+import { useCurrentUserStore } from "@/store/useCurrentUserStore";
+import Dropdown from "@/utils/Dropdown";
+import { useClickOutside } from "@/utils/useClickOutside";
+import { usePolling } from "@/utils/usePolling";
 import Avatar from "../shared/Avatar";
 import SearchBox from "../shared/SearchBox";
 import { TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tabBar";

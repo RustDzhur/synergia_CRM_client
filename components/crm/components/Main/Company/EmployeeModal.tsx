@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbX } from "react-icons/tb";
-import { Employee, EmployeeInput, useEmployeeStore } from "@/app/store/useEmployeeStore";
+import { Employee, EmployeeInput, useEmployeeStore } from "@/store/useEmployeeStore";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 

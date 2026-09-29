@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { TbMenu2 } from "react-icons/tb";
-import { useToggleMenuState } from "@/app/store/useToggleMenuState";
+import { useToggleMenuState } from "@/store/useToggleMenuState";
 
 // Кнопка разделов на телефоне: сайдбар там скрыт, разделы открываются панелью поверх страницы.
 export default function MobileMenu() {

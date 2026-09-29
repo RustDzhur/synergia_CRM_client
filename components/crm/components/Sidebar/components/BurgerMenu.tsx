@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { MdMenu } from "react-icons/md";
-import { useToggleMenuState } from "@/app/store/useToggleMenuState";
+import { useToggleMenuState } from "@/store/useToggleMenuState";
 
 interface Props {
 	size?: number;

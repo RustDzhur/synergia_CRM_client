@@ -3,9 +3,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbChevronDown, TbPlus } from "react-icons/tb";
-import { useActiveOrg, useOrgStore } from "@/app/store/useOrgStore";
-import Dropdown from "@/app/utils/Dropdown";
-import { useClickOutside } from "@/app/utils/useClickOutside";
+import { useActiveOrg, useOrgStore } from "@/store/useOrgStore";
+import Dropdown from "@/utils/Dropdown";
+import { useClickOutside } from "@/utils/useClickOutside";
 
 // Название фирмы в шапке (Figma: «Switch | название»). Ширину задаёт родитель: 387px в шапке (desktop), на всю ширину в мобильном меню.
 // Список — фирмы пользователя: с одного аккаунта можно вести несколько фирм, создать новую и переименовать текущую.

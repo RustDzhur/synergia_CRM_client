@@ -1,9 +1,9 @@
 "use client";
 import React from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Deal, Stage } from "@/app/store/useCrmStore";
-import { formatDate, relativeTime } from "@/app/utils/crmFormat";
-import { stageColor } from "@/app/utils/stageColors";
+import { Deal, Stage } from "@/store/useCrmStore";
+import { formatDate, relativeTime } from "@/utils/crmFormat";
+import { stageColor } from "@/utils/stageColors";
 
 interface Props {
 	deals: Deal[];

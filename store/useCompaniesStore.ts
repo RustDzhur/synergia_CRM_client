@@ -1,9 +1,8 @@
 import { create } from "zustand";
-import type { Activity } from "@/app/types/crm";
+import type { Activity } from "@/types/crm";
 import { api, addActivityRequest, removeActivityRequest, NewActivity } from "./crmApi";
 
-// Компании-клиенты (вкладка Companies в CRM). Не путать с useCompanyStore — там компании
-// самого пользователя для переключателя «Switch Company» в шапке.
+// Компании-клиенты (вкладка Companies в CRM) — фирмы, с которыми работает пользователь.
 export interface ClientCompany {
     _id: string;
     name: string; // «Legal entity's full name»

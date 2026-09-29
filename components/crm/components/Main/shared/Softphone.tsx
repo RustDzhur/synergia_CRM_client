@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdBackspace, MdCall, MdCallEnd, MdCallMade, MdCallMissed, MdCallReceived, MdClose, MdDialpad, MdMic, MdMicOff } from "react-icons/md";
-import { providerLabel } from "@/app/config/callProviders";
-import { useCallStore } from "@/app/store/useCallStore";
+import { providerLabel } from "@/config/callProviders";
+import { useCallStore } from "@/store/useCallStore";
 
 const mmss = (ms: number) => {
 	const s = Math.max(0, Math.floor(ms / 1000));

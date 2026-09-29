@@ -3,7 +3,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useLocale } from "next-intl";
-import logoMob from "@/app/assets/images/logoMob.png";
+import logoMob from "@/assets/images/logoMob.png";
 
 // Логотип в шапке CRM: по клику — на дашборд (главная страница личного кабинета)
 export default function Logo() {

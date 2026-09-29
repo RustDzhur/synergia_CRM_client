@@ -1,4 +1,4 @@
-import { planFor } from "@/app/config/plans";
+import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
 import { ProviderError } from "@/lib/http";
 import AiLog from "@/models/AiLog";

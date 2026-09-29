@@ -14,9 +14,9 @@ import {
 	TbTrash,
 	TbUpload,
 } from "react-icons/tb";
-import { apiCall } from "@/app/store/crmApi";
-import { useFinanceStore } from "@/app/store/useFinanceStore";
-import type { Expense, Invoice } from "@/app/store/useFinanceStore";
+import { apiCall } from "@/store/crmApi";
+import { useFinanceStore } from "@/store/useFinanceStore";
+import type { Expense, Invoice } from "@/store/useFinanceStore";
 import { balanceAt, suggestMatches } from "@/lib/finance/bank";
 import type { MatchCandidate, MatchSuggestion } from "@/lib/finance/bank";
 import Modal from "../shared/Modal";

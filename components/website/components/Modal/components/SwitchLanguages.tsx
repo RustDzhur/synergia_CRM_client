@@ -3,12 +3,12 @@ import React, { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import Image from "next/image";
 import { RiArrowDownSLine } from "react-icons/ri";
-import { useLanguageStore } from "@/app/store/useLanguageStore";
-import { languages } from "@/app/languages/languages";
-import { languageCodeToProperties } from "@/app/languages/languages";
-import { Language } from "@/app/types/languageType";
-import { stripLocale } from "@/app/utils/locale";
-import Collapse from "@/app/utils/Collapse";
+import { useLanguageStore } from "@/store/useLanguageStore";
+import { languages } from "@/languages/languages";
+import { languageCodeToProperties } from "@/languages/languages";
+import { Language } from "@/types/languageType";
+import { stripLocale } from "@/utils/locale";
+import Collapse from "@/utils/Collapse";
 import { usePathname, useRouter } from "next/navigation";
 
 export default function SwitchLanguage() {

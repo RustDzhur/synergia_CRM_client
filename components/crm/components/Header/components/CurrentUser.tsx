@@ -4,11 +4,11 @@ import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { TbChevronDown, TbLogout, TbSettings, TbShieldCog } from "react-icons/tb";
 import Link from "next/link";
-import { useCurrentUserStore } from "@/app/store/useCurrentUserStore";
-import useAuthStore from "@/app/store/useAuthStore";
-import Loader from "@/app/utils/Loader";
-import Dropdown from "@/app/utils/Dropdown";
-import { useClickOutside } from "@/app/utils/useClickOutside";
+import { useCurrentUserStore } from "@/store/useCurrentUserStore";
+import useAuthStore from "@/store/useAuthStore";
+import Loader from "@/utils/Loader";
+import Dropdown from "@/utils/Dropdown";
+import { useClickOutside } from "@/utils/useClickOutside";
 import Avatar from "@/components/crm/components/Main/shared/Avatar";
 
 interface Props {

@@ -3,7 +3,7 @@ import Link from "next/link";
 import React from "react";
 import { useLocale } from "next-intl";
 import BrandMark from "@/components/crm/components/shared/BrandMark";
-import { withLocale } from "@/app/utils/locale";
+import { withLocale } from "@/utils/locale";
 
 // Логотип сайта: по клику — на главную страницу выбранного языка
 export default function Logo({ light = false }: { light?: boolean }) {

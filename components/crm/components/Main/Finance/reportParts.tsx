@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbAlertTriangle, TbSparkles } from "react-icons/tb";
-import { apiCall } from "@/app/store/crmApi";
+import { apiCall } from "@/store/crmApi";
 import { TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tabBar";
 import type { PeriodKind } from "@/lib/finance/reports";
 

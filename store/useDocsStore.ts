@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { DocItemDTO, DocKind, DocsState, FolderDTO } from "@/app/types/documents";
+import type { DocItemDTO, DocKind, DocsState, FolderDTO } from "@/types/documents";
 import { apiCall, authHeaders } from "./crmApi";
 
 interface Result { ok: boolean; message: string }
