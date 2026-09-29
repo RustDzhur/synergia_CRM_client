@@ -3,68 +3,26 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { TbChevronDown, TbCloudUpload, TbDots, TbFile, TbFolder, TbPhoto, TbRefresh } from "react-icons/tb";
-import type { DocItemDTO, DocKind, FolderDTO } from "@/types/documents";
+import { TbRefresh } from "react-icons/tb";
+import type { DocItemDTO, FolderDTO } from "@/types/documents";
 import { authHeaders } from "@/store/crmApi";
 import { useAiStore } from "@/store/useAiStore";
 import { useDocsStore } from "@/store/useDocsStore";
-import Dropdown from "@/utils/Dropdown";
 import { shrinkImage } from "@/utils/imageResize";
 import { stripLocale } from "@/utils/locale";
-import { useClickOutside } from "@/utils/useClickOutside";
 import PageHeader from "@/components/crm/shared/PageHeader";
 import { localeTag } from "@/utils/dateHelpers";
 import ConfirmDialog from "../shared/ConfirmDialog";
-import Modal from "../shared/Modal";
 import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tabBar";
 import SearchBox from "../shared/SearchBox";
-import FileTypeIcon from "./FileTypeIcon";
-
-type Layout = "list" | "grid" | "tile";
-type StatusFilter = "active" | "archived" | "all";
-type GoogleKind = Exclude<DocKind, "file">;
-const GOOGLE_KINDS: GoogleKind[] = ["gdoc", "gsheet", "gslide"];
-const ICON_TYPE = { gdoc: "docx", gsheet: "xlsx", gslide: "pptx" } as const;
-const INLINE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"];
-
-type NameMode = { kind: "doc"; docKind: GoogleKind } | { kind: "folder-new" } | { kind: "folder-rename"; folder: FolderDTO } | { kind: "doc-rename"; doc: DocItemDTO };
-type Target = { type: "folder"; folder: FolderDTO } | { type: "doc"; doc: DocItemDTO };
-
-const fmtSize = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
-
-interface Action { label: string; onClick: () => void; danger?: boolean }
-
-function RowMenu({ actions }: { actions: Action[] }) {
-	const t = useTranslations("collab");
-	const [open, setOpen] = useState(false);
-	const ref = useRef<HTMLDivElement>(null);
-	useClickOutside(ref, open, () => setOpen(false));
-	const item = "fs-popover-row block w-full px-14 py-10 text-left text-13 transition-colors duration-150";
-	return (
-		<div ref={ref} className="relative inline-block">
-			<button type="button" aria-label={t("more")} aria-expanded={open} onClick={() => setOpen(!open)} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
-				<TbDots size={20} />
-			</button>
-			<Dropdown open={open} className="right-0 top-full mt-8 min-w-[190px]">
-				<div className="fs-popover overflow-hidden py-2 text-left">
-					{actions.map((a, i) => (
-						<React.Fragment key={a.label}>
-							{a.danger && i > 0 && <div className="border-t border-inkLine" />}
-							<button type="button" className={`${item} ${a.danger ? "!text-danger" : ""}`} onClick={() => { setOpen(false); a.onClick(); }}>{a.label}</button>
-						</React.Fragment>
-					))}
-				</div>
-			</Dropdown>
-		</div>
-	);
-}
-
-function EntryIcon({ doc, folder, size }: { doc?: DocItemDTO; folder?: boolean; size: number }) {
-	if (folder) return <TbFolder size={size} className="shrink-0 text-[#FABF4D]" aria-hidden />;
-	if (doc && doc.kind !== "file") return <FileTypeIcon type={ICON_TYPE[doc.kind]} size={size} withLabel={false} />;
-	if (doc?.mime.startsWith("image/")) return <TbPhoto size={size} className="shrink-0 text-[#7CB305]" aria-hidden />;
-	return <TbFile size={size} className="shrink-0 text-[#8c948b]" aria-hidden />;
-}
+import CreateTiles from "./documentsParts/CreateTiles";
+import DriveBanner from "./documentsParts/DriveBanner";
+import EntriesGrid from "./documentsParts/EntriesGrid";
+import EntriesTable from "./documentsParts/EntriesTable";
+import MoveDialog from "./documentsParts/MoveDialog";
+import NameDialog from "./documentsParts/NameDialog";
+import { INLINE_TYPES, fmtSize } from "./documentsParts/model";
+import type { Action, GoogleKind, Layout, NameMode, StatusFilter, Target } from "./documentsParts/model";
 
 // Online Documents (/crm/collaboration/online-documents): Google Docs / Sheets / Slides создаются на Google Drive пользователя
 // (редактируются в Google в новой вкладке и сохраняются там сами), файлы и фото хранятся в Firebase Storage. Всё раскладывается по папкам.
@@ -80,7 +38,6 @@ export default function Documents() {
 
 	const [layout, setLayout] = useState<Layout>("list");
 	const [status, setStatus] = useState<StatusFilter>("active");
-	const [statusOpen, setStatusOpen] = useState(false);
 	const [sortAsc, setSortAsc] = useState(true);
 	const [query, setQuery] = useState("");
 	const [filters, setFilters] = useState<Record<string, string>>({});
@@ -92,9 +49,7 @@ export default function Documents() {
 	const [moving, setMoving] = useState<Target | null>(null);
 	const [moveTo, setMoveTo] = useState("");
 	const [toDelete, setToDelete] = useState<Target | null>(null);
-	const statusRef = useRef<HTMLDivElement>(null);
 	const fileRef = useRef<HTMLInputElement>(null);
-	useClickOutside(statusRef, statusOpen, () => setStatusOpen(false));
 
 	// возврат с Google после подключения Диска: ?drive=connected|denied|error
 	useEffect(() => {
@@ -370,10 +325,8 @@ export default function Documents() {
 		{ label: t("delete"), onClick: () => setToDelete({ type: "doc", doc: d }), danger: true },
 	];
 
-	const th = "px-10 text-center";
-	const td = "truncate px-10 text-center text-13";
-	const statusLabel = { active: t("active"), archived: t("archived"), all: t("all") };
 	const empty = subfolders.length === 0 && docs.length === 0;
+	const notice = !state ? "…" : empty ? (current === null ? t("docsEmpty") : t("folderEmpty")) : null;
 
 	return (
 		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
@@ -410,49 +363,9 @@ export default function Documents() {
 				</div>
 			</PageHeader>
 
-			{drive && !drive.connected && (
-				<div className="fs-card mb-16 flex flex-col gap-12 p-16 md:flex-row md:items-center md:justify-between">
-					<div>
-						<p className="text-14 font-medium text-[#f1f4ee]">{t("driveConnectTitle")}</p>
-						<p className="mt-2 text-12 text-[#8c948b]">{drive.configured ? t("driveConnectText") : t("driveNotConfigured")}</p>
-					</div>
-					{drive.configured && <button type="button" onClick={connect} className="fs-btn fs-btn-primary h-38 shrink-0">{t("driveConnectButton")}</button>}
-				</div>
-			)}
-			{drive?.connected && (
-				<div className="mb-16 flex flex-wrap items-center gap-x-12 gap-y-8 text-12 text-[#8c948b]">
-					<span>{t("driveConnectedAs", { email: drive.email || "Google" })}</span>
-					<button type="button" onClick={startImport} disabled={importing} className="fs-btn fs-btn-ghost h-30 disabled:opacity-60">
-						{importing ? t("driveImportRunning") : t("driveImportButton")}
-					</button>
-					<button type="button" onClick={connect} className="fs-link">{t("driveReconnect")}</button>
-					<button type="button" onClick={() => disconnectDrive()} className="fs-link">{t("driveDisconnect")}</button>
-				</div>
-			)}
+			{drive && <DriveBanner drive={drive} importing={importing} onConnect={connect} onImport={startImport} onDisconnect={() => disconnectDrive()} />}
 
-			<ul className="grid grid-cols-2 gap-12 md:grid-cols-4 md:gap-16 lg:gap-20">
-				{GOOGLE_KINDS.map((kind) => (
-					<li key={kind}>
-						<button
-							type="button"
-							onClick={() => startCreate(kind)}
-							className={`fs-card flex aspect-square w-full flex-col items-center justify-center gap-10 transition-transform duration-200 hover:-translate-y-2 lg:max-h-[240px] ${drive?.connected ? "" : "opacity-60"}`}>
-							<FileTypeIcon type={ICON_TYPE[kind]} size={56} />
-							<span className="text-12 font-semibold text-[#8c948b] md:text-13">{t(`kind_${kind}`)}</span>
-						</button>
-					</li>
-				))}
-				<li>
-					<button
-						type="button"
-						onClick={startUpload}
-						className={`fs-card flex aspect-square w-full flex-col items-center justify-center gap-10 transition-transform duration-200 hover:-translate-y-2 lg:max-h-[240px] ${storage?.configured ? "" : "opacity-60"}`}>
-						<TbCloudUpload size={56} className="text-[#8c948b]" aria-hidden />
-						<span className="text-12 font-semibold text-[#8c948b] md:text-13">{t("uploadFile")}</span>
-					</button>
-					<input ref={fileRef} type="file" multiple hidden onChange={(e) => onFiles(e.target.files)} aria-label={t("uploadFile")} />
-				</li>
-			</ul>
+			<CreateTiles driveConnected={!!drive?.connected} storageConfigured={!!storage?.configured} fileRef={fileRef} onCreate={startCreate} onUpload={startUpload} onFiles={onFiles} />
 
 			<nav aria-label={t("breadcrumbs")} className="mt-16 flex flex-wrap items-center gap-x-8 gap-y-2 text-13">
 				<button type="button" onClick={() => setCurrent(null)} className={current === null ? "font-medium text-[#f1f4ee]" : "text-[#c6ff4d] hover:underline"}>{t("rootFolder")}</button>
@@ -466,148 +379,28 @@ export default function Documents() {
 
 			<div className="mt-16 min-h-[240px]">
 				{layout === "list" ? (
-					<div className="fs-card overflow-x-auto">
-						<table className="fs-table min-w-[620px] table-fixed">
-							<thead>
-								<tr>
-									<th className={`${th} w-[38%]`}>
-										<button type="button" onClick={() => setSortAsc(!sortAsc)} className="inline-flex items-center gap-6 transition-colors hover:text-[#c6ff4d]" aria-label={t("sortByName")}>
-											{t("fileName")} {sortAsc ? "↑" : "↓"}
-										</button>
-									</th>
-									<th className={th}>
-										<div ref={statusRef} className="relative inline-block">
-											<button type="button" onClick={() => setStatusOpen(!statusOpen)} aria-expanded={statusOpen} className="inline-flex items-center gap-6 transition-colors hover:text-[#c6ff4d]">
-												{statusLabel[status]}
-												<TbChevronDown size={16} className={`transition-transform duration-200 ${statusOpen ? "rotate-180" : ""}`} />
-											</button>
-											<Dropdown open={statusOpen} className="left-1/2 top-full mt-8 min-w-[150px] -translate-x-1/2">
-												<div className="fs-popover overflow-hidden py-2 text-left">
-													{(["active", "archived", "all"] as const).map((s) => (
-														<button
-															key={s}
-															type="button"
-															onClick={() => { setStatus(s); setStatusOpen(false); }}
-															className={`fs-popover-row block w-full px-14 py-10 text-left text-13 transition-colors duration-150 ${status === s ? "text-[#c6ff4d]" : ""}`}>
-															{statusLabel[s]}
-														</button>
-													))}
-												</div>
-											</Dropdown>
-										</div>
-									</th>
-									<th className={th}>{t("createdBy")}</th>
-									<th className={th}>{t("modified")}</th>
-									<th className="w-[50px]" />
-								</tr>
-							</thead>
-							<tbody>
-								{subfolders.map((f) => (
-									<tr key={f.id} className="h-[52px] animate-fade-in">
-										<td className="px-16">
-											<button type="button" onClick={() => setCurrent(f.id)} className="flex w-full items-center gap-10 text-left transition-colors hover:text-[#c6ff4d]">
-												<EntryIcon folder size={20} />
-												<span className="truncate text-13 font-medium text-[#f1f4ee]">{f.name}</span>
-											</button>
-										</td>
-										<td className={td}>{t("folder")}</td>
-										<td className={td}>—</td>
-										<td className={td}>—</td>
-										<td className="pr-10 text-center"><RowMenu actions={folderActions(f)} /></td>
-									</tr>
-								))}
-								{docs.map((d) => (
-									<tr key={d.id} className="h-[52px] animate-fade-in">
-										<td className="px-16">
-											<button type="button" onClick={() => openDoc(d)} className="flex w-full items-center gap-10 text-left transition-colors hover:text-[#c6ff4d]" title={d.url ? t("openInGoogle") : t("openFile")}>
-												<EntryIcon doc={d} size={18} />
-												<span className="min-w-0">
-													<span className="block truncate text-13 text-[#f1f4ee]">{d.name}</span>
-													<span className="block truncate text-11 text-[#8c948b]">{kindLabel(d)}</span>
-												</span>
-											</button>
-										</td>
-										<td className={td}>{d.archived ? t("archived") : t("active")}</td>
-										<td className={td}>{d.createdBy}</td>
-										<td className={td}>{dateLabel(d.modifiedAt)}</td>
-										<td className="pr-10 text-center"><RowMenu actions={docActions(d)} /></td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-						{state && empty && <p className="py-40 text-center text-13 text-[#8c948b]">{current === null ? t("docsEmpty") : t("folderEmpty")}</p>}
-						{!state && <p className="py-40 text-center text-13 text-[#8c948b]">…</p>}
-					</div>
+					<EntriesTable
+						subfolders={subfolders}
+						docs={docs}
+						sortAsc={sortAsc}
+						onSort={() => setSortAsc(!sortAsc)}
+						status={status}
+						onStatus={setStatus}
+						onOpenFolder={setCurrent}
+						onOpenDoc={openDoc}
+						folderActions={folderActions}
+						docActions={docActions}
+						kindLabel={kindLabel}
+						dateLabel={dateLabel}
+						notice={notice}
+					/>
 				) : (
-					<>
-						<ul className={`grid gap-12 ${layout === "grid" ? "grid-cols-2 md:grid-cols-4 lg:grid-cols-6" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"}`}>
-							{subfolders.map((f) => (
-								<li key={f.id} className={`fs-card animate-fade-in transition-colors duration-150 hover:border-[rgba(198,255,77,0.28)] ${layout === "grid" ? "flex flex-col items-center gap-8 p-14 text-center" : "flex items-center gap-16 p-14"}`}>
-									<button type="button" onClick={() => setCurrent(f.id)} className={`flex min-w-0 flex-1 gap-8 transition-colors hover:text-[#c6ff4d] ${layout === "grid" ? "flex-col items-center" : "items-center text-left"}`}>
-										<EntryIcon folder size={layout === "grid" ? 36 : 30} />
-										<span className="w-full truncate text-13 font-medium text-[#f1f4ee]">{f.name}</span>
-									</button>
-									<RowMenu actions={folderActions(f)} />
-								</li>
-							))}
-							{docs.map((d) => (
-								<li key={d.id} className={`fs-card animate-fade-in transition-colors duration-150 hover:border-[rgba(198,255,77,0.28)] ${layout === "grid" ? "flex flex-col items-center gap-8 p-14 text-center" : "flex items-center gap-16 p-14"}`}>
-									<button type="button" onClick={() => openDoc(d)} className={`flex min-w-0 flex-1 gap-8 transition-colors hover:text-[#c6ff4d] ${layout === "grid" ? "flex-col items-center" : "items-center text-left"}`}>
-										<EntryIcon doc={d} size={layout === "grid" ? 36 : 30} />
-										<span className="w-full min-w-0">
-											<span className="block truncate text-13 font-medium text-[#f1f4ee]">{d.name}</span>
-											<span className="block truncate text-11 text-[#8c948b]">{kindLabel(d)}</span>
-										</span>
-									</button>
-									<RowMenu actions={docActions(d)} />
-								</li>
-							))}
-						</ul>
-						{state && empty && <p className="py-40 text-center text-13 text-[#8c948b]">{current === null ? t("docsEmpty") : t("folderEmpty")}</p>}
-						{!state && <p className="py-40 text-center text-13 text-[#8c948b]">…</p>}
-					</>
+					<EntriesGrid layout={layout} subfolders={subfolders} docs={docs} onOpenFolder={setCurrent} onOpenDoc={openDoc} folderActions={folderActions} docActions={docActions} kindLabel={kindLabel} notice={notice} />
 				)}
 			</div>
 
-			<Modal open={nameMode !== null} onClose={() => setNameMode(null)} label={t("document")} className="w-full max-w-[440px]">
-				<form onSubmit={submitName} className="fs-popover p-20">
-					<h2 className="mb-16 flex items-center gap-12 text-16 font-semibold text-[#f1f4ee]">
-						{nameMode?.kind === "doc" && <FileTypeIcon type={ICON_TYPE[nameMode.docKind]} size={20} withLabel={false} />}
-						{(nameMode?.kind === "folder-new" || nameMode?.kind === "folder-rename") && <TbFolder size={20} className="text-[#FABF4D]" aria-hidden />}
-						{nameMode?.kind === "doc" ? t("newDocument") : nameMode?.kind === "folder-new" ? t("folderNew") : t("rename")}
-					</h2>
-					<input
-						value={name}
-						onChange={(e) => setName(e.target.value)}
-						maxLength={100}
-						autoFocus
-						placeholder={nameMode?.kind === "folder-new" || nameMode?.kind === "folder-rename" ? t("folderName") : undefined}
-						aria-label={t("fileName")}
-						className="fs-field h-40 w-full px-12 text-13 outline-none transition-colors"
-					/>
-					{nameMode?.kind === "doc" && <p className="mt-8 text-12 text-[#8c948b]">{t("docOpenNote")}</p>}
-					<div className="mt-20 flex justify-end gap-10">
-						<button type="button" onClick={() => setNameMode(null)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
-						<button type="submit" disabled={busy} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">
-							{busy ? "…" : nameMode?.kind === "doc" || nameMode?.kind === "folder-new" ? t("create") : t("save")}
-						</button>
-					</div>
-				</form>
-			</Modal>
-
-			<Modal open={moving !== null} onClose={() => setMoving(null)} label={t("moveTo")} className="w-full max-w-[440px]">
-				<form onSubmit={submitMove} className="fs-popover p-20">
-					<h2 className="mb-6 text-16 font-semibold text-[#f1f4ee]">{t("moveTo")}</h2>
-					<p className="mb-12 truncate text-12 text-[#8c948b]">{moving?.type === "folder" ? moving.folder.name : moving?.doc.name}</p>
-					<select value={moveTo} onChange={(e) => setMoveTo(e.target.value)} aria-label={t("moveTo")} className="fs-field h-40 w-full px-12 text-13 outline-none">
-						{moveOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-					</select>
-					<div className="mt-20 flex justify-end gap-10">
-						<button type="button" onClick={() => setMoving(null)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
-						<button type="submit" disabled={busy} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{busy ? "…" : t("moveHere")}</button>
-					</div>
-				</form>
-			</Modal>
+			<NameDialog mode={nameMode} name={name} onName={setName} busy={busy} onClose={() => setNameMode(null)} onSubmit={submitName} />
+			<MoveDialog target={moving} options={moveOptions} value={moveTo} onValue={setMoveTo} busy={busy} onClose={() => setMoving(null)} onSubmit={submitMove} />
 
 			<ConfirmDialog
 				open={toDelete !== null}
