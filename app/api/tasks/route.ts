@@ -6,6 +6,7 @@ import { pickStrings } from "@/lib/activities";
 import { TASK_TEXT_FIELDS } from "@/lib/crmFields";
 import { emit } from "@/lib/automation/emit";
 import { postTask } from "@/lib/feed";
+import Deal from "@/models/Deal";
 import Project from "@/models/Project";
 import Task from "@/models/Task";
 import User from "@/models/User";
@@ -16,6 +17,12 @@ async function ownedProject(id: unknown, org: string) {
     return Project.findOne({ _id: id, owner: org }).select("_id").catch(() => null);
 }
 
+// Сделка, из карточки которой поставлена задача: тоже только своя
+async function ownedDeal(id: unknown, org: string) {
+    if (typeof id !== "string" || !id) return null;
+    return Deal.findOne({ _id: id, owner: org }).select("_id clientName").catch(() => null);
+}
+
 // GET /api/tasks — все задачи текущего пользователя (ближайшие сроки первыми)
 export async function GET(req: Request) {
     const user = await requireUser(req);
@@ -23,7 +30,10 @@ export async function GET(req: Request) {
 
     await connectDB();
     const tasks = await Task.find({ owner: user.id }).sort({ deadline: 1, createdAt: -1 });
-    return NextResponse.json(tasks);
+    // у задач из карточки сделки отдаём её название: в списке задач по нему видно, откуда задача пришла
+    const deals = await Deal.find({ owner: user.id, _id: { $in: tasks.map((t) => t.deal).filter(Boolean) } }).select("clientName");
+    const names = new Map(deals.map((d) => [String(d._id), String(d.clientName ?? "")]));
+    return NextResponse.json(tasks.map((t) => ({ ...t.toObject(), dealName: t.deal ? names.get(String(t.deal)) ?? "" : "" })));
 }
 
 // POST /api/tasks — создать задачу
@@ -37,12 +47,13 @@ export async function POST(req: Request) {
 
     await connectDB();
     const author = await User.findById(user.userId);
-    // проект проверяем на принадлежность фирме: чужой id привязывать нельзя
-    const project = await ownedProject(body?.project, user.id);
+    // проект и сделку проверяем на принадлежность фирме: чужой id привязывать нельзя
+    const [project, deal] = await Promise.all([ownedProject(body?.project, user.id), ownedDeal(body?.deal, user.id)]);
     const task = await Task.create({
         ...fields,
         owner: user.id,
         project: project?._id,
+        deal: deal?._id,
         createdBy: author ? `${author.firstname} ${author.lastname}`.trim() : "",
         responsible: fields.responsible || (author ? author.firstname : ""),
     });

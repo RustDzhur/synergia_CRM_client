@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
-import { sendFromAccount } from "@/lib/mail";
+import { mailboxCanSend, sendFromAccount } from "@/lib/mail";
 import { sendToConversation } from "@/lib/channels";
 import { mailAccount, resolveRecipient } from "@/lib/finance/send";
 import { invoicePdfBuffer, orderPdfBuffer, quotePdfBuffer } from "@/lib/finance/document";
@@ -28,7 +28,7 @@ export const dynamic = "force-dynamic";
 
 type Channel = "sms" | "viber" | "telegram" | "whatsapp" | "email";
 // Что показать пользователю: ready — можно отправлять, остальное — причина, по которой нельзя
-type Availability = "ready" | "no_provider" | "no_phone" | "no_recipient" | "no_mailbox" | "no_conversation" | "no_contact";
+type Availability = "ready" | "no_provider" | "no_phone" | "no_recipient" | "no_mailbox" | "no_send_scope" | "no_conversation" | "no_contact";
 
 const CHANNELS: Channel[] = ["sms", "viber", "telegram", "whatsapp", "email"];
 const SMS_TYPES = ["twilio", "vonage", "plivo", "telnyx"];
@@ -79,7 +79,10 @@ async function availability(org: string, channel: Channel, contact: { _id: unkno
     if (channel === "email") {
         const recipient = await resolveRecipient(org, undefined, { contact: contact?._id, company });
         if (!recipient) return "no_recipient";
-        return (await mailAccount(org)) ? "ready" : "no_mailbox";
+        const account = await mailAccount(org);
+        if (!account) return "no_mailbox";
+        // при входе через Google/Microsoft согласие могло быть только на чтение — отправка не пройдёт
+        return mailboxCanSend(account) ? "ready" : "no_send_scope";
     }
     if (!contact) return "no_contact";
     if (channel === "sms") {

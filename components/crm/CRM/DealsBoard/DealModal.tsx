@@ -6,11 +6,13 @@ import { Deal, DealUpdate, useCrmStore } from "@/store/useCrmStore";
 import type { NewActivity } from "@/store/crmApi";
 import { useContactStore } from "@/store/useContactStore";
 import { useCompaniesStore } from "@/store/useCompaniesStore";
+import { useTaskStore } from "@/store/useTaskStore";
 import Modal from "../../shared/Modal";
 import ConfirmDialog from "../../shared/ConfirmDialog";
 import ActivityComposer, { ComposerTab } from "../../shared/ActivityComposer";
 import ActivityTimeline from "../../shared/ActivityTimeline";
 import DealQuotes from "./DealQuotes";
+import DealTasks from "./dealModalParts/DealTasks";
 import DealHeader from "./dealModalParts/DealHeader";
 import StageArrows from "./dealModalParts/StageArrows";
 import MoreCard from "./dealModalParts/MoreCard";
@@ -32,6 +34,7 @@ export default function DealModal({ dealId, onClose }: Props) {
 	const { deals, stages, updateDeal, deleteDeal, addActivity, removeActivity, loadChannels, sendChannel } = useCrmStore();
 	const { contacts, fetchContacts } = useContactStore();
 	const { companies, fetchCompanies } = useCompaniesStore();
+	const addTask = useTaskStore((s) => s.addTask);
 
 	// пока окно закрывается, сделка может уже исчезнуть из стора (удаление) — держим последнюю версию
 	const lastRef = useRef<Deal>();
@@ -105,6 +108,8 @@ export default function DealModal({ dealId, onClose }: Props) {
 	}, [deal?._id, deal?.recurring]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	if (!deal) return null;
+	// разделы, убранные с карточки кнопкой «Удалить раздел» (см. SectionFooter)
+	const hidden: string[] = deal.hiddenSections ?? [];
 
 	async function save(patch: DealUpdate) {
 		const updated = await updateDeal(deal!._id, patch);
@@ -137,11 +142,18 @@ export default function DealModal({ dealId, onClose }: Props) {
 		if (await save({ recurring })) setRecurringEditing(false);
 	}
 
+	// «Удалить раздел»: данные раздела очищаются, а сам блок убирается с карточки. Вернуть его можно
+	// кнопкой «Добавить раздел» — без этого кнопка выглядела сломанной: пустой блок оставался на месте
 	async function clearSection() {
 		const section = confirmSection;
 		setConfirmSection(null);
-		if (section === "more") await save({ dealType: "", responsible: "", utm: "", availableToAll: true });
-		if (section === "recurring") await save({ recurring: "" });
+		if (!section) return;
+		const fields = section === "more" ? { dealType: "", responsible: "", utm: "", availableToAll: true } : { recurring: "" };
+		if (await save({ ...fields, hiddenSections: [...hidden, section] })) toast.success(t("sectionDeleted"));
+	}
+
+	async function restoreSection(section: "more" | "recurring") {
+		if (await save({ hiddenSections: hidden.filter((s) => s !== section) })) toast.success(t("sectionAdded"));
 	}
 
 	async function removeDeal() {
@@ -174,13 +186,18 @@ export default function DealModal({ dealId, onClose }: Props) {
 		if (code === "no_provider") return t("chanNoProvider");
 		if (code === "no_recipient") return t("chanNoRecipient");
 		if (code === "no_mailbox") return t("chanNoMailbox");
+		if (code === "no_send_scope") return t("chanNoSendScope");
+		// Неизвестный код — это уже не «нет переписки», а ответ сервера или провайдера (например, отказ
+		// SMTP). Показываем его как есть: иначе настоящая причина отказа пряталась за чужой подписью
+		if (/[ .]/.test(code.trim()) || code === "Server error") return code;
 		return t("chanNoConversation", { channel: CHANNEL_LABEL[channel] ?? channel });
 	}
 
 	const tabs: ComposerTab[] = [
 		{ key: "activity", label: t("tabActivity"), type: "activity", mode: "line", placeholder: t("thingsToDo"), withDate: true },
 		{ key: "comment", label: t("tabComment"), type: "comment", mode: "area", placeholder: t("commentPlaceholder") },
-		{ key: "task", label: t("tabTask"), type: "task", mode: "line", placeholder: t("thingsToDo") },
+		// «Задача» ставит настоящую задачу в разделе «Задачи и проекты» (со сроком), а не просто запись в ленте
+		{ key: "task", label: t("tabTask"), type: "task", mode: "line", placeholder: t("thingsToDo"), withDate: true },
 		// Дальше — каналы связи: они не пишут запись, а отправляют (SMS и письмо инициируются
 		// с нашей стороны, в мессенджере отвечаем в существующей переписке)
 		...channelTabs,
@@ -191,6 +208,14 @@ export default function DealModal({ dealId, onClose }: Props) {
 
 	async function submitActivity(activity: NewActivity) {
 		if (!deal) return;
+		// «Задача» — это настоящая задача: сначала создаём её (со сроком и привязкой к сделке),
+		// и только потом пишем запись в ленту сделки, чтобы по ней было видно, что задача поставлена
+		if (activity.type === "task") {
+			const task = await addTask({ title: activity.text, deadline: activity.meta, deal: deal._id });
+			if (!task) return void toast.error(t("error"));
+			await addActivity(deal._id, activity);
+			return void toast.success(t("taskCreated"));
+		}
 		if (!CHANNEL_TABS.includes(activity.type)) return void addActivity(deal._id, activity);
 		const error = await sendChannel(deal._id, activity.type, activity.text, locale);
 		if (error) toast.error(reasonText(error, activity.type) ?? t("chanNoConversation", { channel: CHANNEL_LABEL[activity.type] ?? activity.type }));
@@ -220,15 +245,8 @@ export default function DealModal({ dealId, onClose }: Props) {
 
 				<div className="grid grid-cols-1 gap-16 mp:grid-cols-[minmax(0,450px)_minmax(0,1fr)]">
 					<div className="flex flex-col gap-16">
-						<MoreCard
-							deal={deal}
-							editing={moreEditing}
-							draft={more}
-							onChange={setMore}
-							onToggle={() => setMoreEditing(!moreEditing)}
-							onSave={saveMore}
-							onDeleteSection={() => setConfirmSection("more")}
-						/>
+						{/* Порядок карточки: сначала данные клиента, затем документы (предложения, счета, заказы),
+						    ниже — служебные разделы, и в самом низу «Другое» и удаление сделки */}
 						<AboutCard
 							deal={deal}
 							editing={aboutEditing}
@@ -243,15 +261,44 @@ export default function DealModal({ dealId, onClose }: Props) {
 
 						<DealQuotes dealId={deal._id} customerName={deal.contactName || deal.clientName} contact={deal.contact ?? undefined} company={deal.company ?? undefined} />
 
-						<RecurringCard
-							deal={deal}
-							editing={recurringEditing}
-							value={recurring}
-							onChange={setRecurring}
-							onToggle={() => setRecurringEditing(!recurringEditing)}
-							onSave={saveRecurring}
-							onDeleteSection={() => setConfirmSection("recurring")}
-						/>
+						<DealTasks dealId={deal._id} />
+
+						{!hidden.includes("recurring") && (
+							<RecurringCard
+								deal={deal}
+								editing={recurringEditing}
+								value={recurring}
+								onChange={setRecurring}
+								onToggle={() => setRecurringEditing(!recurringEditing)}
+								onSave={saveRecurring}
+								onDeleteSection={() => setConfirmSection("recurring")}
+							/>
+						)}
+
+						{!hidden.includes("more") && (
+							<MoreCard
+								deal={deal}
+								editing={moreEditing}
+								draft={more}
+								onChange={setMore}
+								onToggle={() => setMoreEditing(!moreEditing)}
+								onSave={saveMore}
+								onDeleteSection={() => setConfirmSection("more")}
+							/>
+						)}
+
+						{/* Убранные разделы можно вернуть: без этого «Удалить раздел» было бы необратимым */}
+						{(hidden.includes("more") || hidden.includes("recurring")) && (
+							<div className="flex flex-wrap items-center gap-10 text-13">
+								<span className="text-[#8c948b]">{t("addSection")}:</span>
+								{hidden.includes("more") && (
+									<button type="button" onClick={() => restoreSection("more")} className="fs-link">+ {t("more")}</button>
+								)}
+								{hidden.includes("recurring") && (
+									<button type="button" onClick={() => restoreSection("recurring")} className="fs-link">+ {t("recurringDeal")}</button>
+								)}
+							</div>
+						)}
 
 						<button
 							type="button"

@@ -13,12 +13,14 @@ export interface Task {
     pinned: boolean;
     muted: boolean;
     project?: string; // id проекта, в рамках которого сделана задача
+    deal?: string; // id сделки, из карточки которой поставлена задача
+    dealName?: string; // название той сделки — приходит только в списке задач
     activities?: Activity[]; // комментарии: type "comment", meta — имя автора
     createdAt?: string;
     updatedAt?: string;
 }
 
-export type TaskInput = Partial<Pick<Task, "title" | "description" | "deadline" | "responsible" | "completed" | "pinned" | "muted" | "project">>;
+export type TaskInput = Partial<Pick<Task, "title" | "description" | "deadline" | "responsible" | "completed" | "pinned" | "muted" | "project" | "deal">>;
 
 export type TaskStatus = "active" | "completed" | "ended";
 

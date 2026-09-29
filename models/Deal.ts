@@ -25,6 +25,9 @@ const DealSchema = new Schema(
         availableToAll: { type: Boolean, default: true },
         utm: { type: String, default: "" },
         recurring: { type: String, default: "" }, // раздел «Recurring Deal»
+        // разделы карточки, скрытые кнопкой «Удалить раздел»: сами данные очищаются, а здесь остаётся
+        // отметка, что блок не показывать («more», «recurring»)
+        hiddenSections: { type: [String], default: [] },
 
         activities: { type: [ActivitySchema], default: [] },
     },

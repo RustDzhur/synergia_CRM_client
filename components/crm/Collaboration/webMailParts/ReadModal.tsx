@@ -12,7 +12,9 @@ export default function ReadModal({ mail, onClose }: { mail: MailDTO | null; onC
 	const locale = useLocale();
 	return (
 		<Modal open={mail !== null} onClose={onClose} label={mail?.subject} className="w-full max-w-[600px]">
-			<div className="fs-popover p-24">
+			{/* Окно письма не выше экрана: шапка остаётся на месте, а длинный текст прокручивается внутри.
+			    Без этого длинное письмо уезжало за верх и низ экрана (100dvh учитывает панели браузера) */}
+			<div className="fs-popover flex max-h-[calc(100dvh-32px)] flex-col p-24">
 				<div className="mb-6 flex items-start justify-between gap-16">
 					<h2 className="break-words text-16 font-semibold text-[#f1f4ee]">{mail?.subject || t("noSubject")}</h2>
 					<div className="flex shrink-0 items-center gap-12 pt-[4px]">
@@ -29,7 +31,9 @@ export default function ReadModal({ mail, onClose }: { mail: MailDTO | null; onC
 				<p className="mb-20 break-words text-12 text-[#8C948B]">
 					{mail?.from} → {mail?.to} · {mail ? new Date(mail.at).toLocaleString(localeTag(locale)) : ""}
 				</p>
-				<p className="whitespace-pre-wrap break-words text-13 text-[#f1f4ee]">{mail?.body}</p>
+				<div className="fs-scroll min-h-0 flex-1 overflow-y-auto">
+					<p className="whitespace-pre-wrap break-words text-13 text-[#f1f4ee]">{mail?.body}</p>
+				</div>
 			</div>
 		</Modal>
 	);

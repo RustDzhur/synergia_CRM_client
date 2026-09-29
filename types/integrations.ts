@@ -70,6 +70,9 @@ export interface MailAccountDTO {
     error: string;
     lastSyncAt: string;
     autoLeads: boolean; // создавать контакты и лиды из новых входящих писем
+    // при входе через Google/Microsoft согласие можно дать только на чтение: тогда ящик принимает письма,
+    // но отправить не может, и об этом нужно сказать — иначе отправка молча не работает
+    canSend: boolean;
 }
 
 export type MailProviderId = "gmail" | "outlook" | "yahoo" | "icloud" | "office365" | "imap";

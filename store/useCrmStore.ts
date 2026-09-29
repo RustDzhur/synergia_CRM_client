@@ -25,6 +25,9 @@ export interface Deal {
     availableToAll?: boolean;
     utm?: string;
     recurring?: string;
+    // разделы карточки, убранные кнопкой «Удалить раздел» («more», «recurring»): их данные очищены,
+    // сами блоки не показываются, пока их не вернут кнопкой «Добавить раздел»
+    hiddenSections?: string[];
     activities?: Activity[];
     createdAt?: string;
     updatedAt?: string;

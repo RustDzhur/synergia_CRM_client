@@ -17,6 +17,8 @@ const TaskSchema = new Schema(
         muted: { type: Boolean, default: false },
         // проект, в рамках которого сделана задача; пусто — задача сама по себе
         project: { type: Schema.Types.ObjectId, ref: "Project", index: true },
+        // сделка, из карточки которой поставлена задача; пусто — задача не привязана к сделке
+        deal: { type: Schema.Types.ObjectId, ref: "Deal", index: true },
         activities: { type: [ActivitySchema], default: [] }, // комментарии к задаче (type: "comment", meta: имя автора)
     },
     { timestamps: true }

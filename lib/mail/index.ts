@@ -25,7 +25,19 @@ export const toMailAccountDTO = (d: Doc): MailAccountDTO => ({
     error: d.error,
     lastSyncAt: d.lastSyncAt ? (d.lastSyncAt as Date).toISOString() : "",
     autoLeads: d.config.autoLeads !== false,
+    canSend: mailboxCanSend(d),
 });
+
+// Может ли ящик отправлять. У входа по паролю — всегда да. У входа через Google/Microsoft согласие
+// можно дать только на чтение (и это легко сделать случайно), тогда отправка отклоняется провайдером:
+// лучше сказать об этом заранее и предложить подключить ящик заново.
+export function mailboxCanSend(d: Doc): boolean {
+    if (d.config.authType !== "oauth") return true;
+    const scope = String(secretsOf<{ scope?: string }>(d).scope ?? "");
+    if (!scope) return true; // согласие выдано до этой проверки — не притворяемся, что знаем его состав
+    if (d.config.vendor === "google") return scope.includes("gmail.send") || scope.includes("https://mail.google.com/");
+    return /mail\.send/i.test(scope);
+}
 
 export const toMailDTO = (m: Doc, withBody: boolean): MailDTO => ({
     id: m._id.toString(),

@@ -24,6 +24,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
     if (typeof body.order === "number" && Number.isFinite(body.order)) data.order = body.order;
     if (typeof body.availableToAll === "boolean") data.availableToAll = body.availableToAll;
+    // какие разделы карточки скрыты: значения ограничены списком, иначе в документ попадёт что угодно
+    if (Array.isArray(body.hiddenSections)) data.hiddenSections = body.hiddenSections.filter((s: unknown) => s === "more" || s === "recurring");
 
     await connectDB();
     const existing = await Deal.findOne({ _id: params.id, owner: user.id });
