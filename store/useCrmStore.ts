@@ -51,10 +51,11 @@ interface CrmStore {
 
     addActivity: (dealId: string, activity: NewActivity) => Promise<void>;
     removeActivity: (dealId: string, activityId: string) => Promise<void>;
-    // Доступность каналов связи для сделки: что можно отправить прямо сейчас, а что требует подключения
-    loadChannels: (dealId: string) => Promise<Record<string, string>>;
-    // Отправка SMS, Viber, Telegram или письма из карточки сделки: null — ушло, иначе причина отказа
-    sendChannel: (dealId: string, channel: string, text: string) => Promise<string | null>;
+    // Каналы связи сделки: state — можно ли отправить сейчас (ready или причина), connected — подключён
+    // ли канал у фирмы вообще (по нему интерфейс решает, показывать ли вкладку)
+    loadChannels: (dealId: string) => Promise<Record<string, { state: string; connected: boolean }>>;
+    // Отправка SMS, WhatsApp, Viber, Telegram или письма из карточки сделки: null — ушло, иначе причина отказа
+    sendChannel: (dealId: string, channel: string, text: string, locale?: string) => Promise<string | null>;
 }
 
 export const useCrmStore = create<CrmStore>((set, get) => {
@@ -171,12 +172,13 @@ export const useCrmStore = create<CrmStore>((set, get) => {
         },
 
         loadChannels: async (dealId) => {
-            const channels = await api<Record<string, string>>(`/api/deals/${dealId}/channels`);
+            const channels = await api<Record<string, { state: string; connected: boolean }>>(`/api/deals/${dealId}/channels`);
             return channels ?? {};
         },
 
-        sendChannel: async (dealId, channel, text) => {
-            const res = await apiCall<Deal>(`/api/deals/${dealId}/channels`, "POST", { channel, text });
+        sendChannel: async (dealId, channel, text, locale) => {
+            // локаль нужна письму: к нему прикладывается документ сделки на языке интерфейса
+            const res = await apiCall<Deal>(`/api/deals/${dealId}/channels`, "POST", { channel, text, locale });
             if (res.ok && res.data) {
                 replaceDeal(res.data);
                 return null;

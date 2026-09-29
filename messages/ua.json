@@ -478,6 +478,7 @@
     "tabTask": "Завдання",
     "tabSms": "SMS",
     "tabViber": "Viber",
+    "tabWhatsapp": "WhatsApp",
     "chanSent": "Надіслано",
     "chanNoContact": "У угоді не вибрано контакт — оберіть його в картці",
     "chanNoProvider": "SMS-провайдер не підключено — підключіть у «Налаштування» → «Інтеграції»",

@@ -478,6 +478,7 @@
     "tabTask": "Task",
     "tabSms": "SMS",
     "tabViber": "Viber",
+    "tabWhatsapp": "WhatsApp",
     "chanSent": "Sent",
     "chanNoContact": "The deal has no contact yet — pick one in the card",
     "chanNoProvider": "No SMS provider is connected — connect one under Settings → Integration",

@@ -478,6 +478,7 @@
     "tabTask": "Aufgabe",
     "tabSms": "SMS",
     "tabViber": "Viber",
+    "tabWhatsapp": "WhatsApp",
     "chanSent": "Gesendet",
     "chanNoContact": "Dem Deal ist kein Kontakt zugeordnet — wählen Sie ihn in der Karte",
     "chanNoProvider": "Kein SMS-Anbieter verbunden — verbinden Sie ihn unter Einstellungen → Integration",

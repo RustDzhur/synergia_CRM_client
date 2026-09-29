@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { Deal, DealUpdate, useCrmStore } from "@/store/useCrmStore";
 import type { NewActivity } from "@/store/crmApi";
@@ -28,6 +28,7 @@ interface Props {
 // Здесь живут состояние и вызовы стора, разметка разделов — в dealModalParts.
 export default function DealModal({ dealId, onClose }: Props) {
 	const t = useTranslations("crm");
+	const locale = useLocale();
 	const { deals, stages, updateDeal, deleteDeal, addActivity, removeActivity, loadChannels, sendChannel } = useCrmStore();
 	const { contacts, fetchContacts } = useContactStore();
 	const { companies, fetchCompanies } = useCompaniesStore();
@@ -52,7 +53,7 @@ export default function DealModal({ dealId, onClose }: Props) {
 	const [confirmDelete, setConfirmDelete] = useState(false);
 	// Что можно отправить из карточки: сервер отвечает по каждому каналу — ready или причину отказа.
 	// Пока ответа нет, вкладки работают и подсказки просто не показываются.
-	const [channels, setChannels] = useState<Record<string, string>>({});
+	const [channels, setChannels] = useState<Record<string, { state: string; connected: boolean }>>({});
 
 	// при открытии другой сделки подтягиваем данные и сбрасываем режимы редактирования;
 	// зависит только от dealId — fetch* и setState стабильны, а лишний перезапуск дёргал бы сеть
@@ -154,6 +155,18 @@ export default function DealModal({ dealId, onClose }: Props) {
 	// подсказкой под полем и сообщением, если отправка всё-таки не удалась.
 	const CHANNEL_LABEL: Record<string, string> = { sms: t("tabSms"), viber: t("tabViber"), telegram: t("tabTelegram"), email: t("tabEmail") };
 
+	// Вкладка канала появляется, только когда канал подключён у фирмы: иначе это была бы кнопка,
+	// которая всё равно не отправит. Подключение — в Настройки → Интеграции.
+	const channelTabs: ComposerTab[] = ([
+		{ key: "sms", label: t("tabSms") },
+		{ key: "whatsapp", label: t("tabWhatsapp") },
+		{ key: "viber", label: t("tabViber") },
+		{ key: "telegram", label: t("tabTelegram") },
+		{ key: "email", label: t("tabEmail") },
+	] as const)
+		.filter((tab) => channels[tab.key]?.connected)
+		.map((tab) => ({ key: tab.key, label: tab.label, type: tab.key as ComposerTab["type"], mode: "area" as const, placeholder: t("commentPlaceholder"), note: reasonText(channels[tab.key]?.state, tab.key) }));
+
 	function reasonText(code: string, channel: string): string | undefined {
 		if (!code || code === "ready") return undefined;
 		if (code === "no_contact") return t("chanNoContact");
@@ -168,21 +181,18 @@ export default function DealModal({ dealId, onClose }: Props) {
 		{ key: "activity", label: t("tabActivity"), type: "activity", mode: "line", placeholder: t("thingsToDo"), withDate: true },
 		{ key: "comment", label: t("tabComment"), type: "comment", mode: "area", placeholder: t("commentPlaceholder") },
 		{ key: "task", label: t("tabTask"), type: "task", mode: "line", placeholder: t("thingsToDo") },
-		// SMS, Viber, Telegram и E-Mail не просто пишут запись, а отправляют: SMS и письмо инициируются
-		// с нашей стороны, в мессенджере отвечаем в существующей переписке (написать первым он не даёт)
-		{ key: "sms", label: t("tabSms"), type: "sms", mode: "area", placeholder: t("commentPlaceholder"), note: reasonText(channels.sms, "sms") },
-		{ key: "viber", label: t("tabViber"), type: "viber", mode: "area", placeholder: t("commentPlaceholder"), note: reasonText(channels.viber, "viber") },
-		{ key: "telegram", label: t("tabTelegram"), type: "telegram", mode: "area", placeholder: t("commentPlaceholder"), note: reasonText(channels.telegram, "telegram") },
-		{ key: "email", label: t("tabEmail"), type: "email", mode: "area", placeholder: t("commentPlaceholder"), note: reasonText(channels.email, "email") },
+		// Дальше — каналы связи: они не пишут запись, а отправляют (SMS и письмо инициируются
+		// с нашей стороны, в мессенджере отвечаем в существующей переписке)
+		...channelTabs,
 	];
 
 	// Каналы отправляют, остальные вкладки по-прежнему пишут запись в ленту
-	const CHANNEL_TABS = ["sms", "viber", "telegram", "email"];
+	const CHANNEL_TABS = channelTabs.map((tab) => tab.key);
 
 	async function submitActivity(activity: NewActivity) {
 		if (!deal) return;
 		if (!CHANNEL_TABS.includes(activity.type)) return void addActivity(deal._id, activity);
-		const error = await sendChannel(deal._id, activity.type, activity.text);
+		const error = await sendChannel(deal._id, activity.type, activity.text, locale);
 		if (error) toast.error(reasonText(error, activity.type) ?? t("chanNoConversation", { channel: CHANNEL_LABEL[activity.type] ?? activity.type }));
 		else toast.success(t("chanSent"));
 	}
