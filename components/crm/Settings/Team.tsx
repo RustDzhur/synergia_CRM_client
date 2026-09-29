@@ -1,9 +1,9 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbX } from "react-icons/tb";
-import { type Role, type Module, ASSIGNABLE_ROLES, GRANTABLE } from "@/lib/access";
+import { type Role, type Module, ASSIGNABLE_ROLES, GRANTABLE, NO_MODULES } from "@/lib/access";
 import { apiCall } from "@/store/crmApi";
 import { useActiveOrg } from "@/store/useOrgStore";
 import PageHeader from "@/components/crm/shared/PageHeader";
@@ -16,6 +16,7 @@ interface Invitation { id: string; email: string; role: Role; modules: string[];
 // Settings → Team (/crm/settings/team): сотрудники фирмы, их роли и доступ к разделам. Видно владельцу и администраторам.
 export default function Team() {
 	const t = useTranslations("settings");
+	const locale = useLocale();
 	const org = useActiveOrg();
 	const [members, setMembers] = useState<Member[]>([]);
 	const [invites, setInvites] = useState<Invitation[]>([]);
@@ -41,10 +42,10 @@ export default function Team() {
 		e.preventDefault();
 		if (busy) return;
 		setBusy(true);
-		const res = await apiCall<{ added: boolean }>("/api/orgs/members", "POST", { email, role, modules: role === "admin" ? [] : custom });
+		const res = await apiCall<{ added: boolean; emailed: boolean }>("/api/orgs/members", "POST", { email, role, modules: role === "admin" ? [] : custom, lang: locale });
 		setBusy(false);
 		if (!res.ok) return void toast.error(res.message);
-		toast.success(res.data?.added ? t("teamAdded") : t("teamInvited"));
+		toast.success(res.data?.added ? t(res.data.emailed ? "teamAddedMail" : "teamAdded") : t(res.data?.emailed ? "teamInvitedMail" : "teamInvited"));
 		setEmail("");
 		setCustom([]);
 		load();
@@ -56,8 +57,9 @@ export default function Team() {
 		load();
 	}
 	const toggleModule = (m: Member, mod: Module) => {
-		const base = m.modules.length ? m.modules : m.effective.filter((x) => (GRANTABLE as string[]).includes(x));
-		change(m, { modules: base.includes(mod) ? base.filter((x) => x !== mod) : [...base, mod] });
+		const base = m.modules.length ? m.modules.filter((x) => x !== NO_MODULES) : m.effective.filter((x) => (GRANTABLE as string[]).includes(x));
+		const next = base.includes(mod) ? base.filter((x) => x !== mod) : [...base, mod];
+		change(m, { modules: next.length ? next : [NO_MODULES] });
 	};
 
 	async function confirmRemove() {
@@ -132,13 +134,16 @@ export default function Team() {
 											)}
 										</div>
 										{m.role !== "owner" && m.role !== "admin" && (
-											<div className="mt-10 flex flex-wrap gap-x-16 gap-y-6">
+											<div className="mt-10 flex flex-wrap items-center gap-x-16 gap-y-6">
 												{GRANTABLE.map((mod) => (
 													<label key={mod} className="flex cursor-pointer items-center gap-6 text-12 text-[#cfd4cb]">
 														<input type="checkbox" checked={m.effective.includes(mod)} onChange={() => toggleModule(m, mod)} className="accent-[#c6ff4d]" />
 														{t(`module_${mod}`)}
 													</label>
 												))}
+												{m.modules.length > 0 && (
+													<button type="button" onClick={() => change(m, { modules: [] })} className="text-12 text-[#c6ff4d] hover:underline">{t("teamResetModules")}</button>
+												)}
 											</div>
 										)}
 									</li>

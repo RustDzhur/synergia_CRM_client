@@ -8,6 +8,9 @@ export const MODULES: Module[] = ["crm", "tasks", "company", "collab", "mail", "
 // Разделы, которые можно выдавать сотруднику выборочно (оплата и состав фирмы — только владельцу и администратору по роли)
 export const GRANTABLE: Module[] = ["crm", "tasks", "company", "collab", "mail", "marketing", "inventory", "automation"];
 
+// Метка «ни одного раздела»: пустой список означает «права роли по умолчанию», поэтому явный запрет хранится так
+export const NO_MODULES = "none";
+
 const ALL_BUT_BILLING = MODULES.filter((m) => m !== "billing");
 export const ROLE_MODULES: Record<Role, Module[]> = {
     owner: MODULES,

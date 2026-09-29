@@ -4,7 +4,9 @@ import { effectivePlan } from "@/lib/billing";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
-import { type Role, ASSIGNABLE_ROLES, GRANTABLE, effectiveModules } from "@/lib/access";
+import { appOrigin } from "@/lib/appUrl";
+import { sendInviteEmail } from "@/lib/inviteEmail";
+import { type Role, ASSIGNABLE_ROLES, GRANTABLE, NO_MODULES, effectiveModules } from "@/lib/access";
 import Invitation from "@/models/Invitation";
 import Membership from "@/models/Membership";
 import Organization from "@/models/Organization";
@@ -12,7 +14,7 @@ import User from "@/models/User";
 
 export const dynamic = "force-dynamic";
 
-const cleanModules = (v: unknown) => (Array.isArray(v) ? Array.from(new Set(v.filter((m): m is string => typeof m === "string" && (GRANTABLE as string[]).includes(m)))) : []);
+const cleanModules = (v: unknown) => (Array.isArray(v) ? Array.from(new Set(v.filter((m): m is string => typeof m === "string" && (GRANTABLE as string[]).includes(m) || m === NO_MODULES))) : []);
 
 // GET /api/orgs/members — участники фирмы и неотправленные приглашения (владелец и администратор)
 export async function GET(req: Request) {
@@ -29,8 +31,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ members, invitations, myRole: user.role });
 }
 
-// POST /api/orgs/members — { email, role, modules? }: добавить сотрудника. Есть аккаунт — доступ сразу; нет — приглашение,
-// которое сработает при регистрации с этим e-mail.
+// POST /api/orgs/members — { email, role, modules?, lang? }: добавить сотрудника. Есть аккаунт — доступ сразу; нет — приглашение,
+// которое сработает при регистрации с этим e-mail. Если у фирмы подключена почта, туда же уходит письмо (emailed).
 export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
@@ -53,8 +55,10 @@ export async function POST(req: Request) {
         if (await Membership.exists({ org: user.id, user: existing._id })) return NextResponse.json({ message: "This person is already in the firm" }, { status: 409 });
         await Membership.create({ org: user.id, user: existing._id, role, modules });
         await Invitation.deleteMany({ org: user.id, email });
-        return NextResponse.json({ added: true, invited: false }, { status: 201 });
+        const emailed = await sendInviteEmail(user.id, email, user.orgName, appOrigin(req), true, String(body?.lang ?? ""));
+        return NextResponse.json({ added: true, invited: false, emailed }, { status: 201 });
     }
     await Invitation.findOneAndUpdate({ org: user.id, email }, { role, modules, invitedBy: user.userId, expiresAt: new Date(Date.now() + 30 * 86400_000) }, { upsert: true });
-    return NextResponse.json({ added: false, invited: true }, { status: 201 });
+    const emailed = await sendInviteEmail(user.id, email, user.orgName, appOrigin(req), false, String(body?.lang ?? ""));
+    return NextResponse.json({ added: false, invited: true, emailed }, { status: 201 });
 }

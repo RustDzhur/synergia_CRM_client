@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
-import { type Role, ASSIGNABLE_ROLES, GRANTABLE } from "@/lib/access";
+import { type Role, ASSIGNABLE_ROLES, GRANTABLE, NO_MODULES } from "@/lib/access";
 import Membership from "@/models/Membership";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +26,7 @@ export async function PATCH(req: Request, { params }: { params: { userId: string
         if (body.role === "admin" && user.role !== "owner") return forbidden("Only the owner can add administrators");
         m.role = body.role;
     }
-    if ("modules" in body) m.modules = Array.isArray(body.modules) ? body.modules.filter((x: unknown) => typeof x === "string" && (GRANTABLE as string[]).includes(x)) : [];
+    if ("modules" in body) m.modules = Array.isArray(body.modules) ? body.modules.filter((x: unknown) => typeof x === "string" && ((GRANTABLE as string[]).includes(x) || x === NO_MODULES)) : [];
     await m.save();
     return NextResponse.json({ userId: params.userId, role: m.role, modules: m.modules });
 }

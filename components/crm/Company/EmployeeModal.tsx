@@ -1,9 +1,12 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbX } from "react-icons/tb";
 import { Employee, EmployeeInput, useEmployeeStore } from "@/store/useEmployeeStore";
+import { apiCall } from "@/store/crmApi";
+import type { Role } from "@/lib/access";
+import { useActiveOrg } from "@/store/useOrgStore";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 
@@ -18,9 +21,15 @@ const EMPTY: EmployeeInput = { firstname: "", lastname: "", email: "", workPhone
 // Окно «Invite Employees» / редактирования сотрудника.
 export default function EmployeeModal({ open, employee, onClose }: Props) {
 	const t = useTranslations("company");
+	const ts = useTranslations("settings");
+	const locale = useLocale();
+	const org = useActiveOrg();
+	const canGrant = org?.role === "owner" || org?.role === "admin";
 	const { addEmployee, updateEmployee } = useEmployeeStore();
 	const [form, setForm] = useState<EmployeeInput>(EMPTY);
 	const [busy, setBusy] = useState(false);
+	const [grant, setGrant] = useState(false);
+	const [role, setRole] = useState<Role>("employee");
 
 	useEffect(() => {
 		if (!open) return;
@@ -34,6 +43,8 @@ export default function EmployeeModal({ open, employee, onClose }: Props) {
 				}
 				: EMPTY
 		);
+		setGrant(false);
+		setRole("employee");
 	}, [open, employee]);
 
 	const set = (key: keyof EmployeeInput) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -44,9 +55,19 @@ export default function EmployeeModal({ open, employee, onClose }: Props) {
 		if (!form.firstname?.trim() || !form.lastname?.trim() || !form.email?.trim()) return toast.error(t("required"));
 		setBusy(true);
 		const ok = employee ? await updateEmployee(employee._id, form) : await addEmployee(form);
+		if (!ok) {
+			setBusy(false);
+			return toast.error(t("error"));
+		}
+		if (employee || !grant || !canGrant) {
+			setBusy(false);
+			toast.success(employee ? t("saved") : t("invited"));
+			return onClose();
+		}
+		const res = await apiCall<{ emailed: boolean }>("/api/orgs/members", "POST", { email: form.email?.trim(), role, lang: locale });
 		setBusy(false);
-		if (!ok) return toast.error(t("error"));
-		toast.success(employee ? t("saved") : t("invited"));
+		if (res.ok) toast.success(t(res.data?.emailed ? "accessGrantedMail" : "accessGranted"));
+		else toast.error(t("accessFailed", { reason: res.message }));
 		onClose();
 	}
 
@@ -68,6 +89,23 @@ export default function EmployeeModal({ open, employee, onClose }: Props) {
 					<FormField label={t("contractType")} value={form.contractType ?? ""} onChange={set("contractType")} maxLength={100} placeholder={t("contractTypePlaceholder")} />
 					<FormField label={t("contractStart")} type="date" value={form.contractStart ?? ""} onChange={set("contractStart")} />
 				</div>
+				{!employee && canGrant && (
+					<div className="mt-16 rounded-10 border border-inkLine p-12">
+						<label className="flex cursor-pointer items-center gap-8 text-13 text-[#f1f4ee]">
+							<input type="checkbox" checked={grant} onChange={(e) => setGrant(e.target.checked)} className="accent-[#c6ff4d]" />
+							{t("grantAccess")}
+						</label>
+						<p className="mt-6 text-11 text-[#9AA396]">{t("grantHint")}</p>
+						{grant && (
+							<label className="mt-10 flex items-center gap-8 text-12 text-[#8c948b]">
+								{t("grantRole")}
+								<select value={role} onChange={(e) => setRole(e.target.value as Role)} className="fs-field h-32 px-10 text-12 outline-none">
+									{(["manager", "employee", "viewer"] as Role[]).map((r) => <option key={r} value={r}>{ts(`role_${r}`)}</option>)}
+								</select>
+							</label>
+						)}
+					</div>
+				)}
 				<div className="mt-24 flex justify-end gap-10">
 					<button type="button" onClick={onClose} className="fs-btn fs-btn-ghost h-40">
 						{t("cancel")}

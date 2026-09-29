@@ -37,8 +37,8 @@ export async function emailReminder(org: string, userId: string, subject: string
         const account = await Integration.findOne({ owner: org, type: "mail", status: "connected" });
         if (!account) return false;
 
-        const sent = await sendFromAccount(account, { to: user.email, subject, text });
-        return !!sent;
+        await sendFromAccount(account, { to: user.email, subject, text });
+        return true;
     } catch {
         // почта не должна ронять напоминание: уведомление в колокольчике уже создано
         return false;
