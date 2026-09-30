@@ -5,7 +5,7 @@ import { ORG_KEY, apiCall } from "./crmApi";
 
 // features — разделы, доступные фирме по тарифу (плюс то, что выдал администратор платформы вручную).
 // Меню и страницы показывают только их; чего нет — то закрыто и на сервере.
-export interface Org { id: string; name: string; role: Role; plan: string; modules: string[]; features: Partial<Record<FeatureKey, boolean>>; blocked: boolean; personal: boolean }
+export interface Org { id: string; name: string; role: Role; plan: string; modules: string[]; features: Partial<Record<FeatureKey, boolean>>; blocked: boolean; personal: boolean; activities?: string[] }
 
 interface OrgStore {
     orgs: Org[];
@@ -15,6 +15,8 @@ interface OrgStore {
     switchOrg: (id: string) => void;
     create: (name: string) => Promise<{ ok: boolean; message: string }>;
     rename: (name: string) => Promise<{ ok: boolean; message: string }>;
+    // Мастер видов деятельности (ТЗ §18): по списку разделы показываются или скрываются
+    saveActivities: (activities: string[]) => Promise<{ ok: boolean; message: string }>;
 }
 
 export const useOrgStore = create<OrgStore>()((set, get) => ({
@@ -46,6 +48,13 @@ export const useOrgStore = create<OrgStore>()((set, get) => ({
         const id = get().activeId;
         const res = await apiCall<{ name: string }>(`/api/orgs/${id}`, "PATCH", { name });
         if (res.ok && res.data) set({ orgs: get().orgs.map((o) => (o.id === id ? { ...o, name: res.data!.name } : o)) });
+        return { ok: res.ok, message: res.message };
+    },
+
+    saveActivities: async (activities) => {
+        const id = get().activeId;
+        const res = await apiCall<{ activities: string[] }>(`/api/orgs/${id}`, "PATCH", { activities });
+        if (res.ok && res.data) set({ orgs: get().orgs.map((o) => (o.id === id ? { ...o, activities: res.data!.activities } : o)) });
         return { ok: res.ok, message: res.message };
     },
 }));

@@ -20,6 +20,7 @@ import {
 	TbScale,
 	TbSettings,
 	TbTable,
+	TbTools,
 	TbTruckDelivery,
 	TbTruckLoading,
 	TbWallet,
@@ -28,6 +29,8 @@ import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tab
 import PageHeader from "@/components/crm/shared/PageHeader";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { useMarket } from "@/store/useMarket";
+import { useActiveOrg, useOrgStore } from "@/store/useOrgStore";
+import ActivityWizard from "./activityParts/ActivityWizard";
 import type { Market } from "@/lib/finance/market";
 import CountryPicker from "./CountryPicker";
 import Overview from "./Overview";
@@ -46,6 +49,7 @@ import Fiscal from "./Fiscal";
 import Delivery from "./Delivery";
 import Purchases from "./Purchases";
 import Pos from "./Pos";
+import Production from "./Production";
 import FinanceSettingsTab from "./Settings";
 import Taxes from "./Taxes";
 import Reports from "./Reports";
@@ -58,7 +62,7 @@ import Reports from "./Reports";
 // из проверок country === "UA" по месту. Пока страна не выбрана, раздел показывает только её выбор
 // и настройки (см. CountryPicker).
 
-type Tab = "overview" | "quotes" | "orders" | "contracts" | "invoices" | "recurring" | "dunning" | "expenses" | "assets" | "bank" | "products" | "purchases" | "pos" | "delivery" | "fiscal" | "vat" | "eur" | "bwa" | "susa" | "audit" | "settings";
+type Tab = "overview" | "quotes" | "orders" | "contracts" | "invoices" | "recurring" | "dunning" | "expenses" | "assets" | "bank" | "products" | "purchases" | "production" | "pos" | "delivery" | "fiscal" | "vat" | "eur" | "bwa" | "susa" | "audit" | "settings";
 
 interface NavLeaf { key: Tab; icon: IconType }
 // Пункт ведёт на экран; группа — только заголовок в колонке навигации (как группы сайдбара), собственного
@@ -86,6 +90,7 @@ const NAV_DE: NavNode[] = [
 	{ kind: "item", key: "products", icon: TbBox },
 	// Закупівлі (ТЗ §12): заказы поставщикам, приход по накладной, счета поставщиков
 	{ kind: "item", key: "purchases", icon: TbTruckLoading },
+	{ kind: "item", key: "production", icon: TbTools },
 	{ kind: "group", key: "taxes", items: [
 		{ key: "vat", icon: TbReceiptTax },
 		{ key: "eur", icon: TbScale },
@@ -115,6 +120,7 @@ const NAV_UA: NavNode[] = [
 	{ kind: "item", key: "bank", icon: TbBuildingBank },
 	{ kind: "item", key: "products", icon: TbBox },
 	{ kind: "item", key: "purchases", icon: TbTruckLoading },
+	{ kind: "item", key: "production", icon: TbTools },
 	// Касса (розница): продажа за прилавком с чеком ПРРО — только украинский режим (ТЗ §12)
 	{ kind: "item", key: "pos", icon: TbCashBanknote },
 	{ kind: "item", key: "delivery", icon: TbTruckDelivery },
@@ -130,6 +136,34 @@ const NAV_UA: NavNode[] = [
 // Экраны, которые режим ещё не показывает: сначала появляется функция, потом её вкладка. Список пуст,
 // когда все экраны режима готовы (в украинском режиме это огляд…налаштування из §4 ТЗ).
 const PENDING_UA: Tab[] = [];
+
+// Вид деятельности → вкладки (ТЗ §18): мастер «Чем занимается фирма?» оставляет только нужное,
+// лишнее скрыто. Вкладки без записи здесь видны всегда: продажи и деньги нужны каждому.
+const TAB_ACTIVITIES: Partial<Record<Tab, string[]>> = {
+	pos: ["retail"],
+	production: ["production"],
+	purchases: ["retail", "wholesale", "production"],
+	delivery: ["retail", "wholesale", "importExport"],
+};
+
+// Фильтр навигации по видам деятельности фирмы; пусто — не фильтруем (мастер ещё не пройден)
+function activityNav(nav: NavNode[], activities: string[]): NavNode[] {
+	if (!activities.length) return nav;
+	const visible = (key: Tab) => {
+		const need = TAB_ACTIVITIES[key];
+		return !need || need.some((a) => activities.includes(a));
+	};
+	const out: NavNode[] = [];
+	for (const node of nav) {
+		if (node.kind === "item") {
+			if (visible(node.key)) out.push(node);
+			continue;
+		}
+		const items = node.items.filter((i) => visible(i.key));
+		if (items.length) out.push({ ...node, items });
+	}
+	return out;
+}
 
 const NAV_BY_MARKET: Record<Market, NavNode[]> = { DE: NAV_DE, UA: NAV_UA };
 
@@ -171,7 +205,19 @@ export default function Finance() {
 	// поэтому счёт, созданный со вкладки «Счета», всегда получал EUR, даже если в фирме выбрана другая валюта.
 	useEffect(() => { loadSettings(); }, [loadSettings]);
 
-	const nav = market ? marketNav(market) : [];
+	// Виды деятельности фирмы (мастер «Чем занимается фирма?»): фильтруют вкладки, пока не пройден — всё видно
+	const org = useActiveOrg();
+	const activities = org?.activities ?? [];
+	const [wizardOpen, setWizardOpen] = useState(false);
+	const orgLoaded = useOrgStore((s) => s.loaded);
+	useEffect(() => {
+		if (!orgLoaded || !org || activities.length) return;
+		let skipped = false;
+		try { skipped = localStorage.getItem(`crm.activityWizardSkipped.${org.id}`) === "1"; } catch { /* приватный режим */ }
+		if (!skipped) setWizardOpen(true);
+	}, [orgLoaded, org, activities.length]);
+
+	const nav = market ? activityNav(marketNav(market), activities) : [];
 	const visible = nav.flatMap((n) => (n.kind === "item" ? [n.key] : n.items.map((i) => i.key)));
 
 	// пришли по ссылке из карточки сделки (CRM → Deal, см. DealsBoard/dealModalParts/DealDocuments.tsx):
@@ -271,6 +317,8 @@ export default function Finance() {
 				</div>
 			</div>
 
+			<ActivityWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
+
 			<div className="flex items-start gap-24 lg:gap-32">
 				{/* Desktop: колонка подменю слева (240px), липнет под шапкой кабинета */}
 				<nav aria-label={t("title")} className="fs-scroll sticky top-80 hidden max-h-[calc(100vh-104px)] w-240 shrink-0 overflow-y-auto lg:block">
@@ -320,6 +368,7 @@ export default function Finance() {
 					{tab === "assets" && <Assets />}
 					{tab === "bank" && <Bank />}
 					{tab === "purchases" && <Purchases />}
+					{tab === "production" && <Production />}
 					{tab === "pos" && <Pos />}
 					{tab === "delivery" && <Delivery />}
 					{tab === "fiscal" && <Fiscal />}

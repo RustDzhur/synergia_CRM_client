@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     const list = memberships
         .map((m) => {
             const o = orgs.find((x) => String(x._id) === String(m.org));
-            return o ? { id: String(o._id), name: o.name, role: m.role as Role, plan: effectivePlan(o), modules: effectiveModules(m.role as Role, m.modules ?? []), features: orgFeatures(o), blocked: !!o.blocked, personal: String(o._id) === user.userId } : null;
+            return o ? { id: String(o._id), name: o.name, role: m.role as Role, plan: effectivePlan(o), modules: effectiveModules(m.role as Role, m.modules ?? []), features: orgFeatures(o), blocked: !!o.blocked, personal: String(o._id) === user.userId, activities: o.activities ?? [] } : null;
         })
         .filter(Boolean)
         .sort((a, b) => Number(b!.personal) - Number(a!.personal) || a!.name.localeCompare(b!.name));
