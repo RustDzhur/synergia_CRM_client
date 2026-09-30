@@ -3,21 +3,20 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized, validId } from "@/lib/api";
 import { logAudit } from "@/lib/audit";
-import { encryptJSON, decryptJSON } from "@/lib/crypto";
+import { decryptJSON } from "@/lib/crypto";
 import { monobankClient, monobankStatement, syncWindow } from "@/lib/banks/monobank";
-import { importBankRows } from "@/lib/finance/bankImport";
-import { orgMarket } from "@/lib/finance/marketGuard";
+import { finishBankSync, linkBankAccount } from "@/lib/banks/link";
 import BankAccount from "@/models/BankAccount";
 import User from "@/models/User";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// GET/POST /api/bank/monobank — выписка по API monobank (ТЗ «Банки і каса»).
+// POST /api/bank/monobank — выписка по API monobank (ТЗ «Банки і каса»).
 //
 // Действия:
 //   { action: "connect", token }                  — проверить токен и показать счета банка (ничего не сохранено)
-//   { action: "link", token, accountId, name? }   — привязать счёт CRM к счёту банка (токен шифруется)
+//   { action: "link", token, providerAccountId, name? } — привязать счёт CRM к счёту банка (токен шифруется)
 //   { action: "sync", accountId }                 — забрать движения с прошлой синхронизации (или за месяц)
 //   { action: "unlink", accountId }               — отвязать (движения остаются, привязка снимается)
 //
@@ -43,7 +42,6 @@ export async function POST(req: Request) {
         const action = str(b?.action, 20);
         await connectDB();
 
-        // Токен принимаем только для connect/link; для sync/unlink он уже лежит на счёте
         if (action === "connect") {
             const token = str(b?.token, 300);
             const client = await monobankClient(token);
@@ -58,23 +56,14 @@ export async function POST(req: Request) {
             const client = await monobankClient(token);
             const bank = client.accounts.find((a) => a.id === providerAccountId);
             if (!bank) return badRequest("У цьому кабінеті monobank такого рахунку немає");
-            let name = str(b?.name, 100) || `monobank · ${bank.iban.slice(-4) || bank.kind}`;
-            const market = (await orgMarket(user.id)) ?? "UA";
-            // Повторная привязка того же счёта банка обновляет существующую запись, а не плодит двойников
-            const existing = await BankAccount.findOne({ org: user.id, provider: "monobank", providerAccountId });
-            // Имя счёта уникально в фирме: второй счёт с тем же именем получает хвост номера
-            if (!existing && (await BankAccount.exists({ org: user.id, name }))) name = `${name} ${providerAccountId.slice(-4)}`;
-            const doc = existing ?? new BankAccount({ org: user.id, market, kind: "bank", name });
-            doc.set({
-                market,
-                name: existing ? doc.name : name,
-                iban: bank.iban,
-                currency: bank.currency || "UAH",
+            const doc = await linkBankAccount(user.id, {
                 provider: "monobank",
                 providerAccountId,
-                providerSecret: encryptJSON({ token }),
+                name: str(b?.name, 100),
+                iban: bank.iban,
+                currency: bank.currency || "UAH",
+                secret: { token },
             });
-            await doc.save();
             const author = await User.findById(user.userId).select("firstname lastname");
             await logAudit({
                 org: user.id,
@@ -107,9 +96,7 @@ export async function POST(req: Request) {
             // Окно: с прошлой синхронизации (или за месяц при первой) — выписка за годы не нужна
             const { from, to } = syncWindow(doc.providerSyncAt, doc.openingDate ?? "");
             const rows = await monobankStatement(token, doc.providerAccountId as string, from, to);
-            const result = await importBankRows(user.id, doc, rows.map((r) => ({ date: r.date, amount: r.amount, counterparty: r.counterparty, reference: r.reference, externalId: `mono:${r.externalId}` })), "auto");
-            doc.providerSyncAt = new Date(to * 1000);
-            await doc.save();
+            const result = await finishBankSync(user.id, doc as never, rows.map((r) => ({ date: r.date, amount: r.amount, counterparty: r.counterparty, reference: r.reference, externalId: `mono:${r.externalId}` })), to);
             return NextResponse.json({ imported: result.created.length, suggestions: result.suggestions, from: new Date(from * 1000).toISOString().slice(0, 10), to: new Date(to * 1000).toISOString().slice(0, 10) });
         }
 

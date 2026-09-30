@@ -1,0 +1,47 @@
+import { encryptJSON } from "@/lib/crypto";
+import { importBankRows } from "@/lib/finance/bankImport";
+import { orgMarket } from "@/lib/finance/marketGuard";
+import BankAccount from "@/models/BankAccount";
+
+// Общий путь подключения счёта к банку по API (monobank, ПриватБанк): маршруты каждого банка
+// приводят свои данные к этому виду, а хранение и запись движений живут здесь, чтобы правила
+// не разъезжались между банками.
+
+export interface BankLinkInput {
+	provider: "monobank" | "privatbank";
+	providerAccountId: string; // id счёта в банке (у ПриватБанка — IBAN)
+	name: string; // имя счёта в CRM; пусто — подставится имя банка с хвостом номера
+	iban?: string;
+	currency?: string;
+	/** Секреты для расшифровки на сервере (токены): в базу уходят зашифрованными и в браузер не возвращаются */
+	secret: Record<string, string>;
+}
+
+/** Привязать счёт CRM к счёту банка: повторная привязка обновляет запись, а не плодит двойников. */
+export async function linkBankAccount(org: string, input: BankLinkInput) {
+	const market = (await orgMarket(org)) ?? "UA";
+	const existing = await BankAccount.findOne({ org, provider: input.provider, providerAccountId: input.providerAccountId });
+	let name = input.name.trim().slice(0, 100) || `${input.provider} · ${(input.iban ?? input.providerAccountId).slice(-4)}`;
+	// Имя счёта уникально в фирме: второй счёт с тем же именем получает хвост номера
+	if (!existing && (await BankAccount.exists({ org, name }))) name = `${name} ${input.providerAccountId.slice(-4)}`;
+	const doc = existing ?? new BankAccount({ org, market, kind: "bank", name });
+	doc.set({
+		market,
+		name: existing ? doc.name : name,
+		iban: input.iban ?? doc.iban ?? "",
+		currency: input.currency || doc.currency || "UAH",
+		provider: input.provider,
+		providerAccountId: input.providerAccountId,
+		providerSecret: encryptJSON(input.secret),
+	});
+	await doc.save();
+	return doc;
+}
+
+/** Записать строки выписки и запомнить момент синхронизации. Возвращает отчёт импорта. */
+export async function finishBankSync(org: string, account: { _id: unknown; save(): Promise<unknown> } & Record<string, unknown>, rows: Array<{ date: string; amount: number; counterparty: string; reference: string; externalId: string }>, toSec: number) {
+	const result = await importBankRows(org, account as never, rows, "auto");
+	(account as unknown as { providerSyncAt?: Date }).providerSyncAt = new Date(toSec * 1000);
+	await account.save();
+	return result;
+}

@@ -22,7 +22,7 @@ const BankAccountSchema = new Schema(
         // ── Подключение к банку (выписка по API) ─────────────────────────────────────────────
         // Счёт может быть привязан к счёту в банке: тогда движения забираются сами (lib/banks/monobank.ts),
         // а providerSecret хранит токен в зашифрованном виде (lib/crypto.ts) и в браузер не уходит.
-        provider: { type: String, enum: ["", "monobank"], default: "" },
+        provider: { type: String, enum: ["", "monobank", "privatbank"], default: "" },
         providerAccountId: { type: String, default: "" }, // id счёта на стороне банка
         providerSecret: { type: String, default: "" }, // зашифрованный {token}
         providerSyncAt: { type: Date }, // до какого момента движения уже забраны — следующая синхронизация продолжает с него

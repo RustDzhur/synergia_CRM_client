@@ -17,7 +17,7 @@ import AccountCards from "./bankParts/AccountCards";
 import AccountDialog from "./bankParts/AccountDialog";
 import ManualDialog from "./bankParts/ManualDialog";
 import MatchDialog from "./bankParts/MatchDialog";
-import MonobankDialog from "./bankParts/MonobankDialog";
+import BankConnectDialog from "./bankParts/BankConnectDialog";
 import TransactionsTable from "./bankParts/TransactionsTable";
 import { EMPTY_ACCOUNT, EMPTY_MANUAL, amountColor, buildCandidates, dayGap, serverMessage } from "./bankParts/model";
 import type { BankAccountRow, BankTx, ImportResult } from "./bankParts/model";
@@ -126,9 +126,9 @@ export default function Bank() {
 	// Синхронизация выписки по API: сервер сам решает окно (с прошлого раза или за месяц),
 	// дубликаты строк не задваиваются — по внешнему id движения из банка
 	async function syncMonobank() {
-		if (!account || mbBusy) return;
+		if (!account || mbBusy || !account.provider) return;
 		setMbBusy(true);
-		const r = await apiCall<{ imported: number; suggestions: number; from: string; to: string }>("/api/bank/monobank", "POST", { action: "sync", accountId: account.id });
+		const r = await apiCall<{ imported: number; suggestions: number; from: string; to: string }>(`/api/bank/${account.provider}`, "POST", { action: "sync", accountId: account.id });
 		setMbBusy(false);
 		if (!r.ok || !r.data) return void toast.error(serverMessage(t, r.message));
 		toast.success(t("mbSynced", { imported: r.data.imported, from: r.data.from, to: r.data.to }));
@@ -136,9 +136,9 @@ export default function Bank() {
 	}
 
 	async function unlinkMonobank() {
-		if (!account) return;
+		if (!account || !account.provider) return;
 		setMbBusy(true);
-		const r = await apiCall("/api/bank/monobank", "POST", { action: "unlink", accountId: account.id });
+		const r = await apiCall(`/api/bank/${account.provider}`, "POST", { action: "unlink", accountId: account.id });
 		setMbBusy(false);
 		setMbUnlink(false);
 		if (!r.ok) return void toast.error(serverMessage(t, r.message));
@@ -339,15 +339,15 @@ export default function Bank() {
 							</span>
 							{account.iban && <span className="text-12 text-[#8c948b]">{account.iban}</span>}
 							{/* Счёт привязан к банку: движения забираются по API — видно чипом и датой последней синхронизации */}
-							{account.provider === "monobank" && (
+							{account.provider && (
 								<span className="fs-chip" title={account.lastSyncAt ? t("mbLastSync", { at: new Date(account.lastSyncAt).toLocaleString() }) : t("mbNeverSynced")}>
-									monobank{account.lastSyncAt ? "" : " ·"}
+									{account.provider === "privatbank" ? "ПриватБанк" : "monobank"}
 								</span>
 							)}
 						</div>
 						<div className="flex flex-wrap items-center gap-10">
 							<PeriodSwitch value={period} onChange={setPeriod} />
-							{account.provider === "monobank" && (
+							{account.provider && (
 								<>
 									<button type="button" disabled={mbBusy} onClick={() => void syncMonobank()} className="fs-btn fs-btn-ghost h-36 disabled:opacity-[0.5]">
 										{mbBusy ? t("mbSyncing") : t("mbSync")}
@@ -446,7 +446,7 @@ export default function Bank() {
 							    честно говорим, что FinTS ещё не сделан и выписка импортируется файлом */}
 							{market === "UA" && (
 								<button type="button" onClick={() => setMbOpen(true)} className="fs-btn fs-btn-ghost h-40">
-									{t("mbConnect")}
+									{t("bankConnect")}
 								</button>
 							)}
 							<button type="button" onClick={openNewAccount} className="fs-btn fs-btn-primary h-40">
@@ -471,7 +471,7 @@ export default function Bank() {
 			<AccountDialog open={accountOpen} onClose={() => setAccountOpen(false)} form={accountForm} onChange={setAccountForm} notice={notice} busy={busy} onSubmit={createAccount} />
 			<ManualDialog open={manualOpen} onClose={() => setManualOpen(false)} form={manualForm} onChange={setManualForm} notice={notice} busy={busy} onSubmit={submitManual} />
 			<MatchDialog open={matchOpen} onClose={() => setMatchOpen(false)} tx={matchTx} candidates={candidates} notice={notice} busy={busy} onPick={match} />
-			<MonobankDialog open={mbOpen} onClose={() => setMbOpen(false)} onLinked={reload} />
+			<BankConnectDialog open={mbOpen} onClose={() => setMbOpen(false)} onLinked={reload} />
 			<ConfirmDialog
 				open={mbUnlink}
 				title={t("mbUnlink")}
