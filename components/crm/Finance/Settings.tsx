@@ -8,6 +8,8 @@ import { MARKET_DEFAULTS, marketDiff, type Market } from "@/lib/finance/market";
 import { fileToLogo, MAX_AVATAR_FILE_BYTES, MAX_LOGO_CHARS } from "@/utils/avatar";
 import FormField from "../shared/FormField";
 import TemplatePicker from "./TemplatePicker";
+import UaProfileCard, { type UaProfileForm } from "./settingsParts/UaProfileCard";
+import DocumentsCard from "./documentsParts/DocumentsCard";
 
 // Поля манаведения появились в API позже, чем тип FinanceSettings в сторе (app/store/useFinanceStore.ts):
 // читаем и сохраняем их рядом с остальными, не расширяя общий тип ради трёх полей.
@@ -25,7 +27,7 @@ export default function FinanceSettingsTab() {
 	const [switchTo, setSwitchTo] = useState<Market | null>(null);
 	const [applyDefaults, setApplyDefaults] = useState(true);
 	// пустые сборы = сборы не начисляются (как и на сервере); поля заполнятся настоящими значениями, когда придут настройки
-	const [form, setForm] = useState({ country: "", currency: "EUR", smallBusiness: false, rateMargin: "0", uaLegalForm: "fop", uaGroup: "3", uaSingleRate: "5", uaVatPayer: false, uaEsvMonthly: "1760", uaMilitaryRate: "1", uaMilitaryFixed: "800", uaVatLimit: "1000000", uaVatPeriod: "month", legalName: "", address: "", taxId: "", vatId: "", registerNumber: "", managingDirector: "", phone: "", email: "", website: "", logo: "", footerText: "", iban: "", bic: "", paymentTermsDays: "14", invoicePrefix: "RE", quotePrefix: "AN", creditNotePrefix: "GS", reminderIntervalDays: "7", dunningFees: ["", "", "", "", ""], dunningInterestRate: "", dunningPaymentDays: "7", template: "classic", paymentQr: true });
+	const [form, setForm] = useState({ country: "", currency: "EUR", smallBusiness: false, rateMargin: "0", uaLegalForm: "fop", uaTaxSystem: "single_3", uaGroup: "3", uaSingleRate: "5", uaVatPayer: false, uaVatRegDate: "", uaVatCertificate: "", uaVatRates: [20, 7, 0] as number[], uaEdrpou: "", uaIpn: "", uaKved: "", uaBank: "", uaIban: "", uaMfo: "", uaSignerName: "", uaSignerPosition: "", uaSignature: "", uaSeal: "", uaLimitsText: {} as Record<string, string>, uaEsvMonthly: "1760", uaMilitaryRate: "1", uaMilitaryFixed: "800", uaVatLimit: "1000000", uaVatPeriod: "month", legalName: "", address: "", taxId: "", vatId: "", registerNumber: "", managingDirector: "", phone: "", email: "", website: "", logo: "", footerText: "", iban: "", bic: "", paymentTermsDays: "14", invoicePrefix: "RE", quotePrefix: "AN", creditNotePrefix: "GS", reminderIntervalDays: "7", dunningFees: ["", "", "", "", ""], dunningInterestRate: "", dunningPaymentDays: "7", template: "classic", paymentQr: true });
 	const [saving, setSaving] = useState(false);
 	const logoInput = useRef<HTMLInputElement>(null);
 
@@ -35,7 +37,7 @@ export default function FinanceSettingsTab() {
 		const dn = settings as typeof settings & DunningFields;
 		// сборы по ступеням: индекс 0 в интерфейсе не используется, поэтому показываем ровно пять полей 0..4
 		const fees = Array.from({ length: 5 }, (_, i) => (dn.dunningFees?.[i] !== undefined ? String(dn.dunningFees[i]) : ""));
-		setForm({ country: settings.country, currency: settings.currency, smallBusiness: settings.smallBusiness, rateMargin: String(settings.rateMargin ?? 0), uaLegalForm: settings.uaLegalForm ?? "fop", uaGroup: String(settings.uaGroup ?? 3), uaSingleRate: String(settings.uaSingleRate ?? 5), uaVatPayer: !!settings.uaVatPayer, uaEsvMonthly: String(settings.uaEsvMonthly ?? 1760), uaMilitaryRate: String(settings.uaMilitaryRate ?? 1), uaMilitaryFixed: String(settings.uaMilitaryFixed ?? 800), uaVatLimit: String(settings.uaVatLimit ?? 1000000), uaVatPeriod: settings.uaVatPeriod ?? "month", legalName: settings.legalName, address: settings.address, taxId: settings.taxId, vatId: settings.vatId, registerNumber: settings.registerNumber, managingDirector: settings.managingDirector, phone: settings.phone, email: settings.email, website: settings.website, logo: settings.logo, footerText: settings.footerText, iban: settings.iban, bic: settings.bic, paymentTermsDays: String(settings.paymentTermsDays), invoicePrefix: settings.invoicePrefix, quotePrefix: settings.quotePrefix, creditNotePrefix: settings.creditNotePrefix, reminderIntervalDays: String(settings.reminderIntervalDays), dunningFees: fees, dunningInterestRate: String(dn.dunningInterestRate ?? 0), dunningPaymentDays: String(dn.dunningPaymentDays ?? 7), template: settings.template || "classic", paymentQr: settings.paymentQr !== false });
+		setForm({ country: settings.country, currency: settings.currency, smallBusiness: settings.smallBusiness, rateMargin: String(settings.rateMargin ?? 0), uaLegalForm: settings.uaLegalForm ?? "fop", uaTaxSystem: settings.uaTaxSystem || (settings.uaLegalForm === "tov" ? "general_tov" : `single_${settings.uaGroup ?? 3}`), uaGroup: String(settings.uaGroup ?? 3), uaSingleRate: String(settings.uaSingleRate ?? 5), uaVatPayer: !!settings.uaVatPayer, uaVatRegDate: settings.uaVatRegDate ?? "", uaVatCertificate: settings.uaVatCertificate ?? "", uaVatRates: Array.isArray(settings.uaVatRates) && settings.uaVatRates.length ? settings.uaVatRates : [20, 7, 0], uaEdrpou: settings.uaEdrpou ?? "", uaIpn: settings.uaIpn ?? "", uaKved: (settings.uaKved ?? []).join(", "), uaBank: settings.uaBank ?? "", uaIban: settings.uaIban ?? "", uaMfo: settings.uaMfo ?? "", uaSignerName: settings.uaSignerName ?? "", uaSignerPosition: settings.uaSignerPosition ?? "", uaSignature: settings.uaSignature ?? "", uaSeal: settings.uaSeal ?? "", uaLimitsText: {}, uaEsvMonthly: String(settings.uaEsvMonthly ?? 1760), uaMilitaryRate: String(settings.uaMilitaryRate ?? 1), uaMilitaryFixed: String(settings.uaMilitaryFixed ?? 800), uaVatLimit: String(settings.uaVatLimit ?? 1000000), uaVatPeriod: settings.uaVatPeriod ?? "month", legalName: settings.legalName, address: settings.address, taxId: settings.taxId, vatId: settings.vatId, registerNumber: settings.registerNumber, managingDirector: settings.managingDirector, phone: settings.phone, email: settings.email, website: settings.website, logo: settings.logo, footerText: settings.footerText, iban: settings.iban, bic: settings.bic, paymentTermsDays: String(settings.paymentTermsDays), invoicePrefix: settings.invoicePrefix, quotePrefix: settings.quotePrefix, creditNotePrefix: settings.creditNotePrefix, reminderIntervalDays: String(settings.reminderIntervalDays), dunningFees: fees, dunningInterestRate: String(dn.dunningInterestRate ?? 0), dunningPaymentDays: String(dn.dunningPaymentDays ?? 7), template: settings.template || "classic", paymentQr: settings.paymentQr !== false });
 	}, [settings]);
 
 	const selectedCountry = countries.find((c) => c.code === form.country);
@@ -59,6 +61,29 @@ export default function FinanceSettingsTab() {
 			uaMilitaryRate: Math.max(0, Number(form.uaMilitaryRate) || 0),
 			uaMilitaryFixed: Math.max(0, Number(form.uaMilitaryFixed) || 0),
 			uaVatLimit: Math.max(0, Number(form.uaVatLimit) || 1000000),
+			// Полный профиль украинской фирмы (ТЗ §6): реквизиты уже проверены валидаторами под полями,
+			// сервер проверит их ещё раз и ответит кодами ошибок
+			uaTaxSystem: form.uaTaxSystem,
+			uaVatRegDate: form.uaVatRegDate,
+			uaVatCertificate: form.uaVatCertificate,
+			uaVatRates: form.uaVatRates,
+			uaEdrpou: form.uaEdrpou,
+			uaIpn: form.uaIpn,
+			uaKved: form.uaKved.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean),
+			uaBank: form.uaBank,
+			uaIban: form.uaIban,
+			uaMfo: form.uaMfo,
+			uaSignerName: form.uaSignerName,
+			uaSignerPosition: form.uaSignerPosition,
+			uaSignature: form.uaSignature,
+			uaSeal: form.uaSeal,
+			// Лимиты групп: вписанные значения — на текущий год; записи других лет сохраняются как были
+			uaLimits: [
+				...(settings?.uaLimits ?? []).filter((l) => l.year !== new Date().getFullYear()),
+				...Object.entries(form.uaLimitsText)
+					.map(([group, v]) => ({ year: new Date().getFullYear(), group: Number(group), amount: Number(v.replace(/\D/g, "")) || 0 }))
+					.filter((l) => l.amount > 0),
+			],
 		} as any);
 		setSaving(false);
 		if (err) return toast.error(err);
@@ -82,7 +107,6 @@ export default function FinanceSettingsTab() {
 		}
 	}
 
-	const field = "fs-field h-40 w-full px-12 text-13 outline-none";
 	const label = "mb-6 block text-12 text-[#8c948b]";
 	const hint = "mt-[4px] block text-11 text-[#9AA396]";
 
@@ -170,62 +194,18 @@ export default function FinanceSettingsTab() {
 				</div>
 			)}
 
-			{/* Украинская налоговая модель: ФОП на єдиному податку или ТОВ, единый налог, военный сбор
-			    и ЄСВ. Цифры — умолчания на 2025 год, их можно менять: законы пересматриваются, и
-			    приложение не должно решать за бухгалтера. Отчёты по этим настройкам — в «Податках». */}
+			{/* Украинская налоговая модель: профиль фирмы целиком — система налогообложения, ПДВ,
+			    реквизиты, банк, подписант с подписью и печатью, лимиты групп по годам (ТЗ §6) */}
 			{market === "UA" && (
-				<div className="mb-16 fs-card p-16 md:p-20">
-					<h3 className="mb-4 text-14 font-semibold text-[#f1f4ee]">{t("uaSection")}</h3>
-					<p className="mb-14 text-12 leading-[1.5] text-[#8c948b]">{t("uaSectionHint")}</p>
-					<div className="grid grid-cols-1 gap-12 md:grid-cols-2">
-						<label className="block">
-							<span className={label}>{t("uaLegalForm")}</span>
-							<select value={form.uaLegalForm} onChange={(e) => setForm({ ...form, uaLegalForm: e.target.value })} className={field}>
-								<option value="fop">{t("uaLegalFop")}</option>
-								<option value="tov">{t("uaLegalTov")}</option>
-							</select>
-						</label>
-						<label className="block">
-							<span className={label}>{t("uaGroup")}</span>
-							<select value={form.uaGroup} onChange={(e) => setForm({ ...form, uaGroup: e.target.value })} className={field}>
-								<option value="1">{t("uaGroup1")}</option>
-								<option value="2">{t("uaGroup2")}</option>
-								<option value="3">{t("uaGroup3")}</option>
-								<option value="0">{t("uaGroup0")}</option>
-							</select>
-						</label>
-						<label className="block">
-							<span className={label}>{t("uaSingleRate")}</span>
-							<select value={form.uaSingleRate} onChange={(e) => setForm({ ...form, uaSingleRate: e.target.value })} className={field}>
-								<option value="5">{t("uaSingle5")}</option>
-								<option value="3">{t("uaSingle3")}</option>
-							</select>
-						</label>
-						<FormField label={t("uaVatLimit")} value={form.uaVatLimit} onChange={(e) => setForm({ ...form, uaVatLimit: e.target.value.replace(/[^\d]/g, "") })} maxLength={10} />
-						<FormField label={t("uaEsvMonthly")} value={form.uaEsvMonthly} onChange={(e) => setForm({ ...form, uaEsvMonthly: e.target.value.replace(/[^\d.]/g, "") })} maxLength={8} />
-						<FormField label={t("uaMilitaryRate")} value={form.uaMilitaryRate} onChange={(e) => setForm({ ...form, uaMilitaryRate: e.target.value.replace(/[^\d.]/g, "") })} maxLength={6} />
-						<FormField label={t("uaMilitaryFixed")} value={form.uaMilitaryFixed} onChange={(e) => setForm({ ...form, uaMilitaryFixed: e.target.value.replace(/[^\d.]/g, "") })} maxLength={8} />
-						<label className="block">
-							<span className={label}>{t("uaVatPeriod")}</span>
-							<select value={form.uaVatPeriod} onChange={(e) => setForm({ ...form, uaVatPeriod: e.target.value })} className={field}>
-								<option value="month">{t("uaPeriodMonth")}</option>
-								<option value="quarter">{t("uaPeriodQuarter")}</option>
-							</select>
-						</label>
-					</div>
-					<label className="mt-14 flex items-center gap-10 text-13 text-[#cfd4cb]">
-						<input type="checkbox" checked={form.uaVatPayer} onChange={(e) => setForm({ ...form, uaVatPayer: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
-						{t("uaVatPayer")}
-					</label>
-					{/* Курс для счетов в валюте: печатаем сумму в ₴ по курсу НБУ плюс наценка фирмы.
-					    Ноль — чистый курс Нацбанка. */}
-					<label className="mt-14 block max-w-[260px]">
-						<span className={label}>{t("rateMargin")}</span>
-						<input value={form.rateMargin} onChange={(e) => setForm({ ...form, rateMargin: e.target.value.replace(/[^\d.]/g, "") })} className={field} maxLength={5} inputMode="decimal" />
-						<span className={hint}>{t("rateMarginHint")}</span>
-					</label>
-				</div>
+				<UaProfileCard
+					form={form as unknown as UaProfileForm}
+					set={(patch) => setForm({ ...form, ...patch } as typeof form)}
+					year={new Date().getFullYear()}
+				/>
 			)}
+
+			{/* Налаштування → Документи: бланки документів с текстами, блоками, подписью и печатью (ТЗ §7) */}
+			{market === "UA" && <DocumentsCard />}
 
 			<div className="mb-16 fs-card p-16 md:p-20">
 				<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("companySection")}</h3>

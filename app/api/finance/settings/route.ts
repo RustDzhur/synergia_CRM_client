@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { unauthorized } from "@/lib/api";
+import { badRequest, unauthorized } from "@/lib/api";
 import { COUNTRY_CODES, COUNTRY_TAX } from "@/lib/finance/taxRates";
 import { MARKET_DEFAULTS, marketOf } from "@/lib/finance/market";
+import { UA_TAX_SYSTEMS, taxSystemOf, uaProfileErrors, formAndGroup } from "@/lib/validation/ua";
 import { financeSettings } from "@/lib/finance/settings";
 import { isTemplate } from "@/lib/finance/pdf";
 import FinanceSettings from "@/models/FinanceSettings";
@@ -40,10 +41,27 @@ function toDTO(s: any) {
         dunningFees: Array.isArray(s.dunningFees) && s.dunningFees.length ? s.dunningFees.map((n: unknown) => Number(n) || 0) : [0, 0, 2.5, 5, 10],
         dunningInterestRate: Number(s.dunningInterestRate) || 0,
         dunningPaymentDays: Number(s.dunningPaymentDays) || 7,
-        uaLegalForm: s.uaLegalForm === "tov" ? "tov" : "fop",
-        uaGroup: [0, 1, 2, 3].includes(Number(s.uaGroup)) ? Number(s.uaGroup) : 3,
+        uaLegalForm: s.uaLegalForm === "tov" ? "tov" : s.uaLegalForm === "other" ? "other" : "fop",
+        uaTaxSystem: taxSystemOf(s),
+        uaGroup: [0, 1, 2, 3, 4].includes(Number(s.uaGroup)) ? Number(s.uaGroup) : 3,
         uaSingleRate: Number(s.uaSingleRate) === 3 ? 3 : 5,
         uaVatPayer: !!s.uaVatPayer,
+        uaVatRegDate: s.uaVatRegDate ?? "",
+        uaVatCertificate: s.uaVatCertificate ?? "",
+        uaVatRates: Array.isArray(s.uaVatRates) && s.uaVatRates.length ? s.uaVatRates.map((n: unknown) => Number(n)).filter((n: number) => Number.isFinite(n)) : [20, 7, 0],
+        uaEdrpou: s.uaEdrpou ?? "",
+        uaIpn: s.uaIpn ?? "",
+        uaKved: Array.isArray(s.uaKved) ? s.uaKved.map((x: unknown) => String(x)).slice(0, 50) : [],
+        uaBank: s.uaBank ?? "",
+        uaIban: s.uaIban ?? "",
+        uaMfo: s.uaMfo ?? "",
+        uaSignerName: s.uaSignerName ?? "",
+        uaSignerPosition: s.uaSignerPosition ?? "",
+        uaSignature: s.uaSignature ?? "",
+        uaSeal: s.uaSeal ?? "",
+        uaLimits: Array.isArray(s.uaLimits)
+            ? s.uaLimits.map((l: { year?: unknown; group?: unknown; amount?: unknown }) => ({ year: Number(l.year) || 0, group: Number(l.group) || 0, amount: Number(l.amount) || 0 })).filter((l: { year: number }) => l.year > 2000)
+            : [],
         uaEsvMonthly: Number(s.uaEsvMonthly) || 1760,
         uaMilitaryRate: Number.isFinite(Number(s.uaMilitaryRate)) ? Number(s.uaMilitaryRate) : 1,
         uaMilitaryFixed: Number.isFinite(Number(s.uaMilitaryFixed)) ? Number(s.uaMilitaryFixed) : 800,
@@ -104,12 +122,45 @@ export async function PATCH(req: Request) {
         const n = Number(b.dunningPaymentDays);
         if (Number.isFinite(n) && n >= 1 && n <= 60) set.dunningPaymentDays = Math.round(n);
     }
-    // Украинская налоговая модель: набор и границы проверяем здесь, чтобы в документ не попало что угодно
-    if (b.uaLegalForm === "fop" || b.uaLegalForm === "tov") set.uaLegalForm = b.uaLegalForm;
-    if ([0, 1, 2, 3].includes(Number(b.uaGroup))) set.uaGroup = Number(b.uaGroup);
+    // Украинская налоговая модель: набор и границы проверяем здесь, чтобы в документ не попало что угодно.
+    // Реквизиты (ЄДРПОУ, ІПН, IBAN, МФО, КВЕД, свідоцтво ПДВ) проходят валидаторы lib/validation/ua.ts:
+    // сервер отвечает 400 с кодами полей, а тексты берутся интерфейсом из переводов.
+    const uaErrors = uaProfileErrors(b as Record<string, unknown>);
+    if (uaErrors.length) return badRequest(`Проверьте реквизиты: ${uaErrors.map((e) => `${e.field}:${e.code}`).join(", ")}`);
+    if (b.uaLegalForm === "fop" || b.uaLegalForm === "tov" || b.uaLegalForm === "other") set.uaLegalForm = b.uaLegalForm;
+    if ((UA_TAX_SYSTEMS as readonly string[]).includes(String(b.uaTaxSystem))) {
+        // Система налогообложения ведёт за собой форму и группу — они не могут расходиться
+        const system = String(b.uaTaxSystem) as (typeof UA_TAX_SYSTEMS)[number];
+        const { legalForm, group } = formAndGroup(system, Number(b.uaSingleRate) === 3 ? 3 : 5);
+        set.uaTaxSystem = system;
+        set.uaLegalForm = legalForm;
+        set.uaGroup = group;
+    }
+    if ([0, 1, 2, 3, 4].includes(Number(b.uaGroup))) set.uaGroup = Number(b.uaGroup);
     if (Number(b.uaSingleRate) === 3 || Number(b.uaSingleRate) === 5) set.uaSingleRate = Number(b.uaSingleRate);
     if (typeof b.uaVatPayer === "boolean") set.uaVatPayer = b.uaVatPayer;
     if (b.uaVatPeriod === "month" || b.uaVatPeriod === "quarter") set.uaVatPeriod = b.uaVatPeriod;
+    if (typeof b.uaVatRegDate === "string") set.uaVatRegDate = /^\d{4}-\d{2}-\d{2}$/.test(b.uaVatRegDate) ? b.uaVatRegDate : "";
+    if (Array.isArray(b.uaVatRates)) {
+        const allowed = [20, 7, 0];
+        set.uaVatRates = b.uaVatRates.map((n: unknown) => Number(n)).filter((n: number) => allowed.includes(n));
+    }
+    if (Array.isArray(b.uaKved)) set.uaKved = b.uaKved.map((x: unknown) => String(x).trim()).filter(Boolean).slice(0, 50);
+    // Лимиты групп по годам: 2000..2100, группы 1..4, суммы неотрицательные
+    if (Array.isArray(b.uaLimits)) {
+        set.uaLimits = b.uaLimits
+            .map((l: { year?: unknown; group?: unknown; amount?: unknown }) => ({ year: Math.round(Number(l.year) || 0), group: Math.round(Number(l.group) || 0), amount: Math.max(0, Number(l.amount) || 0) }))
+            .filter((l: { year: number; group: number }) => l.year >= 2000 && l.year <= 2100 && l.group >= 1 && l.group <= 4)
+            .slice(0, 40);
+    }
+    // Подпись и печать приходят data-URL из того же ресайза, что логотип: только картинка и не больше 400 КБ
+    for (const k of ["uaSignature", "uaSeal"] as const) {
+        if (typeof b[k] === "string") set[k] = String(b[k]).startsWith("data:image/") && String(b[k]).length <= 400_000 ? b[k] : "";
+    }
+    for (const k of ["uaEdrpou", "uaIpn", "uaVatCertificate", "uaBank", "uaIban", "uaMfo", "uaSignerName", "uaSignerPosition"] as const) {
+        const v = str(b[k], 100);
+        if (v !== undefined) set[k] = k === "uaIban" ? v.replace(/\s/g, "").toUpperCase() : v;
+    }
     if (b.rateMargin !== undefined) {
         const n = Number(b.rateMargin);
         if (Number.isFinite(n) && n >= 0 && n <= 50) set.rateMargin = n;

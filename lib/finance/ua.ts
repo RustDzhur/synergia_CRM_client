@@ -1,6 +1,8 @@
 import Invoice from "@/models/Invoice";
 import Expense from "@/models/Expense";
 import { financeSettings } from "./settings";
+import { groupLimit, rulesFor, rulesNotice } from "./ua/rules";
+import { formAndGroup, taxSystemOf, type UaTaxSystem } from "@/lib/validation/ua";
 
 // Украинский учёт: он устроен иначе, чем немецкий, и это не «другой перевод», а другая логика.
 //
@@ -17,6 +19,7 @@ import { financeSettings } from "./settings";
 const round = (n: number) => Math.round(n * 100) / 100;
 
 export interface UaTaxProfile {
+    taxSystem: UaTaxSystem; // система налогообложения (ФОП 1–4, общая, ТОВ: прибуток или єдиний)
     legalForm: "fop" | "tov";
     group: number; // 0 — общая система
     singleRate: number; // % единого налога (для 3-й группы: 3 или 5)
@@ -29,9 +32,13 @@ export interface UaTaxProfile {
 }
 
 export function uaProfile(settings: any): UaTaxProfile {
+    // Система налогообложения — источник правды; если её ещё не выбрали, выводим из формы и группы
+    const taxSystem = taxSystemOf(settings ?? {});
+    const { legalForm, group } = formAndGroup(taxSystem, Number(settings?.uaSingleRate) === 3 ? 3 : 5);
     return {
-        legalForm: settings?.uaLegalForm === "tov" ? "tov" : "fop",
-        group: [0, 1, 2, 3].includes(Number(settings?.uaGroup)) ? Number(settings?.uaGroup) : 3,
+        taxSystem,
+        legalForm: legalForm === "tov" ? "tov" : "fop",
+        group,
         singleRate: Number(settings?.uaSingleRate) === 3 ? 3 : 5,
         vatPayer: !!settings?.uaVatPayer,
         esvMonthly: Number(settings?.uaEsvMonthly) || 1760,
@@ -74,14 +81,15 @@ export interface IncomeBook {
     esv: number;
     total: number; // всё вместе к уплате за год
     limitLeft: number | null; // сколько осталось до лимита группы (null — лимита нет)
+    /** На какой год действуют правила и откуда цифры — в интерфейсе видно «сверьтесь с бухгалтером» */
+    rules: { year: number; source: string; notice: string };
     warnings: string[];
 }
-
-const GROUP_LIMIT: Record<number, number> = { 1: 1_336_000, 2: 6_672_000, 3: 9_336_000 };
 
 export async function incomeBook(org: string, year: string): Promise<IncomeBook> {
     const settings = await financeSettings(org);
     const profile = uaProfile(settings);
+    const rules = rulesFor(Number(year));
     const from = `${year}-01-01`;
     const to = `${year}-12-31`;
 
@@ -138,9 +146,15 @@ export async function incomeBook(org: string, year: string): Promise<IncomeBook>
     if (profile.group === 0) {
         warnings.push("У фирмы общая система налогообложения: единый налог не считается, нужен учёт доходов и расходов и декларация о прибыли.");
     }
-    const limit = GROUP_LIMIT[profile.group];
+    if (profile.group === 4) {
+        warnings.push("4-я группа — сільгоспвиробники: лимит считается от площади земли, а не от дохода, поэтому лимит здесь не проверяется.");
+    }
+    // Лимит группы — по правилам года, но фирма может задать своё значение (uaLimits) в настройках
+    const limit = groupLimit(settings, Number(year), profile.group);
     if (limit && income > limit * 0.8) {
-        warnings.push(`Доход за год приближается к лимиту ${profile.group}-й группы (${limit.toLocaleString("uk-UA")} ₴). При превышении ставка единого налога — 15 %.`);
+        warnings.push(
+            `Доход за год приближается к лимиту ${profile.group}-й группы (${limit.toLocaleString("uk-UA")} ₴). При превышении ставка единого налога — ${rules.overLimitRate} %.`
+        );
     }
     if (income === 0) warnings.push("За выбранный год нет оплаченных счетов — книга пуста.");
 
@@ -154,6 +168,7 @@ export async function incomeBook(org: string, year: string): Promise<IncomeBook>
         esv,
         total: round(singleTax + military + esv),
         limitLeft: limit ? round(limit - income) : null,
+        rules: { year: rules.year, source: rules.source, notice: rulesNotice(Number(year)) },
         warnings,
     };
 }
@@ -261,4 +276,61 @@ export async function vatRegister(org: string, from: string, to: string): Promis
         limitLeft: round(profile.vatLimit - turnover12m),
         warnings,
     };
+}
+
+// ── Податок на прибуток (ТОВ на загальній системі) ──────────────────────────────────────────────────
+// У ТОВ на общей системе объект налогообложения — прибыль: доходы минус расходы и амортизация.
+// Это заготовка для бухгалтера: точные суммы зависят от налоговых разниц, которые CRM не знает.
+
+export interface ProfitReport {
+    year: string;
+    from: string;
+    to: string;
+    income: number; // доход по выставленным счетам (метод начислений — как принято у юрлиц)
+    expenses: number; // расходы за период
+    depreciation: number; // амортизация основных средств (если ведётся в Anlagen)
+    profit: number; // прибыль до налога
+    tax: number; // 18 % — справочно; фирма может переопределить в настройках отчёта
+    rate: number;
+    rules: { year: number; source: string; notice: string };
+    warnings: string[];
+}
+
+export async function profitReport(org: string, year: string, rate = 18): Promise<ProfitReport> {
+    const settings = await financeSettings(org);
+    const profile = uaProfile(settings);
+    const from = `${year}-01-01`;
+    const to = `${year}-12-31`;
+
+    const invoices = await Invoice.find({ org, kind: "invoice", status: { $nin: ["draft", "cancelled"] }, issueDate: { $gte: from, $lte: to } }).select("items");
+    const expenses = await Expense.find({ org, date: { $gte: from, $lte: to } }).select("amount");
+    const income = round(invoices.reduce((sum, inv) => sum + itemsTotals(inv.items ?? []).net, 0));
+    const costs = round(expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0));
+    const depreciation = round(await depreciationInYear(org, Number(year)));
+    const profit = round(income - costs - depreciation);
+    const tax = profit > 0 ? round(profit * (rate / 100)) : 0;
+
+    const warnings: string[] = [];
+    if (profile.legalForm !== "tov" || profile.taxSystem !== "general_tov") {
+        warnings.push("Фирма не отмечена как ТОВ на загальній системі — отчёт показан для сверки.");
+    }
+    warnings.push("Суммы не учитывают налоговые разницы; перед подачей декларации их проверяет бухгалтер.");
+
+    const rules = rulesFor(Number(year));
+    return { year, from, to, income, expenses: costs, depreciation, profit, tax, rate, rules: { year: rules.year, source: rules.source, notice: rulesNotice(Number(year)) }, warnings };
+}
+
+// Амортизация за год — из основного средства (Anlagen), если оно ведётся: у ТОВ она уменьшает прибыль
+async function depreciationInYear(org: string, year: number): Promise<number> {
+    try {
+        const { default: Asset } = await import("@/models/Asset");
+        const { depreciationInRange } = await import("./assets");
+        const assets = await Asset.find({ org });
+        return assets.reduce(
+            (sum, a) => sum + depreciationInRange(a as never, `${year}-01-01`, `${year}-12-31`),
+            0
+        );
+    } catch {
+        return 0;
+    }
 }

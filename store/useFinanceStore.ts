@@ -83,9 +83,15 @@ export interface FinanceSettings {
 	// Оформление по умолчанию для всех документов и код оплаты на счетах; у отдельного документа шаблон свой
 	template: string; paymentQr: boolean;
 	// Украинская налоговая модель — показывается при стране UA (см. models/FinanceSettings.ts)
-	uaLegalForm: "fop" | "tov"; uaGroup: number; uaSingleRate: number; uaVatPayer: boolean;
+	uaLegalForm: "fop" | "tov" | "other"; uaGroup: number; uaSingleRate: number; uaVatPayer: boolean;
 	uaEsvMonthly: number; uaMilitaryRate: number; uaMilitaryFixed: number; uaVatLimit: number;
 	uaVatPeriod: "month" | "quarter";
+	// Полный профиль украинской фирмы (ТЗ §6): система налогообложения, реквизиты, банк, подписант
+	// с изображениями подписи и печати, лимиты групп по годам и допустимые ставки ПДВ
+	uaTaxSystem: string; uaVatRegDate: string; uaVatCertificate: string; uaVatRates: number[];
+	uaEdrpou: string; uaIpn: string; uaKved: string[]; uaBank: string; uaIban: string; uaMfo: string;
+	uaSignerName: string; uaSignerPosition: string; uaSignature: string; uaSeal: string;
+	uaLimits: Array<{ year: number; group: number; amount: number }>;
 	// Наценка к курсу НБУ (%), 0 — чистый курс
 	rateMargin: number;
 }
