@@ -12,7 +12,12 @@ export interface AiAction {
 	link?: string;
 }
 export interface AiMessage { id: string; role: "user" | "assistant"; text: string; steps?: string[]; actions?: AiAction[]; error?: boolean }
-export interface AiStatus { configured: boolean; limit: number; remaining: number; canWrite: boolean; tools: { name: string; write: boolean }[] }
+export interface AiStatus {
+	configured: boolean;
+	// stt — серверная диктовка (ключ OpenAI); браузерная не нуждается ни в ключе, ни в сервере
+	stt: boolean;
+	limit: number; remaining: number; canWrite: boolean; tools: { name: string; write: boolean }[];
+}
 
 interface AiStore {
 	open: boolean;

@@ -135,3 +135,39 @@ export async function completeVision(system: string, prompt: string, image: Imag
     if (!p) throw new ProviderError("AI is not configured on this site");
     return p === "anthropic" ? anthropicVision(system, prompt, image) : openaiVision(system, prompt, image);
 }
+
+// ── Распознавание речи (диктовка в окне ассистента) ──────────────────────────────────────────────────
+// У Anthropic нет распознавания аудио, поэтому серверная диктовка работает на ключе OpenAI даже когда
+// сам разговор идёт на Claude. Ключа нет — честный отказ, а интерфейс остаётся с браузерной диктовкой
+// (SpeechRecognition), которой ключ не нужен вовсе.
+export const sttConfigured = () => !!process.env.OPENAI_API_KEY;
+// Модель распознавания можно поменять переменной (например, gpt-4o-mini-transcribe — дешевле)
+export const sttModel = () => process.env.AI_TRANSCRIBE_MODEL || "whisper-1";
+
+// Расширение для имени файла: провайдеру оно помогает понять формат записи
+const AUDIO_EXT: Record<string, string> = {
+    "audio/webm": "webm", "video/webm": "webm", "audio/ogg": "ogg", "audio/mp4": "mp4", "video/mp4": "mp4",
+    "audio/mpeg": "mp3", "audio/wav": "wav", "audio/x-wav": "wav", "audio/x-m4a": "m4a", "audio/m4a": "m4a",
+};
+
+export async function transcribeAudio(bytes: Buffer, mime: string, language?: string): Promise<string> {
+    if (!process.env.OPENAI_API_KEY) throw new ProviderError("Speech recognition is not configured on this site");
+    const type = (mime || "audio/webm").split(";")[0];
+    const form = new FormData();
+    form.append("file", new Blob([bytes], { type }), `voice.${AUDIO_EXT[type] ?? "webm"}`);
+    form.append("model", sttModel());
+    // Язык записи подсказываем, но не настаиваем: whisper и так определит по речи
+    if (language) form.append("language", language);
+    const res = await fetchProvider(
+        `${trim(process.env.OPENAI_API_URL || "https://api.openai.com/v1")}/audio/transcriptions`,
+        { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: form },
+        55000
+    );
+    const json = (await res.json().catch(() => null)) as ({ text?: string; error?: { message?: string } } & Record<string, unknown>) | null;
+    if (!res.ok || !json) {
+        const detail = json?.error?.message;
+        console.error("transcribe error", res.status, detail);
+        throw new ProviderError(res.status === 401 ? "The AI provider rejected the API key" : res.status === 429 ? "The AI provider is busy or out of quota. Try again later." : `The AI provider returned an error (${res.status})`);
+    }
+    return String(json.text ?? "").trim();
+}

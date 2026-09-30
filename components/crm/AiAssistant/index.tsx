@@ -2,11 +2,16 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import toast from "react-hot-toast";
 import { MdAutoAwesome, MdCheckCircle, MdClose, MdErrorOutline, MdSearch } from "react-icons/md";
+import { TbMicrophone, TbPlayerStop, TbVolume, TbVolumeOff } from "react-icons/tb";
 import { AiAction, AiMessage, useAiStore } from "@/store/useAiStore";
 import { stripLocale } from "@/utils/locale";
 import Modal from "../shared/Modal";
 import Markdown from "./markdown";
+import { dictationSupported, recorderSupported, ttsSupported, useSpeechOutput, useVoiceInput } from "./voice";
+
+const AUTO_SPEAK_KEY = "ai.autospeak";
 
 const RECENT_KEY = "ai.recent";
 const readRecent = (): string[] => { try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]").slice(0, 4); } catch { return []; } };
@@ -81,9 +86,10 @@ function ActionCard({ message, action }: { message: AiMessage; action: AiAction 
 	);
 }
 
-function Bubble({ m }: { m: AiMessage }) {
+function Bubble({ m, ttsOn, speakingId, onSpeak, onStopSpeak }: { m: AiMessage; ttsOn: boolean; speakingId: string | null; onSpeak: (id: string, text: string) => void; onStopSpeak: () => void }) {
 	const t = useTranslations("ai");
 	if (m.role === "user") return <div className="ml-auto max-w-[85%] whitespace-pre-wrap break-words rounded-14 bg-[rgba(198,255,77,0.14)] px-14 py-10 text-13 text-[#f1f4ee]">{m.text}</div>;
+	const speaking = speakingId === m.id;
 	return (
 		<div className="max-w-[95%] break-words text-13 text-[#cfd4cb]">
 			{!!m.steps?.length && (
@@ -92,6 +98,18 @@ function Bubble({ m }: { m: AiMessage }) {
 				</p>
 			)}
 			{m.error ? <p className="flex items-start gap-8 text-danger"><MdErrorOutline size={20} className="mt-[2px] shrink-0" aria-hidden />{m.text}</p> : <Markdown text={m.text} />}
+			{/* Озвучка — браузерный синтез речи, ключей не требует; ошибки ассистента не читаем */}
+			{ttsOn && !m.error && (
+				<button
+					type="button"
+					onClick={() => (speaking ? onStopSpeak() : onSpeak(m.id, m.text))}
+					aria-label={speaking ? t("stopSpeak") : t("speak")}
+					title={speaking ? t("stopSpeak") : t("speak")}
+					className={`mt-6 flex items-center gap-6 text-11 transition-colors ${speaking ? "text-[#c6ff4d]" : "text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+					{speaking ? <TbPlayerStop size={13} aria-hidden /> : <TbVolume size={13} aria-hidden />}
+					{speaking ? t("stopSpeak") : t("speak")}
+				</button>
+			)}
 			{m.actions?.map((a) => <ActionCard key={a.id} message={m} action={a} />)}
 		</div>
 	);
@@ -106,6 +124,38 @@ export default function AiAssistant() {
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const endRef = useRef<HTMLDivElement>(null);
 	const [recent, setRecent] = useState<string[]>([]);
+	// Возможности голоса — только после монтирования: SpeechRecognition и speechSynthesis живут
+	// в window и в разметке сервера их нет (иначе разошлась бы гидратация)
+	const [voice, setVoice] = useState({ dictation: false, recorder: false, tts: false });
+	useEffect(() => { setVoice({ dictation: dictationSupported(), recorder: recorderSupported(), tts: ttsSupported() }); }, []);
+	const micAvailable = voice.dictation || (voice.recorder && !!status?.stt);
+	const { state: micState, start: micStart, stop: micStop } = useVoiceInput({
+		locale,
+		serverStt: !!status?.stt,
+		onText: (text) => setDraft(text),
+		onError: (code) => toast.error(t(code)),
+	});
+	// Озвучка ответов: кнопка у каждого ответа, автоозвучка — переключатель в шапке
+	const { speak, stop: stopSpeak, speakingId } = useSpeechOutput(locale);
+	const [autoSpeak, setAutoSpeak] = useState(false);
+	useEffect(() => { try { setAutoSpeak(localStorage.getItem(AUTO_SPEAK_KEY) === "1"); } catch { /* приватный режим */ } }, []);
+	function toggleAutoSpeak() {
+		setAutoSpeak((v) => {
+			const next = !v;
+			if (!next) stopSpeak();
+			try { localStorage.setItem(AUTO_SPEAK_KEY, next ? "1" : "0"); } catch { /* приватный режим */ }
+			return next;
+		});
+	}
+	const spokenRef = useRef<string | null>(null);
+	useEffect(() => {
+		if (!open || !autoSpeak || !voice.tts) return;
+		const last = messages[messages.length - 1];
+		if (last?.role === "assistant" && !last.error && last.id !== spokenRef.current) {
+			spokenRef.current = last.id;
+			speak(last.id, last.text);
+		}
+	}, [messages, open, autoSpeak, voice.tts, speak]);
 
 	useEffect(() => {
 		const onKey = (e: KeyboardEvent) => {
@@ -138,16 +188,31 @@ export default function AiAssistant() {
 
 	const blocked = status?.configured === false;
 	const empty = messages.length === 0;
+	// Закрытие окна останавливает и чтение, и запись — микрофон не должен остаться включённым
+	const close = () => { stopSpeak(); micStop(); hide(); };
 
 	return (
-		<Modal open={open} onClose={hide} align="top" label={t("title")} zIndex={90} className="mt-[6vh] w-full max-w-[720px]">
+		<Modal open={open} onClose={close} align="top" label={t("title")} zIndex={90} className="mt-[6vh] w-full max-w-[720px]">
 			<div className="fs-popover flex max-h-[84vh] flex-col overflow-hidden">
 				<header className="flex items-center gap-10 border-b border-inkLine px-16 py-12">
 					<MdAutoAwesome size={22} className="text-primaryColor" aria-hidden />
 					<h2 className="whitespace-nowrap text-18 font-medium text-[#334A74]">{t("title")}</h2>
 					{status?.configured && <span className="ml-auto hidden text-11 text-[#8c948b] md:inline">{t("remaining", { n: status.remaining })}</span>}
-					<button type="button" onClick={reset} disabled={empty} className={`${status?.configured ? "max-md:ml-auto" : "ml-auto"} whitespace-nowrap text-12 text-[#8c948b] transition-colors hover:text-[#c6ff4d] disabled:opacity-[0.4]`}>{t("newChat")}</button>
-					<button type="button" onClick={hide} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><MdClose size={18} /></button>
+					{/* Автоозвучка ответов: браузерный синтез речи, ключей не требует */}
+					{voice.tts && !blocked && (
+						<button
+							type="button"
+							onClick={toggleAutoSpeak}
+							aria-pressed={autoSpeak}
+							aria-label={t("autoSpeak")}
+							title={t("autoSpeak")}
+							className={`${status?.configured ? "" : "ml-auto"} flex h-30 items-center gap-6 rounded-8 border px-10 text-11 transition-colors ${autoSpeak ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+							{autoSpeak ? <TbVolume size={14} aria-hidden /> : <TbVolumeOff size={14} aria-hidden />}
+							<span className="max-md:hidden">{t("autoSpeak")}</span>
+						</button>
+					)}
+					<button type="button" onClick={reset} disabled={empty} className={`${status?.configured || (voice.tts && !blocked) ? "max-md:ml-auto" : "ml-auto"} whitespace-nowrap text-12 text-[#8c948b] transition-colors hover:text-[#c6ff4d] disabled:opacity-[0.4]`}>{t("newChat")}</button>
+					<button type="button" onClick={close} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><MdClose size={18} /></button>
 				</header>
 
 				<div className="min-h-[160px] flex-1 overflow-y-auto px-20 py-16">
@@ -175,7 +240,7 @@ export default function AiAssistant() {
 						</div>
 					) : (
 						<div className="flex flex-col gap-16">
-							{messages.map((m) => <Bubble key={m.id} m={m} />)}
+							{messages.map((m) => <Bubble key={m.id} m={m} ttsOn={voice.tts} speakingId={speakingId} onSpeak={speak} onStopSpeak={stopSpeak} />)}
 							{busy && <p className="animate-pulse text-12 text-[#8c948b]">{t("thinking")}</p>}
 							<div ref={endRef} />
 						</div>
@@ -184,6 +249,18 @@ export default function AiAssistant() {
 
 				<form onSubmit={(e) => { e.preventDefault(); submit(); }} className="border-t border-inkLine px-16 py-12">
 					<div className="flex items-end gap-10">
+						{/* Диктовка: браузерная (без ключей) или серверная (ключ OpenAI, см. /api/ai/transcribe).
+						    Текст попадает в поле, отправка — вручную: голос ничего не подтверждает сам */}
+						{micAvailable && !blocked && (
+							<button
+								type="button"
+								onClick={() => (micState === "idle" ? void micStart(draft) : micStop())}
+								aria-label={micState === "idle" ? t("mic") : micState === "listening" ? t("micStop") : t("micTranscribing")}
+								title={micState === "idle" ? t("mic") : micState === "listening" ? t("micStop") : t("micTranscribing")}
+								className={`fs-btn h-50 w-50 shrink-0 ${micState === "listening" ? "animate-pulse border-[rgba(235,87,87,0.55)] bg-[rgba(235,87,87,0.14)] text-danger" : "fs-btn-ghost"} ${micState === "transcribing" ? "fs-btn-ghost" : ""}`}>
+								{micState === "listening" ? <TbPlayerStop size={16} aria-hidden /> : <TbMicrophone size={16} className={micState === "transcribing" ? "animate-pulse" : ""} aria-hidden />}
+							</button>
+						)}
 						<textarea
 							ref={inputRef}
 							value={draft}
@@ -198,7 +275,9 @@ export default function AiAssistant() {
 						/>
 						<button type="submit" disabled={!draft.trim() || busy || blocked} className="fs-btn fs-btn-primary h-50 shrink-0 disabled:cursor-default disabled:opacity-[0.4]">{t("ask")}</button>
 					</div>
-					<p className="mt-8 text-12 text-[#B3B3B3]">{t("disclaimer")}</p>
+					<p className="mt-8 text-12 text-[#B3B3B3]">
+						{micState === "listening" ? t("micListening") : micState === "transcribing" ? t("micTranscribing") : t("disclaimer")}
+					</p>
 				</form>
 			</div>
 		</Modal>
