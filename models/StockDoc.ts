@@ -10,7 +10,10 @@ const StockLineSchema = new Schema(
     {
         product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
         qty: { type: Number, required: true }, // всегда положительное: знак задаёт вид документа
-        price: { type: Number, default: 0 }, // цена в документе (приход — закупочная, списание — себестоимость)
+        price: { type: Number, default: 0 }, // цена в документе (приход — закупочная, списание — себестоимость); 0 — взять из карточки товара
+        // Инвентаризация: qty — фактическое количество, diff — расхождение с учётом (плюс — излишек,
+        // минус — недостача). Движения проводятся только на расхождение; для прочих видов 0.
+        diff: { type: Number, default: 0 },
         note: { type: String, default: "" },
     },
     { _id: false }

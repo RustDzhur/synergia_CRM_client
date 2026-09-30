@@ -44,13 +44,15 @@ export async function GET(req: Request) {
             by: d.by ?? "",
             reversed: !!d.reversedBy,
             reversalOf: d.reversalOf ? String(d.reversalOf) : "",
-            lines: (d.lines ?? []).map((l: { product: unknown; qty: number; price?: number }) => ({
+            lines: (d.lines ?? []).map((l: { product: unknown; qty: number; price?: number; diff?: number }) => ({
                 product: String(l.product),
                 name: pInfo.get(String(l.product))?.name ?? "",
                 sku: pInfo.get(String(l.product))?.sku ?? "",
                 unit: pInfo.get(String(l.product))?.unit ?? "",
                 qty: l.qty,
                 price: l.price ?? 0,
+                // инвентаризация: расхождение с учётом (плюс — излишек, минус — недостача)
+                diff: l.diff ?? 0,
             })),
         }))
     );

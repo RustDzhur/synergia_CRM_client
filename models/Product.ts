@@ -8,7 +8,10 @@ const ProductSchema = new Schema(
     {
         org: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
         name: { type: String, required: true },
+        // Артикул (SKU) — внутренний код товара: по нему сопоставляется импорт и ищут товар
         sku: { type: String, default: "" },
+        // Штрихкод с этикетки: сканер вводит его как обычный текст, поиск товара ищет и по нему
+        barcode: { type: String, default: "" },
         type: { type: String, enum: ["good", "service"], default: "service" },
         unit: { type: String, default: "pcs" }, // «pcs», «h», «kg»...
         purchasePrice: { type: Number, default: 0 }, // закупочная цена — себестоимость для отчёта о прибыли
@@ -30,5 +33,7 @@ const ProductSchema = new Schema(
     { timestamps: true }
 );
 ProductSchema.index({ org: 1, name: 1 });
+// Поиск по штрихкоду сканером — обычный случай, индекс не помешает
+ProductSchema.index({ org: 1, barcode: 1 });
 
 export default registerModel("Product", ProductSchema);

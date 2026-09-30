@@ -13,7 +13,7 @@ import Link from "next/link";
 // пробивается по правилам (готівка и картка — обязателен). Возврат — по чеку из списка: кредит-нота,
 // возврат товара и чек возврата. DE без сертифицированной кассы продажу не проводит — маршрут ответит.
 
-interface ProductRow { id: string; name: string; sku: string; price: number; unit: string; stockQty: number; image: string }
+interface ProductRow { id: string; name: string; sku: string; barcode: string; price: number; unit: string; stockQty: number; image: string }
 interface SaleRow { id: string; number: string; at: string; total: number; currency: string; fiscalCode: string; payType: string; customerName: string }
 interface CartLine { product: string; name: string; price: number; qty: number }
 
@@ -44,12 +44,12 @@ export default function Pos() {
 	}, []);
 	useEffect(() => { void load(); }, [load]);
 
-	// Поиск по штрихкоду (SKU) и названию: сканер вводит артикул как текст — точное совпадение SKU
-	// добавляет товар сразу, иначе показываем подсказки
+	// Поиск по штрихкоду, артикулу и названию: сканер вводит номер как текст — точное совпадение
+	// штрихкода или SKU добавляет товар сразу, иначе показываем подсказки
 	const found = useMemo(() => {
 		const q = query.trim().toLowerCase();
 		if (!q) return [];
-		return products.filter((p) => p.sku.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)).slice(0, 8);
+		return products.filter((p) => (p.sku ?? "").toLowerCase().includes(q) || (p.barcode ?? "").includes(q) || p.name.toLowerCase().includes(q)).slice(0, 8);
 	}, [products, query]);
 
 	function addToCart(p: ProductRow, qty = 1) {
@@ -63,8 +63,9 @@ export default function Pos() {
 
 	function onQueryChange(v: string) {
 		setQuery(v);
-		// Точное совпадение со штрихкодом — сразу в чек (так работает сканер)
-		const exact = products.find((p) => p.sku && p.sku.toLowerCase() === v.trim().toLowerCase());
+		// Точное совпадение со штрихкодом или артикулом — сразу в чек (так работает сканер)
+		const probe = v.trim().toLowerCase();
+		const exact = products.find((p) => (p.barcode && p.barcode.toLowerCase() === probe) || (p.sku && p.sku.toLowerCase() === probe));
 		if (exact) addToCart(exact);
 	}
 

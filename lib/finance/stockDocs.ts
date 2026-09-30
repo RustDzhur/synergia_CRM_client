@@ -2,7 +2,7 @@ import { Types } from "mongoose";
 import { ProviderError } from "@/lib/http";
 import { nextNumber } from "./numbering";
 import { financeSettings } from "./settings";
-import { averageCost } from "./warehouse";
+import { averageCost, stockOnHand, type MovementLike } from "./warehouse";
 import { moveStock } from "./stock";
 import Product from "@/models/Product";
 import StockDoc from "@/models/StockDoc";
@@ -13,6 +13,12 @@ import Warehouse from "@/models/Warehouse";
 // инвентаризация. Документ проводит движения — остаток меняется только так, руками не правится.
 // Ошибку исправляет сторно: оно повторяет движения с обратным знаком и остаётся в журнале рядом
 // с исходным документом, чтобы история читалась как есть.
+//
+// Цена строки больше не спрашивается в форме: приход/списание считаются по себестоимости из карточки
+// товара (средняя по приходам или закупочная). Направление движения задаёт вид документа, а не цена —
+// раньше от цены зависела даже инвентаризация, и пустая цена превращала оприходование в списание.
+// Инвентаризация принимает ФАКТИЧЕСКОЕ количество и проводит только расхождения (излишек — приход,
+// недостача — списание), а не двигает склад на введённое число целиком.
 
 export type StockDocKind = "receipt" | "issue" | "transfer" | "writeoff" | "surplus" | "inventory";
 
@@ -23,7 +29,7 @@ export interface StockDocLine { product: string; qty: number; price?: number; no
 export interface StockDocInput {
     kind: StockDocKind;
     date?: string;
-    warehouseFrom?: string; // расход, списание, перемещение
+    warehouseFrom?: string; // расход, списание, инвентаризация, перемещение
     warehouseTo?: string; // приход, излишки, перемещение
     lines: StockDocLine[];
     note?: string;
@@ -37,6 +43,23 @@ async function ownedWarehouse(org: string, id?: string | null) {
     return w;
 }
 
+/** Остаток по учёту: по всему складу фирмы или по конкретному складу (как в отчёте остатков). */
+async function bookQuantities(org: string, productIds: string[], warehouseId: string | null): Promise<Map<string, number>> {
+    const movements = await StockMovement.find({ org, product: { $in: productIds } }).select("product qty warehouse");
+    const list: MovementLike[] = movements.map((m) => ({
+        product: String(m.product),
+        warehouse: m.warehouse ? String(m.warehouse) : null,
+        qty: m.qty,
+        reason: String(m.reason),
+        unitCost: 0,
+        at: "",
+    }));
+    const filtered = warehouseId ? list.filter((m) => (m.warehouse ?? "") === warehouseId) : list;
+    const out = new Map<string, number>();
+    for (const id of productIds) out.set(id, stockOnHand(filtered, id));
+    return out;
+}
+
 /** Проведение документа: движения склада по строкам + запись в журнал движений. */
 export async function postStockDoc(org: string, input: StockDocInput) {
     const lines = (input.lines ?? []).filter((l) => l.product && Number(l.qty) > 0);
@@ -48,12 +71,26 @@ export async function postStockDoc(org: string, input: StockDocInput) {
     const from = await ownedWarehouse(org, input.warehouseFrom);
     const to = await ownedWarehouse(org, input.warehouseTo);
     if (input.kind === "receipt" && !to) throw new ProviderError("Для приходу вкажіть склад");
-    if ((input.kind === "issue" || input.kind === "writeoff") && !from) throw new ProviderError("Вкажіть склад, з якого списуємо");
+    if ((input.kind === "issue" || input.kind === "writeoff" || input.kind === "inventory") && !from) throw new ProviderError("Вкажіть склад, з якого списуємо");
+    if (input.kind === "inventory" && !to) {
+        // Инвентаризация и оприходует излишки, и списывает недостачу: без склада-получателя приход
+        // излишка было бы некуда положить — считаем инвентаризацию по складу-источнику
+        input.warehouseTo = input.warehouseFrom;
+    }
 
     const settings = await financeSettings(org);
     const method = settings.stockCosting === "fifo" ? "fifo" : "avg";
     const number = await nextNumber(org, PREFIX[input.kind]);
     const date = input.date && /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? input.date : new Date().toISOString().slice(0, 10);
+
+    // Инвентаризация: количество в строке — фактическое; считаем расхождение с учётом и проводим
+    // только его. Строки без расхождения остаются в документе как подтверждение подсчёта
+    let prepared = lines.map((l) => ({ product: l.product, qty: Math.abs(Number(l.qty)), price: Number(l.price) || 0, diff: 0, note: (l.note ?? "").slice(0, 200) }));
+    if (input.kind === "inventory") {
+        const ids = Array.from(new Set(prepared.map((l) => String(l.product))));
+        const book = await bookQuantities(org, ids, from?._id ? String(from._id) : null);
+        prepared = prepared.map((l) => ({ ...l, diff: Math.round((l.qty - (book.get(String(l.product)) ?? 0)) * 10000) / 10000 }));
+    }
 
     const doc = await StockDoc.create({
         org,
@@ -61,8 +98,8 @@ export async function postStockDoc(org: string, input: StockDocInput) {
         number,
         date,
         warehouseFrom: from?._id ?? null,
-        warehouseTo: to?._id ?? null,
-        lines: lines.map((l) => ({ product: l.product, qty: Math.abs(Number(l.qty)), price: Number(l.price) || 0, note: (l.note ?? "").slice(0, 200) })),
+        warehouseTo: (to ?? (input.kind === "inventory" ? from : null))?._id ?? null,
+        lines: prepared,
         note: (input.note ?? "").slice(0, 500),
         by: input.by ?? "",
     });
@@ -71,14 +108,15 @@ export async function postStockDoc(org: string, input: StockDocInput) {
     return doc;
 }
 
-// Движения документа: приход +, расход -, перемещение — минус на источнике и плюс на получателе
+// Движения документа: приход +, расход -, перемещение — минус на источнике и плюс на получателе;
+// инвентаризация — только на расхождение (diff)
 async function applyDocMovements(org: string, doc: any, method: "avg" | "fifo", reverse = false) {
     const sign = reverse ? -1 : 1;
     for (const line of doc.lines) {
         const qty = Math.abs(Number(line.qty));
         const unitCost = Number(line.price) || (await currentUnitCost(org, String(line.product), method));
-        if (doc.kind === "receipt" || (doc.kind === "surplus") || (doc.kind === "inventory" && Number(line.price) > 0)) {
-            // Приход и излишки: плюс на склад-получатель; цена строки становится себестоимостью партии
+        if (doc.kind === "receipt" || doc.kind === "surplus") {
+            // Приход и излишки: плюс на склад-получатель; цена строки (если задана) становится себестоимостью партии
             await moveStock(org, String(line.product), sign * qty, reverse ? "adjustment" : doc.kind === "receipt" ? "purchase" : "surplus", {
                 warehouse: doc.warehouseTo?._id ?? doc.warehouseTo ?? null,
                 unitCost,
@@ -89,8 +127,19 @@ async function applyDocMovements(org: string, doc: any, method: "avg" | "fifo", 
         } else if (doc.kind === "transfer") {
             await moveStock(org, String(line.product), -sign * qty, reverse ? "adjustment" : "transfer_out", { warehouse: doc.warehouseFrom ?? null, unitCost, docId: doc._id, note: `Переміщення ${doc.number}`, by: doc.by });
             await moveStock(org, String(line.product), sign * qty, reverse ? "adjustment" : "transfer_in", { warehouse: doc.warehouseTo ?? null, unitCost, docId: doc._id, note: `Переміщення ${doc.number}`, by: doc.by });
+        } else if (doc.kind === "inventory") {
+            // Только расхождение: излишек приходуется, недостача списывается; нулевые строки — наблюдение
+            const diff = Number(line.diff) || 0;
+            if (!diff) continue;
+            await moveStock(org, String(line.product), sign * diff, reverse ? "adjustment" : diff > 0 ? "surplus" : "writeoff", {
+                warehouse: (diff > 0 ? doc.warehouseTo : doc.warehouseFrom)?._id ?? doc.warehouseFrom ?? doc.warehouseTo ?? null,
+                unitCost,
+                docId: doc._id,
+                note: `Інвентаризація ${doc.number}`,
+                by: doc.by,
+            });
         } else {
-            // Расход и списание: минус со склада-источника по выбранной оценке
+            // Расход (issue) и списание: минус со склада-источника по выбранной оценке
             await moveStock(org, String(line.product), -sign * qty, reverse ? "adjustment" : doc.kind === "writeoff" ? "writeoff" : "sale", { warehouse: doc.warehouseFrom ?? null, unitCost, docId: doc._id, note: `Документ ${doc.number}`, by: doc.by });
         }
     }
@@ -101,7 +150,10 @@ async function currentUnitCost(org: string, product: string, method: "avg" | "fi
         // Средняя по всем приходам товара — цена, по которой он лежит на складе «в среднем»
         const receipts = await StockMovement.find({ org, product, qty: { $gt: 0 } }).select("qty unitCost");
         const movements = receipts.map((m) => ({ product, qty: m.qty, unitCost: m.unitCost ?? 0, reason: "purchase", at: "" }));
-        return averageCost(movements as never, product);
+        const avg = averageCost(movements as never, product);
+        // Приходов ещё не было (или все с нулевой ценой) — берём закупочную цену из карточки товара:
+        // иначе первый приход лёг бы на склад с себестоимостью 0 и продажа считалась бы по нулю
+        if (avg > 0) return avg;
     }
     const p = await Product.findOne({ _id: product, org }).select("purchasePrice");
     return Number(p?.purchasePrice) || 0;

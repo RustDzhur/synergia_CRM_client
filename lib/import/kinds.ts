@@ -33,6 +33,7 @@ export const IMPORT_KINDS: Record<ImportKind, KindDef> = {
         fields: [
             { key: "name", label: "Название", required: true, aliases: ["name", "название", "найменування", "наименование", "bezeichnung", "товар", "product"] },
             { key: "sku", label: "SKU / Артикул", aliases: ["sku", "артикул", "код", "code", "artikel", "article", "код товару"] },
+            { key: "barcode", label: "Штрихкод", aliases: ["barcode", "штрихкод", "штрих-код", "штрих код", "штрихкодean", "ean", "штрихкод ean"] },
             { key: "type", label: "Тип (good/service)", aliases: ["type", "тип", "вид", "typ"] },
             { key: "unit", label: "Единица", aliases: ["unit", "ед", "единица", "од", "einheit", "measure"] },
             { key: "purchasePrice", label: "Закупочная цена", code: "amount", aliases: ["purchaseprice", "закупочная цена", "закупівельна ціна", "ціна закупівлі", "цена закупки", "закупочная", "закупівельна", "закупівля", "purchase", "ek", "einkaufspreis", "cost"] },
@@ -84,7 +85,7 @@ export const IMPORT_KINDS: Record<ImportKind, KindDef> = {
         matchBy: ["code", "name"],
         fields: [
             { key: "name", label: "Название", required: true, aliases: ["name", "название", "назва", "наименование", "firma", "company"] },
-            { key: "code", label: "ЄДРПОУ / USt-IdNr", aliases: ["code", "код", "єдрпоу", "едрпоу", "ust-idnr", "ustid", "vatid", "vat"] },
+            { key: "code", label: "Код (ЄДРПОУ / ІПН / USt-IdNr.)", aliases: ["code", "код", "єдрпоу", "едрпоу", "ust-idnr", "ustid", "vatid", "vat"] },
             { key: "status", label: "Статус", aliases: ["status", "статус"] },
             { key: "address", label: "Адрес", aliases: ["address", "адрес", "адреса", "anschrift", "contacts"] },
             { key: "email", label: "Почта", code: "email", aliases: ["email", "почта", "пошта", "mail"] },

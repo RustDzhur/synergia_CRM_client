@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { ProviderError } from "@/lib/http";
 import { nextNumber } from "./numbering";
 import { explodeBom, productionCost, unitCostOf, type BomLike } from "./production";
@@ -6,6 +7,7 @@ import Bom from "@/models/Bom";
 import Product from "@/models/Product";
 import ProductionOrder from "@/models/ProductionOrder";
 import StockMovement from "@/models/StockMovement";
+import Warehouse from "@/models/Warehouse";
 
 // Производственные заказы (ТЗ §13): план → запуск (резерв материалов) → выпуск.
 //
@@ -56,6 +58,14 @@ export interface CreateProductionInput {
     by?: string;
 }
 
+/** Склад по умолчанию для заказа: явно выбранный или первый склад фирмы; без складов выпуск невозможен. */
+async function fallbackWarehouse(org: string, preferred?: string): Promise<string> {
+    if (preferred && Types.ObjectId.isValid(preferred)) return preferred;
+    const def = await Warehouse.findOne({ org, archived: { $ne: true } }).sort({ isDefault: -1, createdAt: 1 }).select("_id");
+    if (!def) throw new ProviderError("Створіть хоча б один склад — випуск і списання матеріалів проводяться через нього");
+    return String(def._id);
+}
+
 /** Создание заказа: взрыв состава и план себестоимости (материалы по средней, труд по норме). */
 export async function createProductionOrder(org: string, input: CreateProductionInput) {
     const qty = Number(input.qty) || 0;
@@ -74,8 +84,19 @@ export async function createProductionOrder(org: string, input: CreateProduction
         overheadPercent: bom.overheadPercent,
     });
 
-    const product = await Product.findOne({ _id: input.product, org }).select("name");
+    // Изделие и компоненты обязаны быть товарами (type "good"): у услуги нет остатка, и выпуск
+    // молча ничего бы не приходовал — «будка выпущена, а на складе её нет» начиналось именно так
+    const ids = [String(input.product), ...materialLines.map((m) => m.product)];
+    const rows = await Product.find({ _id: { $in: ids }, org }).select("name type");
+    const service = rows.find((p) => p.type !== "good");
+    if (service) throw new ProviderError(`«${service.name}» у картці має тип «Послуга» — у послуги немає складу. Відкрийте картку товару і змініть тип на «Товар»`);
+    if (rows.length !== new Set(ids).size) throw new ProviderError("Деякі товари замовлення не знайдено");
+
+    const product = rows.find((p) => String(p._id) === String(input.product));
     if (!product) throw new ProviderError("Виріб не знайдено");
+    // Склад обязателен: без него движения уходили бы в «ничей» склад и не попадали ни в одну колонку отчёта
+    const warehouseMaterials = await fallbackWarehouse(org, input.warehouseMaterials);
+    const warehouseOutput = await fallbackWarehouse(org, input.warehouseOutput);
     const number = await nextNumber(org, "ВЗ");
     const order = await ProductionOrder.create({
         org,
@@ -84,8 +105,8 @@ export async function createProductionOrder(org: string, input: CreateProduction
         product: input.product,
         planQty: qty,
         status: "plan",
-        warehouseMaterials: input.warehouseMaterials || undefined,
-        warehouseOutput: input.warehouseOutput || undefined,
+        warehouseMaterials,
+        warehouseOutput,
         materials: materialLines,
         operations: explosion.operations.map((o) => ({ name: o.name, minutes: o.minutes, actualMinutes: 0, costPerHour: o.costPerHour, workCenter: o.workCenter })),
         planCost: plan.total,
@@ -101,9 +122,7 @@ export async function launchProductionOrder(org: string, id: string) {
     const order = await ProductionOrder.findOne({ _id: id, org });
     if (!order) throw new ProviderError("Замовлення не знайдено");
     if (order.status !== "plan") throw new ProviderError("Запустити можна лише заплановане замовлення");
-    const warehouse = order.warehouseMaterials ? { id: String(order.warehouseMaterials) } : null;
     await reserveForOrder(org, String(order._id), (order.materials ?? []).map((m: { product: unknown; qty: number }) => ({ product: String(m.product), qty: m.qty })), order.createdByName ?? "");
-    void warehouse;
     order.status = "launched";
     await order.save();
     return order;
@@ -126,19 +145,30 @@ export async function produceOutput(org: string, id: string, input: OutputInput)
     if (qty <= 0) throw new ProviderError("Вкажіть кількість випуску");
     const left = Number(order.planQty) - Number(order.producedQty);
     const portion = Math.min(qty, left);
+    // Ноль выпускать нечего: раньше такая попытка «проходила успешно», не сделав ни одного движения
+    if (portion <= 0) throw new ProviderError("План уже виконано — випускати більше нічого");
     const factor = portion / (Number(order.planQty) || 1);
 
-    // Материалы: снимаем резерв на долю выпуска и списываем её в производство
+    // Материалы: снимаем резерв на долю выпуска и списываем её в производство.
+    // До движений проверяем, что материалы — товары: молчаливый пропуск движения (услуга в составе)
+    // раньше выглядел как успешный выпуск, при котором склад не менялся вовсе
     const materialLines = (order.materials ?? []) as Array<{ product: unknown; qty: number; usedQty?: number; unitCost?: number }>;
     const usePortion = materialLines.map((m) => ({ product: String(m.product), qty: Math.round(m.qty * factor * 10000) / 10000 }));
+    const materialIds = Array.from(new Set(usePortion.map((u) => u.product)));
+    const materialCards = await Product.find({ _id: { $in: materialIds }, org }).select("name type");
+    const notGood = materialCards.find((p) => p.type !== "good");
+    if (notGood || materialCards.length !== materialIds.length) {
+        throw new ProviderError(`Матеріал «${notGood?.name ?? "?"}» має тип «Послуга» або не існує — списати в виробництво нічого. Перевірте картки товарів`);
+    }
     await releaseForOrder(org, String(order._id), usePortion, order.createdByName ?? "");
     for (const line of usePortion) {
-        await moveStock(org, line.product, -Math.abs(line.qty), "writeoff", {
+        const moved = await moveStock(org, line.product, -Math.abs(line.qty), "writeoff", {
             warehouse: order.warehouseMaterials ? String(order.warehouseMaterials) : null,
             unitCost: materialLines.find((m) => String(m.product) === line.product)?.unitCost ?? 0,
             note: `Списання у виробництво ${order.number}`,
             by: input.by ?? "",
         });
+        if (!moved) throw new ProviderError("Матеріал у складі замовлення має тип «Послуга» або нульову кількість — склад не змінився. Перевірте картки товарів");
     }
     for (const m of materialLines) m.usedQty = Math.round(((Number(m.usedQty) || 0) + Math.round(m.qty * factor * 10000) / 10000) * 10000) / 10000;
 
@@ -162,19 +192,26 @@ export async function produceOutput(org: string, id: string, input: OutputInput)
     });
     const unitCost = unitCostOf(cost, portion);
 
-    // Выпуск на склад: основное изделие и побочная продукция (по доле выпуска)
-    await moveStock(org, String(order.product), portion, "purchase", {
-        warehouse: order.warehouseOutput ? String(order.warehouseOutput) : null,
+    // Выпуск на склад: основное изделие и побочная продукция (по доле выпуска).
+    // Склад выпуска: у старых заказов его могло не быть — подставляем склад по умолчанию,
+    // иначе приход уходил бы в «ничей» склад и не был виден ни по одному складу
+    const outputWarehouse = order.warehouseOutput ? String(order.warehouseOutput) : await fallbackWarehouse(org);
+    const produced = await moveStock(org, String(order.product), portion, "purchase", {
+        warehouse: outputWarehouse,
         unitCost,
         note: `Випуск за замовленням ${order.number}`,
         by: input.by ?? "",
     });
+    if (!produced) {
+        const p = await Product.findOne({ _id: order.product, org }).select("name type");
+        throw new ProviderError(`Не вдалося оприбуткувати «${p?.name ?? "виріб"}»: у картці тип «Послуга» — у послуги немає складу. Змініть тип на «Товар» і повторіть випуск`);
+    }
     const stockQty = portion - (Number(input.scrapQty) || 0);
     for (const out of bom?.outputs ?? []) {
         const outQty = Math.round(((Number(out.qty) || 0) * factor) * 10000) / 10000;
         if (outQty <= 0) continue;
         await moveStock(org, String(out.product), outQty, "surplus", {
-            warehouse: order.warehouseOutput ? String(order.warehouseOutput) : null,
+            warehouse: outputWarehouse,
             unitCost: 0,
             note: `Побічна продукція за ${order.number}`,
             by: input.by ?? "",

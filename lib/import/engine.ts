@@ -1,5 +1,6 @@
 import { parseAmount, parseDate } from "@/lib/finance/bank";
 import { fieldError } from "@/lib/validation/common";
+import { cleanBarcode } from "@/lib/finance/productFields";
 import { moveStock } from "@/lib/finance/stock";
 import { parseCsv } from "./csv";
 import { IMPORT_KINDS, guessMapping, type ImportKind } from "./kinds";
@@ -171,6 +172,7 @@ async function applyRow(
         const patch: Record<string, unknown> = {
             name: v.name,
             ...(v.sku !== undefined ? { sku: v.sku } : {}),
+            ...(v.barcode ? { barcode: cleanBarcode(v.barcode) } : {}),
             ...(v.type ? { type: v.type.toLowerCase() === "good" ? "good" : "service" } : {}),
             ...(v.unit ? { unit: v.unit } : {}),
             ...(v.purchasePrice ? { purchasePrice: num(v.purchasePrice) } : {}),

@@ -13,7 +13,7 @@ import { downloadAuthed } from "./download";
 import ImportWizard from "../Settings/ImportWizard";
 import Stock from "./Stock";
 
-const EMPTY = { name: "", sku: "", type: "service" as "good" | "service", unit: "pcs", purchasePrice: "0", salePrice: "0", taxRate: "", stockQty: "0", reorderLevel: "0", image: "", prices: [] as Array<{ type: string; price: string; minQty: string }>, hsCode: "", weightKg: "0", originCountry: "" };
+const EMPTY = { name: "", sku: "", barcode: "", type: "service" as "good" | "service", unit: "pcs", purchasePrice: "0", salePrice: "0", taxRate: "", stockQty: "0", reorderLevel: "0", image: "", prices: [] as Array<{ type: string; price: string; minQty: string }>, hsCode: "", weightKg: "0", originCountry: "" };
 
 // Каталог товаров и услуг: то же, что раньше было вкладкой «Products» в Inventory Management, но остаток теперь настоящий —
 // меняется только через движения склада (заказы), не правкой числа в этой форме.
@@ -22,6 +22,8 @@ export default function Products() {
 	const locale = useLocale();
 	const { products, loadProducts, createProduct, updateProduct, deleteProduct, settings } = useFinanceStore();
 	const [query, setQuery] = useState("");
+	// Фильтр списка: тип (товар/услуга) — товаров и услуг бывает много, а искать нужно быстро
+	const [typeFilter, setTypeFilter] = useState("");
 	const [open, setOpen] = useState(false);
 	const [editId, setEditId] = useState<string | null>(null);
 	const [form, setForm] = useState(EMPTY);
@@ -30,10 +32,15 @@ export default function Products() {
 
 	useEffect(() => { loadProducts(); }, [loadProducts]);
 
+	// Поиск идёт по названию, артикулу и штрихкоду: сканер вводит цифры как обычный текст,
+	// поэтому достаточно поставить курсор в поле поиска и «выстрелить» сканером
 	const visible = useMemo(() => {
 		const q = query.trim().toLowerCase();
-		return products.filter((p) => !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q));
-	}, [products, query]);
+		return products.filter((p) =>
+			(!q || p.name.toLowerCase().includes(q) || (p.sku ?? "").toLowerCase().includes(q) || (p.barcode ?? "").includes(q)) &&
+			(!typeFilter || p.type === typeFilter)
+		);
+	}, [products, query, typeFilter]);
 
 	function openNew() { setEditId(null); setForm(EMPTY); setOpen(true); }
 	function openEdit(id: string) {
@@ -41,7 +48,7 @@ export default function Products() {
 		if (!p) return;
 		setEditId(id);
 		setForm({
-			name: p.name, sku: p.sku, type: p.type, unit: p.unit,
+			name: p.name, sku: p.sku, barcode: p.barcode ?? "", type: p.type, unit: p.unit,
 			purchasePrice: String(p.purchasePrice), salePrice: String(p.salePrice),
 			taxRate: p.taxRate === null ? "" : String(p.taxRate), stockQty: String(p.stockQty), reorderLevel: String(p.reorderLevel),
 			image: p.image ?? "",
@@ -56,7 +63,7 @@ export default function Products() {
 		e.preventDefault();
 		if (!form.name.trim()) return toast.error(t("nameRequired"));
 		const data = {
-			name: form.name.trim(), sku: form.sku.trim(), type: form.type, unit: form.unit.trim() || "pcs",
+			name: form.name.trim(), sku: form.sku.trim(), barcode: form.barcode.trim(), type: form.type, unit: form.unit.trim() || "pcs",
 			purchasePrice: Number(form.purchasePrice) || 0, salePrice: Number(form.salePrice) || 0,
 			taxRate: form.taxRate === "" ? null : Number(form.taxRate),
 			...(editId ? {} : { stockQty: Number(form.stockQty) || 0 }),
@@ -95,7 +102,19 @@ export default function Products() {
 			{view === "stock" ? <Stock /> : (
 			<>
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-12">
-				<SearchBox value={query} onChange={setQuery} placeholder={t("search")} className="w-full md:w-[280px]" />
+				<SearchBox
+					value={query}
+					onChange={setQuery}
+					placeholder={t("productSearchPlaceholder")}
+					className="w-full md:w-[320px]"
+					filters={[{ key: "type", label: t("colType"), options: [
+						{ value: "", label: t("productFilterAll") },
+						{ value: "good", label: t("typeGood") },
+						{ value: "service", label: t("typeService") },
+					] }]}
+					active={{ type: typeFilter }}
+					onFilter={(_k, v) => setTypeFilter(v)}
+				/>
 				<div className="flex flex-wrap items-center gap-8">
 					{/* Импорт/экспорт каталога (ТЗ §17): мастер открывается окном прямо здесь (в настройки
 					    уводила отдельная страница без своей вкладки), выгрузка идёт файлом с токеном */}
@@ -115,12 +134,22 @@ export default function Products() {
 			) : (
 				<div className="fs-card overflow-x-auto">
 					<table className="fs-table min-w-[640px] text-left">
-						<thead><tr><th className="px-16">{t("itemDescription")}</th><th className="px-10">SKU</th><th className="px-10">{t("colType")}</th><th className="px-10 text-right">{t("colPrice")}</th><th className="px-10 text-right">{t("colStock")}</th><th className="px-10" /></tr></thead>
+						<thead><tr><th className="px-16">{t("productColName")}</th><th className="px-10">{t("productSkuCol")}</th><th className="px-10">{t("colType")}</th><th className="px-10 text-right">{t("colPrice")}</th><th className="px-10 text-right">{t("colStock")}</th><th className="px-10" /></tr></thead>
 						<tbody>
 							{visible.map((p) => (
 								<tr key={p.id} className="cursor-pointer" onClick={() => openEdit(p.id)}>
-									<td className="px-16 text-13 font-medium text-[#f1f4ee]">{p.name}</td>
-									<td className="px-10 text-13 text-[#8c948b]">{p.sku}</td>
+									<td className="px-16 text-13 font-medium text-[#f1f4ee]">
+										<span className="flex items-center gap-10">
+											{/* Картинка товара из ссылки в карточке: маленькая, с заглушкой, если ссылки нет */}
+											{p.image ? (
+												<img src={p.image} alt="" className="h-28 w-28 shrink-0 rounded-6 border border-inkLine object-cover" loading="lazy" />
+											) : (
+												<span className="h-28 w-28 shrink-0 rounded-6 border border-inkLine bg-[rgba(255,255,255,0.03)]" aria-hidden />
+											)}
+											<span className="min-w-0">{p.name}</span>
+										</span>
+									</td>
+									<td className="px-10 text-13 text-[#8c948b]">{p.sku}{p.barcode ? <span className="ml-6 text-11 text-[#9AA396]">{p.barcode}</span> : null}</td>
 									<td className="px-10 text-13 text-[#8c948b]">{t(p.type === "good" ? "typeGood" : "typeService")}</td>
 									<td className="px-10 text-right text-13">{money(p.salePrice, settings?.currency ?? "EUR", locale)}</td>
 									<td className="px-10 text-right text-13">
@@ -148,16 +177,24 @@ export default function Products() {
 					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{editId ? t("editProduct") : t("newProduct")}</h2>
 					<div className="flex flex-col gap-12">
 						<FormField label={t("itemDescription")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={200} autoFocus />
+						{/* Артикул — внутренний код товара, штрихкод — номер с этикетки: сканер вводит его как текст */}
 						<div className="grid grid-cols-2 gap-12">
-							<FormField label="SKU" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} maxLength={60} />
-							<label className="block">
-								<span className="mb-6 block text-12 text-[#8c948b]">{t("colType")}</span>
-								<select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as "good" | "service" })} className="fs-field h-40 w-full px-12 text-13 outline-none">
-									<option value="service">{t("typeService")}</option>
-									<option value="good">{t("typeGood")}</option>
-								</select>
-							</label>
+							<div>
+								<FormField label={t("productSku")} value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} maxLength={60} />
+								<span className="mt-[4px] block text-11 text-[#9AA396]">{t("productSkuHint")}</span>
+							</div>
+							<div>
+								<FormField label={t("productBarcode")} value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} maxLength={40} placeholder="4820000000000" />
+								<span className="mt-[4px] block text-11 text-[#9AA396]">{t("productBarcodeHint")}</span>
+							</div>
 						</div>
+						<label className="block">
+							<span className="mb-6 block text-12 text-[#8c948b]">{t("colType")}</span>
+							<select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as "good" | "service" })} className="fs-field h-40 w-full px-12 text-13 outline-none">
+								<option value="service">{t("typeService")}</option>
+								<option value="good">{t("typeGood")}</option>
+							</select>
+						</label>
 						<div className="grid grid-cols-2 gap-12">
 							<FormField label={t("purchasePrice")} type="number" step="0.01" value={form.purchasePrice} onChange={(e) => setForm({ ...form, purchasePrice: e.target.value })} />
 							<FormField label={t("salePrice")} type="number" step="0.01" value={form.salePrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value })} />

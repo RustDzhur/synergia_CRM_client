@@ -22,7 +22,11 @@ export async function GET(req: Request) {
     const kind = url.searchParams.get("kind") ?? "on-hand";
     await connectDB();
 
-    const movements = await StockMovement.find({ org: user.id }).sort({ createdAt: 1 }).limit(20000);
+    // Свежие движения важнее старых: раньше сортировка по возрастанию с лимитом 20 000 брала САМЫЕ
+    // СТАРЫЕ движения, и у фирмы с большой историей новые выпуски/перемещения не попадали в остатки
+    // и отчёты вовсе. Берём последние 20 000 и разворачиваем в хронологический порядок для расчётов.
+    const movements = await StockMovement.find({ org: user.id }).sort({ createdAt: -1 }).limit(20000);
+    movements.reverse();
     const list: MovementLike[] = movements.map((m) => ({
         product: String(m.product),
         warehouse: m.warehouse ? String(m.warehouse) : null,
@@ -31,7 +35,7 @@ export async function GET(req: Request) {
         unitCost: m.unitCost ?? 0,
         at: (m.createdAt ?? new Date()).toISOString(),
     }));
-    const products = await Product.find({ org: user.id }).select("name sku unit stockQty reorderLevel purchasePrice salePrice type");
+    const products = await Product.find({ org: user.id }).select("name sku barcode unit stockQty reorderLevel purchasePrice salePrice type image");
     const info = new Map(products.map((p) => [String(p._id), p]));
 
     if (kind === "on-hand") {
@@ -42,21 +46,29 @@ export async function GET(req: Request) {
             .filter((p) => p.type === "good")
             .map((p) => {
                 const id = String(p._id);
+                const total = stockOnHand(list, id);
+                const byWh = Object.fromEntries(warehouses.map((w) => [String(w._id), by[String(w._id)]?.[id] ?? 0]));
+                const placed = Object.values(byWh).reduce((s, v) => s + (Number(v) || 0), 0);
                 return {
                     id,
                     name: p.name,
                     sku: p.sku ?? "",
+                    barcode: p.barcode ?? "",
                     unit: p.unit ?? "",
-                    total: stockOnHand(list, id),
-                    byWarehouse: Object.fromEntries(warehouses.map((w) => [String(w._id), by[String(w._id)]?.[id] ?? 0])),
+                    total,
+                    byWarehouse: byWh,
+                    // Остаток «без складу»: старые движения без склада и резервы заказов. Без этой колонки
+                    // «Разом» не сходилось с суммой складов и выглядело ошибкой
+                    noWarehouse: Math.round((total - placed) * 1000) / 1000,
                     reorderLevel: p.reorderLevel ?? 0,
+                    image: p.image ?? "",
                 };
             });
         // Остатки файлом: кнопка «Експорт залишків» обещала CSV, а отдавала JSON — теперь форматов два,
         // по умолчанию по-прежнему JSON (его читает мастер импорта), CSV — для таблиц и сверок
         if ((url.searchParams.get("format") ?? "json").toLowerCase() === "csv") {
-            const columns = ["sku", "name", "unit", ...warehouses.map((w) => w.name), "total", "reorderLevel"];
-            const csvRows = rows.map((r) => [r.sku, r.name, r.unit, ...warehouses.map((w) => r.byWarehouse[String(w._id)] ?? 0), r.total, r.reorderLevel]);
+            const columns = ["sku", "barcode", "name", "unit", ...warehouses.map((w) => w.name), "noWarehouse", "total", "reorderLevel"];
+            const csvRows = rows.map((r) => [r.sku, r.barcode, r.name, r.unit, ...warehouses.map((w) => r.byWarehouse[String(w._id)] ?? 0), r.noWarehouse, r.total, r.reorderLevel]);
             return new Response(toCsv(columns, csvRows), {
                 headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="stock-on-hand.csv"`, "Cache-Control": "no-store" },
             });

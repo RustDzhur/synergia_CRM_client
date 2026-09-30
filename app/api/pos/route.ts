@@ -26,10 +26,10 @@ export async function GET(req: Request) {
     await connectDB();
     await requireMarket(user.id, "UA");
     const sales = await recentRetail(user.id);
-    const products = await Product.find({ org: user.id, type: "good", archived: { $ne: true } }).select("name sku salePrice unit stockQty image");
+    const products = await Product.find({ org: user.id, type: "good", archived: { $ne: true } }).select("name sku barcode salePrice unit stockQty image");
     return NextResponse.json({
         recent: sales.map((s) => ({ id: String(s._id), number: s.number, at: s.paidAt ? new Date(s.paidAt).toISOString() : "", total: Number(s.paidAmount) || 0, currency: s.currency, fiscalCode: s.fiscalCode ?? "", payType: s.paidVia ?? "", customerName: s.customerName })),
-        products: products.map((p) => ({ id: String(p._id), name: p.name, sku: p.sku ?? "", price: p.salePrice ?? 0, unit: p.unit ?? "", stockQty: p.stockQty ?? 0, image: p.image ?? "" })),
+        products: products.map((p) => ({ id: String(p._id), name: p.name, sku: p.sku ?? "", barcode: p.barcode ?? "", price: p.salePrice ?? 0, unit: p.unit ?? "", stockQty: p.stockQty ?? 0, image: p.image ?? "" })),
     });
 }
 
