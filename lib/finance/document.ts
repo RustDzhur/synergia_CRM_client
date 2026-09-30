@@ -1,11 +1,13 @@
 import { isTemplate, renderDocumentPdf, PdfSettings, PdfParty, PdfLineItem } from "./pdf";
 import { financeSettings } from "./settings";
 import { marketOf } from "./market";
+import { assertCompliant, type ComplianceDoc } from "./compliance";
 import { activeTemplate, applyTemplate, templateAllowsRate } from "./documents/store";
 import { firmRate } from "./rates";
 import Contact from "@/models/Contact";
 import Company from "@/models/Company";
 import Invoice from "@/models/Invoice";
+import Product from "@/models/Product";
 
 // Общие сборщики PDF для всех финансовых документов: и маршруты скачивания (/api/<kind>/<id>/pdf),
 // и отправка клиенту (lib/finance/send.ts) берут готовый буфер отсюда, чтобы файл в письме и файл
@@ -99,6 +101,7 @@ export async function invoicePdfBuffer(org: string, inv: any, locale: string, te
     const settings = await financeSettings(org);
     // Активный бланк вида: его тексты (условия оплаты, примечания), блоки и подпись/печать
     const tpl = await activeTemplate(org, inv.kind === "credit_note" ? "credit_note" : "invoice");
+    complianceFor(inv.kind === "credit_note" ? "credit_note" : "invoice", inv, settings);
     let creditForNumber: string | undefined;
     if (inv.kind === "credit_note" && inv.creditFor) {
         const orig = await Invoice.findOne({ _id: inv.creditFor, org }).select("number");
@@ -134,6 +137,7 @@ export async function invoicePdfBuffer(org: string, inv: any, locale: string, te
 export async function quotePdfBuffer(org: string, q: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     const tpl = await activeTemplate(org, "quote");
+    complianceFor("quote", q, settings);
     return renderDocumentPdf(
         {
             kind: "quote",
@@ -155,6 +159,7 @@ export async function quotePdfBuffer(org: string, q: any, locale: string, templa
 export async function orderPdfBuffer(org: string, o: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     const tpl = await activeTemplate(org, "order");
+    complianceFor("order", o, settings);
     return renderDocumentPdf(
         {
             kind: "order",
@@ -178,6 +183,7 @@ export async function orderPdfBuffer(org: string, o: any, locale: string, templa
 export async function deliveryNotePdfBuffer(org: string, order: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     const tpl = await activeTemplate(org, "delivery_note");
+    complianceFor("delivery_note", order, settings);
     return renderDocumentPdf(
         {
             kind: "delivery_note",
@@ -202,6 +208,7 @@ export async function deliveryNotePdfBuffer(org: string, order: any, locale: str
 export async function actPdfBuffer(org: string, order: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     const tpl = await activeTemplate(org, "act");
+    complianceFor("act", order, settings);
     return renderDocumentPdf(
         {
             kind: "act",
@@ -223,6 +230,7 @@ export async function actPdfBuffer(org: string, order: any, locale: string, temp
 export async function contractPdfBuffer(org: string, c: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     const tpl = await activeTemplate(org, "contract");
+    complianceFor("contract", c, settings);
     return renderDocumentPdf(
         {
             kind: "contract",
@@ -240,4 +248,83 @@ export async function contractPdfBuffer(org: string, c: any, locale: string, tem
         applyTemplate(toPdfSettings(settings), tpl, pdfLocale(locale)),
         pdfLocale(locale)
     );
+}
+
+// Упаковочный лист (ВЭД): позиции заказа с кодами УКТ ЗЕД/HS, весом и страной происхождения —
+// данные для брокера и таможни. Цен в нём нет: это документ о грузе, а не о деньгах.
+export async function packingListPdfBuffer(org: string, order: any, locale: string, template?: string): Promise<Buffer> {
+    const settings = await financeSettings(org);
+    const tpl = await activeTemplate(org, "delivery_note");
+    const items = await toPackingItems(org, order.items ?? []);
+    complianceFor("packing_list", { ...order, items }, settings);
+    return renderDocumentPdf(
+        {
+            kind: "packing_list",
+            number: order.deliveryNoteNumber || order.number,
+            orderNumber: order.number,
+            customer: await customerParty(org, order),
+            items,
+            currency: order.currency,
+            uahRate: null,
+            supplyDate: order.deliveryDate || new Date().toISOString().slice(0, 10),
+            notes: order.notes,
+            template: template ?? pdfTemplate(order.template),
+        },
+        applyTemplate(toPdfSettings(settings), tpl, pdfLocale(locale)),
+        pdfLocale(locale)
+    );
+}
+
+// Строки упаковочного листа: «Название · УКТ ЗЕД 1234 · 12.5 кг · UA»
+async function toPackingItems(org: string, items: any[]): Promise<PdfLineItem[]> {
+    const ids = items.map((it) => it?.product).filter(Boolean);
+    const products = ids.length ? await Product.find({ _id: { $in: ids }, org }).select("hsCode weightKg originCountry") : [];
+    const info = new Map(products.map((p) => [String(p._id), p]));
+    return (items ?? []).map((it) => {
+        const p = info.get(String(it?.product ?? ""));
+        const parts = [
+            String(it?.description ?? ""),
+            p?.hsCode ? `УКТ ЗЕД ${p.hsCode}` : "",
+            p?.weightKg ? `${(Number(p.weightKg) || 0) * (Number(it?.qty) || 0)} кг` : "",
+            p?.originCountry ? String(p.originCountry) : "",
+        ].filter(Boolean);
+        return { description: parts.join(" · "), qty: Number(it?.qty) || 0, unitPrice: 0, taxRate: 0 };
+    });
+}
+
+// Проверка обязательных реквизитов перед выпуском (ТЗ §14): документ без них не печатается,
+// причина уходит ответом 400 списком кодов (lib/finance/compliance/index.ts), интерфейс переводит.
+function complianceFor(kind: ComplianceDoc["kind"], doc: any, settings: any, extra: Partial<ComplianceDoc> = {}): void {
+    const items = (doc.items ?? []) as ComplianceDoc["items"];
+    const totals = computeTotalsClient(items);
+    assertCompliant(
+        {
+            kind,
+            number: String(doc.number ?? ""),
+            issueDate: String(doc.issueDate ?? doc.actDate ?? doc.createdAt ?? "").slice(0, 10) || undefined,
+            dueDate: String(doc.dueDate ?? "") || undefined,
+            supplyDate: String(doc.supplyDate ?? "") || undefined,
+            supplyPeriodFrom: String(doc.supplyPeriodFrom ?? "") || undefined,
+            supplyPeriodTo: String(doc.supplyPeriodTo ?? "") || undefined,
+            startDate: String(doc.startDate ?? "") || undefined,
+            endDate: String(doc.endDate ?? "") || undefined,
+            currency: String(doc.currency ?? ""),
+            value: Number(doc.value) || 0,
+            party: { name: String(doc.customerName ?? ""), address: String(doc.customerAddress ?? "") },
+            items,
+            totals,
+            ...extra,
+        },
+        settings as never,
+    );
+}
+
+// Локальный расчёт нетто/брутто для чек-листа: тот же computeTotals, без обращения к базе
+function computeTotalsClient(items: ComplianceDoc["items"]): { gross: number } {
+    let gross = 0;
+    for (const it of items ?? []) {
+        const net = (Number(it.qty) || 0) * (Number(it.unitPrice) || 0);
+        gross += net * (1 + (Number(it.taxRate) || 0) / 100);
+    }
+    return { gross: Math.round(gross * 100) / 100 };
 }

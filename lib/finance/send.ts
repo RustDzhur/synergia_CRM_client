@@ -45,9 +45,9 @@ export async function mailAccount(owner: string, accountId?: unknown) {
 }
 
 const TITLE: Record<string, Record<DocKind, string>> = {
-    en: { invoice: "Invoice", credit_note: "Credit note", quote: "Quotation", order: "Order confirmation", contract: "Contract", delivery_note: "Delivery note", act: "Certificate of services" },
-    de: { invoice: "Rechnung", credit_note: "Gutschrift", quote: "Angebot", order: "Auftragsbestätigung", contract: "Vertrag", delivery_note: "Lieferschein", act: "Leistungsnachweis" },
-    ua: { invoice: "Рахунок", credit_note: "Кредит-нота", quote: "Комерційна пропозиція", order: "Підтвердження замовлення", contract: "Договір", delivery_note: "Видаткова накладна", act: "Акт виконаних робіт" },
+    en: { invoice: "Invoice", credit_note: "Credit note", quote: "Quotation", order: "Order confirmation", contract: "Contract", delivery_note: "Delivery note", act: "Certificate of services", packing_list: "Packing list" },
+    de: { invoice: "Rechnung", credit_note: "Gutschrift", quote: "Angebot", order: "Auftragsbestätigung", contract: "Vertrag", delivery_note: "Lieferschein", act: "Leistungsnachweis", packing_list: "Packliste" },
+    ua: { invoice: "Рахунок", credit_note: "Кредит-нота", quote: "Комерційна пропозиція", order: "Підтвердження замовлення", contract: "Договір", delivery_note: "Видаткова накладна", act: "Акт виконаних робіт", packing_list: "Пакувальний лист" },
 };
 
 // Текст письма на трёх языках интерфейса — как и подписи в PDF, держим рядом с отправкой, без messages/*.json

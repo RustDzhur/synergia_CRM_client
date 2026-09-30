@@ -36,6 +36,9 @@ export default function Invoices({ openId, prefill }: { openId?: string | null; 
 	const [open, setOpen] = useState(false);
 	const [customerName, setCustomerName] = useState("");
 	const [supplyDate, setSupplyDate] = useState(""); // Leistungsdatum, §14 Abs. 4 Nr. 6 UStG — печатается на счёте
+	// ВЭД: условие поставки и номер декларации — для экспортных счетов (ТЗ §12)
+	const [incoterms, setIncoterms] = useState("");
+	const [customs, setCustoms] = useState("");
 	const [items, setItems] = useState<LineItem[]>([emptyItem(defaultTaxRate)]);
 	const [busy, setBusy] = useState<string | null>(null);
 	const [creditTarget, setCreditTarget] = useState<string | null>(null);
@@ -65,7 +68,7 @@ export default function Invoices({ openId, prefill }: { openId?: string | null; 
 		const cleanItems = items.filter((it) => it.description.trim());
 		if (!cleanItems.length) return toast.error(t("itemsRequired"));
 		const err = await createInvoice({
-			customerName: customerName.trim(), items: cleanItems, currency: settings?.currency || "EUR", supplyDate: supplyDate || undefined,
+			customerName: customerName.trim(), items: cleanItems, currency: settings?.currency || "EUR", supplyDate: supplyDate || undefined, incoterms: incoterms || undefined, customsDeclaration: customs || undefined,
 			// привязка к сделке и клиенту: счёт создаётся из карточки и должен в ней же появиться
 			...(prefill ? { deal: prefill.dealId, contact: prefill.contact, company: prefill.company } : {}),
 		});
@@ -104,7 +107,7 @@ export default function Invoices({ openId, prefill }: { openId?: string | null; 
 	}
 	async function duplicate(id: string) { setBusy(id); const err = await duplicateInvoice(id); setBusy(null); if (err) toast.error(err); else toast.success(t("invoiceDuplicated")); }
 	async function downloadPdf(id: string, number: string) {
-		if (!(await downloadDocumentPdf("invoices", id, number, locale))) toast.error(t("pdfFailed"));
+		void downloadDocumentPdf("invoices", id, number, locale);
 	}
 	async function submitCreditNote(e: React.FormEvent) {
 		e.preventDefault();
@@ -222,6 +225,8 @@ export default function Invoices({ openId, prefill }: { openId?: string | null; 
 					<div className="mb-16 md:max-w-[calc(50%-6px)]">
 						<FormField label={t("supplyDate")} type="date" value={supplyDate} onChange={(e) => setSupplyDate(e.target.value)} />
 						<p className="mt-[4px] text-11 text-[#9AA396]">{t("supplyDateHint")}</p>
+						<FormField label={t("invIncoterms")} value={incoterms} onChange={(e) => setIncoterms(e.target.value.toUpperCase())} maxLength={10} placeholder="FCA / DAP" />
+						<FormField label={t("invCustoms")} value={customs} onChange={(e) => setCustoms(e.target.value)} maxLength={60} />
 					</div>
 					<LineItemsEditor items={items} onChange={setItems} products={products.filter((p) => !p.archived)} currency={settings?.currency ?? "EUR"} />
 					<div className="mt-20 flex justify-end gap-10">

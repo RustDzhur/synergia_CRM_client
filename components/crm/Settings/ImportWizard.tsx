@@ -293,6 +293,10 @@ export default function ImportWizard() {
 							<a href="/api/export?kind=products&format=yml" className="fs-btn fs-btn-ghost h-32 text-12">
 								<TbDownload size={13} /> {t("exportYml")}
 							</a>
+							{/* DATEV: проводки для бухгалтера (EXTF, SKR03 по умолчанию) — формат подтверждает бухгалтер */}
+							<a href={`/api/export?kind=datev&year=${new Date().getFullYear()}`} className="fs-btn fs-btn-ghost h-32 text-12">
+								<TbDownload size={13} /> {t("exportDatev")}
+							</a>
 						</div>
 					</section>
 				</div>

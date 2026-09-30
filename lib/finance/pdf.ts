@@ -14,14 +14,14 @@ const DOC_FONT = Buffer.from(notoSansUrl.slice(notoSansUrl.indexOf(",") + 1), "b
 
 // Какие бумаги рисует этот файл. Счёт и кредит-нота жили здесь и раньше, предложение/заказ/договор добавлены,
 // чтобы каждый финансовый документ можно было и скачать, и отправить клиенту одним и тем же рендером.
-export type DocKind = "invoice" | "credit_note" | "quote" | "order" | "contract" | "delivery_note" | "act";
+export type DocKind = "invoice" | "credit_note" | "quote" | "order" | "contract" | "delivery_note" | "act" | "packing_list";
 
 // Небольшой словарь подписей PDF на трёх языках интерфейса — сам PDFKit не знает про next-intl (это не React-рендер),
 // поэтому подписи держим здесь же, минимальным набором, без обращения к messages/*.json.
 const LABELS: Record<string, Record<string, string>> = {
     en: {
         invoice: "Invoice", credit_note: "Credit Note", quote: "Quotation", order: "Order confirmation", contract: "Contract",
-        delivery_note: "Delivery note", deliveryDate: "Delivery date", ourOrder: "Our order",
+        delivery_note: "Delivery note", packing_list: "Packing list", deliveryDate: "Delivery date", ourOrder: "Our order",
         level_1: "Payment reminder", level_2: "First reminder", level_3: "Second reminder", level_4: "Final reminder",
         creditFor: "Credit note for invoice",
         billTo: "Bill to", issueDate: "Issue date", dueDate: "Due date", date: "Date", orderDate: "Order date",
@@ -40,7 +40,7 @@ const LABELS: Record<string, Record<string, string>> = {
     },
     de: {
         invoice: "Rechnung", credit_note: "Gutschrift", quote: "Angebot", order: "Auftragsbestätigung", contract: "Vertrag",
-        delivery_note: "Lieferschein", deliveryDate: "Lieferdatum", ourOrder: "Unsere Bestellung",
+        delivery_note: "Lieferschein", packing_list: "Packliste", deliveryDate: "Lieferdatum", ourOrder: "Unsere Bestellung",
         level_1: "Zahlungserinnerung", level_2: "1. Mahnung", level_3: "2. Mahnung", level_4: "Letzte Mahnung",
         creditFor: "Gutschrift zur Rechnung",
         billTo: "Rechnungsempfänger", issueDate: "Rechnungsdatum", dueDate: "Fällig am", date: "Datum", orderDate: "Bestelldatum",
@@ -59,7 +59,7 @@ const LABELS: Record<string, Record<string, string>> = {
     },
     ua: {
         invoice: "Рахунок", credit_note: "Кредит-нота", quote: "Комерційна пропозиція", order: "Підтвердження замовлення", contract: "Договір",
-        delivery_note: "Видаткова накладна", deliveryDate: "Дата поставки", ourOrder: "Наше замовлення",
+        delivery_note: "Видаткова накладна", packing_list: "Пакувальний лист", deliveryDate: "Дата поставки", ourOrder: "Наше замовлення",
         level_1: "Нагадування про оплату", level_2: "1-ше нагадування", level_3: "2-ге нагадування", level_4: "Останнє нагадування",
         creditFor: "Кредит-нота до рахунку",
         billTo: "Платник", issueDate: "Дата виставлення", dueDate: "Термін оплати", date: "Дата", orderDate: "Дата замовлення",
@@ -143,6 +143,7 @@ const UA_LABELS: Record<string, string> = {
     order: "Замовлення",
     contract: "Договір",
     delivery_note: "Видаткова накладна",
+    packing_list: "Пакувальний лист",
     deliveryDate: "Дата поставки",
     ourOrder: "Наше замовлення",
     level_1: "Нагадування про оплату",

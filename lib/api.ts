@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { MarketError, ProviderError } from "@/lib/http";
+import { ComplianceError } from "@/lib/finance/compliance";
 import { reportError } from "@/lib/reportError";
 import { wasDenied, wasPlanDenied } from "@/lib/auth";
 
@@ -22,6 +23,8 @@ export const validId = (id: string) => isValidObjectId(id);
 export function failure(e: unknown) {
     // Режим рынка: 409 и код market — интерфейс переведёт его сам (кому функция доступна)
     if (e instanceof MarketError) return NextResponse.json({ message: e.message, code: "market", market: e.market }, { status: 409 });
+    // Чек-лист реквизитов: 400 со списком отсутствующих полей (ТЗ §14 — документ не выпускается)
+    if (e instanceof ComplianceError) return NextResponse.json({ message: e.message, code: "compliance", missing: e.issues.map((i) => i.code) }, { status: 400 });
     if (e instanceof ProviderError) return NextResponse.json({ message: e.message }, { status: 502 });
     console.error(e);
     void reportError(e, { where: "ошибка API" });

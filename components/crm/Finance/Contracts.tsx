@@ -42,7 +42,7 @@ export default function Contracts() {
 	}
 	async function act(id: string, fn: (id: string) => Promise<string | null>) { setBusy(id); const err = await fn(id); setBusy(null); if (err) toast.error(err); }
 	async function downloadContractPdf(id: string, number: string) {
-		if (!(await downloadDocumentPdf("contracts", id, number, locale))) toast.error(t("pdfFailed"));
+		void downloadDocumentPdf("contracts", id, number, locale);
 	}
 
 	return (

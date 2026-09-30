@@ -50,6 +50,9 @@ const InvoiceSchema = new Schema(
         supplyPeriodFrom: { type: String, default: "" },
         supplyPeriodTo: { type: String, default: "" },
         notes: { type: String, default: "" },
+        // ВЭД (ТЗ §12): условие поставки и данные таможенной декларации/валютного контроля
+        incoterms: { type: String, default: "" },
+        customsDeclaration: { type: String, default: "" },
         // Шаблон оформления PDF: у каждого документа он свой, чтобы счёт клиенту и договор могли выглядеть по-разному
         template: { type: String, default: "" },
 

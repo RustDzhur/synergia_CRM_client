@@ -44,6 +44,7 @@ export const toInvoiceDTO = (inv: any) => ({
     items: (inv.items ?? []).map((it: any) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice, taxRate: it.taxRate, product: it.product ? String(it.product) : "" })),
     currency: inv.currency, smallBusinessNote: !!inv.smallBusinessNote,
     issueDate: inv.issueDate, dueDate: inv.dueDate, notes: inv.notes, template: inv.template || "",
+    incoterms: inv.incoterms ?? "", customsDeclaration: inv.customsDeclaration ?? "",
     supplyDate: inv.supplyDate ?? "", supplyPeriodFrom: inv.supplyPeriodFrom ?? "", supplyPeriodTo: inv.supplyPeriodTo ?? "",
     status: inv.status, sentAt: inv.sentAt ? inv.sentAt.toISOString() : "", sentTo: inv.sentTo ?? "", paidAt: inv.paidAt ? inv.paidAt.toISOString() : "", paidAmount: inv.paidAmount,
     reminderCount: inv.reminderCount ?? 0, lastReminderAt: inv.lastReminderAt ? inv.lastReminderAt.toISOString() : "",

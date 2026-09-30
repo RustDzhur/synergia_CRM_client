@@ -68,6 +68,9 @@ export async function POST(req: Request) {
         supplyPeriodFrom: typeof b.supplyPeriodFrom === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.supplyPeriodFrom) ? b.supplyPeriodFrom : "",
         supplyPeriodTo: typeof b.supplyPeriodTo === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.supplyPeriodTo) ? b.supplyPeriodTo : "",
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
+        // ВЭД (ТЗ §12): условие поставки и номер митной декларації — для экспортных счетов
+        incoterms: typeof b.incoterms === "string" ? b.incoterms.trim().toUpperCase().slice(0, 10) : "",
+        customsDeclaration: typeof b.customsDeclaration === "string" ? b.customsDeclaration.trim().slice(0, 60) : "",
         template: isTemplate(b.template) ? b.template : "",
         createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
     });

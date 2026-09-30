@@ -35,8 +35,8 @@ type L = Record<string, string>;
 export function dateLines(d: PdfDocumentData, L: L): string[] {
     const out: string[] = [];
     const add = (label: string, value?: string) => { if (value) out.push(`${label}: ${value}`); };
-    if (d.kind === "delivery_note") {
-        // В накладной важны дата поставки и ссылка на заказ, по которому она сделана
+    if (d.kind === "delivery_note" || d.kind === "packing_list") {
+        // В накладной и упаковочном листе важны дата поставки и ссылка на заказ
         add(L.deliveryDate, d.supplyDate || d.issueDate);
         add(L.ourOrder, d.orderNumber);
     }
@@ -454,7 +454,7 @@ function totalsHeight(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, totals
 
 function totalsBlock(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, totals: ReturnType<typeof computeTotals>, x: number, y: number, w: number, o: { accent: string; tint: string; boxed?: boolean; size?: number; grid?: boolean }) {
     // У накладной нет сумм: это документ о передаче товара, а не о деньгах
-    if (d.kind === "delivery_note") return y;
+    if (d.kind === "delivery_note" || d.kind === "packing_list") return y;
     const size = o.size ?? 10;
     const { rows, heights, words, h } = totalsMetrics(doc, d, s, L, totals, w, size);
     const top = y + 8;

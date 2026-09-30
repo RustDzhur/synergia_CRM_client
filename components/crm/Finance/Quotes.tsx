@@ -81,7 +81,7 @@ export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: str
 		toast.error(r.message);
 	}
 	async function downloadPdf(id: string, number: string) {
-		if (!(await downloadDocumentPdf("quotes", id, number, locale))) toast.error(t("pdfFailed"));
+		void downloadDocumentPdf("quotes", id, number, locale); // причину отказа показывает сам хелпер
 	}
 	async function decide(id: string, accepted: boolean) { setBusy(id); const err = await decideQuote(id, accepted); setBusy(null); if (err) toast.error(err); }
 	async function toOrder(id: string) {

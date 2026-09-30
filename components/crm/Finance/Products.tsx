@@ -11,7 +11,7 @@ import SearchBox from "../shared/SearchBox";
 import { money } from "./format";
 import Stock from "./Stock";
 
-const EMPTY = { name: "", sku: "", type: "service" as "good" | "service", unit: "pcs", purchasePrice: "0", salePrice: "0", taxRate: "", stockQty: "0", reorderLevel: "0", image: "", prices: [] as Array<{ type: string; price: string; minQty: string }> };
+const EMPTY = { name: "", sku: "", type: "service" as "good" | "service", unit: "pcs", purchasePrice: "0", salePrice: "0", taxRate: "", stockQty: "0", reorderLevel: "0", image: "", prices: [] as Array<{ type: string; price: string; minQty: string }>, hsCode: "", weightKg: "0", originCountry: "" };
 
 // Каталог товаров и услуг: то же, что раньше было вкладкой «Products» в Inventory Management, но остаток теперь настоящий —
 // меняется только через движения склада (заказы), не правкой числа в этой форме.
@@ -43,6 +43,9 @@ export default function Products() {
 			taxRate: p.taxRate === null ? "" : String(p.taxRate), stockQty: String(p.stockQty), reorderLevel: String(p.reorderLevel),
 			image: p.image ?? "",
 			prices: (p.prices ?? []).map((x) => ({ type: x.type ?? "", price: String(x.price ?? ""), minQty: String(x.minQty ?? 1) })),
+			hsCode: p.hsCode ?? "",
+			weightKg: String(p.weightKg ?? 0),
+			originCountry: p.originCountry ?? "",
 		});
 		setOpen(true);
 	}
@@ -58,6 +61,9 @@ export default function Products() {
 			image: form.image.trim(),
 			// Прайс: строки с пустой или нулевой ценой отбрасываются на сервере — здесь отправляем как есть
 			prices: form.prices.map((x) => ({ type: x.type.trim(), price: Number(x.price) || 0, minQty: Number(x.minQty) || 1 })),
+			hsCode: form.hsCode.trim(),
+			weightKg: Number(form.weightKg) || 0,
+			originCountry: form.originCountry.trim().toUpperCase(),
 		};
 		const err = editId ? await updateProduct(editId, data) : await createProduct(data);
 		if (err) return toast.error(err);
@@ -155,6 +161,12 @@ export default function Products() {
 						)}
 						{form.type === "good" && editId && <p className="text-11 text-[#9AA396]">{t("stockHint")}</p>}
 						<FormField label={t("productImage")} value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} maxLength={500} placeholder="https://…" />
+						{/* ВЭД (ТЗ §12): код УКТ ЗЕД/HS, вес единицы и страна происхождения — для пакувального листа */}
+						<div className="grid grid-cols-3 gap-12">
+							<FormField label={t("productHsCode")} value={form.hsCode} onChange={(e) => setForm({ ...form, hsCode: e.target.value })} maxLength={20} placeholder="8517 62 00 00" />
+							<FormField label={t("productWeight")} value={form.weightKg} onChange={(e) => setForm({ ...form, weightKg: e.target.value.replace(/[^\d.]/g, "") })} maxLength={8} />
+							<FormField label={t("productOrigin")} value={form.originCountry} onChange={(e) => setForm({ ...form, originCountry: e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2) })} maxLength={2} placeholder="UA" />
+						</div>
 						{/* Прайс: типы цен и ступени по количеству (ТЗ §12, «Опт») */}
 						<div>
 							<span className="mb-6 block text-12 text-[#8c948b]">{t("productPrices")}</span>

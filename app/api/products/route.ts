@@ -12,6 +12,9 @@ const toDTO = (p: any) => ({
     purchasePrice: p.purchasePrice, salePrice: p.salePrice, taxRate: p.taxRate,
     stockQty: p.stockQty, reorderLevel: p.reorderLevel, archived: !!p.archived,
     image: p.image ?? "",
+    hsCode: p.hsCode ?? "",
+    weightKg: p.weightKg ?? 0,
+    originCountry: p.originCountry ?? "",
     // Типы цен и ступени (ТЗ §12): «опт / партнер», цена и минимальное количество
     prices: Array.isArray(p.prices) ? p.prices.map((x: { type?: string; price?: number; minQty?: number }) => ({ type: String(x.type ?? ""), price: Number(x.price) || 0, minQty: Number(x.minQty) || 1 })) : [],
 });
@@ -52,6 +55,9 @@ export async function POST(req: Request) {
         reorderLevel: Math.max(0, Number(b.reorderLevel) || 0),
         image: typeof b.image === "string" && /^https?:\/\//.test(b.image.trim()) ? b.image.trim().slice(0, 500) : "",
         prices: cleanPrices(b.prices),
+        hsCode: typeof b.hsCode === "string" ? b.hsCode.trim().slice(0, 20) : "",
+        weightKg: Math.max(0, Number(b.weightKg) || 0),
+        originCountry: typeof b.originCountry === "string" ? b.originCountry.trim().toUpperCase().slice(0, 2) : "",
     });
     return NextResponse.json(toDTO(product), { status: 201 });
 }

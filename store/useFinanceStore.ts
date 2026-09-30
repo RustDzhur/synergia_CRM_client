@@ -14,6 +14,10 @@ export interface Product {
 	image?: string;
 	// Типы цен и ступени по количеству (ТЗ §12): «опт / партнер», цена и минимальное количество
 	prices?: Array<{ type: string; price: number; minQty: number }>;
+	// ВЭД (ТЗ §12): код УКТ ЗЕД/HS, вес единицы и страна происхождения — для пакувального листа
+	hsCode?: string;
+	weightKg?: number;
+	originCountry?: string;
 }
 export interface OrderWaybill {
 	number: string; ref?: string; status: string; statusAt: string; cost: number;
@@ -42,6 +46,8 @@ export interface Invoice {
 	issueDate: string; dueDate: string; notes: string;
 	// Дата/период оказания услуги — обязательное поле немецкого счёта (§14 Abs. 4 Nr. 6 UStG), в PDF печатается как Leistungsdatum
 	supplyDate: string; supplyPeriodFrom: string; supplyPeriodTo: string;
+	// ВЭД (ТЗ §12): условие поставки и номер митной декларації
+	incoterms?: string; customsDeclaration?: string;
 	status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
 	sentAt: string; sentTo: string; paidAt: string; paidAmount: number;
 	dunningLevel?: number; dunningFee?: number; dunningLog?: { level: number; sentAt: string; fee: number; dueDate: string; method: string }[];

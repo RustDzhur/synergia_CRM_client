@@ -18,7 +18,7 @@ import { STATUS_COLORS } from "@/utils/statusColors";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
-import { downloadAct, downloadDeliveryNote, downloadDocumentPdf } from "./download";
+import { downloadAct, downloadDeliveryNote, downloadDocumentPdf, downloadPackingList } from "./download";
 import WaybillDialog from "./ordersParts/WaybillDialog";
 import UkrposhtaDialog from "./ordersParts/UkrposhtaDialog";
 import DocumentTemplateButton from "./DocumentTemplateButton";
@@ -93,7 +93,7 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 	// Акт виконаних робіт — украинский документ, но кнопку показываем всем: фирма сама решает,
 	// нужен ли он ей (в отличие от ТТН, которая без подключённой доставки смысла не имеет)
 	async function downloadActPdf(id: string, actNumber: string) {
-		if (!(await downloadAct(id, actNumber, locale))) toast.error(t("pdfFailed"));
+		void downloadAct(id, actNumber, locale);
 	}
 
 	// Укрпошта: штрихкод вписывает менеджер (номер известен после регистрации в отделении),
@@ -138,11 +138,11 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 	}
 
 	async function downloadDelivery(id: string, noteNumber: string) {
-		if (!(await downloadDeliveryNote(id, noteNumber, locale))) toast.error(t("pdfFailed"));
+		void downloadDeliveryNote(id, noteNumber, locale);
 	}
 
 	async function downloadOrderPdf(id: string, number: string) {
-		if (!(await downloadDocumentPdf("orders", id, number, locale))) toast.error(t("pdfFailed"));
+		void downloadDocumentPdf("orders", id, number, locale);
 	}
 	async function advance(id: string, status: string) {
 		setBusy(id);
@@ -205,6 +205,14 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 									className="fs-btn fs-btn-ghost h-34"
 									title={o.deliveryNoteNumber ? t("deliveryIssued", { number: o.deliveryNoteNumber }) : t("deliveryCreate")}>
 									<TbTruckDelivery size={15} /> {o.deliveryNoteNumber || t("deliveryNote")}
+								</button>
+								{/* Пакувальний лист (ВЭД): позиции с УКТ ЗЕД, весом и страной происхождения */}
+								<button
+									type="button"
+									onClick={() => void downloadPackingList(o.id, o.number, locale)}
+									className="fs-btn fs-btn-ghost h-34"
+									title={t("packingListHint")}>
+									<TbTruckDelivery size={15} /> {t("packingList")}
 								</button>
 								{/* Публичная ссылка для клиента: статус, состав, доставка и кнопка оплаты */}
 								<button type="button" disabled={busy === o.id} onClick={() => void shareOrder(o.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]" title={t("shareHint")}>
