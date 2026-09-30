@@ -4,8 +4,9 @@ import { randomToken } from "@/lib/crypto";
 import Integration from "@/models/Integration";
 import Contact from "@/models/Contact";
 import Company from "@/models/Company";
+import FiscalShift from "@/models/FiscalShift";
 import type { HydratedDocument } from "mongoose";
-import { currentShift, openShift, sellReceipt, signIn, taxes, type CbGood } from "@/lib/checkbox";
+import { closeShift, currentShift, listShifts, openShift, returnReceipt, sellReceipt, signIn, taxes, type CbGood, type CbPayType } from "@/lib/checkbox";
 
 // Фискализация счетов через ПРРО Checkbox: когда счёт оплачен, чек пробивается сам, а клиент
 // получает его от Checkbox (по почте или в SMS). Это требование украинского закона, но подключение —
@@ -38,12 +39,33 @@ async function withToken<T>(cfg: FiscalCredentials, fn: (token: string) => Promi
 
 export interface FiscalResult { fiscalCode: string; url: string; receiptId: string }
 
+// ── Когда чек нужен ─────────────────────────────────────────────────────────────────────────────────
+// РРО/ПРРО по украинскому закону: чек обязателен при наличной и карточной оплате; при безналичной
+// оплате по рахунку между юрособами/ФОП обычно достаточно рахунку й акта (это место помечено в ТЗ
+// «проверить у бухгалтера»). Поэтому чек — предложение по способу оплаты, а не безусловная кнопка:
+// автофискализация срабатывает только там, где чек точно нужен.
+
+/** Оплата пришла через эквайринг (monobank/LiqPay/WayForPay/крипта) — для покупателя это карта */
+export const paidByCard = (inv: { paidVia?: string }) => ["monobank", "liqpay", "wayforpay", "cryptopay"].includes(String(inv.paidVia ?? ""));
+
+export interface FiscalAdvice {
+    needed: boolean; // чек обязателен по правилам (наличная/карточная оплата)
+    payType: CbPayType; // предполагаемый способ оплаты для чека
+    reason: string; // человеческое объяснение — его показывает интерфейс
+}
+
+/** Нужен ли чек по этому счёту и каким способом он, скорее всего, был оплачен. */
+export function fiscalAdvice(inv: { paidVia?: string; paidAmount?: number; totalGross?: number }): FiscalAdvice {
+    if (paidByCard(inv)) return { needed: true, payType: "CARD", reason: "Оплата пройшла через еквайринг (картка) — чек ПРРО обов'язковий" };
+    return { needed: false, payType: "CASH", reason: "Безготівкова оплата за рахунком: зазвичай достатньо рахунку й акта; чек можна пробити в один клік" };
+}
+
 /**
  * Пробить чек по счёту. Сумма — фактически оплаченная (или вся), позиции — из строк счёта.
  * Копия чека уходит клиенту от самого Checkbox: почта и телефон берутся из связанного контакта
  * или фирмы, иначе чек просто остаётся в кассе.
  */
-export async function fiscalizeInvoice(org: string, invoice: Doc, amount?: number): Promise<FiscalResult> {
+export async function fiscalizeInvoice(org: string, invoice: Doc, amount?: number, payType?: CbPayType): Promise<FiscalResult> {
     const doc = await findFiscal(org);
     if (!doc) throw new ProviderError("ПРРО Checkbox не підключено до цієї фірми");
     const cfg = fiscalConfig(doc);
@@ -61,13 +83,75 @@ export async function fiscalizeInvoice(org: string, invoice: Doc, amount?: numbe
     if (!items.length) throw new ProviderError("У счёте немає позицій — чек нема з чого скласти");
 
     return withToken(cfg, async (token) => {
-        // Смена: без открытой смены Checkbox чек не принимает. Открываем сами, если её нет.
-        if (!(await currentShift(cfg.licenseKey, token))) await openShift(cfg.licenseKey, token);
-        // Коды налогов нужны только плательщику ПДВ; у неплательщика касса их не примет, поэтому
-        // ставку подставляем лишь когда Checkbox её отдал
+        // Смена: без открытой смены Checkbox чек не принимает. Открываем сами, если её нет —
+        // и запоминаем в журнале смен, чтобы кассир видел, когда она открылась
+        const shift = await currentShift(cfg.licenseKey, token);
+        if (!shift) {
+            const opened = await openShift(cfg.licenseKey, token);
+            await FiscalShift.updateOne(
+                { org, shiftId: opened.id },
+                { $setOnInsert: { org, provider: "checkbox", shiftId: opened.id, openedAt: new Date() } },
+                { upsert: true }
+            ).catch(() => undefined);
+        }
+        // Коды налогов нужны плательщику ПДВ: касса принимает ставку по каждой позиции (20 %, 7 %,
+        // 0 %). Ищем код по ставке строки, а если касса такого не отдала — общий ПДВ-код,
+        // иначе позиция уходит без налога (так и надо неплательщику).
+        const taxesList = await taxes(cfg.licenseKey, token);
+        const taxForRate = (rate: number): string | undefined => {
+            if (!rate) return undefined;
+            const byRate = taxesList.find((t) => t.label.includes(`${rate}%`) || t.label.includes(`${rate} %`) || t.code === (rate === 20 ? "А" : rate === 7 ? "Б" : ""));
+            if (byRate) return byRate.id;
+            return taxesList.find((t) => /пдв|vat/i.test(t.label))?.id;
+        };
+
+        const goods: CbGood[] = items.map((it) => {
+            const rate = Number((it as { taxRate?: number }).taxRate) || 0;
+            const taxId = taxForRate(rate);
+            return {
+                name: String(it.description ?? "Послуга"),
+                price: Number(it.unitPrice) || 0,
+                qty: Number(it.qty) || 1,
+                ...(taxId ? { taxId } : {}),
+            };
+        });
+        const total = Number(amount) || goods.reduce((sum, g) => sum + g.price * g.qty, 0);
+        const receipt = await sellReceipt(cfg.licenseKey, token, {
+            goods,
+            amount: total,
+            cashierName: cfg.cashierName,
+            payType: payType ?? fiscalAdvice(invoice).payType,
+            delivery: { ...(email ? { emails: [email] } : {}), ...(phone ? { phone } : {}) },
+        });
+        return { fiscalCode: receipt.fiscalCode, url: receipt.url, receiptId: receipt.id };
+    });
+}
+
+/**
+ * Чек возврата по счёту: ссылается на исходный чек кассы (previous_receipt_id). Делается, когда
+ * по счёту выпустили кредит-ноту — деньги вернулись клиенту, и касса должна это видеть.
+ */
+export async function fiscalizeReturn(org: string, invoice: Doc, amount?: number, payType?: CbPayType): Promise<FiscalResult> {
+    const doc = await findFiscal(org);
+    if (!doc) throw new ProviderError("ПРРО Checkbox не підключено до цієї фірми");
+    const cfg = fiscalConfig(doc);
+    const previousReceiptId = String(invoice.fiscalId ?? "");
+    if (!previousReceiptId) throw new ProviderError("За цим рахунком не пробито чек продажу — повертати нічого");
+
+    const items = (invoice.items ?? []) as { description?: string; qty?: number; unitPrice?: number }[];
+    if (!items.length) throw new ProviderError("У рахунку немає позицій — чек повернення нема з чого скласти");
+    const [contact, company] = await Promise.all([
+        invoice.contact ? Contact.findOne({ _id: invoice.contact, owner: org }).select("email phone") : null,
+        invoice.company ? Company.findOne({ _id: invoice.company, owner: org }).select("email phone") : null,
+    ]);
+
+    return withToken(cfg, async (token) => {
+        if (!(await currentShift(cfg.licenseKey, token))) {
+            const opened = await openShift(cfg.licenseKey, token);
+            await FiscalShift.updateOne({ org, shiftId: opened.id }, { $setOnInsert: { org, shiftId: opened.id, openedAt: new Date() } }, { upsert: true }).catch(() => undefined);
+        }
         const taxesList = await taxes(cfg.licenseKey, token);
         const vat = taxesList.find((t) => /пдв|vat/i.test(t.label) || /^А$/i.test(t.code));
-
         const goods: CbGood[] = items.map((it) => ({
             name: String(it.description ?? "Послуга"),
             price: Number(it.unitPrice) || 0,
@@ -75,14 +159,89 @@ export async function fiscalizeInvoice(org: string, invoice: Doc, amount?: numbe
             ...(vat ? { taxId: vat.id } : {}),
         }));
         const total = Number(amount) || goods.reduce((sum, g) => sum + g.price * g.qty, 0);
-        const receipt = await sellReceipt(cfg.licenseKey, token, {
+        const receipt = await returnReceipt(cfg.licenseKey, token, {
             goods,
             amount: total,
+            previousReceiptId,
             cashierName: cfg.cashierName,
-            delivery: { ...(email ? { emails: [email] } : {}), ...(phone ? { phone } : {}) },
+            payType: payType ?? "CARD",
+            delivery: {
+                ...(String(contact?.email || company?.email || "") ? { emails: [String(contact?.email || company?.email)] } : {}),
+                ...(String(contact?.phone || company?.phone || "") ? { phone: String(contact?.phone || company?.phone) } : {}),
+            },
         });
         return { fiscalCode: receipt.fiscalCode, url: receipt.url, receiptId: receipt.id };
     });
+}
+
+// ── Смена кассы ─────────────────────────────────────────────────────────────────────────────────────
+
+export interface ShiftState {
+    open: { id: string; openedAt?: string } | null;
+    /** Последние закрытые смены из журнала: Z-отчёт с оборотом */
+    recent: Array<{ id: string; openedAt: string | null; closedAt: string | null; receipts: number; turnover: number }>;
+}
+
+/** Состояние смены: открыта ли, и что показывали последние Z-отчёты. */
+export async function shiftState(org: string): Promise<ShiftState> {
+    const doc = await findFiscal(org);
+    const shifts = await FiscalShift.find({ org }).sort({ openedAt: -1 }).limit(10);
+    const recent = shifts.filter((s) => s.closedAt).map((s) => ({
+        id: String(s.shiftId),
+        openedAt: s.openedAt ? new Date(s.openedAt).toISOString() : null,
+        closedAt: s.closedAt ? new Date(s.closedAt).toISOString() : null,
+        receipts: Number(s.receipts) || 0,
+        turnover: Number(s.turnover) || 0,
+    }));
+    if (!doc) return { open: null, recent };
+    const cfg = fiscalConfig(doc);
+    try {
+        const shift = await withToken(cfg, (token) => currentShift(cfg.licenseKey, token));
+        return { open: shift ? { id: shift.id } : null, recent };
+    } catch {
+        // Касса недоступна — состояние неизвестно, но журнал смен всё равно показываем
+        return { open: null, recent };
+    }
+}
+
+/** Закрыть смену и сохранить Z-отчёт в журнал. */
+export async function closeFiscalShift(org: string): Promise<{ id: string; receipts: number; turnover: number }> {
+    const doc = await findFiscal(org);
+    if (!doc) throw new ProviderError("ПРРО Checkbox не підключено до цієї фірми");
+    const cfg = fiscalConfig(doc);
+    return withToken(cfg, async (token) => {
+        const shift = await currentShift(cfg.licenseKey, token);
+        if (!shift) throw new ProviderError("Відкритої зміни немає — закривати нічого");
+        const report = await closeShift(cfg.licenseKey, token, shift.id);
+        await FiscalShift.updateOne(
+            { org, shiftId: shift.id },
+            { $set: { closedAt: new Date(), receipts: report.receipts, turnover: report.turnover, zReport: report.raw } },
+            { upsert: true }
+        ).catch(() => undefined);
+        return { id: shift.id, receipts: report.receipts, turnover: report.turnover };
+    });
+}
+
+/** Открыть смену вручную (обычно её открывает первый чек). */
+export async function openFiscalShift(org: string): Promise<{ id: string }> {
+    const doc = await findFiscal(org);
+    if (!doc) throw new ProviderError("ПРРО Checkbox не підключено до цієї фірми");
+    const cfg = fiscalConfig(doc);
+    return withToken(cfg, async (token) => {
+        const existing = await currentShift(cfg.licenseKey, token);
+        if (existing) return { id: existing.id };
+        const opened = await openShift(cfg.licenseKey, token);
+        await FiscalShift.updateOne({ org, shiftId: opened.id }, { $setOnInsert: { org, shiftId: opened.id, openedAt: new Date() } }, { upsert: true }).catch(() => undefined);
+        return { id: opened.id };
+    });
+}
+
+/** История смен из кассы (для сверки с журналом CRM). */
+export async function remoteShifts(org: string) {
+    const doc = await findFiscal(org);
+    if (!doc) throw new ProviderError("ПРРО Checkbox не підключено до цієї фірми");
+    const cfg = fiscalConfig(doc);
+    return withToken(cfg, (token) => listShifts(cfg.licenseKey, token));
 }
 
 /** Сохранение подключения: ключ и пароль проверяются входом кассира до записи (как у ботов и почты) */

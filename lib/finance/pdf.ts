@@ -105,6 +105,7 @@ export interface PdfDocumentData {
     endDate?: string;
     value?: number; // договор: сумма договора
     notes?: string;
+    contractNumber?: string; // номер договора: в украинских документах его печатают рядом с датой
     template?: string; // id шаблона оформления; если не задан — берётся умолчание из настроек бухгалтерии
 }
 export interface PdfSettings {
@@ -118,6 +119,16 @@ export interface PdfSettings {
     template?: string; // шаблон оформления по умолчанию для новых документов
     paymentQr?: boolean; // печатать ли QR-код на оплату в счетах
     country?: string; // ISO-код страны фирмы: у UA-фирмы документы называются по-украински
+    // Украинские реквизиты и подписант: печатаются рядом с обычными, если фирма их заполнила
+    bank?: string; // название банка
+    uaSigner?: { name: string; position: string }; // подписант документов (ФОП или директор ТОВ)
+    signature?: string; // data-URL изображения подписи
+    seal?: string; // data-URL изображения печати
+    showSignature?: boolean; // ставить ли изображение подписи в акте/накладной
+    showStamp?: boolean; // ставить ли изображение печати
+    // Тексты из настраиваемого бланка (DocumentTemplate): условия оплаты, примечания и подвал
+    // документа. Пусто — печатаются значения по умолчанию из настроек фирмы.
+    texts?: { paymentTerms?: string; notes?: string; footer?: string };
 }
 
 
@@ -158,15 +169,24 @@ const UA_LABELS: Record<string, string> = {
     unitPrice: "Ціна",
     tax: "ПДВ",
     lineTotal: "Сума",
-    net: "Без ПДВ",
+    // Итоги украинского документа — «Разом без ПДВ / ПДВ / До сплати» (ТЗ §7)
+    net: "Разом без ПДВ",
     taxTotal: "ПДВ",
     gross: "До сплати",
     taxOn: "на",
+    sumInWords: "Сума прописом",
+    contractNo: "Договір",
+    edrpou: "ЄДРПОУ",
+    ipn: "ІПН",
+    mfo: "МФО",
+    bank: "Банк",
+    vatCert: "Свідоцтво платника ПДВ",
+    signerPosition: "посада",
     smallBusiness: "ПДВ не нараховується: фірма не є платником ПДВ.",
     paymentTerms: "Термін оплати",
     days: "днів",
     iban: "IBAN",
-    bic: "BIC",
+    bic: "МФО",
     notes: "Примітки",
     seller: "Постачальник",
     payByQr: "Оплата за QR-кодом",

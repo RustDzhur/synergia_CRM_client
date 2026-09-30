@@ -8,6 +8,7 @@ import { logAudit } from "@/lib/audit";
 import Order from "@/models/Order";
 import User from "@/models/User";
 import { requireMarket } from "@/lib/finance/marketGuard";
+import { numberPrefix } from "@/lib/finance/documents/store";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     if (!order.actNumber || actDate !== order.actDate) {
         const settings = await financeSettings(user.id);
-        const number = order.actNumber || (await nextNumber(user.id, settings.actPrefix || "АКТ"));
+        const number = order.actNumber || (await nextNumber(user.id, await numberPrefix(user.id, "act", settings.actPrefix || "АКТ")));
         order.actNumber = number;
         order.actDate = actDate;
         await order.save();

@@ -6,11 +6,13 @@ import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
 import { cleanItems } from "@/lib/finance/totals";
 import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
+import { fiscalConfig, fiscalizeReturn, findFiscal } from "@/lib/finance/fiscal";
 import { emit } from "@/lib/automation/emit";
 import { logAudit } from "@/lib/audit";
 import Invoice from "@/models/Invoice";
 import { isTemplate } from "@/lib/finance/pdf";
 import { toInvoiceDTO } from "@/lib/finance/dto";
+import { numberPrefix } from "@/lib/finance/documents/store";
 
 // POST /api/invoices/:id/credit-note — { items?, notes? }: выпускает кредит-ноту (Gutschrift/storno) к отправленному
 // счёту. Номер счёта, однажды выданный, не меняется и не удаляется (§14 UStG) — корректировка оформляется отдельным
@@ -33,7 +35,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const settings = await financeSettings(user.id);
-    const number = await nextNumber(user.id, settings.creditNotePrefix || "GS");
+    const number = await nextNumber(user.id, await numberPrefix(user.id, "credit_note", settings.creditNotePrefix || "GS"));
     const today = new Date().toISOString().slice(0, 10);
     const credit = await Invoice.create({
         org: user.id, number, kind: "credit_note", creditFor: source._id,
@@ -47,6 +49,23 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         template: isTemplate(b.template) ? b.template : source.template,
         status: "sent", sentAt: new Date(),
     });
+    // ПРРО: если по исходному счёту пробит чек продажи и включена автофискализация — пробиваем чек
+    // возврата сразу (он ссылается на чек продажи). Ошибку храним в кредит-ноте, выпуск не отменяем.
+    if (source.fiscalId) {
+        try {
+            const fiscalDoc = await findFiscal(user.id);
+            if (fiscalDoc && fiscalConfig(fiscalDoc).auto) {
+                const receipt = await fiscalizeReturn(user.id, credit, undefined, "CARD");
+                credit.fiscalReturnId = receipt.receiptId;
+                credit.fiscalReturnCode = receipt.fiscalCode;
+                credit.fiscalReturnAt = new Date();
+                await credit.save();
+            }
+        } catch (e) {
+            credit.fiscalReturnError = e instanceof Error ? e.message.slice(0, 300) : "Чек повернення не вдалося пробити";
+            await credit.save();
+        }
+    }
     await emit(user.id, { type: "invoice_credit_note_created", data: { id: String(credit._id), number: credit.number, customerName: credit.customerName, sourceInvoice: source.number } });
     await logAudit({ org: user.id, userId: user.userId, action: "invoice.credit_note", entityType: "invoice", entityId: String(credit._id), summary: `Credit note ${credit.number} issued for invoice ${source.number}`, meta: { sourceInvoice: source.number, currency: credit.currency } });
     return NextResponse.json(toInvoiceDTO(credit), { status: 201 });

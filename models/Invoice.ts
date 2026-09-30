@@ -75,6 +75,12 @@ const InvoiceSchema = new Schema(
         fiscalUrl: { type: String, default: "" },
         fiscalAt: { type: Date },
         fiscalError: { type: String, default: "" },
+        fiscalPayType: { type: String, enum: ["", "CASH", "CARD"], default: "" }, // способ оплаты в чеке (готівка/картка)
+        // Чек возврата (при кредит-ноте): ссылается на чек продажи — без него возврат не сойдётся в кассе
+        fiscalReturnId: { type: String, default: "" },
+        fiscalReturnCode: { type: String, default: "" },
+        fiscalReturnAt: { type: Date },
+        fiscalReturnError: { type: String, default: "" },
         // Ссылка на оплату (эквайринг фирмы): способ, адрес и платёж у провайдера. paidVia — чем закрыли счёт.
         payLink: { provider: { type: String, default: "" }, url: { type: String, default: "" }, id: { type: String, default: "" }, at: { type: Date } },
         paidVia: { type: String, default: "" }, // счёт создан автоматически по шаблону

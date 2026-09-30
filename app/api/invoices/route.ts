@@ -11,6 +11,7 @@ import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal, dealForCustomer } from "@/lib/deals";
 import Invoice from "@/models/Invoice";
 import User from "@/models/User";
+import { numberPrefix } from "@/lib/finance/documents/store";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
     ]);
     // ставку определяет фирма, а не браузер: освобождённая — 0 % во всех строках, иначе страна по умолчанию
     const items = applyTaxPolicy(rawItems, settings);
-    const number = await nextNumber(user.id, settings.invoicePrefix || "RE");
+    const number = await nextNumber(user.id, await numberPrefix(user.id, "invoice", settings.invoicePrefix || "RE"));
     const today = new Date().toISOString().slice(0, 10);
     const due = new Date(Date.now() + (settings.paymentTermsDays ?? 14) * 86400000).toISOString().slice(0, 10);
     const invoice = await Invoice.create({

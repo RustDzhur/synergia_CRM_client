@@ -74,20 +74,20 @@ export interface CbGood {
     taxId?: string;
 }
 
+export type CbPayType = "CASH" | "CARD";
+
 export interface CbReceipt {
     id: string;
     fiscalCode: string;
     url: string; // ссылка на чек для клиента, если Checkbox её вернула
 }
 
-/** Чек продажи. delivery — куда Checkbox сам отправит копию чека (почта или телефон клиента) */
-export async function sellReceipt(
-    licenseKey: string,
-    token: string,
-    input: { goods: CbGood[]; amount: number; cashierName?: string; delivery?: { emails?: string[]; phone?: string } }
-): Promise<CbReceipt> {
-    const body = {
+// Тело чека: у продажи и возврата оно одинаковое (возврат лишь ссылается на исходный чек),
+// поэтому собирается в одном месте — расхождение в копейках/тысячных здесь дороже всего
+function receiptBody(input: { goods: CbGood[]; amount: number; cashierName?: string; payType?: CbPayType; delivery?: { emails?: string[]; phone?: string }; previousReceiptId?: string }) {
+    return {
         ...(input.cashierName ? { cashier_name: input.cashierName } : {}),
+        ...(input.previousReceiptId ? { previous_receipt_id: input.previousReceiptId } : {}),
         goods: input.goods.map((g) => ({
             good: {
                 name: g.name.slice(0, 120),
@@ -96,23 +96,91 @@ export async function sellReceipt(
             },
             quantity: Math.max(1, Math.round(g.qty * 1000)), // тысячные
         })),
-        // чек закрывается картой: деньги приходят на счёт, а не в ящик — так и помечаем
-        payments: [{ type: "CARD", amount: Math.round(input.amount * 100) }],
+        // Способ оплаты: карта — деньги приходят на счёт, готівка — в ящик. По правилам РРО чек нужен
+        // в обоих случаях, но в отчётности они различаются, поэтому тип приходит снаружи
+        payments: [{ type: input.payType ?? "CARD", amount: Math.round(input.amount * 100) }],
         ...(input.delivery && (input.delivery.emails?.length || input.delivery.phone)
             ? { delivery: { ...(input.delivery.emails?.length ? { emails: input.delivery.emails } : {}), ...(input.delivery.phone ? { phone: input.delivery.phone } : {}) } }
             : {}),
     };
+}
+
+const receiptFrom = (res: { id?: string; fiscal_code?: string; fiscalCode?: string; tax_url?: string; taxUrl?: string; url?: string; link?: string }): CbReceipt => ({
+    id: String(res.id ?? ""),
+    fiscalCode: String(res.fiscal_code ?? res.fiscalCode ?? ""),
+    // ссылку отдаёт сам Checkbox; если её нет — оставляем пустой, а не выдумываем адрес
+    url: String(res.tax_url ?? res.taxUrl ?? res.url ?? res.link ?? ""),
+});
+
+/** Чек продажи. delivery — куда Checkbox сам отправит копию чека (почта или телефон клиента) */
+export async function sellReceipt(
+    licenseKey: string,
+    token: string,
+    input: { goods: CbGood[]; amount: number; cashierName?: string; payType?: CbPayType; delivery?: { emails?: string[]; phone?: string } }
+): Promise<CbReceipt> {
     const res = await cb<{ id?: string; fiscal_code?: string; fiscalCode?: string; tax_url?: string; taxUrl?: string; url?: string; link?: string }>("/receipts/sell", {
         method: "POST",
         licenseKey,
         token,
-        body,
+        body: receiptBody(input),
     });
     if (!res.id) throw new ProviderError("Checkbox не повернув чек");
+    return receiptFrom(res);
+}
+
+/** Чек возврата (кредит-нота): ссылается на исходный чек кассы — без него возврат не сойдётся в ЄРПН */
+export async function returnReceipt(
+    licenseKey: string,
+    token: string,
+    input: { goods: CbGood[]; amount: number; previousReceiptId: string; cashierName?: string; payType?: CbPayType; delivery?: { emails?: string[]; phone?: string } }
+): Promise<CbReceipt> {
+    if (!input.previousReceiptId) throw new ProviderError("Немає чека, до якого зробити повернення — спочатку пробийте чек продажу");
+    const res = await cb<{ id?: string; fiscal_code?: string; fiscalCode?: string; tax_url?: string; taxUrl?: string; url?: string; link?: string }>("/receipts/return", {
+        method: "POST",
+        licenseKey,
+        token,
+        body: receiptBody(input),
+    });
+    if (!res.id) throw new ProviderError("Checkbox не повернув чек");
+    return receiptFrom(res);
+}
+
+// ── Смены и Z-отчёт ─────────────────────────────────────────────────────────────────────────────────
+// Чек принимается только при открытой смене. Смену открывают в начале дня, а в конце — закрывают:
+// Checkbox формирует Z-отчёт (итоги смены), который и служит подтверждением закрытия.
+
+export interface CbShiftReport {
+    id: string; // id закрытой смены
+    closedAt: string;
+    /** Итоги Z-отчёта: приходят разными полями у разных версий API, поэтому читаем терпимо */
+    receipts: number;
+    turnover: number;
+    raw: Record<string, unknown>;
+}
+
+const num = (v: unknown): number => (Number.isFinite(Number(v)) ? Number(v) : 0);
+
+/** Закрытие смены: Checkbox отвечает данными Z-отчёта (счётчики и оборот берём, что есть) */
+export async function closeShift(licenseKey: string, token: string, shiftId: string): Promise<CbShiftReport> {
+    const res = await cb<Record<string, unknown>>(`/shifts/close`, { method: "POST", licenseKey, token, body: { shift_id: shiftId } });
+    const z = (res.z_report ?? res.zReport ?? res) as Record<string, unknown>;
     return {
-        id: String(res.id),
-        fiscalCode: String(res.fiscal_code ?? res.fiscalCode ?? ""),
-        // ссылку отдаёт сам Checkbox; если её нет — оставляем пустой, а не выдумываем адрес
-        url: String(res.tax_url ?? res.taxUrl ?? res.url ?? res.link ?? ""),
+        id: String(res.id ?? shiftId),
+        closedAt: String(res.closed_at ?? res.closedAt ?? new Date().toISOString()),
+        receipts: num(z.receipts_count ?? z.receiptsCount ?? z.receipt_count ?? z.count ?? res.receipts_count),
+        turnover: num(z.turnover ?? z.sum ?? z.total ?? res.turnover) / 100, // копейки → гривны
+        raw: res,
     };
+}
+
+/** Список смен кассы: по нему видно, закрыта ли предыдущая и когда её закрывали */
+export async function listShifts(licenseKey: string, token: string, limit = 20): Promise<Array<{ id: string; status: string; openedAt: string; closedAt: string }>> {
+    const res = await cb<{ results?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>>(`/shifts?limit=${limit}`, { licenseKey, token }).catch(() => null);
+    const rows = Array.isArray(res) ? res : (res?.results ?? []);
+    return rows.map((s) => ({
+        id: String(s.id ?? ""),
+        status: String(s.status ?? ""),
+        openedAt: String(s.opened_at ?? s.openedAt ?? ""),
+        closedAt: String(s.closed_at ?? s.closedAt ?? ""),
+    })).filter((s) => s.id);
 }

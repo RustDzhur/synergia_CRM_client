@@ -7,6 +7,7 @@ import { nextNumber } from "@/lib/finance/numbering";
 import { logAudit } from "@/lib/audit";
 import Order from "@/models/Order";
 import User from "@/models/User";
+import { numberPrefix } from "@/lib/finance/documents/store";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     if (!order.deliveryNoteNumber || deliveryDate !== order.deliveryDate) {
         const settings = await financeSettings(user.id);
-        const number = order.deliveryNoteNumber || (await nextNumber(user.id, settings.deliveryNotePrefix || "LS"));
+        const number = order.deliveryNoteNumber || (await nextNumber(user.id, await numberPrefix(user.id, "delivery_note", settings.deliveryNotePrefix || "LS")));
         order.deliveryNoteNumber = number;
         order.deliveryDate = deliveryDate;
         await order.save();

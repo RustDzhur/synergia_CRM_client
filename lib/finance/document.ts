@@ -1,5 +1,7 @@
 import { isTemplate, renderDocumentPdf, PdfSettings, PdfParty, PdfLineItem } from "./pdf";
 import { financeSettings } from "./settings";
+import { marketOf } from "./market";
+import { activeTemplate, applyTemplate, templateAllowsRate } from "./documents/store";
 import { firmRate } from "./rates";
 import Contact from "@/models/Contact";
 import Company from "@/models/Company";
@@ -29,26 +31,38 @@ async function uahRateFor(org: string, currency: string) {
 
 export const pdfTemplate = (v: unknown) => (isTemplate(v) ? v : undefined);
 
-export const toPdfSettings = (s: any): PdfSettings => ({
-    legalName: s?.legalName ?? "",
-    address: s?.address ?? "",
-    taxId: s?.taxId ?? "",
-    // Налоговый номер и USt-IdNr. — разные строки: на немецком счёте обычно указывают оба
-    vatId: s?.vatId ?? "",
-    iban: s?.iban ?? "",
-    bic: s?.bic ?? "",
-    paymentTermsDays: Number(s?.paymentTermsDays) || 0,
-    phone: s?.phone ?? "",
-    email: s?.email ?? "",
-    website: s?.website ?? "",
-    registerNumber: s?.registerNumber ?? "",
-    managingDirector: s?.managingDirector ?? "",
-    logo: s?.logo ?? "",
-    footerText: s?.footerText ?? "",
-    template: isTemplate(s?.template) ? s.template : undefined,
-    paymentQr: s?.paymentQr !== false, // по умолчанию код на оплату печатается
-    country: s?.country ?? "", // UA — документы называются по-украински (см. UA_LABELS в pdf.ts)
-});
+export const toPdfSettings = (s: any): PdfSettings => {
+    const ua = marketOf(s?.country) === "UA";
+    // Реквизиты украинской фирмы печатаются со своими подписями: «ЄДРПОУ 12345678», «ІПН …»,
+    // банк и МФО — вместо немецких налогового номера и BIC. Подписи (названия строк) приходят
+    // из UA_LABELS, поэтому здесь собираем строки целиком.
+    const uaIds = [s?.uaEdrpou ? `ЄДРПОУ ${s.uaEdrpou}` : "", s?.uaIpn ? `ІПН ${s.uaIpn}` : ""].filter(Boolean).join(" · ");
+    const uaBankParts = [s?.uaBank ? `${s.uaBank}` : "", s?.uaMfo ? `МФО ${s.uaMfo}` : ""].filter(Boolean).join(" · ");
+    return {
+        legalName: s?.legalName ?? "",
+        address: s?.address ?? "",
+        taxId: ua ? uaIds || (s?.taxId ?? "") : (s?.taxId ?? ""),
+        // Налоговый номер и USt-IdNr. — разные строки: на немецком счёте обычно указывают оба
+        vatId: s?.vatId ?? "",
+        iban: ua ? s?.uaIban || (s?.iban ?? "") : (s?.iban ?? ""),
+        bic: ua ? s?.uaMfo || (s?.bic ?? "") : (s?.bic ?? ""),
+        bank: ua ? s?.uaBank || "" : "",
+        paymentTermsDays: Number(s?.paymentTermsDays) || 0,
+        phone: s?.phone ?? "",
+        email: s?.email ?? "",
+        website: s?.website ?? "",
+        registerNumber: ua ? (s?.uaVatCertificate ? `Свідоцтво ПДВ ${s.uaVatCertificate}` : uaBankParts) : (s?.registerNumber ?? ""),
+        managingDirector: s?.managingDirector ?? "",
+        uaSigner: ua && (s?.uaSignerName || s?.uaSignerPosition) ? { name: s?.uaSignerName ?? "", position: s?.uaSignerPosition ?? "" } : undefined,
+        signature: ua ? s?.uaSignature || "" : "",
+        seal: ua ? s?.uaSeal || "" : "",
+        logo: s?.logo ?? "",
+        footerText: s?.footerText ?? "",
+        template: isTemplate(s?.template) ? s.template : undefined,
+        paymentQr: s?.paymentQr !== false, // по умолчанию код на оплату печатается
+        country: s?.country ?? "", // UA — документы называются по-украински (см. UA_LABELS в pdf.ts)
+    };
+};
 
 export const toPdfItems = (items: any): PdfLineItem[] =>
     (Array.isArray(items) ? items : []).map((it: any) => ({
@@ -80,6 +94,8 @@ export async function customerParty(org: string, doc: { customerName?: string; c
 // Счёт и кредит-нота: стороны и позиции — снимок внутри документа, поэтому дополнительных запросов нет
 export async function invoicePdfBuffer(org: string, inv: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
+    // Активный бланк вида: его тексты (условия оплаты, примечания), блоки и подпись/печать
+    const tpl = await activeTemplate(org, inv.kind === "credit_note" ? "credit_note" : "invoice");
     let creditForNumber: string | undefined;
     if (inv.kind === "credit_note" && inv.creditFor) {
         const orig = await Invoice.findOne({ _id: inv.creditFor, org }).select("number");
@@ -92,8 +108,8 @@ export async function invoicePdfBuffer(org: string, inv: any, locale: string, te
             creditForNumber,
             customer: { name: inv.customerName, address: inv.customerAddress, taxId: inv.customerTaxId },
             items: toPdfItems(inv.items),
-            currency: inv.currency,
-            uahRate: await uahRateFor(org, inv.currency),
+            currency: tpl?.currency || inv.currency,
+            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, inv.currency) : null,
             smallBusinessNote: !!inv.smallBusinessNote,
             issueDate: inv.issueDate,
             supplyDate: inv.supplyDate,
@@ -107,46 +123,48 @@ export async function invoicePdfBuffer(org: string, inv: any, locale: string, te
             notes: inv.notes,
             template: template ?? pdfTemplate(inv.template),
         },
-        toPdfSettings(settings),
+        applyTemplate(toPdfSettings(settings), tpl, pdfLocale(locale)),
         pdfLocale(locale)
     );
 }
 
 export async function quotePdfBuffer(org: string, q: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
+    const tpl = await activeTemplate(org, "quote");
     return renderDocumentPdf(
         {
             kind: "quote",
             number: q.number,
             customer: await customerParty(org, q),
             items: toPdfItems(q.items),
-            currency: q.currency,
-            uahRate: await uahRateFor(org, q.currency),
+            currency: tpl?.currency || q.currency,
+            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, q.currency) : null,
             issueDate: q.issueDate,
             validUntil: q.validUntil,
             notes: q.notes,
             template: template ?? pdfTemplate(q.template),
         },
-        toPdfSettings(settings),
+        applyTemplate(toPdfSettings(settings), tpl, pdfLocale(locale)),
         pdfLocale(locale)
     );
 }
 
 export async function orderPdfBuffer(org: string, o: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
+    const tpl = await activeTemplate(org, "order");
     return renderDocumentPdf(
         {
             kind: "order",
             number: o.number,
             customer: await customerParty(org, o),
             items: toPdfItems(o.items),
-            currency: o.currency,
-            uahRate: await uahRateFor(org, o.currency),
+            currency: tpl?.currency || o.currency,
+            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, o.currency) : null,
             issueDate: o.createdAt ? new Date(o.createdAt).toISOString().slice(0, 10) : "",
             notes: o.notes,
             template: template ?? pdfTemplate(o.template),
         },
-        toPdfSettings(settings),
+        applyTemplate(toPdfSettings(settings), tpl, pdfLocale(locale)),
         pdfLocale(locale)
     );
 }
@@ -156,6 +174,7 @@ export async function orderPdfBuffer(org: string, o: any, locale: string, templa
 // поэтому повторная печать даёт тот же документ, а не новый номер.
 export async function deliveryNotePdfBuffer(org: string, order: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
+    const tpl = await activeTemplate(org, "delivery_note");
     return renderDocumentPdf(
         {
             kind: "delivery_note",
@@ -163,14 +182,14 @@ export async function deliveryNotePdfBuffer(org: string, order: any, locale: str
             orderNumber: order.number,
             customer: await customerParty(org, order),
             items: toPdfItems(order.items),
-            currency: order.currency,
-            uahRate: await uahRateFor(org, order.currency),
+            currency: tpl?.currency || order.currency,
+            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, order.currency) : null,
             // Дата поставки: если её не указали, берём сегодняшнюю — накладная всегда про состоявшуюся передачу
             supplyDate: order.deliveryDate || new Date().toISOString().slice(0, 10),
             notes: order.notes,
             template: template ?? pdfTemplate(order.template),
         },
-        toPdfSettings(settings),
+        applyTemplate(toPdfSettings(settings), tpl, pdfLocale(locale)),
         pdfLocale(locale)
     );
 }
@@ -179,6 +198,7 @@ export async function deliveryNotePdfBuffer(org: string, order: any, locale: str
 // и отдельной нумерацией — в украинском учёте это самостоятельный документ
 export async function actPdfBuffer(org: string, order: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
+    const tpl = await activeTemplate(org, "act");
     return renderDocumentPdf(
         {
             kind: "act",
@@ -186,34 +206,35 @@ export async function actPdfBuffer(org: string, order: any, locale: string, temp
             orderNumber: order.number,
             customer: await customerParty(org, order),
             items: toPdfItems(order.items),
-            currency: order.currency,
-            uahRate: await uahRateFor(org, order.currency),
+            currency: tpl?.currency || order.currency,
+            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, order.currency) : null,
             issueDate: order.actDate || new Date().toISOString().slice(0, 10),
             notes: order.notes,
             template: template ?? pdfTemplate(order.template),
         },
-        toPdfSettings(settings),
+        applyTemplate(toPdfSettings(settings), tpl, pdfLocale(locale)),
         pdfLocale(locale)
     );
 }
 
 export async function contractPdfBuffer(org: string, c: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
+    const tpl = await activeTemplate(org, "contract");
     return renderDocumentPdf(
         {
             kind: "contract",
             number: c.number,
             customer: await customerParty(org, c),
             items: [], // у договора позиций нет: печатается сумма договора и срок
-            currency: c.currency,
-            uahRate: await uahRateFor(org, c.currency),
+            currency: tpl?.currency || c.currency,
+            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, c.currency) : null,
             value: c.value,
             startDate: c.startDate,
             endDate: c.endDate,
             notes: c.notes,
             template: template ?? pdfTemplate(c.template),
         },
-        toPdfSettings(settings),
+        applyTemplate(toPdfSettings(settings), tpl, pdfLocale(locale)),
         pdfLocale(locale)
     );
 }

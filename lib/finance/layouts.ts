@@ -1,4 +1,6 @@
 import { computeTotals, taxBreakdown } from "./totals";
+import { marketOf } from "./market";
+import { uahInWords } from "./ua/words";
 import { formatMoney } from "./money";
 import { epcPayload, qrMatrix } from "./qr";
 import { templateDef } from "./templates";
@@ -52,6 +54,8 @@ export function dateLines(d: PdfDocumentData, L: L): string[] {
     if (d.supplyPeriodFrom || d.supplyPeriodTo) {
         add(L.supplyPeriod, [d.supplyPeriodFrom, d.supplyPeriodTo].filter(Boolean).join(" – "));
     } else if (d.supplyDate) add(L.supplyDate, d.supplyDate);
+    // Номер договора — реквизит украинских первичных документов: счёт/акт/накладная часто идут «до договору»
+    if (d.contractNumber) add(L.contractNo ?? "Contract", d.contractNumber);
     // Напоминание всегда называет новый срок оплаты и, если он есть, начисленный сбор
     if (d.dunningNewDue) add(L.dunningNewDue, d.dunningNewDue);
     return out;
@@ -232,15 +236,25 @@ interface FootLine { str: string; size: number; color: string; gap: number }
 function footerLines(d: PdfDocumentData, s: PdfSettings, L: L, base: number, color?: string): FootLine[] {
     const out: FootLine[] = [];
     if (d.smallBusinessNote) out.push({ str: L.smallBusiness, size: base, color: "#999999", gap: 6 });
-    if (d.notes) {
+    // Примечания: свои у документа, иначе — из настраиваемого бланка фирмы (DocumentTemplate)
+    const notes = d.notes || s.texts?.notes || "";
+    if (notes) {
         out.push({ str: L.notes, size: base + 1, color: "#333333", gap: 2 });
-        out.push({ str: d.notes, size: base, color: color ?? "#666666", gap: 6 });
+        out.push({ str: notes, size: base, color: color ?? "#666666", gap: 6 });
     }
-    if (payerKind(d.kind)) out.push({ str: `${L.paymentTerms}: ${s.paymentTermsDays} ${L.days}`, size: base, color: "#999999", gap: 2 });
-    if (s.iban) out.push({ str: `${L.iban}: ${s.iban}${s.bic ? `   ${L.bic}: ${s.bic}` : ""}`, size: base, color: "#999999", gap: 2 });
-    // Свой текст фирмы (благодарность за своевременную оплату, условия гарантии, часы работы)
-    if (s.footerText) out.push({ str: s.footerText, size: base, color: color ?? "#666666", gap: 4 });
-    if (s.managingDirector) out.push({ str: s.managingDirector, size: base, color: "#999999", gap: 0 });
+    // Условия оплаты: свой текст бланка важнее шаблонной строки «Zahlungsziel: 14 Tage»
+    if (payerKind(d.kind)) {
+        const own = (s.texts?.paymentTerms ?? "").trim();
+        out.push({ str: own || `${L.paymentTerms}: ${s.paymentTermsDays} ${L.days}`, size: base, color: "#999999", gap: 2 });
+    }
+    // Банковские реквизиты: у украинской фирмы вместо BIC печатается МФО (подпись из UA_LABELS) и банк
+    if (s.iban) out.push({ str: `${L.iban}: ${s.iban}${s.bic ? `   ${L.bic}: ${s.bic}` : ""}${s.bank ? `   ${L.bank}: ${s.bank}` : ""}`, size: base, color: "#999999", gap: 2 });
+    // Свой текст фирмы (благодарность за своевременную оплату, условия гарантии, часы работы);
+    // текст из бланка документа сильнее общего из настроек
+    const footer = (s.texts?.footer ?? "").trim() || s.footerText;
+    if (footer) out.push({ str: footer, size: base, color: color ?? "#666666", gap: 4 });
+    const signer = s.uaSigner?.name || s.managingDirector;
+    if (signer) out.push({ str: s.uaSigner?.position ? `${signer}, ${s.uaSigner.position}` : signer, size: base, color: "#999999", gap: 0 });
     return out;
 }
 
@@ -404,27 +418,45 @@ function totalsRows(d: PdfDocumentData, L: L, totals: ReturnType<typeof computeT
     return rows;
 }
 
+
+// Сума прописом: реквизит украинских первичных документов. Печатается только у документов с суммами
+// в гривне — для валютного счёта слова были бы про валюту, которой документ не выставляется.
+function sumInWordsFor(d: PdfDocumentData, s: PdfSettings, totals: ReturnType<typeof computeTotals>): string {
+    if (marketOf(s.country) !== "UA") return "";
+    if (String(d.currency ?? "").toUpperCase() !== "UAH") return "";
+    if (d.kind === "delivery_note" || d.kind === "contract") return "";
+    const amount = totals.gross + (Number(d.dunningFee) || 0);
+    return amount > 0 ? uahInWords(amount) : "";
+}
+
 // Высоты строк итогов: подпись вида «USt. 19 % auf 1.800,00 €» при узком блоке переносится,
 // поэтому строку меряем, а не считаем по одной константе — иначе строки налезали друг на друга.
-function totalsMetrics(doc: Doc, d: PdfDocumentData, L: L, totals: ReturnType<typeof computeTotals>, w: number, size: number) {
+function totalsMetrics(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, totals: ReturnType<typeof computeTotals>, w: number, size: number) {
     const rows = totalsRows(d, L, totals);
     const heights = rows.map(([label, , strong]) => {
         doc.fontSize(strong ? size + 1 : size);
         return Math.max(doc.heightOfString(label, { width: w - 100 }), size + 7);
     });
-    return { rows, heights, h: heights.reduce((a, b) => a + b, 0) + 12 };
+    // Строка «Сума прописом» идёт во всю ширину блока и измеряется отдельно — иначе она вылезла бы за рамку
+    const words = sumInWordsFor(d, s, totals);
+    let wordsH = 0;
+    if (words) {
+        doc.fontSize(size - 1);
+        wordsH = doc.heightOfString(`${L.sumInWords}: ${words}`, { width: w - 24 }) + 4;
+    }
+    return { rows, heights, words, wordsH, h: heights.reduce((a, b) => a + b, 0) + 12 + wordsH };
 }
 
 // Высота блока итогов — чтобы шаблон мог заранее решить, поместится ли он на странице
-function totalsHeight(doc: Doc, d: PdfDocumentData, L: L, totals: ReturnType<typeof computeTotals>, w: number, size = 10): number {
-    return totalsMetrics(doc, d, L, totals, w, size).h;
+function totalsHeight(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, totals: ReturnType<typeof computeTotals>, w: number, size = 10): number {
+    return totalsMetrics(doc, d, s, L, totals, w, size).h;
 }
 
-function totalsBlock(doc: Doc, d: PdfDocumentData, L: L, totals: ReturnType<typeof computeTotals>, x: number, y: number, w: number, o: { accent: string; tint: string; boxed?: boolean; size?: number; grid?: boolean }) {
+function totalsBlock(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, totals: ReturnType<typeof computeTotals>, x: number, y: number, w: number, o: { accent: string; tint: string; boxed?: boolean; size?: number; grid?: boolean }) {
     // У накладной нет сумм: это документ о передаче товара, а не о деньгах
     if (d.kind === "delivery_note") return y;
     const size = o.size ?? 10;
-    const { rows, heights, h } = totalsMetrics(doc, d, L, totals, w, size);
+    const { rows, heights, words, h } = totalsMetrics(doc, d, s, L, totals, w, size);
     const top = y + 8;
     if (o.boxed) {
         box(doc, x, top - 6, w, h, { fill: o.tint, stroke: o.grid ? o.accent : undefined });
@@ -436,25 +468,48 @@ function totalsBlock(doc: Doc, d: PdfDocumentData, L: L, totals: ReturnType<type
         text(doc, value, x + w - 88, ty, { size: strong ? size + 1 : size, color: strong ? "#333333" : "#666666", width: 76, align: "right" });
         ty += heights[i];
     });
-    if (!o.boxed) { rule(doc, x + 12, top - 6, x + w - 12, "#E6E6E6"); rule(doc, x + 12, ty - heights[heights.length - 1] + 2, x + w - 12, o.accent, 0.8); }
-    return ty;
+    // Подчёркивание под итоговой строкой ставим ДО строки прописом: она — примечание под блоком
+    const rowsBottom = ty;
+    if (!o.boxed) { rule(doc, x + 12, top - 6, x + w - 12, "#E6E6E6"); rule(doc, x + 12, rowsBottom - heights[heights.length - 1] + 2, x + w - 12, o.accent, 0.8); }
+    let endY = ty;
+    if (words) endY = rowsBottom + 2 + text(doc, `${L.sumInWords}: ${words}`, x + 12, rowsBottom + 2, { size: size - 1, color: "#666666", width: w - 24 });
+    return endY;
 }
 
 // Подписи сторон в акте: две линии — исполнитель и заказчик. Если до низа страницы не хватает
 // места, подписи уходят на новую — обрезать их нельзя.
+//
+// Украинская фирма может загрузить изображения подписи и печати (uaSignature/uaSeal): подпись
+// ставится над линией исполнителя, печать — рядом с ней. Флаги showSignature/showStamp приходят
+// из настраиваемого бланка документа: их можно выключить для конкретного вида документа.
 function actSignatures(doc: Doc, s: PdfSettings, t: TemplateDef, L: L) {
     const x = t.margin;
     const w = PAGE_W - t.margin * 2;
     const half = Math.min(200, w / 2 - 20);
-    let y = doc.y + 22;
+    const ua = marketOf(s.country) === "UA";
+    const signer = s.uaSigner?.name || s.managingDirector;
+    // Изображениям нужно место над линией: подпись 34 pt, печать 64 pt
+    const imagesNeeded = ua && ((s.showSignature !== false && s.signature) || (s.showStamp !== false && s.seal));
+    const reserve = imagesNeeded ? (s.showStamp !== false && s.seal ? 70 : 40) : 0;
+    let y = doc.y + 22 + reserve;
     if (y > PAGE_H - t.margin - 60) {
         doc.addPage();
-        y = t.margin;
+        y = t.margin + reserve;
+    }
+    if (ua && s.showSignature !== false && s.signature) {
+        try {
+            doc.image(Buffer.from(s.signature.slice(s.signature.indexOf(",") + 1), "base64"), x + 24, y - reserve + 2, { fit: [120, 34] });
+        } catch { /* повреждённый data-URL не должен ломать документ */ }
+    }
+    if (ua && s.showStamp !== false && s.seal) {
+        try {
+            doc.image(Buffer.from(s.seal.slice(s.seal.indexOf(",") + 1), "base64"), x + w - half + 24, y - reserve + 2, { fit: [64, 64] });
+        } catch { /* то же: печать — украшение, документ важнее */ }
     }
     rule(doc, x, y, x + half, "#999999");
     rule(doc, x + w - half, y, x + w, "#999999");
-    const name = s.managingDirector ? `${L.signedBy}: ${s.managingDirector}` : L.signedBy;
-    text(doc, name, x, y + 6, { size: 9, color: "#666666", width: half });
+    const signerLine = signer ? `${L.signedBy}: ${signer}${s.uaSigner?.position ? `, ${s.uaSigner.position}` : ""}` : L.signedBy;
+    text(doc, signerLine, x, y + 6, { size: 9, color: "#666666", width: half });
     text(doc, L.signedByCustomer, x + w - half, y + 6, { size: 9, color: "#666666", width: half });
     doc.y = y + 26;
 }
@@ -483,8 +538,8 @@ const classic: Layout = (doc, d, s, L, t, totals, qr) => {
     logoDraw(doc, s, logoSlotTopRight(t));
     if (d.items.length) {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, bottom: fl.bottom, onBreak: fl.brk });
-        y = fl.fit(y + 6, totalsHeight(doc, d, L, totals, 200));
-        y = totalsBlock(doc, d, L, totals, x + w - 200, y + 6, 200, { accent: t.accent, tint: t.tint });
+        y = fl.fit(y + 6, totalsHeight(doc, d, s, L, totals, 200));
+        y = totalsBlock(doc, d, s, L, totals, x + w - 200, y + 6, 200, { accent: t.accent, tint: t.tint });
     } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
     band.draw();
 };
@@ -513,8 +568,8 @@ const modern: Layout = (doc, d, s, L, t, totals, qr) => {
     y = Math.max(py, dy) + 20;
     if (d.items.length) {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true, zebra: true, bottom: fl.bottom, onBreak: fl.brk });
-        y = fl.fit(y + 8, totalsHeight(doc, d, L, totals, 210));
-        y = totalsBlock(doc, d, L, totals, x + w - 210, y + 8, 210, { accent: t.accent, tint: t.tint, boxed: true, size: 10 });
+        y = fl.fit(y + 8, totalsHeight(doc, d, s, L, totals, 210));
+        y = totalsBlock(doc, d, s, L, totals, x + w - 210, y + 8, 210, { accent: t.accent, tint: t.tint, boxed: true, size: 10 });
     } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
     band.draw();
 };
@@ -538,8 +593,8 @@ const minimal: Layout = (doc, d, s, L, t, totals, qr) => {
     logoDraw(doc, s, logoSlotTopRight(t));
     if (d.items.length) {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 10, rowPad: 9, bottom: fl.bottom, onBreak: fl.brk });
-        y = fl.fit(y + 10, totalsHeight(doc, d, L, totals, 190));
-        y = totalsBlock(doc, d, L, totals, x + w - 190, y + 10, 190, { accent: t.accent, tint: t.tint, size: 10 });
+        y = fl.fit(y + 10, totalsHeight(doc, d, s, L, totals, 190));
+        y = totalsBlock(doc, d, s, L, totals, x + w - 190, y + 10, 190, { accent: t.accent, tint: t.tint, size: 10 });
     } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
     band.draw();
 };
@@ -585,8 +640,8 @@ const boxed: Layout = (doc, d, s, L, t, totals, qr) => {
     y = Math.max(yy + 8, py + partyH) + 10;
     if (d.items.length) {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, grid: true, border: "#DCDCDC", bottom: fl.bottom, onBreak: fl.brk });
-        y = fl.fit(y + 8, totalsHeight(doc, d, L, totals, 210));
-        y = totalsBlock(doc, d, L, totals, x + w - 210, y + 8, 210, { accent: t.accent, tint: t.tint, boxed: true, grid: true });
+        y = fl.fit(y + 8, totalsHeight(doc, d, s, L, totals, 210));
+        y = totalsBlock(doc, d, s, L, totals, x + w - 210, y + 8, 210, { accent: t.accent, tint: t.tint, boxed: true, grid: true });
     } else if (d.kind === "contract") {
         box(doc, x, y, 250, 40, { fill: t.tint, stroke: "#DCDCDC" });
         text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x + 12, y + 14, { size: 12, color: "#333333", width: 226 });
@@ -626,8 +681,8 @@ const sidebar: Layout = (doc, d, s, L, t, totals, qr) => {
     let y = header();
     if (d.items.length) {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 9.5, headerFill: true, bottom: fl.bottom, onBreak: fl.brk });
-        y = fl.fit(y + 8, totalsHeight(doc, d, L, totals, 190));
-        y = totalsBlock(doc, d, L, totals, x + w - 190, y + 8, 190, { accent: t.accent, tint: t.tint });
+        y = fl.fit(y + 8, totalsHeight(doc, d, s, L, totals, 190));
+        y = totalsBlock(doc, d, s, L, totals, x + w - 190, y + 8, 190, { accent: t.accent, tint: t.tint });
     } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12 });
     band.draw();
 };
@@ -658,8 +713,8 @@ const banner: Layout = (doc, d, s, L, t, totals, qr) => {
     y = Math.max(ly, ry) + 20;
     if (d.items.length) {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true, bottom: fl.bottom, onBreak: fl.brk });
-        y = fl.fit(y + 8, totalsHeight(doc, d, L, totals, 205));
-        y = totalsBlock(doc, d, L, totals, x + w - 205, y + 8, 205, { accent: t.accent, tint: t.tint });
+        y = fl.fit(y + 8, totalsHeight(doc, d, s, L, totals, 205));
+        y = totalsBlock(doc, d, s, L, totals, x + w - 205, y + 8, 205, { accent: t.accent, tint: t.tint });
     } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12 });
     band.draw();
 };
@@ -711,8 +766,8 @@ const twocol: Layout = (doc, d, s, L, t, totals, qr) => {
     } else y += 10;
     if (d.items.length) {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true, zebra: true, bottom: fl.bottom, onBreak: fl.brk });
-        y = fl.fit(y + 8, totalsHeight(doc, d, L, totals, 205));
-        y = totalsBlock(doc, d, L, totals, x + w - 205, y + 8, 205, { accent: t.accent, tint: t.tint, boxed: true });
+        y = fl.fit(y + 8, totalsHeight(doc, d, s, L, totals, 205));
+        y = totalsBlock(doc, d, s, L, totals, x + w - 205, y + 8, 205, { accent: t.accent, tint: t.tint, boxed: true });
     } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
     band.draw();
 };
@@ -734,8 +789,8 @@ const compact: Layout = (doc, d, s, L, t, totals, qr) => {
     logoDraw(doc, s, slot);
     if (d.items.length) {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 8.5, rowPad: 3, zebra: true, bottom: fl.bottom, onBreak: fl.brk });
-        y = fl.fit(y + 4, totalsHeight(doc, d, L, totals, 180, 8.5));
-        y = totalsBlock(doc, d, L, totals, x + w - 180, y + 4, 180, { accent: t.accent, tint: t.tint, size: 8.5 });
+        y = fl.fit(y + 4, totalsHeight(doc, d, s, L, totals, 180, 8.5));
+        y = totalsBlock(doc, d, s, L, totals, x + w - 180, y + 4, 180, { accent: t.accent, tint: t.tint, size: 8.5 });
     } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 10, width: hw });
     band.draw();
 };
@@ -767,8 +822,8 @@ const elegant: Layout = (doc, d, s, L, t, totals, qr) => {
     y = Math.max(ly, ry) + 24;
     if (d.items.length) {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 10, rowPad: 8, bottom: fl.bottom, onBreak: fl.brk });
-        y = fl.fit(y + 12, totalsHeight(doc, d, L, totals, 210));
-        y = totalsBlock(doc, d, L, totals, x + w - 210, y + 12, 210, { accent: t.accent, tint: t.tint, size: 10 });
+        y = fl.fit(y + 12, totalsHeight(doc, d, s, L, totals, 210));
+        y = totalsBlock(doc, d, s, L, totals, x + w - 210, y + 12, 210, { accent: t.accent, tint: t.tint, size: 10 });
     } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: w, align: "center" });
     band.draw();
 };
@@ -801,8 +856,8 @@ const swiss: Layout = (doc, d, s, L, t, totals, qr) => {
     logoDraw(doc, s, logoSlotTopRight(t));
     if (d.items.length) {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 9.5, rowPad: 5, border: "#111111", bottom: fl.bottom, onBreak: fl.brk });
-        y = fl.fit(y + 6, totalsHeight(doc, d, L, totals, 220, 9.5));
-        y = totalsBlock(doc, d, L, totals, x + w - 220, y + 6, 220, { accent: t.accent, tint: t.tint, grid: true, size: 9.5 });
+        y = fl.fit(y + 6, totalsHeight(doc, d, s, L, totals, 220, 9.5));
+        y = totalsBlock(doc, d, s, L, totals, x + w - 220, y + 6, 220, { accent: t.accent, tint: t.tint, grid: true, size: 9.5 });
     } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x + labelW, y, { size: 12, color: "#111111", width: w - labelW });
     band.draw();
 };

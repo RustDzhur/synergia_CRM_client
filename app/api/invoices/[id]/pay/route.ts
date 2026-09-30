@@ -8,7 +8,7 @@ import { applyPayment, statusAfterPayment } from "@/lib/finance/payments";
 import { computeTotals } from "@/lib/finance/totals";
 import Invoice from "@/models/Invoice";
 import { toInvoiceDTO } from "@/lib/finance/dto";
-import { fiscalConfig, fiscalizeInvoice, findFiscal } from "@/lib/finance/fiscal";
+import { fiscalAdvice, fiscalConfig, fiscalizeInvoice, findFiscal } from "@/lib/finance/fiscal";
 
 // POST /api/invoices/:id/pay — { amount? }: отметить оплату (без amount — вся сумма, с amount — частично).
 // Оплата фиксируется вручную: деньги приходят переводом или наличными, а в CRM их вносят человек
@@ -34,17 +34,21 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (full) {
         await emit(user.id, { type: "invoice_paid", data: { id: String(inv._id), number: inv.number, customerName: inv.customerName, amount: String(amount), dealId: inv.deal ? String(inv.deal) : "" } });
     }
-    // ПРРО (Украина): при полной оплате чек пробивается сам — если Checkbox подключён и включена
-    // автофискализация. Ошибку показываем в счёте, но оплату не отменяем: деньги уже пришли.
+    // ПРРО (Украина): при полной оплате чек пробивается сам — если Checkbox подключён, включена
+    // автофискализация и чек по правилам нужен. Правило (lib/finance/fiscal.ts, fiscalAdvice):
+    // обязателен для наличной и карточной оплаты; при безналичной оплате за рахунком чек —
+    // предложение в один клик, а не автоматическое действие. Ошибку показываем в счёте, оплату не отменяем.
     if (full && !inv.fiscalCode) {
         try {
-            const fiscalDoc = await findFiscal(user.id);
+            const advice = fiscalAdvice(inv);
+            const fiscalDoc = advice.needed ? await findFiscal(user.id) : null;
             if (fiscalDoc && fiscalConfig(fiscalDoc).auto) {
-                const receipt = await fiscalizeInvoice(user.id, inv, gross);
+                const receipt = await fiscalizeInvoice(user.id, inv, gross, advice.payType);
                 inv.fiscalId = receipt.receiptId;
                 inv.fiscalCode = receipt.fiscalCode;
                 inv.fiscalUrl = receipt.url;
                 inv.fiscalAt = new Date();
+                inv.fiscalPayType = advice.payType;
                 inv.fiscalError = "";
                 await inv.save();
             }
