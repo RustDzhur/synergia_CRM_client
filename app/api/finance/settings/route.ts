@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { badRequest, unauthorized } from "@/lib/api";
+import { unauthorized } from "@/lib/api";
 import { COUNTRY_CODES, COUNTRY_TAX } from "@/lib/finance/taxRates";
 import { MARKET_DEFAULTS, marketOf } from "@/lib/finance/market";
 import { UA_TAX_SYSTEMS, taxSystemOf, uaProfileErrors, formAndGroup } from "@/lib/validation/ua";
@@ -128,10 +128,11 @@ export async function PATCH(req: Request) {
         if (Number.isFinite(n) && n >= 1 && n <= 60) set.dunningPaymentDays = Math.round(n);
     }
     // Украинская налоговая модель: набор и границы проверяем здесь, чтобы в документ не попало что угодно.
-    // Реквизиты (ЄДРПОУ, ІПН, IBAN, МФО, КВЕД, свідоцтво ПДВ) проходят валидаторы lib/validation/ua.ts:
-    // сервер отвечает 400 с кодами полей, а тексты берутся интерфейсом из переводов.
+    // Реквизиты (ЄДРПОУ, ІПН, IBAN, МФО, КВЕД, свідоцтво ПДВ) проходят валидаторы lib/validation/ua.ts.
+    // Невалидные поля НЕ сохраняем, но и не отклоняем всю форму из-за одного из них: раньше PATCH отвечал
+    // 400 целиком, из-за чего при одной опечатке терялось всё введённое, а на экране оставались значения —
+    // выглядело как «сохранилось, но после обновления пропало». Ошибки уходят кодами в ответе.
     const uaErrors = uaProfileErrors(b as Record<string, unknown>);
-    if (uaErrors.length) return badRequest(`Проверьте реквизиты: ${uaErrors.map((e) => `${e.field}:${e.code}`).join(", ")}`);
     if (b.uaLegalForm === "fop" || b.uaLegalForm === "tov" || b.uaLegalForm === "other") set.uaLegalForm = b.uaLegalForm;
     if ((UA_TAX_SYSTEMS as readonly string[]).includes(String(b.uaTaxSystem))) {
         // Система налогообложения ведёт за собой форму и группу — они не могут расходиться
@@ -150,7 +151,8 @@ export async function PATCH(req: Request) {
         const allowed = [20, 7, 0];
         set.uaVatRates = b.uaVatRates.map((n: unknown) => Number(n)).filter((n: number) => allowed.includes(n));
     }
-    if (Array.isArray(b.uaKved)) set.uaKved = b.uaKved.map((x: unknown) => String(x).trim()).filter(Boolean).slice(0, 50);
+    // КВЕД: запятая вместо точки («62,01») — частая опечатка, нормализуем её при сохранении
+    if (Array.isArray(b.uaKved)) set.uaKved = b.uaKved.map((x: unknown) => String(x).trim().replace(/,/g, ".")).filter(Boolean).slice(0, 50);
     // Лимиты групп по годам: 2000..2100, группы 1..4, суммы неотрицательные
     if (Array.isArray(b.uaLimits)) {
         set.uaLimits = b.uaLimits
@@ -180,6 +182,8 @@ export async function PATCH(req: Request) {
             if (Number.isFinite(n) && n >= 0 && n <= max) set[key] = n;
         }
     }
+    // Поля с неверными реквизитами не сохраняем — остальную форму сохраняем целиком
+    for (const issue of uaErrors) delete set[issue.field];
     // Смена режима рынка может применить набор по умолчанию (валюта, префиксы, срок оплаты, шаблон,
     // налоговые прапорщики): явно присланные поля сильнее набора, существующие документы не трогаются
     if (b.applyDefaults === true) {
@@ -187,5 +191,5 @@ export async function PATCH(req: Request) {
         if (target) set = { ...MARKET_DEFAULTS[target], ...set };
     }
     const s = await FinanceSettings.findOneAndUpdate({ org: user.id }, { $set: set }, { upsert: true, new: true });
-    return NextResponse.json(toDTO(s));
+    return NextResponse.json({ ...toDTO(s), fieldErrors: uaErrors });
 }

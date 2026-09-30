@@ -10,7 +10,9 @@ export type { TemplateDef, TemplateVariant } from "./templates";
 // Helvetica лениво грузит node_modules/pdfkit/js/standard-fonts/*, которых в функциях на Vercel нет, и генерация
 // падала с "Cannot find module '#standard-fonts/Helvetica'". Noto Sans заодно покрывает кириллицу и знаки €/₴/№,
 // которых у Helvetica нет.
-const DOC_FONT = Buffer.from(notoSansUrl.slice(notoSansUrl.indexOf(",") + 1), "base64");
+// Экспортируется: печать складских документов (lib/finance/stockDocPdf.ts) собирает свой простой PDF
+// тем же встроенным шрифтом, чтобы кириллица и ₴ печатались одинаково во всех документах
+export const DOC_FONT = Buffer.from(notoSansUrl.slice(notoSansUrl.indexOf(",") + 1), "base64");
 
 // Какие бумаги рисует этот файл. Счёт и кредит-нота жили здесь и раньше, предложение/заказ/договор добавлены,
 // чтобы каждый финансовый документ можно было и скачать, и отправить клиенту одним и тем же рендером.

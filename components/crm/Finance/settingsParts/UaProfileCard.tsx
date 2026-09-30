@@ -141,7 +141,10 @@ export default function UaProfileCard({ form, set, year }: { form: UaProfileForm
 						<span className={label}>{t("uaVatRegDate")}</span>
 						<input type="date" value={form.uaVatRegDate} onChange={(e) => set({ uaVatRegDate: e.target.value })} className={field} />
 					</label>
-					<FormField label={t("uaVatCertificate")} value={form.uaVatCertificate} onChange={(e) => set({ uaVatCertificate: e.target.value.replace(/[^\d]/g, "") })} maxLength={12} />
+					<div>
+						<FormField label={t("uaVatCertificate")} value={form.uaVatCertificate} onChange={(e) => set({ uaVatCertificate: e.target.value.replace(/[^\d]/g, "") })} maxLength={12} />
+						{error("uaVatCertificate") && <span className={err}>{t(`uaErr_${error("uaVatCertificate")}`)}</span>}
+					</div>
 					<div className="md:col-span-2">
 						<span className={label}>{t("uaVatRates")}</span>
 						<div className="flex flex-wrap gap-14">
@@ -175,7 +178,10 @@ export default function UaProfileCard({ form, set, year }: { form: UaProfileForm
 						{error("uaIpn") && <span className={err}>{error("uaIpn")}</span>}
 					</div>
 				)}
-				<FormField label={t("uaKved")} value={form.uaKved} onChange={(e) => set({ uaKved: e.target.value })} maxLength={200} placeholder="62.01, 63.11" />
+				<div>
+					<FormField label={t("uaKved")} value={form.uaKved} onChange={(e) => set({ uaKved: e.target.value })} maxLength={200} placeholder="62.01, 63.11" />
+					{error("uaKved") && <span className={err}>{t(`uaErr_${error("uaKved")}`)}</span>}
+				</div>
 			</div>
 
 			<div className="mt-12 grid grid-cols-1 gap-12 md:grid-cols-3">

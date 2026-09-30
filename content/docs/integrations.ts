@@ -15,9 +15,9 @@ export const INTEGRATIONS_DOCS: DocSection[] = [
 				title: t3("The cards", "Die Karten", "Картки"),
 				steps: [
 					t3(
-						"The tab shows ten cards in a grid (two columns on a phone and tablet, three on a desktop); each has an icon and a name: [[settings.intCall]], [[settings.intSms]], [[settings.intViber]], [[settings.intTelegram]], [[settings.intMessenger]], [[settings.intWhatsapp]], [[settings.intComments]], [[settings.intChatBot]], [[settings.intOnlineChat]] and [[settings.intWidget]].",
-						"Der Tab zeigt zehn Karten in einem Raster (zwei Spalten am Telefon und Tablet, drei am Desktop); jede hat ein Symbol und einen Namen: [[settings.intCall]], [[settings.intSms]], [[settings.intViber]], [[settings.intTelegram]], [[settings.intMessenger]], [[settings.intWhatsapp]], [[settings.intComments]], [[settings.intChatBot]], [[settings.intOnlineChat]] und [[settings.intWidget]].",
-						"Вкладка показує десять карток у сітці (дві колонки на телефоні й планшеті, три на комп’ютері); кожна має значок і назву: [[settings.intCall]], [[settings.intSms]], [[settings.intViber]], [[settings.intTelegram]], [[settings.intMessenger]], [[settings.intWhatsapp]], [[settings.intComments]], [[settings.intChatBot]], [[settings.intOnlineChat]] та [[settings.intWidget]].",
+						"The tab shows eight cards in a grid (two columns on a phone and tablet, three on a desktop); each has an icon and a name: [[settings.intCall]], [[settings.intSms]], [[settings.intViber]], [[settings.intTelegram]], [[settings.intMessenger]], [[settings.intWhatsapp]], [[settings.intOnlineChat]] and [[settings.intWidget]].",
+						"Der Tab zeigt acht Karten in einem Raster (zwei Spalten am Telefon und Tablet, drei am Desktop); jede hat ein Symbol und einen Namen: [[settings.intCall]], [[settings.intSms]], [[settings.intViber]], [[settings.intTelegram]], [[settings.intMessenger]], [[settings.intWhatsapp]], [[settings.intOnlineChat]] und [[settings.intWidget]].",
+						"Вкладка показує вісім карток у сітці (дві колонки на телефоні й планшеті, три на комп’ютері); кожна має значок і назву: [[settings.intCall]], [[settings.intSms]], [[settings.intViber]], [[settings.intTelegram]], [[settings.intMessenger]], [[settings.intWhatsapp]], [[settings.intOnlineChat]] та [[settings.intWidget]].",
 					),
 					t3(
 						"The colour of a card is its state: green — the channel is connected; orange — it is connected but needs attention (for example a token was revoked, or the webhook is not registered); grey — not connected. Click a card to open its window.",
@@ -25,9 +25,9 @@ export const INTEGRATIONS_DOCS: DocSection[] = [
 						"Колір картки — це її стан: зелений — канал підключено; помаранчевий — підключено, але потрібна увага (наприклад, токен відкликано або вебхук не зареєстровано); сірий — не підключено. Клацніть картку, щоб відкрити її вікно.",
 					),
 					t3(
-						"[[settings.intComments]] and [[settings.intChatBot]] are demonstration switches: they only remember the position of the switch in your browser and connect nothing (the tooltip says “[[settings.intDemo]]”). [[settings.intOnlineChat]] and [[settings.intWidget]] both open the same dialog of the chat for your website. Mailboxes are not connected here but in [[navigation.web_mails]].",
-						"[[settings.intComments]] und [[settings.intChatBot]] sind Demo-Schalter: Sie merken sich nur die Stellung des Schalters in Ihrem Browser und verbinden nichts (der Tooltip sagt „[[settings.intDemo]]“). [[settings.intOnlineChat]] und [[settings.intWidget]] öffnen beide denselben Dialog des Chats für Ihre Website. Postfächer werden nicht hier, sondern in [[navigation.web_mails]] verbunden.",
-						"[[settings.intComments]] і [[settings.intChatBot]] — демонстраційні перемикачі: вони лише запам’ятовують положення перемикача у вашому браузері й нічого не підключають (підказка каже «[[settings.intDemo]]»). [[settings.intOnlineChat]] і [[settings.intWidget]] відкривають той самий діалог чату для вашого сайту. Скриньки підключають не тут, а в [[navigation.web_mails]].",
+						"[[settings.intOnlineChat]] and [[settings.intWidget]] both open the same dialog of the chat for your website. Mailboxes are not connected here but in [[navigation.web_mails]].",
+						"[[settings.intOnlineChat]] und [[settings.intWidget]] öffnen beide denselben Dialog des Chats für Ihre Website. Postfächer werden nicht hier, sondern in [[navigation.web_mails]] verbunden.",
+						"[[settings.intOnlineChat]] і [[settings.intWidget]] відкривають той самий діалог чату для вашого сайту. Скриньки підключають не тут, а в [[navigation.web_mails]].",
 					),
 				],
 			},

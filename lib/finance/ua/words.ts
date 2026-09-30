@@ -37,12 +37,20 @@ function trio(n: number, gender: "m" | "f"): string {
     return out.join(" ");
 }
 
-// Индекс = номер тройки: 1 — тысячи, 2 — миллионы, 3 — миллиарды (chunks[0] — единицы)
+// Индекс = номер тройки: 1 — тысячи, 2 — миллионы, 3 — миллиарды (chunks[0] — единицы).
+// Разряды кончаются на квадриллионе: сумма больше 10^18 — уже не бухгалтерская ошибка, а испорченные
+// данные; такие числа обрабатывает uahInWords, не роняя рендер документа (раньше индекс уходил
+// за пределы массива, и PDF падал с «Server error» — «загрузка счёта в ПДФ не работает»).
 const GROUPS: Array<{ one: string; few: string; many: string; gender: "m" | "f" }> = [
     { one: "тисяча", few: "тисячі", many: "тисяч", gender: "f" },
     { one: "мільйон", few: "мільйони", many: "мільйонів", gender: "m" },
     { one: "мільярд", few: "мільярди", many: "мільярдів", gender: "m" },
+    { one: "трильйон", few: "трильйони", many: "трильйонів", gender: "m" },
+    { one: "квадрильйон", few: "квадрильйони", many: "квадрильйонів", gender: "m" },
 ];
+
+/** Максимальное число, которое раскладывается в слова (10^18 − 1). Больше — уже не сумма документа. */
+const MAX_WORDS = 1e18 - 1;
 
 /** Целое число словами: 1 234 → «одна тисяча двісті тридцять чотири»; 0 → «нуль».
  *  gender — род последнего разряда: «одна гривня» (f), но «один мільйон» (m). */
@@ -63,6 +71,7 @@ export function intInWords(value: number, gender: "m" | "f" = "m"): string {
         if (i === 0) parts.push(trio(chunk, gender));
         else {
             const g = GROUPS[i - 1];
+            if (!g) return n.toLocaleString("uk-UA"); // число вне разрядов — печатаем цифрами, но не падаем
             parts.push(`${trio(chunk, g.gender)} ${pluralForm(chunk, g.one, g.few, g.many)}`);
         }
     }
@@ -78,6 +87,8 @@ export function uahInWords(amount: number): string {
     const total = Math.round(safe * 100);
     const hryvnia = Math.floor(total / 100);
     const kopiyky = total % 100;
+    // Сумма вне разрядов (испорченные данные) — цифрами: документ напечатается, а не упадёт
+    if (hryvnia > MAX_WORDS) return `${hryvnia.toLocaleString("uk-UA")} ₴ ${String(kopiyky).padStart(2, "0")} коп.`;
     const words = intInWords(hryvnia, "f");
     const capitalized = words.charAt(0).toUpperCase() + words.slice(1);
     return `${capitalized} ${pluralForm(hryvnia, "гривня", "гривні", "гривень")} ${String(kopiyky).padStart(2, "0")} ${pluralForm(kopiyky, "копійка", "копійки", "копійок")}`;

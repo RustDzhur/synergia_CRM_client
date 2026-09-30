@@ -35,12 +35,24 @@ export default function FinanceSettingsTab() {
 	const logoInput = useRef<HTMLInputElement>(null);
 
 	useEffect(() => { loadSettings(); }, [loadSettings]);
+	// Форму заполняем из настроек один раз (и заново при смене страны): раньше эффект срабатывал на любое
+	// изменение settings — в том числе после сохранения соседней карточки, — и невинно набранные реквизиты
+	// стирались с экрана, хотя в базу не попадали. Теперь ввод не перетирается чужими сохранениями.
+	const hydratedCountry = useRef<string | null>(null);
 	useEffect(() => {
 		if (!settings) return;
+		// страна в ответе та же, что уже показана, — значит, ввод трогать нельзя
+		if (hydratedCountry.current === settings.country && form.country === settings.country) return;
+		hydratedCountry.current = settings.country;
 		const dn = settings as typeof settings & DunningFields;
 		// сборы по ступеням: индекс 0 в интерфейсе не используется, поэтому показываем ровно пять полей 0..4
 		const fees = Array.from({ length: 5 }, (_, i) => (dn.dunningFees?.[i] !== undefined ? String(dn.dunningFees[i]) : ""));
-		setForm({ country: settings.country, currency: settings.currency, smallBusiness: settings.smallBusiness, rateMargin: String(settings.rateMargin ?? 0), uaLegalForm: settings.uaLegalForm ?? "fop", uaTaxSystem: settings.uaTaxSystem || (settings.uaLegalForm === "tov" ? "general_tov" : `single_${settings.uaGroup ?? 3}`), uaGroup: String(settings.uaGroup ?? 3), uaSingleRate: String(settings.uaSingleRate ?? 5), uaVatPayer: !!settings.uaVatPayer, uaVatRegDate: settings.uaVatRegDate ?? "", uaVatCertificate: settings.uaVatCertificate ?? "", uaVatRates: Array.isArray(settings.uaVatRates) && settings.uaVatRates.length ? settings.uaVatRates : [20, 7, 0], uaEdrpou: settings.uaEdrpou ?? "", uaIpn: settings.uaIpn ?? "", uaKved: (settings.uaKved ?? []).join(", "), uaBank: settings.uaBank ?? "", uaIban: settings.uaIban ?? "", uaMfo: settings.uaMfo ?? "", uaSignerName: settings.uaSignerName ?? "", uaSignerPosition: settings.uaSignerPosition ?? "", uaSignature: settings.uaSignature ?? "", uaSeal: settings.uaSeal ?? "", uaLimitsText: {}, uaEsvMonthly: String(settings.uaEsvMonthly ?? 1760), uaMilitaryRate: String(settings.uaMilitaryRate ?? 1), uaMilitaryFixed: String(settings.uaMilitaryFixed ?? 800), uaVatLimit: String(settings.uaVatLimit ?? 1000000), uaVatPeriod: settings.uaVatPeriod ?? "month", legalName: settings.legalName, address: settings.address, taxId: settings.taxId, vatId: settings.vatId, registerNumber: settings.registerNumber, managingDirector: settings.managingDirector, phone: settings.phone, email: settings.email, website: settings.website, logo: settings.logo, footerText: settings.footerText, iban: settings.iban, bic: settings.bic, paymentTermsDays: String(settings.paymentTermsDays), invoicePrefix: settings.invoicePrefix, quotePrefix: settings.quotePrefix, creditNotePrefix: settings.creditNotePrefix, reminderIntervalDays: String(settings.reminderIntervalDays), dunningFees: fees, dunningInterestRate: String(dn.dunningInterestRate ?? 0), dunningPaymentDays: String(dn.dunningPaymentDays ?? 7), template: settings.template || "classic", paymentQr: settings.paymentQr !== false });
+		// Вписанные лимиты групп на текущий год — в текстовые поля; чужие годы живут в settings.uaLimits
+		const year = new Date().getFullYear();
+		const limitsText: Record<string, string> = {};
+		for (const l of settings.uaLimits ?? []) if (l.year === year && l.amount > 0) limitsText[String(l.group)] = String(l.amount);
+		setForm({ country: settings.country, currency: settings.currency, smallBusiness: settings.smallBusiness, rateMargin: String(settings.rateMargin ?? 0), uaLegalForm: settings.uaLegalForm ?? "fop", uaTaxSystem: settings.uaTaxSystem || (settings.uaLegalForm === "tov" ? "general_tov" : `single_${settings.uaGroup ?? 3}`), uaGroup: String(settings.uaGroup ?? 3), uaSingleRate: String(settings.uaSingleRate ?? 5), uaVatPayer: !!settings.uaVatPayer, uaVatRegDate: settings.uaVatRegDate ?? "", uaVatCertificate: settings.uaVatCertificate ?? "", uaVatRates: Array.isArray(settings.uaVatRates) && settings.uaVatRates.length ? settings.uaVatRates : [20, 7, 0], uaEdrpou: settings.uaEdrpou ?? "", uaIpn: settings.uaIpn ?? "", uaKved: (settings.uaKved ?? []).join(", "), uaBank: settings.uaBank ?? "", uaIban: settings.uaIban ?? "", uaMfo: settings.uaMfo ?? "", uaSignerName: settings.uaSignerName ?? "", uaSignerPosition: settings.uaSignerPosition ?? "", uaSignature: settings.uaSignature ?? "", uaSeal: settings.uaSeal ?? "", uaLimitsText: limitsText, uaEsvMonthly: String(settings.uaEsvMonthly ?? 1760), uaMilitaryRate: String(settings.uaMilitaryRate ?? 1), uaMilitaryFixed: String(settings.uaMilitaryFixed ?? 800), uaVatLimit: String(settings.uaVatLimit ?? 1000000), uaVatPeriod: settings.uaVatPeriod ?? "month", legalName: settings.legalName, address: settings.address, taxId: settings.taxId, vatId: settings.vatId, registerNumber: settings.registerNumber, managingDirector: settings.managingDirector, phone: settings.phone, email: settings.email, website: settings.website, logo: settings.logo, footerText: settings.footerText, iban: settings.iban, bic: settings.bic, paymentTermsDays: String(settings.paymentTermsDays), invoicePrefix: settings.invoicePrefix, quotePrefix: settings.quotePrefix, creditNotePrefix: settings.creditNotePrefix, reminderIntervalDays: String(settings.reminderIntervalDays), dunningFees: fees, dunningInterestRate: String(dn.dunningInterestRate ?? 0), dunningPaymentDays: String(dn.dunningPaymentDays ?? 7), template: settings.template || "classic", paymentQr: settings.paymentQr !== false });
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [settings]);
 
 	const selectedCountry = countries.find((c) => c.code === form.country);
@@ -80,16 +92,19 @@ export default function FinanceSettingsTab() {
 			uaSignerPosition: form.uaSignerPosition,
 			uaSignature: form.uaSignature,
 			uaSeal: form.uaSeal,
-			// Лимиты групп: вписанные значения — на текущий год; записи других лет сохраняются как были
-			uaLimits: [
-				...(settings?.uaLimits ?? []).filter((l) => l.year !== new Date().getFullYear()),
-				...Object.entries(form.uaLimitsText)
-					.map(([group, v]) => ({ year: new Date().getFullYear(), group: Number(group), amount: Number(v.replace(/\D/g, "")) || 0 }))
-					.filter((l) => l.amount > 0),
-			],
+			// Лимиты групп: вписанные значения — на текущий год; записи других лет и другие группы
+			// текущего года сохраняются как были (раньше год заменялся целиком и группа 4 терялась)
+			uaLimits: mergeLimits(settings?.uaLimits ?? [], form.uaLimitsText),
 		} as any);
 		setSaving(false);
 		if (err) return toast.error(err);
+		// Сервер сохранил всё, кроме полей с неверными реквизитами: говорим, что именно не сохранилось
+		// и почему — раньше отказ приходил русской строкой, а форма продолжала показывать введённое
+		const fieldErrors = (useFinanceStore.getState().settings as unknown as { fieldErrors?: Array<{ field: string; code: string }> } | null)?.fieldErrors ?? [];
+		if (fieldErrors.length) {
+			toast.error(t("uaErrSaved", { fields: fieldErrors.map((e) => t(`uaErr_${e.code}` as never)).join(", ") }), { duration: 8000 });
+			return;
+		}
 		toast.success(t("saved"));
 	}
 
@@ -329,7 +344,24 @@ export default function FinanceSettingsTab() {
 			</div>
 			)}
 
-			<button type="submit" disabled={saving} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{t("save")}</button>
+			{/* Сохранять можно только заполненную форму: отправка ненагруженной формы затёрла бы
+			    страну и реквизиты значениями по умолчанию */}
+			<button type="submit" disabled={saving || !settings} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{t("save")}</button>
 		</form>
 	);
+}
+
+// Лимиты групп по годам: вписанные в форму значения заменяют только свои пары «год-группа»,
+// остальные записи (другие годы и другие группы текущего года) сохраняются из настроек как были.
+// Очищенное поле снимает свой лимит, а не оставляет старое значение.
+function mergeLimits(existing: Array<{ year: number; group: number; amount: number }>, text: Record<string, string>): Array<{ year: number; group: number; amount: number }> {
+	const year = new Date().getFullYear();
+	const touched = new Map<number, number>();
+	for (const [group, v] of Object.entries(text)) {
+		const g = Number(group);
+		if (g >= 1 && g <= 4) touched.set(g, Number(v.replace(/\D/g, "")) || 0);
+	}
+	const out = existing.filter((l) => !(l.year === year && touched.has(l.group)));
+	touched.forEach((amount, group) => { if (amount > 0) out.push({ year, group, amount }); });
+	return out;
 }

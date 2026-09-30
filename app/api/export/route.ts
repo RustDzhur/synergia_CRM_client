@@ -1,6 +1,7 @@
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { badRequest, unauthorized } from "@/lib/api";
+import { badRequest, failure, unauthorized } from "@/lib/api";
+import { requireMarket } from "@/lib/finance/marketGuard";
 import { toCsv } from "@/lib/import/csv";
 import { computeTotals } from "@/lib/finance/totals";
 import Product from "@/models/Product";
@@ -34,8 +35,15 @@ export async function GET(req: Request) {
     if (!kind || !KINDS.includes(kind)) return badRequest("kind must be one of: " + KINDS.join(", "));
     const format = (url.searchParams.get("format") ?? "csv").toLowerCase();
     // DATEV: выгрузка проводок (EXTF 700/21) для бухгалтера — номера счетов по умолчанию SKR03
-    // (8400 выручка 19 %, 1200 банк), их можно переопределить параметрами и подтвердить с бухгалтером
+    // (8400 выручка 19 %, 1200 банк), их можно переопределить параметрами и подтвердить с бухгалтером.
+    // Формат немецкий: украинской фирме он не выгружается даже по прямой ссылке
     if (kind === "datev") {
+        await connectDB();
+        try {
+            await requireMarket(user.id, "DE");
+        } catch (e) {
+            return failure(e);
+        }
         return datevExport(user.id, url);
     }
     if (!["csv", "json", "yml"].includes(format)) return badRequest("format must be csv, json or yml");
@@ -46,8 +54,8 @@ export async function GET(req: Request) {
 
     if (kind === "products") {
         const list = await Product.find({ org: user.id }).sort({ name: 1 });
-        columns = ["name", "sku", "type", "unit", "purchasePrice", "salePrice", "taxRate", "stockQty", "reorderLevel", "image"];
-        rows = list.map((p) => [p.name, p.sku ?? "", p.type ?? "", p.unit ?? "", p.purchasePrice ?? 0, p.salePrice ?? 0, p.taxRate ?? "", p.stockQty ?? 0, p.reorderLevel ?? 0, p.image ?? ""]);
+        columns = ["name", "sku", "barcode", "type", "unit", "purchasePrice", "salePrice", "taxRate", "stockQty", "reorderLevel", "image"];
+        rows = list.map((p) => [p.name, p.sku ?? "", p.barcode ?? "", p.type ?? "", p.unit ?? "", p.purchasePrice ?? 0, p.salePrice ?? 0, p.taxRate ?? "", p.stockQty ?? 0, p.reorderLevel ?? 0, p.image ?? ""]);
         if (format === "yml") return ymlProducts(user.id, url.origin);
     } else if (kind === "contacts") {
         const list = await Contact.find({ owner: user.id }).sort({ name: 1 });

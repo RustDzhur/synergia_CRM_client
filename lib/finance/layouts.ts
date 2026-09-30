@@ -1,5 +1,5 @@
 import { computeTotals, taxBreakdown } from "./totals";
-import { marketOf } from "./market";
+import { marketOf, profile } from "./market";
 import { uahInWords } from "./ua/words";
 import { formatMoney } from "./money";
 import { epcPayload, qrMatrix } from "./qr";
@@ -201,8 +201,12 @@ function logoDraw(doc: Doc, s: PdfSettings, slot: LogoSlot): { w: number; h: num
 
 // Ссылка на оплату: код рисуем только там, где платёж действительно ожидается и есть куда платить — счёт,
 // кредит-нота, с IBAN продавца и ненулевой суммой. У предложения, заказа и договора счёта на оплату нет.
+// EPC-QR — европейский формат (сумма внутри жёстко в EUR): украинскому счёту он не подходит и не рисуется,
+// иначе на рахунку в гривне печатался бы платёж «EUR 14800.50» (режим рынка прямо говорит sepaQr: false).
 function qrPayloadFor(d: PdfDocumentData, s: PdfSettings, L: L, gross: number): { payload: string; caption: string } | null {
     if (!payerKind(d.kind) || !s.iban || !s.legalName || gross <= 0) return null;
+    const market = marketOf(s.country);
+    if (market && !profile(market).features.sepaQr) return null;
     return {
         payload: epcPayload({ name: s.legalName, iban: s.iban, bic: s.bic, amount: gross, remittance: `${L[d.kind]} ${d.number}` }),
         caption: L.payByQr,
@@ -467,7 +471,13 @@ function sumInWordsFor(d: PdfDocumentData, s: PdfSettings, totals: ReturnType<ty
     if (String(d.currency ?? "").toUpperCase() !== "UAH") return "";
     if (d.kind === "delivery_note" || d.kind === "contract") return "";
     const amount = totals.gross + (Number(d.dunningFee) || 0);
-    return amount > 0 ? uahInWords(amount) : "";
+    if (!(amount > 0)) return "";
+    // Строка прописом — украшение, документ важнее: одна кривая сумма не должна ронять весь PDF
+    try {
+        return uahInWords(amount);
+    } catch {
+        return "";
+    }
 }
 
 // Высоты строк итогов: подпись вида «USt. 19 % auf 1.800,00 €» при узком блоке переносится,

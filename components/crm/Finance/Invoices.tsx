@@ -6,8 +6,10 @@ import { TbCopy, TbDownload, TbPlus, TbReceipt } from "react-icons/tb";
 import { LineItem, useFinanceStore } from "@/store/useFinanceStore";
 import { useContactStore } from "@/store/useContactStore";
 import { useCompaniesStore } from "@/store/useCompaniesStore";
+import { useMarket } from "@/store/useMarket";
 import { apiCall } from "@/store/crmApi";
 import { defaultRateFor } from "@/lib/finance/tax";
+import { explainCompliance } from "@/lib/finance/complianceLabels";
 import { STATUS_COLORS } from "@/utils/statusColors";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
@@ -36,6 +38,7 @@ export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: 
 	const locale = useLocale();
 	const { invoices, products, loadInvoices, loadProducts, createInvoice, updateInvoice, sendInvoice, payInvoice, duplicateInvoice, issueCreditNote, settings } = useFinanceStore();
 	const defaultTaxRate = defaultRateFor(settings ?? {});
+	const { market, loaded: marketLoaded } = useMarket();
 	const { contacts, fetchContacts } = useContactStore();
 	const { companies, fetchCompanies } = useCompaniesStore();
 	const [open, setOpen] = useState(false);
@@ -121,6 +124,8 @@ export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: 
 		setBusy(null);
 		if (r.ok) return toast.success(t("sentTo", { email: r.sentTo }));
 		// адреса нет — спрашиваем его в окне; если адрес ввели неверно, показываем текст ошибки сервера
+		// Отказ чек-листа реквизитов переводим словами с подсказкой, где заполнить (иначе «seller_ua_id»)
+		if (r.code === "compliance" && r.missing.length) return void toast.error(explainCompliance(r.missing, locale), { duration: 8000 });
 		if (r.code === "no_recipient") { if (to) toast.error(r.message); setMailFor(id); setMailTo(to ?? ""); return; }
 		toast.error(r.message);
 	}
@@ -274,10 +279,16 @@ export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: 
 						/>
 						{(clientLink.contact || clientLink.company) && <span className="mt-6 block text-11 text-[#9AA396]">{t("contractClientLinked")}</span>}
 					</div>
-					{/* Leistungsdatum рядом с датами документа: без него немецкий счёт (§14 Abs. 4 Nr. 6 UStG) неполный */}
+					{/* Leistungsdatum — обязательный реквизит именно немецкого счёта (§14 Abs. 4 Nr. 6 UStG);
+					    украинскому рахунку он не нужен, и подсказка про немецкий закон там только путала.
+					    Инкотермс и номер декларации — ВЭД, они применимы обеим странам */}
 					<div className="mb-16 md:max-w-[calc(50%-6px)]">
-						<FormField label={t("supplyDate")} type="date" value={supplyDate} onChange={(e) => setSupplyDate(e.target.value)} />
-						<p className="mt-[4px] text-11 text-[#9AA396]">{t("supplyDateHint")}</p>
+						{marketLoaded && market !== "UA" && (
+							<>
+								<FormField label={t("supplyDate")} type="date" value={supplyDate} onChange={(e) => setSupplyDate(e.target.value)} />
+								<p className="mt-[4px] text-11 text-[#9AA396]">{t("supplyDateHint")}</p>
+							</>
+						)}
 						<FormField label={t("invIncoterms")} value={incoterms} onChange={(e) => setIncoterms(e.target.value.toUpperCase())} maxLength={10} placeholder="FCA / DAP" />
 						<FormField label={t("invCustoms")} value={customs} onChange={(e) => setCustoms(e.target.value)} maxLength={60} />
 					</div>

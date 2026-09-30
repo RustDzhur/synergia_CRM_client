@@ -50,9 +50,10 @@ export function uaFieldError(field: string, value: unknown): UaFieldCode | null 
     if (!v) return null;
     if (field === "uaIban") return validIban(v) ? null : "iban";
     if (field === "uaKved") {
-        // КВЕД приходит строкой «62.01, 63.11» или массивом — проверяем каждый
-        const list = v.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean);
-        return list.every((x) => kvedSchema.safeParse(x).success) ? null : "kved";
+        // КВЕД приходит строкой «62.01, 63.11» или массивом — проверяем каждый. Запятая вместо точки
+        // («62,01») — частая опечатка при вводе, поэтому прощаем её: с ней поле не блокирует сохранение
+        const list = v.split(/[;\n]/).flatMap((x) => x.split(",").map((y) => y.trim())).filter(Boolean);
+        return list.every((x) => kvedSchema.safeParse(x.replace(",", ".")).success) ? null : "kved";
     }
     const def = simple.find((s) => s.field === field);
     if (!def) return null;

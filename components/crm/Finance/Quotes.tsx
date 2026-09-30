@@ -7,6 +7,7 @@ import { LineItem, useFinanceStore } from "@/store/useFinanceStore";
 import { useContactStore } from "@/store/useContactStore";
 import { useCompaniesStore } from "@/store/useCompaniesStore";
 import { defaultRateFor } from "@/lib/finance/tax";
+import { explainCompliance } from "@/lib/finance/complianceLabels";
 import { STATUS_COLORS } from "@/utils/statusColors";
 import { localeTag } from "@/utils/dateHelpers";
 import Modal from "../shared/Modal";
@@ -112,6 +113,8 @@ export default function Quotes({ onOpenOrder, prefill, onPrefillDone }: { onOpen
 		const r = await sendQuote(id);
 		setBusy(null);
 		if (r.ok) return toast.success(t("sentTo", { email: r.sentTo }));
+		// Отказ чек-листа реквизитов переводим словами с подсказкой, где заполнить; остальное — как объяснил сервер
+		if (r.code === "compliance" && r.missing.length) return void toast.error(explainCompliance(r.missing, locale), { duration: 8000 });
 		// адреса у клиента нет — сервер объясняет это в message, показываем как есть
 		toast.error(r.message);
 	}

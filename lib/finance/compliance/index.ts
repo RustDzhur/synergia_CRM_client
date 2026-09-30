@@ -71,7 +71,9 @@ export function checkCompliance(doc: ComplianceDoc, seller: ComplianceSeller, ma
             need(DATE.test(doc.supplyDate ?? "") || (DATE.test(doc.supplyPeriodFrom ?? "") && DATE.test(doc.supplyPeriodTo ?? "")), "supply_date", "document");
         }
     } else {
-        need(has(seller.uaEdrpou) || has(seller.uaIpn), "seller_ua_id", "tax");
+        // Идентификатор продавца: ЄДРПОУ/ІПН из украинского профиля или общий налоговый номер (taxId) —
+        // PDF печатает первый непустой из них (lib/finance/document.ts), чек-лист не должен быть строже
+        need(has(seller.uaEdrpou) || has(seller.uaIpn) || has(seller.taxId), "seller_ua_id", "tax");
         // Платник ПДВ выписывает податкову накладну — без номера свідоцтва реквизиты неполные
         if (seller.uaVatPayer && (doc.kind === "invoice" || doc.kind === "act")) {
             need(has(seller.uaVatCertificate), "ua_vat_certificate", "tax");

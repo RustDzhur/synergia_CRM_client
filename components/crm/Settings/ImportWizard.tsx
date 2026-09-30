@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { TbAlertTriangle, TbArrowBackUp, TbDownload, TbFileImport, TbUpload } from "react-icons/tb";
 import PageHeader from "@/components/crm/shared/PageHeader";
 import { apiCall } from "@/store/crmApi";
+import { useMarket } from "@/store/useMarket";
 import { downloadAuthed } from "@/components/crm/Finance/download";
 import SettingsTabs from "./SettingsTabs";
 
@@ -41,6 +42,8 @@ const SAMPLE_FILES: Record<string, { file: string; label: string }> = {
 
 export default function ImportWizard({ kind: initialKind, embedded = false }: { kind?: string; embedded?: boolean } = {}) {
 	const t = useTranslations("settings");
+	// DATEV — немецкий формат проводок для бухгалтера; украинской фирме он не нужен и не показывается
+	const { market } = useMarket();
 	const [kinds, setKinds] = useState<KindDef[]>([]);
 	const [batches, setBatches] = useState<BatchRow[]>([]);
 	const [templates, setTemplates] = useState<MappingRow[]>([]);
@@ -310,10 +313,13 @@ export default function ImportWizard({ kind: initialKind, embedded = false }: { 
 							<button type="button" onClick={() => void downloadAuthed("/api/export?kind=products&format=yml", "products.yml", t("importFailed"))} className="fs-btn fs-btn-ghost h-32 text-12">
 								<TbDownload size={13} /> {t("exportYml")}
 							</button>
-							{/* DATEV: проводки для бухгалтера (EXTF, SKR03 по умолчанию) — формат подтверждает бухгалтер */}
-							<button type="button" onClick={() => void downloadAuthed(`/api/export?kind=datev&year=${new Date().getFullYear()}`, `EXTF_Buchungsstapel_${new Date().getFullYear()}.csv`, t("importFailed"))} className="fs-btn fs-btn-ghost h-32 text-12">
-								<TbDownload size={13} /> {t("exportDatev")}
-							</button>
+							{/* DATEV: проводки для бухгалтера (EXTF, SKR03 по умолчанию) — немецкий формат,
+							    поэтому украинской фирме кнопка не показывается вовсе */}
+							{market !== "UA" && (
+								<button type="button" onClick={() => void downloadAuthed(`/api/export?kind=datev&year=${new Date().getFullYear()}`, `EXTF_Buchungsstapel_${new Date().getFullYear()}.csv`, t("importFailed"))} className="fs-btn fs-btn-ghost h-32 text-12">
+									<TbDownload size={13} /> {t("exportDatev")}
+								</button>
+							)}
 						</div>
 					</section>
 				</div>

@@ -5,13 +5,15 @@ export interface LineItem { description: string; qty: number; unitPrice: number;
 
 // Итог отправки документа клиенту: либо адрес, на который ушло письмо, либо текст ошибки и её код
 // ("no_recipient" — нет адреса у клиента, "no_mailbox" — не подключён ящик), по которому окно решает, что делать.
-export type SendOutcome = { ok: true; sentTo: string } | { ok: false; message: string; code: string };
+export type SendOutcome = { ok: true; sentTo: string } | { ok: false; message: string; code: string; missing: string[] };
 export interface Totals { net: number; tax: number; gross: number }
 
 export interface Product {
 	id: string; name: string; sku: string; type: "good" | "service"; unit: string;
 	purchasePrice: number; salePrice: number; taxRate: number | null; stockQty: number; reorderLevel: number; archived: boolean;
 	image?: string;
+	// Штрихкод с этикетки: поиск товара и касса ищут и по нему (сканер вводит его как текст)
+	barcode?: string;
 	// Типы цен и ступени по количеству (ТЗ §12): «опт / партнер», цена и минимальное количество
 	prices?: Array<{ type: string; price: number; minQty: number }>;
 	// ВЭД (ТЗ §12): код УКТ ЗЕД/HS, вес единицы и страна происхождения — для пакувального листа
@@ -245,7 +247,7 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 	sendInvoice: async (id, to) => {
 		// to — адрес, введённый вручную; без него сервер сам берёт e-mail контакта или фирмы клиента
 		const r = await apiCall<Invoice>(`/api/invoices/${id}/send`, "POST", to ? { to } : {});
-		if (!r.ok || !r.data) return { ok: false, message: r.message, code: r.code };
+		if (!r.ok || !r.data) return { ok: false, message: r.message, code: r.code, missing: r.missing };
 		const sent = r.data as Invoice;
 		set((s) => ({ invoices: s.invoices.map((i) => (i.id === id ? sent : i)) }));
 		return { ok: true, sentTo: sent.sentTo };
@@ -311,7 +313,7 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 	deleteQuote: async (id) => { const r = await apiCall(`/api/quotes/${id}`, "DELETE"); if (!r.ok) return r.message; set((s) => ({ quotes: s.quotes.filter((q) => q.id !== id) })); return null; },
 	sendQuote: async (id, to) => {
 		const r = await apiCall<Quote>(`/api/quotes/${id}/send`, "POST", to ? { to } : {});
-		if (!r.ok || !r.data) return { ok: false, message: r.message, code: r.code };
+		if (!r.ok || !r.data) return { ok: false, message: r.message, code: r.code, missing: r.missing };
 		const sent = r.data as Quote;
 		set((s) => ({ quotes: s.quotes.map((q) => (q.id === id ? sent : q)) }));
 		return { ok: true, sentTo: sent.sentTo };

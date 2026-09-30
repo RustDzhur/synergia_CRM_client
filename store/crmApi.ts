@@ -48,7 +48,9 @@ export async function api<T>(url: string, method = "GET", body?: unknown): Promi
 
 // То же, но с текстом ошибки сервера (для форм подключения, где пользователю нужно знать, что именно не так).
 // opts.cache — для опроса сервера: там нужен no-store, иначе браузер может отдать ответ из кэша.
-export async function apiCall<T>(url: string, method = "GET", body?: unknown, opts: { cache?: RequestCache } = {}): Promise<{ ok: boolean; data: T | null; message: string; code: string; status: number }> {
+// missing — коды недостающих реквизитов документа (code "compliance"): интерфейс переводит их словами
+// (lib/finance/complianceLabels.ts), а не показывает сырой текст сервера
+export async function apiCall<T>(url: string, method = "GET", body?: unknown, opts: { cache?: RequestCache } = {}): Promise<{ ok: boolean; data: T | null; message: string; code: string; missing: string[]; status: number }> {
     try {
         const res = await fetch(url, {
             method,
@@ -58,10 +60,10 @@ export async function apiCall<T>(url: string, method = "GET", body?: unknown, op
         });
         const json = res.status === 204 ? null : await res.json().catch(() => null);
         if (res.status === 401) sessionExpired();
-        if (!res.ok) return { ok: false, data: null, message: json?.message ?? `Error ${res.status}`, code: json?.code ?? "", status: res.status };
-        return { ok: true, data: json as T, message: "", code: "", status: res.status };
+        if (!res.ok) return { ok: false, data: null, message: json?.message ?? `Error ${res.status}`, code: json?.code ?? "", missing: Array.isArray(json?.missing) ? json.missing : [], status: res.status };
+        return { ok: true, data: json as T, message: "", code: "", missing: [], status: res.status };
     } catch {
-        return { ok: false, data: null, message: "Network error", code: "", status: 0 };
+        return { ok: false, data: null, message: "Network error", code: "", missing: [], status: 0 };
     }
 }
 
