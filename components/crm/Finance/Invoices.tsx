@@ -9,7 +9,6 @@ import { useCompaniesStore } from "@/store/useCompaniesStore";
 import { useMarket } from "@/store/useMarket";
 import { apiCall } from "@/store/crmApi";
 import { defaultRateFor } from "@/lib/finance/tax";
-import { explainCompliance } from "@/lib/finance/complianceLabels";
 import { STATUS_COLORS } from "@/utils/statusColors";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
@@ -18,6 +17,7 @@ import LineItemsEditor from "./LineItemsEditor";
 import { downloadDocumentPdf } from "./download";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import PaymentLinkDialog from "./invoicesParts/PaymentLinkDialog";
+import SendDialog from "./SendDialog";
 import { localeTag } from "@/utils/dateHelpers";
 import { money } from "./format";
 import { emptyItem, useDefaultTaxRate } from "./lineItems";
@@ -56,8 +56,8 @@ export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: 
 	const [payFor, setPayFor] = useState<string | null>(null);
 	const [creditNotes, setCreditNotes] = useState("");
 	// Окно «введите адрес»: открывается, когда у клиента нет сохранённого e-mail (сервер отвечает no_recipient)
-	const [mailFor, setMailFor] = useState<string | null>(null);
-	const [mailTo, setMailTo] = useState("");
+	// Окно отправки: адресат и ящик, с которого уйдёт письмо
+	const [sendFor, setSendFor] = useState<{ id: string } | null>(null);
 	const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
 	useEffect(() => { loadInvoices(); loadProducts(); }, [loadInvoices, loadProducts]);
@@ -118,26 +118,9 @@ export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: 
 		toast.success(t("saved"));
 		setOpen(false); setCustomerName(""); setSupplyDate(""); setItems([emptyItem(defaultTaxRate)]);
 	}
-	async function send(id: string, to?: string) {
-		setBusy(id);
-		const r = await sendInvoice(id, to);
-		setBusy(null);
-		if (r.ok) return toast.success(t("sentTo", { email: r.sentTo }));
-		// адреса нет — спрашиваем его в окне; если адрес ввели неверно, показываем текст ошибки сервера
-		// Отказ чек-листа реквизитов переводим словами с подсказкой, где заполнить (иначе «seller_ua_id»)
-		if (r.code === "compliance" && r.missing.length) return void toast.error(explainCompliance(r.missing, locale), { duration: 8000 });
-		if (r.code === "no_recipient") { if (to) toast.error(r.message); setMailFor(id); setMailTo(to ?? ""); return; }
-		toast.error(r.message);
-	}
-	async function submitMail(e: React.FormEvent) {
-		e.preventDefault();
-		if (!mailFor) return;
-		const to = mailTo.trim();
-		if (!to) return toast.error(t("emailRequired"));
-		const id = mailFor;
-		setMailFor(null);
-		await send(id, to);
-	}
+	// Отправка открывает окно: адресат и ЯЩИК ОТПРАВКИ — письмо должно уходить с ящика фирмы,
+	// а не с первого подключённого (личного), как было раньше (SendDialog)
+
 	async function pay(id: string) { setBusy(id); const err = await payInvoice(id); setBusy(null); if (err) toast.error(err); else toast.success(t("markedPaid")); }
 	// Фискальный чек ПРРО: при включённой автофискализации он пробивается сам при оплате, кнопка —
 	// для ручного случая и для повтора после неудачи (ошибка хранится в самом счёте)
@@ -203,7 +186,7 @@ export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: 
 								<p className="text-15 font-semibold text-[#f1f4ee]">{money(inv.totals.gross, inv.currency, locale)}</p>
 							</div>
 							<div className="mt-12 flex flex-wrap items-center gap-8">
-								{inv.status === "draft" && <button type="button" disabled={busy === inv.id} onClick={() => send(inv.id)} className="fs-btn fs-btn-primary h-34 disabled:opacity-[0.5]">{t("send")}</button>}
+								{inv.status === "draft" && <button type="button" onClick={() => setSendFor({ id: inv.id })} className="fs-btn fs-btn-primary h-34">{t("send")}</button>}
 								{inv.kind === "invoice" && (inv.status === "sent" || inv.status === "overdue") && <button type="button" disabled={busy === inv.id} onClick={() => pay(inv.id)} className="fs-btn fs-btn-ghost h-34 border-[rgba(198,255,77,0.4)] text-[#c6ff4d] disabled:opacity-[0.5]">{t("markPaid")}</button>}
 								{inv.status === "paid" && <span className="text-12 text-[#c6ff4d]">{t("paidOn", { date: inv.paidAt ? new Date(inv.paidAt).toLocaleDateString(locale) : "" })}</span>}
 								{inv.kind === "invoice" && ["sent", "paid", "overdue"].includes(inv.status) && (
@@ -309,17 +292,11 @@ export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: 
 				/>
 			)}
 
-			<Modal open={!!mailFor} onClose={() => setMailFor(null)} label={t("sendTitle")} className="w-full max-w-[520px]">
-				<form onSubmit={submitMail} className="fs-popover p-20 md:p-24">
-					<h2 className="mb-8 text-16 font-semibold text-[#f1f4ee]">{t("sendTitle")}</h2>
-					<p className="mb-16 text-12 text-[#8c948b]">{t("sendHint")}</p>
-					<FormField label={t("email")} type="email" value={mailTo} onChange={(e) => setMailTo(e.target.value)} maxLength={200} autoFocus />
-					<div className="mt-20 flex justify-end gap-10">
-						<button type="button" onClick={() => setMailFor(null)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
-						<button type="submit" disabled={busy === mailFor} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{t("send")}</button>
-					</div>
-				</form>
-			</Modal>
+			<SendDialog
+				open={!!sendFor}
+				onClose={() => setSendFor(null)}
+				onSubmit={(o) => sendInvoice(sendFor?.id ?? "", o.to || undefined, o.accountId || undefined)}
+			/>
 
 			<Modal open={!!creditTarget} onClose={() => setCreditTarget(null)} label={t("issueCreditNote")} className="w-full max-w-[520px]">
 				<form onSubmit={submitCreditNote} className="fs-popover p-20 md:p-24">

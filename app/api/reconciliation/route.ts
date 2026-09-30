@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { badRequest, unauthorized } from "@/lib/api";
+import { badRequest, unauthorized, contentDisposition } from "@/lib/api";
 import { reconciliation, creditRoom } from "@/lib/finance/pricing";
 import { toCsv } from "@/lib/import/csv";
 import Company from "@/models/Company";
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
             ["Дата", "Документ", "Нараховано", "Оплачено", "Сальдо"],
             [["", "Сальдо на початок", "", "", result.opening], ...result.rows.map((r) => [r.date, r.number, r.charged, r.paid, r.balance]), ["", "Сальдо на кінець", "", "", result.closing]]
         );
-        return new Response(csv, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="reconciliation-${company.name}.csv"`, "Cache-Control": "no-store" } });
+        return new Response(csv, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": contentDisposition(`reconciliation-${company.name}.csv`, "attachment"), "Cache-Control": "no-store" } });
     }
     return NextResponse.json(payload);
 }

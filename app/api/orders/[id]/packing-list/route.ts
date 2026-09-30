@@ -1,6 +1,6 @@
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
+import { badRequest, notFound, unauthorized, validId, contentDisposition } from "@/lib/api";
 import { packingListPdfBuffer, pdfLocale, pdfTemplate } from "@/lib/finance/document";
 import { financeSettings } from "@/lib/finance/settings";
 import { nextNumber } from "@/lib/finance/numbering";
@@ -40,7 +40,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     return new Response(new Uint8Array(buf), {
         headers: {
             "Content-Type": "application/pdf",
-            "Content-Disposition": `inline; filename="packing-list-${order.packingNumber || order.number}.pdf"`,
+            "Content-Disposition": contentDisposition(`packing-list-${order.packingNumber || order.number}.pdf`),
             "Cache-Control": "no-store",
         },
     });

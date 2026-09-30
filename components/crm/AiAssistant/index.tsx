@@ -9,9 +9,12 @@ import { AiAction, AiMessage, useAiStore } from "@/store/useAiStore";
 import { stripLocale } from "@/utils/locale";
 import Modal from "../shared/Modal";
 import Markdown from "./markdown";
-import { dictationSupported, isStopCommand, recorderSupported, ttsSupported, useContinuousListening, useSpeechOutput, useVoiceInput, voiceDecision } from "./voice";
+import VoiceOrb from "./VoiceOrb";
+import { dictationSupported, isStopCommand, recorderSupported, stripWake, ttsSupported, useBargeIn, useContinuousListening, useSpeechOutput, useVoiceInput, voiceDecision } from "./voice";
 
 const AUTO_SPEAK_KEY = "ai.autospeak";
+// Окно продолжения после ответа: уточнения и «так/ні» можно говорить без имени, пока оно открыто
+const WAKE_FOLLOWUP_MS = 30_000;
 
 const RECENT_KEY = "ai.recent";
 const readRecent = (): string[] => { try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]").slice(0, 4); } catch { return []; } };
@@ -148,6 +151,8 @@ export default function AiAssistant() {
 		});
 	}
 	const spokenRef = useRef<string | null>(null);
+	// Окно продолжения: после каждого ответа/перебивания ассистент ещё 30 с слушает без имени
+	const activatedAtRef = useRef(0);
 
 	// ── Режим разговора (Джарвис): слушаю → думаю → говорю → снова слушаю ────────────────────────────
 	// Голос здесь ничего не обходит: вопросы отправляются без рук, а предложенные ИЗМЕНЕНИЯ данных
@@ -161,6 +166,8 @@ export default function AiAssistant() {
 	// Фаза выводится из состояния, а не хранится отдельно: так её нельзя рассогласовать с реальностью
 	const phase: "listening" | "thinking" | "speaking" = busy ? "thinking" : speakingId ? "speaking" : "listening";
 	const listening = voiceMode && open && !blocked && voice.dictation && !busy && !speakingId;
+	// Окно продолжения открыто (имя звучало недавно) — подсказка и вид шара это показывают
+	const activated = Date.now() - activatedAtRef.current < WAKE_FOLLOWUP_MS;
 
 	useEffect(() => {
 		if (!open || !autoSpeak || !voice.tts || voiceMode) return;
@@ -174,13 +181,24 @@ export default function AiAssistant() {
 	function speakVoice(text: string) {
 		if (!speak("voice-note", text)) setVoiceMode(false); // озвучки нет — режим разговора бессмыслен
 	}
+	// Без имени фраза в чат не уходит (в комнате звучит много всего); позвали «Айрис…» — окно открыто
 	function handlePhrase(text: string) {
+		const { hit, rest } = stripWake(text);
+		const fresh = Date.now() - activatedAtRef.current < WAKE_FOLLOWUP_MS;
+		if (!hit && !fresh) return;
+		if (hit) activatedAtRef.current = Date.now();
 		if (isStopCommand(text)) {
 			stopSpeak();
 			setVoiceMode(false);
 			return;
 		}
-		const decision = voiceDecision(text, pendingActions.length);
+		if (hit && !rest) {
+			// Позвали по имени без просьбы — отзываемся и слушаем дальше
+			speakVoice(t("voiceAwake"));
+			return;
+		}
+		const utterance = hit ? rest : text;
+		const decision = voiceDecision(utterance, pendingActions.length);
 		if (decision.kind === "confirm" && lastAssistant && pendingActions[0]) {
 			const target = lastAssistant;
 			const action = pendingActions[0];
@@ -196,13 +214,19 @@ export default function AiAssistant() {
 			speakVoice(t("voiceConfirmMany"));
 			return;
 		}
-		submit(text);
+		submit(utterance);
 	}
 	const { interim } = useContinuousListening({
 		locale,
 		active: listening,
 		onPhrase: handlePhrase,
 		onError: (code) => { toast.error(t(code)); setVoiceMode(false); },
+	});
+	// Перебивание голосом, как в голосовом режиме GPT: пока говорит ассистент, микрофон измеряет
+	// громкость (с подавлением эха) и обрывает речь, как только заговорил человек
+	useBargeIn({
+		active: voiceMode && open && !!speakingId,
+		onDetect: () => { stopSpeak(); activatedAtRef.current = Date.now(); },
 	});
 	// Ответ ассистента в режиме разговора читается вслух всегда (это и есть смысл режима), а если
 	// в нём одно предложенное действие — сразу и вопрос «Підтвердити?», чтобы ответить голосом
@@ -211,6 +235,7 @@ export default function AiAssistant() {
 		const last = messages[messages.length - 1];
 		if (last?.role !== "assistant" || last.error || last.id === spokenRef.current) return;
 		spokenRef.current = last.id;
+		activatedAtRef.current = Date.now(); // после ответа окно продолжения открыто
 		const pending = last.actions?.filter((a) => a.state === "pending") ?? [];
 		const tail = pending.length === 1 ? ` ${t("voiceAskConfirm")}` : pending.length > 1 ? ` ${t("voiceConfirmMany")}` : "";
 		speak(last.id, last.text + tail);
@@ -292,21 +317,25 @@ export default function AiAssistant() {
 					<button type="button" onClick={close} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><MdClose size={18} /></button>
 				</header>
 
-				{/* Панель разговора: состояние и распознаваемая фраза всегда на виду; нажатие на круг
-				    прерывает речь — можно сразу перебить и сказать новое */}
+				{/* Панель разговора: живой шар показывает состояние, распознаваемая фраза — рядом;
+				    нажатие на шар обрывает речь (то же делает голос — useBargeIn) */}
 				{voiceMode && !blocked && (
 					<div className="flex items-center gap-12 border-b border-inkLine bg-[rgba(198,255,77,0.05)] px-16 py-12">
 						<button
 							type="button"
 							onClick={() => { if (speakingId) stopSpeak(); }}
 							aria-label={speakingId ? t("stopSpeak") : t(`voice_${phase}`)}
-							className={`flex h-52 w-52 shrink-0 items-center justify-center rounded-full border transition-colors ${speakingId ? "border-[rgba(198,255,77,0.6)] bg-[rgba(198,255,77,0.12)] text-[#c6ff4d]" : phase === "listening" ? "animate-pulse border-[rgba(235,87,87,0.5)] bg-[rgba(235,87,87,0.10)] text-danger" : "border-inkLine text-[#8c948b]"}`}>
-							{speakingId ? <TbPlayerStop size={18} aria-hidden /> : <TbMicrophone size={18} aria-hidden />}
+							title={speakingId ? t("stopSpeak") : t(`voice_${phase}`)}
+							className="relative shrink-0 rounded-full transition-transform hover:scale-105">
+							<VoiceOrb size={56} state={speakingId ? "speaking" : busy ? "thinking" : activated ? "listening" : "idle"} />
+							{speakingId
+								? <TbPlayerStop size={16} className="absolute inset-0 m-auto text-[#0d120b]" aria-hidden />
+								: <TbMicrophone size={15} className="absolute inset-0 m-auto text-[#0d120b]" aria-hidden />}
 						</button>
 						<div className="min-w-0 flex-1">
 							<p className="text-13 text-[#f1f4ee]">{t(`voice_${phase}`)}</p>
 							<p className="truncate text-12 text-[#8c948b]">
-								{pendingActions.length > 0 ? t(pendingActions.length === 1 ? "voiceAskConfirm" : "voiceConfirmMany") : interim || t("voiceHint")}
+								{pendingActions.length > 0 ? t(pendingActions.length === 1 ? "voiceAskConfirm" : "voiceConfirmMany") : interim || t(activated ? "voiceHint" : "voiceWakeHint")}
 							</p>
 						</div>
 						<button type="button" onClick={toggleVoiceMode} className="fs-link shrink-0 text-12">{t("voiceExit")}</button>

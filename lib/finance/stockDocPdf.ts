@@ -94,32 +94,52 @@ export function stockDocPdfBuffer(doc: StockDocPdfData, s: StockDocPdfSettings, 
 		if (doc.note) line(`${Lx.note}: ${doc.note}`, { size: 10, color: "#555555" });
 		y += 8;
 
-		// Колонки строк: у инвентаризации — учёт и расхождение, у остальных — количество и стоимость
+		// Колонки строк: у инвентаризации — учёт и расхождение, у остальных — количество и стоимость.
+		// Правый край таблицы — поле страницы (x + w): три числовые колонки по 56 pt с зазором 4 pt
+		// заканчиваются ровно на нём. Раньше «Сума» и «Розходження» уходили за поле до самого края
+		// листа (при печати обрезалось), а заголовок «Розходження» не влезал в колонку и налезал
+		// на первую строку данных
 		const inventory = doc.kind === "inventory";
 		const cols = inventory
-			? { num: x, item: x + 24, sku: x + w - 250, unit: x + w - 160, qty: x + w - 110, book: x + w - 70, diff: x + w - 10, price: 0, sum: 0 }
-			: { num: x, item: x + 24, sku: x + w - 250, unit: x + w - 160, qty: x + w - 100, book: 0, diff: 0, price: x + w - 60, sum: x + w - 10 };
+			? { num: x, item: x + 24, sku: x + w - 302, unit: x + w - 222, qty: x + w - 176, book: x + w - 116, diff: x + w - 56, price: 0, sum: 0 }
+			: { num: x, item: x + 24, sku: x + w - 302, unit: x + w - 222, qty: x + w - 176, book: 0, diff: 0, price: x + w - 116, sum: x + w - 56 };
 		const header = () => {
 			pdf.fontSize(8).fillColor("#999999");
 			const top = y;
-			const cell = (str: string, cx: number, o: { align?: "right"; width?: number } = {}) => pdf.text(str, cx, top, { width: o.width ?? 60, align: o.align ?? "left" });
+			// Высота шапки меряется: перенесённая подпись («Laut Bestand» в немецком) раньше
+			// рисовалась под фиксированные 12 pt и налезала на первую строку таблицы
+			let hh = 0;
+			const cell = (str: string, cx: number, o: { align?: "right"; width?: number } = {}) => {
+				const wid = o.width ?? 60;
+				hh = Math.max(hh, pdf.heightOfString(str, { width: wid }));
+				pdf.text(str, cx, top, { width: wid, align: o.align ?? "left" });
+			};
 			cell(Lx.colNum, cols.num, { width: 20 });
 			cell(Lx.colItem, cols.item, { width: cols.sku - cols.item - 6 });
-			cell(Lx.colSku, cols.sku, { width: 84 });
-			cell(Lx.colUnit, cols.unit, { width: 44 });
+			cell(Lx.colSku, cols.sku, { width: 74 });
+			cell(Lx.colUnit, cols.unit, { width: 40 });
 			if (inventory) {
-				cell(Lx.colQty, cols.qty, { align: "right", width: 46 });
-				cell(Lx.colBook, cols.book, { align: "right", width: 46 });
-				cell(Lx.colDiff, cols.diff, { align: "right", width: 50 });
+				cell(Lx.colQty, cols.qty, { align: "right", width: 56 });
+				cell(Lx.colBook, cols.book, { align: "right", width: 56 });
+				cell(Lx.colDiff, cols.diff, { align: "right", width: 56 });
 			} else {
-				cell(Lx.colQty, cols.qty, { align: "right", width: 46 });
-				cell(Lx.colPrice, cols.price, { align: "right", width: 46 });
-				cell(Lx.colSum, cols.sum, { align: "right", width: 60 });
+				cell(Lx.colQty, cols.qty, { align: "right", width: 56 });
+				cell(Lx.colPrice, cols.price, { align: "right", width: 56 });
+				cell(Lx.colSum, cols.sum, { align: "right", width: 56 });
 			}
-			y += 12;
+			y += hh + 4;
 			pdf.moveTo(x, y - 3).lineTo(x + w, y - 3).lineWidth(0.5).strokeColor("#DDDDDD").stroke();
 		};
 		header();
+
+		// Числовая ячейка: суммы и количества не переносятся — перенос налезал бы на следующую строку
+		// (высота строки считается по названию товара), поэтому кегль подбирается под колонку
+		const fitText = (str: string, cx: number, ty: number, boxW: number, o: { color?: string } = {}) => {
+			let size = 9;
+			pdf.fontSize(size);
+			while (size > 6.5 && pdf.widthOfString(str) > boxW - 2) { size -= 0.5; pdf.fontSize(size); }
+			pdf.fillColor(o.color ?? "#333333").text(str, cx, ty, { width: boxW, align: "right", lineBreak: false });
+		};
 
 		// Строки
 		let total = 0;
@@ -135,25 +155,25 @@ export function stockDocPdfBuffer(doc: StockDocPdfData, s: StockDocPdfSettings, 
 			if (i % 2 === 1) pdf.rect(x, ty - 2, w, height + 2).fill("#F7F7F7");
 			cell(String(i + 1), cols.num, { width: 20, color: "#666666" });
 			cell(l.name || "—", cols.item, { width: cols.sku - cols.item - 6 });
-			cell(l.sku, cols.sku, { width: 84, color: "#666666" });
-			cell(l.unit, cols.unit, { width: 44, color: "#666666" });
+			cell(l.sku, cols.sku, { width: 74, color: "#666666" });
+			cell(l.unit, cols.unit, { width: 40, color: "#666666" });
 			if (inventory) {
-				cell(fmtQty(l.qty), cols.qty, { align: "right", width: 46 });
-				cell(fmtQty(l.qty - l.diff), cols.book, { align: "right", width: 46, color: "#666666" });
-				cell(`${l.diff > 0 ? "+" : ""}${fmtQty(l.diff)}`, cols.diff, { align: "right", width: 50, color: l.diff === 0 ? "#666666" : "#B00020" });
+				fitText(fmtQty(l.qty), cols.qty, ty, 56);
+				fitText(fmtQty(l.qty - l.diff), cols.book, ty, 56, { color: "#666666" });
+				fitText(`${l.diff > 0 ? "+" : ""}${fmtQty(l.diff)}`, cols.diff, ty, 56, { color: l.diff === 0 ? "#666666" : "#B00020" });
 			} else {
 				const sum = Math.round(l.qty * l.price * 100) / 100;
 				total += sum;
-				cell(fmtQty(l.qty), cols.qty, { align: "right", width: 46 });
-				cell(l.price ? fmtSum(l.price) : "—", cols.price, { align: "right", width: 46, color: "#666666" });
-				cell(l.price ? fmtSum(sum) : "—", cols.sum, { align: "right", width: 60 });
+				fitText(fmtQty(l.qty), cols.qty, ty, 56);
+				fitText(l.price ? fmtSum(l.price) : "—", cols.price, ty, 56, { color: "#666666" });
+				fitText(l.price ? fmtSum(sum) : "—", cols.sum, ty, 56);
 			}
 			y = ty + height;
 		});
 		if (!inventory && total > 0) {
 			pdf.moveTo(x, y).lineTo(x + w, y).lineWidth(0.5).strokeColor("#DDDDDD").stroke();
 			y += 4;
-			pdf.fontSize(10).fillColor("#333333").text(`${Lx.colSum}: ${total.toLocaleString("uk-UA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, cols.price - 40, y, { width: 60 + 40, align: "right" });
+			pdf.fontSize(10).fillColor("#333333").text(`${Lx.colSum}: ${total.toLocaleString("uk-UA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, x + w - 160, y, { width: 160, align: "right" });
 			y += 16;
 		}
 

@@ -1,6 +1,6 @@
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
+import { badRequest, notFound, unauthorized, validId, contentDisposition } from "@/lib/api";
 import { requireMarket } from "@/lib/finance/marketGuard";
 import { waybillPrintUrl } from "@/lib/finance/delivery";
 import Order from "@/models/Order";
@@ -32,7 +32,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         return new Response(res.body, {
             headers: {
                 "Content-Type": "application/pdf",
-                "Content-Disposition": `inline; filename="waybill-${order.waybill.number}-${kind}.pdf"`,
+                "Content-Disposition": contentDisposition(`waybill-${order.waybill.number}-${kind}.pdf`),
                 "Cache-Control": "no-store",
             },
         });

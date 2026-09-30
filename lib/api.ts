@@ -16,6 +16,18 @@ export const badRequest = (message: string) => NextResponse.json({ message }, { 
 export const notFound = () => NextResponse.json({ message: "Not found" }, { status: 404 });
 export const validId = (id: string) => isValidObjectId(id);
 
+// Content-Disposition с именем файла, которое может быть не-ASCII: украинские номера документов —
+// «КП-2026-1», «ВН-2026-4» — в HTTP-заголовке бросают TypeError (заголовки обязаны быть
+// ASCII-совместимыми байтами ≤255), и маршрут отвечал «Server error», хотя PDF был уже готов —
+// именно так выглядело «PDF в пропозициях не скачивается». Даём ASCII-запасное имя для старых
+// браузеров и RFC 5987 filename* с точным именем для всех современных.
+export function contentDisposition(filename: string, kind: "inline" | "attachment" = "inline"): string {
+    const ascii = filename.replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_").slice(0, 120) || "document.pdf";
+    // RFC 5987: кавычка, скобки и звёздочка не входят в attr-char и должны быть процент-кодированы
+    const encoded = encodeURIComponent(filename).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+    return `${kind}; filename="${ascii}"; filename*=UTF-8''${encoded}`;
+}
+
 // Ошибки провайдера (неверный токен, номер не найден…) — 502 с понятным текстом; остальное — 500 без подробностей.
 // Неожиданные ошибки — то есть наши собственные поломки — уходят владельцу в Telegram (lib/reportError.ts):
 // человек узнаёт о них, не дожидаясь, пока кто-нибудь пожалуется. Провайдерные не отправляем: их видно

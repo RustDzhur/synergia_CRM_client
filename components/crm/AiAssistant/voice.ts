@@ -236,12 +236,99 @@ export function voiceDecision(text: string, pendingActions: number): { kind: "co
 	return { kind: "send" };
 }
 
+// ── Имя-пробуждение ──────────────────────────────────────────────────────────────────────────────────
+// Ассистента зовут «Airis» (Айрис). В режиме разговора без имени фраза не уходит в чат: иначе любая
+// реплика в комнате жгла бы квоту и лезла в CRM. После ответа ассистента окно продолжения открыто —
+// уточнения и ответы «так/ні» говорят уже без имени.
+
+const WAKE_WORDS = ["airis", "айріс", "айрис", "ірис", "iris"];
+
+/** Имя во фразе: {hit — позвали, rest — сама просьба без имени}. */
+export function stripWake(text: string): { hit: boolean; rest: string } {
+	const raw = String(text ?? "");
+	const ws = words(raw);
+	const hit = ws.some((w) => WAKE_WORDS.includes(w));
+	if (!hit) return { hit: false, rest: raw.trim() };
+	// Убираем только ПЕРВОЕ имя — в остальном тексте слово «айріс» может быть частью просьбы.
+	// Границы слова — юникодные: \b в JavaScript знает только ASCII и с кириллицей не срабатывает
+	const re = new RegExp(`(?<![\\p{L}\\p{N}])(?:${WAKE_WORDS.join("|")})(?![\\p{L}\\p{N}])[\\s,!.…—–-]*`, "giu");
+	return { hit: true, rest: raw.replace(re, "").trim() };
+}
+
+// ── Перебивание голосом (как в голосовом режиме ChatGPT) ─────────────────────────────────────────────
+// Пока ассистент говорит, микрофон приоткрыт ТОЛЬКО для измерения громкости: поток берётся с
+// echoCancellation, чтобы голос ассистента из динамиков не считался речью человека. Как только
+// человек заговорил (уровень устойчиво выше фонового), речь ассистента обрывается и слушание
+// начинается заново — как в живом разговоре.
+
+const BARGE_POLL_MS = 70;
+const BARGE_FRAMES = 3; // ~210 мс устойчивой речи, чтобы кашель не перебивал
+const BARGE_MIN_LEVEL = 0.045;
+
+export function useBargeIn({ active, onDetect }: { active: boolean; onDetect: () => void }) {
+	const onDetectRef = useRef(onDetect);
+	onDetectRef.current = onDetect;
+	useEffect(() => {
+		if (!active) return;
+		if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return;
+		let disposed = false;
+		let stream: MediaStream | null = null;
+		let ctx: AudioContext | null = null;
+		let timer: ReturnType<typeof setInterval> | null = null;
+		const stop = () => {
+			if (timer) { clearInterval(timer); timer = null; }
+			stream?.getTracks().forEach((t) => t.stop());
+			stream = null;
+			void ctx?.close().catch(() => undefined);
+			ctx = null;
+		};
+		void (async () => {
+			try {
+				stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+				if (disposed) return stop();
+				ctx = new AudioContext();
+				const src = ctx.createMediaStreamSource(stream);
+				const analyser = ctx.createAnalyser();
+				analyser.fftSize = 512;
+				src.connect(analyser);
+				const data = new Float32Array(analyser.fftSize);
+				const level = () => {
+					analyser.getFloatTimeDomainData(data);
+					let sum = 0;
+					for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+					return Math.sqrt(sum / data.length);
+				};
+				// Первые кадры — фон: так порог подстраивается под комнату и под остаток эха динамиков
+				let baseline = 0;
+				for (let i = 0; i < 5; i++) { baseline += level(); await new Promise((r) => setTimeout(r, 40)); }
+				baseline /= 5;
+				const threshold = Math.max(BARGE_MIN_LEVEL, baseline * 2.5);
+				let loud = 0;
+				timer = setInterval(() => {
+					if (disposed) return;
+					const l = level();
+					loud = l > threshold ? loud + 1 : 0;
+					if (loud >= BARGE_FRAMES) {
+						stop();
+						onDetectRef.current();
+					}
+				}, BARGE_POLL_MS);
+			} catch {
+				stop(); // без микрофона перебивание недоступно — остаётся кнопка
+			}
+		})();
+		return () => { disposed = true; stop(); };
+	}, [active]);
+}
+
 /**
  * Непрерывное слушание для режима разговора: распознаёт фразу и сам зовёт onPhrase, когда человек
- * замолчал (тишина ~1,4 с). Пока ассистент думает или говорит, слушание выключено — микрофон не
- * должен слышать собственный голос. Живёт только на браузерном распознавании: серверный путь
- * требует ручной остановки записи, а «Джарвис» — это именно разговор без рук.
+ * замолчал (тишина ~3 с — успевает договорить и подумать посреди фразы). Пока ассистент думает или
+ * говорит, слушание выключено — микрофон не должен слышать собственный голос (перебивание голосом
+ * делает useBargeIn). Живёт только на браузерном распознавании: серверный путь требует ручной
+ * остановки записи, а «Джарвис» — это именно разговор без рук.
  */
+export const SILENCE_MS = 3000;
 export function useContinuousListening({ locale, active, onPhrase, onError }: {
 	locale: string;
 	active: boolean;
@@ -284,7 +371,7 @@ export function useContinuousListening({ locale, active, onPhrase, onError }: {
 				setInterim("");
 				try { recogRef.current?.stop(); } catch { /* уже остановлен */ }
 				onPhraseRef.current(phrase);
-			}, 1400);
+			}, SILENCE_MS);
 		};
 
 		const startEngine = () => {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
+import { badRequest, failure, notFound, unauthorized, validId, contentDisposition } from "@/lib/api";
 import { actPdfBuffer, customerParty, pdfLocale, pdfTemplate } from "@/lib/finance/document";
 import { financeSettings } from "@/lib/finance/settings";
 import { checkCompliance, complianceMessage } from "@/lib/finance/compliance";
@@ -66,7 +66,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         return new Response(buffer as unknown as BodyInit, {
             headers: {
                 "Content-Type": "application/pdf",
-                "Content-Disposition": `inline; filename="${order.actNumber}.pdf"`,
+                "Content-Disposition": contentDisposition(`${order.actNumber}.pdf`),
                 "Cache-Control": "no-store",
             },
         });

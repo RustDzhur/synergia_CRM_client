@@ -17,6 +17,14 @@ export function marketOf(country?: string | null): Market | null {
     return null;
 }
 
+/** Язык документов фирмы по стране: украинская — украинский, немецкая — немецкий. Пусто — null.
+ *  По нему выбирается язык PDF и письма клиенту, когда язык не задан явно: документ должен быть
+ *  на языке страны, в которой он выставляется, — интерфейс кабинета может быть и на третьем. */
+export const marketDocumentLocale = (country?: string | null): "ua" | "de" | null => {
+    const m = marketOf(country);
+    return m === "UA" ? "ua" : m === "DE" ? "de" : null;
+};
+
 /** Вкладки финансового раздела (ключи совпадают с Finance/index.tsx и ?tab= в ссылках). */
 export type FinanceTabId =
     | "overview"

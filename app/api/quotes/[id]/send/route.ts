@@ -4,9 +4,10 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
 import { logAudit } from "@/lib/audit";
-import { pdfLocale, quotePdfBuffer } from "@/lib/finance/document";
+import { LOCALES, pdfLocale, quotePdfBuffer } from "@/lib/finance/document";
 import { emailDocument, mailAccount, resolveRecipient } from "@/lib/finance/send";
 import { financeSettings } from "@/lib/finance/settings";
+import { marketDocumentLocale } from "@/lib/finance/market";
 import { assertCompliant } from "@/lib/finance/compliance";
 import { computeTotals } from "@/lib/finance/totals";
 import Quote from "@/models/Quote";
@@ -37,12 +38,16 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!account) return needsSetup("Connect a mailbox in Web Mails to send quotes by email", "no_mailbox");
 
     try {
-        const locale = pdfLocale(b?.locale);
-        const [pdf, settings, sender] = await Promise.all([
+        // Язык документа: явно заданный (если валиден) → язык страны фирмы → английский. Раньше язык
+        // не передавался и письмо с PDF всегда уходили на английском, хотя документ украинской фирмы
+        // должен быть украинским (язык кабинета может быть любым)
+        const settingsFirst = await financeSettings(user.id);
+        const locale = (LOCALES as readonly string[]).includes(String(b?.locale)) ? pdfLocale(b?.locale) : marketDocumentLocale(settingsFirst.country) ?? "en";
+        const [pdf, sender] = await Promise.all([
             quotePdfBuffer(user.id, q, locale),
-            financeSettings(user.id),
             User.findById(user.userId).select("firstname lastname"),
         ]);
+        const settings = settingsFirst;
         // Выпуск клиенту — момент проверки обязательных реквизитов (ТЗ §14)
         const gross = computeTotals(q.items as never).gross;
         assertCompliant(

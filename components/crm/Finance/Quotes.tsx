@@ -7,7 +7,6 @@ import { LineItem, useFinanceStore } from "@/store/useFinanceStore";
 import { useContactStore } from "@/store/useContactStore";
 import { useCompaniesStore } from "@/store/useCompaniesStore";
 import { defaultRateFor } from "@/lib/finance/tax";
-import { explainCompliance } from "@/lib/finance/complianceLabels";
 import { STATUS_COLORS } from "@/utils/statusColors";
 import { localeTag } from "@/utils/dateHelpers";
 import Modal from "../shared/Modal";
@@ -16,6 +15,7 @@ import LineItemsEditor from "./LineItemsEditor";
 import { downloadDocumentPdf } from "./download";
 import { apiCall } from "@/store/crmApi";
 import DocumentTemplateButton from "./DocumentTemplateButton";
+import SendDialog from "./SendDialog";
 import { money } from "./format";
 import { emptyItem, useDefaultTaxRate } from "./lineItems";
 
@@ -40,6 +40,7 @@ export default function Quotes({ onOpenOrder, prefill, onPrefillDone }: { onOpen
 	const [busy, setBusy] = useState<string | null>(null);
 	const [dealLink, setDealLink] = useState<{ deal?: string; contact?: string; company?: string }>({});
 	const [historyOpen, setHistoryOpen] = useState<Set<string>>(new Set());
+	const [sendFor, setSendFor] = useState<{ id: string } | null>(null);
 	// Окно «введите адрес»: открывается, когда у клиента нет сохранённого e-mail (сервер отвечает no_recipient)
 	const toggleHistory = (id: string) => setHistoryOpen((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
@@ -108,16 +109,8 @@ export default function Quotes({ onOpenOrder, prefill, onPrefillDone }: { onOpen
 		toast.success(t("saved"));
 		setOpen(false); setCustomerName(""); setItems([emptyItem(defaultTaxRate)]); setDealLink({});
 	}
-	async function send(id: string) {
-		setBusy(id);
-		const r = await sendQuote(id);
-		setBusy(null);
-		if (r.ok) return toast.success(t("sentTo", { email: r.sentTo }));
-		// Отказ чек-листа реквизитов переводим словами с подсказкой, где заполнить; остальное — как объяснил сервер
-		if (r.code === "compliance" && r.missing.length) return void toast.error(explainCompliance(r.missing, locale), { duration: 8000 });
-		// адреса у клиента нет — сервер объясняет это в message, показываем как есть
-		toast.error(r.message);
-	}
+	// Отправка открывает окно: адресат и ЯЩИК ОТПРАВКИ (раньше ящик выбирался сервером молча —
+	// первый подключённый, и письмо могло уйти с личного адреса, хотя у фирмы есть свой)
 	async function downloadPdf(id: string, number: string) {
 		void downloadDocumentPdf("quotes", id, number, locale); // причину отказа показывает сам хелпер
 	}
@@ -176,7 +169,7 @@ export default function Quotes({ onOpenOrder, prefill, onPrefillDone }: { onOpen
 								</ul>
 							)}
 							<div className="mt-12 flex flex-wrap items-center gap-8">
-								{q.status === "draft" && <button type="button" disabled={busy === q.id} onClick={() => send(q.id)} className="fs-btn fs-btn-primary h-34 disabled:opacity-[0.5]">{t("send")}</button>}
+								{q.status === "draft" && <button type="button" onClick={() => setSendFor(q)} className="fs-btn fs-btn-primary h-34">{t("send")}</button>}
 								{/* Ссылка для клиента: он сам отметит нужные позиции и примет предложение */}
 								<button type="button" onClick={() => void share(q.id)} className="fs-btn fs-btn-ghost h-34" title={t("shareHint")}>
 									<TbLink size={15} /> {t("share")}
@@ -229,6 +222,12 @@ export default function Quotes({ onOpenOrder, prefill, onPrefillDone }: { onOpen
 					</div>
 				</form>
 			</Modal>
+
+			<SendDialog
+				open={!!sendFor}
+				onClose={() => setSendFor(null)}
+				onSubmit={(o) => sendQuote(sendFor?.id ?? "", o.to || undefined, o.accountId || undefined)}
+			/>
 		</div>
 	);
 }

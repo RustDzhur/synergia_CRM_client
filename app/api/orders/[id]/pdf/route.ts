@@ -1,6 +1,6 @@
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { failure, notFound, unauthorized, validId } from "@/lib/api";
+import { failure, notFound, unauthorized, validId, contentDisposition } from "@/lib/api";
 import { orderPdfBuffer, pdfTemplate, pdfLocale } from "@/lib/finance/document";
 import Order from "@/models/Order";
 
@@ -19,7 +19,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         return new Response(buffer as unknown as BodyInit, {
             headers: {
                 "content-type": "application/pdf",
-                "content-disposition": `inline; filename="${order.number}.pdf"`,
+                "content-disposition": contentDisposition(`${order.number}.pdf`),
                 "cache-control": "private, no-store",
             },
         });

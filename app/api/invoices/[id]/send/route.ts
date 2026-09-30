@@ -4,9 +4,10 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
 import { logAudit } from "@/lib/audit";
-import { invoicePdfBuffer, pdfLocale } from "@/lib/finance/document";
+import { LOCALES, invoicePdfBuffer, pdfLocale } from "@/lib/finance/document";
 import { emailDocument, mailAccount, resolveRecipient } from "@/lib/finance/send";
 import { financeSettings } from "@/lib/finance/settings";
+import { marketDocumentLocale } from "@/lib/finance/market";
 import { assertCompliant } from "@/lib/finance/compliance";
 import { computeTotals } from "@/lib/finance/totals";
 import Invoice from "@/models/Invoice";
@@ -40,12 +41,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!account) return needsSetup("Connect a mailbox in Web Mails to send invoices by email", "no_mailbox");
 
     try {
-        const locale = pdfLocale(b?.locale);
-        const [pdf, settings, sender] = await Promise.all([
+        // Язык документа: явно заданный (если валиден) → язык страны фирмы → английский — как у КП:
+        // раньше письмо всегда уходило на английском
+        const settingsFirst = await financeSettings(user.id);
+        const locale = (LOCALES as readonly string[]).includes(String(b?.locale)) ? pdfLocale(b?.locale) : marketDocumentLocale(settingsFirst.country) ?? "en";
+        const [pdf, sender] = await Promise.all([
             invoicePdfBuffer(user.id, inv, locale),
-            financeSettings(user.id),
             User.findById(user.userId).select("firstname lastname"),
         ]);
+        const settings = settingsFirst;
         // Выпуск клиенту — момент, когда проверяются обязательные реквизиты (ТЗ §14): черновик можно
         // сохранять и печатать, но отправить неполный документ нельзя. Ошибка уходит 400 со списком кодов.
         const gross = computeTotals(inv.items as never).gross;

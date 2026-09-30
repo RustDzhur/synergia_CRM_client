@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { failure, notFound, unauthorized, validId } from "@/lib/api";
+import { failure, notFound, unauthorized, validId, contentDisposition } from "@/lib/api";
 import { pdfLocale } from "@/lib/finance/document";
 import { marketOf } from "@/lib/finance/market";
 import { financeSettings } from "@/lib/finance/settings";
@@ -56,12 +56,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
             );
         } catch (e) {
             // Причина рендера видна пользователю: молчаливое «Server error» не подсказывает ничего
-            return NextResponse.json({ message: e instanceof Error ? e.message : "PDF render failed", code: "pdf", probe: e instanceof Error ? `${e.name}` : "?" }, { status: 500 });
+            return NextResponse.json({ message: e instanceof Error ? e.message : "PDF render failed", code: "pdf" }, { status: 500 });
         }
         return new Response(new Uint8Array(buffer), {
             headers: {
                 "Content-Type": "application/pdf",
-                "Content-Disposition": `inline; filename="${doc.number}.pdf"`,
+                "Content-Disposition": contentDisposition(`${doc.number}.pdf`),
                 "Cache-Control": "no-store",
             },
         });

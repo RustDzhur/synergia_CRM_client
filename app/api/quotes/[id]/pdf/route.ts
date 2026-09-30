@@ -1,6 +1,6 @@
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { failure, notFound, unauthorized, validId } from "@/lib/api";
+import { failure, notFound, unauthorized, validId, contentDisposition } from "@/lib/api";
 import { pdfTemplate, pdfLocale, quotePdfBuffer } from "@/lib/finance/document";
 import Quote from "@/models/Quote";
 
@@ -21,7 +21,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         return new Response(buffer as unknown as BodyInit, {
             headers: {
                 "content-type": "application/pdf",
-                "content-disposition": `inline; filename="${quote.number}.pdf"`,
+                "content-disposition": contentDisposition(`${quote.number}.pdf`),
                 "cache-control": "private, no-store",
             },
         });

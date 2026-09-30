@@ -147,7 +147,7 @@ interface FinanceStore {
 	invoiceOrder: (id: string) => Promise<string | null>;
 	createInvoice: (data: Partial<Invoice>) => Promise<string | null>;
 	updateInvoice: (id: string, data: Partial<Invoice>) => Promise<string | null>;
-	sendInvoice: (id: string, to?: string) => Promise<SendOutcome>;
+	sendInvoice: (id: string, to?: string, accountId?: string) => Promise<SendOutcome>;
 	payInvoice: (id: string, amount?: number) => Promise<string | null>;
 	duplicateInvoice: (id: string) => Promise<string | null>;
 	issueCreditNote: (id: string, data?: { items?: LineItem[]; notes?: string }) => Promise<string | null>;
@@ -159,7 +159,7 @@ interface FinanceStore {
 	createQuote: (data: Partial<Quote>) => Promise<string | null>;
 	updateQuote: (id: string, data: Partial<Quote>) => Promise<string | null>;
 	deleteQuote: (id: string) => Promise<string | null>;
-	sendQuote: (id: string, to?: string) => Promise<SendOutcome>;
+	sendQuote: (id: string, to?: string, accountId?: string) => Promise<SendOutcome>;
 	decideQuote: (id: string, accepted: boolean) => Promise<string | null>;
 	quoteToOrder: (id: string) => Promise<string | null>;
 	createContract: (data: Partial<Contract>) => Promise<string | null>;
@@ -244,9 +244,10 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 		set((s) => ({ invoices: s.invoices.map((i) => (i.id === id ? (r.data as Invoice) : i)) }));
 		return null;
 	},
-	sendInvoice: async (id, to) => {
-		// to — адрес, введённый вручную; без него сервер сам берёт e-mail контакта или фирмы клиента
-		const r = await apiCall<Invoice>(`/api/invoices/${id}/send`, "POST", to ? { to } : {});
+	sendInvoice: async (id, to, accountId) => {
+		// to — адрес, введённый вручную; без него сервер сам берёт e-mail контакта или фирмы клиента.
+		// accountId — выбранный ящик отправки; без него сервер берёт первый подключённый
+		const r = await apiCall<Invoice>(`/api/invoices/${id}/send`, "POST", { ...(to ? { to } : {}), ...(accountId ? { accountId } : {}) });
 		if (!r.ok || !r.data) return { ok: false, message: r.message, code: r.code, missing: r.missing };
 		const sent = r.data as Invoice;
 		set((s) => ({ invoices: s.invoices.map((i) => (i.id === id ? sent : i)) }));
@@ -311,8 +312,8 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 		return null;
 	},
 	deleteQuote: async (id) => { const r = await apiCall(`/api/quotes/${id}`, "DELETE"); if (!r.ok) return r.message; set((s) => ({ quotes: s.quotes.filter((q) => q.id !== id) })); return null; },
-	sendQuote: async (id, to) => {
-		const r = await apiCall<Quote>(`/api/quotes/${id}/send`, "POST", to ? { to } : {});
+	sendQuote: async (id, to, accountId) => {
+		const r = await apiCall<Quote>(`/api/quotes/${id}/send`, "POST", { ...(to ? { to } : {}), ...(accountId ? { accountId } : {}) });
 		if (!r.ok || !r.data) return { ok: false, message: r.message, code: r.code, missing: r.missing };
 		const sent = r.data as Quote;
 		set((s) => ({ quotes: s.quotes.map((q) => (q.id === id ? sent : q)) }));

@@ -354,14 +354,21 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
     const size = o.size ?? 10;
     const pad = o.rowPad ?? 6;
     // Упаковочный лист — не «накладная без цен», а свой документ груза: УКТ ЗЕД, вес и страна
-    // происхождения отдельными колонками (для брокера), плюс строка общего веса под таблицей
+    // происхождения отдельными колонками (для брокера), плюс строка общего веса под таблицей.
+    // Ширины подобраны так, чтобы описанию оставалось место и в узких шаблонах (sidebar: ~117 pt)
     const packing = d.kind === "packing_list";
+    // Накладная: цен нет, поэтому количество прижимается к правому краю, а не висит посреди пустоты
+    const noPrices = !!o.noPrices && !packing;
     const cols = packing
-        ? { num: o.x, desc: o.x + 24, hs: o.x + o.width - 252, qty: o.x + o.width - 156, weight: o.x + o.width - 100, origin: o.x + o.width - 46, price: 0, tax: 0, total: 0 }
-        : { num: 0, desc: o.x, hs: 0, qty: o.x + o.width - 245, weight: 0, origin: 0, price: o.x + o.width - 185, tax: o.x + o.width - 105, total: o.x + o.width - 65 };
+        ? { num: o.x, desc: o.x + 24, hs: o.x + o.width - 216, qty: o.x + o.width - 142, weight: o.x + o.width - 96, origin: o.x + o.width - 44, price: 0, tax: 0, total: 0 }
+        : noPrices
+            ? { num: 0, desc: o.x, hs: 0, qty: o.x + o.width - 50, weight: 0, origin: 0, price: 0, tax: 0, total: 0 }
+            : { num: 0, desc: o.x, hs: 0, qty: o.x + o.width - 245, weight: 0, origin: 0, price: o.x + o.width - 185, tax: o.x + o.width - 105, total: o.x + o.width - 65 };
     const widths = packing
-        ? { num: 20, hs: 90, qty: 50, weight: 56, origin: 46, price: 0, tax: 0, total: 0 }
-        : { num: 0, hs: 0, qty: 50, weight: 0, origin: 0, price: 60, tax: 40, total: 65 };
+        ? { num: 20, hs: 74, qty: 46, weight: 52, origin: 44, price: 0, tax: 0, total: 0 }
+        : noPrices
+            ? { num: 0, hs: 0, qty: 50, weight: 0, origin: 0, price: 0, tax: 0, total: 0 }
+            : { num: 0, hs: 0, qty: 50, weight: 0, origin: 0, price: 60, tax: 40, total: 65 };
     const descWidth = (packing ? cols.hs : cols.qty) - cols.desc - 6;
     const headerH = size + pad;
     const drawHeader = (yy: number): number => {
@@ -370,13 +377,14 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
         const hy = yy + pad / 2;
         if (packing) {
             text(doc, "№", cols.num, hy, { size: size - 1, color: headerColor, width: widths.num });
-            text(doc, L.description, cols.desc, hy, { size: size - 1, color: headerColor });
+            // Ширина обязательна: без неё pdfkit тянет заголовок до правого поля страницы и он заезжает в колонки
+            text(doc, L.description, cols.desc, hy, { size: size - 1, color: headerColor, width: descWidth });
             text(doc, L.hsCode, cols.hs, hy, { size: size - 1, color: headerColor, width: widths.hs });
             text(doc, L.qty, cols.qty, hy, { size: size - 1, color: headerColor, width: widths.qty, align: "right" });
             text(doc, L.weightKg, cols.weight, hy, { size: size - 1, color: headerColor, width: widths.weight, align: "right" });
             text(doc, L.origin, cols.origin, hy, { size: size - 1, color: headerColor, width: widths.origin, align: "right" });
         } else {
-            text(doc, L.description, cols.desc, hy, { size: size - 1, color: headerColor });
+            text(doc, L.description, cols.desc, hy, { size: size - 1, color: headerColor, width: descWidth });
             text(doc, L.qty, cols.qty, hy, { size: size - 1, color: headerColor, width: widths.qty, align: "right" });
             if (!o.noPrices) {
                 text(doc, L.unitPrice, cols.price, hy, { size: size - 1, color: headerColor, width: widths.price, align: "right" });
@@ -388,7 +396,14 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
         if (!o.headerFill) rule(doc, o.x, top - pad / 2, o.x + o.width, o.border ?? "#E6E6E6");
         return top;
     };
-    const rowH = (it: PdfLineItem) => Math.max(doc.fontSize(size).heightOfString(it.description, { width: descWidth }), size) + pad;
+    // Высота строки: переносится только описание (и код УКТ ЗЕД — в нём есть пробелы); числа рисуются
+    // одной строкой с подбором кегля (numberCell), поэтому их высота равна кеглю
+    const rowH = (it: PdfLineItem) => {
+        doc.fontSize(size);
+        const heights: number[] = [doc.heightOfString(it.description, { width: descWidth })];
+        if (packing) heights.push(doc.heightOfString(it.hsCode || "—", { width: widths.hs }));
+        return Math.max(...heights, size) + pad;
+    };
     const bottom = o.bottom ?? Number.POSITIVE_INFINITY;
     // Шапка не должна отрываться от первой строки: если они вместе не помещаются — переносим заранее
     if (o.onBreak && d.items.length && y + headerH + rowH(d.items[0]) > bottom) y = o.onBreak();
@@ -404,20 +419,20 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
         const ty = top + pad / 2;
         if (packing) {
             const weight = (Number(it.unitWeightKg) || 0) * (Number(it.qty) || 0);
-            text(doc, String(row + 1), cols.num, ty, { size, color: "#666666", width: widths.num });
+            numberCell(doc, String(row + 1), cols.num, ty, widths.num, size, "#666666", "left");
             text(doc, it.description, cols.desc, ty, { size, color: "#333333", width: descWidth });
             text(doc, it.hsCode || "—", cols.hs, ty, { size, color: "#333333", width: widths.hs });
-            text(doc, String(it.qty), cols.qty, ty, { size, color: "#333333", width: widths.qty, align: "right" });
-            text(doc, weight > 0 ? fmtWeight(weight) : "—", cols.weight, ty, { size, color: "#333333", width: widths.weight, align: "right" });
-            text(doc, it.originCountry || "—", cols.origin, ty, { size, color: "#333333", width: widths.origin, align: "right" });
+            numberCell(doc, String(it.qty), cols.qty, ty, widths.qty, size);
+            numberCell(doc, weight > 0 ? fmtWeight(weight) : "—", cols.weight, ty, widths.weight, size);
+            numberCell(doc, it.originCountry || "—", cols.origin, ty, widths.origin, size);
         } else {
             text(doc, it.description, cols.desc, ty, { size, color: "#333333", width: descWidth });
-            text(doc, String(it.qty), cols.qty, ty, { size, color: "#333333", width: widths.qty, align: "right" });
+            numberCell(doc, String(it.qty), cols.qty, ty, widths.qty, size);
             if (!o.noPrices) {
-                text(doc, formatMoney(it.unitPrice, d.currency), cols.price, ty, { size, color: "#333333", width: widths.price, align: "right" });
+                numberCell(doc, formatMoney(it.unitPrice, d.currency), cols.price, ty, widths.price, size);
                 // у документа без налога в колонке ставки стоит прочерк: печатать там 19 % при нулевом налоге — противоречие
-                text(doc, d.smallBusinessNote ? "—" : `${it.taxRate}%`, cols.tax, ty, { size, color: "#333333", width: widths.tax, align: "right" });
-                text(doc, formatMoney(it.qty * it.unitPrice, d.currency), cols.total, ty, { size, color: "#333333", width: widths.total, align: "right" });
+                numberCell(doc, d.smallBusinessNote ? "—" : `${it.taxRate}%`, cols.tax, ty, widths.tax, size);
+                numberCell(doc, formatMoney(it.qty * it.unitPrice, d.currency), cols.total, ty, widths.total, size);
             }
         }
         top += h;
@@ -439,6 +454,21 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
 
 // Вес в упаковочном листе: до трёх знаков, без хвостовых нулей, запятая как в документах
 const fmtWeight = (n: number) => (Math.round(n * 1000) / 1000).toString().replace(".", ",");
+
+// Числовая ячейка таблицы: суммы и количества НЕ переносятся. Число с разделителями — одно слово,
+// и pdfkit, получив ширину, всё равно печатает его целиком поверх соседней колонки («152.345.666,52»
+// налезало на «ПДВ») — вместо этого подбираем кегль под ширину колонки. Меньше 6.5 pt не опускаемся:
+// дальше текст уже нечитаем, и лучше усечь с многоточием, чем печатать кашу.
+function numberCell(doc: Doc, str: string, x: number, y: number, w: number, size: number, color = "#333333", align: "right" | "left" = "right") {
+    let s = size;
+    doc.fontSize(s);
+    while (s > 6.5 && doc.widthOfString(str) > w - 2) {
+        s -= 0.5;
+        doc.fontSize(s);
+    }
+    const shown = doc.widthOfString(str) > w - 2 ? oneLine(doc, str, s, w - 2) : str;
+    doc.fillColor(color).text(shown, x, y, { width: w, align, lineBreak: false });
+}
 
 // Итоги: нетто, налог (кроме пометки малого бизнеса) и итог. В рамке, на подложке или просто справа — по шаблону.
 function totalsRows(d: PdfDocumentData, L: L, totals: ReturnType<typeof computeTotals>): [string, string, boolean][] {
@@ -516,7 +546,9 @@ function totalsBlock(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, totals:
     let ty = top;
     rows.forEach(([label, value, strong], i) => {
         text(doc, label, x + 12, ty, { size: strong ? size + 1 : size, color: strong ? "#333333" : "#666666", width: w - 100 });
-        text(doc, value, x + w - 88, ty, { size: strong ? size + 1 : size, color: strong ? "#333333" : "#666666", width: 76, align: "right" });
+        // Суммы в итогах не переносятся, а подбирают кегль: «30.469.261,50 UAH» в 76 pt разрывалось
+        // посреди «UAH» и налезало на строку выше — та же болезнь, что была в таблице позиций
+        numberCell(doc, value, x + w - 88, ty, 76, strong ? size + 1 : size, strong ? "#333333" : "#666666");
         ty += heights[i];
     });
     // Подчёркивание под итоговой строкой ставим ДО строки прописом: она — примечание под блоком
