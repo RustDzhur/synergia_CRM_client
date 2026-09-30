@@ -176,15 +176,17 @@ export function useSpeechOutput(locale: string) {
 		setSpeakingId(null);
 	}, []);
 
-	const speak = useCallback((id: string, text: string) => {
+	// onDone — когда фраза дочитана (или чтение сорвалось): режим разговора по нему возобновляет слушание
+	const speak = useCallback((id: string, text: string, onDone?: () => void) => {
 		if (!ttsSupported()) return false;
 		speechSynthesis.cancel();
 		const clean = stripForSpeech(text);
 		if (!clean) return false;
 		const utterance = new SpeechSynthesisUtterance(clean.slice(0, 4000));
 		utterance.lang = speechLang(locale);
-		utterance.onend = () => setSpeakingId((s) => (s === id ? null : s));
-		utterance.onerror = () => setSpeakingId((s) => (s === id ? null : s));
+		const finish = () => { setSpeakingId((s) => (s === id ? null : s)); onDone?.(); };
+		utterance.onend = finish;
+		utterance.onerror = finish;
 		speechSynthesis.speak(utterance);
 		setSpeakingId(id);
 		return true;
@@ -194,4 +196,137 @@ export function useSpeechOutput(locale: string) {
 	useEffect(() => () => { if (ttsSupported()) speechSynthesis.cancel(); }, []);
 
 	return { speak, stop, speakingId };
+}
+
+// ── Режим разговора (Джарвис) ────────────────────────────────────────────────────────────────────────
+
+// Слова-ответы: голосом подтверждают или отменяют действие, командуют «стоп». Сравнение по словам,
+// а не по вхождению подстроки — «нету планов» не должно читаться как «нет».
+const YES_WORDS = ["так", "ага", "ок", "окей", "добре", "гаразд", "підтверджую", "підтверди", "давай", "зроби", "виконуй", "yes", "ok", "okay", "confirm", "sure", "do it", "ja", "jep", "bestätige", "bestätigen", "mach"];
+const NO_WORDS = ["ні", "нет", "no", "nein", "скасуй", "відміни", "відміна", "відбій", "не треба", "cancel", "stop it", "abbrechen", "стоп"];
+const STOP_WORDS = ["стоп", "зупинись", "зупинитися", "stop", "halt", "стоп режим"];
+
+const words = (text: string) => String(text ?? "").toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, " ").split(/\s+/).filter(Boolean);
+const hasWord = (list: string[], text: string) => {
+	const ws = words(text);
+	return list.some((w) => (w.includes(" ") ? text.toLowerCase().includes(w) : ws.includes(w)));
+};
+
+/** Ответ «да» / «нет» в распознанной фразе; null — ни то ни другое. */
+export function spokenAnswer(text: string): "yes" | "no" | null {
+	if (hasWord(YES_WORDS, text)) return "yes";
+	if (hasWord(NO_WORDS, text)) return "no";
+	return null;
+}
+
+/** Команда «стоп» — выйти из режима разговора. */
+export const isStopCommand = (text: string) => hasWord(STOP_WORDS, text);
+
+/**
+ * Что делать с распознанной фразой, когда ассистент ждёт подтверждения:
+ * «так» подтверждает единственное предложенное действие, «ні» отменяет, всё остальное — новый вопрос.
+ * При нескольких действиях голосом подтверждать нельзя — их слишком легко перепутать, просим кнопку.
+ */
+export function voiceDecision(text: string, pendingActions: number): { kind: "confirm" } | { kind: "cancel" } | { kind: "many" } | { kind: "send" } {
+	if (pendingActions > 0) {
+		const answer = spokenAnswer(text);
+		if (answer === "yes") return pendingActions === 1 ? { kind: "confirm" } : { kind: "many" };
+		if (answer === "no") return { kind: "cancel" };
+	}
+	return { kind: "send" };
+}
+
+/**
+ * Непрерывное слушание для режима разговора: распознаёт фразу и сам зовёт onPhrase, когда человек
+ * замолчал (тишина ~1,4 с). Пока ассистент думает или говорит, слушание выключено — микрофон не
+ * должен слышать собственный голос. Живёт только на браузерном распознавании: серверный путь
+ * требует ручной остановки записи, а «Джарвис» — это именно разговор без рук.
+ */
+export function useContinuousListening({ locale, active, onPhrase, onError }: {
+	locale: string;
+	active: boolean;
+	onPhrase: (text: string) => void;
+	onError: (code: MicError) => void;
+}) {
+	const [interim, setInterim] = useState("");
+	const recogRef = useRef<RecognitionLike | null>(null);
+	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const phraseRef = useRef("");
+	const sentRef = useRef(false);
+	const onPhraseRef = useRef(onPhrase);
+	const onErrorRef = useRef(onError);
+	onPhraseRef.current = onPhrase;
+	onErrorRef.current = onError;
+
+	useEffect(() => {
+		const clearTimer = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; } };
+		sentRef.current = false;
+		phraseRef.current = "";
+		setInterim("");
+		if (!active) {
+			clearTimer();
+			try { recogRef.current?.stop(); } catch { /* уже остановлен */ }
+			recogRef.current = null;
+			return;
+		}
+		const Ctor = recognitionCtor();
+		if (!Ctor) return;
+		let disposed = false;
+
+		// Пауза означает конец фразы: отправляем её и останавливаем распознавание до следующего круга
+		const arm = () => {
+			clearTimer();
+			timerRef.current = setTimeout(() => {
+				const phrase = phraseRef.current.trim();
+				if (!phrase || sentRef.current || disposed) return;
+				sentRef.current = true;
+				phraseRef.current = "";
+				setInterim("");
+				try { recogRef.current?.stop(); } catch { /* уже остановлен */ }
+				onPhraseRef.current(phrase);
+			}, 1400);
+		};
+
+		const startEngine = () => {
+			if (disposed) return;
+			const recog = new Ctor();
+			recog.lang = speechLang(locale);
+			recog.continuous = true;
+			recog.interimResults = true;
+			recog.onresult = (e) => {
+				let finalText = "";
+				let interimText = "";
+				for (let i = 0; i < e.results.length; i++) {
+					const r = e.results[i];
+					if (r.isFinal) finalText += r[0].transcript;
+					else interimText += r[0].transcript;
+				}
+				phraseRef.current = finalText;
+				const shown = (finalText + interimText).trim();
+				setInterim(shown);
+				if (shown) arm();
+			};
+			recog.onerror = (e) => {
+				if (e?.error === "not-allowed" || e?.error === "service-not-allowed") onErrorRef.current("micDenied");
+			};
+			// Браузер сам завершает сессию распознавания (тишина, лимит времени) — пока режим включён, поднимаем заново
+			recog.onend = () => {
+				if (disposed || sentRef.current) return;
+				try { recog.start(); } catch { /* перезапустим после следующего события */ }
+			};
+			recogRef.current = recog;
+			try { recog.start(); } catch { /* уже запущен */ }
+		};
+		startEngine();
+
+		return () => {
+			disposed = true;
+			clearTimer();
+			try { recogRef.current?.stop(); } catch { /* уже остановлен */ }
+			recogRef.current = null;
+			setInterim("");
+		};
+	}, [active, locale]);
+
+	return { interim, supported: dictationSupported() };
 }

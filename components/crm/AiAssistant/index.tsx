@@ -3,13 +3,13 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { MdAutoAwesome, MdCheckCircle, MdClose, MdErrorOutline, MdSearch } from "react-icons/md";
+import { MdAutoAwesome, MdCheckCircle, MdClose, MdErrorOutline, MdGraphicEq, MdSearch } from "react-icons/md";
 import { TbMicrophone, TbPlayerStop, TbVolume, TbVolumeOff } from "react-icons/tb";
 import { AiAction, AiMessage, useAiStore } from "@/store/useAiStore";
 import { stripLocale } from "@/utils/locale";
 import Modal from "../shared/Modal";
 import Markdown from "./markdown";
-import { dictationSupported, recorderSupported, ttsSupported, useSpeechOutput, useVoiceInput } from "./voice";
+import { dictationSupported, isStopCommand, recorderSupported, ttsSupported, useContinuousListening, useSpeechOutput, useVoiceInput, voiceDecision } from "./voice";
 
 const AUTO_SPEAK_KEY = "ai.autospeak";
 
@@ -120,7 +120,7 @@ export default function AiAssistant() {
 	const t = useTranslations("ai");
 	const locale = useLocale();
 	const pathname = usePathname();
-	const { open, messages, busy, status, draft, setDraft, hide, reset, send } = useAiStore();
+	const { open, messages, busy, status, draft, setDraft, hide, reset, send, confirm, cancel } = useAiStore();
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const endRef = useRef<HTMLDivElement>(null);
 	const [recent, setRecent] = useState<string[]>([]);
@@ -148,14 +148,80 @@ export default function AiAssistant() {
 		});
 	}
 	const spokenRef = useRef<string | null>(null);
+
+	// ── Режим разговора (Джарвис): слушаю → думаю → говорю → снова слушаю ────────────────────────────
+	// Голос здесь ничего не обходит: вопросы отправляются без рук, а предложенные ИЗМЕНЕНИЯ данных
+	// по-прежнему требуют явного подтверждения — просто голосового («підтверджую»/«ні»), и только
+	// когда действие одно; при нескольких просим нажать кнопку, чтобы не перепутать.
+	const [voiceMode, setVoiceMode] = useState(false);
+	const blocked = status?.configured === false;
+	const empty = messages.length === 0;
+	const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+	const pendingActions = lastAssistant?.actions?.filter((a) => a.state === "pending") ?? [];
+	// Фаза выводится из состояния, а не хранится отдельно: так её нельзя рассогласовать с реальностью
+	const phase: "listening" | "thinking" | "speaking" = busy ? "thinking" : speakingId ? "speaking" : "listening";
+	const listening = voiceMode && open && !blocked && voice.dictation && !busy && !speakingId;
+
 	useEffect(() => {
-		if (!open || !autoSpeak || !voice.tts) return;
+		if (!open || !autoSpeak || !voice.tts || voiceMode) return;
 		const last = messages[messages.length - 1];
 		if (last?.role === "assistant" && !last.error && last.id !== spokenRef.current) {
 			spokenRef.current = last.id;
 			speak(last.id, last.text);
 		}
-	}, [messages, open, autoSpeak, voice.tts, speak]);
+	}, [messages, open, autoSpeak, voice.tts, voiceMode, speak]);
+
+	function speakVoice(text: string) {
+		if (!speak("voice-note", text)) setVoiceMode(false); // озвучки нет — режим разговора бессмыслен
+	}
+	function handlePhrase(text: string) {
+		if (isStopCommand(text)) {
+			stopSpeak();
+			setVoiceMode(false);
+			return;
+		}
+		const decision = voiceDecision(text, pendingActions.length);
+		if (decision.kind === "confirm" && lastAssistant && pendingActions[0]) {
+			const target = lastAssistant;
+			const action = pendingActions[0];
+			void confirm(target.id, action.id).then(() => speakVoice(t("voiceDone")));
+			return;
+		}
+		if (decision.kind === "cancel" && lastAssistant && pendingActions[0]) {
+			cancel(lastAssistant.id, pendingActions[0].id);
+			speakVoice(t("voiceCancelled"));
+			return;
+		}
+		if (decision.kind === "many") {
+			speakVoice(t("voiceConfirmMany"));
+			return;
+		}
+		submit(text);
+	}
+	const { interim } = useContinuousListening({
+		locale,
+		active: listening,
+		onPhrase: handlePhrase,
+		onError: (code) => { toast.error(t(code)); setVoiceMode(false); },
+	});
+	// Ответ ассистента в режиме разговора читается вслух всегда (это и есть смысл режима), а если
+	// в нём одно предложенное действие — сразу и вопрос «Підтвердити?», чтобы ответить голосом
+	useEffect(() => {
+		if (!open || !voiceMode || !voice.tts) return;
+		const last = messages[messages.length - 1];
+		if (last?.role !== "assistant" || last.error || last.id === spokenRef.current) return;
+		spokenRef.current = last.id;
+		const pending = last.actions?.filter((a) => a.state === "pending") ?? [];
+		const tail = pending.length === 1 ? ` ${t("voiceAskConfirm")}` : pending.length > 1 ? ` ${t("voiceConfirmMany")}` : "";
+		speak(last.id, last.text + tail);
+	}, [messages, open, voiceMode, voice.tts, speak, t]);
+	function toggleVoiceMode() {
+		setVoiceMode((v) => {
+			if (v) { stopSpeak(); return false; }
+			spokenRef.current = null; // последний ответ можно проговорить заново
+			return true;
+		});
+	}
 
 	useEffect(() => {
 		const onKey = (e: KeyboardEvent) => {
@@ -186,8 +252,6 @@ export default function AiAssistant() {
 		if (sendNow) submit(text); else { setDraft(text); inputRef.current?.focus(); }
 	}
 
-	const blocked = status?.configured === false;
-	const empty = messages.length === 0;
 	// Закрытие окна останавливает и чтение, и запись — микрофон не должен остаться включённым
 	const close = () => { stopSpeak(); micStop(); hide(); };
 
@@ -198,6 +262,19 @@ export default function AiAssistant() {
 					<MdAutoAwesome size={22} className="text-primaryColor" aria-hidden />
 					<h2 className="whitespace-nowrap text-18 font-medium text-[#334A74]">{t("title")}</h2>
 					{status?.configured && <span className="ml-auto hidden text-11 text-[#8c948b] md:inline">{t("remaining", { n: status.remaining })}</span>}
+					{/* Режим разговора (Джарвис): непрерывный голосовой цикл — нужен и синтез речи, и распознавание */}
+					{voice.tts && voice.dictation && !blocked && (
+						<button
+							type="button"
+							onClick={toggleVoiceMode}
+							aria-pressed={voiceMode}
+							aria-label={t("voiceMode")}
+							title={t("voiceMode")}
+							className={`${status?.configured ? "" : "ml-auto"} flex h-30 items-center gap-6 rounded-8 border px-10 text-11 transition-colors ${voiceMode ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+							<MdGraphicEq size={15} aria-hidden />
+							<span className="max-md:hidden">{t("voiceMode")}</span>
+						</button>
+					)}
 					{/* Автоозвучка ответов: браузерный синтез речи, ключей не требует */}
 					{voice.tts && !blocked && (
 						<button
@@ -206,7 +283,7 @@ export default function AiAssistant() {
 							aria-pressed={autoSpeak}
 							aria-label={t("autoSpeak")}
 							title={t("autoSpeak")}
-							className={`${status?.configured ? "" : "ml-auto"} flex h-30 items-center gap-6 rounded-8 border px-10 text-11 transition-colors ${autoSpeak ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+							className={`${status?.configured || (voice.tts && voice.dictation) ? "" : "ml-auto"} flex h-30 items-center gap-6 rounded-8 border px-10 text-11 transition-colors ${autoSpeak ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
 							{autoSpeak ? <TbVolume size={14} aria-hidden /> : <TbVolumeOff size={14} aria-hidden />}
 							<span className="max-md:hidden">{t("autoSpeak")}</span>
 						</button>
@@ -214,6 +291,27 @@ export default function AiAssistant() {
 					<button type="button" onClick={reset} disabled={empty} className={`${status?.configured || (voice.tts && !blocked) ? "max-md:ml-auto" : "ml-auto"} whitespace-nowrap text-12 text-[#8c948b] transition-colors hover:text-[#c6ff4d] disabled:opacity-[0.4]`}>{t("newChat")}</button>
 					<button type="button" onClick={close} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><MdClose size={18} /></button>
 				</header>
+
+				{/* Панель разговора: состояние и распознаваемая фраза всегда на виду; нажатие на круг
+				    прерывает речь — можно сразу перебить и сказать новое */}
+				{voiceMode && !blocked && (
+					<div className="flex items-center gap-12 border-b border-inkLine bg-[rgba(198,255,77,0.05)] px-16 py-12">
+						<button
+							type="button"
+							onClick={() => { if (speakingId) stopSpeak(); }}
+							aria-label={speakingId ? t("stopSpeak") : t(`voice_${phase}`)}
+							className={`flex h-52 w-52 shrink-0 items-center justify-center rounded-full border transition-colors ${speakingId ? "border-[rgba(198,255,77,0.6)] bg-[rgba(198,255,77,0.12)] text-[#c6ff4d]" : phase === "listening" ? "animate-pulse border-[rgba(235,87,87,0.5)] bg-[rgba(235,87,87,0.10)] text-danger" : "border-inkLine text-[#8c948b]"}`}>
+							{speakingId ? <TbPlayerStop size={18} aria-hidden /> : <TbMicrophone size={18} aria-hidden />}
+						</button>
+						<div className="min-w-0 flex-1">
+							<p className="text-13 text-[#f1f4ee]">{t(`voice_${phase}`)}</p>
+							<p className="truncate text-12 text-[#8c948b]">
+								{pendingActions.length > 0 ? t(pendingActions.length === 1 ? "voiceAskConfirm" : "voiceConfirmMany") : interim || t("voiceHint")}
+							</p>
+						</div>
+						<button type="button" onClick={toggleVoiceMode} className="fs-link shrink-0 text-12">{t("voiceExit")}</button>
+					</div>
+				)}
 
 				<div className="min-h-[160px] flex-1 overflow-y-auto px-20 py-16">
 					{blocked ? (
