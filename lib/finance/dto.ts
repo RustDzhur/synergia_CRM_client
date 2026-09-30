@@ -5,6 +5,7 @@
 // как и написано в комментарии lib/crmFields.ts про поля форм. Работало по случайности — вынесено сюда, чтобы больше
 // не работало по случайности.
 import { computeTotals } from "./totals";
+import { DOC_PRESETS } from "./documents/presets";
 
 export const toOrderDTO = (o: any) => ({
     deliveryNoteNumber: o.deliveryNoteNumber ?? "", deliveryDate: o.deliveryDate ?? "",
@@ -97,4 +98,27 @@ export const toContractDTO = (c: any) => ({
     startDate: c.startDate, endDate: c.endDate, notes: c.notes, template: c.template || "",
     signedAt: c.signedAt ? c.signedAt.toISOString() : "", file: c.file ? String(c.file) : "",
     createdAt: c.createdAt.toISOString(), updatedAt: c.updatedAt.toISOString(),
+});
+
+// Бланк документа (DocumentTemplate) для интерфейса: блоки, тексты, префикс, подпись/печать.
+// Живёт здесь, а не в route.ts: Next запрещает именованные экспорты из файлов маршрутов
+// (см. комментарий в начале файла), и такой экспорт ломает проверку типов при сборке.
+export const toTemplateDTO = (t: any) => ({
+    id: String(t._id),
+    market: t.market,
+    kind: t.kind,
+    name: t.name,
+    blocks: Array.isArray(t.blocks) ? t.blocks : [],
+    texts: { ua: t.texts?.ua ?? "", en: t.texts?.en ?? "", de: t.texts?.de ?? "", notes: t.texts?.notes ?? "" },
+    prefix: t.prefix ?? "",
+    numbering: { yearly: t.numbering?.yearly !== false, resetEachYear: t.numbering?.resetEachYear !== false },
+    showStamp: !!t.showStamp,
+    showSignature: !!t.showSignature,
+    footer: t.footer ?? "",
+    paymentTerms: t.paymentTerms ?? "",
+    language: t.language === "en" || t.language === "de" ? t.language : "ua",
+    currency: t.currency ?? "",
+    active: t.active !== false,
+    // ключ пресета — по нему окно предлагает «повернути бланк до пресета»; у своих бланков его нет
+    presetKey: DOC_PRESETS.find((p) => p.market === t.market && p.kind === t.kind && p.name === t.name)?.key ?? "",
 });

@@ -19,6 +19,9 @@ const money = (n: number, currency: string) => {
 
 export default function ShareClient({ data, token }: { data: ShareView; token: string }) {
     const t = useTranslations("share");
+    // Режим рынка фирмы: украинская фирма показывает «Рахунок» и «Комерційну пропозицію» и номер
+    // договора рядом — клиент видит документ в привычных ему словах (ТЗ A16)
+    const ua = data.market === "UA";
     const [picked, setPicked] = useState<number[]>(() => data.items.map((_, i) => i));
     const [accepted, setAccepted] = useState(data.status === "accepted");
     const [busy, setBusy] = useState(false);
@@ -57,11 +60,12 @@ export default function ShareClient({ data, token }: { data: ShareView; token: s
                 </header>
 
                 <section className="rounded-14 border border-[rgba(255,255,255,0.10)] bg-[rgba(255,255,255,0.03)] p-20">
-                    <p className="text-12 uppercase tracking-wide text-[#8c948b]">{data.kind === "order" ? t("orderTitle") : t("quoteTitle")}</p>
+                    <p className="text-12 uppercase tracking-wide text-[#8c948b]">{data.kind === "order" ? (ua ? t("orderTitleUa") : t("orderTitle")) : ua ? t("quoteTitleUa") : t("quoteTitle")}</p>
                     <h1 className="mt-6 text-22 font-semibold">{data.number}</h1>
                     <p className="mt-6 text-13 text-[#8c948b]">
                         {data.customer}
                         {data.validUntil ? ` · ${t("validUntil")}: ${data.validUntil}` : ""}
+                        {data.contract ? ` · ${t("contract")}: ${data.contract}` : ""}
                     </p>
 
                     {data.kind === "order" && (

@@ -112,7 +112,7 @@ function VatView({ period, currency }: { period: PeriodKind; currency: string })
 						<TbAlertTriangle size={15} aria-hidden /> {t("warningTitle")}
 					</p>
 					<ul className="mt-8 flex list-disc flex-col gap-6 pl-18 text-13 leading-[1.5] text-[#cfd4cb]">
-						{report.warnings.map((w, i) => <li key={i}>{w}</li>)}
+						{report.warnings.map((w, i) => <li key={i}>{typeof w === "string" ? w : t(`uaWarn_${(w as { code: string }).code}`, (w as { params?: Record<string, string | number> }).params ?? {})}</li>)}
 					</ul>
 				</div>
 			)}
@@ -244,7 +244,7 @@ function UaVatView({ period }: { period: PeriodKind }) {
 				<div className="rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
 					<p className="flex items-center gap-8 text-12 font-semibold text-[#F4A100]"><TbAlertTriangle size={15} aria-hidden /> {t("warningTitle")}</p>
 					<ul className="mt-8 flex list-disc flex-col gap-6 pl-18 text-13 leading-[1.5] text-[#cfd4cb]">
-						{report.warnings.map((w, i) => <li key={i}>{w}</li>)}
+						{report.warnings.map((w, i) => <li key={i}>{typeof w === "string" ? w : t(`uaWarn_${(w as { code: string }).code}`, (w as { params?: Record<string, string | number> }).params ?? {})}</li>)}
 					</ul>
 				</div>
 			)}
@@ -327,7 +327,7 @@ function UaIncomeView({ currency }: { currency: string }) {
 				<div className="rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
 					<p className="flex items-center gap-8 text-12 font-semibold text-[#F4A100]"><TbAlertTriangle size={15} aria-hidden /> {t("warningTitle")}</p>
 					<ul className="mt-8 flex list-disc flex-col gap-6 pl-18 text-13 leading-[1.5] text-[#cfd4cb]">
-						{report.warnings.map((w, i) => <li key={i}>{w}</li>)}
+						{report.warnings.map((w, i) => <li key={i}>{typeof w === "string" ? w : t(`uaWarn_${(w as { code: string }).code}`, (w as { params?: Record<string, string | number> }).params ?? {})}</li>)}
 					</ul>
 				</div>
 			)}
@@ -384,7 +384,7 @@ function UaProfitView({ currency, year }: { currency: string; year: string }) {
 			{report.warnings.length > 0 && (
 				<div className="rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
 					<ul className="flex list-disc flex-col gap-6 pl-18 text-13 leading-[1.5] text-[#cfd4cb]">
-						{report.warnings.map((w, i) => <li key={i}>{w}</li>)}
+						{report.warnings.map((w, i) => <li key={i}>{typeof w === "string" ? w : t(`uaWarn_${(w as { code: string }).code}`, (w as { params?: Record<string, string | number> }).params ?? {})}</li>)}
 					</ul>
 				</div>
 			)}
@@ -415,7 +415,7 @@ function PaymentCalendar({ year, currency }: { year: string; currency: string })
 			<div className="flex flex-wrap items-center justify-between gap-10 px-16 pt-14">
 				<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("uaCalendarTitle", { year: state.year })}</h3>
 				{state.summary.next && (
-					<span className="text-12 text-[#8c948b]">{t("uaCalendarNext", { date: state.summary.next.date, title: state.summary.next.title, amount: state.summary.next.amount.toFixed(2) })}</span>
+					<span className="text-12 text-[#8c948b]">{t("uaCalendarNext", { date: state.summary.next.date, title: state.summary.next.title, amount: money(state.summary.next.amount, currency, locale) })}</span>
 				)}
 			</div>
 			<table className="fs-table mt-8 min-w-[560px]">

@@ -6,6 +6,7 @@ import { marketOf } from "@/lib/finance/market";
 import { financeSettings } from "@/lib/finance/settings";
 import { listTemplates } from "@/lib/finance/documents/store";
 import { DOC_PRESETS } from "@/lib/finance/documents/presets";
+import { toTemplateDTO } from "@/lib/finance/dto";
 import DocumentTemplate from "@/models/DocumentTemplate";
 
 export const dynamic = "force-dynamic";
@@ -15,25 +16,6 @@ export const dynamic = "force-dynamic";
 //
 // GET  — список бланков (пресеты режима копируются в базу при первом обращении)
 // POST — вернуть бланк к виду пресета { key: "ua-invoice" } (обновляет существующий, не плодит дубли)
-
-export const toTemplateDTO = (t: any) => ({
-    id: String(t._id),
-    market: t.market,
-    kind: t.kind,
-    name: t.name,
-    blocks: Array.isArray(t.blocks) ? t.blocks : [],
-    texts: { ua: t.texts?.ua ?? "", en: t.texts?.en ?? "", de: t.texts?.de ?? "", notes: t.texts?.notes ?? "" },
-    prefix: t.prefix ?? "",
-    numbering: { yearly: t.numbering?.yearly !== false, resetEachYear: t.numbering?.resetEachYear !== false },
-    showStamp: !!t.showStamp,
-    showSignature: !!t.showSignature,
-    footer: t.footer ?? "",
-    paymentTerms: t.paymentTerms ?? "",
-    language: t.language === "en" || t.language === "de" ? t.language : "ua",
-    currency: t.currency ?? "",
-    active: t.active !== false,
-    presetKey: DOC_PRESETS.find((p) => p.market === t.market && p.kind === t.kind && p.name === t.name)?.key ?? "",
-});
 
 export async function GET(req: Request) {
     const user = await requireUser(req);

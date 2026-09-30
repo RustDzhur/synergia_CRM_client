@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import DocumentTemplate from "@/models/DocumentTemplate";
-import { toTemplateDTO } from "../route";
+import { toTemplateDTO } from "@/lib/finance/dto";
 
 export const dynamic = "force-dynamic";
 

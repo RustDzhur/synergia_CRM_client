@@ -1960,6 +1960,16 @@
         "uaTotalToPay": "Gesamt zu zahlen (Steuer + Militärabgabe + ЄСВ)",
         "tab_ua_vat": "ПДВ",
         "tab_ua_single": "Einheitliche Steuer",
+        "uaWarn_tov_book": "Das ist das Einnahmenbuch für Einzelunternehmer. Für eine Kapitalgesellschaft (TOV) werden Einkommen und Gewinnsteuer anders gerechnet — ein Buchhalter ist nötig.",
+        "uaWarn_general_system": "Die Firma ist im allgemeinen Steuersystem: keine Einheitssteuer, Einnahmen und Ausgaben sind zu erfassen und eine Gewinnsteuererklärung abzugeben.",
+        "uaWarn_group4_area": "Gruppe 4 ist für Landwirtschaft: Die Grenze richtet sich nach der Fläche, nicht nach dem Einkommen — hier wird keine Einkommensgrenze geprüft.",
+        "uaWarn_limit_near": "Das Jahreseinkommen nähert sich der Grenze der Gruppe {group} ({limit} ₴). Darüber gilt der Einheitssteuersatz von {rate} %.",
+        "uaWarn_empty_year": "Keine bezahlten Rechnungen in diesem Jahr — das Buch ist leer.",
+        "uaWarn_not_vat_payer": "Die Firma ist als Nicht-USt-Zahler markiert: Das Register dient dem Abgleich, Steuerrechnungen werden nicht registriert.",
+        "uaWarn_turnover_over_limit": "Der Umsatz der letzten 12 Monate ({turnover} ₴) überstieg die Grenze von {limit} ₴ — die USt-Registrierung ist Pflicht.",
+        "uaWarn_empty_period": "Keine ausgestellten oder erhaltenen Steuerrechnungen im Zeitraum.",
+        "uaWarn_not_general_tov": "Die Firma ist nicht als TOV im allgemeinen System markiert — der Bericht dient dem Abgleich.",
+        "uaWarn_tax_differences": "Die Beträge berücksichtigen keine steuerlichen Differenzen; vor der Abgabe prüft sie ein Buchhalter.",
         "uaExportCsv": "CSV für DPS herunterladen",
         "uaExportXml": "XML herunterladen",
         "uaExportHint": "Die Einreichung läuft über das DPS-Kabinett (M.E.Doc/Вчасно) mit dem КЕП des Inhabers — außerhalb der CRM. Format vor dem Einreichen mit dem Buchhalter prüfen.",
@@ -1969,7 +1979,7 @@
         "uaProfitTax": "Gewinnsteuer {rate} %",
         "uaCalendarTitle": "Zahlungskalender für {year}",
         "uaCalendarPayment": "Zahlung",
-        "uaCalendarNext": "Nächstes: {date} — {title}, {amount} ₴",
+        "uaCalendarNext": "Nächstes: {date} — {title}, {amount}",
         "notifyClient": "An Kunden senden",
         "notifyHint": "Sendet die Sendungsnummer in den Chat des Kunden, sonst per E-Mail",
         "notifySent": "Nummer über {via} gesendet",
@@ -2184,8 +2194,6 @@
         "npPickCity": "Wählen Sie zuerst eine Stadt",
         "npCodHint": "Die Nachnahme geben Sie in ₴ an — dieser Betrag wird beim Empfänger eingezogen. 0 bedeutet: kein Nachnahme.",
         "fiscalChip": "Beleg {code}",
-        "fiscalIssue": "Beleg ausstellen",
-        "fiscalIssued": "Beleg ausgestellt",
         "fiscalError": "Beleg nicht ausgestellt: {message}",
         "act": "Leistungsnachweis",
         "actIssued": "Leistungsnachweis {number} ausgestellt",
@@ -2596,6 +2604,9 @@
     },
     "share": {
         "orderTitle": "Ihre Bestellung",
+        "orderTitleUa": "Rachunok / Bestellung",
+        "quoteTitleUa": "Kommerzielles Angebot",
+        "contract": "Vertrag",
         "quoteTitle": "Ihr Angebot",
         "colName": "Position",
         "colQty": "Menge",
@@ -2619,5 +2630,10 @@
         "status_invoiced": "In Rechnung gestellt",
         "status_closed": "Abgeschlossen",
         "status_cancelled": "Storniert"
+    },
+    "payDone": {
+        "title": "Zahlung eingegangen",
+        "text": "Vielen Dank! Die Zahlung ist durchgelaufen — die Firma wurde benachrichtigt.",
+        "back": "Zurück zur Website"
     }
 }

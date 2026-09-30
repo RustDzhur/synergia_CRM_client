@@ -1960,6 +1960,16 @@
         "uaTotalToPay": "Total to pay (tax + military levy + ЄСВ)",
         "tab_ua_vat": "VAT",
         "tab_ua_single": "Single tax",
+        "uaWarn_tov_book": "This is the sole trader's income ledger. For a company (TOV) income and profit tax are calculated differently — an accountant is needed.",
+        "uaWarn_general_system": "The firm is on the general taxation system: single tax does not apply, income and expenses must be tracked and a profit declaration filed.",
+        "uaWarn_group4_area": "Group 4 is for farming: the limit is based on land area, not on income, so no income limit is checked here.",
+        "uaWarn_limit_near": "Yearly income is approaching the group {group} limit ({limit} ₴). Above it the single tax rate is {rate} %.",
+        "uaWarn_empty_year": "No paid invoices in this year — the ledger is empty.",
+        "uaWarn_not_vat_payer": "The firm is marked as a non-payer of VAT: the register is shown for reconciliation, no tax invoices are registered.",
+        "uaWarn_turnover_over_limit": "Turnover of the last 12 months ({turnover} ₴) exceeded the limit of {limit} ₴ — VAT registration is mandatory.",
+        "uaWarn_empty_period": "No issued or received tax invoices in this period.",
+        "uaWarn_not_general_tov": "The firm is not marked as a TOV on the general system — the report is shown for reconciliation.",
+        "uaWarn_tax_differences": "The amounts ignore tax differences; an accountant checks them before filing.",
         "uaExportCsv": "Download CSV for DPS",
         "uaExportXml": "Download XML",
         "uaExportHint": "Submission goes through the DPS cabinet (M.E.Doc/Вчасно) with the owner's КЕП — outside the CRM. Check the format with your accountant before filing.",
@@ -1969,7 +1979,7 @@
         "uaProfitTax": "Profit tax at {rate} %",
         "uaCalendarTitle": "Payment calendar for {year}",
         "uaCalendarPayment": "Payment",
-        "uaCalendarNext": "Next: {date} — {title}, {amount} ₴",
+        "uaCalendarNext": "Next: {date} — {title}, {amount}",
         "notifyClient": "Send to client",
         "notifyHint": "Send the tracking number into the client's chat, or by e-mail when there is no chat",
         "notifySent": "Number sent via {via}",
@@ -2184,8 +2194,6 @@
         "npPickCity": "Pick a city first",
         "npCodHint": "Enter the cash-on-delivery amount in ₴ — it is collected from the recipient. 0 means no COD.",
         "fiscalChip": "Receipt {code}",
-        "fiscalIssue": "Issue receipt",
-        "fiscalIssued": "Receipt issued",
         "fiscalError": "Receipt not issued: {message}",
         "act": "Certificate of services",
         "actIssued": "Certificate {number} issued",
@@ -2596,6 +2604,9 @@
     },
     "share": {
         "orderTitle": "Your order",
+        "orderTitleUa": "Invoice / order",
+        "quoteTitleUa": "Commercial offer",
+        "contract": "Contract",
         "quoteTitle": "Your quote",
         "colName": "Item",
         "colQty": "Qty",
@@ -2619,5 +2630,10 @@
         "status_invoiced": "Invoiced",
         "status_closed": "Closed",
         "status_cancelled": "Cancelled"
+    },
+    "payDone": {
+        "title": "Payment received",
+        "text": "Thank you! The payment went through — the firm has already been notified.",
+        "back": "Back to the site"
     }
 }

@@ -5,6 +5,7 @@ import Order from "@/models/Order";
 import Quote from "@/models/Quote";
 import ShareLink from "@/models/ShareLink";
 import { financeSettings } from "@/lib/finance/settings";
+import { marketOf } from "@/lib/finance/market";
 
 // Публичные ссылки для клиента: статус заказа и принятие предложения. Ссылка даёт ровно один документ
 // и ничего больше — ни кабинета, ни других клиентов, ни настроек. Токен случайный и длинный, отозвать
@@ -33,6 +34,10 @@ export async function revokeShare(org: string, kind: "order" | "quote", ref: str
 export interface ShareItem { name: string; qty: number; price: number }
 export interface ShareView {
     kind: "order" | "quote";
+    /** Режим рынка фирмы: подписи и порядок строк на портале зависят от него (ТЗ A16) */
+    market: "DE" | "UA";
+    /** Номер договора, если заказ/предложение к нему привязаны */
+    contract: string;
     company: { name: string; phone: string; email: string; site: string; logo: string };
     number: string;
     status: string;
@@ -62,6 +67,8 @@ export async function shareData(token: string): Promise<ShareView | null> {
         logo: settings.logo || "",
     };
 
+    const market = marketOf(settings.country) ?? "DE";
+
     if (link.kind === "order") {
         const order = await Order.findOne({ _id: link.ref, org });
         if (!order) return null;
@@ -73,6 +80,8 @@ export async function shareData(token: string): Promise<ShareView | null> {
               : null;
         return {
             kind: "order",
+            market,
+            contract: order.contract ? String(order.contract) : "",
             company,
             number: String(order.number ?? ""),
             status: String(order.status ?? ""),
@@ -91,6 +100,8 @@ export async function shareData(token: string): Promise<ShareView | null> {
     if (!quote) return null;
     return {
         kind: "quote",
+        market,
+        contract: quote.contract ? String(quote.contract) : "",
         company,
         number: String(quote.number ?? ""),
         status: String(quote.status ?? ""),

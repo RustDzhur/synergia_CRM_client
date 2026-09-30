@@ -71,6 +71,10 @@ export interface IncomeBookQuarter {
     esv: number; // ЄСВ за три месяца квартала
 }
 
+// Предупреждение отчёта: код и параметры, а не готовый текст — тексты живут в messages/*.json
+// (требование R6: строки в коде не оставляем), интерфейс подставляет их переводом.
+export interface ReportWarning { code: string; params?: Record<string, string | number> }
+
 export interface IncomeBook {
     year: string;
     profile: UaTaxProfile;
@@ -83,7 +87,7 @@ export interface IncomeBook {
     limitLeft: number | null; // сколько осталось до лимита группы (null — лимита нет)
     /** На какой год действуют правила и откуда цифры — в интерфейсе видно «сверьтесь с бухгалтером» */
     rules: { year: number; source: string; notice: string };
-    warnings: string[];
+    warnings: ReportWarning[];
 }
 
 export async function incomeBook(org: string, year: string): Promise<IncomeBook> {
@@ -139,24 +143,16 @@ export async function incomeBook(org: string, year: string): Promise<IncomeBook>
     const military = round(quarters.reduce((s, q) => s + q.military, 0));
     const esv = round(quarters.reduce((s, q) => s + q.esv, 0));
 
-    const warnings: string[] = [];
-    if (profile.legalForm === "tov") {
-        warnings.push("Це книга доходів для ФОП. Для ТОВ дохід і податок на прибуток рахуються інакше — потрібен бухгалтер.");
-    }
-    if (profile.group === 0) {
-        warnings.push("У фирмы общая система налогообложения: единый налог не считается, нужен учёт доходов и расходов и декларация о прибыли.");
-    }
-    if (profile.group === 4) {
-        warnings.push("4-я группа — сільгоспвиробники: лимит считается от площади земли, а не от дохода, поэтому лимит здесь не проверяется.");
-    }
+    const warnings: ReportWarning[] = [];
+    if (profile.legalForm === "tov") warnings.push({ code: "tov_book" });
+    if (profile.group === 0) warnings.push({ code: "general_system" });
+    if (profile.group === 4) warnings.push({ code: "group4_area" });
     // Лимит группы — по правилам года, но фирма может задать своё значение (uaLimits) в настройках
     const limit = groupLimit(settings, Number(year), profile.group);
     if (limit && income > limit * 0.8) {
-        warnings.push(
-            `Доход за год приближается к лимиту ${profile.group}-й группы (${limit.toLocaleString("uk-UA")} ₴). При превышении ставка единого налога — ${rules.overLimitRate} %.`
-        );
+        warnings.push({ code: "limit_near", params: { limit, group: profile.group, rate: rules.overLimitRate } });
     }
-    if (income === 0) warnings.push("За выбранный год нет оплаченных счетов — книга пуста.");
+    if (income === 0) warnings.push({ code: "empty_year" });
 
     return {
         year,
@@ -202,7 +198,7 @@ export interface VatRegister {
     payable: number; // >0 — доплатить, <0 — к возмещению
     turnover12m: number; // оборот за 12 месяцев — для лимита регистрации плательщиком ПДВ
     limitLeft: number;
-    warnings: string[];
+    warnings: ReportWarning[];
 }
 
 const itemsTotals = (items: { qty?: number; unitPrice?: number; taxRate?: number }[] = []) =>
@@ -252,14 +248,10 @@ export async function vatRegister(org: string, from: string, to: string): Promis
     const lastYear = await Invoice.find({ org, kind: "invoice", status: { $nin: ["draft", "cancelled"] }, issueDate: { $gte: yearAgo, $lte: to } }).select("items");
     const turnover12m = round(lastYear.reduce((sum, inv) => sum + itemsTotals(inv.items ?? []).net, 0));
 
-    const warnings: string[] = [];
-    if (!profile.vatPayer) {
-        warnings.push("Фирма отмечена как неплательщик ПДВ: реестр показывается для сверки, но налоговые накладные не регистрируются.");
-    }
-    if (turnover12m > profile.vatLimit) {
-        warnings.push(`Оборот за 12 месяцев (${turnover12m.toLocaleString("uk-UA")} ₴) превысил лимит ${profile.vatLimit.toLocaleString("uk-UA")} ₴ — регистрация плательщиком ПДВ обязательна.`);
-    }
-    if (!issued.length && !received.length) warnings.push("За период нет ни выданных, ни полученных налоговых накладных.");
+    const warnings: ReportWarning[] = [];
+    if (!profile.vatPayer) warnings.push({ code: "not_vat_payer" });
+    if (turnover12m > profile.vatLimit) warnings.push({ code: "turnover_over_limit", params: { turnover: turnover12m, limit: profile.vatLimit } });
+    if (!issued.length && !received.length) warnings.push({ code: "empty_period" });
 
     return {
         from,
@@ -293,7 +285,7 @@ export interface ProfitReport {
     tax: number; // 18 % — справочно; фирма может переопределить в настройках отчёта
     rate: number;
     rules: { year: number; source: string; notice: string };
-    warnings: string[];
+    warnings: ReportWarning[];
 }
 
 export async function profitReport(org: string, year: string, rate = 18): Promise<ProfitReport> {
@@ -310,11 +302,9 @@ export async function profitReport(org: string, year: string, rate = 18): Promis
     const profit = round(income - costs - depreciation);
     const tax = profit > 0 ? round(profit * (rate / 100)) : 0;
 
-    const warnings: string[] = [];
-    if (profile.legalForm !== "tov" || profile.taxSystem !== "general_tov") {
-        warnings.push("Фирма не отмечена как ТОВ на загальній системі — отчёт показан для сверки.");
-    }
-    warnings.push("Суммы не учитывают налоговые разницы; перед подачей декларации их проверяет бухгалтер.");
+    const warnings: ReportWarning[] = [];
+    if (profile.legalForm !== "tov" || profile.taxSystem !== "general_tov") warnings.push({ code: "not_general_tov" });
+    warnings.push({ code: "tax_differences" });
 
     const rules = rulesFor(Number(year));
     return { year, from, to, income, expenses: costs, depreciation, profit, tax, rate, rules: { year: rules.year, source: rules.source, notice: rulesNotice(Number(year)) }, warnings };
