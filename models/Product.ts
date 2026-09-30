@@ -16,6 +16,7 @@ const ProductSchema = new Schema(
         taxRate: { type: Number, default: null }, // null — берём ставку по умолчанию из FinanceSettings на момент выставления счёта
         stockQty: { type: Number, default: 0 }, // только для type "good"; источник истины — сумма StockMovement
         reorderLevel: { type: Number, default: 0 }, // ниже этого — «Low stock» на дашборде
+        image: { type: String, default: "" }, // ссылка на картинку товара (импорт из каталога); файлы не храним — только URL
         archived: { type: Boolean, default: false },
     },
     { timestamps: true }
