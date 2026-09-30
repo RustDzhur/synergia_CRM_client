@@ -104,13 +104,70 @@ export interface PdfSettings {
     managingDirector?: string; // подпись/руководитель, как принято в немецких документах
     template?: string; // шаблон оформления по умолчанию для новых документов
     paymentQr?: boolean; // печатать ли QR-код на оплату в счетах
+    country?: string; // ISO-код страны фирмы: у UA-фирмы документы называются по-украински
 }
+
+
+// ── Украинские подписи ───────────────────────────────────────────────────────────────────────────────
+// Документы украинской фирмы называются и подписываются по-украински независимо от языка интерфейса:
+// счёт-фактура остаётся рахунком-фактурою, даже если бухгалтер смотрит кабинет на немецком.
+// Названия — принятые в учёте: рахунок-фактура, видаткова накладна, акт, товарно-транспортна накладна.
+const UA_LABELS: Record<string, string> = {
+    invoice: "Рахунок-фактура",
+    credit_note: "Рахунок-коригування",
+    quote: "Комерційна пропозиція",
+    order: "Замовлення",
+    contract: "Договір",
+    delivery_note: "Видаткова накладна",
+    deliveryDate: "Дата поставки",
+    ourOrder: "Наше замовлення",
+    level_1: "Нагадування про оплату",
+    level_2: "1-ше нагадування",
+    level_3: "2-ге нагадування",
+    level_4: "Останнє нагадування",
+    creditFor: "Рахунок-коригування до рахунку",
+    billTo: "Покупець",
+    issueDate: "Дата виставлення",
+    dueDate: "Термін оплати",
+    date: "Дата",
+    orderDate: "Дата замовлення",
+    supplyDate: "Дата надання послуг",
+    supplyPeriod: "Період надання послуг",
+    dunningLevel: "Нагадування про оплату",
+    dunningFee: "Плата за нагадування",
+    dunningNewDue: "Новий строк оплати",
+    validUntil: "Дійсний до",
+    startDate: "Початок",
+    endDate: "Завершення",
+    contractValue: "Сума договору",
+    description: "Опис",
+    qty: "К-сть",
+    unitPrice: "Ціна",
+    tax: "ПДВ",
+    lineTotal: "Сума",
+    net: "Без ПДВ",
+    taxTotal: "ПДВ",
+    gross: "До сплати",
+    taxOn: "на",
+    smallBusiness: "ПДВ не нараховується: фірма не є платником ПДВ.",
+    paymentTerms: "Термін оплати",
+    days: "днів",
+    iban: "IBAN",
+    bic: "BIC",
+    notes: "Примітки",
+    seller: "Постачальник",
+    payByQr: "Оплата за QR-кодом",
+    qrHint: "Скануйте у банківському застосунку",
+    continued: "продовження",
+};
 
 // Рендерит PDF финансового документа в буфер — вызывается из app/api/*/[id]/pdf/route.ts (скачивание и печать)
 // и из lib/finance/send.ts (вложение к письму клиенту). Сам рендер (десять шаблонов оформления) живёт в
 // lib/finance/layouts.ts; здесь остаётся только создание документа с встроенным шрифтом и выбор языка подписей.
 export function renderDocumentPdf(d: PdfDocumentData, settings: PdfSettings, locale = "en"): Promise<Buffer> {
-    const L = LABELS[locale] ?? LABELS.en;
+    // Украинская фирма получает украинские названия документов независимо от языка интерфейса
+    const base = LABELS[locale] ?? LABELS.en;
+    const L = settings.country === "UA" ? { ...base, ...UA_LABELS } : base;
     return new Promise((resolve, reject) => {
         // pdfkit принимает буфер шрифта в options.font (разбирает его fontkit), но в его типах там только имя шрифта
         const doc = new PDFDocument({ size: "A4", margin: 50, font: DOC_FONT as unknown as string });

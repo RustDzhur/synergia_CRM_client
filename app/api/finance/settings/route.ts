@@ -38,6 +38,15 @@ function toDTO(s: any) {
         dunningFees: Array.isArray(s.dunningFees) && s.dunningFees.length ? s.dunningFees.map((n: unknown) => Number(n) || 0) : [0, 0, 2.5, 5, 10],
         dunningInterestRate: Number(s.dunningInterestRate) || 0,
         dunningPaymentDays: Number(s.dunningPaymentDays) || 7,
+        uaLegalForm: s.uaLegalForm === "tov" ? "tov" : "fop",
+        uaGroup: [0, 1, 2, 3].includes(Number(s.uaGroup)) ? Number(s.uaGroup) : 3,
+        uaSingleRate: Number(s.uaSingleRate) === 3 ? 3 : 5,
+        uaVatPayer: !!s.uaVatPayer,
+        uaEsvMonthly: Number(s.uaEsvMonthly) || 1760,
+        uaMilitaryRate: Number.isFinite(Number(s.uaMilitaryRate)) ? Number(s.uaMilitaryRate) : 1,
+        uaMilitaryFixed: Number.isFinite(Number(s.uaMilitaryFixed)) ? Number(s.uaMilitaryFixed) : 800,
+        uaVatLimit: Number(s.uaVatLimit) || 1000000,
+        uaVatPeriod: s.uaVatPeriod === "quarter" ? "quarter" : "month",
         template: isTemplate(s.template) ? s.template : "classic",
         paymentQr: s.paymentQr !== false,
     };
@@ -91,6 +100,18 @@ export async function PATCH(req: Request) {
     if (b.dunningPaymentDays !== undefined) {
         const n = Number(b.dunningPaymentDays);
         if (Number.isFinite(n) && n >= 1 && n <= 60) set.dunningPaymentDays = Math.round(n);
+    }
+    // Украинская налоговая модель: набор и границы проверяем здесь, чтобы в документ не попало что угодно
+    if (b.uaLegalForm === "fop" || b.uaLegalForm === "tov") set.uaLegalForm = b.uaLegalForm;
+    if ([0, 1, 2, 3].includes(Number(b.uaGroup))) set.uaGroup = Number(b.uaGroup);
+    if (Number(b.uaSingleRate) === 3 || Number(b.uaSingleRate) === 5) set.uaSingleRate = Number(b.uaSingleRate);
+    if (typeof b.uaVatPayer === "boolean") set.uaVatPayer = b.uaVatPayer;
+    if (b.uaVatPeriod === "month" || b.uaVatPeriod === "quarter") set.uaVatPeriod = b.uaVatPeriod;
+    for (const [key, max] of [["uaEsvMonthly", 100000], ["uaMilitaryFixed", 100000], ["uaVatLimit", 100000000], ["uaMilitaryRate", 100]] as const) {
+        if (b[key] !== undefined) {
+            const n = Number(b[key]);
+            if (Number.isFinite(n) && n >= 0 && n <= max) set[key] = n;
+        }
     }
     const s = await FinanceSettings.findOneAndUpdate({ org: user.id }, { $set: set }, { upsert: true, new: true });
     return NextResponse.json(toDTO(s));

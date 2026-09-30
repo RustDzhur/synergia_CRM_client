@@ -6,6 +6,7 @@ import { useFinanceStore } from "@/store/useFinanceStore";
 import { money } from "./format";
 import { AiAnalysis, PeriodSwitch, ReportDisclaimer, ReportFailed, ReportLoading, useReport } from "./reportParts";
 import type { IncomeSurplus, PeriodKind, VatReturn, VatLine } from "@/lib/finance/reports";
+import type { IncomeBook, VatRegister } from "@/lib/finance/ua";
 
 // Steuern: UStVA (Voranmeldung по НДС) и EÜR (доходы минус расходы). Цифры считает сервер
 // (lib/finance/reports.ts → /api/finance/reports), здесь — только таблицы, итог, подсказки ELSTER и разбор от ИИ.
@@ -168,19 +169,172 @@ function EurView({ period, currency }: { period: PeriodKind; currency: string })
 	);
 }
 
+// ── Украина ──────────────────────────────────────────────────────────────────────────────────────────
+// У украинской фирмы те же две вкладки означают другое: ПДВ считается по реестру налоговых накладных,
+// а вместо EÜR — книга обліку доходів вместе с единым налогом, военным сбором и ЄСВ (lib/finance/ua.ts).
+
+function UaVatView({ period }: { period: PeriodKind }) {
+	const t = useTranslations("finance");
+	const locale = useLocale();
+	const currency = useFinanceStore((s) => s.settings?.currency ?? "UAH");
+	const { report, loading, failed } = useReport<VatRegister>("vat-register", period);
+	const fmt = (n: number) => money(n, currency, locale);
+	if (loading) return <ReportLoading />;
+	if (failed || !report) return <ReportFailed />;
+
+	const table = (title: string, rows: VatRegister["issued"]) => (
+		<section className="fs-card overflow-x-auto">
+			<h3 className="px-16 pt-14 text-14 font-semibold text-[#f1f4ee]">{title}</h3>
+			<table className="fs-table mt-8 min-w-[560px]">
+				<thead>
+					<tr>
+						<th className="px-16">{t("colDate")}</th>
+						<th className="px-10">{t("colCounterparty")}</th>
+						<th className="px-10 text-right">{t("colNet")}</th>
+						<th className="px-10 text-right">{t("uaTaxLabel")}</th>
+						<th className="px-10 text-right">{t("total")}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{rows.length === 0 ? (
+						<tr><td className="px-16 text-13 text-[#8c948b]" colSpan={5}>{t("empty")}</td></tr>
+					) : rows.map((r, i) => (
+						<tr key={`${r.number}-${i}`}>
+							<td className="px-16 text-13">{r.date}</td>
+							<td className="px-10 text-13">{r.number ? `${r.number} · ` : ""}{r.counterparty}</td>
+							<td className="px-10 text-right text-13">{fmt(r.net)}</td>
+							<td className="px-10 text-right text-13">{fmt(r.tax)}</td>
+							<td className="px-10 text-right text-13">{fmt(r.gross)}</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</section>
+	);
+
+	return (
+		<div className="flex flex-col gap-16">
+			<p className="text-12 text-[#9AA396]">{t("periodLabel")}: {report.from} – {report.to}</p>
+			<div className="grid grid-cols-1 gap-16 md:grid-cols-3">
+				<section className="fs-card p-16">
+					<p className="text-12 text-[#8c948b]">{t("uaIssuedTax")}</p>
+					<p className="mt-6 text-16 font-semibold text-[#f1f4ee]">{fmt(report.issuedTax)}</p>
+				</section>
+				<section className="fs-card p-16">
+					<p className="text-12 text-[#8c948b]">{t("uaReceivedTax")}</p>
+					<p className="mt-6 text-16 font-semibold text-[#f1f4ee]">{fmt(report.receivedTax)}</p>
+				</section>
+				<section className="fs-card p-16">
+					<p className="text-12 text-[#8c948b]">{report.payable >= 0 ? t("uaVatPayable") : t("uaVatRefund")}</p>
+					<p className="mt-6 text-16 font-semibold" style={{ color: report.payable >= 0 ? "#f1f4ee" : "#2DDEB6" }}>{fmt(Math.abs(report.payable))}</p>
+				</section>
+			</div>
+			{table(t("uaIssued"), report.issued)}
+			{table(t("uaReceived"), report.received)}
+			<p className="text-12 text-[#9AA396]">{t("uaTurnover12m")}: {fmt(report.turnover12m)} · {t("uaLimitLeft")}: {fmt(report.limitLeft)}</p>
+			{report.warnings.length > 0 && (
+				<div className="rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
+					<p className="flex items-center gap-8 text-12 font-semibold text-[#F4A100]"><TbAlertTriangle size={15} aria-hidden /> {t("warningTitle")}</p>
+					<ul className="mt-8 flex list-disc flex-col gap-6 pl-18 text-13 leading-[1.5] text-[#cfd4cb]">
+						{report.warnings.map((w, i) => <li key={i}>{w}</li>)}
+					</ul>
+				</div>
+			)}
+		</div>
+	);
+}
+
+function UaIncomeView({ currency }: { currency: string }) {
+	const t = useTranslations("finance");
+	const locale = useLocale();
+	const { report, loading, failed } = useReport<IncomeBook>("income-book", "year");
+	const fmt = (n: number) => money(n, currency, locale);
+	if (loading) return <ReportLoading />;
+	if (failed || !report) return <ReportFailed />;
+
+	return (
+		<div className="flex flex-col gap-16">
+			<p className="text-12 text-[#9AA396]">{t("uaYearLabel")}: {report.year}</p>
+			<div className="grid grid-cols-1 gap-16 md:grid-cols-2 xl:grid-cols-4">
+				{[["uaIncome", report.income], ["uaSingleTax", report.singleTax], ["uaMilitary", report.military], ["uaEsv", report.esv]].map(([key, value]) => (
+					<section key={key as string} className="fs-card p-16">
+						<p className="text-12 text-[#8c948b]">{t(key as string)}</p>
+						<p className="mt-6 text-16 font-semibold text-[#f1f4ee]">{fmt(value as number)}</p>
+					</section>
+				))}
+			</div>
+			{report.quarters.map((q) => (
+				<section key={q.quarter} className="fs-card overflow-x-auto">
+					<h3 className="px-16 pt-14 text-14 font-semibold text-[#f1f4ee]">{t("uaQuarter", { n: q.quarter })}</h3>
+					<table className="fs-table mt-8 min-w-[520px]">
+						<thead>
+							<tr>
+								<th className="px-16">{t("colDate")}</th>
+								<th className="px-10">{t("colInvoice")}</th>
+								<th className="px-10">{t("colCustomer")}</th>
+								<th className="px-10 text-right">{t("uaReceived")}</th>
+							</tr>
+						</thead>
+						<tbody>
+							{q.rows.length === 0 ? (
+								<tr><td className="px-16 text-13 text-[#8c948b]" colSpan={4}>{t("empty")}</td></tr>
+							) : q.rows.map((r, i) => (
+								<tr key={i}>
+									<td className="px-16 text-13">{r.date}</td>
+									<td className="px-10 text-13">{r.number}</td>
+									<td className="px-10 text-13">{r.customer}</td>
+									<td className="px-10 text-right text-13">{fmt(r.amount)}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+					<div className="flex flex-wrap gap-x-20 gap-y-6 px-16 py-12 text-12 text-[#8c948b]">
+						<span>{t("uaQuarterIncome")}: <b className="text-[#f1f4ee]">{fmt(q.income)}</b></span>
+						<span>{t("uaSingleTax")}: <b className="text-[#f1f4ee]">{fmt(q.singleTax)}</b></span>
+						<span>{t("uaMilitary")}: <b className="text-[#f1f4ee]">{fmt(q.military)}</b></span>
+						<span>{t("uaEsv")}: <b className="text-[#f1f4ee]">{fmt(q.esv)}</b></span>
+					</div>
+				</section>
+			))}
+			<section className="fs-card p-16 md:p-20">
+				<div className="flex items-center justify-between gap-16">
+					<span className="text-15 font-semibold text-[#e6eae2]">{t("uaTotalToPay")}</span>
+					<span className="text-24 font-semibold text-[#c6ff4d]">{fmt(report.total)}</span>
+				</div>
+			</section>
+			{report.warnings.length > 0 && (
+				<div className="rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
+					<p className="flex items-center gap-8 text-12 font-semibold text-[#F4A100]"><TbAlertTriangle size={15} aria-hidden /> {t("warningTitle")}</p>
+					<ul className="mt-8 flex list-disc flex-col gap-6 pl-18 text-13 leading-[1.5] text-[#cfd4cb]">
+						{report.warnings.map((w, i) => <li key={i}>{w}</li>)}
+					</ul>
+				</div>
+			)}
+		</div>
+	);
+}
+
 // kind приходит из адреса вкладки: ?tab=vat → UStVA, ?tab=eur → EÜR (см. index.tsx)
 export default function Taxes({ kind }: { kind: "vat" | "eur" }) {
 	const t = useTranslations("finance");
+	const country = useFinanceStore((s) => s.settings?.country ?? "");
 	const currency = useFinanceStore((s) => s.settings?.currency ?? "EUR");
 	const [period, setPeriod] = useState<PeriodKind>("quarter");
+	// Украинская отчётность отличается от немецкой по существу, а не переводом: у UA-фирмы те же
+	// вкладки показывают реестр налоговых накладных и книгу доходов с единым налогом
+	const ua = country === "UA";
 
 	return (
 		<div>
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-x-20 gap-y-10">
-				<h2 className="text-16 font-semibold text-[#f1f4ee]">{kind === "vat" ? t("vatTitle") : t("eurTitle")}</h2>
-				<PeriodSwitch value={period} onChange={setPeriod} />
+				<h2 className="text-16 font-semibold text-[#f1f4ee]">
+					{kind === "vat" ? (ua ? t("uaVatTitle") : t("vatTitle")) : ua ? t("uaIncomeTitle") : t("eurTitle")}
+				</h2>
+				{!(ua && kind === "eur") && <PeriodSwitch value={period} onChange={setPeriod} />}
 			</div>
-			{kind === "vat" ? <VatView period={period} currency={currency} /> : <EurView period={period} currency={currency} />}
+			{ua
+				? kind === "vat" ? <UaVatView period={period} /> : <UaIncomeView currency={currency} />
+				: kind === "vat" ? <VatView period={period} currency={currency} /> : <EurView period={period} currency={currency} />}
 			<div className="mt-16"><AiAnalysis kind={kind} period={period} /></div>
 			<ReportDisclaimer className="mt-14" />
 		</div>

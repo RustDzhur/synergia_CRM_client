@@ -68,6 +68,10 @@ export interface FinanceSettings {
 	creditNotePrefix: string; reminderIntervalDays: number;
 	// Оформление по умолчанию для всех документов и код оплаты на счетах; у отдельного документа шаблон свой
 	template: string; paymentQr: boolean;
+	// Украинская налоговая модель — показывается при стране UA (см. models/FinanceSettings.ts)
+	uaLegalForm: "fop" | "tov"; uaGroup: number; uaSingleRate: number; uaVatPayer: boolean;
+	uaEsvMonthly: number; uaMilitaryRate: number; uaMilitaryFixed: number; uaVatLimit: number;
+	uaVatPeriod: "month" | "quarter";
 }
 export interface CountryOption { code: string; name: string; standard: number; reduced?: number; label: string }
 export interface FinanceDashboard {

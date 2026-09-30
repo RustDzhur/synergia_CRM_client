@@ -38,6 +38,19 @@ const FinanceSettingsSchema = new Schema(
         dunningFees: { type: [Number], default: [0, 0, 2.5, 5, 10] }, // индекс = ступень (0 не используется)
         dunningInterestRate: { type: Number, default: 0 }, // % годовых; 0 — не считать
         dunningPaymentDays: { type: Number, default: 7 }, // срок оплаты, который даёт каждое напоминание
+        // ── Украина ────────────────────────────────────────────────────────────────────────────────
+        // Налоговая модель украинской фирмы отличается от немецкой, поэтому хранится отдельно и
+        // показывается только при стране UA. Значения — умолчания на 2025 год, их можно менять:
+        // ставки и лимиты время от времени пересматриваются, поэтому они настройки, а не константы кода.
+        uaLegalForm: { type: String, enum: ["fop", "tov"], default: "fop" }, // ФОП или ТОВ
+        uaGroup: { type: Number, default: 3 }, // группа єдиного податку: 1, 2, 3; 0 — общая система
+        uaSingleRate: { type: Number, default: 5 }, // 3-я группа: 5 % без ПДВ или 3 % с ПДВ
+        uaVatPayer: { type: Boolean, default: false }, // платник ПДВ
+        uaEsvMonthly: { type: Number, default: 1760 }, // ЄСВ за себя в месяц (22 % от минимальной зарплаты)
+        uaMilitaryRate: { type: Number, default: 1 }, // военный сбор 3-й группы, % от дохода
+        uaMilitaryFixed: { type: Number, default: 800 }, // военный сбор 1, 2 и 4 групп, ₴ в месяц
+        uaVatLimit: { type: Number, default: 1000000 }, // лимит дохода для обязательной регистрации плательщиком ПДВ
+        uaVatPeriod: { type: String, enum: ["month", "quarter"], default: "month" }, // как отчитываться по ПДВ
         // счётчики последнего использованного номера по типу документа и году — атомарно инкрементируются, без пропусков
         counters: { type: Map, of: Number, default: {} },
     },

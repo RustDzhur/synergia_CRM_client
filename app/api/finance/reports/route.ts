@@ -3,10 +3,12 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { type PeriodKind, businessAnalysis, incomeSurplus, periodRange, trialBalance, vatReturn } from "@/lib/finance/reports";
+import { incomeBook, vatRegister } from "@/lib/finance/ua";
 
 export const dynamic = "force-dynamic";
 
-const KINDS = ["vat", "eur", "bwa", "susa"] as const;
+// vat/eur/bwa/susa — немецкая отчётность; income-book и vat-register — украинская (см. lib/finance/ua.ts)
+const KINDS = ["vat", "eur", "bwa", "susa", "income-book", "vat-register"] as const;
 type Kind = (typeof KINDS)[number];
 const PERIODS: PeriodKind[] = ["month", "quarter", "year"];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -19,7 +21,7 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
 
     const kind = url.searchParams.get("kind") as Kind | null;
-    if (!kind || !KINDS.includes(kind)) return badRequest("kind must be one of: vat, eur, bwa, susa");
+    if (!kind || !KINDS.includes(kind)) return badRequest("kind must be one of: vat, eur, bwa, susa, income-book, vat-register");
 
     const periodParam = url.searchParams.get("period");
     const period: PeriodKind = PERIODS.includes(periodParam as PeriodKind) ? (periodParam as PeriodKind) : "quarter";
@@ -31,10 +33,19 @@ export async function GET(req: Request) {
     const to = toParam && DATE.test(toParam) ? toParam : preset.to;
     if (from > to) return badRequest("from must not be after to");
 
+    // Книга доходов считается за год: у ФОП отчётность по єдиному податку годовая, а кварталы — внутри
+    if (kind === "income-book") {
+        const yearParam = url.searchParams.get("year");
+        const year = yearParam && /^\d{4}$/.test(yearParam) ? yearParam : from.slice(0, 4);
+        await connectDB();
+        return NextResponse.json({ period: "year", report: await incomeBook(user.id, year) });
+    }
+
     await connectDB();
     const range = { from, to };
     if (kind === "vat") return NextResponse.json({ period, report: await vatReturn(user.id, range.from, range.to) });
     if (kind === "eur") return NextResponse.json({ period, report: await incomeSurplus(user.id, range.from, range.to) });
+    if (kind === "vat-register") return NextResponse.json({ period, report: await vatRegister(user.id, range.from, range.to) });
     if (kind === "bwa") return NextResponse.json({ period, report: await businessAnalysis(user.id, range.from, range.to) });
     return NextResponse.json({ period, report: await trialBalance(user.id, range.from, range.to) });
 }

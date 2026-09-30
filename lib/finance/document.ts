@@ -33,6 +33,7 @@ export const toPdfSettings = (s: any): PdfSettings => ({
     footerText: s?.footerText ?? "",
     template: isTemplate(s?.template) ? s.template : undefined,
     paymentQr: s?.paymentQr !== false, // по умолчанию код на оплату печатается
+    country: s?.country ?? "", // UA — документы называются по-украински (см. UA_LABELS в pdf.ts)
 });
 
 export const toPdfItems = (items: any): PdfLineItem[] =>

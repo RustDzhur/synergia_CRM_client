@@ -92,6 +92,7 @@ const ROW_IDLE = "text-[#cfd4cb] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#
 export default function Finance() {
 	const t = useTranslations("finance");
 	const loadSettings = useFinanceStore((s) => s.loadSettings);
+	const country = useFinanceStore((s) => s.settings?.country ?? "");
 	const [tab, setTab] = useState<Tab>("overview");
 	const [openInvoiceId, setOpenInvoiceId] = useState<string | null>(null);
 	const [openOrderId, setOpenOrderId] = useState<string | null>(null);
@@ -137,6 +138,16 @@ export default function Finance() {
 		if (wantedTab || newFromDeal || newInvoiceFor || open) window.history.replaceState(null, "", window.location.pathname);
 	}, []);
 
+	// «Steuern» у украинской фирмы — это ПДВ и единый налог, а не UStVA и EÜR: подписи должны совпадать
+	// с тем, что на экране (см. Taxes.tsx)
+	function tabLabel(key: Tab): string {
+		if (country === "UA") {
+			if (key === "vat") return t("tab_ua_vat");
+			if (key === "eur") return t("tab_ua_single");
+		}
+		return t(`tab_${key}`);
+	}
+
 	function openInvoice(id: string) {
 		setOpenInvoiceId(id);
 		setTab("invoices");
@@ -166,7 +177,7 @@ export default function Finance() {
 							aria-selected={tab === key}
 							onClick={() => select(key)}
 							className={`${TAB_ITEM} ${tab === key ? TAB_ITEM_ACTIVE : TAB_ITEM_IDLE}`}>
-							{t(`tab_${key}`)}
+							{tabLabel(key)}
 						</button>
 					))}
 				</div>
@@ -184,7 +195,7 @@ export default function Finance() {
 								onClick={() => select(node.key)}
 								className={`${ROW} ${tab === node.key ? ROW_ACTIVE : ROW_IDLE}`}>
 								<node.icon size={17} className={`shrink-0 ${tab === node.key ? "text-[#c6ff4d]" : "text-[#8c948b]"}`} />
-								{t(`tab_${node.key}`)}
+								{tabLabel(node.key)}
 							</button>
 						) : (
 							<div key={node.key}>
@@ -198,7 +209,7 @@ export default function Finance() {
 												onClick={() => select(leaf.key)}
 												className={`${ROW} ${tab === leaf.key ? ROW_ACTIVE : ROW_IDLE}`}>
 												<leaf.icon size={17} className={`shrink-0 ${tab === leaf.key ? "text-[#c6ff4d]" : "text-[#8c948b]"}`} />
-												{t(`tab_${leaf.key}`)}
+												{tabLabel(leaf.key)}
 											</button>
 										</li>
 									))}

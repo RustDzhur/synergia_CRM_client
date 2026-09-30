@@ -9,7 +9,8 @@ import type { PeriodKind } from "@/lib/finance/reportMath";
 // Общие детали отчётов Steuern (UStVA, EÜR) и Auswertungen (BWA, SuSa): переключатель периода, запрос отчёта
 // у сервера и разбор от ИИ. Оба экрана пользуются ими, чтобы не дублировать разметку и запросы.
 
-export type ReportKind = "vat" | "eur" | "bwa" | "susa";
+// vat/eur/bwa/susa — немецкие отчёты, vat-register/income-book — украинские (lib/finance/ua.ts)
+export type ReportKind = "vat" | "eur" | "bwa" | "susa" | "vat-register" | "income-book";
 
 // Плитка сводки: подпись сверху, крупная цифра снизу (дашборд, Anlagen, Bank, Mahnwesen)
 export function Stat({ label, value, color }: { label: string; value: string; color?: string }) {

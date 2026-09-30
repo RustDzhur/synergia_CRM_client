@@ -5,6 +5,7 @@ import { badRequest, serverError, unauthorized } from "@/lib/api";
 import { aiConfigured, complete } from "@/lib/ai/provider";
 import { ProviderError } from "@/lib/http";
 import { type PeriodKind, businessAnalysis, incomeSurplus, periodRange, trialBalance, vatReturn } from "@/lib/finance/reports";
+import { incomeBook, vatRegister } from "@/lib/finance/ua";
 import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
 import { dailyLimit, takeQuota, usedToday } from "@/lib/ai/run";
@@ -12,7 +13,7 @@ import Organization from "@/models/Organization";
 
 export const dynamic = "force-dynamic";
 
-const KINDS = ["vat", "eur", "bwa", "susa"] as const;
+const KINDS = ["vat", "eur", "bwa", "susa", "vat-register", "income-book"] as const;
 type Kind = (typeof KINDS)[number];
 const PERIODS: PeriodKind[] = ["month", "quarter", "year"];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -27,7 +28,7 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url);
     const kind = url.searchParams.get("kind") as Kind | null;
-    if (!kind || !KINDS.includes(kind)) return badRequest("kind must be one of: vat, eur, bwa, susa");
+    if (!kind || !KINDS.includes(kind)) return badRequest("kind must be one of: vat, eur, bwa, susa, vat-register, income-book");
     const localeParam = url.searchParams.get("locale") ?? "de";
     const locale = ["en", "de", "ua"].includes(localeParam) ? localeParam : "de";
 
@@ -52,6 +53,8 @@ export async function GET(req: Request) {
             kind === "vat" ? await vatReturn(user.id, from, to) :
             kind === "eur" ? await incomeSurplus(user.id, from, to) :
             kind === "bwa" ? await businessAnalysis(user.id, from, to) :
+            kind === "vat-register" ? await vatRegister(user.id, from, to) :
+            kind === "income-book" ? await incomeBook(user.id, from.slice(0, 4)) :
             await trialBalance(user.id, from, to);
 
         if (!(await takeQuota(user.id, limit))) return badRequest("The daily AI limit for your plan is used up");
@@ -67,6 +70,7 @@ Strict rules:
 - Never invent numbers, customers, dates or legal requirements you are not sure about.
 - Structure the answer in short sections with plain headings: 1) what the figures say, 2) what stands out (only real anomalies visible in the data), 3) what to do next, 4) for VAT: which line of the ELSTER form each figure goes into — use the "kennzahl"/"where" fields provided.
 - Pick the frame that fits the report: for "vat" (UStVA) focus on the VAT payable or refundable and map every figure to its ELSTER line; for "eur" (EÜR) focus on profit or loss and which cost blocks drive it; for "bwa" focus on the monthly trend, whether revenue covers costs and which category grew; for "susa" explain that this is a management trial balance built from the documents in the system, that no statutory chart of accounts is kept, and that the totals must balance.
+- Ukrainian reports use Ukrainian rules, not German ones: for "vat-register" (Ukraine) speak about the register of tax invoices (податкові накладні) — output VAT on issued invoices minus input VAT on received ones, the amount payable or refundable, and the 1,000,000 ₴ turnover threshold for mandatory VAT registration; for "income-book" (Ukraine) speak about the income ledger of a sole trader (ФОП) on the simplified system: income is recognised when money is received, and the single tax (5% without VAT or 3% with VAT), the military levy and the monthly ЄСВ are three separate payments that are NOT part of each other. Mention the group's annual income limit only if the data shows the firm is close to it.
 - This is not tax advice. Say plainly that the figures must be checked by a tax adviser before filing.
 - Be concrete and short. No filler, no marketing tone.`;
 
