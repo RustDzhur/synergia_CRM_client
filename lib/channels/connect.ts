@@ -15,7 +15,7 @@ import { verifyVonage } from "./vonage";
 import { connectTwilio, normalizePhone } from "./twilio";
 import { deleteWebhook, getMe, getWebhookInfo, setWebhook } from "./telegram";
 import { getAccount, removeViberWebhook, setViberWebhook } from "./viber";
-import { appSubscriptions, discoverWhatsAppNumbers, exchangeWhatsAppCode, getPhoneNumber, longLivedWhatsAppToken, setWhatsAppAppWebhook, subscribeApp, whatsappOauthUrl } from "./whatsapp";
+import { appSubscriptions, discoverWhatsAppNumbers, exchangeEmbeddedCode, exchangeWhatsAppCode, getPhoneNumber, longLivedWhatsAppToken, setWhatsAppAppWebhook, subscribeApp, whatsappOauthUrl } from "./whatsapp";
 
 // Общий адрес вебхука WhatsApp на всю платформу: Meta разрешает только один адрес на приложение,
 // поэтому фирма определяется по номеру из события (см. app/api/webhooks/whatsapp/app)
@@ -117,6 +117,58 @@ export async function completeMetaOauth(owner: string, kind: MetaKind, code: str
     doc.markModified("config");
     await doc.save();
     return { options };
+}
+
+/**
+ * Подключение WhatsApp из окна Embedded Signup: клиент выбрал свой аккаунт в окне Meta, оттуда
+ * пришли код и идентификаторы номера и аккаунта. Своё приложение в Meta for Developers ему для этого
+ * не нужно — оно одно на платформу, а секрет остаётся только у нас на сервере.
+ */
+export async function connectWhatsAppEmbedded(
+    owner: string,
+    input: { code: string; phoneNumberId: string; wabaId: string },
+    origin: string
+): Promise<{ name: string; warning?: string }> {
+    const { appId, appSecret } = await metaApp();
+    if (!appId || !appSecret) throw new ProviderError("Приложение Meta не настроено администратором платформы — напишите в поддержку");
+    if (!input.code) throw new ProviderError("Meta не вернула код подключения — попробуйте ещё раз");
+    const token = await exchangeEmbeddedCode(appId, appSecret, input.code);
+
+    // Аккаунт и номер: в окне Embedded Signup их присылает само окно; если чего-то не пришло —
+    // находим по токену (у клиента обычно один аккаунт WhatsApp Business)
+    let wabaId = input.wabaId;
+    let phoneNumberId = input.phoneNumberId;
+    if (!wabaId || !phoneNumberId) {
+        const numbers = await discoverWhatsAppNumbers(token);
+        const found = phoneNumberId ? numbers.find((n) => n.phoneNumberId === phoneNumberId) : numbers[0];
+        if (!found) throw new ProviderError("В аккаунте WhatsApp Business нет ни одного номера — добавьте номер и повторите");
+        wabaId = wabaId || found.wabaId;
+        phoneNumberId = phoneNumberId || found.phoneNumberId;
+    }
+
+    const phone = await getPhoneNumber(phoneNumberId, token);
+    const doc = (await Integration.findOne({ owner, type: "whatsapp" })) ?? new Integration({ owner, type: "whatsapp", token: randomToken() });
+    const verifyToken = String(doc.config?.verifyToken || randomToken(8));
+    doc.set({
+        name: phone.display_phone_number || phone.verified_name || phoneNumberId,
+        config: { ...(doc.config ?? {}), appId, wabaId, phoneNumberId, verifyToken, ...(phone.verified_name ? { botName: phone.verified_name } : {}) },
+        secrets: packSecrets({ accessToken: token, appSecret }),
+        status: "connected",
+        error: "",
+    });
+    doc.markModified("config");
+
+    // Подписка аккаунта на приложение и общий адрес вебхука: без них Meta не присылает сообщения
+    const warnings: string[] = [];
+    const subscribed = await subscribeApp(wabaId, token).then(() => "").catch((e) => (e instanceof ProviderError ? e.message : "Could not subscribe the app to the WhatsApp Business account"));
+    if (subscribed) warnings.push(subscribed);
+    const webhook = await setWhatsAppAppWebhook(appId, appSecret, `${origin}${PLATFORM_WA_WEBHOOK}`, await whatsappVerifyToken())
+        .then(() => "")
+        .catch((e) => (e instanceof ProviderError ? e.message : "Could not register the webhook in Meta"));
+    if (webhook) warnings.push(webhook);
+
+    await doc.save();
+    return { name: doc.name, ...(warnings.length ? { warning: warnings.join("; ") } : {}) };
 }
 
 /** Подключение выбранного: токен выбранной страницы (или номера) уже лежит в секретах после возврата */

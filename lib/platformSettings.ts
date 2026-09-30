@@ -56,23 +56,32 @@ export async function whatsappVerifyToken(): Promise<string> {
     return token;
 }
 
-export interface MetaApp { appId: string; appSecret: string }
+// configId — идентификатор конфигурации «Facebook Login for Business» (Вход через Facebook → Конфигурации).
+// Он открывает окно Embedded Signup: клиент выбирает свой аккаунт WhatsApp в окне Meta и подключается
+// в три клика, без создания собственного приложения в Meta for Developers.
+export interface MetaApp { appId: string; appSecret: string; configId: string }
 
 export async function metaApp(): Promise<MetaApp> {
     const fromEnv = { appId: process.env.META_APP_ID ?? "", appSecret: process.env.META_APP_SECRET ?? "" };
-    if (fromEnv.appId && fromEnv.appSecret) return fromEnv;
     const doc = await connectDB().then(() => PlatformSettings.findOne({ key: KEY })).catch(() => null);
-    if (!doc) return fromEnv;
-    const secrets = doc.secrets ? decryptJSON<{ appSecret?: string }>(doc.secrets) : {};
-    return { appId: String(doc.value || fromEnv.appId), appSecret: String(secrets.appSecret || fromEnv.appSecret) };
+    const secrets = doc?.secrets ? decryptJSON<{ appSecret?: string; configId?: string }>(doc.secrets) : {};
+    return {
+        appId: String(doc?.value || fromEnv.appId),
+        appSecret: String(secrets.appSecret || fromEnv.appSecret),
+        configId: String(secrets.configId || process.env.META_CONFIG_ID || ""),
+    };
 }
 
-/** Сохраняет ключи приложения. Пустой секрет оставляет прежний: его не показываем и не переписываем зря. */
-export async function setMetaApp(appId: string, appSecret: string): Promise<void> {
+/** Сохраняет ключи приложения. Пустое значение оставляет прежнее: секрет не показываем и не переписываем зря. */
+export async function setMetaApp(appId: string, appSecret: string, configId?: string): Promise<void> {
     await connectDB();
+    const doc = await PlatformSettings.findOne({ key: KEY });
+    const keep = doc?.secrets ? decryptJSON<{ appSecret?: string; configId?: string }>(doc.secrets) : {};
+    const nextSecret = (appSecret.trim() || keep.appSecret) ?? "";
+    const nextConfig = (typeof configId === "string" ? configId.trim() : undefined) ?? keep.configId ?? "";
     await PlatformSettings.updateOne(
         { key: KEY },
-        { $set: { value: appId.trim(), ...(appSecret.trim() ? { secrets: encryptJSON({ appSecret: appSecret.trim() }) } : {}) } },
+        { $set: { value: appId.trim(), secrets: encryptJSON({ appSecret: nextSecret, configId: nextConfig }) } },
         { upsert: true }
     );
 }

@@ -925,7 +925,13 @@
         "intWaWebhookHelp": "Tragen Sie Callback-URL und Verify-Token oben in der App unter WhatsApp → Konfiguration → Webhooks ein und abonnieren Sie das Feld «messages» – danach erscheinen eingehende Nachrichten in Chat und Anrufe.",
         "intHelp_webchat": "Eine Chat-Blase für Ihre Website. Besucher schreiben von der Seite, Sie antworten unter Chat and Calls.",
         "intPollingInfo": "Lokaler Modus: Neue Nachrichten werden abgerufen, solange Chat and Calls geöffnet ist. Unter einer öffentlichen https-Adresse wechselt die Seite zu Webhooks.",
-        "intErrNeedHttps": "Webhooks benötigen eine öffentliche https-Adresse. Setzen Sie APP_URL (oder öffnen Sie die Seite über die öffentliche Domain) und drücken Sie dann «Webhook registrieren»."
+        "intErrNeedHttps": "Webhooks benötigen eine öffentliche https-Adresse. Setzen Sie APP_URL (oder öffnen Sie die Seite über die öffentliche Domain) und drücken Sie dann «Webhook registrieren».",
+        "metaConnectButton": "Über Facebook verbinden",
+        "metaConnecting": "Fenster von Meta ist offen…",
+        "metaConnected": "{name} ist verbunden",
+        "metaFailed": "Die Verbindung wurde nicht abgeschlossen. Versuchen Sie es erneut.",
+        "metaNoCode": "Meta hat keinen Verbindungscode zurückgegeben — versuchen Sie es erneut.",
+        "metaNotReady": "Die Plattform ist für „Verbinden in drei Klicks“ noch nicht eingerichtet — schreiben Sie dem Support. Wenn Sie eine eigene Meta-App haben, tragen Sie deren Schlüssel unten ein."
     },
     "upgrade": {
         "free": "Kostenlos",
@@ -2252,7 +2258,9 @@
         "featuresHelp": "Der Tarif enthält die markierten Bereiche bereits. Zusätzliche können Sie hier nur für diese Firma ein- oder ausschalten; „Laut Tarif“ stellt die Tarifeinstellung wieder her.",
         "featByPlan": "Laut Tarif",
         "featExtra": "Gewährt",
-        "featOff": "Aus"
+        "featOff": "Aus",
+        "metaConfigId": "Config-ID (Facebook Login for Business)",
+        "metaConfigHelp": "Ohne diese ID erscheint im Kundenkonto kein Fenster „Über Facebook verbinden“. Erstellen Sie sie in Meta: Facebook-Login for Business → Konfigurationen → WhatsApp Embedded Signup."
     },
     "capabilities": {
         "title": "Was Firmspace AI für Sie tut",

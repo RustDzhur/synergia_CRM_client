@@ -925,7 +925,13 @@
         "intWaWebhookHelp": "Enter the Callback URL and the Verify token above in the app's WhatsApp → Configuration → Webhooks, subscribe to the «messages» field — after that incoming messages appear in Chat and Calls.",
         "intHelp_webchat": "A chat bubble for your website. Visitors write from the site, and you answer in Chat and Calls.",
         "intPollingInfo": "Local mode: new messages are fetched while Chat and Calls is open. On a public https address the site switches to webhooks.",
-        "intErrNeedHttps": "Webhooks need a public https address. Set APP_URL (or open the site on its public domain), then press «Register webhook»."
+        "intErrNeedHttps": "Webhooks need a public https address. Set APP_URL (or open the site on its public domain), then press «Register webhook».",
+        "metaConnectButton": "Connect with Facebook",
+        "metaConnecting": "The Meta window is open…",
+        "metaConnected": "{name} is connected",
+        "metaFailed": "The connection was not completed. Please try again.",
+        "metaNoCode": "Meta returned no connection code — please try again.",
+        "metaNotReady": "The platform is not set up for the three-click connection yet — contact support. If you have your own Meta app, enter its keys below."
     },
     "upgrade": {
         "free": "Free",
@@ -2252,7 +2258,9 @@
         "featuresHelp": "The plan already includes the ticked sections. Extra ones can be switched on or off here for this firm only; “By plan” returns a section to the plan's setting.",
         "featByPlan": "By plan",
         "featExtra": "Granted",
-        "featOff": "Off"
+        "featOff": "Off",
+        "metaConfigId": "Config ID (Facebook Login for Business)",
+        "metaConfigHelp": "Without it the customer account shows no “Connect with Facebook” window. Create it in Meta: Facebook Login for Business → Configurations → WhatsApp Embedded Signup."
     },
     "capabilities": {
         "title": "What Firmspace AI actually does",

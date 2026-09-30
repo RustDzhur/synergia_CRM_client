@@ -15,6 +15,7 @@ import Modal from "../../shared/Modal";
 import CopyField from "./integrationParts/CopyField";
 import FacebookChoice from "./integrationParts/FacebookChoice";
 import FacebookForm from "./integrationParts/FacebookForm";
+import MetaEmbeddedButton from "./MetaEmbeddedButton";
 import ProviderTiles from "./integrationParts/ProviderTiles";
 import { FIELDS, sipBrand } from "./integrationParts/model";
 import type { Real } from "./integrationParts/model";
@@ -27,7 +28,7 @@ interface Props { type: Real | null; title: string; onClose: () => void; provide
 export default function IntegrationDialog({ type, title, onClose, providerKind }: Props) {
 	const t = useTranslations("settings");
 	const locale = useLocale(); // для возврата из окна Facebook на свою языковую версию страницы
-	const { items, connect, patch, remove } = useIntegrationsStore();
+	const { items, connect, patch, remove, load } = useIntegrationsStore();
 	const [values, setValues] = useState<Record<string, string>>({});
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
@@ -232,6 +233,12 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 						)}
 						{current?.type === "telegram" && current.config.polling === "1" && <p className="text-12 text-[#8c948b]">{t("intPollingInfo")}</p>}
 						{current?.status === "error" && current.error && <p className="rounded-10 bg-[rgba(244,161,0,0.10)] p-12 text-12 text-[#F4A100]">{current.error.startsWith("Webhooks need a public https address") ? t("intErrNeedHttps") : current.error}</p>}
+
+						{/* Основной путь для WhatsApp: окно Meta в три клика. Ключи приложения платформы
+						    на сервере, клиенту не нужен профиль в Meta for Developers */}
+						{shown === "whatsapp" && !connectedNow && (
+							<MetaEmbeddedButton channel="whatsapp" onConnected={() => void load()} />
+						)}
 
 						{fbForm && (
 							<FacebookForm

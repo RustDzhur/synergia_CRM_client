@@ -80,6 +80,19 @@ export async function discoverWhatsAppNumbers(userToken: string): Promise<WaNumb
     return out;
 }
 
+/**
+ * Код из окна Embedded Signup меняем на «бизнес-токен» клиента (business integration system user
+ * access token) — им дальше подписываем его аккаунт WhatsApp на наше приложение и отправляем сообщения.
+ * Код живёт 30 секунд, поэтому обмен делаем сразу, как только он пришёл с клиента.
+ */
+export async function exchangeEmbeddedCode(appId: string, appSecret: string, code: string): Promise<string> {
+    const q = new URLSearchParams({ client_id: appId, client_secret: appSecret, code });
+    const res = await fetchProvider(`${base()}/oauth/access_token?${q}`, { method: "GET" });
+    const json = (await res.json().catch(() => null)) as { access_token?: string; error?: { message?: string } } | null;
+    if (!res.ok || !json?.access_token) throw new ProviderError(json?.error?.message ?? "Meta отклонила код подключения — попробуйте ещё раз");
+    return json.access_token;
+}
+
 // Реквизиты номера: заодно проверяем, что id номера и токен доступа подходят друг другу
 export const getPhoneNumber = (phoneNumberId: string, accessToken: string) =>
     graph<{ id: string; display_phone_number?: string; verified_name?: string }>(`/${phoneNumberId}?fields=display_phone_number,verified_name`, accessToken);

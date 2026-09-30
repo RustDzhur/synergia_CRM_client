@@ -14,13 +14,15 @@ export async function GET(req: Request) {
     if (!admin) return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     try {
         const app = await metaApp();
-        return NextResponse.json({ appId: app.appId, hasSecret: !!app.appSecret, fromEnv: !!(process.env.META_APP_ID && process.env.META_APP_SECRET) });
+        return NextResponse.json({ appId: app.appId, hasSecret: !!app.appSecret, configId: app.configId, fromEnv: !!(process.env.META_APP_ID && process.env.META_APP_SECRET) });
     } catch (e) {
         return serverError(e);
     }
 }
 
-// POST { appId, appSecret } — сохранить. Пустой секрет оставляет прежний: его не показывают и не переписывают зря.
+// POST { appId, appSecret, configId } — сохранить. Пустые поля оставляют прежние значения: секрет
+// не показывают и не переписывают зря. configId — из «Facebook Login for Business → Конфигурации»:
+// он открывает окно Embedded Signup, в котором клиент подключает свой WhatsApp в три клика.
 export async function POST(req: Request) {
     const admin = await requirePlatformAdmin(req);
     if (!admin) return NextResponse.json({ message: "Forbidden" }, { status: 403 });
@@ -30,7 +32,7 @@ export async function POST(req: Request) {
     if (!/^\d{6,20}$/.test(appId)) return badRequest("The App ID is a number — copy it from Meta → Settings → Basic");
     if (appSecret && (appSecret.length < 20 || appSecret.length > 60)) return badRequest("The App Secret is a 32-character string — copy it from Meta → Settings → Basic");
     try {
-        await setMetaApp(appId, appSecret);
+        await setMetaApp(appId, appSecret, String(b.configId ?? ""));
         return NextResponse.json({ ok: true });
     } catch (e) {
         return serverError(e);

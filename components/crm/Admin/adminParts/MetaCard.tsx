@@ -13,20 +13,22 @@ export default function MetaCard() {
 	const [metaSecret, setMetaSecret] = useState("");
 	const [metaHasSecret, setMetaHasSecret] = useState(false);
 	const [metaFromEnv, setMetaFromEnv] = useState(false);
+	const [metaConfigId, setMetaConfigId] = useState("");
 	const [metaBusy, setMetaBusy] = useState(false);
 
 	const loadMeta = useCallback(async () => {
-		const res = await apiCall<{ appId: string; hasSecret: boolean; fromEnv: boolean }>("/api/admin/settings/meta");
+		const res = await apiCall<{ appId: string; hasSecret: boolean; configId: string; fromEnv: boolean }>("/api/admin/settings/meta");
 		if (!res.data) return;
 		setMetaId(res.data.appId);
 		setMetaHasSecret(res.data.hasSecret);
+		setMetaConfigId(res.data.configId ?? "");
 		setMetaFromEnv(res.data.fromEnv);
 	}, []);
 	useEffect(() => { void loadMeta(); }, [loadMeta]);
 
 	async function saveMeta() {
 		setMetaBusy(true);
-		const res = await apiCall("/api/admin/settings/meta", "POST", { appId: metaId.trim(), appSecret: metaSecret.trim() });
+		const res = await apiCall("/api/admin/settings/meta", "POST", { appId: metaId.trim(), appSecret: metaSecret.trim(), configId: metaConfigId.trim() });
 		setMetaBusy(false);
 		if (!res.ok) return void toast.error(res.message);
 		setMetaSecret("");
@@ -49,6 +51,10 @@ export default function MetaCard() {
 					<label className="flex flex-col gap-6">
 						<span className="text-11 text-[#8c948b]">{t("metaAppId")}</span>
 						<input value={metaId} onChange={(e) => setMetaId(e.target.value)} placeholder="1098409499579046" maxLength={40} className={inputClass} />
+					</label>
+					<label className="flex flex-col gap-6">
+						<span className="text-11 text-[#8c948b]">{t("metaConfigId")}</span>
+						<input value={metaConfigId} onChange={(e) => setMetaConfigId(e.target.value)} placeholder="1234567890123456" maxLength={40} className={inputClass} />
 					</label>
 					<label className="flex flex-col gap-6">
 						<span className="text-11 text-[#8c948b]">{t("metaSecret")}</span>
