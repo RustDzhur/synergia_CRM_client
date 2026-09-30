@@ -141,7 +141,7 @@ function SusaView({ period, currency }: { period: PeriodKind; currency: string }
 							report.rows.map((r) => (
 								<tr key={`${r.account}-${r.name}`}>
 									<td className="px-16 text-13 text-[#8c948b]">{r.account}</td>
-									<td className="px-10 text-13 font-medium text-[#f1f4ee]">{r.name}</td>
+									<td className="px-10 text-13 font-medium text-[#f1f4ee] fs-wrap">{r.name}</td>
 									<td className="px-10 text-right text-13">{fmt(r.debit)}</td>
 									<td className="px-10 text-right text-13">{fmt(r.credit)}</td>
 									<td className="px-10 text-right text-13">{fmt(r.balance)}</td>

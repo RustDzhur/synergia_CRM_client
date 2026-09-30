@@ -143,8 +143,8 @@ export default function Colleagues() {
 												</span>
 											</div>
 										</td>
-										<td className={TD}>{e.position}</td>
-										<td className={TD}>{e.department}</td>
+										<td className={`${TD} fs-wrap`}>{e.position}</td>
+										<td className={`${TD} fs-wrap`}>{e.department}</td>
 										<td className={TD}>{e.workPhone}</td>
 										<td className={TD}>{e.email}</td>
 									</tr>

@@ -10,7 +10,7 @@ import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
 import { firmRate } from "@/lib/finance/rates";
 import { toOrderDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
-import { ownedContact, ownedCompany, ownedDeal, ownedContract, dealForCustomer } from "@/lib/deals";
+import { ownedContact, ownedCompany, ownedDeal, ownedContract, contactForCustomer, dealForCustomer } from "@/lib/deals";
 import Order from "@/models/Order";
 import Contact from "@/models/Contact";
 import User from "@/models/User";
@@ -63,9 +63,11 @@ export async function POST(req: Request) {
     const currency = typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id);
     // Курс НБУ на дату заказа — снимок, как и в счёте (см. app/api/invoices)
     const rate = currency === "UAH" ? { base: 0, margin: 0, value: 0, at: "" } : await firmRate(user.id, currency).then((r) => (r ? { base: r.base, margin: r.margin, value: r.rate, at: r.at } : { base: 0, margin: 0, value: 0, at: "" })).catch(() => ({ base: 0, margin: 0, value: 0, at: "" }));
+    // Клиент текстом без карточки: точное имя контакта — привязываем; нового клиента — заводим карточку
+    const linkedContact = contact || (await contactForCustomer(user.id, { contact: b.contact, company: b.company, customerName }));
     const order = await Order.create({
         org: user.id, number, customerName, items,
-        contact: contact || undefined, company: company || undefined, deal: (deal || (await dealForCustomer(user.id, contact, company, customerName))) || undefined, contract: contract || undefined,
+        contact: linkedContact || undefined, company: company || undefined, deal: (deal || (await dealForCustomer(user.id, linkedContact, company, customerName))) || undefined, contract: contract || undefined,
         currency,
         rate,
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",

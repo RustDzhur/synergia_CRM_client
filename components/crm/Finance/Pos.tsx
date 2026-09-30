@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbArrowBackUp, TbCash, TbCreditCard, TbReceipt, TbTrash } from "react-icons/tb";
 import ConfirmDialog from "../shared/ConfirmDialog";
+import ScanCode from "../shared/ScanCode";
 import { apiCall } from "@/store/crmApi";
 import { money } from "./format";
 import Link from "next/link";
@@ -14,7 +15,7 @@ import Link from "next/link";
 // возврат товара и чек возврата. DE без сертифицированной кассы продажу не проводит — маршрут ответит.
 
 interface ProductRow { id: string; name: string; sku: string; barcode: string; price: number; unit: string; stockQty: number; image: string }
-interface SaleRow { id: string; number: string; at: string; total: number; currency: string; fiscalCode: string; payType: string; customerName: string }
+interface SaleRow { id: string; number: string; at: string; total: number; currency: string; fiscalCode: string; payType: string; customerName: string; returnedBy?: string }
 interface CartLine { product: string; name: string; price: number; qty: number }
 
 export default function Pos() {
@@ -139,7 +140,11 @@ export default function Pos() {
 				{/* Товар: поиск по штрихкоду и названию */}
 				<section className="fs-card p-16 md:p-20">
 					<h3 className="mb-10 text-14 font-semibold text-[#f1f4ee]">{t("posSearch")}</h3>
-					<input value={query} onChange={(e) => onQueryChange(e.target.value)} placeholder={t("posSearchPlaceholder")} autoFocus className={field} />
+					<div className="flex gap-8">
+						<input value={query} onChange={(e) => onQueryChange(e.target.value)} placeholder={t("posSearchPlaceholder")} autoFocus className={field} />
+						{/* Сканер: камера телефона или «пистолет» — точный код добавляет товар сразу */}
+						<ScanCode onDetect={(code) => onQueryChange(code)} />
+					</div>
 					{found.length > 0 && query.trim() && (
 						<ul className="mt-8 flex flex-col gap-4">
 							{found.map((p) => (
@@ -207,11 +212,17 @@ export default function Pos() {
 						{recent.map((s) => (
 							<li key={s.id} className="flex flex-wrap items-center justify-between gap-10 border-t border-inkLine pt-6 text-12">
 								<span className="text-[#f1f4ee]">{s.number}<span className="ml-6 text-11 text-[#8c948b]">{new Date(s.at).toLocaleString()} · {s.payType === "cash" ? t("fiscalCash") : t("fiscalCard")}</span></span>
+								{/* Возвращённый чек остаётся в списке с отметкой — по нему видно, что товар вернули */}
+								{s.returnedBy && <span className="fs-chip h-22 border-[rgba(235,87,87,0.35)] px-8 text-10 text-[#EB5757]">{t("fiscalReturnedChip", { number: s.returnedBy })}</span>}
 								<span className="text-[#cfd4cb]">{money(s.total, s.currency, locale)}</span>
 								<span className="text-11 text-[#8c948b]">{s.fiscalCode ? `${t("fiscalChip")} ${s.fiscalCode}` : ""}</span>
-								<button type="button" disabled={busy} onClick={() => setReturnFor(s)} className="fs-btn fs-btn-ghost h-28 disabled:opacity-50">
-									<TbArrowBackUp size={12} /> {t("posReturn")}
-								</button>
+								{!s.returnedBy ? (
+									<button type="button" disabled={busy} onClick={() => setReturnFor(s)} className="fs-btn fs-btn-ghost h-28 disabled:opacity-50">
+										<TbArrowBackUp size={12} /> {t("posReturn")}
+									</button>
+								) : (
+									<span className="h-28" />
+								)}
 							</li>
 						))}
 					</ul>

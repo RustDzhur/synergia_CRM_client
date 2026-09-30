@@ -1,15 +1,16 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { TbDownload } from "react-icons/tb";
+import { TbDownload, TbEye } from "react-icons/tb";
 import SearchBox from "../shared/SearchBox";
 import { apiCall } from "@/store/crmApi";
-import { downloadAct, downloadDeliveryNote } from "./download";
+import { downloadAct, downloadDeliveryNote, viewAct, viewDeliveryNote } from "./download";
 import { money } from "./format";
 
 // Реестр выписанных документов (ТЗ §4): «Акти» и «Накладні» — по одной вкладке на вид.
 // Акт виконаних робіт и видаткова накладна принадлежат заказу и получают номер при первой
 // выписке; здесь они собраны одной лентой, чтобы повторная печать не требовала искать заказ.
+// Две кнопки на строку: «Просмотр» открывает PDF во вкладке (оттуда печатают), «Скачать» сохраняет файл.
 
 interface Row {
 	id: string;
@@ -34,9 +35,11 @@ export default function IssuedDocs({ kind }: { kind: "act" | "delivery_note" }) 
 	}, [kind]);
 	useEffect(() => { void load(""); }, [load]);
 
-	function download(row: Row) {
-		setBusy(row.id);
-		const done = kind === "act" ? downloadAct(row.id, row.docNumber, locale) : downloadDeliveryNote(row.id, row.docNumber, locale);
+	function open(row: Row, mode: "view" | "download") {
+		setBusy(row.id + mode);
+		const done = kind === "act"
+			? (mode === "view" ? viewAct(row.id, row.docNumber, locale) : downloadAct(row.id, row.docNumber, locale))
+			: (mode === "view" ? viewDeliveryNote(row.id, row.docNumber, locale) : downloadDeliveryNote(row.id, row.docNumber, locale));
 		void done.finally(() => setBusy(""));
 	}
 
@@ -70,13 +73,18 @@ export default function IssuedDocs({ kind }: { kind: "act" | "delivery_note" }) 
 								<tr key={r.id}>
 									<td className="px-16 text-13 font-medium text-[#f1f4ee]">{r.docNumber}</td>
 									<td className="px-10 text-13 text-[#8c948b]">{r.date}</td>
-									<td className="px-10 text-13 text-[#cfd4cb]">{r.customerName}</td>
+									<td className="px-10 text-13 text-[#cfd4cb] fs-wrap">{r.customerName}</td>
 									<td className="px-10 text-13 text-[#8c948b]">{r.orderNumber}</td>
 									<td className="px-10 text-right text-13">{money(r.total, r.currency, locale)}</td>
 									<td className="px-10 text-right">
-										<button type="button" disabled={busy === r.id} onClick={() => download(r)} className="fs-btn fs-btn-ghost h-30 text-12 disabled:opacity-50">
-											<TbDownload size={13} /> {t("downloadPdf")}
-										</button>
+										<div className="flex items-center justify-end gap-8">
+											<button type="button" disabled={busy === r.id + "view"} onClick={() => open(r, "view")} className="fs-btn fs-btn-ghost h-30 text-12 disabled:opacity-50">
+												<TbEye size={13} /> {t("viewPdf")}
+											</button>
+											<button type="button" disabled={busy === r.id + "download"} onClick={() => open(r, "download")} className="fs-btn fs-btn-ghost h-30 text-12 disabled:opacity-50">
+												<TbDownload size={13} /> {t("downloadPdf")}
+											</button>
+										</div>
 									</td>
 								</tr>
 							))}

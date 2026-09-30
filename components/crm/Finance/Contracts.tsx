@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { TbDownload, TbPlus } from "react-icons/tb";
+import { TbDownload, TbEye, TbPlus } from "react-icons/tb";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { useContactStore } from "@/store/useContactStore";
 import { useCompaniesStore } from "@/store/useCompaniesStore";
@@ -11,7 +11,7 @@ import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
 import SuggestInput, { type SuggestOption } from "../shared/SuggestInput";
-import { downloadDocumentPdf } from "./download";
+import { downloadDocumentPdf, viewDocumentPdf } from "./download";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
 import { marketOf } from "@/lib/finance/market";
@@ -80,6 +80,9 @@ export default function Contracts() {
 	async function downloadContractPdf(id: string, number: string) {
 		void downloadDocumentPdf("contracts", id, number, locale);
 	}
+	async function viewContractPdf(id: string, number: string) {
+		void viewDocumentPdf("contracts", id, number, locale);
+	}
 
 	return (
 		<div>
@@ -121,6 +124,9 @@ export default function Contracts() {
 									</>
 								)}
 								{c.status === "active" && c.signedAt && <span className="text-12 text-[#9AA396]">{t("signedOn", { date: new Date(c.signedAt).toLocaleDateString(locale) })}</span>}
+								<button type="button" onClick={() => viewContractPdf(c.id, c.number)} className="fs-btn fs-btn-ghost h-34">
+									<TbEye size={15} /> {t("viewPdf")}
+								</button>
 								<button type="button" onClick={() => downloadContractPdf(c.id, c.number)} className="fs-btn fs-btn-ghost h-34">
 									<TbDownload size={15} /> {t("downloadPdf")}
 								</button>

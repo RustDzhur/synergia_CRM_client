@@ -13,7 +13,7 @@ export const maxDuration = 60;
 
 // Заказ поставщику: приход по накладной, возврат, отмена.
 //   { action: "receive", quantities?, invoice?, warehouse? } — принять товар: документ склада +
-//       закупочная цена в товаре + счёт поставщика (если указан номер);
+//       закупочная цена в товаре + счёт поставщика (создаётся всегда, номер необязателен);
 //   { action: "return", lines, warehouse }                  — вернуть поставщику (списание);
 //   { action: "cancel" }                                    — отменить заказ.
 export async function POST(req: Request, { params }: { params: { id: string } }) {

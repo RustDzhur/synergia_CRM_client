@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbCheck, TbPlus, TbTruckDelivery, TbX } from "react-icons/tb";
+import ScanCode from "../shared/ScanCode";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
 import Modal from "../shared/Modal";
@@ -62,6 +63,15 @@ export default function Purchases() {
 	useEffect(() => { void load(); loadProducts(); }, [load, loadProducts]);
 
 	const goods = useMemo(() => products.filter((p) => !p.archived), [products]);
+
+	// Код от сканера: находим товар по штрихкоду или артикулу и добавляем строку заказа сразу;
+	// цена подставляется закупочная — её всегда можно перебить в строке
+	function onScanLine(code: string) {
+		const probe = code.trim().toLowerCase();
+		const found = goods.find((p) => (p.barcode && p.barcode.toLowerCase() === probe) || (p.sku ?? "").toLowerCase() === probe);
+		if (!found) return void toast.error(t("scanNotFound", { code }));
+		setPoLines([...poLines, { product: found.id, qty: "1", price: String(found.purchasePrice ?? "") }]);
+	}
 	const activeSuppliers = useMemo(() => suppliers.filter((s) => !s.archived), [suppliers]);
 	const input = "fs-field h-36 w-full px-10 text-12 outline-none";
 
@@ -108,7 +118,9 @@ export default function Purchases() {
 			action: "receive",
 			quantities: receiveForm.quantities.map((q) => Number(q) || 0),
 			warehouse: receiveForm.warehouse,
-			...(receiveForm.invoiceNumber.trim() ? { invoice: { number: receiveForm.invoiceNumber.trim(), date: receiveForm.invoiceDate, dueDate: receiveForm.dueDate } } : {}),
+			// Счёт поставщика создаётся всегда: без номера тоже — долг и расход закупки видны в отчётах,
+			// номер можно принести позже. Дата и срок оплаты, введённые в окне, сохраняются и без номера
+			invoice: { number: receiveForm.invoiceNumber.trim(), date: receiveForm.invoiceDate, dueDate: receiveForm.dueDate },
 		});
 		setBusy("");
 		if (!res.ok) return void toast.error(res.message);
@@ -331,7 +343,11 @@ export default function Purchases() {
 									</button>
 								</div>
 							))}
-							<button type="button" onClick={() => setPoLines([...poLines, { product: "", qty: "1", price: "" }])} className="fs-link text-left">{t("stockAddLine")}</button>
+							<div className="flex items-center gap-12">
+								<button type="button" onClick={() => setPoLines([...poLines, { product: "", qty: "1", price: "" }])} className="fs-link text-left">{t("stockAddLine")}</button>
+								{/* Сканер: код товара добавляет строку закупки сразу — вручную выбирать из списка не нужно */}
+								<ScanCode onDetect={onScanLine} />
+							</div>
 						</div>
 						<FormField label={t("stockNote")} value={poForm.notes} onChange={(e) => setPoForm({ ...poForm, notes: e.target.value })} maxLength={600} className="mt-12" />
 					</div>

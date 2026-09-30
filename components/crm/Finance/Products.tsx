@@ -8,6 +8,7 @@ import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
 import SearchBox from "../shared/SearchBox";
+import ScanCode from "../shared/ScanCode";
 import { money } from "./format";
 import { downloadAuthed } from "./download";
 import ImportWizard from "../Settings/ImportWizard";
@@ -41,6 +42,15 @@ export default function Products() {
 			(!typeFilter || p.type === typeFilter)
 		);
 	}, [products, query, typeFilter]);
+
+	// Код от сканера: точное совпадение со штрихкодом или артикулом открывает карточку товара,
+	// иначе код становится поисковым запросом — видно, что нашлось
+	function onScanCode(code: string) {
+		const probe = code.trim().toLowerCase();
+		const exact = products.find((p) => (p.barcode && p.barcode.toLowerCase() === probe) || (p.sku ?? "").toLowerCase() === probe);
+		if (exact) return openEdit(exact.id);
+		setQuery(code);
+	}
 
 	function openNew() { setEditId(null); setForm(EMPTY); setOpen(true); }
 	function openEdit(id: string) {
@@ -102,19 +112,23 @@ export default function Products() {
 			{view === "stock" ? <Stock /> : (
 			<>
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-12">
-				<SearchBox
-					value={query}
-					onChange={setQuery}
-					placeholder={t("productSearchPlaceholder")}
-					className="w-full md:w-[320px]"
-					filters={[{ key: "type", label: t("colType"), options: [
-						{ value: "", label: t("productFilterAll") },
-						{ value: "good", label: t("typeGood") },
-						{ value: "service", label: t("typeService") },
-					] }]}
-					active={{ type: typeFilter }}
-					onFilter={(_k, v) => setTypeFilter(v)}
-				/>
+				<div className="flex w-full items-center gap-8 md:w-auto">
+					<SearchBox
+						value={query}
+						onChange={setQuery}
+						placeholder={t("productSearchPlaceholder")}
+						className="w-full md:w-[320px]"
+						filters={[{ key: "type", label: t("colType"), options: [
+							{ value: "", label: t("productFilterAll") },
+							{ value: "good", label: t("typeGood") },
+							{ value: "service", label: t("typeService") },
+						] }]}
+						active={{ type: typeFilter }}
+						onFilter={(_k, v) => setTypeFilter(v)}
+					/>
+					{/* Сканер: точный код открывает карточку товара сразу, иначе — ищем по коду */}
+					<ScanCode onDetect={onScanCode} />
+				</div>
 				<div className="flex flex-wrap items-center gap-8">
 					{/* Импорт/экспорт каталога (ТЗ §17): мастер открывается окном прямо здесь (в настройки
 					    уводила отдельная страница без своей вкладки), выгрузка идёт файлом с токеном */}

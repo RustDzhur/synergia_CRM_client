@@ -108,8 +108,8 @@ export default function Expenses() {
 							{expenses.map((ex) => (
 								<tr key={ex.id}>
 									<td className="px-16 text-13 text-[#8c948b]">{ex.date}</td>
-									<td className="px-10 text-13 font-medium text-[#f1f4ee]">{ex.vendor}</td>
-									<td className="px-10 text-13 text-[#8c948b]">{ex.category || "—"}</td>
+									<td className="px-10 text-13 font-medium text-[#f1f4ee] fs-wrap">{ex.vendor}</td>
+									<td className="px-10 text-13 text-[#8c948b] fs-wrap">{ex.category || "—"}</td>
 									<td className="px-10 text-right text-13">{money(ex.amount, ex.currency || settings?.currency || "EUR", locale)}</td>
 									<td className="px-10 text-right"><button type="button" onClick={() => setToDelete(ex.id)} aria-label={t("delete")} className="text-[#9AA396] transition-colors hover:text-danger"><TbTrash size={16} /></button></td>
 								</tr>

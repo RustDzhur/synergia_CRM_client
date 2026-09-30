@@ -1,5 +1,6 @@
 import Invoice from "@/models/Invoice";
 import Expense from "@/models/Expense";
+import SupplierInvoice from "@/models/SupplierInvoice";
 import { financeSettings } from "./settings";
 import { groupLimit, rulesFor, rulesNotice } from "./ua/rules";
 import { formAndGroup, taxSystemOf, type UaTaxSystem } from "@/lib/validation/ua";
@@ -299,8 +300,14 @@ export async function profitReport(org: string, year: string, rate = 18): Promis
 
     const invoices = await Invoice.find({ org, kind: "invoice", status: { $nin: ["draft", "cancelled"] }, issueDate: { $gte: from, $lte: to } }).select("items");
     const expenses = await Expense.find({ org, date: { $gte: from, $lte: to } }).select("amount");
+    // Закупівлі: счета поставщиков — расход года, как и обычные расходы (по дате счёта). Без них
+    // прибыль до налога была завышена на всю закупочную стоимость товара
+    const purchases = await SupplierInvoice.find({ org, status: { $ne: "cancelled" }, date: { $gte: from, $lte: to } }).select("amount");
     const income = round(invoices.reduce((sum, inv) => sum + itemsTotals(inv.items ?? []).net, 0));
-    const costs = round(expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0));
+    const costs = round(
+        expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) +
+        purchases.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+    );
     const depreciation = round(await depreciationInYear(org, Number(year)));
     const profit = round(income - costs - depreciation);
     const tax = profit > 0 ? round(profit * (rate / 100)) : 0;

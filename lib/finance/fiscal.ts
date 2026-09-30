@@ -6,7 +6,7 @@ import Contact from "@/models/Contact";
 import Company from "@/models/Company";
 import FiscalShift from "@/models/FiscalShift";
 import type { HydratedDocument } from "mongoose";
-import { closeShift, currentShift, listShifts, openShift, returnReceipt, sellReceipt, signIn, taxes, type CbGood, type CbPayType } from "@/lib/checkbox";
+import { closeShift, currentShift, listShifts, openShift, receiptById, returnReceipt, sellReceipt, signIn, taxes, type CbGood, type CbPayType } from "@/lib/checkbox";
 
 // Фискализация счетов через ПРРО Checkbox: когда счёт оплачен, чек пробивается сам, а клиент
 // получает его от Checkbox (по почте или в SMS). Это требование украинского закона, но подключение —
@@ -38,6 +38,38 @@ async function withToken<T>(cfg: FiscalCredentials, fn: (token: string) => Promi
 }
 
 export interface FiscalResult { fiscalCode: string; url: string; receiptId: string }
+
+/**
+ * Дотянуть ссылку на чек, если она не сохранилась (старые чеки, ответ без tax_url): Checkbox отдаёт
+ * её при повторном чтении чека по id. Обновляет счёт и возвращает ссылку — по ней чек открывают,
+ * скачивают и печатают. Владелец: «чеки должны быть кликабельные: посмотреть, скачать, распечатать».
+ */
+export async function syncReceiptUrls(org: string, inv: {
+    fiscalId?: string; fiscalUrl?: string;
+    fiscalReturnId?: string; fiscalReturnUrl?: string;
+    save: () => Promise<unknown>;
+}): Promise<{ url: string; returnUrl: string }> {
+    const doc = await findFiscal(org);
+    if (!doc) throw new ProviderError("ПРРО Checkbox не підключено до цієї фірми");
+    const cfg = fiscalConfig(doc);
+    if (!cfg.licenseKey || !cfg.login || !cfg.password) throw new ProviderError("У налаштуваннях Checkbox не заповнені ключ каси, логін або пароль касира");
+    let url = String(inv.fiscalUrl ?? "");
+    let returnUrl = String(inv.fiscalReturnUrl ?? "");
+    await withToken(cfg, async (token) => {
+        if (!url && inv.fiscalId) {
+            const receipt = await receiptById(cfg.licenseKey, token, inv.fiscalId);
+            url = receipt.url;
+            if (url) inv.fiscalUrl = url;
+        }
+        if (!returnUrl && inv.fiscalReturnId) {
+            const receipt = await receiptById(cfg.licenseKey, token, inv.fiscalReturnId);
+            returnUrl = receipt.url;
+            if (returnUrl) inv.fiscalReturnUrl = returnUrl;
+        }
+    });
+    if (url || returnUrl) await inv.save();
+    return { url, returnUrl };
+}
 
 // ── Когда чек нужен ─────────────────────────────────────────────────────────────────────────────────
 // РРО/ПРРО по украинскому закону: чек обязателен при наличной и карточной оплате; при безналичной

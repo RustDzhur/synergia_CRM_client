@@ -110,6 +110,9 @@ export async function retailReturn(org: string, invoiceId: string, input: { ware
     const source = await Invoice.findOne({ _id: invoiceId, org, kind: "invoice" });
     if (!source) throw new ProviderError("Чек не знайдено");
     if (source.status !== "paid") throw new ProviderError("Повернення роблять за оплаченим чеком");
+    // Двойной возврат по одному чеку: кредит-нота уже выпущена — второй раз товар не возвращаем
+    const already = await Invoice.findOne({ org, kind: "credit_note", creditFor: source._id }).select("number");
+    if (already) throw new ProviderError(`За цим чеком уже зроблено повернення (${already.number})`);
 
     const settings = await financeSettings(org);
     const items = (source.items as Array<{ description: string; qty: number; unitPrice: number; taxRate: number; product?: string }>).map((it) => ({
@@ -156,6 +159,8 @@ export async function retailReturn(org: string, invoiceId: string, input: { ware
             if (doc && fiscalConfig(doc).auto) {
                 const receipt = await fiscalizeReturn(org, source, Math.abs(computeTotals(source.items as never).gross), (source.fiscalPayType as "CASH" | "CARD") || "CARD");
                 credit.fiscalReturnId = receipt.receiptId;
+
+                credit.fiscalReturnUrl = receipt.url;
                 credit.fiscalReturnCode = receipt.fiscalCode;
                 credit.fiscalReturnAt = new Date();
                 credit.fiscalReturnError = "";

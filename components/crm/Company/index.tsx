@@ -142,11 +142,11 @@ export default function Company() {
                                     <td className="text-center">
                                         <Avatar src={e.avatarUrl} initials={initials(e)} size={40} className="mx-auto flex text-13" />
                                     </td>
-                                    <td className={`${td} font-medium text-[#f1f4ee]`}>{e.firstname} {e.lastname}</td>
+                                    <td className={`${td} font-medium text-[#f1f4ee] fs-wrap`}>{e.firstname} {e.lastname}</td>
                                     <td className={td}>{e.email}</td>
                                     <td className={td}>{e.workPhone}</td>
-                                    <td className={td}>{e.position}</td>
-                                    <td className={td}>{e.department}</td>
+                                    <td className={`${td} fs-wrap`}>{e.position}</td>
+                                    <td className={`${td} fs-wrap`}>{e.department}</td>
                                     <td className={td}>{e.internalPhone}</td>
                                 </tr>
                             ))}

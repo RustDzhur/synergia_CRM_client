@@ -2,6 +2,7 @@
 import { useTranslations } from "next-intl";
 import { useContactStore, Contact } from "@/store/useContactStore";
 import EntityEditPage, { FieldDef } from "../shared/EntityEditPage";
+import ContactDocuments from "./ContactDocuments";
 
 export default function ContactEdit({ id }: { id: string }) {
     const t = useTranslations("crm");
@@ -38,6 +39,8 @@ export default function ContactEdit({ id }: { id: string }) {
             update={updateContact}
             addActivity={addActivity}
             removeActivity={removeActivity}
+            // Документы клиента: что ему выставили и подписали — видно прямо в карточке
+            extraPanel={(contact) => <ContactDocuments contactId={contact._id} />}
         />
     );
 }

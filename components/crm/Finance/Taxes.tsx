@@ -204,7 +204,7 @@ function UaVatView({ period }: { period: PeriodKind }) {
 					) : rows.map((r, i) => (
 						<tr key={`${r.number}-${i}`}>
 							<td className="px-16 text-13">{r.date}</td>
-							<td className="px-10 text-13">{r.number ? `${r.number} · ` : ""}{r.counterparty}</td>
+							<td className="px-10 text-13 fs-wrap">{r.number ? `${r.number} · ` : ""}{r.counterparty}</td>
 							<td className="px-10 text-right text-13">{fmt(r.net)}</td>
 							<td className="px-10 text-right text-13">{fmt(r.tax)}</td>
 							<td className="px-10 text-right text-13">{fmt(r.gross)}</td>
@@ -296,7 +296,7 @@ function UaIncomeView({ currency }: { currency: string }) {
 								<tr key={i}>
 									<td className="px-16 text-13">{r.date}</td>
 									<td className="px-10 text-13">{r.number}</td>
-									<td className="px-10 text-13">{r.customer}</td>
+									<td className="px-10 text-13 fs-wrap">{r.customer}</td>
 									<td className="px-10 text-right text-13">{fmt(r.amount)}</td>
 								</tr>
 							))}
@@ -438,7 +438,7 @@ function PaymentCalendar({ year, currency }: { year: string; currency: string })
 					{state.entries.map((e, i) => (
 						<tr key={i}>
 							<td className="px-16 text-13">{e.date}</td>
-							<td className="px-10 text-13">{e.title}<span className="ml-6 text-11 text-[#8c948b]">{e.note}</span></td>
+							<td className="px-10 text-13 fs-wrap">{e.title}<span className="ml-6 text-11 text-[#8c948b]">{e.note}</span></td>
 							<td className="px-10 text-right text-13">{e.amount > 0 ? fmt(e.amount) : "—"}</td>
 						</tr>
 					))}

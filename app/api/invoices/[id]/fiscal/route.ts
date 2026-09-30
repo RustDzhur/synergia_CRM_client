@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { computeTotals } from "@/lib/finance/totals";
-import { fiscalizeInvoice, fiscalizeReturn, fiscalAdvice } from "@/lib/finance/fiscal";
+import { fiscalizeInvoice, fiscalizeReturn, fiscalAdvice, syncReceiptUrls } from "@/lib/finance/fiscal";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import Invoice from "@/models/Invoice";
 import { requireMarket } from "@/lib/finance/marketGuard";
@@ -14,7 +14,8 @@ export const maxDuration = 60;
 // POST /api/invoices/:id/fiscal — фискальный чек (ПРРО Checkbox):
 //   обычный вызов           — чек продажи (вручную или повтор попытки после ошибки);
 //   { payType: "CASH"|"CARD" } — способ оплаты в чеке (готівка или картка);
-//   { action: "return" }    — чек возврата по кредит-ноте: ссылается на чек продажи.
+//   { action: "return" }    — чек возврата по кредит-ноте: ссылается на чек продажи;
+//   { action: "receipt-link" } — дотянуть ссылку на чек у Checkbox, если она не сохранилась.
 // Автоматически чек продажи пробивается при полной оплате картой (см. pay/route.ts); здесь —
 // кнопка в счёте для всего остального.
 export async function POST(req: Request, { params }: { params: { id: string } }) {
@@ -31,6 +32,16 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const { gross } = computeTotals(inv.items as never);
     const paid = Number(inv.paidAmount) || 0;
 
+    // Ссылка на чек: кликабельный код в списках открывает её — по ней чек смотрят, скачивают и печатают
+    if (b?.action === "receipt-link") {
+        try {
+            const { url, returnUrl } = await syncReceiptUrls(user.id, inv);
+            return NextResponse.json({ url, returnUrl, invoice: toInvoiceDTO(inv) });
+        } catch (e) {
+            return NextResponse.json({ message: e instanceof Error ? e.message : "Не вдалося отримати посилання на чек" }, { status: 502 });
+        }
+    }
+
     // Чек возврата: сумма — всей оплаты (или указанная), ссылка на чек продажи внутри
     if (b?.action === "return") {
         if (inv.fiscalReturnCode) return badRequest("Чек повернення за цим рахунком уже пробито");
@@ -38,6 +49,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         try {
             const receipt = await fiscalizeReturn(user.id, inv, amountReturn, payType);
             inv.fiscalReturnId = receipt.receiptId;
+
+            inv.fiscalReturnUrl = receipt.url;
             inv.fiscalReturnCode = receipt.fiscalCode;
             inv.fiscalReturnAt = new Date();
             inv.fiscalReturnError = "";

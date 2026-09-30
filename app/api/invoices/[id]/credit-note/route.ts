@@ -57,6 +57,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             if (fiscalDoc && fiscalConfig(fiscalDoc).auto) {
                 const receipt = await fiscalizeReturn(user.id, credit, undefined, "CARD");
                 credit.fiscalReturnId = receipt.receiptId;
+
+                credit.fiscalReturnUrl = receipt.url;
                 credit.fiscalReturnCode = receipt.fiscalCode;
                 credit.fiscalReturnAt = new Date();
                 await credit.save();

@@ -58,6 +58,9 @@ export const toInvoiceDTO = (inv: any) => ({
     fiscal: inv.fiscalCode || inv.fiscalId || inv.fiscalError
         ? { code: inv.fiscalCode ?? "", url: inv.fiscalUrl ?? "", at: inv.fiscalAt ? new Date(inv.fiscalAt).toISOString() : "", error: inv.fiscalError ?? "" }
         : null,
+    fiscalReturn: inv.fiscalReturnCode || inv.fiscalReturnId || inv.fiscalReturnError
+        ? { code: inv.fiscalReturnCode ?? "", url: inv.fiscalReturnUrl ?? "", at: inv.fiscalReturnAt ? new Date(inv.fiscalReturnAt).toISOString() : "", error: inv.fiscalReturnError ?? "" }
+        : null,
     totals: computeTotals(inv.items ?? []),
     createdAt: inv.createdAt.toISOString(), updatedAt: inv.updatedAt.toISOString(),
 });

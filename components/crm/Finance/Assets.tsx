@@ -210,7 +210,7 @@ export default function Assets() {
 											</span>
 										)}
 									</td>
-									<td className="px-10 text-13 text-[#8c948b]">{a.category || "—"}</td>
+									<td className="px-10 text-13 text-[#8c948b] fs-wrap">{a.category || "—"}</td>
 									<td className="px-10 text-13 text-[#8c948b]">{a.acquiredDate}</td>
 									<td className="px-10 text-right text-13">{money(a.cost, a.currency, locale)}</td>
 									{/* срок в годах — единица измерения в заголовке колонки, в ячейке только число */}

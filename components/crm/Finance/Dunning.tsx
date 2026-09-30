@@ -133,7 +133,7 @@ export default function Dunning() {
 								<React.Fragment key={inv.id}>
 									<tr>
 										<td className="px-16 text-13 font-medium">{inv.number}</td>
-										<td className="px-10 text-13">{inv.customerName}</td>
+										<td className="px-10 text-13 fs-wrap">{inv.customerName}</td>
 										<td className="px-10 text-13">{inv.dueDate || "—"}</td>
 										<td className="px-10 text-right text-13" style={{ color: days > 0 ? "#EB5757" : undefined }}>{days}</td>
 										<td className="px-10 text-13">
@@ -164,7 +164,7 @@ export default function Dunning() {
 									</tr>
 									{notice?.id === inv.id && (
 										<tr>
-											<td colSpan={9} className="pt-0 text-12 leading-[1.5] text-[#9AA396]">{notice.text}</td>
+											<td colSpan={9} className="pt-0 text-12 leading-[1.5] text-[#9AA396] fs-wrap">{notice.text}</td>
 										</tr>
 									)}
 								</React.Fragment>

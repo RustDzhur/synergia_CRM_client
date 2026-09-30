@@ -26,8 +26,11 @@ interface ReceiptRow {
 	fiscalError: string;
 	fiscalPayType: string;
 	fiscalReturnCode: string;
+	fiscalReturnUrl: string;
 	fiscalReturnAt: string;
 	fiscalReturnError: string;
+	/** номер кредит-ноты, если по этому чеку был возврат: чек помечается «Повернено» */
+	returnedBy: string;
 	needed: boolean;
 	reason: string;
 }
@@ -60,6 +63,19 @@ export default function Fiscal() {
 		if (!res.ok) return void toast.error(res.message);
 		if (action === "close") toast.success(t("fiscalShiftClosed", { receipts: res.data?.receipts ?? 0, turnover: res.data?.turnover ?? 0 }));
 		else toast.success(t("fiscalShiftOpened"));
+		void load();
+	}
+
+	// Ссылка на чек не сохранилась (старый чек или ответ Checkbox без tax_url) — дотягиваем её
+	// у провайдера: по ссылке чек открывают, скачивают и печатают
+	async function fetchLink(row: ReceiptRow, which: "sale" | "return") {
+		setBusy(row.id + "link" + which);
+		const res = await apiCall<{ url: string; returnUrl: string }>(`/api/invoices/${row.id}/fiscal`, "POST", { action: "receipt-link" });
+		setBusy("");
+		if (!res.ok || !res.data) return void toast.error(res.message || t("fiscalLinkFailed"));
+		const url = which === "sale" ? res.data.url : res.data.returnUrl;
+		if (url) window.open(url, "_blank", "noopener");
+		else toast.error(t("fiscalLinkFailed"));
 		void load();
 	}
 
@@ -177,15 +193,44 @@ export default function Fiscal() {
 									<td className="py-8">{row.fiscalPayType === "CASH" ? t("fiscalCash") : row.fiscalPayType === "CARD" ? t("fiscalCard") : "—"}</td>
 									<td className="py-8">
 										{row.fiscalCode ? (
-											<a href={row.fiscalUrl || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-4 text-[#c6ff4d] hover:underline">
-												{row.fiscalCode} <TbExternalLink size={12} />
-											</a>
+											row.fiscalUrl ? (
+												// Ссылка Checkbox: чек открывается на сайте налоговой — оттуда его скачивают и печатают
+												<a href={row.fiscalUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-4 text-[#c6ff4d] hover:underline" title={t("fiscalOpenHint")}>
+													{row.fiscalCode} <TbExternalLink size={12} />
+												</a>
+											) : (
+												<span className="inline-flex flex-wrap items-center gap-6 text-[#cfd4cb]">
+													{row.fiscalCode}
+													<button type="button" disabled={busy !== ""} onClick={() => void fetchLink(row, "sale")} className="text-11 text-[#c6ff4d] hover:underline disabled:opacity-50">
+														{t("fiscalReceiptLink")}
+													</button>
+												</span>
+											)
 										) : row.fiscalError ? (
 											<span className="inline-flex items-center gap-4 text-[#F4A100]"><TbAlertTriangle size={12} /> {row.fiscalError}</span>
 										) : (
 											<span className="text-[#9AA396]">{row.needed ? t("fiscalNeeded") : t("fiscalOptional")}</span>
 										)}
-										{row.fiscalReturnCode && <p className="mt-4 text-11 text-[#2DDEB6]">{t("fiscalReturnChip", { code: row.fiscalReturnCode })}</p>}
+										{/* Проданный чек с возвратом: отметка, чтобы в списке было видно, что товар вернули */}
+										{row.returnedBy && row.kind === "invoice" && (
+											<p className="mt-4 text-11 text-[#EB5757]">{t("fiscalReturnedChip", { number: row.returnedBy })}</p>
+										)}
+										{row.fiscalReturnCode && (
+											<p className="mt-4 text-11 text-[#2DDEB6]">
+												{row.fiscalReturnUrl ? (
+													<a href={row.fiscalReturnUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-4 hover:underline" title={t("fiscalOpenHint")}>
+														{t("fiscalReturnChip", { code: row.fiscalReturnCode })} <TbExternalLink size={11} />
+													</a>
+												) : (
+													<span className="inline-flex flex-wrap items-center gap-6">
+														{t("fiscalReturnChip", { code: row.fiscalReturnCode })}
+														<button type="button" disabled={busy !== ""} onClick={() => void fetchLink(row, "return")} className="text-[#c6ff4d] hover:underline disabled:opacity-50">
+															{t("fiscalReceiptLink")}
+														</button>
+													</span>
+												)}
+											</p>
+										)}
 										{row.fiscalReturnError && <p className="mt-4 text-11 text-[#F4A100]">{row.fiscalReturnError}</p>}
 									</td>
 									<td className="py-8 text-[#8c948b]">{fmt(row.fiscalAt || row.fiscalReturnAt)}</td>

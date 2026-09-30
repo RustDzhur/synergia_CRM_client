@@ -92,7 +92,7 @@ export default function BlogAdmin() {
 					<tbody>
 						{posts.map((p) => (
 							<tr key={p.id}>
-								<td className="px-12 py-10 text-13 font-medium text-[#f1f4ee]">{p.title.en || "—"}</td>
+								<td className="px-12 py-10 text-13 font-medium text-[#f1f4ee] fs-wrap">{p.title.en || "—"}</td>
 								<td className="px-12 py-10 text-13 text-[#8c948b]">{p.slug}</td>
 								<td className="px-12 py-10 text-13 text-[#8c948b]">{p.publishedAt}</td>
 								<td className="px-12 py-10">

@@ -1,5 +1,6 @@
 import Invoice from "@/models/Invoice";
 import Expense from "@/models/Expense";
+import SupplierInvoice from "@/models/SupplierInvoice";
 import { financeSettings } from "./settings";
 import { assetsSummary } from "./assets";
 import Asset from "@/models/Asset";
@@ -153,9 +154,13 @@ export async function incomeSurplus(org: string, from: string, to: string): Prom
         issueDate: { $gte: from, $lte: to },
     }).select("items");
     const expenses = await Expense.find({ org, date: { $gte: from, $lte: to } }).select("vendor category amount taxRate");
+    // Закупки (счета поставщиков) — такие же расходы периода: без них прибыль была завышена
+    // (владелец: «закупівлі вообще не вижу в отчётах»). Считаем по дате счёта, как и расходы
+    const purchases = await SupplierInvoice.find({ org, status: { $ne: "cancelled" }, date: { $gte: from, $lte: to } }).select("amount");
 
     const income = incomeOf(invoices as never, creditNotes as never);
     const cashExpenses = round(expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0));
+    const purchased = round(purchases.reduce((s, p) => s + (Number(p.amount) || 0), 0));
 
     // Амортизация основных средств: это расход периода, но не платёж, поэтому идёт отдельной строкой,
     // а не в составе оплаченных счетов — иначе EÜR показывал бы прибыль больше реальной.
@@ -163,8 +168,9 @@ export async function incomeSurplus(org: string, from: string, to: string): Prom
     const afa = assetsSummary(assets as never, from, to).depreciation;
 
     const byCategory = costsByCategory(expenses as never);
+    if (purchased > 0) byCategory.push({ label: "Wareneingänge (Lieferantenrechnungen)", amount: purchased });
     if (afa > 0) byCategory.push({ label: "Abschreibungen (AfA)", amount: afa });
-    const expenseTotal = round(cashExpenses + afa);
+    const expenseTotal = round(cashExpenses + purchased + afa);
 
     return {
         from, to,
@@ -187,14 +193,21 @@ export async function businessAnalysis(org: string, from: string, to: string): P
         issueDate: { $gte: from, $lte: to },
     }).select("items issueDate");
     const expenses = await Expense.find({ org, date: { $gte: from, $lte: to } }).select("vendor category amount date");
+    // Закупки идут в BWA как отдельная категория расходов — по дате счёта поставщика
+    const purchases = await SupplierInvoice.find({ org, status: { $ne: "cancelled" }, date: { $gte: from, $lte: to } }).select("amount date");
 
     const withDate = <T,>(docs: T[], dateOf: (d: T) => string | undefined) =>
         (docs as never[]).map((d) => ({ ...(d as object), date: dateOf(d as T) })) as never[];
 
+    const costDocs = [
+        ...(expenses as never[]),
+        ...purchases.map((p) => ({ amount: Number(p.amount) || 0, date: p.date, category: "Wareneingänge (Lieferantenrechnungen)" })),
+    ] as never[];
+
     const list = monthlySeries(
         withDate(invoices, (i: { issueDate?: string }) => i.issueDate),
         withDate(creditNotes, (c: { issueDate?: string }) => c.issueDate),
-        expenses as never
+        costDocs
     );
     // Амортизация попадает в тот месяц, в котором она начислена, а не в месяц покупки
     const assets = await Asset.find({ org }).select("name category acquiredDate cost usefulLifeYears residualValue disposalDate");
@@ -203,7 +216,7 @@ export async function businessAnalysis(org: string, from: string, to: string): P
     const revenue = round(list.reduce((s, m) => s + m.revenue, 0));
     const costs = round(list.reduce((s, m) => s + m.costs, 0) + afaTotal);
 
-    const costRows = costsByCategory(expenses as never).map((c) => ({ key: c.label, amount: c.amount }));
+    const costRows = costsByCategory(costDocs).map((c) => ({ key: c.label, amount: c.amount }));
     if (afaTotal > 0) costRows.push({ key: "Abschreibungen (AfA)", amount: afaTotal });
 
     return {
@@ -249,6 +262,13 @@ export async function trialBalance(org: string, from: string, to: string): Promi
     const expenseTotal = round(vat.inputNet);
     if (expenseTotal > 0) {
         rows.push({ account: "4900", name: "Sonstige betriebliche Aufwendungen", debit: expenseTotal, credit: 0, balance: expenseTotal });
+    }
+    // Кредиторка перед поставщиками: неоплаченная часть счетов поставщиков (долг фирмы). Без неё
+    // сальдо показывало расходы, но не показывало, что за них ещё должны
+    const openSupplier = await SupplierInvoice.find({ org, status: { $ne: "cancelled" }, date: { $lte: to } }).select("amount paidAmount");
+    const debt = round(openSupplier.reduce((s, p) => s + Math.max(0, (Number(p.amount) || 0) - (Number(p.paidAmount) || 0)), 0));
+    if (debt > 0) {
+        rows.push({ account: "3300", name: "Verbindlichkeiten aus Lieferungen und Leistungen", debit: 0, credit: debt, balance: round(-debt) });
     }
 
     const debitTotal = round(rows.reduce((s, r) => s + r.debit, 0));

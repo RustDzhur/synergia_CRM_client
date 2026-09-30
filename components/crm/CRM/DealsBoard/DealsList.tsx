@@ -40,9 +40,9 @@ export default function DealsList({ deals, stages, onOpen }: Props) {
 								key={deal._id}
 								onClick={() => onOpen(deal._id)}
 								className="cursor-pointer">
-								<td className="font-medium text-[#f1f4ee]">{deal.clientName}</td>
-								<td className="text-[#8c948b]">{deal.contactName}</td>
-								<td className="text-[#8c948b]">{deal.companyName}</td>
+								<td className="font-medium text-[#f1f4ee] fs-wrap">{deal.clientName}</td>
+								<td className="text-[#8c948b] fs-wrap">{deal.contactName}</td>
+								<td className="text-[#8c948b] fs-wrap">{deal.companyName}</td>
 								<td>
 									{stage && (
 										<span

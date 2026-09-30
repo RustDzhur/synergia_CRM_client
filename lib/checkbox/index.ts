@@ -112,6 +112,13 @@ const receiptFrom = (res: { id?: string; fiscal_code?: string; fiscalCode?: stri
     url: String(res.tax_url ?? res.taxUrl ?? res.url ?? res.link ?? ""),
 });
 
+/** Чек по id: нужен, когда ссылка не сохранилась (старый чек или ответ без tax_url) — Checkbox
+ *  отдаёт её при повторном чтении, и чек снова можно открыть, скачать и распечатать */
+export async function receiptById(licenseKey: string, token: string, id: string): Promise<CbReceipt> {
+    const res = await cb<{ id?: string; fiscal_code?: string; fiscalCode?: string; tax_url?: string; taxUrl?: string; url?: string; link?: string }>(`/receipts/${encodeURIComponent(id)}`, { licenseKey, token });
+    return receiptFrom(res);
+}
+
 /** Чек продажи. delivery — куда Checkbox сам отправит копию чека (почта или телефон клиента) */
 export async function sellReceipt(
     licenseKey: string,

@@ -136,6 +136,13 @@
 		color: #f1f4ee;
 		border-bottom: 1px solid rgba(255, 255, 255, 0.045);
 		vertical-align: middle;
+		/* Ячейки не переносятся: дата «2026-09-30» рвалась после дефиса, суммы с пробелами
+		   и длинные числа уезжали из-под своего заголовка (жалоба владельца — «цифры в стороне
+		   от названия колонки»). Свободному тексту (имя, примечание) перенос возвращает fs-wrap. */
+		white-space: nowrap;
+	}
+	.fs-table tbody td.fs-wrap {
+		white-space: normal;
 	}
 	.fs-table tbody tr:hover td {
 		background-color: rgba(255, 255, 255, 0.025);

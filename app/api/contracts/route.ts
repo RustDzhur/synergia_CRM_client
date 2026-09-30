@@ -5,7 +5,7 @@ import { badRequest, unauthorized } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
 import { toContractDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
-import { ownedContact, ownedCompany, ownedDeal, dealForCustomer } from "@/lib/deals";
+import { ownedContact, ownedCompany, ownedDeal, contactForCustomer, dealForCustomer } from "@/lib/deals";
 import Contract from "@/models/Contract";
 import User from "@/models/User";
 import { defaultCurrency } from "@/lib/finance/settings";
@@ -37,9 +37,11 @@ export async function POST(req: Request) {
         nextNumber(user.id, "CT"), User.findById(user.userId).select("firstname lastname"),
         ownedContact(b.contact, user.id), ownedCompany(b.company, user.id), ownedDeal(b.deal, user.id),
     ]);
+    // Клиент текстом без карточки: точное имя контакта — привязываем; нового клиента — заводим карточку
+    const linkedContact = contact || (await contactForCustomer(user.id, { contact: b.contact, company: b.company, customerName }));
     const contract = await Contract.create({
         org: user.id, number, customerName,
-        contact: contact || undefined, company: company || undefined, deal: (deal || (await dealForCustomer(user.id, contact, company, customerName))) || undefined,
+        contact: linkedContact || undefined, company: company || undefined, deal: (deal || (await dealForCustomer(user.id, linkedContact, company, customerName))) || undefined,
         value: Math.max(0, Number(b.value) || 0),
         currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id),
         startDate: typeof b.startDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.startDate) ? b.startDate : "",

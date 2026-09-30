@@ -38,12 +38,14 @@ interface Props<T extends Entity> {
 	update: (id: string, data: Record<string, string>) => Promise<T | null>;
 	addActivity: (id: string, activity: NewActivity) => Promise<T | null>;
 	removeActivity: (id: string, activityId: string) => Promise<T | null>;
+	// Дополнительный блок в правой панели (например, документы клиента в карточке контакта)
+	extraPanel?: (entity: T) => React.ReactNode;
 }
 
 // Страница «Edit Contact» / «Edit Company»: слева форма с кнопками Back / Save, справа панель заметок
 // (New Note / E-Mail / Call / New Activity / Create Task / Schedule) и лента записей.
 export default function EntityEditPage<T extends Entity>({
-	id, tab, titleEdit, titleNew, fields, requiredAny, prepareForm, load, create, update, addActivity, removeActivity,
+	id, tab, titleEdit, titleNew, fields, requiredAny, prepareForm, load, create, update, addActivity, removeActivity, extraPanel,
 }: Props<T>) {
 	const t = useTranslations("crm");
 	const locale = useLocale();
@@ -173,6 +175,7 @@ export default function EntityEditPage<T extends Entity>({
 					<p className="fs-card p-20 text-13 text-[#8c948b]">{t("saveFirst")}</p>
 				) : (
 					<>
+						{extraPanel?.(entity)}
 						<ActivityComposer
 							tabs={tabs}
 							submitLabel={t("save")}

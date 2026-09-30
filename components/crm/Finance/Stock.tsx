@@ -6,6 +6,7 @@ import { TbAlertTriangle, TbArrowBackUp, TbPencil, TbPrinter, TbPlus, TbTrash } 
 import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
 import SearchBox from "../shared/SearchBox";
+import ScanCode from "../shared/ScanCode";
 import Modal from "../shared/Modal";
 import { apiCall } from "@/store/crmApi";
 import { useFinanceStore } from "@/store/useFinanceStore";
@@ -482,14 +483,18 @@ export default function Stock() {
 						{/* Поиск товара: название, артикул или штрихкод. Точное совпадение кода добавляет строку сразу —
 						    так работает сканер; подсказки добавляют товар нажатием или Enter */}
 						<div className="relative mb-8">
-							<input
-								value={lineQuery}
-								onChange={(e) => onLineQueryChange(e.target.value)}
-								onKeyDown={(e) => { if (e.key === "Enter" && lineMatches.length) { e.preventDefault(); addDocLine(lineMatches[0].id); } }}
-								placeholder={t("stockLineSearch")}
-								className={`${input} h-40`}
-								autoComplete="off"
-							/>
+							<div className="flex gap-8">
+								<input
+									value={lineQuery}
+									onChange={(e) => onLineQueryChange(e.target.value)}
+									onKeyDown={(e) => { if (e.key === "Enter" && lineMatches.length) { e.preventDefault(); addDocLine(lineMatches[0].id); } }}
+									placeholder={t("stockLineSearch")}
+									className={`${input} h-40`}
+									autoComplete="off"
+								/>
+								{/* Камера телефона или аппаратный сканер: код встаёт в поле и добавляет строку сам */}
+								<ScanCode onDetect={(code) => onLineQueryChange(code)} />
+							</div>
 							{lineQuery.trim() && !lineMatches.length && <p className="mt-6 text-11 text-[#9AA396]">{t("stockSearchEmpty")}</p>}
 							{lineMatches.length > 0 && (
 								<ul className="mt-6 flex flex-col gap-4">

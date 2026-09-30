@@ -16,8 +16,9 @@ import SupplierInvoice from "@/models/SupplierInvoice";
 export interface ReceiveInput {
     /** Сколько принимаем по каждой строке (по индексу строки заказа). Не указано — принимаем всё. */
     quantities?: number[];
-    /** Счёт поставщика: номер, дата, срок оплаты. Без номера счёт не создаётся — долг появится, когда его принесут. */
-    invoice?: { number: string; date?: string; dueDate?: string };
+    /** Счёт поставщика: номер, дата, срок оплаты. Номер необязателен — счёт (долг и расход) создаётся
+     *  и без него, а номер можно добавить позже: иначе закупка выпадала бы из отчётов вовсе. */
+    invoice?: { number?: string; date?: string; dueDate?: string };
     warehouse?: string;
     by?: string;
 }
@@ -69,18 +70,21 @@ export async function receivePurchase(org: string, purchaseId: string, input: Re
     po.status = fullyReceived ? "received" : "confirmed";
     await po.save();
 
-    // Счёт поставщика: долг фирмы. Сумма — по принятым строкам, валюта заказа.
+    // Счёт поставщика: долг фирмы. Сумма — по принятым строкам, валюта заказа. Счёт создаётся ВСЕГДА,
+    // даже без номера: без него закупка не попадала ни в отчёты, ни в долги — владелец жаловался,
+    // что закупівлі «нигде не видно» в прибыли. Номер приносят позже — его видно в списке и можно
+    // вписать при оплате; пустая строка значит «номер ещё не известен», а не «закупки нет».
     let invoice = null;
     const total = lines.reduce((sum: number, l: { qty: number; price: number }) => sum + l.qty * l.price, 0);
-    if (input.invoice?.number && total > 0) {
-        const date = input.invoice.date && /^\d{4}-\d{2}-\d{2}$/.test(input.invoice.date) ? input.invoice.date : new Date().toISOString().slice(0, 10);
+    if (total > 0) {
+        const date = input.invoice?.date && /^\d{4}-\d{2}-\d{2}$/.test(input.invoice.date) ? input.invoice.date : new Date().toISOString().slice(0, 10);
         invoice = await SupplierInvoice.create({
             org,
             supplier: supplier._id,
             purchase: po._id,
-            number: input.invoice.number.slice(0, 60),
+            number: String(input.invoice?.number ?? "").trim().slice(0, 60),
             date,
-            dueDate: input.invoice.dueDate && /^\d{4}-\d{2}-\d{2}$/.test(input.invoice.dueDate) ? input.invoice.dueDate : addDays(date, supplier.paymentDays || 0),
+            dueDate: input.invoice?.dueDate && /^\d{4}-\d{2}-\d{2}$/.test(input.invoice.dueDate) ? input.invoice.dueDate : addDays(date, supplier.paymentDays || 0),
             amount: Math.round(total * 100) / 100,
             currency: po.currency || "",
             notes: `Прихід за замовленням ${po.number}`,

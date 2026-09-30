@@ -27,7 +27,15 @@ export async function GET(req: Request) {
     const list = await Invoice.find({ org: user.id, $or: [{ fiscalCode: { $ne: "" } }, { fiscalError: { $ne: "" } }, { fiscalReturnCode: { $ne: "" } }, { fiscalReturnError: { $ne: "" } }] })
         .sort({ fiscalAt: -1, paidAt: -1, createdAt: -1 })
         .limit(60)
-        .select("number kind customerName status currency items paidAmount paidVia fiscalId fiscalCode fiscalUrl fiscalAt fiscalError fiscalPayType fiscalReturnCode fiscalReturnAt fiscalReturnError");
+        .select("number kind customerName status currency items paidAmount paidVia fiscalId fiscalCode fiscalUrl fiscalAt fiscalError fiscalPayType fiscalReturnId fiscalReturnCode fiscalReturnUrl fiscalReturnAt fiscalReturnError");
+
+    // Отметка «товар повернули»: кредит-нота ссылается на исходный счёт (creditFor). Без неё
+    // возвращённый чек выглядел в списке как обычная продажа (жалоба владельца)
+    const ids = list.map((i) => i._id);
+    const returns = await Invoice.find({ org: user.id, kind: "credit_note", creditFor: { $in: ids } })
+        .select("number creditFor status")
+        .catch(() => []);
+    const returnOf = new Map(returns.map((r) => [String(r.creditFor), { number: r.number, status: r.status }]));
 
     return NextResponse.json({
         connected,
@@ -35,6 +43,7 @@ export async function GET(req: Request) {
         shift,
         receipts: list.map((inv) => {
             const advice = fiscalAdvice(inv);
+            const returned = returnOf.get(String(inv._id));
             return {
                 id: String(inv._id),
                 number: inv.number,
@@ -49,8 +58,11 @@ export async function GET(req: Request) {
                 fiscalError: inv.fiscalError ?? "",
                 fiscalPayType: inv.fiscalPayType ?? "",
                 fiscalReturnCode: inv.fiscalReturnCode ?? "",
+                fiscalReturnUrl: inv.fiscalReturnUrl ?? "",
                 fiscalReturnAt: inv.fiscalReturnAt ? new Date(inv.fiscalReturnAt).toISOString() : "",
                 fiscalReturnError: inv.fiscalReturnError ?? "",
+                // Проданный чек, по которому выпущена кредит-нота: в списке помечается «Повернено»
+                returnedBy: returned?.number ?? "",
                 needed: advice.needed,
                 reason: advice.reason,
             };

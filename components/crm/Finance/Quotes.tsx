@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { TbDownload, TbLink, TbPlus } from "react-icons/tb";
+import { TbDownload, TbEye, TbLink, TbPlus } from "react-icons/tb";
 import { LineItem, useFinanceStore } from "@/store/useFinanceStore";
 import { useContactStore } from "@/store/useContactStore";
 import { useCompaniesStore } from "@/store/useCompaniesStore";
@@ -12,7 +12,7 @@ import { localeTag } from "@/utils/dateHelpers";
 import Modal from "../shared/Modal";
 import SuggestInput, { type SuggestOption } from "../shared/SuggestInput";
 import LineItemsEditor from "./LineItemsEditor";
-import { downloadDocumentPdf } from "./download";
+import { downloadDocumentPdf, viewDocumentPdf } from "./download";
 import { apiCall } from "@/store/crmApi";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import SendDialog from "./SendDialog";
@@ -114,6 +114,9 @@ export default function Quotes({ onOpenOrder, prefill, onPrefillDone }: { onOpen
 	async function downloadPdf(id: string, number: string) {
 		void downloadDocumentPdf("quotes", id, number, locale); // причину отказа показывает сам хелпер
 	}
+	async function viewPdf(id: string, number: string) {
+		void viewDocumentPdf("quotes", id, number, locale);
+	}
 	async function decide(id: string, accepted: boolean) { setBusy(id); const err = await decideQuote(id, accepted); setBusy(null); if (err) toast.error(err); }
 	async function toOrder(id: string) {
 		setBusy(id);
@@ -173,6 +176,9 @@ export default function Quotes({ onOpenOrder, prefill, onPrefillDone }: { onOpen
 								{/* Ссылка для клиента: он сам отметит нужные позиции и примет предложение */}
 								<button type="button" onClick={() => void share(q.id)} className="fs-btn fs-btn-ghost h-34" title={t("shareHint")}>
 									<TbLink size={15} /> {t("share")}
+								</button>
+								<button type="button" onClick={() => viewPdf(q.id, q.number)} className="fs-btn fs-btn-ghost h-34">
+									<TbEye size={15} /> {t("viewPdf")}
 								</button>
 								<button type="button" onClick={() => downloadPdf(q.id, q.number)} className="fs-btn fs-btn-ghost h-34">
 									<TbDownload size={15} /> {t("downloadPdf")}

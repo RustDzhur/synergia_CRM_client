@@ -4,92 +4,114 @@ import { explainCompliance } from "@/lib/finance/complianceLabels";
 
 export type DocumentKind = "invoices" | "quotes" | "orders" | "contracts";
 
-// Скачивание PDF финансового документа — одна кнопка на все бумаги (счёт, кредит-нота, предложение,
-// заказ, договор). Файл отдаёт маршрут /api/<kind>/<id>/pdf, локаль — язык интерфейса.
-// template — оформление для предпросмотра: если он передан, PDF соберётся по нему, не дожидаясь сохранения
-// документа (так работает предпросмотр в выборе шаблона). Без него сервер берёт шаблон самого документа,
-// а если и там пусто — общий из настроек бухгалтерии.
-// Возвращает false, если документ не отдался: интерфейс покажет «не удалось сформировать PDF».
-// Накладная (Lieferschein) живёт по адресу /api/orders/<id>/delivery-note — у неё своя нумерация,
-// поэтому качается отдельной функцией, а не через общий downloadDocumentPdf.
-// Акт виконаних робіт: тот же путь, что у накладной — открываем PDF в новой вкладке,
-// а если браузер её заблокировал, скачиваем файлом
-export async function downloadAct(orderId: string, number: string, locale: string): Promise<boolean> {
+// Действия с PDF финансового документа — двумя кнопками, как просил владелец: «Просмотр» открывает
+// файл во вкладке браузера (оттуда его печатают), «Скачать» сохраняет файл. Раньше была одна кнопка,
+// которая то открывала, то качала, — и понять, что произойдёт, было нельзя.
+//
+// Все запросы идут через fetch с токеном: обычная <a href> не отправляет заголовок авторизации,
+// и сервер отвечал «Unauthorized» (грабля, уже пойманная на выгрузках).
+
+async function fetchPdf(url: string, fallbackError: string): Promise<Blob | null> {
     try {
-        const res = await fetch(`/api/orders/${orderId}/act?locale=${locale}`, { headers: authHeaders(false) });
+        const res = await fetch(url, { headers: authHeaders(false) });
         if (!res.ok) {
-            toast.error(await explainPdfFailure(res, "act"));
-            return false;
+            toast.error(await explainPdfFailure(res, fallbackError));
+            return null;
         }
-        const url = URL.createObjectURL(await res.blob());
-        const tab = window.open(url, "_blank", "noopener");
-        if (!tab) { const a = document.createElement("a"); a.href = url; a.download = `${number || "act"}.pdf`; a.click(); }
-        setTimeout(() => URL.revokeObjectURL(url), 60_000);
-        return true;
+        return await res.blob();
     } catch {
-        return false;
+        toast.error(fallbackError);
+        return null;
     }
+}
+
+/** Открыть PDF во вкладке браузера (оттуда печатают); если вкладку заблокировали — скачать файлом */
+function openBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const tab = window.open(url, "_blank");
+    if (!tab) {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+/** Сохранить PDF файлом — кнопка «Скачать» всегда именно скачивает */
+function saveBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+const docUrl = (kind: DocumentKind, id: string, locale: string, template?: string) => {
+    const q = new URLSearchParams({ locale });
+    if (template) q.set("template", template);
+    return `/api/${kind}/${id}/pdf?${q}`;
+};
+
+export async function downloadDocumentPdf(kind: DocumentKind, id: string, number: string, locale: string, template?: string): Promise<boolean> {
+    const blob = await fetchPdf(docUrl(kind, id, locale, template), kind);
+    if (!blob) return false;
+    saveBlob(blob, `${number || "document"}.pdf`);
+    return true;
+}
+
+export async function viewDocumentPdf(kind: DocumentKind, id: string, number: string, locale: string, template?: string): Promise<boolean> {
+    const blob = await fetchPdf(docUrl(kind, id, locale, template), kind);
+    if (!blob) return false;
+    openBlob(blob, `${number || "document"}.pdf`);
+    return true;
+}
+
+// Накладная (Lieferschein), акт виконаних робіт и пакувальний лист живут на заказе: у каждого своя
+// нумерация и свой маршрут /api/orders/<id>/…
+const orderDocUrl = (path: "act" | "delivery-note" | "packing-list", orderId: string, locale: string) => `/api/orders/${orderId}/${path}?locale=${locale}`;
+
+export async function downloadAct(orderId: string, number: string, locale: string): Promise<boolean> {
+    const blob = await fetchPdf(orderDocUrl("act", orderId, locale), "act");
+    if (!blob) return false;
+    saveBlob(blob, `${number || "act"}.pdf`);
+    return true;
+}
+
+export async function viewAct(orderId: string, number: string, locale: string): Promise<boolean> {
+    const blob = await fetchPdf(orderDocUrl("act", orderId, locale), "act");
+    if (!blob) return false;
+    openBlob(blob, `${number || "act"}.pdf`);
+    return true;
 }
 
 export async function downloadDeliveryNote(orderId: string, number: string, locale: string): Promise<boolean> {
-    try {
-        const res = await fetch(`/api/orders/${orderId}/delivery-note?locale=${locale}`, { headers: authHeaders(false) });
-        if (!res.ok) {
-            toast.error(await explainPdfFailure(res, "delivery-note"));
-            return false;
-        }
-        const url = URL.createObjectURL(await res.blob());
-        const tab = window.open(url, "_blank", "noopener");
-        if (!tab) { const a = document.createElement("a"); a.href = url; a.download = `${number || "Lieferschein"}.pdf`; a.click(); }
-        setTimeout(() => URL.revokeObjectURL(url), 60_000);
-        return true;
-    } catch {
-        return false;
-    }
+    const blob = await fetchPdf(orderDocUrl("delivery-note", orderId, locale), "delivery-note");
+    if (!blob) return false;
+    saveBlob(blob, `${number || "Lieferschein"}.pdf`);
+    return true;
 }
 
-export async function downloadDocumentPdf(kind: DocumentKind, id: string, number: string, locale: string, template?: string): Promise<boolean> {
-    try {
-        const q = new URLSearchParams({ locale });
-        if (template) q.set("template", template);
-        const res = await fetch(`/api/${kind}/${id}/pdf?${q}`, { headers: authHeaders(false) });
-        if (!res.ok) {
-            toast.error(await explainPdfFailure(res, kind));
-            return false;
-        }
-        const url = URL.createObjectURL(await res.blob());
-        const tab = window.open(url, "_blank", "noopener");
-        if (!tab) { const a = document.createElement("a"); a.href = url; a.download = `${number}.pdf`; a.click(); }
-        setTimeout(() => URL.revokeObjectURL(url), 60_000);
-        return true;
-    } catch {
-        return false;
-    }
+export async function viewDeliveryNote(orderId: string, number: string, locale: string): Promise<boolean> {
+    const blob = await fetchPdf(orderDocUrl("delivery-note", orderId, locale), "delivery-note");
+    if (!blob) return false;
+    openBlob(blob, `${number || "Lieferschein"}.pdf`);
+    return true;
 }
 
-// Упаковочный лист (ВЭД): открываем PDF в новой вкладке, как акт и накладную — из него печатают
-// комплект для брокера
 export async function downloadPackingList(orderId: string, number: string, locale: string): Promise<boolean> {
-    try {
-        const res = await fetch(`/api/orders/${orderId}/packing-list?locale=${locale}`, { headers: authHeaders() });
-        if (!res.ok) {
-            toast.error(await explainPdfFailure(res, "packing-list"));
-            return false;
-        }
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const win = window.open(url, "_blank");
-        if (!win) {
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `packing-list${number ? `-${number}` : ""}.pdf`;
-            a.click();
-        }
-        setTimeout(() => URL.revokeObjectURL(url), 60_000);
-        return true;
-    } catch {
-        return false;
-    }
+    const blob = await fetchPdf(orderDocUrl("packing-list", orderId, locale), "packing-list");
+    if (!blob) return false;
+    saveBlob(blob, `packing-list${number ? `-${number}` : ""}.pdf`);
+    return true;
+}
+
+export async function viewPackingList(orderId: string, number: string, locale: string): Promise<boolean> {
+    const blob = await fetchPdf(orderDocUrl("packing-list", orderId, locale), "packing-list");
+    if (!blob) return false;
+    openBlob(blob, `packing-list${number ? `-${number}` : ""}.pdf`);
+    return true;
 }
 
 // Причина отказа сервера по-человечески: чек-лист реквизитов (код compliance) называет поля, которых
@@ -121,13 +143,7 @@ export async function downloadAuthed(url: string, filename: string, fallbackErro
             toast.error(await explainPdfFailure(res, fallbackError));
             return false;
         }
-        const blob = await res.blob();
-        const href = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = href;
-        a.download = filename;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(href), 60_000);
+        saveBlob(await res.blob(), filename);
         return true;
     } catch {
         toast.error(fallbackError);
@@ -137,24 +153,8 @@ export async function downloadAuthed(url: string, filename: string, fallbackErro
 
 // Предпросмотр бланка: тоже требует токена — открываем blob-адресом в новой вкладке
 export async function openAuthedPreview(url: string, fallbackError: string): Promise<boolean> {
-    try {
-        const res = await fetch(url, { headers: authHeaders(false) });
-        if (!res.ok) {
-            toast.error(await explainPdfFailure(res, fallbackError));
-            return false;
-        }
-        const href = URL.createObjectURL(await res.blob());
-        const tab = window.open(href, "_blank");
-        if (!tab) {
-            const a = document.createElement("a");
-            a.href = href;
-            a.download = "preview.pdf";
-            a.click();
-        }
-        setTimeout(() => URL.revokeObjectURL(href), 60_000);
-        return true;
-    } catch {
-        toast.error(fallbackError);
-        return false;
-    }
+    const blob = await fetchPdf(url, fallbackError);
+    if (!blob) return false;
+    openBlob(blob, "preview.pdf");
+    return true;
 }

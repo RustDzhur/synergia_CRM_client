@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { TbCopy, TbDownload, TbPlus, TbReceipt } from "react-icons/tb";
+import { TbCopy, TbDownload, TbEye, TbPlus, TbReceipt } from "react-icons/tb";
 import { LineItem, useFinanceStore } from "@/store/useFinanceStore";
 import { useContactStore } from "@/store/useContactStore";
 import { useCompaniesStore } from "@/store/useCompaniesStore";
@@ -14,7 +14,7 @@ import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import SuggestInput, { type SuggestOption } from "../shared/SuggestInput";
 import LineItemsEditor from "./LineItemsEditor";
-import { downloadDocumentPdf } from "./download";
+import { downloadDocumentPdf, viewDocumentPdf } from "./download";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import PaymentLinkDialog from "./invoicesParts/PaymentLinkDialog";
 import SendDialog from "./SendDialog";
@@ -121,6 +121,23 @@ export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: 
 	// Отправка открывает окно: адресат и ЯЩИК ОТПРАВКИ — письмо должно уходить с ящика фирмы,
 	// а не с первого подключённого (личного), как было раньше (SendDialog)
 
+	// Номер исходного счёта кредит-ноты: кредит-нота хранит его id (creditFor), а в строке нужен номер —
+	// «Кредит-нота до рахунку РАХ-2026-7» объясняет, что это за документ
+	function sourceNumberOf(inv: { creditFor?: string }): string {
+		if (!inv.creditFor) return "";
+		return invoices.find((x) => x.id === inv.creditFor)?.number ?? "";
+	}
+
+	// Чек ПРРО без сохранённой ссылки: дотягиваем её у Checkbox и открываем — оттуда чек скачивают и печатают
+	async function fetchFiscalLink(id: string) {
+		setBusy(id);
+		const res = await apiCall<{ url: string }>(`/api/invoices/${id}/fiscal`, "POST", { action: "receipt-link" });
+		setBusy(null);
+		if (!res.ok || !res.data?.url) return void toast.error(res.message || t("fiscalLinkFailed"));
+		window.open(res.data.url, "_blank", "noopener");
+		void loadInvoices();
+	}
+
 	async function pay(id: string) { setBusy(id); const err = await payInvoice(id); setBusy(null); if (err) toast.error(err); else toast.success(t("markedPaid")); }
 	// Фискальный чек ПРРО: при включённой автофискализации он пробивается сам при оплате, кнопка —
 	// для ручного случая и для повтора после неудачи (ошибка хранится в самом счёте)
@@ -135,6 +152,9 @@ export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: 
 	async function duplicate(id: string) { setBusy(id); const err = await duplicateInvoice(id); setBusy(null); if (err) toast.error(err); else toast.success(t("invoiceDuplicated")); }
 	async function downloadPdf(id: string, number: string) {
 		void downloadDocumentPdf("invoices", id, number, locale);
+	}
+	async function viewPdf(id: string, number: string) {
+		void viewDocumentPdf("invoices", id, number, locale);
 	}
 	async function submitCreditNote(e: React.FormEvent) {
 		e.preventDefault();
@@ -181,7 +201,11 @@ export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: 
 										)}
 										{inv.reminderCount > 0 && <span className="fs-chip h-22 border-[rgba(244,161,0,0.35)] px-8 text-10 text-[#f4a100]">{t("remindersSent", { count: inv.reminderCount })}</span>}
 									</p>
-									<p className="mt-[4px] text-12 text-[#8c948b]">{inv.customerName} · {t("colDate")}: {inv.issueDate}{inv.dueDate ? ` · ${t("dueDate")}: ${inv.dueDate}` : ""}</p>
+									<p className="mt-[4px] text-12 text-[#8c948b]">
+										{/* Кредит-нота без ссылки на исходный счёт непонятна — показываем, что она исправляет */}
+										{inv.kind === "credit_note" && sourceNumberOf(inv) ? `${t("creditFor")} ${sourceNumberOf(inv)} · ` : ""}
+										{inv.customerName} · {t("colDate")}: {inv.issueDate}{inv.dueDate ? ` · ${t("dueDate")}: ${inv.dueDate}` : ""}
+									</p>
 								</div>
 								<p className="text-15 font-semibold text-[#f1f4ee]">{money(inv.totals.gross, inv.currency, locale)}</p>
 							</div>
@@ -199,12 +223,15 @@ export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: 
 										<TbCopy size={15} /> {t("duplicate")}
 									</button>
 								)}
-								{/* ПРРО: чек видно в строке счёта — номер кликабелен, ошибка показана рядом */}
+								{/* ПРРО: чек видно в строке счёта — номер кликабелен (открыть/скачать/распечатать),
+								    ошибка показана рядом; без сохранённой ссылки её можно дотянуть у Checkbox */}
 								{inv.fiscal?.code ? (
 									inv.fiscal.url ? (
-										<a href={inv.fiscal.url} target="_blank" rel="noopener noreferrer" className="fs-btn fs-btn-ghost h-34" title={t("fiscalIssued")}>{t("fiscalChip", { code: inv.fiscal.code })}</a>
+										<a href={inv.fiscal.url} target="_blank" rel="noopener noreferrer" className="fs-btn fs-btn-ghost h-34" title={t("fiscalOpenHint")}>{t("fiscalChip", { code: inv.fiscal.code })}</a>
 									) : (
-										<span className="fs-chip h-24 px-10 text-10" title={t("fiscalIssued")}>{t("fiscalChip", { code: inv.fiscal.code })}</span>
+										<button type="button" disabled={busy === inv.id} onClick={() => void fetchFiscalLink(inv.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-50" title={t("fiscalIssued")}>
+											{t("fiscalChip", { code: inv.fiscal.code })} · {t("fiscalReceiptLink")}
+										</button>
 									)
 								) : (
 									<button type="button" disabled={busy === inv.id} onClick={() => void fiscal(inv.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]" title={inv.fiscal?.error || undefined}>
@@ -217,6 +244,9 @@ export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: 
 										{inv.payLink ? t("payLinkReady") : t("payLink")}
 									</button>
 								)}
+								<button type="button" onClick={() => viewPdf(inv.id, inv.number)} className="fs-btn fs-btn-ghost h-34">
+									<TbEye size={15} /> {t("viewPdf")}
+								</button>
 								<button type="button" onClick={() => downloadPdf(inv.id, inv.number)} className="fs-btn fs-btn-ghost h-34">
 									<TbDownload size={15} /> {t("downloadPdf")}
 								</button>

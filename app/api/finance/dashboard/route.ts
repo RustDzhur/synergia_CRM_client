@@ -5,6 +5,7 @@ import { unauthorized } from "@/lib/api";
 import { computeTotals } from "@/lib/finance/totals";
 import Invoice from "@/models/Invoice";
 import Expense from "@/models/Expense";
+import SupplierInvoice from "@/models/SupplierInvoice";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
 
@@ -19,9 +20,11 @@ export async function GET(req: Request) {
     await connectDB();
 
     const since = new Date(); since.setMonth(since.getMonth() - months + 1); since.setDate(1);
-    const [invoices, expenses, orders, lowStock] = await Promise.all([
+    const [invoices, expenses, purchaseInvoices, orders, lowStock] = await Promise.all([
         Invoice.find({ org: user.id, kind: "invoice" }).select("status issueDate paidAt items currency"),
         Expense.find({ org: user.id, date: { $gte: since.toISOString().slice(0, 10) } }).select("amount date"),
+        // Закупки — такие же расходы, как Expense: без них «Прибыль» на дашборде была завышена
+        SupplierInvoice.find({ org: user.id, status: { $ne: "cancelled" }, date: { $gte: since.toISOString().slice(0, 10) } }).select("amount date"),
         Order.find({ org: user.id }).select("status"),
         Product.find({ org: user.id, type: "good", archived: { $ne: true }, $expr: { $lte: ["$stockQty", "$reorderLevel"] } }).select("name stockQty reorderLevel").limit(20),
     ]);
@@ -32,7 +35,7 @@ export async function GET(req: Request) {
     const revenue = sum(paid);
     const outstandingAmount = sum(outstanding);
     const overdueAmount = sum(invoices.filter((i) => i.status === "overdue"));
-    const totalExpenses = expenses.reduce((s, e) => s + (e.amount ?? 0), 0);
+    const totalExpenses = expenses.reduce((s, e) => s + (e.amount ?? 0), 0) + purchaseInvoices.reduce((s, p) => s + (p.amount ?? 0), 0);
 
     // помесячный ряд за period: доход по дате оплаты, расход по дате
     const key = (d: string | Date) => { const dt = typeof d === "string" ? new Date(d) : d; return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`; };
@@ -40,6 +43,7 @@ export async function GET(req: Request) {
     for (let i = 0; i < months; i++) { const d = new Date(since); d.setMonth(d.getMonth() + i); series[key(d)] = { revenue: 0, expenses: 0 }; }
     for (const inv of paid) if (inv.paidAt && series[key(inv.paidAt)]) series[key(inv.paidAt)].revenue += computeTotals(inv.items as any).gross;
     for (const e of expenses) if (series[key(e.date)]) series[key(e.date)].expenses += e.amount ?? 0;
+    for (const p of purchaseInvoices) if (series[key(p.date)]) series[key(p.date)].expenses += p.amount ?? 0;
 
     const orderCounts: Record<string, number> = {};
     for (const o of orders) orderCounts[o.status] = (orderCounts[o.status] ?? 0) + 1;

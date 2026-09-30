@@ -14,13 +14,13 @@ import StageColumn, { ARROW_DEPTH } from "./StageColumn";
 import DealsList from "./DealsList";
 import DealModal from "./DealModal";
 
-// Зоны за краями доски: справа — «выиграна», слева — корзина. Это не дропзоны dnd, а накладки:
-// они не занимают место в потоке и не появляются в реестре dnd. Так перенос не сдвигает столбцы
-// (иначе карточка уезжала из-под руки и её приходилось тащить дальше, чем нужно), а сброс
-// определяется по положению курсора в момент отпускания.
-const TRASH_WIDTH = 72; // полоса корзины у левого края доски
-const WON_WIDTH = 168; // ширина зоны «выиграна» сразу за последним столбцом
-const ZONE_GAP = 8;
+// Зоны сброса — накладки поверх столбцов: корзина лежит на первой колонке (полоса у её левого
+// края), «выиграна» — на последней, во всю её ширину. Это не дропзоны dnd: они не занимают место
+// в потоке и не появляются в реестре dnd, поэтому перенос не сдвигает столбцы, а сброс
+// определяется по положению курсора в момент отпускания. Высота у обеих — вся высота своей
+// колонки: раньше зоны были ниже длинных колонок, и нижнюю карточку приходилось тащить вверх,
+// чтобы попасть в зону (жалоба владельца).
+const TRASH_WIDTH = 72; // полоса корзины у левого края первой колонки
 
 interface Props {
     search: string;
@@ -36,11 +36,15 @@ export default function DealsBoard({ search }: Props) {
     // под курсором сейчас «выиграна» или «корзина» — зона подсвечивается
     const [hotZone, setHotZone] = useState<"won" | "trash" | null>(null);
     const [trashDealId, setTrashDealId] = useState<string | null>(null);
-    // где стоят зоны: считаем по столбцам в момент начала переноса (и при прокрутке доски)
-    const [zoneBox, setZoneBox] = useState<{ trashLeft: number; wonLeft: number; top: number; height: number } | null>(null);
+    // где стоят зоны: считаем по столбцам в момент начала переноса (и при прокрутке доски).
+    // У каждой зоны свои top/height — по дорожке ЕЁ колонки, поэтому высота подстраивается под
+    // реальное число карточек
+    const [zoneBox, setZoneBox] = useState<{
+        trashLeft: number; trashTop: number; trashHeight: number;
+        wonLeft: number; wonTop: number; wonHeight: number; wonWidth: number;
+    } | null>(null);
     const boardRef = useRef<HTMLDivElement | null>(null);
     const hotZoneRef = useRef<"won" | "trash" | null>(null);
-    const pointerRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
     // Внимание: в макете Figma под подписью «List» показана доска со стрелками. Здесь «Kanban» — доска,
     // а «List» — таблица сделок; чтобы по умолчанию открывалась доска, стартуем с "kanban".
     const [view, setView] = useState<"list" | "kanban">("kanban");
@@ -60,8 +64,9 @@ export default function DealsBoard({ search }: Props) {
         return () => window.removeEventListener("blur", reset);
     }, []);
 
-    // Границы зон берём у столбцов: корзина — полоса у левого края доски, «выиграна» — сразу за
-    // последним столбцом. Пока карточку тянут, столбцы не двигаются, поэтому замер остаётся верным;
+    // Границы зон берём у столбцов: корзина — полоса у левого края первой колонки, «выиграна» —
+    // поверх последней колонки. Высота каждой — по дорожке её колонки (карточки растут вниз).
+    // Пока карточку тянут, столбцы не двигаются, поэтому замер остаётся верным;
     // при прокрутке доски пересчитываем (координаты внутри прокручиваемого содержимого).
     useLayoutEffect(() => {
         if (!dragging) { setZoneBox(null); return; }
@@ -73,13 +78,18 @@ export default function DealsBoard({ search }: Props) {
             const boardRect = board.getBoundingClientRect();
             const first = columns[0].getBoundingClientRect();
             const last = columns[columns.length - 1].getBoundingClientRect();
-            const lane = lanes[lanes.length - 1].getBoundingClientRect();
-            const toContent = (r: DOMRect) => r.left - boardRect.left + board.scrollLeft;
+            const firstLane = lanes[0].getBoundingClientRect();
+            const lastLane = lanes[lanes.length - 1].getBoundingClientRect();
+            const toContentX = (r: DOMRect) => r.left - boardRect.left + board.scrollLeft;
+            const toContentY = (r: DOMRect) => r.top - boardRect.top + board.scrollTop;
             setZoneBox({
-                trashLeft: toContent(first),
-                wonLeft: toContent(last) + last.width + ZONE_GAP,
-                top: lane.top - boardRect.top + board.scrollTop,
-                height: Math.max(lane.height, 200),
+                trashLeft: toContentX(first),
+                trashTop: toContentY(firstLane),
+                trashHeight: Math.max(firstLane.height, 200),
+                wonLeft: toContentX(last),
+                wonTop: toContentY(lastLane),
+                wonHeight: Math.max(lastLane.height, 200),
+                wonWidth: last.width,
             });
         };
         measure();
@@ -99,16 +109,17 @@ export default function DealsBoard({ search }: Props) {
         const move = (e: MouseEvent | TouchEvent) => {
             const point = "touches" in e ? e.touches[0] : e;
             if (!point) return;
-            pointerRef.current = { x: point.clientX, y: point.clientY };
             const board = boardRef.current;
             const box = board?.getBoundingClientRect();
             if (!board || !box || !zoneBox) return;
             // Координаты зон хранятся внутри прокручиваемого содержимого — переводим их в экранные
-            const top = box.top + zoneBox.top - board.scrollTop;
-            const withinLane = point.clientY >= top && point.clientY <= top + zoneBox.height;
+            const trashTop = box.top + zoneBox.trashTop - board.scrollTop;
+            const inTrash = point.clientY >= trashTop && point.clientY <= trashTop + zoneBox.trashHeight;
+            const wonTop = box.top + zoneBox.wonTop - board.scrollTop;
+            const inWon = point.clientY >= wonTop && point.clientY <= wonTop + zoneBox.wonHeight;
             const trashRight = box.left + zoneBox.trashLeft + TRASH_WIDTH - board.scrollLeft;
             const wonStart = box.left + zoneBox.wonLeft - board.scrollLeft;
-            const next: "won" | "trash" | null = !withinLane ? null : point.clientX <= trashRight ? "trash" : point.clientX >= wonStart ? "won" : null;
+            const next: "won" | "trash" | null = inTrash && point.clientX <= trashRight ? "trash" : inWon && point.clientX >= wonStart ? "won" : null;
             if (next !== hotZoneRef.current) {
                 hotZoneRef.current = next;
                 setHotZone(next);
@@ -273,7 +284,7 @@ export default function DealsBoard({ search }: Props) {
                                 {dragging && zoneBox && (
                                     <div
                                         aria-hidden
-                                        style={{ left: zoneBox.trashLeft, top: zoneBox.top, width: TRASH_WIDTH, height: zoneBox.height }}
+                                        style={{ left: zoneBox.trashLeft, top: zoneBox.trashTop, width: TRASH_WIDTH, height: zoneBox.trashHeight }}
                                         className={`pointer-events-none absolute z-10 flex flex-col items-center justify-center gap-8 rounded-12 border border-dashed text-center transition-colors duration-150 ${
                                             hotZone === "trash"
                                                 ? "border-[#EB5757] bg-[rgba(235,87,87,0.22)] text-[#EB5757]"
@@ -302,12 +313,14 @@ export default function DealsBoard({ search }: Props) {
                                 ))}
                                 {boardProvided.placeholder}
 
-                                {/* «Выиграна» — сразу за последним столбцом: сделка, вытянутая сюда, прошла
-								    всю воронку, карточка переезжает в последний этап с отметкой о выигрыше */}
+                                {/* «Выиграна» — поверх последней колонки, во всю её ширину и высоту: сделка,
+								    отпущенная здесь, прошла всю воронку; карточка переезжает в последний этап
+								    с отметкой о выигрыше. Накладка ловит курсор по всей колонке — тянуть вбок
+								    или вверх, чтобы попасть в узкую полосу, больше не нужно */}
                                 {dragging && zoneBox && (
                                     <div
                                         aria-hidden
-                                        style={{ left: zoneBox.wonLeft, top: zoneBox.top, width: WON_WIDTH, height: zoneBox.height }}
+                                        style={{ left: zoneBox.wonLeft, top: zoneBox.wonTop, width: zoneBox.wonWidth, height: zoneBox.wonHeight }}
                                         className={`pointer-events-none absolute z-10 flex flex-col items-center justify-center gap-8 rounded-12 border border-dashed px-10 text-center transition-colors duration-150 ${
                                             hotZone === "won"
                                                 ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.20)] text-[#c6ff4d]"

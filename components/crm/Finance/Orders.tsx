@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import {
 	TbDownload,
+	TbEye,
 	TbSend,
 	TbFileText,
 	TbLink,
@@ -21,7 +22,7 @@ import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import SuggestInput, { type SuggestOption } from "../shared/SuggestInput";
 import LineItemsEditor from "./LineItemsEditor";
-import { downloadAct, downloadDeliveryNote, downloadDocumentPdf, downloadPackingList } from "./download";
+import { downloadDocumentPdf, viewAct, viewDeliveryNote, viewDocumentPdf, viewPackingList } from "./download";
 import WaybillDialog from "./ordersParts/WaybillDialog";
 import UkrposhtaDialog from "./ordersParts/UkrposhtaDialog";
 import DocumentTemplateButton from "./DocumentTemplateButton";
@@ -126,8 +127,8 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 	// а не оплату, поэтому доступна и до счёта.
 	// Акт виконаних робіт — украинский документ, но кнопку показываем всем: фирма сама решает,
 	// нужен ли он ей (в отличие от ТТН, которая без подключённой доставки смысла не имеет)
-	async function downloadActPdf(id: string, actNumber: string) {
-		void downloadAct(id, actNumber, locale);
+	async function openActPdf(id: string, actNumber: string) {
+		void viewAct(id, actNumber, locale);
 	}
 
 	// Укрпошта: штрихкод вписывает менеджер (номер известен после регистрации в отделении),
@@ -171,12 +172,18 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 		}
 	}
 
-	async function downloadDelivery(id: string, noteNumber: string) {
-		void downloadDeliveryNote(id, noteNumber, locale);
+	async function openDelivery(id: string, noteNumber: string) {
+		void viewDeliveryNote(id, noteNumber, locale);
 	}
 
 	async function downloadOrderPdf(id: string, number: string) {
 		void downloadDocumentPdf("orders", id, number, locale);
+	}
+	async function viewOrderPdf(id: string, number: string) {
+		void viewDocumentPdf("orders", id, number, locale);
+	}
+	async function openPackingList(id: string, number: string) {
+		void viewPackingList(id, number, locale);
 	}
 	async function advance(id: string, status: string) {
 		setBusy(id);
@@ -229,13 +236,16 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 										<TbReceipt size={15} /> {t("makeInvoice")}
 									</button>
 								)}
+								<button type="button" onClick={() => viewOrderPdf(o.id, o.number)} className="fs-btn fs-btn-ghost h-34">
+									<TbEye size={15} /> {t("viewPdf")}
+								</button>
 								<button type="button" onClick={() => downloadOrderPdf(o.id, o.number)} className="fs-btn fs-btn-ghost h-34">
 									<TbDownload size={15} /> {t("downloadPdf")}
 								</button>
 								{/* Накладная (Lieferschein): номер присваивается при первой выписке и дальше не меняется */}
 								<button
 									type="button"
-									onClick={() => downloadDelivery(o.id, o.deliveryNoteNumber ?? "")}
+									onClick={() => openDelivery(o.id, o.deliveryNoteNumber ?? "")}
 									className="fs-btn fs-btn-ghost h-34"
 									title={o.deliveryNoteNumber ? t("deliveryIssued", { number: o.deliveryNoteNumber }) : t("deliveryCreate")}>
 									<TbTruckDelivery size={15} /> {o.deliveryNoteNumber || t("deliveryNote")}
@@ -243,7 +253,7 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 								{/* Пакувальний лист (ВЭД): свои колонки УКТ ЗЕД/вес/страна и свой номер при первой выписке */}
 								<button
 									type="button"
-									onClick={() => void downloadPackingList(o.id, o.packingNumber ?? "", locale)}
+									onClick={() => openPackingList(o.id, o.packingNumber ?? "")}
 									className="fs-btn fs-btn-ghost h-34"
 									title={o.packingNumber ? t("packingIssued", { number: o.packingNumber }) : t("packingListHint")}>
 									<TbTruckDelivery size={15} /> {o.packingNumber || t("packingList")}
@@ -255,7 +265,7 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 								{/* Акт виконаних робіт (Украина): номер присваивается при первой выписке */}
 								<button
 									type="button"
-									onClick={() => downloadActPdf(o.id, o.actNumber ?? "")}
+									onClick={() => openActPdf(o.id, o.actNumber ?? "")}
 									className="fs-btn fs-btn-ghost h-34"
 									title={o.actNumber ? t("actIssued", { number: o.actNumber }) : t("actCreate")}>
 									<TbFileText size={15} /> {o.actNumber || t("act")}

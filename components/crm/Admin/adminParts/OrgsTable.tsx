@@ -31,8 +31,8 @@ export default function OrgsTable({ orgs, query, onQuery, onPatch, onFeatures, o
 					<tbody>
 						{orgs.map((o) => (
 							<tr key={o.id} className={o.blocked ? "bg-[rgba(235,87,87,0.06)]" : ""}>
-								<td className="px-12 py-10 text-13 font-medium text-[#f1f4ee]">{o.name}{o.blocked && <span className="ml-6 text-12 text-danger">({t("blockedTag")})</span>}</td>
-								<td className="px-12 py-10 text-13 text-[#8c948b]"><span className="block">{o.ownerName}</span><span className="text-12 text-[#9AA396]">{o.ownerEmail}</span></td>
+								<td className="px-12 py-10 text-13 font-medium text-[#f1f4ee] fs-wrap">{o.name}{o.blocked && <span className="ml-6 text-12 text-danger">({t("blockedTag")})</span>}</td>
+								<td className="px-12 py-10 text-13 text-[#8c948b] fs-wrap"><span className="block">{o.ownerName}</span><span className="text-12 text-[#9AA396]">{o.ownerEmail}</span></td>
 								<td className="px-12 py-10"><span className="fs-chip h-24 border-[rgba(198,255,77,0.30)] px-8 text-10 text-[#c6ff4d]">{o.plan}</span></td>
 								<td className="px-12 py-10 text-13 text-[#8c948b]">
 									{o.status ? `${o.stripePlan} · ${o.status}${o.interval ? ` · ${o.interval === "year" ? t("year") : t("month")}` : ""}` : "—"}

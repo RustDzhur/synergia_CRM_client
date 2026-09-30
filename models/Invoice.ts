@@ -85,6 +85,7 @@ const InvoiceSchema = new Schema(
         // Чек возврата (при кредит-ноте): ссылается на чек продажи — без него возврат не сойдётся в кассе
         fiscalReturnId: { type: String, default: "" },
         fiscalReturnCode: { type: String, default: "" },
+        fiscalReturnUrl: { type: String, default: "" }, // ссылка на чек возврата (Checkbox tax_url)
         fiscalReturnAt: { type: Date },
         fiscalReturnError: { type: String, default: "" },
         // Ссылка на оплату (эквайринг фирмы): способ, адрес и платёж у провайдера. paidVia — чем закрыли счёт.

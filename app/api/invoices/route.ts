@@ -9,7 +9,7 @@ import { cleanItems } from "@/lib/finance/totals";
 import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
-import { ownedContact, ownedCompany, ownedDeal, dealForCustomer } from "@/lib/deals";
+import { ownedContact, ownedCompany, ownedDeal, contactForCustomer, dealForCustomer } from "@/lib/deals";
 import Invoice from "@/models/Invoice";
 import User from "@/models/User";
 import { numberPrefix } from "@/lib/finance/documents/store";
@@ -51,11 +51,14 @@ export async function POST(req: Request) {
     const currency = typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id);
     // Снимок курса: для гривневого счёта он не нужен, для валютного — берём у НБУ с наценкой фирмы
     const rate = currency === "UAH" ? { base: 0, margin: 0, value: 0, at: "" } : await firmRate(user.id, currency).then((r) => (r ? { base: r.base, margin: r.margin, value: r.rate, at: r.at } : { base: 0, margin: 0, value: 0, at: "" })).catch(() => ({ base: 0, margin: 0, value: 0, at: "" }));
+    // Клиент текстом без карточки: имя точь-в-точь как у контакта — привязываем; нового клиента —
+    // заводим карточку (владелец: «документы должны вестись вместе с карточкой клиента по CRM»)
+    const linkedContact = contact || (await contactForCustomer(user.id, { contact: b.contact, company: b.company, customerName, email: b.customerEmail }));
     const invoice = await Invoice.create({
         org: user.id, number, kind: "invoice", customerName, items,
         customerAddress: typeof b.customerAddress === "string" ? b.customerAddress.trim().slice(0, 500) : "",
         customerTaxId: typeof b.customerTaxId === "string" ? b.customerTaxId.trim().slice(0, 60) : "",
-        contact: contact || undefined, company: company || undefined, deal: (deal || (await dealForCustomer(user.id, contact, company, customerName))) || undefined,
+        contact: linkedContact || undefined, company: company || undefined, deal: (deal || (await dealForCustomer(user.id, linkedContact, company, customerName))) || undefined,
         currency,
         // Курс НБУ фиксируется на дате документа: валютный счёт печатает сумму в ₴ по этому снимку,
         // а не по курсу того дня, когда документ открыли заново (ТЗ §8.2)

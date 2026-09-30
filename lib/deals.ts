@@ -40,3 +40,27 @@ export async function dealForCustomer(owner: string, contact?: unknown, company?
     if (!or.length) return null;
     return Deal.findOne({ owner, wonAt: null, $or: or }).sort({ updatedAt: -1 }).select("_id").catch(() => null);
 }
+
+// Контакт клиента для финансового документа: выбранный из подсказки → найденный по точному имени →
+// СОЗДАННЫЙ. Правило владельца: «карточка клиента ведётся по CRM» — документ, оформленный на новое
+// имя, заводит карточку сам, и счёт/заказ сразу виден в ней (как в карточке сделки). Без этого
+// клиент жил бы текстом в счёте, а в CRM его бы не было. Фирму не трогаем: если выбрана Company,
+// контакт не нужен — документ привязан к фирме.
+export async function contactForCustomer(owner: string, input: { contact?: unknown; company?: unknown; customerName?: unknown; email?: unknown }) {
+    if (input.contact && isValidObjectId(String(input.contact))) {
+        const found = await Contact.findOne({ _id: input.contact, owner }).select("_id");
+        if (found) return found._id;
+    }
+    const name = typeof input.customerName === "string" ? input.customerName.trim() : "";
+    if (!name) return null;
+    // Уже выбрана фирма CRM — документ и так виден в её карточке, отдельный контакт не создаём
+    if (input.company && isValidObjectId(String(input.company))) return null;
+    const exact = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+    const existing = await Contact.findOne({ owner, name: exact }).select("_id").catch(() => null);
+    if (existing) return existing._id;
+    // «Роздрібний покупець» и подобные заглушки карточек не заслуживают — это не клиент
+    if (/^(роздрібний покупець|рozdr|barverkauf|retail customer|laufkunde)/i.test(name)) return null;
+    const email = typeof input.email === "string" && input.email.includes("@") ? input.email.trim().slice(0, 200) : "";
+    const created = await Contact.create({ owner, name: name.slice(0, 200), ...(email ? { email } : {}), source: "finance" }).catch(() => null);
+    return created ? created._id : null;
+}

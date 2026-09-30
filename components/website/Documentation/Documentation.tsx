@@ -20,7 +20,7 @@ const FRAME: Record<string, FrameScreen> = {
 // поэтому менять его нельзя). Таблица связывает такие пары, иначе раздел в списке двоится.
 const DOC_SECTION_OF_MENU: Record<string, string> = {
 	tasks_projects: "tasks",           // «Aufgaben und Projekte» в меню — раздел «Aufgaben und Kalender»
-	inventory_management: "finance",   // пункт меню называется «Finanzen», раздел — «Finanzen: Angebote…»
+	inventory_management: "finance",   // пункт меню — «Buchhaltung» (бывш. Finanzen), раздел — «Buchhaltung: Angebote…»
 	upgrade_plan: "billing",           // «Aktualisieren Sie Ihren Plan» — раздел «Tarife und Abrechnung»
 };
 
