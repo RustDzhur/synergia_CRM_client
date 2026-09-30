@@ -13,7 +13,7 @@ const DOC_FONT = Buffer.from(notoSansUrl.slice(notoSansUrl.indexOf(",") + 1), "b
 
 // Какие бумаги рисует этот файл. Счёт и кредит-нота жили здесь и раньше, предложение/заказ/договор добавлены,
 // чтобы каждый финансовый документ можно было и скачать, и отправить клиенту одним и тем же рендером.
-export type DocKind = "invoice" | "credit_note" | "quote" | "order" | "contract" | "delivery_note";
+export type DocKind = "invoice" | "credit_note" | "quote" | "order" | "contract" | "delivery_note" | "act";
 
 // Небольшой словарь подписей PDF на трёх языках интерфейса — сам PDFKit не знает про next-intl (это не React-рендер),
 // поэтому подписи держим здесь же, минимальным набором, без обращения к messages/*.json.
@@ -32,6 +32,8 @@ const LABELS: Record<string, Record<string, string>> = {
         smallBusiness: "No VAT is charged pursuant to the small business regulation (§19 UStG or equivalent).",
         paymentTerms: "Payment terms", days: "days", iban: "IBAN", bic: "BIC", notes: "Notes",
         seller: "Seller", payByQr: "Pay by QR code", qrHint: "Scan with your banking app",
+        act: "Certificate of services", actDate: "Service date", actFor: "for invoice",
+        signedBy: "Contractor", signedByCustomer: "Customer",
         continued: "continued",
     },
     de: {
@@ -48,6 +50,8 @@ const LABELS: Record<string, Record<string, string>> = {
         smallBusiness: "Gemäß §19 UStG (Kleinunternehmerregelung) wird keine Umsatzsteuer berechnet.",
         paymentTerms: "Zahlungsziel", days: "Tage", iban: "IBAN", bic: "BIC", notes: "Anmerkungen",
         seller: "Verkäufer", payByQr: "Zahlung per QR-Code", qrHint: "Mit der Banking-App scannen",
+        act: "Leistungsnachweis", actDate: "Leistungsdatum", actFor: "zur Rechnung",
+        signedBy: "Auftragnehmer", signedByCustomer: "Auftraggeber",
         continued: "Fortsetzung",
     },
     ua: {
@@ -64,6 +68,8 @@ const LABELS: Record<string, Record<string, string>> = {
         smallBusiness: "ПДВ не нараховується згідно з режимом для малого підприємця (§19 UStG або аналог).",
         paymentTerms: "Термін оплати", days: "днів", iban: "IBAN", bic: "BIC", notes: "Примітки",
         seller: "Постачальник", payByQr: "Оплата за QR-кодом", qrHint: "Скануйте у банківському застосунку",
+        act: "Акт виконаних робіт", actDate: "Дата складання", actFor: "до рахунку",
+        signedBy: "Виконавець", signedByCustomer: "Замовник",
         continued: "продовження",
     },
 };
@@ -159,6 +165,11 @@ const UA_LABELS: Record<string, string> = {
     payByQr: "Оплата за QR-кодом",
     qrHint: "Скануйте у банківському застосунку",
     continued: "продовження",
+    act: "Акт виконаних робіт",
+    actDate: "Дата складання",
+    actFor: "до рахунку",
+    signedBy: "Виконавець",
+    signedByCustomer: "Замовник",
 };
 
 // Рендерит PDF финансового документа в буфер — вызывается из app/api/*/[id]/pdf/route.ts (скачивание и печать)

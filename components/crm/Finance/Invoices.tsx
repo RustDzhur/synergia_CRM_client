@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbCopy, TbDownload, TbPlus, TbReceipt } from "react-icons/tb";
 import { LineItem, useFinanceStore } from "@/store/useFinanceStore";
+import { apiCall } from "@/store/crmApi";
 import { defaultRateFor } from "@/lib/finance/tax";
 import { STATUS_COLORS } from "@/utils/statusColors";
 import Modal from "../shared/Modal";
@@ -88,6 +89,16 @@ export default function Invoices({ openId, prefill }: { openId?: string | null; 
 		await send(id, to);
 	}
 	async function pay(id: string) { setBusy(id); const err = await payInvoice(id); setBusy(null); if (err) toast.error(err); else toast.success(t("markedPaid")); }
+	// Фискальный чек ПРРО: при включённой автофискализации он пробивается сам при оплате, кнопка —
+	// для ручного случая и для повтора после неудачи (ошибка хранится в самом счёте)
+	async function fiscal(id: string) {
+		setBusy(id);
+		const res = await apiCall<{ fiscal?: { code?: string }; message?: string }>(`/api/invoices/${id}/fiscal`, "POST");
+		setBusy(null);
+		if (res.ok) return void (toast.success(t("fiscalIssued")), loadInvoices());
+		toast.error(t("fiscalError", { message: res.message }));
+		if (res.status === 502) loadInvoices();
+	}
 	async function duplicate(id: string) { setBusy(id); const err = await duplicateInvoice(id); setBusy(null); if (err) toast.error(err); else toast.success(t("invoiceDuplicated")); }
 	async function downloadPdf(id: string, number: string) {
 		if (!(await downloadDocumentPdf("invoices", id, number, locale))) toast.error(t("pdfFailed"));
@@ -153,6 +164,18 @@ export default function Invoices({ openId, prefill }: { openId?: string | null; 
 								{inv.kind === "invoice" && (
 									<button type="button" disabled={busy === inv.id} onClick={() => duplicate(inv.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]">
 										<TbCopy size={15} /> {t("duplicate")}
+									</button>
+								)}
+								{/* ПРРО: чек видно в строке счёта — номер кликабелен, ошибка показана рядом */}
+								{inv.fiscal?.code ? (
+									inv.fiscal.url ? (
+										<a href={inv.fiscal.url} target="_blank" rel="noopener noreferrer" className="fs-btn fs-btn-ghost h-34" title={t("fiscalIssued")}>{t("fiscalChip", { code: inv.fiscal.code })}</a>
+									) : (
+										<span className="fs-chip h-24 px-10 text-10" title={t("fiscalIssued")}>{t("fiscalChip", { code: inv.fiscal.code })}</span>
+									)
+								) : (
+									<button type="button" disabled={busy === inv.id} onClick={() => void fiscal(inv.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]" title={inv.fiscal?.error || undefined}>
+										<TbReceipt size={15} /> {t("fiscalIssue")}
 									</button>
 								)}
 								<button type="button" onClick={() => downloadPdf(inv.id, inv.number)} className="fs-btn fs-btn-ghost h-34">

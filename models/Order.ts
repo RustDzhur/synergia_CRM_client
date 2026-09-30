@@ -35,6 +35,9 @@ const OrderSchema = new Schema(
         // печать давала тот же документ, и дата фактической поставки.
         deliveryNoteNumber: { type: String, default: "" },
         deliveryDate: { type: String, default: "" },
+        // Акт виконаних робіт (Украина): свой номер и дата, как у накладной — документ выписывается один раз
+        actNumber: { type: String, default: "" },
+        actDate: { type: String, default: "" },
         invoice: { type: Schema.Types.ObjectId, ref: "Invoice" }, // счёт, выставленный по этому заказу
 
         // Доставка «Новою Поштою» (Украина): номер ТТН называют клиенту, по нему же виден статус посылки.

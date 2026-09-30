@@ -41,6 +41,11 @@ export function dateLines(d: PdfDocumentData, L: L): string[] {
     else if (d.kind === "invoice" || d.kind === "credit_note") { add(L.issueDate, d.issueDate); add(L.dueDate, d.dueDate); }
     else if (d.kind === "quote") { add(L.date, d.issueDate); add(L.validUntil, d.validUntil); }
     else if (d.kind === "order") { add(L.orderDate, d.issueDate); }
+    else if (d.kind === "act") {
+        // В акте важны дата составления и счёт, к которому он относится
+        add(L.actDate, d.issueDate);
+        add(L.actFor, d.orderNumber);
+    }
     else { add(L.startDate, d.startDate); add(L.endDate, d.endDate); }
     // Период оказания услуг — обязательное поле счёта в Германии (§14 Abs. 4 Nr. 6 UStG):
     // без него счёт формально неполный. Печатаем и в счёте, и в кредит-ноте, и в подтверждении заказа.
@@ -429,6 +434,25 @@ function totalsBlock(doc: Doc, d: PdfDocumentData, L: L, totals: ReturnType<type
     return ty;
 }
 
+// Подписи сторон в акте: две линии — исполнитель и заказчик. Если до низа страницы не хватает
+// места, подписи уходят на новую — обрезать их нельзя.
+function actSignatures(doc: Doc, s: PdfSettings, t: TemplateDef, L: L) {
+    const x = t.margin;
+    const w = PAGE_W - t.margin * 2;
+    const half = Math.min(200, w / 2 - 20);
+    let y = doc.y + 22;
+    if (y > PAGE_H - t.margin - 60) {
+        doc.addPage();
+        y = t.margin;
+    }
+    rule(doc, x, y, x + half, "#999999");
+    rule(doc, x + w - half, y, x + w, "#999999");
+    const name = s.managingDirector ? `${L.signedBy}: ${s.managingDirector}` : L.signedBy;
+    text(doc, name, x, y + 6, { size: 9, color: "#666666", width: half });
+    text(doc, L.signedByCustomer, x + w - half, y + 6, { size: 9, color: "#666666", width: half });
+    doc.y = y + 26;
+}
+
 // --- шаблоны -------------------------------------------------------------------------------------------
 
 type Layout = (doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, t: TemplateDef, totals: ReturnType<typeof computeTotals>, qr: { payload: string; caption: string } | null) => void;
@@ -790,5 +814,7 @@ export function renderLayout(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L)
     const dueTotal = totals.gross + (Number(d.dunningFee) || 0);
     const qr = (s.paymentQr ?? true) ? qrPayloadFor(d, s, L, dueTotal) : null;
     (LAYOUTS[t.id] ?? classic)(doc, d, s, L, t, totals, qr);
+    // Акт подписывают обе стороны — без подписей это не акт, а обычный счёт
+    if (d.kind === "act") actSignatures(doc, s, t, L);
     footerBrand(doc, s, t);
 }

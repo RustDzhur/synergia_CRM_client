@@ -22,6 +22,7 @@ export interface Order {
 	items: LineItem[]; currency: string; notes: string; responsible: string; invoice: string; totals: Totals;
 	// Накладная (Lieferschein): номер присваивается при первой выписке, дата — фактической поставки
 	deliveryNoteNumber?: string; deliveryDate?: string;
+	actNumber?: string; actDate?: string;
 	// Доставка «Новою Поштою» (Украина): номер ТТН и статус посылки — null, если ТТН ещё не создана
 	waybill?: OrderWaybill | null;
 	template: string; createdAt: string; updatedAt: string;
@@ -38,6 +39,8 @@ export interface Invoice {
 	dunningLevel?: number; dunningFee?: number; dunningLog?: { level: number; sentAt: string; fee: number; dueDate: string; method: string }[];
 	reminderCount: number; lastReminderAt: string; recurringSource: string;
 	template: string; totals: Totals; createdAt: string; updatedAt: string;
+	// Фискальный чек ПРРО (Украина): номер, ссылка для клиента и текст ошибки, если чек не пробился
+	fiscal?: { code: string; url: string; at: string; error: string } | null;
 }
 export interface RecurringInvoice {
 	id: string; active: boolean; contact: string; company: string;
@@ -71,7 +74,7 @@ export interface FinanceSettings {
 	vatId: string; registerNumber: string; managingDirector: string; phone: string; email: string; website: string;
 	logo: string; footerText: string;
 	iban: string; bic: string; paymentTermsDays: number; invoicePrefix: string; quotePrefix: string;
-	creditNotePrefix: string; reminderIntervalDays: number;
+	creditNotePrefix: string; deliveryNotePrefix: string; actPrefix: string; reminderIntervalDays: number;
 	// Оформление по умолчанию для всех документов и код оплаты на счетах; у отдельного документа шаблон свой
 	template: string; paymentQr: boolean;
 	// Украинская налоговая модель — показывается при стране UA (см. models/FinanceSettings.ts)

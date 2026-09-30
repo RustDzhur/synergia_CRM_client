@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import {
 	TbDownload,
+	TbFileText,
 	TbPlus,
 	TbReceipt,
 	TbTruckDelivery,
@@ -15,7 +16,7 @@ import { STATUS_COLORS } from "@/utils/statusColors";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
-import { downloadDeliveryNote, downloadDocumentPdf } from "./download";
+import { downloadAct, downloadDeliveryNote, downloadDocumentPdf } from "./download";
 import WaybillDialog from "./ordersParts/WaybillDialog";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
@@ -75,6 +76,12 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 
 	// Накладную можно выписать по любому неотменённому заказу: она подтверждает передачу товара,
 	// а не оплату, поэтому доступна и до счёта.
+	// Акт виконаних робіт — украинский документ, но кнопку показываем всем: фирма сама решает,
+	// нужен ли он ей (в отличие от ТТН, которая без подключённой доставки смысла не имеет)
+	async function downloadActPdf(id: string, actNumber: string) {
+		if (!(await downloadAct(id, actNumber, locale))) toast.error(t("pdfFailed"));
+	}
+
 	async function downloadDelivery(id: string, noteNumber: string) {
 		if (!(await downloadDeliveryNote(id, noteNumber, locale))) toast.error(t("pdfFailed"));
 	}
@@ -143,6 +150,14 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 									className="fs-btn fs-btn-ghost h-34"
 									title={o.deliveryNoteNumber ? t("deliveryIssued", { number: o.deliveryNoteNumber }) : t("deliveryCreate")}>
 									<TbTruckDelivery size={15} /> {o.deliveryNoteNumber || t("deliveryNote")}
+								</button>
+								{/* Акт виконаних робіт (Украина): номер присваивается при первой выписке */}
+								<button
+									type="button"
+									onClick={() => downloadActPdf(o.id, o.actNumber ?? "")}
+									className="fs-btn fs-btn-ghost h-34"
+									title={o.actNumber ? t("actIssued", { number: o.actNumber }) : t("actCreate")}>
+									<TbFileText size={15} /> {o.actNumber || t("act")}
 								</button>
 								{/* Доставка «Новою Поштою»: номер ТТН и статус посылки — прямо в строке заказа */}
 								{delivery?.connected && (o.waybill?.number ? (

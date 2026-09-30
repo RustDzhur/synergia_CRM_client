@@ -38,6 +38,7 @@ const LABEL: Record<Needed, string> = {
 	webchat: "intOnlineChat",
 	// Доставка в кампаниях не участвует, но подпись нужна: тип интеграции общий (Settings → Integration)
 	novaposhta: "intNovaPoshta",
+	checkbox: "intCheckbox",
 };
 
 interface Props {

@@ -157,6 +157,27 @@ export async function deliveryNotePdfBuffer(org: string, order: any, locale: str
     );
 }
 
+// Акт виконаних робіт: как счёт по составу (позиции и суммы), но со своими подписями сторон
+// и отдельной нумерацией — в украинском учёте это самостоятельный документ
+export async function actPdfBuffer(org: string, order: any, locale: string, template?: string): Promise<Buffer> {
+    const settings = await financeSettings(org);
+    return renderDocumentPdf(
+        {
+            kind: "act",
+            number: order.actNumber || order.number,
+            orderNumber: order.number,
+            customer: await customerParty(org, order),
+            items: toPdfItems(order.items),
+            currency: order.currency,
+            issueDate: order.actDate || new Date().toISOString().slice(0, 10),
+            notes: order.notes,
+            template: template ?? pdfTemplate(order.template),
+        },
+        toPdfSettings(settings),
+        pdfLocale(locale)
+    );
+}
+
 export async function contractPdfBuffer(org: string, c: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     return renderDocumentPdf(

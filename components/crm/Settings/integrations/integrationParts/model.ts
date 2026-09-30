@@ -43,6 +43,15 @@ export const FIELDS: Record<Real, FieldDef[]> = {
 		{ key: "senderName", label: "intfNpSenderName", optional: true, placeholder: "ФОП Шевченко Т. Г." },
 		{ key: "senderPhone", label: "intfNpSenderPhone", optional: true, placeholder: "+380…" },
 	],
+	// Checkbox — ПРРО: ключ кассы и вход кассира берутся в кабинете Checkbox; автофискализация
+	// пробивает чек сама, когда счёт оплачен (lib/finance/fiscal.ts)
+	checkbox: [
+		{ key: "licenseKey", label: "intfCbKey", secret: true },
+		{ key: "login", label: "intfCbLogin", placeholder: "cashier@example.com" },
+		{ key: "password", label: "intfCbPassword", secret: true },
+		{ key: "cashierName", label: "intfCbCashier", optional: true, placeholder: "Шевченко Т. Г." },
+		{ key: "autoFiscal", label: "intfCbAuto", type: "bool" },
+	],
 	telegram: [{ key: "botToken", label: "intfBotToken", secret: true, placeholder: "123456:ABC…" }],
 	viber: [{ key: "authToken", label: "intfViberToken", secret: true }],
 	messenger: [

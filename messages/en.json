@@ -937,7 +937,13 @@
         "intfNpSenderCity": "Sender city",
         "intfNpSenderWarehouse": "Sender branch",
         "intfNpSenderName": "Sender name",
-        "intfNpSenderPhone": "Sender phone"
+        "intfNpSenderPhone": "Sender phone",
+        "intCheckbox": "Checkbox (ПРРО)",
+        "intfCbKey": "Cash register key (X-License-Key)",
+        "intfCbLogin": "Cashier login",
+        "intfCbPassword": "Cashier password",
+        "intfCbCashier": "Cashier name printed on the receipt",
+        "intfCbAuto": "Issue the receipt automatically when the invoice is paid"
     },
     "upgrade": {
         "free": "Free",
@@ -1969,7 +1975,14 @@
         "npSearchCity": "Search city…",
         "npNoCities": "Nothing found — check the spelling",
         "npPickCity": "Pick a city first",
-        "npCodHint": "Enter the cash-on-delivery amount in ₴ — it is collected from the recipient. 0 means no COD."
+        "npCodHint": "Enter the cash-on-delivery amount in ₴ — it is collected from the recipient. 0 means no COD.",
+        "fiscalChip": "Receipt {code}",
+        "fiscalIssue": "Issue receipt",
+        "fiscalIssued": "Receipt issued",
+        "fiscalError": "Receipt not issued: {message}",
+        "act": "Certificate of services",
+        "actIssued": "Certificate {number} issued",
+        "actCreate": "Issue a certificate of services for this order"
     },
     "ads": {
         "needsUpgrade": "Ad performance needs the Professional plan.",

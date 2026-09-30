@@ -937,7 +937,13 @@
         "intfNpSenderCity": "Absenderstadt",
         "intfNpSenderWarehouse": "Absenderfiliale",
         "intfNpSenderName": "Absendername",
-        "intfNpSenderPhone": "Absendertelefon"
+        "intfNpSenderPhone": "Absendertelefon",
+        "intCheckbox": "Checkbox (ПРРО)",
+        "intfCbKey": "Kassenschlüssel (X-License-Key)",
+        "intfCbLogin": "Kassierer-Login",
+        "intfCbPassword": "Kassierer-Passwort",
+        "intfCbCashier": "Name des Kassierers auf dem Beleg",
+        "intfCbAuto": "Beleg automatisch ausstellen, wenn die Rechnung bezahlt ist"
     },
     "upgrade": {
         "free": "Kostenlos",
@@ -1969,7 +1975,14 @@
         "npSearchCity": "Stadt suchen…",
         "npNoCities": "Nichts gefunden — prüfen Sie die Schreibweise",
         "npPickCity": "Wählen Sie zuerst eine Stadt",
-        "npCodHint": "Die Nachnahme geben Sie in ₴ an — dieser Betrag wird beim Empfänger eingezogen. 0 bedeutet: kein Nachnahme."
+        "npCodHint": "Die Nachnahme geben Sie in ₴ an — dieser Betrag wird beim Empfänger eingezogen. 0 bedeutet: kein Nachnahme.",
+        "fiscalChip": "Beleg {code}",
+        "fiscalIssue": "Beleg ausstellen",
+        "fiscalIssued": "Beleg ausgestellt",
+        "fiscalError": "Beleg nicht ausgestellt: {message}",
+        "act": "Leistungsnachweis",
+        "actIssued": "Leistungsnachweis {number} ausgestellt",
+        "actCreate": "Leistungsnachweis für diesen Auftrag ausstellen"
     },
     "ads": {
         "needsUpgrade": "Werbeleistung erfordert den Tarif Professional.",

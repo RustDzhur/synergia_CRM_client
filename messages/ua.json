@@ -937,7 +937,13 @@
         "intfNpSenderCity": "Місто відправника",
         "intfNpSenderWarehouse": "Відділення відправника",
         "intfNpSenderName": "Ім’я відправника",
-        "intfNpSenderPhone": "Телефон відправника"
+        "intfNpSenderPhone": "Телефон відправника",
+        "intCheckbox": "Checkbox (ПРРО)",
+        "intfCbKey": "Ключ каси (X-License-Key)",
+        "intfCbLogin": "Логін касира",
+        "intfCbPassword": "Пароль касира",
+        "intfCbCashier": "Ім’я касира в чеку",
+        "intfCbAuto": "Пробивати чек автоматично, коли рахунок оплачено"
     },
     "upgrade": {
         "free": "Безкоштовний",
@@ -1969,7 +1975,14 @@
         "npSearchCity": "Пошук міста…",
         "npNoCities": "Нічого не знайдено — перевірте написання",
         "npPickCity": "Спершу виберіть місто",
-        "npCodHint": "Накладений платіж вказується в ₴ — цю суму стягнуть з отримувача. 0 означає без накладеного платежу."
+        "npCodHint": "Накладений платіж вказується в ₴ — цю суму стягнуть з отримувача. 0 означає без накладеного платежу.",
+        "fiscalChip": "Чек {code}",
+        "fiscalIssue": "Пробити чек",
+        "fiscalIssued": "Чек пробито",
+        "fiscalError": "Чек не пробито: {message}",
+        "act": "Акт виконаних робіт",
+        "actIssued": "Акт {number} виписано",
+        "actCreate": "Виписати акт виконаних робіт за цим замовленням"
     },
     "ads": {
         "needsUpgrade": "Ефективність реклами доступна від тарифу Professional.",

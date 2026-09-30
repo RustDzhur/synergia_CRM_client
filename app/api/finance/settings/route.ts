@@ -34,6 +34,7 @@ function toDTO(s: any) {
         quotePrefix: s.quotePrefix ?? "AN",
         creditNotePrefix: s.creditNotePrefix ?? "GS",
         deliveryNotePrefix: s.deliveryNotePrefix ?? "LS",
+        actPrefix: s.actPrefix ?? "АКТ",
         reminderIntervalDays: s.reminderIntervalDays ?? 7,
         dunningFees: Array.isArray(s.dunningFees) && s.dunningFees.length ? s.dunningFees.map((n: unknown) => Number(n) || 0) : [0, 0, 2.5, 5, 10],
         dunningInterestRate: Number(s.dunningInterestRate) || 0,
@@ -72,7 +73,7 @@ export async function PATCH(req: Request) {
     const currency = str(b.currency, 6); if (currency !== undefined) set.currency = currency.toUpperCase();
     if (typeof b.smallBusiness === "boolean") set.smallBusiness = b.smallBusiness;
     // footerText — длинный текст, остальные реквизиты короткие
-    for (const k of ["legalName", "address", "taxId", "vatId", "phone", "email", "website", "registerNumber", "managingDirector", "footerText", "iban", "bic", "invoicePrefix", "quotePrefix", "creditNotePrefix", "deliveryNotePrefix"] as const) {
+    for (const k of ["legalName", "address", "taxId", "vatId", "phone", "email", "website", "registerNumber", "managingDirector", "footerText", "iban", "bic", "invoicePrefix", "quotePrefix", "creditNotePrefix", "deliveryNotePrefix", "actPrefix"] as const) {
         const v = str(b[k], k === "address" ? 500 : k === "footerText" ? 1200 : 100);
         if (v !== undefined) set[k] = v;
     }

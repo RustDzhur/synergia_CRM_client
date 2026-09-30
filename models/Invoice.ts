@@ -67,7 +67,14 @@ const InvoiceSchema = new Schema(
             type: [new Schema({ level: Number, sentAt: Date, fee: Number, dueDate: String, method: String }, { _id: false })],
             default: [],
         },
-        recurringSource: { type: Schema.Types.ObjectId, ref: "RecurringInvoice" }, // счёт создан автоматически по шаблону
+        recurringSource: { type: Schema.Types.ObjectId, ref: "RecurringInvoice" },
+        // Фискальный чек ПРРО (Украина): номер чека у Checkbox, фискальный номер и ссылка для клиента.
+        // Пробивается автоматически при полной оплате (lib/finance/fiscal.ts) или вручную из счёта.
+        fiscalId: { type: String, default: "" },
+        fiscalCode: { type: String, default: "" },
+        fiscalUrl: { type: String, default: "" },
+        fiscalAt: { type: Date },
+        fiscalError: { type: String, default: "" }, // счёт создан автоматически по шаблону
 
         createdByName: { type: String, default: "" },
     },

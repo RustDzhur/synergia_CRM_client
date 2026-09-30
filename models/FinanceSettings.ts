@@ -32,6 +32,7 @@ const FinanceSettingsSchema = new Schema(
         quotePrefix: { type: String, default: "AN" }, // Angebot (предложение)
         creditNotePrefix: { type: String, default: "GS" }, // Gutschrift (кредит-нота/сторно) — своя последовательность номеров
         deliveryNotePrefix: { type: String, default: "LS" }, // Lieferschein (накладная)
+        actPrefix: { type: String, default: "АКТ" }, // акт виконаних робіт (Украина) — своя последовательность
         reminderIntervalDays: { type: Number, default: 7 }, // раз в сколько дней слать напоминание по просроченному счёту
         // Манаведение: сбор за каждую ступень напоминания (0 — не брать) и ставка процентов за просрочку.
         // По умолчанию сборы нулевые: брать их или нет — решение фирмы, а не наше.

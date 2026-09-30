@@ -8,6 +8,7 @@ import { computeTotals } from "./totals";
 
 export const toOrderDTO = (o: any) => ({
     deliveryNoteNumber: o.deliveryNoteNumber ?? "", deliveryDate: o.deliveryDate ?? "",
+    actNumber: o.actNumber ?? "", actDate: o.actDate ?? "",
     // Доставка «Новою Поштою»: номер ТТН и последний статус посылки (см. app/api/orders/[id]/waybill)
     waybill: o.waybill
         ? {
@@ -41,6 +42,10 @@ export const toInvoiceDTO = (inv: any) => ({
     dunningLevel: inv.dunningLevel ?? 0, dunningFee: inv.dunningFee ?? 0,
     dunningLog: (inv.dunningLog ?? []).map((e: any) => ({ level: e.level, sentAt: e.sentAt ? e.sentAt.toISOString() : "", fee: e.fee ?? 0, dueDate: e.dueDate ?? "", method: e.method ?? "" })),
     recurringSource: inv.recurringSource ? String(inv.recurringSource) : "",
+    // Фискальный чек ПРРО: фискальный номер и ссылка для клиента (см. lib/finance/fiscal.ts)
+    fiscal: inv.fiscalCode || inv.fiscalId || inv.fiscalError
+        ? { code: inv.fiscalCode ?? "", url: inv.fiscalUrl ?? "", at: inv.fiscalAt ? new Date(inv.fiscalAt).toISOString() : "", error: inv.fiscalError ?? "" }
+        : null,
     totals: computeTotals(inv.items ?? []),
     createdAt: inv.createdAt.toISOString(), updatedAt: inv.updatedAt.toISOString(),
 });

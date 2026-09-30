@@ -8,6 +8,7 @@ import { applyPayment, statusAfterPayment } from "@/lib/finance/payments";
 import { computeTotals } from "@/lib/finance/totals";
 import Invoice from "@/models/Invoice";
 import { toInvoiceDTO } from "@/lib/finance/dto";
+import { fiscalConfig, fiscalizeInvoice, findFiscal } from "@/lib/finance/fiscal";
 
 // POST /api/invoices/:id/pay — { amount? }: отметить оплату (без amount — вся сумма, с amount — частично).
 // Оплата фиксируется вручную: деньги приходят переводом или наличными, а в CRM их вносят человек
@@ -32,6 +33,25 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     // на аванс. Частичная оплата видна в самом счёте и в журнале действий.
     if (full) {
         await emit(user.id, { type: "invoice_paid", data: { id: String(inv._id), number: inv.number, customerName: inv.customerName, amount: String(amount), dealId: inv.deal ? String(inv.deal) : "" } });
+    }
+    // ПРРО (Украина): при полной оплате чек пробивается сам — если Checkbox подключён и включена
+    // автофискализация. Ошибку показываем в счёте, но оплату не отменяем: деньги уже пришли.
+    if (full && !inv.fiscalCode) {
+        try {
+            const fiscalDoc = await findFiscal(user.id);
+            if (fiscalDoc && fiscalConfig(fiscalDoc).auto) {
+                const receipt = await fiscalizeInvoice(user.id, inv, gross);
+                inv.fiscalId = receipt.receiptId;
+                inv.fiscalCode = receipt.fiscalCode;
+                inv.fiscalUrl = receipt.url;
+                inv.fiscalAt = new Date();
+                inv.fiscalError = "";
+                await inv.save();
+            }
+        } catch (e) {
+            inv.fiscalError = e instanceof Error ? e.message.slice(0, 300) : "Чек не вдалося пробити";
+            await inv.save();
+        }
     }
     await logAudit({ org: user.id, userId: user.userId, action: full ? "invoice.paid" : "invoice.partially_paid", entityType: "invoice", entityId: String(inv._id), summary: `Invoice ${inv.number}: ${amount} ${inv.currency} booked — ${paid} of ${gross} paid`, meta: { amount, paid, gross, currency: inv.currency } });
     return NextResponse.json(toInvoiceDTO(inv));
