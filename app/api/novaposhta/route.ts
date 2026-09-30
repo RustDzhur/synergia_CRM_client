@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
-import { ProviderError } from "@/lib/http";
-import { checkApiKey } from "@/lib/novaposhta";
 import { findDelivery, saveDelivery, senderOf } from "@/lib/finance/delivery";
 import { secretsOf } from "@/lib/integrations";
+import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +14,7 @@ export async function GET(req: Request) {
     if (!user) return unauthorized(req);
     try {
         await connectDB();
+        await requireMarket(user.id, "UA");
         const doc = await findDelivery(user.id);
         if (!doc) return NextResponse.json({ connected: false, hasKey: false, sender: senderOf({ config: {} }) });
         return NextResponse.json({ connected: true, hasKey: !!secretsOf<{ apiKey?: string }>(doc).apiKey, sender: senderOf(doc) });
@@ -35,10 +35,8 @@ export async function POST(req: Request) {
     if (!senderCity) return badRequest("Вкажіть місто відправника");
     try {
         await connectDB();
-        // Пустой ключ — значит оставляем прежний: проверяем только новый
-        if (apiKey) await checkApiKey(apiKey).catch((e) => {
-            throw new ProviderError(e instanceof ProviderError ? e.message : "Нова Пошта відхилила ключ");
-        });
+        await requireMarket(user.id, "UA");
+        // Ключ проверяет saveDelivery до записи (и новый, и прежний при правке отправителя)
         const doc = await saveDelivery(user.id, {
             apiKey,
             senderCity,
@@ -58,6 +56,7 @@ export async function DELETE(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     await connectDB();
+    await requireMarket(user.id, "UA");
     const doc = await findDelivery(user.id);
     if (doc) {
         doc.status = "error";

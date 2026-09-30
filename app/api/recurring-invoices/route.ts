@@ -6,6 +6,7 @@ import { cleanItems } from "@/lib/finance/totals";
 import { ownedContact, ownedCompany } from "@/lib/deals";
 import { toRecurringInvoiceDTO } from "@/lib/finance/dto";
 import RecurringInvoice from "@/models/RecurringInvoice";
+import { defaultCurrency } from "@/lib/finance/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
         customerAddress: typeof b.customerAddress === "string" ? b.customerAddress.trim().slice(0, 500) : "",
         customerTaxId: typeof b.customerTaxId === "string" ? b.customerTaxId.trim().slice(0, 60) : "",
         contact: contact || undefined, company: company || undefined,
-        currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : "EUR",
+        currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id),
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
         interval, dayOfMonth, autoSend: !!b.autoSend, nextRunDate,
     });

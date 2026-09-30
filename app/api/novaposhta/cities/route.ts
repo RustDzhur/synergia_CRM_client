@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { failure, unauthorized } from "@/lib/api";
 import { cities, warehouses } from "@/lib/finance/delivery";
+import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export async function GET(req: Request) {
     const query = (url.searchParams.get("q") ?? "").trim();
     try {
         await connectDB();
+        await requireMarket(user.id, "UA");
         if (cityRef) return NextResponse.json({ warehouses: await warehouses(user.id, cityRef, query) });
         if (query.length < 2) return NextResponse.json({ cities: [] });
         return NextResponse.json({ cities: await cities(user.id, query) });

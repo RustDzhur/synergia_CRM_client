@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbAlertTriangle, TbInfoCircle } from "react-icons/tb";
 import { useFinanceStore } from "@/store/useFinanceStore";
+import { useMarket } from "@/store/useMarket";
 import { money } from "./format";
 import { AiAnalysis, PeriodSwitch, ReportDisclaimer, ReportFailed, ReportLoading, useReport } from "./reportParts";
 import type { IncomeSurplus, PeriodKind, VatReturn, VatLine } from "@/lib/finance/reports";
@@ -317,12 +318,12 @@ function UaIncomeView({ currency }: { currency: string }) {
 // kind приходит из адреса вкладки: ?tab=vat → UStVA, ?tab=eur → EÜR (см. index.tsx)
 export default function Taxes({ kind }: { kind: "vat" | "eur" }) {
 	const t = useTranslations("finance");
-	const country = useFinanceStore((s) => s.settings?.country ?? "");
+	const { market } = useMarket();
 	const currency = useFinanceStore((s) => s.settings?.currency ?? "EUR");
 	const [period, setPeriod] = useState<PeriodKind>("quarter");
 	// Украинская отчётность отличается от немецкой по существу, а не переводом: у UA-фирмы те же
 	// вкладки показывают реестр налоговых накладных и книгу доходов с единым налогом
-	const ua = country === "UA";
+	const ua = market === "UA";
 
 	return (
 		<div>

@@ -8,6 +8,7 @@ import { trackLast } from "@/lib/ukrposhta";
 import { toOrderDTO } from "@/lib/finance/dto";
 import Integration from "@/models/Integration";
 import Order from "@/models/Order";
+import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -38,6 +39,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
     try {
         await connectDB();
+        await requireMarket(user.id, "UA");
         const order = await Order.findOne({ _id: params.id, org: user.id });
         if (!order) return notFound();
         if (barcodeInput !== undefined) order.set("ukrposhta.barcode", barcodeInput);

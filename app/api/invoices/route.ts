@@ -3,9 +3,9 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
-import { financeSettings } from "@/lib/finance/settings";
+import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
 import { cleanItems } from "@/lib/finance/totals";
-import { applyTaxPolicy } from "@/lib/finance/tax";
+import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal, dealForCustomer } from "@/lib/deals";
@@ -51,8 +51,8 @@ export async function POST(req: Request) {
         customerAddress: typeof b.customerAddress === "string" ? b.customerAddress.trim().slice(0, 500) : "",
         customerTaxId: typeof b.customerTaxId === "string" ? b.customerTaxId.trim().slice(0, 60) : "",
         contact: contact || undefined, company: company || undefined, deal: (deal || (await dealForCustomer(user.id, contact, company, customerName))) || undefined,
-        currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : "EUR",
-        smallBusinessNote: !!settings.smallBusiness,
+        currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id),
+        smallBusinessNote: taxExempt(settings),
         issueDate: typeof b.issueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.issueDate) ? b.issueDate : today,
         dueDate: typeof b.dueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.dueDate) ? b.dueDate : due,
         // Дата/период оказания услуг (§14 Abs. 4 Nr. 6 UStG) — необязательные, но если пришли, то только как дата

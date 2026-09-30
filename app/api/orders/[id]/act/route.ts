@@ -7,6 +7,7 @@ import { nextNumber } from "@/lib/finance/numbering";
 import { logAudit } from "@/lib/audit";
 import Order from "@/models/Order";
 import User from "@/models/User";
+import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     await connectDB();
+    // Акт виконаних робіт — украинский документ: в немецком режиме его не выпускаем
+    await requireMarket(user.id, "UA");
 
     const order = await Order.findOne({ _id: params.id, org: user.id });
     if (!order) return notFound();

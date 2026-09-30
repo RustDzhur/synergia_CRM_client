@@ -5,7 +5,7 @@ import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
 import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
-import { applyTaxPolicy } from "@/lib/finance/tax";
+import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
 import Order from "@/models/Order";
 import Invoice from "@/models/Invoice";
 import "@/lib/finance/pdf";
@@ -37,7 +37,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         customerTaxId: typeof b.customerTaxId === "string" ? b.customerTaxId.trim().slice(0, 60) : "",
         deal: order.deal, order: order._id, contract: order.contract,
         items: applyTaxPolicy(order.items, settings), currency: order.currency,
-        smallBusinessNote: !!settings.smallBusiness,
+        smallBusinessNote: taxExempt(settings),
         issueDate: today, dueDate: due,
         template: order.template, // счёт по заказу печатается так же, как сам заказ
         createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",

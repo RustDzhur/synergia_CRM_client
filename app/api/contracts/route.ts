@@ -8,6 +8,7 @@ import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal, dealForCustomer } from "@/lib/deals";
 import Contract from "@/models/Contract";
 import User from "@/models/User";
+import { defaultCurrency } from "@/lib/finance/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
         org: user.id, number, customerName,
         contact: contact || undefined, company: company || undefined, deal: (deal || (await dealForCustomer(user.id, contact, company, customerName))) || undefined,
         value: Math.max(0, Number(b.value) || 0),
-        currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : "EUR",
+        currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id),
         startDate: typeof b.startDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.startDate) ? b.startDate : "",
         endDate: typeof b.endDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.endDate) ? b.endDate : "",
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",

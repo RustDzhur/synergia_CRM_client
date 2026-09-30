@@ -5,7 +5,7 @@ import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings } from "@/lib/finance/settings";
 import { cleanItems } from "@/lib/finance/totals";
-import { applyTaxPolicy } from "@/lib/finance/tax";
+import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
 import { emit } from "@/lib/automation/emit";
 import { logAudit } from "@/lib/audit";
 import Invoice from "@/models/Invoice";
@@ -40,7 +40,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         contact: source.contact, company: source.company,
         customerName: source.customerName, customerAddress: source.customerAddress, customerTaxId: source.customerTaxId,
         deal: source.deal, order: source.order, contract: source.contract,
-        items: applyTaxPolicy(items, settings), currency: source.currency, smallBusinessNote: !!settings.smallBusiness,
+        items: applyTaxPolicy(items, settings), currency: source.currency, smallBusinessNote: taxExempt(settings),
         issueDate: today, dueDate: "",
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
         // кредит-нота выглядит как исправляемый счёт, если в запросе не попросили другой шаблон

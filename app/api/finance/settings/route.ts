@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { COUNTRY_CODES, COUNTRY_TAX } from "@/lib/finance/taxRates";
+import { MARKET_DEFAULTS, marketOf } from "@/lib/finance/market";
 import { financeSettings } from "@/lib/finance/settings";
 import { isTemplate } from "@/lib/finance/pdf";
 import FinanceSettings from "@/models/FinanceSettings";
@@ -69,7 +70,7 @@ export async function PATCH(req: Request) {
     if (!user) return unauthorized(req);
     const b = await req.json().catch(() => ({}));
     await connectDB();
-    const set: Record<string, unknown> = {};
+    let set: Record<string, unknown> = {};
     if (typeof b.country === "string") set.country = COUNTRY_CODES.includes(b.country) ? b.country : "";
     const currency = str(b.currency, 6); if (currency !== undefined) set.currency = currency.toUpperCase();
     if (typeof b.smallBusiness === "boolean") set.smallBusiness = b.smallBusiness;
@@ -118,6 +119,12 @@ export async function PATCH(req: Request) {
             const n = Number(b[key]);
             if (Number.isFinite(n) && n >= 0 && n <= max) set[key] = n;
         }
+    }
+    // Смена режима рынка может применить набор по умолчанию (валюта, префиксы, срок оплаты, шаблон,
+    // налоговые прапорщики): явно присланные поля сильнее набора, существующие документы не трогаются
+    if (b.applyDefaults === true) {
+        const target = marketOf(typeof set.country === "string" ? set.country : (await FinanceSettings.findOne({ org: user.id }).select("country"))?.country);
+        if (target) set = { ...MARKET_DEFAULTS[target], ...set };
     }
     const s = await FinanceSettings.findOneAndUpdate({ org: user.id }, { $set: set }, { upsert: true, new: true });
     return NextResponse.json(toDTO(s));

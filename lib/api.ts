@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
-import { ProviderError } from "@/lib/http";
+import { MarketError, ProviderError } from "@/lib/http";
 import { reportError } from "@/lib/reportError";
 import { wasDenied, wasPlanDenied } from "@/lib/auth";
 
@@ -20,6 +20,8 @@ export const validId = (id: string) => isValidObjectId(id);
 // человек узнаёт о них, не дожидаясь, пока кто-нибудь пожалуется. Провайдерные не отправляем: их видно
 // в интерфейсе, и это не поломка приложения, а ответ внешнего сервиса.
 export function failure(e: unknown) {
+    // Режим рынка: 409 и код market — интерфейс переведёт его сам (кому функция доступна)
+    if (e instanceof MarketError) return NextResponse.json({ message: e.message, code: "market", market: e.market }, { status: 409 });
     if (e instanceof ProviderError) return NextResponse.json({ message: e.message }, { status: 502 });
     console.error(e);
     void reportError(e, { where: "ошибка API" });

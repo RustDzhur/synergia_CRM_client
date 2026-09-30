@@ -6,6 +6,7 @@ import { computeTotals } from "@/lib/finance/totals";
 import { fiscalizeInvoice } from "@/lib/finance/fiscal";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import Invoice from "@/models/Invoice";
+import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -18,6 +19,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     await connectDB();
+    // Фискальные чеки — украинское ПРРО
+    await requireMarket(user.id, "UA");
     const inv = await Invoice.findOne({ _id: params.id, org: user.id });
     if (!inv) return notFound();
     if (inv.fiscalCode) return badRequest("Чек за цим рахунком уже пробито");

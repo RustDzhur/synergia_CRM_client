@@ -5,6 +5,7 @@ import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { bookValueAt, depreciationInRange } from "@/lib/finance/assets";
 import { logAudit } from "@/lib/audit";
 import Asset from "@/models/Asset";
+import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     await connectDB();
+    await requireMarket(user.id, "DE"); // Anlagen — немецкий учёт основных средств
     const a = await Asset.findOne({ _id: params.id, org: user.id });
     if (!a) return notFound();
 
@@ -39,6 +41,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!validId(params.id)) return notFound();
     const b = await req.json().catch(() => ({}));
     await connectDB();
+    await requireMarket(user.id, "DE"); // Anlagen — немецкий учёт основных средств
     const asset = await Asset.findOne({ _id: params.id, org: user.id });
     if (!asset) return notFound();
 
@@ -76,6 +79,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     await connectDB();
+    await requireMarket(user.id, "DE"); // Anlagen — немецкий учёт основных средств
     const asset = await Asset.findOneAndDelete({ _id: params.id, org: user.id });
     if (!asset) return notFound();
     await logAudit({

@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { findIntegrationByType } from "@/lib/integrations";
 import { checkMarketplace, syncMarketplaces } from "@/lib/marketplace";
+import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -18,6 +19,7 @@ export async function POST(req: Request) {
     const provider = typeof body?.provider === "string" ? body.provider : "";
     try {
         await connectDB();
+        await requireMarket(user.id, "UA");
         if (provider && body?.check) {
             const doc = await findIntegrationByType(user.id, provider);
             if (!doc) return NextResponse.json({ message: "Площадка не подключена" }, { status: 404 });

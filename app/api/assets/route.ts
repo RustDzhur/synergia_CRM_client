@@ -6,6 +6,7 @@ import { assetsSummary, bookValueAt } from "@/lib/finance/assets";
 import { logAudit } from "@/lib/audit";
 import Asset from "@/models/Asset";
 import User from "@/models/User";
+import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,7 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     await connectDB();
+    await requireMarket(user.id, "DE"); // Anlagen — немецкий учёт основных средств
     const url = new URL(req.url);
     const from = url.searchParams.get("from");
     const to = url.searchParams.get("to");
@@ -64,6 +66,8 @@ export async function POST(req: Request) {
     if (years < 1 || years > 100) return badRequest("usefulLifeYears must be between 1 and 100");
 
     await connectDB();
+
+    await requireMarket(user.id, "DE"); // Anlagen — немецкий учёт основных средств
     const author = await User.findById(user.userId).select("firstname lastname");
     const asset = await Asset.create({
         org: user.id, name, category: str(b?.category), acquiredDate, cost,

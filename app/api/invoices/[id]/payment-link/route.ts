@@ -11,6 +11,7 @@ import Invoice from "@/models/Invoice";
 import { webhookPath } from "@/lib/integrations";
 import { sendToConversation } from "@/lib/channels";
 import Conversation from "@/models/Conversation";
+import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -22,6 +23,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     await connectDB();
+    // Приём оплаты через monobank/LiqPay/WayForPay/крипту — украинский набор
+    await requireMarket(user.id, "UA");
     const inv = await Invoice.findOne({ _id: params.id, org: user.id }).select("contact payLink");
     if (!inv) return notFound();
     const [connected, conversations] = await Promise.all([
@@ -50,6 +53,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!isPayProvider(provider)) return badRequest("Обери спосіб оплати");
     try {
         await connectDB();
+        await requireMarket(user.id, "UA");
         const inv = await Invoice.findOne({ _id: params.id, org: user.id });
         if (!inv) return notFound();
         if (inv.status === "paid") return badRequest("Рахунок уже оплачено");

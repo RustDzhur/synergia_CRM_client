@@ -5,6 +5,7 @@ import { badRequest, unauthorized } from "@/lib/api";
 import { logAudit } from "@/lib/audit";
 import User from "@/models/User";
 import Expense from "@/models/Expense";
+import { defaultCurrency } from "@/lib/finance/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
         org: user.id, vendor, amount, date,
         category: typeof b.category === "string" ? b.category.trim().slice(0, 100) : "",
         taxRate: Number.isFinite(Number(b.taxRate)) ? Math.min(100, Math.max(0, Number(b.taxRate))) : 0,
-        currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : "EUR",
+        currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id),
         deal: b.deal || undefined, order: b.order || undefined, receipt: b.receipt || undefined,
         recurring: ["monthly", "yearly"].includes(b.recurring) ? b.recurring : "",
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",

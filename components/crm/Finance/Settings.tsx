@@ -3,6 +3,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { useFinanceStore } from "@/store/useFinanceStore";
+import { useMarket } from "@/store/useMarket";
+import { MARKET_DEFAULTS, marketDiff, type Market } from "@/lib/finance/market";
 import { fileToLogo, MAX_AVATAR_FILE_BYTES, MAX_LOGO_CHARS } from "@/utils/avatar";
 import FormField from "../shared/FormField";
 import TemplatePicker from "./TemplatePicker";
@@ -17,6 +19,11 @@ type DunningFields = { dunningFees?: number[]; dunningInterestRate?: number; dun
 export default function FinanceSettingsTab() {
 	const t = useTranslations("finance");
 	const { settings, countries, loadSettings, saveSettings } = useFinanceStore();
+	const { market } = useMarket();
+	// Смена страны — отдельное действие с подтверждением: окно показывает, что скроется и что появится,
+	// и предлагает применить набор по умолчанию. Данные подключений и документов не удаляются (ТЗ §3).
+	const [switchTo, setSwitchTo] = useState<Market | null>(null);
+	const [applyDefaults, setApplyDefaults] = useState(true);
 	// пустые сборы = сборы не начисляются (как и на сервере); поля заполнятся настоящими значениями, когда придут настройки
 	const [form, setForm] = useState({ country: "", currency: "EUR", smallBusiness: false, rateMargin: "0", uaLegalForm: "fop", uaGroup: "3", uaSingleRate: "5", uaVatPayer: false, uaEsvMonthly: "1760", uaMilitaryRate: "1", uaMilitaryFixed: "800", uaVatLimit: "1000000", uaVatPeriod: "month", legalName: "", address: "", taxId: "", vatId: "", registerNumber: "", managingDirector: "", phone: "", email: "", website: "", logo: "", footerText: "", iban: "", bic: "", paymentTermsDays: "14", invoicePrefix: "RE", quotePrefix: "AN", creditNotePrefix: "GS", reminderIntervalDays: "7", dunningFees: ["", "", "", "", ""], dunningInterestRate: "", dunningPaymentDays: "7", template: "classic", paymentQr: true });
 	const [saving, setSaving] = useState(false);
@@ -84,33 +91,89 @@ export default function FinanceSettingsTab() {
 			<div className="mb-16 fs-card p-16 md:p-20">
 				<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("taxSection")}</h3>
 				<div className="grid grid-cols-1 gap-12 md:grid-cols-2">
-					<label>
-						<span className={label}>{t("country")}</span>
-						<select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className={field}>
-							<option value="">{t("countryNone")}</option>
-							{countries.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
-						</select>
-					</label>
+					{/* Страна — не выпадающий список «на будущее», а режим работы: смена показывает, что скроется,
+					    и применяет набор по умолчанию. Существующие документы сохраняют свою валюту и формат. */}
+					<div>
+						<span className={label}>{t("market_current")}</span>
+						<div className="flex items-center gap-10">
+							<span className="fs-field flex h-40 flex-1 items-center px-12 text-13">{market ? t(`market_${market.toLowerCase()}`) : t("countryNone")}</span>
+							<button type="button" onClick={() => { setApplyDefaults(true); setSwitchTo(market === "UA" ? "DE" : "UA"); }} className="fs-btn fs-btn-ghost h-40">
+								{t("market_change_btn")}
+							</button>
+						</div>
+					</div>
 					<FormField label={t("currency")} value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value.toUpperCase() })} maxLength={6} />
 				</div>
 				{/* Подсказка повторяет то, что реально делает код (lib/finance/tax.ts): у освобождённой фирмы ставка
 				    страны не применяется вообще — 0 % и пометка §19 на каждом документе, поэтому и текст другой */}
-				{form.smallBusiness ? (
+				{market === "DE" && (form.smallBusiness ? (
 					<p className="mt-8 text-12 text-[#9AA396]">{t("taxHintExempt")}</p>
 				) : selectedCountry ? (
 					<p className="mt-8 text-12 text-[#8c948b]">{t("taxHint", { rate: selectedCountry.standard, label: selectedCountry.label })}</p>
-				) : null}
-				<label className="mt-14 flex items-center gap-10 text-13 text-[#cfd4cb]">
-					<input type="checkbox" checked={form.smallBusiness} onChange={(e) => setForm({ ...form, smallBusiness: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
-					{t("smallBusiness")}
-				</label>
-				<p className="mt-[4px] pl-[26px] text-11 text-[#9AA396]">{t("smallBusinessHint")}</p>
+				) : null)}
+				{/* Kleinunternehmerregelung §19 — немецкое поле; у украинской фирмы его место занимает «платник ПДВ» */}
+				{market !== "UA" && (
+					<>
+						<label className="mt-14 flex items-center gap-10 text-13 text-[#cfd4cb]">
+							<input type="checkbox" checked={form.smallBusiness} onChange={(e) => setForm({ ...form, smallBusiness: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
+							{t("smallBusiness")}
+						</label>
+						<p className="mt-[4px] pl-[26px] text-11 text-[#9AA396]">{t("smallBusinessHint")}</p>
+					</>
+				)}
 			</div>
+
+			{/* Подтверждение смены режима: ничего не удаляется, но набор экранов, документов и интеграций
+			    меняется целиком — человек должен видеть, что именно скроется и что появится (ТЗ §3). */}
+			{switchTo && market && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(6,8,6,0.72)] p-16" role="dialog" aria-modal="true">
+					<div className="w-full max-w-[520px] rounded-14 border border-[rgba(255,255,255,0.10)] bg-[#131715] p-20">
+						<h3 className="text-15 font-semibold text-[#f1f4ee]">{t("market_change_title")}</h3>
+						<p className="mt-8 text-13 text-[#cfd4cb]">{t("market_hint")}</p>
+						{(() => {
+							const diff = marketDiff(market, switchTo);
+							const name = (id: string) => (switchTo === "UA" && id === "vat" ? t("tab_ua_vat") : switchTo === "UA" && id === "eur" ? t("tab_ua_single") : t(`tab_${id}`));
+							return (
+								<div className="mt-12 space-y-10">
+									<div>
+										<p className="mb-6 text-11 uppercase tracking-[0.08em] text-[#8c948b]">{t("market_change_hide")}</p>
+										<p className="text-13 text-[#cfd4cb]">{diff.hidden.length ? diff.hidden.map(name).join(" · ") : t("market_change_same")}</p>
+									</div>
+									<div>
+										<p className="mb-6 text-11 uppercase tracking-[0.08em] text-[#8c948b]">{t("market_change_show")}</p>
+										<p className="text-13 text-[#cfd4cb]">{diff.shown.length ? diff.shown.map(name).join(" · ") : t("market_change_same")}</p>
+									</div>
+								</div>
+							);
+						})()}
+						<label className="mt-14 flex items-start gap-10 text-13 text-[#cfd4cb]">
+							<input type="checkbox" checked={applyDefaults} onChange={(e) => setApplyDefaults(e.target.checked)} className="mt-2 h-16 w-16 accent-[#c6ff4d]" />
+							<span>{t("market_change_defaults")}</span>
+						</label>
+						<div className="mt-16 flex justify-end gap-10">
+							<button type="button" onClick={() => setSwitchTo(null)} className="fs-btn fs-btn-ghost h-38">{t("market_change_cancel")}</button>
+							<button
+								type="button"
+								onClick={async () => {
+									const target = switchTo;
+									setSwitchTo(null);
+									const d = MARKET_DEFAULTS[target];
+									const err = await saveSettings((applyDefaults ? { country: target, ...d } : { country: target }) as never);
+									if (err) return toast.error(err);
+									toast.success(t("saved"));
+								}}
+								className="fs-btn fs-btn-primary h-38">
+								{t("market_change_confirm")}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{/* Украинская налоговая модель: ФОП на єдиному податку или ТОВ, единый налог, военный сбор
 			    и ЄСВ. Цифры — умолчания на 2025 год, их можно менять: законы пересматриваются, и
 			    приложение не должно решать за бухгалтера. Отчёты по этим настройкам — в «Податках». */}
-			{form.country === "UA" && (
+			{market === "UA" && (
 				<div className="mb-16 fs-card p-16 md:p-20">
 					<h3 className="mb-4 text-14 font-semibold text-[#f1f4ee]">{t("uaSection")}</h3>
 					<p className="mb-14 text-12 leading-[1.5] text-[#8c948b]">{t("uaSectionHint")}</p>
@@ -220,11 +283,16 @@ export default function FinanceSettingsTab() {
 				<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("templateSection")}</h3>
 				<p className="mb-14 text-12 text-[#8c948b]">{t("templateSectionHint")}</p>
 				<TemplatePicker value={form.template || "classic"} onChange={(v) => setForm({ ...form, template: v || "classic" })} columns={5} />
-				<label className="mt-16 flex items-center gap-10 text-13 text-[#cfd4cb]">
-					<input type="checkbox" checked={form.paymentQr} onChange={(e) => setForm({ ...form, paymentQr: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
-					{t("paymentQr")}
-				</label>
-				<p className="mt-[4px] pl-[26px] text-11 text-[#9AA396]">{t("paymentQrHint")}</p>
+				{/* EPC/SEPA-QR — немецкий способ оплаты по QR; украинскому счёту он ничего не даёт */}
+				{market !== "UA" && (
+					<>
+						<label className="mt-16 flex items-center gap-10 text-13 text-[#cfd4cb]">
+							<input type="checkbox" checked={form.paymentQr} onChange={(e) => setForm({ ...form, paymentQr: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
+							{t("paymentQr")}
+						</label>
+						<p className="mt-[4px] pl-[26px] text-11 text-[#9AA396]">{t("paymentQrHint")}</p>
+					</>
+				)}
 			</div>
 
 			<div className="mb-16 fs-card p-16 md:p-20">
@@ -239,7 +307,9 @@ export default function FinanceSettingsTab() {
 			</div>
 
 			{/* Манаведение: сбор за каждую ступень напоминания и справочная ставка процентов. Пока сборы не заполнены,
-			    они нулевые — начислять их или нет, решает фирма, и подсказка говорит об этом прямо. */}
+			    они нулевые — начислять их или нет, решает фирма, и подсказка говорит об этом прямо.
+			    Mahnwesen — немецкий институт: украинской фирме его настройки не показываем. */}
+			{market !== "UA" && (
 			<div className="mb-16 fs-card p-16 md:p-20">
 				<h3 className="mb-8 text-14 font-semibold text-[#f1f4ee]">{t("dunningSection")}</h3>
 				<p className="mb-14 text-12 leading-[1.5] text-[#8c948b]">{t("dunningSettingsHint")}</p>
@@ -264,6 +334,7 @@ export default function FinanceSettingsTab() {
 					<FormField label={t("dunningPaymentDaysLabel")} type="number" min={1} max={60} value={form.dunningPaymentDays} onChange={(e) => setForm({ ...form, dunningPaymentDays: e.target.value })} />
 				</div>
 			</div>
+			)}
 
 			<button type="submit" disabled={saving} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{t("save")}</button>
 		</form>

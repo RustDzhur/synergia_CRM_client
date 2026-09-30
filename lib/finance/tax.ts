@@ -1,4 +1,5 @@
 import { defaultTaxRate } from "./taxRates";
+import { marketOf } from "./market";
 
 // Налоговая политика фирмы — одно место, где решается, какая ставка попадёт в документ.
 // Раньше этого не было: ставку присылал браузер, сервер её сохранял как есть, а настройка
@@ -8,14 +9,16 @@ import { defaultTaxRate } from "./taxRates";
 export interface TaxPolicySettings {
     country?: string;
     smallBusiness?: boolean;
+    uaVatPayer?: boolean;
 }
 
-// Фирма на упрощённом режиме (Kleinunternehmerregelung §19 UStG и аналоги в других странах):
-// налог не начисляется ни в одной строке документа.
-export const taxExempt = (s: TaxPolicySettings) => !!s.smallBusiness;
+// Фирма не начисляет налог: в Германии — Kleinunternehmerregelung §19 UStG, в Украине — фирма,
+// не зарегистрированная плательщиком ПДВ (в документе печатается «ПДВ не нараховується»).
+export const taxExempt = (s: TaxPolicySettings) =>
+    marketOf(s.country) === "UA" ? !s.uaVatPayer : !!s.smallBusiness;
 
 // Ставка по умолчанию для страны фирмы (0 для освобождённых и для неизвестной страны)
-export const defaultRateFor = (s: TaxPolicySettings) => defaultTaxRate(s.country ?? "", !!s.smallBusiness);
+export const defaultRateFor = (s: TaxPolicySettings) => defaultTaxRate(s.country ?? "", taxExempt(s));
 
 // Приводит строки документа к налоговой политике фирмы. Вызывается на каждом создании документа,
 // поэтому правило одно и то же для счёта, заказа, предложения, договора, повторяющегося счёта и кредит-ноты.

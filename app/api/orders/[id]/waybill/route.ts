@@ -5,6 +5,7 @@ import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api"
 import { createOrderWaybill, trackStatuses } from "@/lib/finance/delivery";
 import { toOrderDTO } from "@/lib/finance/dto";
 import Order from "@/models/Order";
+import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -23,6 +24,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!validId(params.id)) return notFound();
     try {
         await connectDB();
+        await requireMarket(user.id, "UA");
         const order = await Order.findOne({ _id: params.id, org: user.id });
         if (!order) return notFound();
         const number = String(order.waybill?.number ?? "");
@@ -46,6 +48,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     try {
         await connectDB();
+        await requireMarket(user.id, "UA");
         const order = await Order.findOne({ _id: params.id, org: user.id });
         if (!order) return notFound();
         if (order.waybill?.number) return NextResponse.json({ order: toOrderDTO(order) }, { status: 200 });

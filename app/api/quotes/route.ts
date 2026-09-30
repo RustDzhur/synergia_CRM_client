@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
-import { financeSettings } from "@/lib/finance/settings";
+import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
 import { cleanItems } from "@/lib/finance/totals";
 import { applyTaxPolicy } from "@/lib/finance/tax";
 import { toQuoteDTO } from "@/lib/finance/dto";
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     const quote = await Quote.create({
         org: user.id, number, customerName, items,
         contact: contact || undefined, company: company || undefined, deal: (deal || (await dealForCustomer(user.id, contact, company, customerName))) || undefined,
-        currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : "EUR",
+        currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id),
         issueDate: typeof b.issueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.issueDate) ? b.issueDate : today,
         validUntil,
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",

@@ -8,6 +8,8 @@ import { FaFacebookMessenger, FaTelegram, FaViber, FaWhatsapp } from "react-icon
 import { TbCreditCard, TbCurrencyBitcoin, TbShoppingCart, TbReceipt, TbTruckDelivery, TbCode, TbDeviceMobileMessage, TbHeadset, TbPhone } from "react-icons/tb";
 import { SMS_PROVIDER_TYPES } from "@/config/smsProviders";
 import { useIntegrationsStore } from "@/store/useIntegrationsStore";
+import { useMarket } from "@/store/useMarket";
+import { marketAllowsIntegration } from "@/lib/finance/market";
 import type { IntegrationType } from "@/types/integrations";
 import PageHeader from "@/components/crm/shared/PageHeader";
 import IntegrationDialog from "./integrations/IntegrationDialog";
@@ -67,6 +69,11 @@ export default function IntegrationSettings() {
 	const [dialog, setDialog] = useState<Integration | null>(null);
 	const { items, load } = useIntegrationsStore();
 	const params = useSearchParams();
+	// Режим рынка фирмы: украинские плитки (НП, Укрпошта, Checkbox, эквайринги, маркетплейсы) видны
+	// только украинской фирме — немецкой они не нужны и наоборот (ТЗ §3). Общие (звонки, СМС,
+	// мессенджеры, веб-чат) видны всегда и рынком не фильтруются.
+	const { profile: marketProfile } = useMarket();
+	const visibleIntegrations = INTEGRATIONS.filter((item) => !marketProfile || !item.real || marketAllowsIntegration(marketProfile.market, item.real));
 	useEffect(() => { load(); }, [load]);
 
 	// Возврат из окна Facebook: колбэк приводит сюда с ?messenger=connected|choose|error
@@ -114,7 +121,7 @@ export default function IntegrationSettings() {
 			<div className="flex flex-col gap-20 lg:flex-row">
 				<SettingsTabs className="shrink-0 md:self-start" />
 				<ul className="grid min-w-0 flex-1 grid-cols-2 gap-12 md:gap-16 lg:grid-cols-3 lg:gap-16">
-					{INTEGRATIONS.map((item) => {
+					{visibleIntegrations.map((item) => {
 						const kinds = item.providers ?? [item.real, item.alt].filter(Boolean) as string[];
 						const linkedAll = kinds.length ? items.filter((i) => kinds.includes(i.type)) : [];
 						const on = item.real ? linkedAll.some((i) => i.status === "connected") : enabled.includes(item.id);
