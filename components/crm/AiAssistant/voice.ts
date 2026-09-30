@@ -236,22 +236,44 @@ export function voiceDecision(text: string, pendingActions: number): { kind: "co
 	return { kind: "send" };
 }
 
-// ── Имя-пробуждение ──────────────────────────────────────────────────────────────────────────────────
-// Ассистента зовут «Airis» (Айрис). В режиме разговора без имени фраза не уходит в чат: иначе любая
-// реплика в комнате жгла бы квоту и лезла в CRM. После ответа ассистента окно продолжения открыто —
-// уточнения и ответы «так/ні» говорят уже без имени.
+// ── Имя «Айрис» в фразе ──────────────────────────────────────────────────────────────────────────────
+// Разговорный режим слушает постоянно — имя больше НЕ ворота: просьбу выполняем и без него (владелец:
+// «пусть модель будет постоянно активная и слушающая»). Имя распознаём, чтобы снять его из текста
+// («Айрис, створи задачу» → «створи задачу») и отозваться «Слухаю», если позвали только по имени.
 
-const WAKE_WORDS = ["airis", "айріс", "айрис", "ірис", "iris"];
+const WAKE_WORDS = ["airis", "айріс", "айрис", "арис", "ірис", "iris"];
+// Для нечёткого сравнения (одна опечатка) — только длинные формы: короткие («ірис»/«iris» в 4 буквы)
+// с допуском на опечатку ловили бы обычные слова («рис», «ира»). Точное совпадение коротких форм
+// остаётся: «Ірис» как имя по-прежнему распознаётся
+const WAKE_FUZZY = ["airis", "айріс", "айрис", "арис"];
+
+// Расстояние Левенштейна ≤ 1: распознавание слышит имя по-разному («Айрс», «Айріз», «Ейріс») —
+// одна опечатка допускается, две уже нет
+function nearWord(word: string, target: string): boolean {
+	if (Math.abs(word.length - target.length) > 1) return false;
+	let i = 0, j = 0, edits = 0;
+	while (i < word.length && j < target.length) {
+		if (word[i] === target[j]) { i++; j++; continue; }
+		if (++edits > 1) return false;
+		if (word.length > target.length) i++;
+		else if (word.length < target.length) j++;
+		else { i++; j++; }
+	}
+	return edits + (word.length - i) + (target.length - j) <= 1;
+}
+
+const isWakeWord = (w: string) => WAKE_WORDS.includes(w) || (w.length >= 4 && WAKE_FUZZY.some((t) => nearWord(w, t)));
 
 /** Имя во фразе: {hit — позвали, rest — сама просьба без имени}. */
 export function stripWake(text: string): { hit: boolean; rest: string } {
 	const raw = String(text ?? "");
 	const ws = words(raw);
-	const hit = ws.some((w) => WAKE_WORDS.includes(w));
-	if (!hit) return { hit: false, rest: raw.trim() };
+	if (!ws.some(isWakeWord)) return { hit: false, rest: raw.trim() };
 	// Убираем только ПЕРВОЕ имя — в остальном тексте слово «айріс» может быть частью просьбы.
-	// Границы слова — юникодные: \b в JavaScript знает только ASCII и с кириллицей не срабатывает
-	const re = new RegExp(`(?<![\\p{L}\\p{N}])(?:${WAKE_WORDS.join("|")})(?![\\p{L}\\p{N}])[\\s,!.…—–-]*`, "giu");
+	// Границы слова — юникодные: \b в JavaScript знает только ASCII и с кириллицей не срабатывает.
+	// Варианты с одной опечаткой снимаем тем же списком, что ловим (набор невелик)
+	const variants = [...WAKE_WORDS, ...ws.filter((w) => !WAKE_WORDS.includes(w) && isWakeWord(w))];
+	const re = new RegExp(`(?<![\\p{L}\\p{N}])(?:${variants.join("|")})(?![\\p{L}\\p{N}])[\\s,!.…—–-]*`, "giu");
 	return { hit: true, rest: raw.replace(re, "").trim() };
 }
 
@@ -396,10 +418,17 @@ export function useContinuousListening({ locale, active, onPhrase, onError }: {
 			recog.onerror = (e) => {
 				if (e?.error === "not-allowed" || e?.error === "service-not-allowed") onErrorRef.current("micDenied");
 			};
-			// Браузер сам завершает сессию распознавания (тишина, лимит времени) — пока режим включён, поднимаем заново
+			// Браузер сам завершает сессию распознавания (тишина, лимит времени) — пока режим включён,
+			// поднимаем заново. Важно и после отправки фразы: если запрос НЕ ушёл в чат (onPhrase решил
+			// ничего не делать), active не меняется, эффект не перезапускается — раньше микрофон умирал
+			// после первой же такой фразы, и ассистент «не просыпался» до конца сессии. Сбрасываем буфер
+			// и продолжаем слушать; если ассистент ушёл думать/говорить, active станет false, эффект
+			// остановит распознавание и сюда мы уже не вернёмся.
 			recog.onend = () => {
-				if (disposed || sentRef.current) return;
-				try { recog.start(); } catch { /* перезапустим после следующего события */ }
+				if (disposed) return;
+				sentRef.current = false;
+				phraseRef.current = "";
+				try { recog.start(); } catch { /* перезапустим после следующего onend */ }
 			};
 			recogRef.current = recog;
 			try { recog.start(); } catch { /* уже запущен */ }
