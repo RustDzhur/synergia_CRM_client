@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import {
 	TbDownload,
 	TbFileText,
+	TbLink,
 	TbPlus,
 	TbReceipt,
 	TbTruckDelivery,
@@ -108,6 +109,20 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 		await loadOrders();
 	}
 
+	// Публичная ссылка на статус заказа: клиент открывает её без входа и видит, где его заказ
+	async function shareOrder(id: string) {
+		setBusy(id);
+		const res = await apiCall<{ url: string }>(`/api/orders/${id}/share`);
+		setBusy(null);
+		if (!res.ok || !res.data) return void toast.error(res.message);
+		try {
+			await navigator.clipboard.writeText(res.data.url);
+			toast.success(t("shareCopied"));
+		} catch {
+			toast.success(res.data.url, { duration: 8000 });
+		}
+	}
+
 	async function downloadDelivery(id: string, noteNumber: string) {
 		if (!(await downloadDeliveryNote(id, noteNumber, locale))) toast.error(t("pdfFailed"));
 	}
@@ -176,6 +191,10 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 									className="fs-btn fs-btn-ghost h-34"
 									title={o.deliveryNoteNumber ? t("deliveryIssued", { number: o.deliveryNoteNumber }) : t("deliveryCreate")}>
 									<TbTruckDelivery size={15} /> {o.deliveryNoteNumber || t("deliveryNote")}
+								</button>
+								{/* Публичная ссылка для клиента: статус, состав, доставка и кнопка оплаты */}
+								<button type="button" disabled={busy === o.id} onClick={() => void shareOrder(o.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]" title={t("shareHint")}>
+									<TbLink size={15} /> {t("share")}
 								</button>
 								{/* Акт виконаних робіт (Украина): номер присваивается при первой выписке */}
 								<button

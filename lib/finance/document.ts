@@ -1,5 +1,6 @@
 import { isTemplate, renderDocumentPdf, PdfSettings, PdfParty, PdfLineItem } from "./pdf";
 import { financeSettings } from "./settings";
+import { firmRate } from "./rates";
 import Contact from "@/models/Contact";
 import Company from "@/models/Company";
 import Invoice from "@/models/Invoice";
@@ -13,6 +14,19 @@ export const pdfLocale = (v: unknown) => (typeof v === "string" && (LOCALES as r
 
 // Шаблон оформления: явный выбор в запросе (?template=modern) важнее шаблона самого документа, а тот —
 // умолчания из настроений бухгалтерии. Неизвестное значение молча игнорируется, рендер берёт classic.
+
+// Курс к гривне для документов в валюте: у украинской фирмы в счёте печатается и сумма в ₴.
+// Курс берём из lib/finance/rates.ts (НБУ плюс наценка фирмы) и только когда он вообще нужен —
+// для гривневого документа или для фирмы без курса поле остаётся пустым.
+async function uahRateFor(org: string, currency: string) {
+    if (!currency || currency.toUpperCase() === "UAH") return null;
+    try {
+        return await firmRate(org, currency);
+    } catch {
+        return null;
+    }
+}
+
 export const pdfTemplate = (v: unknown) => (isTemplate(v) ? v : undefined);
 
 export const toPdfSettings = (s: any): PdfSettings => ({
@@ -79,6 +93,7 @@ export async function invoicePdfBuffer(org: string, inv: any, locale: string, te
             customer: { name: inv.customerName, address: inv.customerAddress, taxId: inv.customerTaxId },
             items: toPdfItems(inv.items),
             currency: inv.currency,
+            uahRate: await uahRateFor(org, inv.currency),
             smallBusinessNote: !!inv.smallBusinessNote,
             issueDate: inv.issueDate,
             supplyDate: inv.supplyDate,
@@ -106,6 +121,7 @@ export async function quotePdfBuffer(org: string, q: any, locale: string, templa
             customer: await customerParty(org, q),
             items: toPdfItems(q.items),
             currency: q.currency,
+            uahRate: await uahRateFor(org, q.currency),
             issueDate: q.issueDate,
             validUntil: q.validUntil,
             notes: q.notes,
@@ -125,6 +141,7 @@ export async function orderPdfBuffer(org: string, o: any, locale: string, templa
             customer: await customerParty(org, o),
             items: toPdfItems(o.items),
             currency: o.currency,
+            uahRate: await uahRateFor(org, o.currency),
             issueDate: o.createdAt ? new Date(o.createdAt).toISOString().slice(0, 10) : "",
             notes: o.notes,
             template: template ?? pdfTemplate(o.template),
@@ -147,6 +164,7 @@ export async function deliveryNotePdfBuffer(org: string, order: any, locale: str
             customer: await customerParty(org, order),
             items: toPdfItems(order.items),
             currency: order.currency,
+            uahRate: await uahRateFor(org, order.currency),
             // Дата поставки: если её не указали, берём сегодняшнюю — накладная всегда про состоявшуюся передачу
             supplyDate: order.deliveryDate || new Date().toISOString().slice(0, 10),
             notes: order.notes,
@@ -169,6 +187,7 @@ export async function actPdfBuffer(org: string, order: any, locale: string, temp
             customer: await customerParty(org, order),
             items: toPdfItems(order.items),
             currency: order.currency,
+            uahRate: await uahRateFor(org, order.currency),
             issueDate: order.actDate || new Date().toISOString().slice(0, 10),
             notes: order.notes,
             template: template ?? pdfTemplate(order.template),
@@ -187,6 +206,7 @@ export async function contractPdfBuffer(org: string, c: any, locale: string, tem
             customer: await customerParty(org, c),
             items: [], // у договора позиций нет: печатается сумма договора и срок
             currency: c.currency,
+            uahRate: await uahRateFor(org, c.currency),
             value: c.value,
             startDate: c.startDate,
             endDate: c.endDate,

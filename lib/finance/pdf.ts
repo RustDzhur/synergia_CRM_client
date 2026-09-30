@@ -32,6 +32,7 @@ const LABELS: Record<string, Record<string, string>> = {
         smallBusiness: "No VAT is charged pursuant to the small business regulation (§19 UStG or equivalent).",
         paymentTerms: "Payment terms", days: "days", iban: "IBAN", bic: "BIC", notes: "Notes",
         seller: "Seller", payByQr: "Pay by QR code", qrHint: "Scan with your banking app",
+        uahTotal: "Total in UAH", uahRate: "rate",
         act: "Certificate of services", actDate: "Service date", actFor: "for invoice",
         signedBy: "Contractor", signedByCustomer: "Customer",
         continued: "continued",
@@ -50,6 +51,7 @@ const LABELS: Record<string, Record<string, string>> = {
         smallBusiness: "Gemäß §19 UStG (Kleinunternehmerregelung) wird keine Umsatzsteuer berechnet.",
         paymentTerms: "Zahlungsziel", days: "Tage", iban: "IBAN", bic: "BIC", notes: "Anmerkungen",
         seller: "Verkäufer", payByQr: "Zahlung per QR-Code", qrHint: "Mit der Banking-App scannen",
+        uahTotal: "Gesamt in UAH", uahRate: "Kurs",
         act: "Leistungsnachweis", actDate: "Leistungsdatum", actFor: "zur Rechnung",
         signedBy: "Auftragnehmer", signedByCustomer: "Auftraggeber",
         continued: "Fortsetzung",
@@ -68,6 +70,7 @@ const LABELS: Record<string, Record<string, string>> = {
         smallBusiness: "ПДВ не нараховується згідно з режимом для малого підприємця (§19 UStG або аналог).",
         paymentTerms: "Термін оплати", days: "днів", iban: "IBAN", bic: "BIC", notes: "Примітки",
         seller: "Постачальник", payByQr: "Оплата за QR-кодом", qrHint: "Скануйте у банківському застосунку",
+        uahTotal: "Разом у гривні", uahRate: "курс",
         act: "Акт виконаних робіт", actDate: "Дата складання", actFor: "до рахунку",
         signedBy: "Виконавець", signedByCustomer: "Замовник",
         continued: "продовження",
@@ -79,6 +82,9 @@ export interface PdfParty { name: string; address?: string; taxId?: string }
 export interface PdfDocumentData {
     kind: DocKind;
     number: string;
+    // Курс к гривне: у счёта в валюте печатается и сумма в ₴ (НБУ плюс наценка фирмы).
+    // Здесь именно данные, а не настройки: строка попадает в те же итоги, что и остальные суммы.
+    uahRate?: { rate: number; base: number; margin: number; at: string } | null;
     orderNumber?: string; // накладная: номер заказа, по которому она выписана
     creditForNumber?: string; // для kind "credit_note" — номер исправляемого счёта
     customer: PdfParty;
@@ -170,6 +176,8 @@ const UA_LABELS: Record<string, string> = {
     actFor: "до рахунку",
     signedBy: "Виконавець",
     signedByCustomer: "Замовник",
+    uahTotal: "Разом у гривні",
+    uahRate: "курс",
 };
 
 // Рендерит PDF финансового документа в буфер — вызывается из app/api/*/[id]/pdf/route.ts (скачивание и печать)

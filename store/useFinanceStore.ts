@@ -86,6 +86,8 @@ export interface FinanceSettings {
 	uaLegalForm: "fop" | "tov"; uaGroup: number; uaSingleRate: number; uaVatPayer: boolean;
 	uaEsvMonthly: number; uaMilitaryRate: number; uaMilitaryFixed: number; uaVatLimit: number;
 	uaVatPeriod: "month" | "quarter";
+	// Наценка к курсу НБУ (%), 0 — чистый курс
+	rateMargin: number;
 }
 export interface CountryOption { code: string; name: string; standard: number; reduced?: number; label: string }
 export interface FinanceDashboard {

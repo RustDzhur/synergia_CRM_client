@@ -18,7 +18,7 @@ export default function FinanceSettingsTab() {
 	const t = useTranslations("finance");
 	const { settings, countries, loadSettings, saveSettings } = useFinanceStore();
 	// пустые сборы = сборы не начисляются (как и на сервере); поля заполнятся настоящими значениями, когда придут настройки
-	const [form, setForm] = useState({ country: "", currency: "EUR", smallBusiness: false, uaLegalForm: "fop", uaGroup: "3", uaSingleRate: "5", uaVatPayer: false, uaEsvMonthly: "1760", uaMilitaryRate: "1", uaMilitaryFixed: "800", uaVatLimit: "1000000", uaVatPeriod: "month", legalName: "", address: "", taxId: "", vatId: "", registerNumber: "", managingDirector: "", phone: "", email: "", website: "", logo: "", footerText: "", iban: "", bic: "", paymentTermsDays: "14", invoicePrefix: "RE", quotePrefix: "AN", creditNotePrefix: "GS", reminderIntervalDays: "7", dunningFees: ["", "", "", "", ""], dunningInterestRate: "", dunningPaymentDays: "7", template: "classic", paymentQr: true });
+	const [form, setForm] = useState({ country: "", currency: "EUR", smallBusiness: false, rateMargin: "0", uaLegalForm: "fop", uaGroup: "3", uaSingleRate: "5", uaVatPayer: false, uaEsvMonthly: "1760", uaMilitaryRate: "1", uaMilitaryFixed: "800", uaVatLimit: "1000000", uaVatPeriod: "month", legalName: "", address: "", taxId: "", vatId: "", registerNumber: "", managingDirector: "", phone: "", email: "", website: "", logo: "", footerText: "", iban: "", bic: "", paymentTermsDays: "14", invoicePrefix: "RE", quotePrefix: "AN", creditNotePrefix: "GS", reminderIntervalDays: "7", dunningFees: ["", "", "", "", ""], dunningInterestRate: "", dunningPaymentDays: "7", template: "classic", paymentQr: true });
 	const [saving, setSaving] = useState(false);
 	const logoInput = useRef<HTMLInputElement>(null);
 
@@ -28,7 +28,7 @@ export default function FinanceSettingsTab() {
 		const dn = settings as typeof settings & DunningFields;
 		// сборы по ступеням: индекс 0 в интерфейсе не используется, поэтому показываем ровно пять полей 0..4
 		const fees = Array.from({ length: 5 }, (_, i) => (dn.dunningFees?.[i] !== undefined ? String(dn.dunningFees[i]) : ""));
-		setForm({ country: settings.country, currency: settings.currency, smallBusiness: settings.smallBusiness, uaLegalForm: settings.uaLegalForm ?? "fop", uaGroup: String(settings.uaGroup ?? 3), uaSingleRate: String(settings.uaSingleRate ?? 5), uaVatPayer: !!settings.uaVatPayer, uaEsvMonthly: String(settings.uaEsvMonthly ?? 1760), uaMilitaryRate: String(settings.uaMilitaryRate ?? 1), uaMilitaryFixed: String(settings.uaMilitaryFixed ?? 800), uaVatLimit: String(settings.uaVatLimit ?? 1000000), uaVatPeriod: settings.uaVatPeriod ?? "month", legalName: settings.legalName, address: settings.address, taxId: settings.taxId, vatId: settings.vatId, registerNumber: settings.registerNumber, managingDirector: settings.managingDirector, phone: settings.phone, email: settings.email, website: settings.website, logo: settings.logo, footerText: settings.footerText, iban: settings.iban, bic: settings.bic, paymentTermsDays: String(settings.paymentTermsDays), invoicePrefix: settings.invoicePrefix, quotePrefix: settings.quotePrefix, creditNotePrefix: settings.creditNotePrefix, reminderIntervalDays: String(settings.reminderIntervalDays), dunningFees: fees, dunningInterestRate: String(dn.dunningInterestRate ?? 0), dunningPaymentDays: String(dn.dunningPaymentDays ?? 7), template: settings.template || "classic", paymentQr: settings.paymentQr !== false });
+		setForm({ country: settings.country, currency: settings.currency, smallBusiness: settings.smallBusiness, rateMargin: String(settings.rateMargin ?? 0), uaLegalForm: settings.uaLegalForm ?? "fop", uaGroup: String(settings.uaGroup ?? 3), uaSingleRate: String(settings.uaSingleRate ?? 5), uaVatPayer: !!settings.uaVatPayer, uaEsvMonthly: String(settings.uaEsvMonthly ?? 1760), uaMilitaryRate: String(settings.uaMilitaryRate ?? 1), uaMilitaryFixed: String(settings.uaMilitaryFixed ?? 800), uaVatLimit: String(settings.uaVatLimit ?? 1000000), uaVatPeriod: settings.uaVatPeriod ?? "month", legalName: settings.legalName, address: settings.address, taxId: settings.taxId, vatId: settings.vatId, registerNumber: settings.registerNumber, managingDirector: settings.managingDirector, phone: settings.phone, email: settings.email, website: settings.website, logo: settings.logo, footerText: settings.footerText, iban: settings.iban, bic: settings.bic, paymentTermsDays: String(settings.paymentTermsDays), invoicePrefix: settings.invoicePrefix, quotePrefix: settings.quotePrefix, creditNotePrefix: settings.creditNotePrefix, reminderIntervalDays: String(settings.reminderIntervalDays), dunningFees: fees, dunningInterestRate: String(dn.dunningInterestRate ?? 0), dunningPaymentDays: String(dn.dunningPaymentDays ?? 7), template: settings.template || "classic", paymentQr: settings.paymentQr !== false });
 	}, [settings]);
 
 	const selectedCountry = countries.find((c) => c.code === form.country);
@@ -45,6 +45,7 @@ export default function FinanceSettingsTab() {
 			dunningInterestRate: Math.max(0, Math.min(30, Number(form.dunningInterestRate) || 0)),
 			dunningPaymentDays: Math.max(1, Math.min(60, Math.round(Number(form.dunningPaymentDays) || 7))),
 			// украинская налоговая модель: числа приходят строками из полей ввода
+			rateMargin: Math.max(0, Math.min(50, Number(form.rateMargin) || 0)),
 			uaGroup: Number(form.uaGroup) || 3,
 			uaSingleRate: Number(form.uaSingleRate) === 3 ? 3 : 5,
 			uaEsvMonthly: Math.max(0, Number(form.uaEsvMonthly) || 0),
@@ -152,6 +153,13 @@ export default function FinanceSettingsTab() {
 					<label className="mt-14 flex items-center gap-10 text-13 text-[#cfd4cb]">
 						<input type="checkbox" checked={form.uaVatPayer} onChange={(e) => setForm({ ...form, uaVatPayer: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
 						{t("uaVatPayer")}
+					</label>
+					{/* Курс для счетов в валюте: печатаем сумму в ₴ по курсу НБУ плюс наценка фирмы.
+					    Ноль — чистый курс Нацбанка. */}
+					<label className="mt-14 block max-w-[260px]">
+						<span className={label}>{t("rateMargin")}</span>
+						<input value={form.rateMargin} onChange={(e) => setForm({ ...form, rateMargin: e.target.value.replace(/[^\d.]/g, "") })} className={field} maxLength={5} inputMode="decimal" />
+						<span className={hint}>{t("rateMarginHint")}</span>
 					</label>
 				</div>
 			)}

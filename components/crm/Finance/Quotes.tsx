@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { TbDownload, TbPlus } from "react-icons/tb";
+import { TbDownload, TbLink, TbPlus } from "react-icons/tb";
 import { LineItem, useFinanceStore } from "@/store/useFinanceStore";
 import { defaultRateFor } from "@/lib/finance/tax";
 import { STATUS_COLORS } from "@/utils/statusColors";
@@ -11,6 +11,7 @@ import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
 import { downloadDocumentPdf } from "./download";
+import { apiCall } from "@/store/crmApi";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
 import { emptyItem, useDefaultTaxRate } from "./lineItems";
@@ -47,6 +48,19 @@ export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: str
 		setDealLink({ deal: prefill.dealId, contact: prefill.contact, company: prefill.company });
 		setOpen(true);
 	}, [prefill]);
+
+	// Ссылка на предложение для клиента: он отмечает нужные позиции и принимает — в CRM остаётся
+	// принятое предложение с выбранными позициями, а менеджер получает уведомление
+	async function share(id: string) {
+		const res = await apiCall<{ url: string }>(`/api/quotes/${id}/share`);
+		if (!res.ok || !res.data) return void toast.error(res.message);
+		try {
+			await navigator.clipboard.writeText(res.data.url);
+			toast.success(t("shareCopied"));
+		} catch {
+			toast.success(res.data.url, { duration: 8000 });
+		}
+	}
 
 	async function submit(e: React.FormEvent) {
 		e.preventDefault();
@@ -121,6 +135,10 @@ export default function Quotes({ onOpenOrder, prefill }: { onOpenOrder: (id: str
 							)}
 							<div className="mt-12 flex flex-wrap items-center gap-8">
 								{q.status === "draft" && <button type="button" disabled={busy === q.id} onClick={() => send(q.id)} className="fs-btn fs-btn-primary h-34 disabled:opacity-[0.5]">{t("send")}</button>}
+								{/* Ссылка для клиента: он сам отметит нужные позиции и примет предложение */}
+								<button type="button" onClick={() => void share(q.id)} className="fs-btn fs-btn-ghost h-34" title={t("shareHint")}>
+									<TbLink size={15} /> {t("share")}
+								</button>
 								<button type="button" onClick={() => downloadPdf(q.id, q.number)} className="fs-btn fs-btn-ghost h-34">
 									<TbDownload size={15} /> {t("downloadPdf")}
 								</button>

@@ -52,6 +52,8 @@ const FinanceSettingsSchema = new Schema(
         uaMilitaryFixed: { type: Number, default: 800 }, // военный сбор 1, 2 и 4 групп, ₴ в месяц
         uaVatLimit: { type: Number, default: 1000000 }, // лимит дохода для обязательной регистрации плательщиком ПДВ
         uaVatPeriod: { type: String, enum: ["month", "quarter"], default: "month" }, // как отчитываться по ПДВ
+        // Наценка к курсу НБУ: фирма может считать по своему курсу («НБУ + 2 %»). 0 — чистый курс.
+        rateMargin: { type: Number, default: 0 },
         // счётчики последнего использованного номера по типу документа и году — атомарно инкрементируются, без пропусков
         counters: { type: Map, of: Number, default: {} },
     },

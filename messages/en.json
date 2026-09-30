@@ -2025,7 +2025,12 @@
         "payLinkSend": "Send to the customer",
         "payLinkSent": "Link sent",
         "payLinkSendFailed": "Could not send",
-        "payLinkNoProvider": "No checkout connected. Connect monobank, LiqPay, WayForPay or NOWPayments in Settings → Integrations."
+        "payLinkNoProvider": "No checkout connected. Connect monobank, LiqPay, WayForPay or NOWPayments in Settings → Integrations.",
+        "rateMargin": "Rate margin, %",
+        "rateMarginHint": "Invoices in a foreign currency also show the amount in ₴ — at the NBU rate plus this margin. 0 = the pure NBU rate.",
+        "share": "Link",
+        "shareHint": "Public link for the customer: status, items, delivery and payment — no login needed",
+        "shareCopied": "Link copied — send it to the customer"
     },
     "ads": {
         "needsUpgrade": "Ad performance needs the Professional plan.",
@@ -2406,5 +2411,31 @@
         "analytics_text": "A dashboard with tasks, closed deals and period comparison; figures for revenue, outstanding amounts and ad channels.",
         "security_title": "Roles and privacy",
         "security_text": "Several companies per account, roles with module permissions, data separated per organisation and a log of every change."
+    },
+    "share": {
+        "orderTitle": "Your order",
+        "quoteTitle": "Your quote",
+        "colName": "Item",
+        "colQty": "Qty",
+        "colPrice": "Price",
+        "colSum": "Total",
+        "total": "Total",
+        "validUntil": "valid until",
+        "choose": "Choose",
+        "accept": "Accept quote",
+        "accepting": "Sending…",
+        "accepted": "Thank you! We have received your acceptance.",
+        "acceptFailed": "Could not send — please try again",
+        "payInvoice": "Pay invoice {number}",
+        "paid": "The invoice is paid — thank you!",
+        "goneTitle": "This link is no longer valid",
+        "goneText": "The page has expired or was withdrawn. Ask the sender for a new link.",
+        "footer": "Powered by Firmspace AI",
+        "status_draft": "Draft",
+        "status_confirmed": "Confirmed",
+        "status_fulfilled": "Fulfilled",
+        "status_invoiced": "Invoiced",
+        "status_closed": "Closed",
+        "status_cancelled": "Cancelled"
     }
 }

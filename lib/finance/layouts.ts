@@ -395,6 +395,12 @@ function totalsRows(d: PdfDocumentData, L: L, totals: ReturnType<typeof computeT
     const dunningFee = Number(d.dunningFee) || 0;
     if (dunningFee > 0) rows.push([L.dunningFee, formatMoney(dunningFee, d.currency), false]);
     rows.push([L.gross, formatMoney(totals.gross + dunningFee, d.currency), true]);
+    // Сумма в гривне по курсу: печатаем только когда документ в валюте и фирма украинская
+    const rate = d.uahRate;
+    if (rate && d.currency && d.currency.toUpperCase() !== "UAH" && rate.rate > 0) {
+        const uah = (totals.gross + dunningFee) * rate.rate;
+        rows.push([`${L.uahTotal} (${L.uahRate} ${rate.rate.toFixed(4)})`, formatMoney(uah, "UAH"), false]);
+    }
     return rows;
 }
 

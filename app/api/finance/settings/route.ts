@@ -48,6 +48,7 @@ function toDTO(s: any) {
         uaMilitaryFixed: Number.isFinite(Number(s.uaMilitaryFixed)) ? Number(s.uaMilitaryFixed) : 800,
         uaVatLimit: Number(s.uaVatLimit) || 1000000,
         uaVatPeriod: s.uaVatPeriod === "quarter" ? "quarter" : "month",
+        rateMargin: Number(s.rateMargin) || 0,
         template: isTemplate(s.template) ? s.template : "classic",
         paymentQr: s.paymentQr !== false,
     };
@@ -108,6 +109,10 @@ export async function PATCH(req: Request) {
     if (Number(b.uaSingleRate) === 3 || Number(b.uaSingleRate) === 5) set.uaSingleRate = Number(b.uaSingleRate);
     if (typeof b.uaVatPayer === "boolean") set.uaVatPayer = b.uaVatPayer;
     if (b.uaVatPeriod === "month" || b.uaVatPeriod === "quarter") set.uaVatPeriod = b.uaVatPeriod;
+    if (b.rateMargin !== undefined) {
+        const n = Number(b.rateMargin);
+        if (Number.isFinite(n) && n >= 0 && n <= 50) set.rateMargin = n;
+    }
     for (const [key, max] of [["uaEsvMonthly", 100000], ["uaMilitaryFixed", 100000], ["uaVatLimit", 100000000], ["uaMilitaryRate", 100]] as const) {
         if (b[key] !== undefined) {
             const n = Number(b[key]);

@@ -2025,7 +2025,12 @@
         "payLinkSend": "An den Kunden senden",
         "payLinkSent": "Link gesendet",
         "payLinkSendFailed": "Senden fehlgeschlagen",
-        "payLinkNoProvider": "Keine Kasse verbunden. Verbinden Sie monobank, LiqPay, WayForPay oder NOWPayments unter Einstellungen → Integrationen."
+        "payLinkNoProvider": "Keine Kasse verbunden. Verbinden Sie monobank, LiqPay, WayForPay oder NOWPayments unter Einstellungen → Integrationen.",
+        "rateMargin": "Kursaufschlag, %",
+        "rateMarginHint": "Rechnungen in Fremdwährung zeigen zusätzlich den Betrag in ₴ — zum NBU-Kurs plus diesem Aufschlag. 0 = reiner NBU-Kurs.",
+        "share": "Link",
+        "shareHint": "Öffentlicher Link für den Kunden: Status, Positionen, Lieferung und Zahlung — ohne Anmeldung",
+        "shareCopied": "Link kopiert — senden Sie ihn dem Kunden"
     },
     "ads": {
         "needsUpgrade": "Werbeleistung erfordert den Tarif Professional.",
@@ -2406,5 +2411,31 @@
         "analytics_text": "Übersicht mit Aufgaben, Abschlüssen und Periodenvergleich; Kennzahlen zu Umsatz, offenen Posten und Werbekanälen.",
         "security_title": "Rollen und Datenschutz",
         "security_text": "Mehrere Firmen pro Konto, Rollen mit Modulrechten, getrennte Daten je Organisation und ein Protokoll über alle Änderungen."
+    },
+    "share": {
+        "orderTitle": "Ihre Bestellung",
+        "quoteTitle": "Ihr Angebot",
+        "colName": "Position",
+        "colQty": "Menge",
+        "colPrice": "Preis",
+        "colSum": "Summe",
+        "total": "Gesamt",
+        "validUntil": "gültig bis",
+        "choose": "Auswählen",
+        "accept": "Angebot annehmen",
+        "accepting": "Wird gesendet…",
+        "accepted": "Danke! Wir haben Ihre Annahme erhalten.",
+        "acceptFailed": "Konnte nicht gesendet werden — bitte versuchen Sie es erneut",
+        "payInvoice": "Rechnung {number} bezahlen",
+        "paid": "Die Rechnung ist bezahlt — danke!",
+        "goneTitle": "Der Link ist nicht mehr gültig",
+        "goneText": "Die Seite ist abgelaufen oder wurde zurückgezogen. Bitten Sie den Absender um einen neuen Link.",
+        "footer": "Seite wird von Firmspace AI bereitgestellt",
+        "status_draft": "Entwurf",
+        "status_confirmed": "Bestätigt",
+        "status_fulfilled": "Ausgeführt",
+        "status_invoiced": "In Rechnung gestellt",
+        "status_closed": "Abgeschlossen",
+        "status_cancelled": "Storniert"
     }
 }
