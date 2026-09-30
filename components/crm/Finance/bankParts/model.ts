@@ -16,6 +16,9 @@ export interface BankAccountRow {
 	balance: number;
 	transactionCount: number;
 	unmatched: number;
+	// "" — счёт ведётся вручную (CSV/касса), "monobank" — движения забираются по API
+	provider: string;
+	lastSyncAt: string;
 }
 
 // Движение в том виде, в каком его отдаёт toDTO (app/api/bank/transactions/route.ts)

@@ -44,6 +44,9 @@ export async function GET(req: Request) {
             openingBalance: account.openingBalance ?? 0,
             openingDate: account.openingDate ?? "",
             active: account.active !== false,
+            // Привязка к банку (выписка по API): интерфейс по ней показывает кнопку «Синхронізувати»
+            provider: account.provider ?? "",
+            lastSyncAt: account.providerSyncAt ? account.providerSyncAt.toISOString() : "",
             balance: balanceAt(account.openingBalance ?? 0, transactions as never, DATE.test(to) ? to : undefined),
             transactionCount: transactions.length,
             unmatched: transactions.filter((t) => !t.matchType).length,

@@ -3,8 +3,8 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized, validId } from "@/lib/api";
 import { logAudit } from "@/lib/audit";
-import { parseBankCsv, suggestMatches } from "@/lib/finance/bank";
-import { computeTotals } from "@/lib/finance/totals";
+import { parseBankCsv } from "@/lib/finance/bank";
+import { importBankRows } from "@/lib/finance/bankImport";
 import BankAccount from "@/models/BankAccount";
 import BankTransaction from "@/models/BankTransaction";
 import { applyPayment, statusAfterPayment } from "@/lib/finance/payments";
@@ -72,45 +72,13 @@ export async function POST(req: Request) {
         const parsed = parseBankCsv(b.csv);
         if (!parsed.rows.length) return badRequest("No transactions found in the file");
 
-        // повторный импорт того же файла не должен задваивать движения
-        const known = await BankTransaction.find({ org: user.id, account: account._id, externalId: { $ne: "" } }).select("externalId");
-        const seen = new Set(known.map((k) => k.externalId));
-        const fresh = parsed.rows.filter((r) => !r.externalId || !seen.has(r.externalId));
-
-        // подсказки по сверке: открытые счета клиентам и расходы за тот же период
-        const dates = fresh.map((r) => r.date).sort();
-        const [invoices, expenses] = await Promise.all([
-            dates.length ? Invoice.find({ org: user.id, kind: "invoice", status: { $nin: ["draft", "cancelled", "paid"] }, issueDate: { $lte: dates[dates.length - 1] } }).select("number customerName items currency") : [],
-            dates.length ? Expense.find({ org: user.id, date: { $gte: dates[0], $lte: dates[dates.length - 1] } }).select("vendor amount date") : [],
-        ]);
-        const candidates = [
-            ...invoices.map((inv) => ({ id: String(inv._id), label: `${inv.number} ${inv.customerName}`, amount: computeTotals(inv.items as never).gross, date: inv.issueDate ?? "" })),
-            ...expenses.map((e) => ({ id: String(e._id), label: `${e.vendor}`, amount: -(Number(e.amount) || 0), date: e.date })),
-        ];
-        const suggestions = suggestMatches(fresh.map((r, index) => ({ index, amount: r.amount, date: r.date, reference: r.reference, counterparty: r.counterparty })), candidates);
-        const byIndex = new Map(suggestions.map((s) => [Number(s.transactionExternalId), s]));
-
-        const created = [];
-        for (let i = 0; i < fresh.length; i++) {
-            const row = fresh[i];
-            const hint = byIndex.get(i);
-            const isInvoice = hint && invoices.some((inv) => String(inv._id) === hint.candidateId);
-            try {
-                const doc = await BankTransaction.create({
-                    org: user.id, account: account._id, date: row.date, amount: row.amount, currency: account.currency,
-                    counterparty: row.counterparty, reference: row.reference, externalId: row.externalId, source: "import",
-                    // привязку ставим только при уверенном совпадении: по номеру документа или по сумме и дате.
-                    // Слабая догадка (только по сумме) остаётся подсказкой, а не фактом.
-                    matchType: hint && hint.score >= 2 ? (isInvoice ? "invoice" : "expense") : "",
-                    matchId: hint && hint.score >= 2 ? hint.candidateId : undefined,
-                });
-                created.push(doc);
-            } catch { /* дубликат внешнего идентификатора — пропускаем */ }
-        }
+        // Запись строк — общая с синхронизацией по API (lib/finance/bankImport.ts): дубликаты не
+        // задваиваются, к новым строкам подбирается предполагаемая пара с подсказкой
+        const { created, skipped, suggestions } = await importBankRows(user.id, account, parsed.rows, "import");
         return NextResponse.json({
             imported: created.length,
-            skipped: parsed.skipped + (parsed.rows.length - fresh.length),
-            suggestions: suggestions.length,
+            skipped: parsed.skipped + skipped,
+            suggestions,
             transactions: created.map(toDTO),
         }, { status: 201 });
     }

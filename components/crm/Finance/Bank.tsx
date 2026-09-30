@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { TbArrowLeft, TbBuildingBank, TbCash, TbCheck, TbPlus, TbTrash, TbUpload } from "react-icons/tb";
 import { apiCall } from "@/store/crmApi";
 import { useFinanceStore } from "@/store/useFinanceStore";
+import { useMarket } from "@/store/useMarket";
 import { balanceAt, suggestMatches } from "@/lib/finance/bank";
 import type { MatchCandidate, MatchSuggestion } from "@/lib/finance/bank";
 import { periodRange } from "@/lib/finance/reportMath";
@@ -16,6 +17,7 @@ import AccountCards from "./bankParts/AccountCards";
 import AccountDialog from "./bankParts/AccountDialog";
 import ManualDialog from "./bankParts/ManualDialog";
 import MatchDialog from "./bankParts/MatchDialog";
+import MonobankDialog from "./bankParts/MonobankDialog";
 import TransactionsTable from "./bankParts/TransactionsTable";
 import { EMPTY_ACCOUNT, EMPTY_MANUAL, amountColor, buildCandidates, dayGap, serverMessage } from "./bankParts/model";
 import type { BankAccountRow, BankTx, ImportResult } from "./bankParts/model";
@@ -41,7 +43,12 @@ export default function Bank() {
 	const loadInvoices = useFinanceStore((s) => s.loadInvoices);
 	const loadExpenses = useFinanceStore((s) => s.loadExpenses);
 
+	const { market } = useMarket();
 	const [accounts, setAccounts] = useState<BankAccountRow[] | null>(null);
+	// Подключение monobank и служебные состояния привязки к банку (ТЗ «Банки і каса»)
+	const [mbOpen, setMbOpen] = useState(false);
+	const [mbBusy, setMbBusy] = useState(false);
+	const [mbUnlink, setMbUnlink] = useState(false);
 	const [accountsFailed, setAccountsFailed] = useState(false);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [period, setPeriod] = useState<PeriodKind>("quarter");
@@ -115,6 +122,29 @@ export default function Bank() {
 	}, [selectedId, period, onlyUnmatched, reloadKey]);
 
 	function reload() { setReloadKey((k) => k + 1); }
+
+	// Синхронизация выписки по API: сервер сам решает окно (с прошлого раза или за месяц),
+	// дубликаты строк не задваиваются — по внешнему id движения из банка
+	async function syncMonobank() {
+		if (!account || mbBusy) return;
+		setMbBusy(true);
+		const r = await apiCall<{ imported: number; suggestions: number; from: string; to: string }>("/api/bank/monobank", "POST", { action: "sync", accountId: account.id });
+		setMbBusy(false);
+		if (!r.ok || !r.data) return void toast.error(serverMessage(t, r.message));
+		toast.success(t("mbSynced", { imported: r.data.imported, from: r.data.from, to: r.data.to }));
+		reload();
+	}
+
+	async function unlinkMonobank() {
+		if (!account) return;
+		setMbBusy(true);
+		const r = await apiCall("/api/bank/monobank", "POST", { action: "unlink", accountId: account.id });
+		setMbBusy(false);
+		setMbUnlink(false);
+		if (!r.ok) return void toast.error(serverMessage(t, r.message));
+		toast.success(t("mbUnlinked"));
+		reload();
+	}
 
 	function openAccount(id: string) {
 		setNotice("");
@@ -308,8 +338,24 @@ export default function Bank() {
 								{account.kind === "cash" ? t("bankKindCash") : t("bankKindBank")}
 							</span>
 							{account.iban && <span className="text-12 text-[#8c948b]">{account.iban}</span>}
+							{/* Счёт привязан к банку: движения забираются по API — видно чипом и датой последней синхронизации */}
+							{account.provider === "monobank" && (
+								<span className="fs-chip" title={account.lastSyncAt ? t("mbLastSync", { at: new Date(account.lastSyncAt).toLocaleString() }) : t("mbNeverSynced")}>
+									monobank{account.lastSyncAt ? "" : " ·"}
+								</span>
+							)}
 						</div>
-						<PeriodSwitch value={period} onChange={setPeriod} />
+						<div className="flex flex-wrap items-center gap-10">
+							<PeriodSwitch value={period} onChange={setPeriod} />
+							{account.provider === "monobank" && (
+								<>
+									<button type="button" disabled={mbBusy} onClick={() => void syncMonobank()} className="fs-btn fs-btn-ghost h-36 disabled:opacity-[0.5]">
+										{mbBusy ? t("mbSyncing") : t("mbSync")}
+									</button>
+									<button type="button" onClick={() => setMbUnlink(true)} className="fs-link text-12">{t("mbUnlink")}</button>
+								</>
+							)}
+						</div>
 					</div>
 
 					{/* Сальдо — остаток на начало плюс движения за период: balanceAt из lib/finance/bank.ts
@@ -395,11 +441,21 @@ export default function Bank() {
 				<>
 					<div className="mb-16 flex flex-wrap items-center justify-between gap-x-20 gap-y-10">
 						<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("bankTitle")}</h2>
-						<button type="button" onClick={openNewAccount} className="fs-btn fs-btn-primary h-40">
-							<TbPlus size={16} /> {t("bankNewAccount")}
-						</button>
+						<div className="flex flex-wrap items-center gap-10">
+							{/* Прямое подключение банка по API — пока украинское (monobank). Немецким фирмам
+							    честно говорим, что FinTS ещё не сделан и выписка импортируется файлом */}
+							{market === "UA" && (
+								<button type="button" onClick={() => setMbOpen(true)} className="fs-btn fs-btn-ghost h-40">
+									{t("mbConnect")}
+								</button>
+							)}
+							<button type="button" onClick={openNewAccount} className="fs-btn fs-btn-primary h-40">
+								<TbPlus size={16} /> {t("bankNewAccount")}
+							</button>
+						</div>
 					</div>
 					<p className="mb-16 text-12 leading-[1.5] text-[#8c948b]">{t("bankHint")}</p>
+					{market === "DE" && <p className="mb-16 text-12 leading-[1.5] text-[#9AA396]">{t("mbDeNote")}</p>}
 					<p className="fs-eyebrow mb-10">{t("bankAccounts")}</p>
 
 					{accounts === null ? (
@@ -415,6 +471,14 @@ export default function Bank() {
 			<AccountDialog open={accountOpen} onClose={() => setAccountOpen(false)} form={accountForm} onChange={setAccountForm} notice={notice} busy={busy} onSubmit={createAccount} />
 			<ManualDialog open={manualOpen} onClose={() => setManualOpen(false)} form={manualForm} onChange={setManualForm} notice={notice} busy={busy} onSubmit={submitManual} />
 			<MatchDialog open={matchOpen} onClose={() => setMatchOpen(false)} tx={matchTx} candidates={candidates} notice={notice} busy={busy} onPick={match} />
+			<MonobankDialog open={mbOpen} onClose={() => setMbOpen(false)} onLinked={reload} />
+			<ConfirmDialog
+				open={mbUnlink}
+				title={t("mbUnlink")}
+				text={t("mbUnlinkConfirm")}
+				onCancel={() => setMbUnlink(false)}
+				onConfirm={() => void unlinkMonobank()}
+			/>
 
 			<ConfirmDialog
 				open={!!toDelete}
