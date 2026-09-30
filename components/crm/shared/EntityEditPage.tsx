@@ -7,6 +7,7 @@ import type { Activity } from "@/types/crm";
 import type { NewActivity } from "@/store/crmApi";
 import Loader from "@/utils/Loader";
 import FormField from "./FormField";
+import AutocompleteField from "./AutocompleteField";
 import ActivityComposer, { ComposerTab } from "./ActivityComposer";
 import ActivityTimeline from "./ActivityTimeline";
 import AiSummaryButton from "../AiAssistant/AiSummaryButton";
@@ -15,6 +16,9 @@ export interface FieldDef {
 	key: string;
 	label: string;
 	type?: "text" | "email" | "tel" | "url" | "date";
+	// Поле с подсказками (ТЗ §16): справочник по режиму рынка — фирмы (VIES/ЄДР) или адреса (Нова Пошта);
+	// fill — какие ещё поля формы заполнить выбранным значением
+	lookup?: { kind: "company" | "address"; country?: string; fill?: Record<string, string> };
 }
 
 type Entity = { _id: string; activities?: Activity[] } & Record<string, any>;
@@ -127,7 +131,17 @@ export default function EntityEditPage<T extends Entity>({
 					{!isNew && entity && <AiSummaryButton kind={tab === "contacts" ? "contact" : "company"} name={String(entity.name ?? "")} />}
 				</div>
 				<div className="flex flex-col gap-16">
-					{fields.map((f) => (
+					{fields.map((f) => f.lookup ? (
+						<AutocompleteField
+							key={f.key}
+							label={f.label}
+							value={form[f.key] ?? ""}
+							onChange={(v) => setForm((prev) => ({ ...prev, [f.key]: v }))}
+							onPick={(fill) => setForm((prev) => ({ ...prev, ...fill, ...(f.lookup!.fill ?? {}) }))}
+							kind={f.lookup.kind}
+							country={f.lookup.country}
+						/>
+					) : (
 						<FormField
 							key={f.key}
 							label={f.label}
