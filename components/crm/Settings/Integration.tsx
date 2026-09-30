@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
 import { FaFacebookMessenger, FaTelegram, FaViber, FaWhatsapp } from "react-icons/fa";
-import { TbShoppingCart, TbReceipt, TbTruckDelivery, TbCode, TbDeviceMobileMessage, TbHeadset, TbPhone } from "react-icons/tb";
+import { TbCreditCard, TbCurrencyBitcoin, TbShoppingCart, TbReceipt, TbTruckDelivery, TbCode, TbDeviceMobileMessage, TbHeadset, TbPhone } from "react-icons/tb";
 import { SMS_PROVIDER_TYPES } from "@/config/smsProviders";
 import { useIntegrationsStore } from "@/store/useIntegrationsStore";
 import type { IntegrationType } from "@/types/integrations";
@@ -45,6 +45,11 @@ const INTEGRATIONS: Integration[] = [
 	// Укрпошта: статус отправления по штрихкоду — вторая по популярности доставка в Украине
 	{ id: "ukrposhta", key: "intUkrposhta", icon: TbTruckDelivery, real: "ukrposhta" },
 	// Маркетплейсы: заявки и заказы площадок попадают в воронку сами, с пометкой источника
+	// Приём оплаты: ссылку на оплату счёта можно отправить клиенту в мессенджер
+	{ id: "monobank", key: "intMonobank", icon: TbCreditCard, real: "monobank" },
+	{ id: "liqpay", key: "intLiqpay", icon: TbCreditCard, real: "liqpay" },
+	{ id: "wayforpay", key: "intWayforpay", icon: TbCreditCard, real: "wayforpay" },
+	{ id: "cryptopay", key: "intCryptopay", icon: TbCurrencyBitcoin, real: "cryptopay" },
 	{ id: "prom", key: "intProm", icon: TbShoppingCart, real: "prom" },
 	{ id: "rozetka", key: "intRozetka", icon: TbShoppingCart, real: "rozetka" },
 	{ id: "horoshop", key: "intHoroshop", icon: TbShoppingCart, real: "horoshop" },

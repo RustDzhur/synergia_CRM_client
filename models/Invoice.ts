@@ -74,7 +74,10 @@ const InvoiceSchema = new Schema(
         fiscalCode: { type: String, default: "" },
         fiscalUrl: { type: String, default: "" },
         fiscalAt: { type: Date },
-        fiscalError: { type: String, default: "" }, // счёт создан автоматически по шаблону
+        fiscalError: { type: String, default: "" },
+        // Ссылка на оплату (эквайринг фирмы): способ, адрес и платёж у провайдера. paidVia — чем закрыли счёт.
+        payLink: { provider: { type: String, default: "" }, url: { type: String, default: "" }, id: { type: String, default: "" }, at: { type: Date } },
+        paidVia: { type: String, default: "" }, // счёт создан автоматически по шаблону
 
         createdByName: { type: String, default: "" },
     },

@@ -43,6 +43,9 @@ export interface Invoice {
 	template: string; totals: Totals; createdAt: string; updatedAt: string;
 	// Фискальный чек ПРРО (Украина): номер, ссылка для клиента и текст ошибки, если чек не пробился
 	fiscal?: { code: string; url: string; at: string; error: string } | null;
+	// Ссылка на оплату от эквайринга фирмы и способ, которым счёт закрыли
+	payLink?: { provider: string; url: string; id: string } | null;
+	paidVia?: string;
 }
 export interface RecurringInvoice {
 	id: string; active: boolean; contact: string; company: string;

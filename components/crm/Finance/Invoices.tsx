@@ -12,6 +12,7 @@ import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
 import { downloadDocumentPdf } from "./download";
 import DocumentTemplateButton from "./DocumentTemplateButton";
+import PaymentLinkDialog from "./invoicesParts/PaymentLinkDialog";
 import { localeTag } from "@/utils/dateHelpers";
 import { money } from "./format";
 import { emptyItem, useDefaultTaxRate } from "./lineItems";
@@ -38,6 +39,8 @@ export default function Invoices({ openId, prefill }: { openId?: string | null; 
 	const [items, setItems] = useState<LineItem[]>([emptyItem(defaultTaxRate)]);
 	const [busy, setBusy] = useState<string | null>(null);
 	const [creditTarget, setCreditTarget] = useState<string | null>(null);
+	// Ссылка на оплату: окно открывается из строки счёта, там же выбирают кассу и чат клиента
+	const [payFor, setPayFor] = useState<string | null>(null);
 	const [creditNotes, setCreditNotes] = useState("");
 	// Окно «введите адрес»: открывается, когда у клиента нет сохранённого e-mail (сервер отвечает no_recipient)
 	const [mailFor, setMailFor] = useState<string | null>(null);
@@ -178,6 +181,12 @@ export default function Invoices({ openId, prefill }: { openId?: string | null; 
 										<TbReceipt size={15} /> {t("fiscalIssue")}
 									</button>
 								)}
+								{/* Ссылка на оплату: клиент платит сам, счёт закрывается вебхуком кассы */}
+								{inv.kind === "invoice" && inv.status !== "paid" && inv.status !== "cancelled" && (
+									<button type="button" onClick={() => setPayFor(inv.id)} className="fs-btn fs-btn-ghost h-34 border-[rgba(198,255,77,0.4)] text-[#c6ff4d]">
+										{inv.payLink ? t("payLinkReady") : t("payLink")}
+									</button>
+								)}
 								<button type="button" onClick={() => downloadPdf(inv.id, inv.number)} className="fs-btn fs-btn-ghost h-34">
 									<TbDownload size={15} /> {t("downloadPdf")}
 								</button>
@@ -221,6 +230,15 @@ export default function Invoices({ openId, prefill }: { openId?: string | null; 
 					</div>
 				</form>
 			</Modal>
+
+			{payFor && (
+				<PaymentLinkDialog
+					invoiceId={payFor}
+					open={payFor !== null}
+					onClose={() => setPayFor(null)}
+					onCreated={() => void loadInvoices()}
+				/>
+			)}
 
 			<Modal open={!!mailFor} onClose={() => setMailFor(null)} label={t("sendTitle")} className="w-full max-w-[520px]">
 				<form onSubmit={submitMail} className="fs-popover p-20 md:p-24">

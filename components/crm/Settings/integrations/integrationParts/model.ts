@@ -66,6 +66,22 @@ export const FIELDS: Record<Real, FieldDef[]> = {
 	],
 	// Укрпошта: bearer-токен из кабинета (выдаётся после договора) — по нему тянем статус отправления
 	ukrposhta: [{ key: "token", label: "intfUpToken", secret: true }],
+	// Приём платежей: у каждой кассы свои ключи. Ссылка на оплату создаётся из счёта, а оплату
+	// CRM узнаёт из вебхука провайдера (lib/payments).
+	monobank: [{ key: "token", label: "intfMonoToken", secret: true, placeholder: "u…" }],
+	liqpay: [
+		{ key: "publicKey", label: "intfLiqpayPublic" },
+		{ key: "privateKey", label: "intfLiqpayPrivate", secret: true },
+	],
+	wayforpay: [
+		{ key: "merchantAccount", label: "intfWfpMerchant" },
+		{ key: "merchantDomainName", label: "intfWfpDomain", optional: true, placeholder: "example.com" },
+		{ key: "secretKey", label: "intfWfpSecret", secret: true },
+	],
+	cryptopay: [
+		{ key: "apiKey", label: "intfCryptoKey", secret: true },
+		{ key: "ipnSecret", label: "intfCryptoIpn", secret: true },
+	],
 	telegram: [{ key: "botToken", label: "intfBotToken", secret: true, placeholder: "123456:ABC…" }],
 	viber: [{ key: "authToken", label: "intfViberToken", secret: true }],
 	messenger: [

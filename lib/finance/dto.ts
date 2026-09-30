@@ -46,6 +46,8 @@ export const toInvoiceDTO = (inv: any) => ({
     dunningLog: (inv.dunningLog ?? []).map((e: any) => ({ level: e.level, sentAt: e.sentAt ? e.sentAt.toISOString() : "", fee: e.fee ?? 0, dueDate: e.dueDate ?? "", method: e.method ?? "" })),
     recurringSource: inv.recurringSource ? String(inv.recurringSource) : "",
     // Фискальный чек ПРРО: фискальный номер и ссылка для клиента (см. lib/finance/fiscal.ts)
+    paidVia: inv.paidVia ?? "",
+    payLink: inv.payLink?.url ? { provider: inv.payLink.provider ?? "", url: inv.payLink.url, id: inv.payLink.id ?? "" } : null,
     fiscal: inv.fiscalCode || inv.fiscalId || inv.fiscalError
         ? { code: inv.fiscalCode ?? "", url: inv.fiscalUrl ?? "", at: inv.fiscalAt ? new Date(inv.fiscalAt).toISOString() : "", error: inv.fiscalError ?? "" }
         : null,

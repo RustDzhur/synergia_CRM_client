@@ -956,7 +956,19 @@
         "intfOlxClientId": "OLX Client ID (Partner-App)",
         "intfOlxClientSecret": "OLX Client Secret",
         "intUkrposhta": "Укрпошта (Sendungsverfolgung)",
-        "intfUpToken": "Bearer-Token (Укрпошта → API)"
+        "intfUpToken": "Bearer-Token (Укрпошта → API)",
+        "intMonobank": "monobank (Zahlungen)",
+        "intLiqpay": "LiqPay (Zahlungen)",
+        "intWayforpay": "WayForPay (Zahlungen)",
+        "intCryptopay": "Krypto-Zahlungen (NOWPayments)",
+        "intfMonoToken": "Merchant-Token (monobank → E-Commerce)",
+        "intfLiqpayPublic": "Öffentlicher Schlüssel",
+        "intfLiqpayPrivate": "Privater Schlüssel",
+        "intfWfpMerchant": "Merchant Account",
+        "intfWfpDomain": "Shop-Domain",
+        "intfWfpSecret": "Secret Key",
+        "intfCryptoKey": "NOWPayments API-Key",
+        "intfCryptoIpn": "IPN Secret"
     },
     "upgrade": {
         "free": "Kostenlos",
@@ -2000,7 +2012,20 @@
         "upTitle": "Укрпошта-Sendung",
         "upBarcode": "Sendungsnummer (ШКІ)",
         "upHint": "Die Nummer steht auf dem Beleg aus der Filiale. Der Status wird sofort abgerufen.",
-        "upSaved": "Sendungsstatus aktualisiert"
+        "upSaved": "Sendungsstatus aktualisiert",
+        "payLink": "Zahlungslink",
+        "payLinkReady": "Zahlungslink ✓",
+        "payLinkTitle": "Zahlungslink",
+        "payLinkHelp": "Wählen Sie die Kasse der Firma und senden Sie den Link an den Kunden — die Rechnung schließt sich automatisch, sobald bezahlt wird.",
+        "payLinkProvider": "Womit kassieren",
+        "payLinkCreate": "Link erstellen",
+        "payLinkCopy": "Kopieren",
+        "payLinkCopied": "Link kopiert",
+        "payLinkCopyFailed": "Kopieren nicht möglich — markieren Sie den Link von Hand",
+        "payLinkSend": "An den Kunden senden",
+        "payLinkSent": "Link gesendet",
+        "payLinkSendFailed": "Senden fehlgeschlagen",
+        "payLinkNoProvider": "Keine Kasse verbunden. Verbinden Sie monobank, LiqPay, WayForPay oder NOWPayments unter Einstellungen → Integrationen."
     },
     "ads": {
         "needsUpgrade": "Werbeleistung erfordert den Tarif Professional.",

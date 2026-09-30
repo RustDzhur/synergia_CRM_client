@@ -956,7 +956,19 @@
         "intfOlxClientId": "OLX Client ID (застосунок партнера)",
         "intfOlxClientSecret": "OLX Client Secret",
         "intUkrposhta": "Укрпошта (трекінг)",
-        "intfUpToken": "Bearer-токен (Укрпошта → API)"
+        "intfUpToken": "Bearer-токен (Укрпошта → API)",
+        "intMonobank": "monobank (прийом оплати)",
+        "intLiqpay": "LiqPay (прийом оплати)",
+        "intWayforpay": "WayForPay (прийом оплати)",
+        "intCryptopay": "Крипто-оплата (NOWPayments)",
+        "intfMonoToken": "Токен мерчанта (monobank → Еквайринг)",
+        "intfLiqpayPublic": "Публічний ключ",
+        "intfLiqpayPrivate": "Приватний ключ",
+        "intfWfpMerchant": "Merchant Account",
+        "intfWfpDomain": "Домен магазину",
+        "intfWfpSecret": "Secret Key",
+        "intfCryptoKey": "API-ключ NOWPayments",
+        "intfCryptoIpn": "IPN Secret"
     },
     "upgrade": {
         "free": "Безкоштовний",
@@ -2000,7 +2012,20 @@
         "upTitle": "Відправлення Укрпошти",
         "upBarcode": "Штрихкод (ШКІ)",
         "upHint": "Номер надруковано на чеку у відділенні. Статус підтягнеться одразу.",
-        "upSaved": "Статус відправлення оновлено"
+        "upSaved": "Статус відправлення оновлено",
+        "payLink": "Посилання на оплату",
+        "payLinkReady": "Посилання ✓",
+        "payLinkTitle": "Посилання на оплату",
+        "payLinkHelp": "Виберіть касу фірми й надішліть посилання клієнту — рахунок закриється сам, коли надійде оплата.",
+        "payLinkProvider": "Чим приймати оплату",
+        "payLinkCreate": "Створити посилання",
+        "payLinkCopy": "Копіювати",
+        "payLinkCopied": "Посилання скопійовано",
+        "payLinkCopyFailed": "Не вдалося скопіювати — виділіть посилання вручну",
+        "payLinkSend": "Надіслати клієнту",
+        "payLinkSent": "Посилання надіслано",
+        "payLinkSendFailed": "Не вдалося надіслати",
+        "payLinkNoProvider": "Жодної каси не підключено. Підключіть monobank, LiqPay, WayForPay або NOWPayments у Налаштуваннях → Інтеграції."
     },
     "ads": {
         "needsUpgrade": "Ефективність реклами доступна від тарифу Professional.",

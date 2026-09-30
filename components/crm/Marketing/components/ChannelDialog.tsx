@@ -44,6 +44,10 @@ const LABEL: Record<Needed, string> = {
 	horoshop: "intHoroshop",
 	olx: "intOlx",
 	ukrposhta: "intUkrposhta",
+	monobank: "intMonobank",
+	liqpay: "intLiqpay",
+	wayforpay: "intWayforpay",
+	cryptopay: "intCryptopay",
 };
 
 interface Props {

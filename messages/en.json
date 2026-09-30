@@ -956,7 +956,19 @@
         "intfOlxClientId": "OLX Client ID (partner app)",
         "intfOlxClientSecret": "OLX Client Secret",
         "intUkrposhta": "Укрпошта (tracking)",
-        "intfUpToken": "Bearer token (Укрпошта → API)"
+        "intfUpToken": "Bearer token (Укрпошта → API)",
+        "intMonobank": "monobank (payments)",
+        "intLiqpay": "LiqPay (payments)",
+        "intWayforpay": "WayForPay (payments)",
+        "intCryptopay": "Crypto payments (NOWPayments)",
+        "intfMonoToken": "Merchant token (monobank → E-Commerce)",
+        "intfLiqpayPublic": "Public key",
+        "intfLiqpayPrivate": "Private key",
+        "intfWfpMerchant": "Merchant account",
+        "intfWfpDomain": "Shop domain",
+        "intfWfpSecret": "Secret key",
+        "intfCryptoKey": "NOWPayments API key",
+        "intfCryptoIpn": "IPN secret"
     },
     "upgrade": {
         "free": "Free",
@@ -2000,7 +2012,20 @@
         "upTitle": "Ukrposhta shipment",
         "upBarcode": "Tracking number (ШКІ)",
         "upHint": "The number is printed on the receipt from the post office. The status is fetched right away.",
-        "upSaved": "Shipment status updated"
+        "upSaved": "Shipment status updated",
+        "payLink": "Payment link",
+        "payLinkReady": "Payment link ✓",
+        "payLinkTitle": "Payment link",
+        "payLinkHelp": "Pick the company's checkout and send the link to the customer — the invoice closes by itself once it is paid.",
+        "payLinkProvider": "Accept payment via",
+        "payLinkCreate": "Create link",
+        "payLinkCopy": "Copy",
+        "payLinkCopied": "Link copied",
+        "payLinkCopyFailed": "Could not copy — select the link manually",
+        "payLinkSend": "Send to the customer",
+        "payLinkSent": "Link sent",
+        "payLinkSendFailed": "Could not send",
+        "payLinkNoProvider": "No checkout connected. Connect monobank, LiqPay, WayForPay or NOWPayments in Settings → Integrations."
     },
     "ads": {
         "needsUpgrade": "Ad performance needs the Professional plan.",
