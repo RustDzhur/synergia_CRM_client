@@ -36,8 +36,9 @@ export function dateLines(d: PdfDocumentData, L: L): string[] {
     const out: string[] = [];
     const add = (label: string, value?: string) => { if (value) out.push(`${label}: ${value}`); };
     if (d.kind === "delivery_note" || d.kind === "packing_list") {
-        // В накладной и упаковочном листе важны дата поставки и ссылка на заказ
-        add(L.deliveryDate, d.supplyDate || d.issueDate);
+        // В накладной и упаковочном листе важны дата и ссылка на заказ; у листа — своя подпись даты,
+        // иначе оба документа выглядели одним и тем же бланком
+        add(d.kind === "packing_list" ? L.packingDate : L.deliveryDate, d.supplyDate || d.issueDate);
         add(L.ourOrder, d.orderNumber);
     }
     else if (d.kind === "invoice" || d.kind === "credit_note") { add(L.issueDate, d.issueDate); add(L.dueDate, d.dueDate); }
@@ -348,25 +349,42 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
     if (d.kind === "delivery_note") o = { ...o, noPrices: true };
     const size = o.size ?? 10;
     const pad = o.rowPad ?? 6;
-    const cols = { desc: o.x, qty: o.x + o.width - 245, price: o.x + o.width - 185, tax: o.x + o.width - 105, total: o.x + o.width - 65 };
-    const widths = { qty: 50, price: 60, tax: 40, total: 65 };
+    // Упаковочный лист — не «накладная без цен», а свой документ груза: УКТ ЗЕД, вес и страна
+    // происхождения отдельными колонками (для брокера), плюс строка общего веса под таблицей
+    const packing = d.kind === "packing_list";
+    const cols = packing
+        ? { num: o.x, desc: o.x + 24, hs: o.x + o.width - 252, qty: o.x + o.width - 156, weight: o.x + o.width - 100, origin: o.x + o.width - 46, price: 0, tax: 0, total: 0 }
+        : { num: 0, desc: o.x, hs: 0, qty: o.x + o.width - 245, weight: 0, origin: 0, price: o.x + o.width - 185, tax: o.x + o.width - 105, total: o.x + o.width - 65 };
+    const widths = packing
+        ? { num: 20, hs: 90, qty: 50, weight: 56, origin: 46, price: 0, tax: 0, total: 0 }
+        : { num: 0, hs: 0, qty: 50, weight: 0, origin: 0, price: 60, tax: 40, total: 65 };
+    const descWidth = (packing ? cols.hs : cols.qty) - cols.desc - 6;
     const headerH = size + pad;
     const drawHeader = (yy: number): number => {
         if (o.headerFill) box(doc, o.x, yy, o.width, headerH, { fill: o.accent });
         const headerColor = o.headerFill ? "#FFFFFF" : "#999999";
         const hy = yy + pad / 2;
-        text(doc, L.description, cols.desc, hy, { size: size - 1, color: headerColor });
-        text(doc, L.qty, cols.qty, hy, { size: size - 1, color: headerColor, width: widths.qty, align: "right" });
-        if (!o.noPrices) {
-            text(doc, L.unitPrice, cols.price, hy, { size: size - 1, color: headerColor, width: widths.price, align: "right" });
-            text(doc, L.tax, cols.tax, hy, { size: size - 1, color: headerColor, width: widths.tax, align: "right" });
-            text(doc, L.lineTotal, cols.total, hy, { size: size - 1, color: headerColor, width: widths.total, align: "right" });
+        if (packing) {
+            text(doc, "№", cols.num, hy, { size: size - 1, color: headerColor, width: widths.num });
+            text(doc, L.description, cols.desc, hy, { size: size - 1, color: headerColor });
+            text(doc, L.hsCode, cols.hs, hy, { size: size - 1, color: headerColor, width: widths.hs });
+            text(doc, L.qty, cols.qty, hy, { size: size - 1, color: headerColor, width: widths.qty, align: "right" });
+            text(doc, L.weightKg, cols.weight, hy, { size: size - 1, color: headerColor, width: widths.weight, align: "right" });
+            text(doc, L.origin, cols.origin, hy, { size: size - 1, color: headerColor, width: widths.origin, align: "right" });
+        } else {
+            text(doc, L.description, cols.desc, hy, { size: size - 1, color: headerColor });
+            text(doc, L.qty, cols.qty, hy, { size: size - 1, color: headerColor, width: widths.qty, align: "right" });
+            if (!o.noPrices) {
+                text(doc, L.unitPrice, cols.price, hy, { size: size - 1, color: headerColor, width: widths.price, align: "right" });
+                text(doc, L.tax, cols.tax, hy, { size: size - 1, color: headerColor, width: widths.tax, align: "right" });
+                text(doc, L.lineTotal, cols.total, hy, { size: size - 1, color: headerColor, width: widths.total, align: "right" });
+            }
         }
         const top = yy + headerH;
         if (!o.headerFill) rule(doc, o.x, top - pad / 2, o.x + o.width, o.border ?? "#E6E6E6");
         return top;
     };
-    const rowH = (it: PdfLineItem) => Math.max(doc.fontSize(size).heightOfString(it.description, { width: cols.qty - o.x - 6 }), size) + pad;
+    const rowH = (it: PdfLineItem) => Math.max(doc.fontSize(size).heightOfString(it.description, { width: descWidth }), size) + pad;
     const bottom = o.bottom ?? Number.POSITIVE_INFINITY;
     // Шапка не должна отрываться от первой строки: если они вместе не помещаются — переносим заранее
     if (o.onBreak && d.items.length && y + headerH + rowH(d.items[0]) > bottom) y = o.onBreak();
@@ -380,20 +398,43 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
         if (o.zebra && row % 2 === 1) box(doc, o.x, top, o.width, h, { fill: o.tint });
         if (o.grid) box(doc, o.x, top, o.width, h, { stroke: o.border ?? "#E6E6E6" });
         const ty = top + pad / 2;
-        text(doc, it.description, cols.desc, ty, { size, color: "#333333", width: cols.qty - o.x - 6 });
-        text(doc, String(it.qty), cols.qty, ty, { size, color: "#333333", width: widths.qty, align: "right" });
-        if (!o.noPrices) {
-            text(doc, formatMoney(it.unitPrice, d.currency), cols.price, ty, { size, color: "#333333", width: widths.price, align: "right" });
-            // у документа без налога в колонке ставки стоит прочерк: печатать там 19 % при нулевом налоге — противоречие
-            text(doc, d.smallBusinessNote ? "—" : `${it.taxRate}%`, cols.tax, ty, { size, color: "#333333", width: widths.tax, align: "right" });
-            text(doc, formatMoney(it.qty * it.unitPrice, d.currency), cols.total, ty, { size, color: "#333333", width: widths.total, align: "right" });
+        if (packing) {
+            const weight = (Number(it.unitWeightKg) || 0) * (Number(it.qty) || 0);
+            text(doc, String(row + 1), cols.num, ty, { size, color: "#666666", width: widths.num });
+            text(doc, it.description, cols.desc, ty, { size, color: "#333333", width: descWidth });
+            text(doc, it.hsCode || "—", cols.hs, ty, { size, color: "#333333", width: widths.hs });
+            text(doc, String(it.qty), cols.qty, ty, { size, color: "#333333", width: widths.qty, align: "right" });
+            text(doc, weight > 0 ? fmtWeight(weight) : "—", cols.weight, ty, { size, color: "#333333", width: widths.weight, align: "right" });
+            text(doc, it.originCountry || "—", cols.origin, ty, { size, color: "#333333", width: widths.origin, align: "right" });
+        } else {
+            text(doc, it.description, cols.desc, ty, { size, color: "#333333", width: descWidth });
+            text(doc, String(it.qty), cols.qty, ty, { size, color: "#333333", width: widths.qty, align: "right" });
+            if (!o.noPrices) {
+                text(doc, formatMoney(it.unitPrice, d.currency), cols.price, ty, { size, color: "#333333", width: widths.price, align: "right" });
+                // у документа без налога в колонке ставки стоит прочерк: печатать там 19 % при нулевом налоге — противоречие
+                text(doc, d.smallBusinessNote ? "—" : `${it.taxRate}%`, cols.tax, ty, { size, color: "#333333", width: widths.tax, align: "right" });
+                text(doc, formatMoney(it.qty * it.unitPrice, d.currency), cols.total, ty, { size, color: "#333333", width: widths.total, align: "right" });
+            }
         }
         top += h;
         row++;
     }
     rule(doc, o.x, top, o.x + o.width, o.border ?? "#E6E6E6");
+    if (packing) {
+        const total = d.items.reduce((sum, it) => sum + (Number(it.unitWeightKg) || 0) * (Number(it.qty) || 0), 0);
+        if (total > 0) {
+            const line = `${L.totalWeight}: ${fmtWeight(total)}`;
+            doc.fontSize(size);
+            const h = doc.heightOfString(line, { width: o.width }) + 4;
+            if (o.onBreak && top + h > bottom && top > pageTop) top = o.onBreak();
+            top += text(doc, line, o.x, top + 4, { size, color: "#333333", width: o.width, align: "right" }) + 6;
+        }
+    }
     return top;
 }
+
+// Вес в упаковочном листе: до трёх знаков, без хвостовых нулей, запятая как в документах
+const fmtWeight = (n: number) => (Math.round(n * 1000) / 1000).toString().replace(".", ",");
 
 // Итоги: нетто, налог (кроме пометки малого бизнеса) и итог. В рамке, на подложке или просто справа — по шаблону.
 function totalsRows(d: PdfDocumentData, L: L, totals: ReturnType<typeof computeTotals>): [string, string, boolean][] {
@@ -482,7 +523,7 @@ function totalsBlock(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L, totals:
 // Украинская фирма может загрузить изображения подписи и печати (uaSignature/uaSeal): подпись
 // ставится над линией исполнителя, печать — рядом с ней. Флаги showSignature/showStamp приходят
 // из настраиваемого бланка документа: их можно выключить для конкретного вида документа.
-function actSignatures(doc: Doc, s: PdfSettings, t: TemplateDef, L: L) {
+function actSignatures(doc: Doc, s: PdfSettings, t: TemplateDef, L: L, labels?: { left: string; right: string }) {
     const x = t.margin;
     const w = PAGE_W - t.margin * 2;
     const half = Math.min(200, w / 2 - 20);
@@ -508,10 +549,58 @@ function actSignatures(doc: Doc, s: PdfSettings, t: TemplateDef, L: L) {
     }
     rule(doc, x, y, x + half, "#999999");
     rule(doc, x + w - half, y, x + w, "#999999");
-    const signerLine = signer ? `${L.signedBy}: ${signer}${s.uaSigner?.position ? `, ${s.uaSigner.position}` : ""}` : L.signedBy;
+    const left = labels?.left ?? L.signedBy;
+    const right = labels?.right ?? L.signedByCustomer;
+    const signerLine = signer ? `${left}: ${signer}${s.uaSigner?.position ? `, ${s.uaSigner.position}` : ""}` : left;
     text(doc, signerLine, x, y + 6, { size: 9, color: "#666666", width: half });
-    text(doc, L.signedByCustomer, x + w - half, y + 6, { size: 9, color: "#666666", width: half });
+    text(doc, right, x + w - half, y + 6, { size: 9, color: "#666666", width: half });
     doc.y = y + 26;
+}
+
+// Текст договора: абзацы пунктов (пустая строка — отступ между абзацами). Длинный абзац переносится
+// по словам и продолжается на новом листе — обрезать текст договора нельзя, а отдать pdfkit «на угад»
+// значило бы налепить его на подвал. Возвращает y после последнего абзаца.
+function contractParagraphs(doc: Doc, d: PdfDocumentData, x: number, y: number, w: number, fl: Flow): number {
+    const body = (d.body ?? "").trim();
+    if (!body) return y;
+    y += 10;
+    // Наибольший кусок текста, который вообще может поместиться на одном листе: выше него ничего резать
+    // не нужно (влезает целиком), ниже — режем по словам и продолжаем на новом листе
+    const limit = Math.max(120, fl.bottom - PAGE_MARGIN - 40);
+    for (const raw of body.split(/\r?\n/)) {
+        let rest = raw.trim();
+        if (!rest) { y += 6; continue; }
+        doc.fontSize(9.5);
+        while (rest) {
+            if (doc.heightOfString(rest, { width: w }) <= limit) {
+                y = fl.fit(y, doc.heightOfString(rest, { width: w }) + 2);
+                y += text(doc, rest, x, y, { size: 9.5, color: "#333333", width: w }) + 2;
+                break;
+            }
+            // Наибольший кусок, влезающий на лист: двоичный поиск по длине, затем откат к пробелу
+            let lo = 1, hi = rest.length;
+            while (lo < hi) {
+                const mid = Math.ceil((lo + hi) / 2);
+                if (doc.heightOfString(rest.slice(0, mid), { width: w }) <= limit - 4) lo = mid;
+                else hi = mid - 1;
+            }
+            let cut = lo;
+            const space = rest.lastIndexOf(" ", cut);
+            if (space > 4) cut = space;
+            const piece = rest.slice(0, cut).trimEnd();
+            y = fl.fit(y, doc.heightOfString(piece, { width: w }) + 2);
+            y += text(doc, piece, x, y, { size: 9.5, color: "#333333", width: w }) + 2;
+            rest = rest.slice(cut).trimStart();
+            if (rest) y = fl.brk();
+        }
+    }
+    return y;
+}
+
+// Тело договора: сумма договора и текст пунктов — единый блок во всех десяти шаблонах
+function contractBody(doc: Doc, d: PdfDocumentData, L: L, x: number, y: number, w: number, fl: Flow): number {
+    y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: headerWidth(w) });
+    return contractParagraphs(doc, d, x, y, w, fl);
 }
 
 // --- шаблоны -------------------------------------------------------------------------------------------
@@ -540,7 +629,7 @@ const classic: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 6, totalsHeight(doc, d, s, L, totals, 200));
         y = totalsBlock(doc, d, s, L, totals, x + w - 200, y + 6, 200, { accent: t.accent, tint: t.tint });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
+    } else if (d.kind === "contract") y = contractBody(doc, d, L, x, y, w, fl);
     band.draw();
 };
 
@@ -570,7 +659,7 @@ const modern: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true, zebra: true, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 8, totalsHeight(doc, d, s, L, totals, 210));
         y = totalsBlock(doc, d, s, L, totals, x + w - 210, y + 8, 210, { accent: t.accent, tint: t.tint, boxed: true, size: 10 });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
+    } else if (d.kind === "contract") y = contractBody(doc, d, L, x, y, w, fl);
     band.draw();
 };
 
@@ -595,7 +684,7 @@ const minimal: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 10, rowPad: 9, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 10, totalsHeight(doc, d, s, L, totals, 190));
         y = totalsBlock(doc, d, s, L, totals, x + w - 190, y + 10, 190, { accent: t.accent, tint: t.tint, size: 10 });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
+    } else if (d.kind === "contract") y = contractBody(doc, d, L, x, y, w, fl);
     band.draw();
 };
 
@@ -645,7 +734,7 @@ const boxed: Layout = (doc, d, s, L, t, totals, qr) => {
     } else if (d.kind === "contract") {
         box(doc, x, y, 250, 40, { fill: t.tint, stroke: "#DCDCDC" });
         text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x + 12, y + 14, { size: 12, color: "#333333", width: 226 });
-        y += 50;
+        y = contractParagraphs(doc, d, x, y + 50, w, fl);
     }
     band.draw();
 };
@@ -683,7 +772,7 @@ const sidebar: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 9.5, headerFill: true, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 8, totalsHeight(doc, d, s, L, totals, 190));
         y = totalsBlock(doc, d, s, L, totals, x + w - 190, y + 8, 190, { accent: t.accent, tint: t.tint });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12 });
+    } else if (d.kind === "contract") y = contractBody(doc, d, L, x, y, w, fl);
     band.draw();
 };
 
@@ -715,7 +804,7 @@ const banner: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 8, totalsHeight(doc, d, s, L, totals, 205));
         y = totalsBlock(doc, d, s, L, totals, x + w - 205, y + 8, 205, { accent: t.accent, tint: t.tint });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12 });
+    } else if (d.kind === "contract") y = contractBody(doc, d, L, x, y, w, fl);
     band.draw();
 };
 
@@ -768,7 +857,7 @@ const twocol: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, headerFill: true, zebra: true, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 8, totalsHeight(doc, d, s, L, totals, 205));
         y = totalsBlock(doc, d, s, L, totals, x + w - 205, y + 8, 205, { accent: t.accent, tint: t.tint, boxed: true });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: hw });
+    } else if (d.kind === "contract") y = contractBody(doc, d, L, x, y, w, fl);
     band.draw();
 };
 
@@ -791,7 +880,7 @@ const compact: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 8.5, rowPad: 3, zebra: true, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 4, totalsHeight(doc, d, s, L, totals, 180, 8.5));
         y = totalsBlock(doc, d, s, L, totals, x + w - 180, y + 4, 180, { accent: t.accent, tint: t.tint, size: 8.5 });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 10, width: hw });
+    } else if (d.kind === "contract") y = contractBody(doc, d, L, x, y, w, fl);
     band.draw();
 };
 
@@ -824,7 +913,7 @@ const elegant: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 10, rowPad: 8, bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 12, totalsHeight(doc, d, s, L, totals, 210));
         y = totalsBlock(doc, d, s, L, totals, x + w - 210, y + 12, 210, { accent: t.accent, tint: t.tint, size: 10 });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x, y, { size: 12, width: w, align: "center" });
+    } else if (d.kind === "contract") y = contractBody(doc, d, L, x, y, w, fl);
     band.draw();
 };
 
@@ -858,7 +947,10 @@ const swiss: Layout = (doc, d, s, L, t, totals, qr) => {
         y = itemsTable(doc, d, L, y, { x, width: w, accent: t.accent, tint: t.tint, size: 9.5, rowPad: 5, border: "#111111", bottom: fl.bottom, onBreak: fl.brk });
         y = fl.fit(y + 6, totalsHeight(doc, d, s, L, totals, 220, 9.5));
         y = totalsBlock(doc, d, s, L, totals, x + w - 220, y + 6, 220, { accent: t.accent, tint: t.tint, grid: true, size: 9.5 });
-    } else if (d.kind === "contract") y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x + labelW, y, { size: 12, color: "#111111", width: w - labelW });
+    } else if (d.kind === "contract") {
+        y += text(doc, `${L.contractValue}: ${formatMoney(Number(d.value) || 0, d.currency)}`, x + labelW, y, { size: 12, color: "#111111", width: w - labelW });
+        y = contractParagraphs(doc, d, x, y, w, fl);
+    }
     band.draw();
 };
 
@@ -875,7 +967,10 @@ export function renderLayout(doc: Doc, d: PdfDocumentData, s: PdfSettings, L: L)
     const dueTotal = totals.gross + (Number(d.dunningFee) || 0);
     const qr = (s.paymentQr ?? true) ? qrPayloadFor(d, s, L, dueTotal) : null;
     (LAYOUTS[t.id] ?? classic)(doc, d, s, L, t, totals, qr);
-    // Акт подписывают обе стороны — без подписей это не акт, а обычный счёт
-    if (d.kind === "act") actSignatures(doc, s, t, L);
+    // Акт и договор подписывают обе стороны — без подписей это не документ, а просто лист с текстом
+    if (d.kind === "act" || d.kind === "contract") actSignatures(doc, s, t, L);
+    // Накладная: подписи «Видав/Отримав» — только когда так задано в бланке фирмы (галочка «подпись»
+    // в редакторе бланков), иначе немецкий Lieferschein печатался бы с лишними линиями
+    else if (d.kind === "delivery_note" && s.showSignature) actSignatures(doc, s, t, L, { left: L.issuedBy ?? L.signedBy, right: L.receivedBy ?? L.signedByCustomer });
     footerBrand(doc, s, t);
 }

@@ -7,7 +7,7 @@ import type { FieldCode } from "@/lib/validation/common";
 // Google Sheets на разных языках): по ним мастер сам угадывает сопоставление, а человек может
 // поправить его в окне. Обязательные поля помечены звёздочкой в подписи.
 
-export type ImportKind = "products" | "contacts" | "companies" | "stock";
+export type ImportKind = "products" | "contacts" | "companies" | "stock" | "boms";
 
 export interface TargetField {
     key: string;
@@ -35,12 +35,33 @@ export const IMPORT_KINDS: Record<ImportKind, KindDef> = {
             { key: "sku", label: "SKU / Артикул", aliases: ["sku", "артикул", "код", "code", "artikel", "article", "код товару"] },
             { key: "type", label: "Тип (good/service)", aliases: ["type", "тип", "вид", "typ"] },
             { key: "unit", label: "Единица", aliases: ["unit", "ед", "единица", "од", "einheit", "measure"] },
-            { key: "purchasePrice", label: "Закупочная цена", code: "amount", aliases: ["purchaseprice", "закупочная", "закупівельна", "цена закупки", "ek", "einkaufspreis", "cost"] },
-            { key: "salePrice", label: "Цена продажи", code: "amount", aliases: ["saleprice", "цена", "ціна", "preis", "price", "цена продажи"] },
+            { key: "purchasePrice", label: "Закупочная цена", code: "amount", aliases: ["purchaseprice", "закупочная цена", "закупівельна ціна", "ціна закупівлі", "цена закупки", "закупочная", "закупівельна", "закупівля", "purchase", "ek", "einkaufspreis", "cost"] },
+            { key: "salePrice", label: "Цена продажи", code: "amount", aliases: ["saleprice", "цена продажи", "ціна продажу", "продажна ціна", "sale price", "verkaufspreis", "цена", "ціна", "preis", "price", "продаж"] },
             { key: "taxRate", label: "Ставка налога, %", code: "rate", aliases: ["taxrate", "ставка", "пдв", "ндс", "mwst", "ust", "vat"] },
             { key: "stockQty", label: "Остаток (приход)", code: "amount", aliases: ["stockqty", "остаток", "залишок", "наявність", "кількість", "количество", "bestand", "qty", "quantity"] },
             { key: "reorderLevel", label: "Минимальный остаток", code: "amount", aliases: ["reorderlevel", "минимум", "мінімум", "mindestbestand"] },
             { key: "image", label: "Картинка (URL)", aliases: ["image", "картинка", "зображення", "изображение", "bild", "photo", "фото"] },
+            // ВЭД: без этих полей пакувальний лист не собрать (ТЗ §12)
+            { key: "hsCode", label: "УКТ ЗЕД / HS", aliases: ["hscode", "укт", "уктзед", "hs", "тнвэд"] },
+            { key: "weightKg", label: "Вес единицы, кг", code: "amount", aliases: ["weightkg", "вес", "вага", "gewicht", "weight"] },
+            { key: "originCountry", label: "Страна происхождения", aliases: ["origincountry", "страна", "країна", "ursprung"] },
+        ],
+    },
+    boms: {
+        kind: "boms",
+        label: "Спецификации (BOM)",
+        // Строка файла — «изделие; компонент; количество»: строки с одним изделием собираются в одну
+        // спецификацию, поэтому один файл описывает и простое изделие, и многоуровневое (полуфабрикат
+        // сам встречается ниже как изделие со своим составом).
+        matchBy: [],
+        fields: [
+            { key: "product", label: "Изделие", required: true, aliases: ["product", "изделие", "виріб", "товар", "продукт"] },
+            { key: "productSku", label: "Артикул изделия", aliases: ["productsku", "артикулизделия", "артикул виробу", "sku", "артикул"] },
+            { key: "component", label: "Компонент", required: true, aliases: ["component", "компонент", "материал", "матеріал", "состав", "склад"] },
+            { key: "componentSku", label: "Артикул компонента", aliases: ["componentsku", "артикулкомпонента", "артикул компонента", "skusostav", "artikelkomponent"] },
+            { key: "qty", label: "Норма на единицу", required: true, code: "amount", aliases: ["qty", "количество", "кількість", "норма", "menge", "quantity"] },
+            { key: "wastePercent", label: "Угар, %", code: "rate", aliases: ["wastepercent", "угар", "відходи", "verlust", "waste"] },
+            { key: "overheadPercent", label: "Накладные, %", code: "rate", aliases: ["overheadpercent", "накладные", "накладні", "gemeinkosten", "overhead"] },
         ],
     },
     contacts: {
@@ -90,6 +111,9 @@ export const IMPORT_KINDS: Record<ImportKind, KindDef> = {
 export const normalizeHeader = (h: string) => h.trim().toLowerCase().replace(/[«»"'`]/g, "").replace(/[\s_-]+/g, "");
 
 /** Угадать сопоставление: колонка → поле. Точное совпадение с синонимом, затем вхождение. */
+// Сопоставление колонок файла с полями: точное совпадение заголовка с псевдонимом сильнее частичного,
+// а среди частичных побеждает самый длинный псевдоним. Иначе «Ціна закупівлі» доставалась бы цене продажи
+// (у неё есть короткий псевдоним «ціна»), а сама цена продажи оставалась без колонки.
 export function guessMapping(kind: ImportKind, columns: string[]): Record<string, string> {
     const def = IMPORT_KINDS[kind];
     const mapping: Record<string, string> = {};
@@ -97,11 +121,19 @@ export function guessMapping(kind: ImportKind, columns: string[]): Record<string
     for (const column of columns) {
         const norm = normalizeHeader(column);
         if (!norm) continue;
-        const exact = def.fields.find((f) => !taken.has(f.key) && f.aliases.some((a) => normalizeHeader(a) === norm));
-        const partial = exact ?? def.fields.find((f) => !taken.has(f.key) && f.aliases.some((a) => norm.includes(normalizeHeader(a)) || normalizeHeader(a).includes(norm)));
-        if (partial) {
-            mapping[column] = partial.key;
-            taken.add(partial.key);
+        let best: { key: string; score: number } | null = null;
+        for (const f of def.fields) {
+            if (taken.has(f.key)) continue;
+            for (const alias of f.aliases) {
+                const a = normalizeHeader(alias);
+                if (!a) continue;
+                const score = a === norm ? 1000 + a.length : norm.includes(a) ? a.length : a.includes(norm) ? Math.min(a.length / 2, 4) : 0;
+                if (score > 0 && (!best || score > best.score)) best = { key: f.key, score };
+            }
+        }
+        if (best) {
+            mapping[column] = best.key;
+            taken.add(best.key);
         }
     }
     return mapping;

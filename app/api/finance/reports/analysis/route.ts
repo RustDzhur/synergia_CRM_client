@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { badRequest, serverError, unauthorized } from "@/lib/api";
+import { badRequest, failure, serverError, unauthorized } from "@/lib/api";
 import { aiConfigured, complete } from "@/lib/ai/provider";
+import { requireMarket } from "@/lib/finance/marketGuard";
 import { ProviderError } from "@/lib/http";
 import { type PeriodKind, businessAnalysis, incomeSurplus, periodRange, trialBalance, vatReturn } from "@/lib/finance/reports";
 import { incomeBook, vatRegister } from "@/lib/finance/ua";
@@ -31,6 +32,15 @@ export async function GET(req: Request) {
     if (!kind || !KINDS.includes(kind)) return badRequest("kind must be one of: vat, eur, bwa, susa, vat-register, income-book");
     const localeParam = url.searchParams.get("locale") ?? "de";
     const locale = ["en", "de", "ua"].includes(localeParam) ? localeParam : "de";
+
+    // Режим рынка — как в /api/finance/reports: украинской фирме разбирают украинские отчёты,
+    // немецкой — немецкие. Иначе квота ИИ тратилась бы на разбор чужого отчёта
+    await connectDB();
+    try {
+        await requireMarket(user.id, kind === "vat-register" || kind === "income-book" ? "UA" : "DE");
+    } catch (e) {
+        return failure(e);
+    }
 
     if (!aiConfigured()) return badRequest("AI is not configured on this site");
 

@@ -3,6 +3,8 @@ import { fieldError } from "@/lib/validation/common";
 import { moveStock } from "@/lib/finance/stock";
 import { parseCsv } from "./csv";
 import { IMPORT_KINDS, guessMapping, type ImportKind } from "./kinds";
+import { groupBomRows, type BomImportRow } from "./bomGroup";
+import Bom from "@/models/Bom";
 import ImportBatch from "@/models/ImportBatch";
 import Product from "@/models/Product";
 import Contact from "@/models/Contact";
@@ -117,6 +119,9 @@ type AnyDoc = Record<string, any> & { _id: unknown; save(): Promise<unknown> };
 
 /** Импорт предпросмотра в базу. Возвращает отчёт; изменения можно откатить по batchId. */
 export async function applyImport(org: string, preview: ImportPreview, opts: { fileName?: string; by?: string } = {}): Promise<ImportReport> {
+    // Спецификации собираются из строк, поэтому идут отдельным проходом: строка файла — компонент,
+    // а спецификация — изделие целиком
+    if (preview.kind === "boms") return applyBomsImport(org, preview, opts);
     const log: ImportReport["log"] = [];
     const createdIds: unknown[] = [];
     const updatedBefore: Array<{ id: unknown; before: Record<string, unknown> }> = [];
@@ -173,6 +178,10 @@ async function applyRow(
             ...(v.taxRate ? { taxRate: num(v.taxRate) } : {}),
             ...(v.reorderLevel ? { reorderLevel: num(v.reorderLevel) } : {}),
             ...(v.image ? { image: v.image.slice(0, 500) } : {}),
+            // ВЭД: УКТ ЗЕД, вес единицы и страна происхождения (ТЗ §12)
+            ...(v.hsCode ? { hsCode: v.hsCode.trim().slice(0, 20) } : {}),
+            ...(v.weightKg ? { weightKg: num(v.weightKg) } : {}),
+            ...(v.originCountry ? { originCountry: v.originCountry.trim().toUpperCase().slice(0, 2) } : {}),
         };
         const existing = v.sku
             ? await Product.findOne({ org, sku: v.sku })
@@ -240,6 +249,100 @@ async function applyRow(
     return "created";
 }
 
+// Спецификации: строки «изделие; компонент; количество» собираются в BOM по изделию; существующая
+// спецификация не переписывается, а поднимает версию — старые производственные заказы считаются
+// по своей версии и не меняются задним числом (как в lib/finance/productionOrders.ts)
+async function applyBomsImport(org: string, preview: ImportPreview, opts: { fileName?: string; by?: string }): Promise<ImportReport> {
+    const log: ImportReport["log"] = [];
+    const createdIds: unknown[] = [];
+    const updatedBefore: Array<{ id: unknown; before: Record<string, unknown> }> = [];
+    let created = 0;
+    let failed = 0;
+
+    const valid = preview.rows.filter((r) => !r.empty);
+    const productCache = new Map<string, string | null>();
+    const findProduct = async (sku: string, name: string): Promise<string | null> => {
+        const key = `${sku.toLowerCase()}|${name.toLowerCase()}`;
+        if (productCache.has(key)) return productCache.get(key) ?? null;
+        const doc = (sku ? await Product.findOne({ org, sku }) : null) ?? (await Product.findOne({ org, name }));
+        productCache.set(key, doc ? String(doc._id) : null);
+        return doc ? String(doc._id) : null;
+    };
+
+    // Строки с ошибками сразу в отчёт; годные собираются в спецификации ПО ИЗДЕЛИЮ:
+    // раньше документ создавался на каждую строку — изделие с четырьмя компонентами давало
+    // четыре одинаковые спецификации разных версий (нашёл тест импорта)
+    const bad = valid.filter((r) => r.errors.length);
+    for (const row of bad) {
+        failed++;
+        log.push({ row: row.line, status: "failed", message: row.errors.map((e) => `${e.field}:${e.code}`).join(", ") });
+    }
+    const goodRows = valid.filter((r) => !r.errors.length);
+    const groups = groupBomRows(goodRows.map((r) => r.values as unknown as BomImportRow));
+    // Строки каждого изделия — для отчёта (номер строки в файле)
+    const rowsOfGroup = (g: { product: string; productSku: string }) =>
+        goodRows.filter((r) => (r.values.product ?? "").trim().toLowerCase() === g.product.toLowerCase() && (r.values.productSku ?? "").trim().toLowerCase() === g.productSku.toLowerCase());
+
+    for (const group of groups) {
+        const productId = await findProduct(group.productSku, group.product);
+        if (!productId) {
+            for (const r of rowsOfGroup(group)) {
+                failed++;
+                log.push({ row: r.line, status: "failed", message: `товар не знайдено: ${group.product} — спочатку імпортуйте каталог` });
+            }
+            continue;
+        }
+        // Компоненты должны существовать: иначе спецификация ссылалась бы в пустоту
+        const components: Array<{ product: string; qty: number; wastePercent: number }> = [];
+        let missing = "";
+        for (const c of group.components) {
+            const cid = await findProduct(c.sku, c.name);
+            if (!cid) {
+                missing = c.name;
+                break;
+            }
+            components.push({ product: cid, qty: c.qty, wastePercent: c.wastePercent });
+        }
+        if (missing) {
+            for (const r of rowsOfGroup(group)) {
+                failed++;
+                log.push({ row: r.line, status: "failed", message: `компонент не знайдено: ${missing}` });
+            }
+            continue;
+        }
+        const latest = await Bom.findOne({ org, product: productId }).sort({ version: -1 });
+        const nextVersion = (latest?.version ?? 0) + 1;
+        const doc = await Bom.create({
+            org,
+            product: productId,
+            name: group.product,
+            version: nextVersion,
+            active: true,
+            components,
+            operations: [],
+            outputs: [],
+            overheadPercent: group.overheadPercent || 0,
+            note: `Імпорт ${opts.fileName ?? ""}`.trim(),
+        });
+        createdIds.push(doc._id);
+        created += rowsOfGroup(group).length;
+        for (const r of rowsOfGroup(group)) log.push({ row: r.line, status: "created", message: nextVersion > 1 ? `версія ${nextVersion}` : "" });
+    }
+
+    const batch = await ImportBatch.create({
+        org,
+        kind: preview.kind,
+        fileName: opts.fileName ?? "",
+        by: opts.by ?? "",
+        summary: { total: preview.summary.total, created, updated: 0, skipped: 0, failed },
+        log: log.slice(0, 1000),
+        createdIds,
+        updatedBefore,
+        stockMovements: [],
+    });
+    return { batchId: String(batch._id), summary: { total: preview.summary.total, created, updated: 0, skipped: 0, failed }, log };
+}
+
 // Остаток из файла каталога становится приходом документом «Імпорт» — остаток не правится напрямую
 async function addStock(org: string, product: AnyDoc, v: Record<string, string>, undo: { stockMovements: unknown[] }) {
     if (product.type !== "good" || !v.stockQty) return;
@@ -268,13 +371,15 @@ export async function rollbackImport(org: string, batchId: string): Promise<{ ok
     if (!batch) return { ok: false, message: "not_found" };
     if (batch.rolledBackAt) return { ok: false, message: "already_rolled_back" };
 
-    const model = batch.kind === "contacts" ? Contact : batch.kind === "companies" ? Company : Product;
+    const model = batch.kind === "contacts" ? Contact : batch.kind === "companies" ? Company : batch.kind === "boms" ? Bom : Product;
+    // У товаров, остатков и спецификаций владелец — org; у контактов и фирм — owner (историческое поле)
+    const scope = batch.kind === "contacts" || batch.kind === "companies" ? { owner: org } : { org };
     if (batch.createdIds.length) {
         const ids = batch.createdIds;
-        await model.deleteMany({ _id: { $in: ids }, ...(batch.kind === "products" || batch.kind === "stock" ? { org } : { owner: org }) });
+        await model.deleteMany({ _id: { $in: ids }, ...scope });
     }
     for (const entry of batch.updatedBefore) {
-        const doc = await model.findOne({ _id: entry.id, ...(batch.kind === "products" || batch.kind === "stock" ? { org } : { owner: org }) });
+        const doc = await model.findOne({ _id: entry.id, ...scope });
         if (doc) {
             doc.set(entry.before as never);
             await doc.save();

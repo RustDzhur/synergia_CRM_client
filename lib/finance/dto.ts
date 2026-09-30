@@ -10,6 +10,7 @@ import { DOC_PRESETS } from "./documents/presets";
 export const toOrderDTO = (o: any) => ({
     deliveryNoteNumber: o.deliveryNoteNumber ?? "", deliveryDate: o.deliveryDate ?? "",
     actNumber: o.actNumber ?? "", actDate: o.actDate ?? "",
+    packingNumber: o.packingNumber ?? "", packingDate: o.packingDate ?? "",
     ukrposhta: o.ukrposhta?.barcode
         ? { uuid: o.ukrposhta.uuid ?? "", barcode: o.ukrposhta.barcode, status: o.ukrposhta.status ?? "", place: o.ukrposhta.place ?? "", postOffice: o.ukrposhta.postOffice ?? "", cod: o.ukrposhta.cod ?? 0, statusAt: o.ukrposhta.statusAt ? new Date(o.ukrposhta.statusAt).toISOString() : "" }
         : null,
@@ -96,7 +97,7 @@ export const toContractDTO = (c: any) => ({
     id: String(c._id), number: c.number, status: c.status,
     contact: c.contact ? String(c.contact) : "", company: c.company ? String(c.company) : "", customerName: c.customerName,
     deal: c.deal ? String(c.deal) : "", value: c.value, currency: c.currency,
-    startDate: c.startDate, endDate: c.endDate, notes: c.notes, template: c.template || "",
+    startDate: c.startDate, endDate: c.endDate, notes: c.notes, body: c.body || "", template: c.template || "",
     signedAt: c.signedAt ? c.signedAt.toISOString() : "", file: c.file ? String(c.file) : "",
     createdAt: c.createdAt.toISOString(), updatedAt: c.updatedAt.toISOString(),
 });

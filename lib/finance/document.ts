@@ -2,7 +2,9 @@ import { isTemplate, renderDocumentPdf, PdfSettings, PdfParty, PdfLineItem } fro
 import { financeSettings } from "./settings";
 import { marketOf } from "./market";
 import { activeTemplate, applyTemplate, templateAllowsRate } from "./documents/store";
+import { contractDate, contractValueText, defaultContractText, fillContractText } from "./contractText";
 import { firmRate } from "./rates";
+import { isValidObjectId } from "mongoose";
 import Contact from "@/models/Contact";
 import Company from "@/models/Company";
 import Invoice from "@/models/Invoice";
@@ -78,9 +80,12 @@ export const toPdfItems = (items: any): PdfLineItem[] =>
 
 // Плательщик для бумаг, у которых нет собственного снимка клиента (предложение, заказ, договор): адрес и
 // налоговый номер берём из связанной фирмы клиента, имя — из самого документа, иначе из контакта/фирмы.
+// Ссылки проверяем на формат ObjectId: у старых документов в contact/company могла остаться произвольная
+// строка — раньше из-за неё весь PDF падал с ошибкой приведения типа (CastError), и «старые пропозиции
+// не скачиваются» было именно этим.
 export async function customerParty(org: string, doc: { customerName?: string; contact?: any; company?: any }): Promise<PdfParty> {
     const party: PdfParty = { name: String(doc.customerName ?? "").trim() };
-    if (doc.company) {
+    if (doc.company && isValidObjectId(doc.company)) {
         const c = await Company.findOne({ _id: doc.company, owner: org });
         if (c) {
             if (!party.name) party.name = c.name;
@@ -88,7 +93,7 @@ export async function customerParty(org: string, doc: { customerName?: string; c
             party.taxId = c.code || "";
         }
     }
-    if (!party.name && doc.contact) {
+    if (!party.name && doc.contact && isValidObjectId(doc.contact)) {
         const c = await Contact.findOne({ _id: doc.contact, owner: org }).select("name");
         if (c) party.name = c.name;
     }
@@ -224,17 +229,37 @@ export async function actPdfBuffer(org: string, order: any, locale: string, temp
 export async function contractPdfBuffer(org: string, c: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     const tpl = await activeTemplate(org, "contract");
+    const party = await customerParty(org, c);
+    const market = marketOf(settings.country);
+    // Текст договора: свой у документа, иначе типовой фирмы из настроек, иначе встроенный типовой.
+    // Значения подставляются в {{…}} — без этого PDF оставался пустым листом с одной строкой суммы
+    const rawBody = String(c.body ?? "").trim() || String(settings.contractTemplate ?? "").trim() || defaultContractText(market);
+    const body = fillContractText(rawBody, {
+        number: c.number,
+        date: contractDate(new Date().toISOString().slice(0, 10)),
+        firm: settings.legalName ?? "",
+        firmAddress: settings.address ?? "",
+        firmTaxId: settings.taxId ?? "",
+        signer: settings.uaSignerName || settings.managingDirector || "",
+        customer: party.name,
+        customerAddress: party.address ?? "",
+        customerTaxId: party.taxId ?? "",
+        value: contractValueText(Number(c.value) || 0, tpl?.currency || c.currency),
+        start: contractDate(c.startDate),
+        end: contractDate(c.endDate),
+    });
     return renderDocumentPdf(
         {
             kind: "contract",
             number: c.number,
-            customer: await customerParty(org, c),
-            items: [], // у договора позиций нет: печатается сумма договора и срок
+            customer: party,
+            items: [], // у договора позиций нет: печатается сумма договора, текст и подписи
             currency: tpl?.currency || c.currency,
             uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, c.currency) : null,
             value: c.value,
             startDate: c.startDate,
             endDate: c.endDate,
+            body,
             notes: c.notes,
             template: template ?? pdfTemplate(c.template),
         },
@@ -245,20 +270,22 @@ export async function contractPdfBuffer(org: string, c: any, locale: string, tem
 
 // Упаковочный лист (ВЭД): позиции заказа с кодами УКТ ЗЕД/HS, весом и страной происхождения —
 // данные для брокера и таможни. Цен в нём нет: это документ о грузе, а не о деньгах.
+// У листа свой номер (как у накладной и акта) и свой бланк: раньше он брал бланк и номер накладной
+// и отличался от неё только заголовком — фирма видела два одинаковых документа.
 export async function packingListPdfBuffer(org: string, order: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
-    const tpl = await activeTemplate(org, "delivery_note");
+    const tpl = (await activeTemplate(org, "packing_list")) ?? (await activeTemplate(org, "delivery_note"));
     const items = await toPackingItems(org, order.items ?? []);
     return renderDocumentPdf(
         {
             kind: "packing_list",
-            number: order.deliveryNoteNumber || order.number,
+            number: order.packingNumber || order.number,
             orderNumber: order.number,
             customer: await customerParty(org, order),
             items,
             currency: order.currency,
             uahRate: null,
-            supplyDate: order.deliveryDate || new Date().toISOString().slice(0, 10),
+            supplyDate: order.packingDate || order.deliveryDate || new Date().toISOString().slice(0, 10),
             notes: order.notes,
             template: template ?? pdfTemplate(order.template),
         },
@@ -267,19 +294,23 @@ export async function packingListPdfBuffer(org: string, order: any, locale: stri
     );
 }
 
-// Строки упаковочного листа: «Название · УКТ ЗЕД 1234 · 12.5 кг · UA»
+// Строки упаковочного листа: у каждой — код УКТ ЗЕД, вес единицы и страна происхождения отдельными
+// полями. Раньше всё сшивалось в одно описание, и при пустых карточках товара лист выглядел копией
+// накладной; теперь колонки печатает itemsTable, а «—» показывает, чего не хватает в карточке товара.
 async function toPackingItems(org: string, items: any[]): Promise<PdfLineItem[]> {
     const ids = items.map((it) => it?.product).filter(Boolean);
     const products = ids.length ? await Product.find({ _id: { $in: ids }, org }).select("hsCode weightKg originCountry") : [];
     const info = new Map(products.map((p) => [String(p._id), p]));
     return (items ?? []).map((it) => {
         const p = info.get(String(it?.product ?? ""));
-        const parts = [
-            String(it?.description ?? ""),
-            p?.hsCode ? `УКТ ЗЕД ${p.hsCode}` : "",
-            p?.weightKg ? `${(Number(p.weightKg) || 0) * (Number(it?.qty) || 0)} кг` : "",
-            p?.originCountry ? String(p.originCountry) : "",
-        ].filter(Boolean);
-        return { description: parts.join(" · "), qty: Number(it?.qty) || 0, unitPrice: 0, taxRate: 0 };
+        return {
+            description: String(it?.description ?? ""),
+            qty: Number(it?.qty) || 0,
+            unitPrice: 0,
+            taxRate: 0,
+            hsCode: p?.hsCode ? String(p.hsCode) : "",
+            unitWeightKg: Number(p?.weightKg) || 0,
+            originCountry: p?.originCountry ? String(p.originCountry) : "",
+        };
     });
 }

@@ -235,10 +235,11 @@ function UaVatView({ period }: { period: PeriodKind }) {
 			{table(t("uaIssued"), report.issued)}
 			{table(t("uaReceived"), report.received)}
 			<p className="text-12 text-[#9AA396]">{t("uaTurnover12m")}: {fmt(report.turnover12m)} · {t("uaLimitLeft")}: {fmt(report.limitLeft)}</p>
-			{/* Подача в ДПС идёт вне CRM (нужен КЕП); отсюда — файл для кабинета */}
+			{/* Подача в ДПС идёт вне CRM (нужен КЕП); отсюда — файл для кабинета.
+			    Период выгрузки — тот же, что выбран на экране (from/to), иначе файл не совпадал с таблицей */}
 			<div className="flex flex-wrap items-center gap-10">
-				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=vat-register&year=${report.from.slice(0, 4)}&format=csv`, `vat-register-${report.from.slice(0, 4)}.csv`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportCsv")}</button>
-				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=vat-register&year=${report.from.slice(0, 4)}&format=xml`, `vat-register-${report.from.slice(0, 4)}.xml`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportXml")}</button>
+				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=vat-register&from=${report.from}&to=${report.to}&format=csv`, `vat-register-${report.from}_${report.to}.csv`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportCsv")}</button>
+				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=vat-register&from=${report.from}&to=${report.to}&format=xml`, `vat-register-${report.from}_${report.to}.xml`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportXml")}</button>
 				<span className="text-11 text-[#9AA396]">{t("uaExportHint")}</span>
 			</div>
 			{report.warnings.length > 0 && (
@@ -415,9 +416,15 @@ function PaymentCalendar({ year, currency }: { year: string; currency: string })
 		<section className="fs-card overflow-x-auto">
 			<div className="flex flex-wrap items-center justify-between gap-10 px-16 pt-14">
 				<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("uaCalendarTitle", { year: state.year })}</h3>
-				{state.summary.next && (
-					<span className="text-12 text-[#8c948b]">{t("uaCalendarNext", { date: state.summary.next.date, title: state.summary.next.title, amount: money(state.summary.next.amount, currency, locale) })}</span>
-				)}
+				<div className="flex flex-wrap items-center gap-10">
+					{state.summary.next && (
+						<span className="text-12 text-[#8c948b]">{t("uaCalendarNext", { date: state.summary.next.date, title: state.summary.next.title, amount: money(state.summary.next.amount, currency, locale) })}</span>
+					)}
+					{/* Тот же календарь файлом — напоминание бухгалтеру, что и когда платить */}
+					<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=calendar&year=${state.year}&format=csv`, `payment-calendar-${state.year}.csv`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-30 text-12">
+						{t("uaExportCsv")}
+					</button>
+				</div>
 			</div>
 			<table className="fs-table mt-8 min-w-[560px]">
 				<thead>
@@ -463,7 +470,9 @@ export default function Taxes({ kind }: { kind: "vat" | "eur" }) {
 			{ua
 				? kind === "vat" ? <UaVatView period={period} /> : <UaIncomeView currency={currency} />
 				: kind === "vat" ? <VatView period={period} currency={currency} /> : <EurView period={period} currency={currency} />}
-			<div className="mt-16"><AiAnalysis kind={kind} period={period} /></div>
+			{/* ИИ должен разбирать тот отчёт, который на экране: у UA-фирмы это реестр ПН и книга доходов,
+			    а не немецкие UStVA/EÜR — иначе ассистент объяснял бы украинские цифры по-немецки */}
+			<div className="mt-16"><AiAnalysis kind={ua ? (kind === "vat" ? "vat-register" : "income-book") : kind} period={period} /></div>
 			<ReportDisclaimer className="mt-14" />
 		</div>
 	);

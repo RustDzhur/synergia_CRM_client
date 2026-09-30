@@ -31,6 +31,7 @@ export interface Order {
 	// Накладная (Lieferschein): номер присваивается при первой выписке, дата — фактической поставки
 	deliveryNoteNumber?: string; deliveryDate?: string;
 	actNumber?: string; actDate?: string;
+	packingNumber?: string; packingDate?: string;
 	// Доставка «Новою Поштою» (Украина): номер ТТН и статус посылки — null, если ТТН ещё не создана
 	waybill?: OrderWaybill | null;
 	// Укрпошта: штрихкод и последний статус отправления — заполняется вручную или создаётся через ecom
@@ -82,7 +83,7 @@ export interface Quote {
 export interface Contract {
 	id: string; number: string; status: "draft" | "active" | "completed" | "cancelled";
 	contact: string; company: string; customerName: string; deal: string; value: number; currency: string;
-	startDate: string; endDate: string; notes: string; signedAt: string; file: string;
+	startDate: string; endDate: string; notes: string; body: string; signedAt: string; file: string;
 	template: string; createdAt: string; updatedAt: string;
 }
 export interface FinanceSettings {
@@ -106,6 +107,10 @@ export interface FinanceSettings {
 	uaLimits: Array<{ year: number; group: number; amount: number }>;
 	// Наценка к курсу НБУ (%), 0 — чистый курс
 	rateMargin: number;
+	// Справочник категорий расходов фирмы; пусто — форма предлагает типовой набор страны
+	expenseCategories: string[];
+	// Типовой текст договора фирмы с подстановками {{…}}; пусто — встроенный типовой текст
+	contractTemplate: string;
 }
 export interface CountryOption { code: string; name: string; standard: number; reduced?: number; label: string }
 export interface FinanceDashboard {

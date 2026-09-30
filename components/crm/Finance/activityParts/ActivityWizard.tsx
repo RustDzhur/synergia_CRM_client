@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import Modal from "../../shared/Modal";
@@ -7,15 +7,23 @@ import { useOrgStore } from "@/store/useOrgStore";
 import { ACTIVITIES } from "@/config/firmActivities";
 
 // Мастер «Чем занимается фирма?» (ТЗ §18): отмеченные виды деятельности оставляют в финансовом
-// разделе только нужные вкладки — «лишнее скрыто». Мастер показывается один раз (по фирме), его
-// можно пропустить: тогда показываются все разделы, как раньше.
+// разделе только нужные вкладки — «лишнее скрыто». Мастер показывается сам один раз (по фирме), его
+// можно пропустить: тогда показываются все разделы, как раньше. Позже набор меняется из Настроек →
+// карточка «Види діяльності» (edit): Escape и клик мимо окна просто закрывают мастер, а не «пропускают»
+// его навсегда — раньше случайное закрытие прятало мастер до конца жизни фирмы.
 
 
-export default function ActivityWizard({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function ActivityWizard({ open, onClose, initial, edit = false }: { open: boolean; onClose: () => void; initial?: string[]; edit?: boolean }) {
 	const t = useTranslations("finance");
 	const { activeId, saveActivities } = useOrgStore();
 	const [picked, setPicked] = useState<string[]>([]);
 	const [busy, setBusy] = useState(false);
+	// Засев отмеченных — на переходе «закрыт → открыт», иначе правки стирались бы каждым ререндером
+	const [wasOpen, setWasOpen] = useState(false);
+	useEffect(() => {
+		if (open && !wasOpen) setPicked(initial ?? []);
+		setWasOpen(open);
+	}, [open, wasOpen, initial]);
 
 	async function save() {
 		setBusy(true);
@@ -32,7 +40,7 @@ export default function ActivityWizard({ open, onClose }: { open: boolean; onClo
 	}
 
 	return (
-		<Modal open={open} onClose={skip} label={t("actTitle")} className="w-full max-w-[520px]">
+		<Modal open={open} onClose={onClose} label={t("actTitle")} className="w-full max-w-[520px]">
 			<div className="fs-popover flex flex-col gap-12 p-20">
 				<h2 className="text-15 font-semibold text-[#f1f4ee]">{t("actTitle")}</h2>
 				<p className="text-12 leading-[1.6] text-[#8c948b]">{t("actHint")}</p>
@@ -50,7 +58,7 @@ export default function ActivityWizard({ open, onClose }: { open: boolean; onClo
 					))}
 				</div>
 				<div className="mt-4 flex justify-end gap-10">
-					<button type="button" onClick={skip} className="fs-btn fs-btn-ghost h-38">{t("actSkip")}</button>
+					{!edit && <button type="button" onClick={skip} className="fs-btn fs-btn-ghost h-38">{t("actSkip")}</button>}
 					<button type="button" disabled={busy || !picked.length} onClick={() => void save()} className="fs-btn fs-btn-primary h-38 disabled:opacity-50">{t("actSave")}</button>
 				</div>
 			</div>

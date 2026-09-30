@@ -1,13 +1,16 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbPlus, TbScan, TbTrash } from "react-icons/tb";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { authHeaders } from "@/store/crmApi";
+import { marketOf } from "@/lib/finance/market";
+import { categoriesFor, hasCategory } from "@/lib/finance/expenseCategories";
 import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
+import SuggestInput from "../shared/SuggestInput";
 import { money } from "./format";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -17,7 +20,7 @@ const EMPTY = { vendor: "", category: "", amount: "0", taxRate: "0", currency: "
 export default function Expenses() {
 	const t = useTranslations("finance");
 	const locale = useLocale();
-	const { expenses, loadExpenses, createExpense, deleteExpense, settings } = useFinanceStore();
+	const { expenses, loadExpenses, createExpense, deleteExpense, settings, saveSettings } = useFinanceStore();
 	const [open, setOpen] = useState(false);
 	const [form, setForm] = useState(EMPTY);
 	const [toDelete, setToDelete] = useState<string | null>(null);
@@ -25,6 +28,24 @@ export default function Expenses() {
 	const fileRef = useRef<HTMLInputElement | null>(null);
 
 	useEffect(() => { loadExpenses(); }, [loadExpenses]);
+
+	// Категории — справочник фирмы (Налаштування → Категорії витрат); пока он пуст, предлагаются типовые
+	const categories = useMemo(() => categoriesFor(marketOf(settings?.country) ?? null, settings?.expenseCategories), [settings]);
+	const categoryOptions = useMemo(() => {
+		const needle = form.category.trim().toLowerCase();
+		return categories
+			.filter((c) => !needle || c.toLowerCase().includes(needle))
+			.map((c) => ({ key: c, title: c }));
+	}, [categories, form.category]);
+	const canAddCategory = !!form.category.trim() && !hasCategory(categories, form.category);
+
+	async function addCategory() {
+		const name = form.category.trim();
+		if (!name) return;
+		const err = await saveSettings({ expenseCategories: [...categories, name] } as never);
+		if (err) return toast.error(err);
+		toast.success(t("catAdded"));
+	}
 
 	async function submit(e: React.FormEvent) {
 		e.preventDefault();
@@ -104,7 +125,22 @@ export default function Expenses() {
 					{form.receipt && <p className="mb-14 rounded-10 border border-[rgba(198,255,77,0.22)] bg-[rgba(198,255,77,0.06)] px-12 py-8 text-12 text-[#cfd4cb]">{t("scannedFromReceipt")}</p>}
 					<div className="flex flex-col gap-12">
 						<FormField label={t("colVendor")} value={form.vendor} onChange={(e) => setForm({ ...form, vendor: e.target.value })} maxLength={200} autoFocus />
-						<FormField label={t("colCategory")} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} maxLength={100} />
+						{/* Категория: подсказки из справочника фирмы, свою можно вписать и сразу добавить в список */}
+						<div>
+							<span className="mb-6 block text-12 text-[#8c948b]">{t("colCategory")}</span>
+							<SuggestInput
+								value={form.category}
+								onChange={(v) => setForm({ ...form, category: v })}
+								onPick={(o) => setForm({ ...form, category: o.title })}
+								options={categoryOptions}
+								placeholder={t("catPlaceholder")}
+							/>
+							{canAddCategory && (
+								<button type="button" onClick={() => void addCategory()} className="fs-link mt-6 text-12">
+									{t("catAddQuick", { name: form.category.trim() })}
+								</button>
+							)}
+						</div>
 						<div className="grid grid-cols-2 gap-12">
 							<FormField label={t("colAmount")} type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
 							<FormField label={t("itemTax")} type="number" step="0.1" value={form.taxRate} onChange={(e) => setForm({ ...form, taxRate: e.target.value })} />

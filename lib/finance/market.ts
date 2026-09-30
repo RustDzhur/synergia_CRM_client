@@ -184,14 +184,15 @@ export interface MarketDefaults {
     creditNotePrefix: string;
     deliveryNotePrefix: string;
     actPrefix: string;
+    packingPrefix: string;
     paymentTermsDays: number;
     smallBusiness: boolean;
     uaVatPayer: boolean;
 }
 
 export const MARKET_DEFAULTS: Record<Market, MarketDefaults> = {
-    DE: { currency: "EUR", invoicePrefix: "RE", quotePrefix: "AN", creditNotePrefix: "GS", deliveryNotePrefix: "LS", actPrefix: "АКТ", paymentTermsDays: 14, smallBusiness: false, uaVatPayer: false },
-    UA: { currency: "UAH", invoicePrefix: "РАХ", quotePrefix: "КП", creditNotePrefix: "КН", deliveryNotePrefix: "ВН", actPrefix: "АКТ", paymentTermsDays: 5, smallBusiness: false, uaVatPayer: false },
+    DE: { currency: "EUR", invoicePrefix: "RE", quotePrefix: "AN", creditNotePrefix: "GS", deliveryNotePrefix: "LS", actPrefix: "АКТ", packingPrefix: "PL", paymentTermsDays: 14, smallBusiness: false, uaVatPayer: false },
+    UA: { currency: "UAH", invoicePrefix: "РАХ", quotePrefix: "КП", creditNotePrefix: "КН", deliveryNotePrefix: "ВН", actPrefix: "АКТ", packingPrefix: "ПЛ", paymentTermsDays: 5, smallBusiness: false, uaVatPayer: false },
 };
 
 /** Что скроется/появится при смене страны — для окна подтверждения в интерфейсе. */

@@ -1,14 +1,17 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbCopy, TbDownload, TbPlus, TbReceipt } from "react-icons/tb";
 import { LineItem, useFinanceStore } from "@/store/useFinanceStore";
+import { useContactStore } from "@/store/useContactStore";
+import { useCompaniesStore } from "@/store/useCompaniesStore";
 import { apiCall } from "@/store/crmApi";
 import { defaultRateFor } from "@/lib/finance/tax";
 import { STATUS_COLORS } from "@/utils/statusColors";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
+import SuggestInput, { type SuggestOption } from "../shared/SuggestInput";
 import LineItemsEditor from "./LineItemsEditor";
 import { downloadDocumentPdf } from "./download";
 import DocumentTemplateButton from "./DocumentTemplateButton";
@@ -28,13 +31,17 @@ const STATUS_COLOR: Record<string, string> = {
 // созданный из карточки, сразу виден в ней же
 export interface InvoicePrefill { dealId: string; customerName: string; contact?: string; company?: string }
 
-export default function Invoices({ openId, prefill }: { openId?: string | null; prefill?: InvoicePrefill | null }) {
+export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: string | null; prefill?: InvoicePrefill | null; onPrefillDone?: () => void }) {
 	const t = useTranslations("finance");
 	const locale = useLocale();
 	const { invoices, products, loadInvoices, loadProducts, createInvoice, updateInvoice, sendInvoice, payInvoice, duplicateInvoice, issueCreditNote, settings } = useFinanceStore();
 	const defaultTaxRate = defaultRateFor(settings ?? {});
+	const { contacts, fetchContacts } = useContactStore();
+	const { companies, fetchCompanies } = useCompaniesStore();
 	const [open, setOpen] = useState(false);
 	const [customerName, setCustomerName] = useState("");
+	// Привязка счёта к записи CRM: сделка (из карточки) и контакт/фирма (из подсказок клиента)
+	const [clientLink, setClientLink] = useState<{ deal?: string; contact?: string; company?: string }>({});
 	const [supplyDate, setSupplyDate] = useState(""); // Leistungsdatum, §14 Abs. 4 Nr. 6 UStG — печатается на счёте
 	// ВЭД: условие поставки и номер декларации — для экспортных счетов (ТЗ §12)
 	const [incoterms, setIncoterms] = useState("");
@@ -55,12 +62,43 @@ export default function Invoices({ openId, prefill }: { openId?: string | null; 
 	useEffect(() => {
 		if (openId && rowRefs.current[openId]) rowRefs.current[openId]?.scrollIntoView({ behavior: "smooth", block: "center" });
 	}, [openId, invoices]);
-	// пришли из карточки сделки: подставляем клиента и сразу открываем форму нового счёта
+	// пришли из карточки сделки: подставляем клиента и сразу открываем форму нового счёта.
+	// Предзаполнение одноразовое — иначе при каждом возврате на вкладку окно открывалось бы снова;
+	// сама связь сохраняется в clientLink, иначе после сброса предзаполнения счёт терял привязку к сделке
 	useEffect(() => {
 		if (!prefill) return;
 		setCustomerName(prefill.customerName);
+		setClientLink({ deal: prefill.dealId, contact: prefill.contact, company: prefill.company });
 		setOpen(true);
+		onPrefillDone?.();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [prefill]);
+
+	// Подсказки клиента — из CRM (контакты и фирмы); грузим при открытии формы
+	useEffect(() => {
+		if (!open) return;
+		if (contacts.length === 0) fetchContacts();
+		if (companies.length === 0) fetchCompanies();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [open]);
+
+	const clientOptions = useMemo<SuggestOption[]>(() => {
+		const q = customerName.trim().toLowerCase();
+		const fromContacts = contacts
+			.filter((c) => !q || [c.name, c.phone, c.email].some((v) => v?.toLowerCase().includes(q)))
+			.map((c) => ({ key: `c:${c._id}`, title: c.name, lines: [c.phone ?? "", c.email ?? ""] }));
+		const fromCompanies = companies
+			.filter((c) => !q || c.name.toLowerCase().includes(q))
+			.map((c) => ({ key: `k:${c._id}`, title: c.name, lines: [c.email ?? ""] }));
+		return [...fromContacts, ...fromCompanies];
+	}, [contacts, companies, customerName]);
+
+	function openNew() {
+		// новый счёт начинается с чистого листа: клиент, строки и связь прошлого счёта не переносятся
+		setCustomerName("");
+		setClientLink({});
+		setOpen(true);
+	}
 
 	async function submit(e: React.FormEvent) {
 		e.preventDefault();
@@ -69,8 +107,9 @@ export default function Invoices({ openId, prefill }: { openId?: string | null; 
 		if (!cleanItems.length) return toast.error(t("itemsRequired"));
 		const err = await createInvoice({
 			customerName: customerName.trim(), items: cleanItems, currency: settings?.currency || "EUR", supplyDate: supplyDate || undefined, incoterms: incoterms || undefined, customsDeclaration: customs || undefined,
-			// привязка к сделке и клиенту: счёт создаётся из карточки и должен в ней же появиться
-			...(prefill ? { deal: prefill.dealId, contact: prefill.contact, company: prefill.company } : {}),
+			// привязка к сделке и клиенту: счёт из карточки виден в ней же, а выбранный из CRM клиент —
+			// в своей карточке контакта/фирмы
+			...clientLink,
 		});
 		if (err) return toast.error(err);
 		toast.success(t("saved"));
@@ -123,7 +162,7 @@ export default function Invoices({ openId, prefill }: { openId?: string | null; 
 	return (
 		<div>
 			<div className="mb-16 flex justify-end">
-				<button type="button" onClick={() => setOpen(true)} className="fs-btn fs-btn-primary h-40">
+				<button type="button" onClick={openNew} className="fs-btn fs-btn-primary h-40">
 					<TbPlus size={16} /> {t("newInvoice")}
 				</button>
 			</div>
@@ -218,8 +257,22 @@ export default function Invoices({ openId, prefill }: { openId?: string | null; 
 			<Modal open={open} onClose={() => setOpen(false)} label={t("newInvoice")} className="w-full max-w-[640px]">
 				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
 					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("newInvoice")}</h2>
+					{/* Клиент подтягивается из CRM (контакты и фирмы): контакт, заведённый в CRM, находится сразу */}
 					<div className="mb-16">
-						<FormField label={t("customer")} value={customerName} onChange={(e) => setCustomerName(e.target.value)} maxLength={200} autoFocus />
+						<span className="mb-6 block text-12 text-[#8c948b]">{t("customer")}</span>
+						<SuggestInput
+							value={customerName}
+							onChange={(v) => { setCustomerName(v); setClientLink((l) => ({ deal: l.deal })); }}
+							onPick={(o) => {
+								const [kind, id] = o.key.split(":");
+								setCustomerName(o.title);
+								setClientLink((l) => ({ deal: l.deal, ...(kind === "k" ? { company: id } : { contact: id }) }));
+							}}
+							options={clientOptions}
+							placeholder={t("contractClientPlaceholder")}
+							showSearchIcon
+						/>
+						{(clientLink.contact || clientLink.company) && <span className="mt-6 block text-11 text-[#9AA396]">{t("contractClientLinked")}</span>}
 					</div>
 					{/* Leistungsdatum рядом с датами документа: без него немецкий счёт (§14 Abs. 4 Nr. 6 UStG) неполный */}
 					<div className="mb-16 md:max-w-[calc(50%-6px)]">

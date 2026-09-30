@@ -41,8 +41,11 @@ export async function GET(req: Request) {
     const format = url.searchParams.get("format") === "xml" ? "xml" : "csv";
     const yearParam = url.searchParams.get("year");
     const year = yearParam && /^\d{4}$/.test(yearParam) ? yearParam : String(new Date().getFullYear());
-    // Период реестра ПН: месяц (YYYY-MM) или весь год
+    // Период реестра ПН: месяц (YYYY-MM), конкретные даты (from/to) или весь год. Экран «ПДВ» показывает
+    // месяц/квартал/год, поэтому выгрузка обязана уметь тот же период — иначе файл не совпадает с таблицей
     const month = url.searchParams.get("month");
+    const fromParam = url.searchParams.get("from");
+    const toParam = url.searchParams.get("to");
 
     await connectDB();
     await requireMarket(user.id, "UA");
@@ -57,10 +60,13 @@ export async function GET(req: Request) {
             ? csv([["Дата оплати", "Номер рахунку", "Контрагент", "Сума, грн"], ...rows, [], ["Дохід за рік", "", "", book.income.toFixed(2)]])
             : xmlRows("incomeBook", book.quarters.flatMap((q) => q.rows.map((r) => ({ date: r.date, invoice: r.number, customer: r.customer, amount: r.amount }))));
     } else if (kind === "vat-register") {
-        const from = month ? `${month}-01` : `${year}-01-01`;
-        const to = month ? new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).toISOString().slice(0, 10) : `${year}-12-31`;
+        // Границы периода: явные даты важнее месяца, месяц важнее года
+        const DATE = /^\d{4}-\d{2}-\d{2}$/;
+        const explicit = fromParam && DATE.test(fromParam) && toParam && DATE.test(toParam) && fromParam <= toParam;
+        const from = explicit ? fromParam! : month ? `${month}-01` : `${year}-01-01`;
+        const to = explicit ? toParam! : month ? new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).toISOString().slice(0, 10) : `${year}-12-31`;
         const reg = await vatRegister(user.id, from, to);
-        if (month) filename = `dps-vat-${month}.${format}`;
+        filename = explicit ? `dps-vat-${from}_${to}.${format}` : month ? `dps-vat-${month}.${format}` : `dps-vat-${year}.${format}`;
         const issued = reg.issued.map((r) => ["issued", r.date, r.number, r.counterparty, r.net.toFixed(2), r.rate, r.tax.toFixed(2)]);
         const received = reg.received.map((r) => ["received", r.date, r.number, r.counterparty, r.net.toFixed(2), r.rate, r.tax.toFixed(2)]);
         body = format === "csv"

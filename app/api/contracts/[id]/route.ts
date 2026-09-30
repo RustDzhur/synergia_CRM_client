@@ -5,6 +5,7 @@ import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import Contract from "@/models/Contract";
 import { toContractDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
+import { ownedContact, ownedCompany } from "@/lib/deals";
 
 // завершённый/отменённый договор уже мог породить события/заказы — не редактируется, только для истории
 const LOCKED = ["completed", "cancelled"];
@@ -18,7 +19,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     return c ? NextResponse.json(toContractDTO(c)) : notFound();
 }
 
-// PATCH /api/contracts/:id — { customerName?, value?, startDate?, endDate?, notes?, file? }
+// PATCH /api/contracts/:id — { customerName?, value?, startDate?, endDate?, notes?, body?, contact?, company?, file? }
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
@@ -34,6 +35,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (typeof b.startDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.startDate)) contract.startDate = b.startDate;
     if (typeof b.endDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.endDate)) contract.endDate = b.endDate;
     if (typeof b.notes === "string") contract.notes = b.notes.trim().slice(0, 2000);
+    // Текст договора и привязка к клиенту из CRM — правятся и после создания
+    if (typeof b.body === "string") contract.body = b.body.trim().slice(0, 20000);
+    if (b.contact !== undefined) contract.contact = (await ownedContact(b.contact, user.id)) || undefined;
+    if (b.company !== undefined) contract.company = (await ownedCompany(b.company, user.id)) || undefined;
     // пустая строка — «печатать оформление из настроек бухгалтерии», поэтому её тоже принимаем
     if (b.template === "") contract.template = "";
     else if (isTemplate(b.template)) contract.template = b.template;

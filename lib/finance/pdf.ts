@@ -36,6 +36,8 @@ const LABELS: Record<string, Record<string, string>> = {
         uahTotal: "Total in UAH", uahRate: "rate",
         act: "Certificate of services", actDate: "Service date", actFor: "for invoice",
         signedBy: "Contractor", signedByCustomer: "Customer",
+        issuedBy: "Issued by", receivedBy: "Received by",
+        hsCode: "HS code", weightKg: "Weight, kg", origin: "Origin", totalWeight: "Total weight", packingDate: "Packing date",
         continued: "continued",
     },
     de: {
@@ -55,6 +57,8 @@ const LABELS: Record<string, Record<string, string>> = {
         uahTotal: "Gesamt in UAH", uahRate: "Kurs",
         act: "Leistungsnachweis", actDate: "Leistungsdatum", actFor: "zur Rechnung",
         signedBy: "Auftragnehmer", signedByCustomer: "Auftraggeber",
+        issuedBy: "Ausgeliefert von", receivedBy: "Erhalten von",
+        hsCode: "Zolltarifnr.", weightKg: "Gewicht, kg", origin: "Herkunft", totalWeight: "Gesamtgewicht", packingDate: "Packdatum",
         continued: "Fortsetzung",
     },
     ua: {
@@ -74,11 +78,19 @@ const LABELS: Record<string, Record<string, string>> = {
         uahTotal: "Разом у гривні", uahRate: "курс",
         act: "Акт виконаних робіт", actDate: "Дата складання", actFor: "до рахунку",
         signedBy: "Виконавець", signedByCustomer: "Замовник",
+        issuedBy: "Видав", receivedBy: "Отримав",
+        hsCode: "УКТ ЗЕД", weightKg: "Вага, кг", origin: "Країна", totalWeight: "Загальна вага", packingDate: "Дата пакування",
         continued: "продовження",
     },
 };
 
-export interface PdfLineItem { description: string; qty: number; unitPrice: number; taxRate: number }
+export interface PdfLineItem {
+    description: string; qty: number; unitPrice: number; taxRate: number;
+    // Упаковочный лист (ВЭД): код УКТ ЗЕД/HS, вес единицы и страна происхождения — печатаются своими колонками
+    hsCode?: string;
+    unitWeightKg?: number;
+    originCountry?: string;
+}
 export interface PdfParty { name: string; address?: string; taxId?: string }
 export interface PdfDocumentData {
     kind: DocKind;
@@ -104,6 +116,7 @@ export interface PdfDocumentData {
     startDate?: string; // договор
     endDate?: string;
     value?: number; // договор: сумма договора
+    body?: string; // договор: текст пунктов с подставленными значениями (lib/finance/contractText.ts)
     notes?: string;
     contractNumber?: string; // номер договора: в украинских документах его печатают рядом с датой
     template?: string; // id шаблона оформления; если не задан — берётся умолчание из настроек бухгалтерии
@@ -198,6 +211,13 @@ const UA_LABELS: Record<string, string> = {
     actFor: "до рахунку",
     signedBy: "Виконавець",
     signedByCustomer: "Замовник",
+    issuedBy: "Видав",
+    receivedBy: "Отримав",
+    hsCode: "УКТ ЗЕД",
+    weightKg: "Вага, кг",
+    origin: "Країна",
+    totalWeight: "Загальна вага",
+    packingDate: "Дата пакування",
     uahTotal: "Разом у гривні",
     uahRate: "курс",
 };

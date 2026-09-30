@@ -11,6 +11,10 @@ import SettingsTabs from "./SettingsTabs";
 // Мастер импорта и экспорта (ТЗ §17): загрузить файл → проверить сопоставление колонок → увидеть
 // предпросмотр с ошибками → импортировать → получить отчёт → при необходимости откатить по номеру
 // пакета. Обновление идёт по ключам (SKU, почта, код фирмы), поэтому повторный импорт не плодит дубли.
+//
+// Мастер открывается в двух видах: отдельной страницей настроек (/crm/settings/import — прямая ссылка)
+// и окном прямо в разделе товаров/склада (embedded): страница настроек без своей вкладки выглядела
+// «спрятанной», а импорт нужен рядом с товарами. Прикладные файлы лежат в public/samples.
 
 interface FieldDef { key: string; label: string; required: boolean; code: string }
 interface KindDef { kind: string; label: string; fields: FieldDef[] }
@@ -27,12 +31,20 @@ interface Preview {
 	truncated?: boolean;
 }
 
-export default function ImportWizard() {
+// Прикладные файлы для импорта: лежат в public/samples и открываются без входа — их можно скачать,
+// заполнить своими данными и загрузить сюда же
+const SAMPLE_FILES: Record<string, { file: string; label: string }> = {
+	products: { file: "/samples/sample-products.csv", label: "sample-products.csv" },
+	stock: { file: "/samples/sample-stock.csv", label: "sample-stock.csv" },
+	boms: { file: "/samples/sample-bom.csv", label: "sample-bom.csv" },
+};
+
+export default function ImportWizard({ kind: initialKind, embedded = false }: { kind?: string; embedded?: boolean } = {}) {
 	const t = useTranslations("settings");
 	const [kinds, setKinds] = useState<KindDef[]>([]);
 	const [batches, setBatches] = useState<BatchRow[]>([]);
 	const [templates, setTemplates] = useState<MappingRow[]>([]);
-	const [kind, setKind] = useState("products");
+	const [kind, setKind] = useState(initialKind ?? "products");
 	const [fileName, setFileName] = useState("");
 	const [text, setText] = useState("");
 	const [mapping, setMapping] = useState<Record<string, string>>({});
@@ -114,10 +126,10 @@ export default function ImportWizard() {
 	const card = "fs-card p-16 md:p-20";
 
 	return (
-		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
-			<PageHeader />
-			<div className="flex flex-col gap-20 lg:flex-row">
-				<SettingsTabs className="shrink-0 md:self-start" />
+		<div className={embedded ? "flex min-w-0 flex-col gap-16" : "px-16 py-20 md:px-24 md:py-24 lg:px-32"}>
+			{!embedded && <PageHeader />}
+			<div className={embedded ? "flex min-w-0 flex-col" : "flex flex-col gap-20 lg:flex-row"}>
+				{!embedded && <SettingsTabs className="shrink-0 md:self-start" />}
 				<div className="flex min-w-0 flex-1 flex-col gap-16">
 					{/* Шаг 1–2: файл и вид данных */}
 					<section className={card}>
@@ -141,6 +153,10 @@ export default function ImportWizard() {
 								<input type="file" accept=".csv,.txt,.tsv" onChange={pickFile} className="hidden" />
 							</label>
 							{fileName && <span className="text-12 text-[#8c948b]">{fileName}</span>}
+							{/* Прикладной файл: скачать, заполнить своими данными и загрузить сюда же */}
+							{SAMPLE_FILES[kind] && (
+								<a href={SAMPLE_FILES[kind].file} download className="fs-link text-12">{t("importSample", { file: SAMPLE_FILES[kind].label })}</a>
+							)}
 							{def && (
 								<button type="button" disabled={busy} onClick={() => templates.filter((x) => x.kind === kind).length ? undefined : toast(t("importNoTemplates"))} className="hidden" aria-hidden />
 							)}

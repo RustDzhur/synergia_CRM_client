@@ -18,8 +18,20 @@ export interface PaymentEntry {
 const pad = (n: number) => String(n).padStart(2, "0");
 const iso = (y: number, m: number, d: number) => `${y}-${pad(m)}-${pad(d)}`;
 
-/** Календарь платежей на год: суммы — из книги доходов по кварталам (по оплате). */
-export function paymentCalendar(year: number, profile: UaTaxProfile, quarters: Array<{ quarter: number; income: number; singleTax: number; military: number; esv: number }>): PaymentEntry[] {
+// Строка реестра ПН для календаря: дата и налог (выпущенные — плюс, полученные — минус)
+export interface VatCalendarRow { date: string; tax: number }
+
+/** ПДВ к уплате за месяц по строкам реестра (выпущенные минус полученные). */
+function vatPayableFor(rows: VatCalendarRow[], year: number, months: number[]): number {
+    const inPeriod = rows.filter((r) => {
+        const m = Number(String(r.date).slice(5, 7));
+        return String(r.date).startsWith(String(year)) && months.includes(m);
+    });
+    return Math.round(inPeriod.reduce((s, r) => s + (Number(r.tax) || 0), 0) * 100) / 100;
+}
+
+/** Календарь платежей на год: суммы — из книги доходов по кварталам (по оплате); ПДВ — из реестра ПН. */
+export function paymentCalendar(year: number, profile: UaTaxProfile, quarters: Array<{ quarter: number; income: number; singleTax: number; military: number; esv: number }>, vatRows: VatCalendarRow[] = []): PaymentEntry[] {
     const out: PaymentEntry[] = [];
     const check = "строк [проверить] у бухгалтера";
 
@@ -72,13 +84,16 @@ export function paymentCalendar(year: number, profile: UaTaxProfile, quarters: A
                 const next = m === 12 ? { y: year + 1, m: 1 } : { y: year, m: m + 1 };
                 const lastDay = new Date(Date.UTC(next.y, next.m, 0)).getUTCDate(); // 30-й день, а в феврале — 28/29
                 const due = iso(next.y, next.m, Math.min(30, lastDay));
-                out.push({ date: due, title: `ПДВ за ${monthName(m)}`, amount: 0, kind: "vat", note: `Сума — з реєстру ПН за місяць; декларація до 20-го, сплата ще 10 днів; ${check}` });
+                // Сумма — из реестра ПН за месяц: выпущенные минус полученные. Ноль, если реестр пуст
+                const amount = vatPayableFor(vatRows, year, [m]);
+                out.push({ date: due, title: `ПДВ за ${monthName(m)}`, amount, kind: "vat", note: `Сума — з реєстру ПН за місяць; декларація до 20-го, сплата ще 10 днів; ${check}` });
             }
         } else {
             for (let q = 1; q <= 4; q++) {
                 const dueDate = new Date(Date.UTC(year, q * 3, 0)); // последний день квартала
                 dueDate.setUTCDate(dueDate.getUTCDate() + 50);
-                out.push({ date: dueDate.toISOString().slice(0, 10), title: `ПДВ за ${q}-й квартал`, amount: 0, kind: "vat", note: `Сума — з реєстру ПН за квартал; ${check}` });
+                const amount = vatPayableFor(vatRows, year, [q * 3 - 2, q * 3 - 1, q * 3]);
+                out.push({ date: dueDate.toISOString().slice(0, 10), title: `ПДВ за ${q}-й квартал`, amount, kind: "vat", note: `Сума — з реєстру ПН за квартал; ${check}` });
             }
         }
     }

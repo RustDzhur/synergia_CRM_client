@@ -10,7 +10,7 @@ import { apiCall } from "@/store/crmApi";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { money } from "./format";
 import { downloadAuthed } from "./download";
-import Link from "next/link";
+import ImportWizard from "../Settings/ImportWizard";
 
 // Склад (ТЗ §12): несколько складов, движения только документами, сторно вместо правки, отчёты
 // (остатки по складам, оборотка, неликвид, ABC) и инвентаризация, расхождения которой превращаются
@@ -121,15 +121,21 @@ export default function Stock() {
 	}
 
 	const input = "fs-field h-36 w-full px-10 text-12 outline-none";
+	const [importOpen, setImportOpen] = useState(false);
 
 	return (
 		<div className="flex flex-col gap-16">
-			{/* Импорт/экспорт остатков (ТЗ §17): перенос остатков файлом и выгрузка каталога с остатками */}
+			{/* Импорт/экспорт остатков (ТЗ §17): мастер открывается окном здесь же, без ухода в настройки */}
 			<div className="mb-12 flex flex-wrap items-center gap-8">
-				<Link href={`/${locale}/crm/settings/import`} className="fs-btn fs-btn-ghost h-32 text-12">{t("stockImport")}</Link>
-				<button type="button" onClick={() => void downloadAuthed("/api/export?kind=products&format=csv", "stock.csv", t("pdfFailed"))} className="fs-btn fs-btn-ghost h-32 text-12">{t("stockExportCsv")}</button>
-				<button type="button" onClick={() => void downloadAuthed("/api/stock?kind=on-hand", "stock-on-hand.json", t("pdfFailed"))} className="fs-btn fs-btn-ghost h-32 text-12">{t("stockExportOnHand")}</button>
+				<button type="button" onClick={() => setImportOpen(true)} className="fs-btn fs-btn-ghost h-32 text-12">{t("stockImport")}</button>
+				<button type="button" onClick={() => void downloadAuthed("/api/export?kind=products&format=csv", "products.csv", t("pdfFailed"))} className="fs-btn fs-btn-ghost h-32 text-12">{t("stockExportCsv")}</button>
+				<button type="button" onClick={() => void downloadAuthed("/api/stock?kind=on-hand&format=csv", "stock-on-hand.csv", t("pdfFailed"))} className="fs-btn fs-btn-ghost h-32 text-12">{t("stockExportOnHand")}</button>
 			</div>
+			<Modal open={importOpen} onClose={() => setImportOpen(false)} label={t("stockImport")} className="w-full max-w-[920px]">
+				<div className="fs-popover fs-scroll max-h-[calc(100vh-32px)] overflow-y-auto p-16 md:p-20">
+					{importOpen && <ImportWizard kind="stock" embedded />}
+				</div>
+			</Modal>
 			{/* Разделы склада: остатки, документы, отчёты */}
 			<div className="flex flex-wrap gap-8">
 				{(["onhand", "docs", "reports"] as Section[]).map((s) => (

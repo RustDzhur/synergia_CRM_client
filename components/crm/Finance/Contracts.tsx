@@ -1,44 +1,80 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbDownload, TbPlus } from "react-icons/tb";
 import { useFinanceStore } from "@/store/useFinanceStore";
+import { useContactStore } from "@/store/useContactStore";
+import { useCompaniesStore } from "@/store/useCompaniesStore";
 import { STATUS_COLORS } from "@/utils/statusColors";
 import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
+import SuggestInput, { type SuggestOption } from "../shared/SuggestInput";
 import { downloadDocumentPdf } from "./download";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
+import { marketOf } from "@/lib/finance/market";
+import { defaultContractText } from "@/lib/finance/contractText";
 
 const STATUS_COLOR: Record<string, string> = {
 	draft: STATUS_COLORS.neutral, active: STATUS_COLORS.success,
 	completed: STATUS_COLORS.info, cancelled: STATUS_COLORS.danger,
 };
-const EMPTY = { customerName: "", value: "0", currency: "EUR", startDate: "", endDate: "", notes: "" };
+const EMPTY = { customerName: "", value: "0", currency: "EUR", startDate: "", endDate: "", notes: "", body: "" };
 
-// Договоры: метаданные + статус (draft → active когда клиент подписал — событие contract_signed, на него можно
-// завести правило автоматизации «поставить задачу закупить материалы» и т.п.). Сам файл договора прикладывается как
-// обычный документ в разделе Documents и привязывается отдельно — здесь только карточка со статусом.
+// Договоры: карточка, текст договора и статус (draft → active когда клиент подписал — событие
+// contract_signed, на него можно завести правило автоматизации). Клиент выбирается из CRM (Contact
+// или Company), поэтому контакт, заведённый в CRM, здесь подхватывается сразу; текст договора
+// печатается в PDF с подстановкой полей ({{number}}, {{customer}}, {{value}} — lib/finance/contractText.ts).
 export default function Contracts() {
 	const t = useTranslations("finance");
 	const locale = useLocale();
 	const { contracts, loadContracts, createContract, updateContract, signContract, completeContract, cancelContract, deleteContract, settings } = useFinanceStore();
+	const { contacts, fetchContacts } = useContactStore();
+	const { companies, fetchCompanies } = useCompaniesStore();
 	const [open, setOpen] = useState(false);
 	const [form, setForm] = useState(EMPTY);
+	const [link, setLink] = useState<{ contact?: string; company?: string }>({});
 	const [busy, setBusy] = useState<string | null>(null);
 	const [toDelete, setToDelete] = useState<string | null>(null);
 
 	useEffect(() => { loadContracts(); }, [loadContracts]);
+	// Подсказки клиента — из CRM: грузим при открытии формы, списки общие с CRM-разделом
+	useEffect(() => {
+		if (!open) return;
+		if (contacts.length === 0) fetchContacts();
+		if (companies.length === 0) fetchCompanies();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [open]);
+
+	// Клиент: контакты и фирмы CRM одним списком подсказок («c:» — контакт, «k:» — фирма):
+	// при выборе договор привязывается к записи CRM, а не остаётся текстом
+	const clientOptions = useMemo<SuggestOption[]>(() => {
+		const q = form.customerName.trim().toLowerCase();
+		const fromContacts = contacts
+			.filter((c) => !q || [c.name, c.phone, c.email].some((v) => v?.toLowerCase().includes(q)))
+			.map((c) => ({ key: `c:${c._id}`, title: c.name, lines: [c.phone ?? "", c.email ?? ""] }));
+		const fromCompanies = companies
+			.filter((c) => !q || c.name.toLowerCase().includes(q))
+			.map((c) => ({ key: `k:${c._id}`, title: c.name, lines: [c.email ?? ""] }));
+		return [...fromContacts, ...fromCompanies];
+	}, [contacts, companies, form.customerName]);
+
+	// Текст договора: типовой фирмы из настроек, иначе встроенный — вписывается при открытии формы
+	function openNew() {
+		setForm({ ...EMPTY, currency: settings?.currency || "EUR", body: settings?.contractTemplate?.trim() || defaultContractText(marketOf(settings?.country) ?? null) });
+		setLink({});
+		setOpen(true);
+	}
 
 	async function submit(e: React.FormEvent) {
 		e.preventDefault();
 		if (!form.customerName.trim()) return toast.error(t("customerRequired"));
-		const err = await createContract({ ...form, customerName: form.customerName.trim(), value: Number(form.value) || 0, currency: settings?.currency || form.currency });
+		const err = await createContract({ ...form, ...link, customerName: form.customerName.trim(), value: Number(form.value) || 0, currency: settings?.currency || form.currency });
 		if (err) return toast.error(err);
 		toast.success(t("saved"));
-		setOpen(false); setForm(EMPTY);
+		setOpen(false); setForm(EMPTY); setLink({});
 	}
 	async function act(id: string, fn: (id: string) => Promise<string | null>) { setBusy(id); const err = await fn(id); setBusy(null); if (err) toast.error(err); }
 	async function downloadContractPdf(id: string, number: string) {
@@ -48,7 +84,7 @@ export default function Contracts() {
 	return (
 		<div>
 			<div className="mb-16 flex justify-end">
-				<button type="button" onClick={() => setOpen(true)} className="fs-btn fs-btn-primary h-40">
+				<button type="button" onClick={openNew} className="fs-btn fs-btn-primary h-40">
 					<TbPlus size={16} /> {t("newContract")}
 				</button>
 			</div>
@@ -95,16 +131,44 @@ export default function Contracts() {
 				</ul>
 			)}
 
-			<Modal open={open} onClose={() => setOpen(false)} label={t("newContract")} className="w-full max-w-[480px]">
+			<Modal open={open} onClose={() => setOpen(false)} label={t("newContract")} className="w-full max-w-[720px]">
 				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
 					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("newContract")}</h2>
 					<div className="flex flex-col gap-12">
-						<FormField label={t("customer")} value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} maxLength={200} autoFocus />
+						{/* Клиент подтягивается из CRM (контакты и фирмы) — тот же список, что в разделе CRM */}
+						<div>
+							<span className="mb-6 block text-12 text-[#8c948b]">{t("customer")}</span>
+							<SuggestInput
+								value={form.customerName}
+								onChange={(v) => { setForm({ ...form, customerName: v }); setLink({}); }}
+								onPick={(o) => {
+									const [kind, id] = o.key.split(":");
+									setForm({ ...form, customerName: o.title });
+									setLink(kind === "k" ? { company: id } : { contact: id });
+								}}
+								options={clientOptions}
+								placeholder={t("contractClientPlaceholder")}
+								showSearchIcon
+							/>
+							{link.contact || link.company ? <span className="mt-6 block text-11 text-[#9AA396]">{t("contractClientLinked")}</span> : null}
+						</div>
 						<FormField label={t("contractValue")} type="number" step="0.01" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} />
 						<div className="grid grid-cols-2 gap-12">
 							<FormField label={t("startDate")} type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
 							<FormField label={t("endDate")} type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
 						</div>
+						{/* Текст договора: правится под фирму; поля подставляются на месте {{…}} при печати PDF */}
+						<div>
+							<span className="mb-6 block text-12 text-[#8c948b]">{t("contractBody")}</span>
+							<textarea
+								value={form.body}
+								onChange={(e) => setForm({ ...form, body: e.target.value })}
+								rows={12}
+								className="fs-field fs-scroll w-full resize-y p-10 text-12 leading-[1.5] outline-none"
+							/>
+							<span className="mt-[4px] block text-11 text-[#9AA396]">{t("contractBodyHint", { vars: "{{number}} {{customer}} {{value}} {{start}} {{end}}" })}</span>
+						</div>
+						<FormField label={t("notes")} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} maxLength={2000} />
 					</div>
 					<div className="mt-20 flex justify-end gap-10">
 						<button type="button" onClick={() => setOpen(false)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>

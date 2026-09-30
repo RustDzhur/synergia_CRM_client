@@ -10,7 +10,7 @@ import FormField from "../shared/FormField";
 import SearchBox from "../shared/SearchBox";
 import { money } from "./format";
 import { downloadAuthed } from "./download";
-import Link from "next/link";
+import ImportWizard from "../Settings/ImportWizard";
 import Stock from "./Stock";
 
 const EMPTY = { name: "", sku: "", type: "service" as "good" | "service", unit: "pcs", purchasePrice: "0", salePrice: "0", taxRate: "", stockQty: "0", reorderLevel: "0", image: "", prices: [] as Array<{ type: string; price: string; minQty: string }>, hsCode: "", weightKg: "0", originCountry: "" };
@@ -26,6 +26,7 @@ export default function Products() {
 	const [editId, setEditId] = useState<string | null>(null);
 	const [form, setForm] = useState(EMPTY);
 	const [toDelete, setToDelete] = useState<string | null>(null);
+	const [importOpen, setImportOpen] = useState(false);
 
 	useEffect(() => { loadProducts(); }, [loadProducts]);
 
@@ -96,11 +97,11 @@ export default function Products() {
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-12">
 				<SearchBox value={query} onChange={setQuery} placeholder={t("search")} className="w-full md:w-[280px]" />
 				<div className="flex flex-wrap items-center gap-8">
-					{/* Импорт/экспорт каталога (ТЗ §17): мастер открывается отдельной страницей настроек,
-					    выгрузка идёт файлом с токеном — иначе сервер отвечает «Unauthorized» */}
-					<Link href={`/${locale}/crm/settings/import`} className="fs-btn fs-btn-ghost h-40">
+					{/* Импорт/экспорт каталога (ТЗ §17): мастер открывается окном прямо здесь (в настройки
+					    уводила отдельная страница без своей вкладки), выгрузка идёт файлом с токеном */}
+					<button type="button" onClick={() => setImportOpen(true)} className="fs-btn fs-btn-ghost h-40">
 						{t("stockImport")}
-					</Link>
+					</button>
 					<button type="button" onClick={() => void downloadAuthed("/api/export?kind=products&format=csv", "products.csv", t("pdfFailed"))} className="fs-btn fs-btn-ghost h-40">
 						{t("stockExportCsv")}
 					</button>
@@ -205,6 +206,14 @@ export default function Products() {
 			</Modal>
 
 			<ConfirmDialog open={!!toDelete} title={t("delete")} text={t("confirmDeleteProduct")} onCancel={() => setToDelete(null)} onConfirm={() => { if (toDelete) deleteProduct(toDelete); setToDelete(null); }} />
+
+			{/* Мастер импорта/экспорта прямо в каталоге: страница настроек без своей вкладки выглядела
+			    «спрятанной», а файл нужен рядом с товарами */}
+			<Modal open={importOpen} onClose={() => setImportOpen(false)} label={t("stockImport")} className="w-full max-w-[920px]">
+				<div className="fs-popover fs-scroll max-h-[calc(100vh-32px)] overflow-y-auto p-16 md:p-20">
+					{importOpen && <ImportWizard kind="products" embedded />}
+				</div>
+			</Modal>
 		</div>
 	);
 }

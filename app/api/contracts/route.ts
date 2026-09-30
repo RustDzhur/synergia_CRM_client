@@ -45,6 +45,8 @@ export async function POST(req: Request) {
         startDate: typeof b.startDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.startDate) ? b.startDate : "",
         endDate: typeof b.endDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.endDate) ? b.endDate : "",
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
+        // Текст договора: пункты с подстановками {{…}} — печатаются PDF-ом (lib/finance/contractText.ts)
+        body: typeof b.body === "string" ? b.body.trim().slice(0, 20000) : "",
         template: isTemplate(b.template) ? b.template : "",
         createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
     });

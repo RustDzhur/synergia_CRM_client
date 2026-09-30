@@ -33,6 +33,7 @@ const FinanceSettingsSchema = new Schema(
         creditNotePrefix: { type: String, default: "GS" }, // Gutschrift (кредит-нота/сторно) — своя последовательность номеров
         deliveryNotePrefix: { type: String, default: "LS" }, // Lieferschein (накладная)
         actPrefix: { type: String, default: "АКТ" }, // акт виконаних робіт (Украина) — своя последовательность
+        packingPrefix: { type: String, default: "PL" }, // Пакувальний лист (ВЭД) — своя последовательность номеров
         reminderIntervalDays: { type: Number, default: 7 }, // раз в сколько дней слать напоминание по просроченному счёту
         // Манаведение: сбор за каждую ступень напоминания (0 — не брать) и ставка процентов за просрочку.
         // По умолчанию сборы нулевые: брать их или нет — решение фирмы, а не наше.
@@ -75,6 +76,12 @@ const FinanceSettingsSchema = new Schema(
         // Оценка себестоимости складских запасов (ТЗ §12): средняя или FIFO — выбор фирмы, влияет
         // на себестоимость продаж в отчётах
         stockCosting: { type: String, enum: ["avg", "fifo"], default: "avg" },
+        // Справочник категорий расходов фирмы: подсказки в форме расхода и группировка в отчётах.
+        // Пусто — интерфейс предлагает типовой набор страны (lib/finance/expenseCategories.ts)
+        expenseCategories: { type: [String], default: [] },
+        // Типовой текст договора фирмы с подстановками {{number}}, {{customer}}, {{value}}… (до 20 000 знаков).
+        // Пусто — в договор подставляется встроенный типовой текст (lib/finance/contractText.ts)
+        contractTemplate: { type: String, default: "" },
         // счётчики последнего использованного номера по типу документа и году — атомарно инкрементируются, без пропусков
         counters: { type: Map, of: Number, default: {} },
     },

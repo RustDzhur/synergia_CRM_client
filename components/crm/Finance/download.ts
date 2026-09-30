@@ -1,5 +1,6 @@
 import toast from "react-hot-toast";
 import { authHeaders } from "@/store/crmApi";
+import { explainCompliance } from "@/lib/finance/complianceLabels";
 
 export type DocumentKind = "invoices" | "quotes" | "orders" | "contracts";
 
@@ -81,7 +82,7 @@ export async function downloadPackingList(orderId: string, number: string, local
         if (!win) {
             const a = document.createElement("a");
             a.href = url;
-            a.download = `packing-list-${number}.pdf`;
+            a.download = `packing-list${number ? `-${number}` : ""}.pdf`;
             a.click();
         }
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
@@ -92,13 +93,19 @@ export async function downloadPackingList(orderId: string, number: string, local
 }
 
 // Причина отказа сервера по-человечески: чек-лист реквизитов (код compliance) называет поля, которых
-// не хватает; интерфейс переводит коды, остальные ошибки показывает текстом сервера.
-export async function explainPdfFailure(res: Response, unknown: string): Promise<string> {
+// не хватает — коды переводятся словами и с подсказкой, где заполнить (lib/finance/complianceLabels.ts),
+// иначе человек видел «act: seller_ua_id, ua_vat_certificate, signer» и не понимал, что делать.
+// Остальные ошибки показываются текстом сервера.
+export async function explainPdfFailure(res: Response, unknown: string, locale?: string): Promise<string> {
+    // Язык интерфейса — первая часть адреса (/de/..., /ua/...): те же слова, что видит человек в кабинете
+    const lang = locale ?? (typeof window !== "undefined" ? window.location.pathname.split("/")[1] || "ua" : "ua");
     try {
         const body = (await res.json()) as { code?: string; message?: string; missing?: string[] };
         if (body.code === "compliance" && Array.isArray(body.missing) && body.missing.length) {
-            return `${unknown}: ${body.missing.join(", ")}`;
+            return explainCompliance(body.missing, lang);
         }
+        // Отказ по режиму рынка: сервер объясняет, для какой страны функция
+        if (body.code === "market" && body.message) return body.message;
         if (body.message) return body.message;
     } catch { /* не JSON — остаётся общий текст */ }
     return unknown;

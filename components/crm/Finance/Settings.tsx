@@ -9,6 +9,9 @@ import { fileToLogo, MAX_AVATAR_FILE_BYTES, MAX_LOGO_CHARS } from "@/utils/avata
 import FormField from "../shared/FormField";
 import TemplatePicker from "./TemplatePicker";
 import UaProfileCard, { type UaProfileForm } from "./settingsParts/UaProfileCard";
+import ExpenseCategoriesCard from "./settingsParts/ExpenseCategoriesCard";
+import ContractTextCard from "./settingsParts/ContractTextCard";
+import ActivitiesCard from "./settingsParts/ActivitiesCard";
 import DocumentsCard from "./documentsParts/DocumentsCard";
 
 // Поля манаведения появились в API позже, чем тип FinanceSettings в сторе (app/store/useFinanceStore.ts):
@@ -112,6 +115,10 @@ export default function FinanceSettingsTab() {
 
 	return (
 		<form onSubmit={submit} className="max-w-[640px]">
+			{/* Виды деятельности фирмы: раньше мастер показывался один раз и пропадал — теперь его
+			    всегда можно открыть здесь и добрать разделы (производство, опт, ВЭД) */}
+			<ActivitiesCard />
+
 			<div className="mb-16 fs-card p-16 md:p-20">
 				<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("taxSection")}</h3>
 				<div className="grid grid-cols-1 gap-12 md:grid-cols-2">
@@ -206,6 +213,12 @@ export default function FinanceSettingsTab() {
 
 			{/* Налаштування → Документи: бланки документів с текстами, блоками, подписью и печатью (ТЗ §7) */}
 			{market === "UA" && <DocumentsCard />}
+
+			{/* Категории расходов: справочник для формы расхода и группировки в отчётах */}
+			<ExpenseCategoriesCard />
+
+			{/* Текст договора: типовой для фирмы, поля подставляются на месте {{…}} при печати PDF */}
+			<ContractTextCard />
 
 			<div className="mb-16 fs-card p-16 md:p-20">
 				<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("companySection")}</h3>

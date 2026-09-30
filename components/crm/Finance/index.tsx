@@ -365,9 +365,9 @@ export default function Finance() {
 
 				<div className="min-w-0 flex-1">
 					{tab === "overview" && <Overview />}
-					{tab === "quotes" && <Quotes onOpenOrder={openOrder} prefill={quotePrefill} />}
+					{tab === "quotes" && <Quotes onOpenOrder={openOrder} prefill={quotePrefill} onPrefillDone={() => setQuotePrefill(null)} />}
 					{tab === "orders" && <Orders onOpenInvoice={openInvoice} openId={openOrderId} />}
-					{tab === "invoices" && <Invoices openId={openInvoiceId} prefill={invoicePrefill} />}
+					{tab === "invoices" && <Invoices openId={openInvoiceId} prefill={invoicePrefill} onPrefillDone={() => setInvoicePrefill(null)} />}
 					{tab === "recurring" && <RecurringInvoices />}
 					{tab === "dunning" && <Dunning />}
 					{tab === "contracts" && <Contracts />}

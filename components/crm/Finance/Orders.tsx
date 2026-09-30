@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import {
@@ -12,11 +12,14 @@ import {
 	TbTruckDelivery,
 } from "react-icons/tb";
 import { type Order, LineItem, useFinanceStore } from "@/store/useFinanceStore";
+import { useContactStore } from "@/store/useContactStore";
+import { useCompaniesStore } from "@/store/useCompaniesStore";
 import { apiCall } from "@/store/crmApi";
 import { defaultRateFor } from "@/lib/finance/tax";
 import { STATUS_COLORS } from "@/utils/statusColors";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
+import SuggestInput, { type SuggestOption } from "../shared/SuggestInput";
 import LineItemsEditor from "./LineItemsEditor";
 import { downloadAct, downloadDeliveryNote, downloadDocumentPdf, downloadPackingList } from "./download";
 import WaybillDialog from "./ordersParts/WaybillDialog";
@@ -38,11 +41,42 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 	const locale = useLocale();
 	const { orders, products, loadOrders, loadProducts, createOrder, updateOrder, invoiceOrder, settings } = useFinanceStore();
 	const defaultTaxRate = defaultRateFor(settings ?? {});
+	const { contacts, fetchContacts } = useContactStore();
+	const { companies, fetchCompanies } = useCompaniesStore();
 	const [open, setOpen] = useState(false);
 	const [customerName, setCustomerName] = useState("");
+	// Заказ привязывается к записи CRM: контакт или фирма выбираются из подсказок того же списка, что в CRM
+	const [clientLink, setClientLink] = useState<{ contact?: string; company?: string }>({});
 	const [responsible, setResponsible] = useState("");
 	const [items, setItems] = useState<LineItem[]>([emptyItem(defaultTaxRate)]);
 	const [busy, setBusy] = useState<string | null>(null);
+
+	// Подсказки клиента — из CRM; грузим при открытии формы
+	useEffect(() => {
+		if (!open) return;
+		if (contacts.length === 0) fetchContacts();
+		if (companies.length === 0) fetchCompanies();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [open]);
+
+	const clientOptions = useMemo<SuggestOption[]>(() => {
+		const q = customerName.trim().toLowerCase();
+		const fromContacts = contacts
+			.filter((c) => !q || [c.name, c.phone, c.email].some((v) => v?.toLowerCase().includes(q)))
+			.map((c) => ({ key: `c:${c._id}`, title: c.name, lines: [c.phone ?? "", c.email ?? ""] }));
+		const fromCompanies = companies
+			.filter((c) => !q || c.name.toLowerCase().includes(q))
+			.map((c) => ({ key: `k:${c._id}`, title: c.name, lines: [c.email ?? ""] }));
+		return [...fromContacts, ...fromCompanies];
+	}, [contacts, companies, customerName]);
+
+	function openNew() {
+		setCustomerName("");
+		setClientLink({});
+		setResponsible("");
+		setItems([emptyItem(defaultTaxRate)]);
+		setOpen(true);
+	}
 	// Доставка «Новою Поштою»: если она подключена, у заказа появляется кнопка ТТН; иначе её нет вовсе
 	const [delivery, setDelivery] = useState<{ connected: boolean } | null>(null);
 	const [waybillFor, setWaybillFor] = useState<Order | null>(null);
@@ -82,7 +116,7 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 		if (!customerName.trim()) return toast.error(t("customerRequired"));
 		const cleanItems = items.filter((it) => it.description.trim());
 		if (!cleanItems.length) return toast.error(t("itemsRequired"));
-		const err = await createOrder({ customerName: customerName.trim(), responsible: responsible.trim(), items: cleanItems, currency: settings?.currency || "EUR" });
+		const err = await createOrder({ customerName: customerName.trim(), responsible: responsible.trim(), items: cleanItems, currency: settings?.currency || "EUR", ...clientLink });
 		if (err) return toast.error(err);
 		toast.success(t("saved"));
 		setOpen(false); setCustomerName(""); setResponsible(""); setItems([emptyItem(defaultTaxRate)]);
@@ -161,7 +195,7 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 	return (
 		<div>
 			<div className="mb-16 flex justify-end">
-				<button type="button" onClick={() => setOpen(true)} className="fs-btn fs-btn-primary h-40">
+				<button type="button" onClick={openNew} className="fs-btn fs-btn-primary h-40">
 					<TbPlus size={16} /> {t("newOrder")}
 				</button>
 			</div>
@@ -206,13 +240,13 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 									title={o.deliveryNoteNumber ? t("deliveryIssued", { number: o.deliveryNoteNumber }) : t("deliveryCreate")}>
 									<TbTruckDelivery size={15} /> {o.deliveryNoteNumber || t("deliveryNote")}
 								</button>
-								{/* Пакувальний лист (ВЭД): позиции с УКТ ЗЕД, весом и страной происхождения */}
+								{/* Пакувальний лист (ВЭД): свои колонки УКТ ЗЕД/вес/страна и свой номер при первой выписке */}
 								<button
 									type="button"
-									onClick={() => void downloadPackingList(o.id, o.number, locale)}
+									onClick={() => void downloadPackingList(o.id, o.packingNumber ?? "", locale)}
 									className="fs-btn fs-btn-ghost h-34"
-									title={t("packingListHint")}>
-									<TbTruckDelivery size={15} /> {t("packingList")}
+									title={o.packingNumber ? t("packingIssued", { number: o.packingNumber }) : t("packingListHint")}>
+									<TbTruckDelivery size={15} /> {o.packingNumber || t("packingList")}
 								</button>
 								{/* Публичная ссылка для клиента: статус, состав, доставка и кнопка оплаты */}
 								<button type="button" disabled={busy === o.id} onClick={() => void shareOrder(o.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]" title={t("shareHint")}>
@@ -307,7 +341,23 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
 					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("newOrder")}</h2>
 					<div className="mb-16 grid grid-cols-1 gap-12 md:grid-cols-2">
-						<FormField label={t("customer")} value={customerName} onChange={(e) => setCustomerName(e.target.value)} maxLength={200} autoFocus />
+						{/* Клиент подтягивается из CRM (контакты и фирмы) — как в предложениях, счетах и договорах */}
+						<div>
+							<span className="mb-6 block text-12 text-[#8c948b]">{t("customer")}</span>
+							<SuggestInput
+								value={customerName}
+								onChange={(v) => { setCustomerName(v); setClientLink({}); }}
+								onPick={(o) => {
+									const [kind, id] = o.key.split(":");
+									setCustomerName(o.title);
+									setClientLink(kind === "k" ? { company: id } : { contact: id });
+								}}
+								options={clientOptions}
+								placeholder={t("contractClientPlaceholder")}
+								showSearchIcon
+							/>
+							{(clientLink.contact || clientLink.company) && <span className="mt-6 block text-11 text-[#9AA396]">{t("contractClientLinked")}</span>}
+						</div>
 						<FormField label={t("responsible")} value={responsible} onChange={(e) => setResponsible(e.target.value)} maxLength={120} />
 					</div>
 					<LineItemsEditor items={items} onChange={setItems} products={products.filter((p) => !p.archived)} currency={settings?.currency ?? "EUR"} />

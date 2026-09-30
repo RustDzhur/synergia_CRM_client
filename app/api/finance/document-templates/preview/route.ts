@@ -13,11 +13,17 @@ export const dynamic = "force-dynamic";
 // «предпросмотр совпадает с PDF» — не пожелание, а свойство: и кнопка скачивания, и это окно
 // зовут один и тот же код (ТЗ §7).
 
-const KINDS: DocKind[] = ["invoice", "credit_note", "quote", "order", "contract", "delivery_note", "act"];
+const KINDS: DocKind[] = ["invoice", "credit_note", "quote", "order", "contract", "delivery_note", "act", "packing_list"];
 
 const SAMPLE_ITEMS = [
     { description: "Консультаційні послуги", qty: 2, unitPrice: 1500, taxRate: 20 },
     { description: "Ліцензія на програмне забезпечення", qty: 1, unitPrice: 1000, taxRate: 7 },
+];
+
+// Упаковочный лист показывает свои колонки — в предпросмотре у строк есть УКТ ЗЕД, вес и страна
+const PACKING_ITEMS = [
+    { description: "Консультаційні послуги", qty: 2, unitPrice: 0, taxRate: 0, hsCode: "8523 49 00 00", unitWeightKg: 0.5, originCountry: "UA" },
+    { description: "Ліцензія на програмне забезпечення", qty: 1, unitPrice: 0, taxRate: 0, hsCode: "4911 99 00 00", unitWeightKg: 2, originCountry: "UA" },
 ];
 
 export async function GET(req: Request) {
@@ -53,9 +59,11 @@ export async function GET(req: Request) {
               ? { ...common, kind, items: [], value: 120000, startDate: today, endDate: due }
               : kind === "delivery_note"
                 ? { ...common, kind, supplyDate: today, orderNumber: `ЗМ-${new Date().getFullYear()}-1` }
-                : kind === "act"
-                  ? { ...common, kind, orderNumber: `ЗМ-${new Date().getFullYear()}-1` }
-                  : { ...common, kind, dueDate: due, smallBusinessNote: false };
+                : kind === "packing_list"
+                  ? { ...common, kind, items: PACKING_ITEMS, supplyDate: today, orderNumber: `ЗМ-${new Date().getFullYear()}-1` }
+                  : kind === "act"
+                    ? { ...common, kind, orderNumber: `ЗМ-${new Date().getFullYear()}-1` }
+                    : { ...common, kind, dueDate: due, smallBusinessNote: false };
 
     const buf = await renderDocumentPdf(
         {

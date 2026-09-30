@@ -69,6 +69,22 @@ export const DOC_PRESETS: DocPreset[] = [
         language: "ua",
     },
     {
+        // Пакувальний лист — документ грузу для брокера: колонки УКТ ЗЕД/вага/країна друкує сам рендер,
+        // а бланк задаёт свой номер (ПЛ), подписи тут не нужны
+        key: "ua-packing",
+        market: "UA",
+        kind: "packing_list",
+        name: "UA-пакувальний лист",
+        blocks: ["logo", "notes", "footer"],
+        texts: empty,
+        notes: { ua: "Документ складно за даними замовлення; розбіжності з видатковою накладною не допускаються", en: "Compiled from the order data; discrepancies with the delivery note are not allowed", de: "Aus den Bestelldaten erstellt; Abweichungen zum Lieferschein sind nicht zulässig" },
+        footer: "",
+        prefix: "ПЛ",
+        showSignature: false,
+        showStamp: false,
+        language: "ua",
+    },
+    {
         key: "ua-quote",
         market: "UA",
         kind: "quote",

@@ -232,10 +232,13 @@ export async function vatRegister(org: string, from: string, to: string): Promis
     const received: VatRegisterRow[] = expenses
         .filter((e) => Number(e.taxRate) > 0)
         .map((e) => {
-            const gross = Number(e.amount) || 0;
+            // У расхода amount — сумма БЕЗ налога (models/Expense.ts): налог сверху, а не вычленяется из общей.
+            // Раньше он считался как «из общей суммы» и занижал налоговый кредит (1000 ₴ при 20 % давали 166,67 ₴
+            // вместо 200 ₴) — реестр расходился с книгой расходов
+            const net = round(Number(e.amount) || 0);
             const rate = Number(e.taxRate) || 0;
-            const net = round(gross / (1 + rate / 100));
-            return { date: String(e.date ?? ""), number: "", counterparty: String(e.vendor ?? ""), net, tax: round(gross - net), gross: round(gross), rate };
+            const tax = round((net * rate) / 100);
+            return { date: String(e.date ?? ""), number: "", counterparty: String(e.vendor ?? ""), net, tax, gross: round(net + tax), rate };
         });
 
     const issuedNet = round(issued.reduce((s, r) => s + r.net, 0));

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
+import { toCsv } from "@/lib/import/csv";
 import { abcAnalysis, deadStock, stockAt, stockByWarehouse, stockOnHand, turnover, type MovementLike } from "@/lib/finance/warehouse";
 import StockMovement from "@/models/StockMovement";
 import Product from "@/models/Product";
@@ -51,6 +52,15 @@ export async function GET(req: Request) {
                     reorderLevel: p.reorderLevel ?? 0,
                 };
             });
+        // Остатки файлом: кнопка «Експорт залишків» обещала CSV, а отдавала JSON — теперь форматов два,
+        // по умолчанию по-прежнему JSON (его читает мастер импорта), CSV — для таблиц и сверок
+        if ((url.searchParams.get("format") ?? "json").toLowerCase() === "csv") {
+            const columns = ["sku", "name", "unit", ...warehouses.map((w) => w.name), "total", "reorderLevel"];
+            const csvRows = rows.map((r) => [r.sku, r.name, r.unit, ...warehouses.map((w) => r.byWarehouse[String(w._id)] ?? 0), r.total, r.reorderLevel]);
+            return new Response(toCsv(columns, csvRows), {
+                headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="stock-on-hand.csv"`, "Cache-Control": "no-store" },
+            });
+        }
         return NextResponse.json({ warehouses: warehouses.map((w) => ({ id: String(w._id), name: w.name })), rows });
     }
 
