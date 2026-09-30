@@ -1,0 +1,79 @@
+import { NextResponse } from "next/server";
+import { connectDB } from "@/lib/mongodb";
+import { requireUser } from "@/lib/auth";
+import { badRequest, failure, unauthorized } from "@/lib/api";
+import { requireMarket } from "@/lib/finance/marketGuard";
+import { logAudit } from "@/lib/audit";
+import { recentRetail, retailReturn, retailSale, type RetailLine } from "@/lib/finance/pos";
+import { toInvoiceDTO } from "@/lib/finance/dto";
+import Invoice from "@/models/Invoice";
+import Product from "@/models/Product";
+import User from "@/models/User";
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+// Касса (ТЗ §12, «Розница»): продажа по штрихбкоду и возврат по чеку.
+//   GET  — последние розничные чеки (для возврата) и товары для поиска;
+//   POST { action: "sale", lines, payType, discountPercent?, warehouse? } — продажа;
+//   POST { action: "return", invoiceId, warehouse? }                    — возврат по чеку.
+// UA: чек ПРРО пробивается по правилам (готівка/картка). DE: розница без сертифицированной
+// кассы не проводится — маршрут отвечает 409, чтобы продажу нельзя было оформить в обход.
+
+export async function GET(req: Request) {
+    const user = await requireUser(req);
+    if (!user) return unauthorized(req);
+    await connectDB();
+    await requireMarket(user.id, "UA");
+    const sales = await recentRetail(user.id);
+    const products = await Product.find({ org: user.id, type: "good", archived: { $ne: true } }).select("name sku salePrice unit stockQty image");
+    return NextResponse.json({
+        recent: sales.map((s) => ({ id: String(s._id), number: s.number, at: s.paidAt ? new Date(s.paidAt).toISOString() : "", total: Number(s.paidAmount) || 0, currency: s.currency, fiscalCode: s.fiscalCode ?? "", payType: s.paidVia ?? "", customerName: s.customerName })),
+        products: products.map((p) => ({ id: String(p._id), name: p.name, sku: p.sku ?? "", price: p.salePrice ?? 0, unit: p.unit ?? "", stockQty: p.stockQty ?? 0, image: p.image ?? "" })),
+    });
+}
+
+export async function POST(req: Request) {
+    const user = await requireUser(req);
+    if (!user) return unauthorized(req);
+    const b = await req.json().catch(() => ({}));
+    try {
+        await connectDB();
+        await requireMarket(user.id, "UA");
+        const author = await User.findById(user.userId).select("firstname lastname");
+        const by = author ? `${author.firstname} ${author.lastname}`.trim() : "";
+
+        if (b?.action === "sale") {
+            const payType = b?.payType === "cash" || b?.payType === "card" ? b.payType : null;
+            if (!payType) return badRequest("payType must be cash or card");
+            const lines = (Array.isArray(b?.lines) ? b.lines : []) as RetailLine[];
+            const result = await retailSale(user.id, {
+                lines: lines.map((l) => ({ product: String(l.product ?? ""), qty: Number(l.qty) || 0, price: Number(l.price) || 0 })),
+                payType,
+                discountPercent: Number(b?.discountPercent) || 0,
+                warehouse: typeof b?.warehouse === "string" ? b.warehouse : undefined,
+                by,
+            });
+            await logAudit({ org: user.id, userId: user.userId, action: "pos.sale", entityType: "invoice", entityId: String(result.invoice._id), summary: `Retail sale ${result.invoice.number}: ${result.totals.gross} ${result.invoice.currency} (${payType})`, meta: { payType, fiscal: result.fiscal?.fiscalCode ?? "" } });
+            return NextResponse.json({ invoice: toInvoiceDTO(result.invoice), totals: result.totals, fiscal: result.fiscal }, { status: 201 });
+        }
+
+        if (b?.action === "return") {
+            const invoiceId = String(b?.invoiceId ?? "");
+            if (!invoiceId) return badRequest("invoiceId is required");
+            const result = await retailReturn(user.id, invoiceId, { warehouse: typeof b?.warehouse === "string" ? b.warehouse : undefined, by });
+            await logAudit({ org: user.id, userId: user.userId, action: "pos.return", entityType: "invoice", entityId: String(result.credit._id), summary: `Retail return ${result.credit.number} for ${invoiceId}`, meta: {} });
+            return NextResponse.json({ credit: toInvoiceDTO(result.credit) }, { status: 201 });
+        }
+
+        if (b?.action === "sale-status") {
+            const inv = await Invoice.findOne({ _id: String(b?.invoiceId ?? ""), org: user.id }).select("number fiscalCode fiscalUrl fiscalError fiscalPayType");
+            if (!inv) return badRequest("not found");
+            return NextResponse.json({ number: inv.number, fiscalCode: inv.fiscalCode ?? "", fiscalUrl: inv.fiscalUrl ?? "", fiscalError: inv.fiscalError ?? "", fiscalPayType: inv.fiscalPayType ?? "" });
+        }
+
+        return badRequest('action must be "sale", "return" or "sale-status"');
+    } catch (e) {
+        return failure(e);
+    }
+}
