@@ -8,6 +8,9 @@ type Doc = HydratedDocument<any>;
 export function webhookPath(type: IntegrationType, token: string) {
     if (type === "twilio") return `/api/webhooks/twilio/${token}`;
     if (type === "webchat") return `/api/webchat/${token}`;
+    // У платёжек адрес общий на четверых: /api/webhooks/pay/<провайдер>/<маркер фирмы>
+    // (см. app/api/webhooks/pay/[provider]/[token]) — иначе провайдер звал бы несуществующий адрес
+    if (type === "monobank" || type === "liqpay" || type === "wayforpay" || type === "cryptopay") return `/api/webhooks/pay/${type}/${token}`;
     return `/api/webhooks/${type}/${token}`;
 }
 

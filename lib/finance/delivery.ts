@@ -1,8 +1,9 @@
 import type { HydratedDocument } from "mongoose";
 import { ProviderError } from "@/lib/http";
 import { packSecrets, secretsOf } from "@/lib/integrations";
+import { randomToken } from "@/lib/crypto";
 import Integration from "@/models/Integration";
-import { createWaybill, searchCities, cityWarehouses, trackWaybills, type NpCity, type NpWarehouse, type TrackingInfo, type Waybill } from "@/lib/novaposhta";
+import { checkApiKey, createWaybill, searchCities, cityWarehouses, trackWaybills, type NpCity, type NpWarehouse, type TrackingInfo, type Waybill } from "@/lib/novaposhta";
 
 // Доставка «Новою Поштою»: ключ и данные отправителя лежат в интеграции (Integration type "novaposhta"),
 // секрет зашифрован — как у почты и каналов. Здесь — доступ к ним и операции, которыми пользуются маршруты.
@@ -88,12 +89,15 @@ export async function trackStatuses(org: string, numbers: string[]): Promise<Tra
 // Сохранение подключения: ключ проверяется запросом к Новой Поште до записи — как у ботов и почты,
 // иначе неверный ключ лежал бы в базе и «работал» до первой отправки
 export async function saveDelivery(org: string, input: { apiKey: string; senderCity: string; senderWarehouse: string; senderName: string; senderPhone: string; senderCityRef?: string }) {
-    const doc = (await Integration.findOne({ owner: org, type: "novaposhta" })) ?? new Integration({ owner: org, type: "novaposhta" });
+    const doc = (await Integration.findOne({ owner: org, type: "novaposhta" })) ?? new Integration({ owner: org, type: "novaposhta", token: randomToken() });
     const previous = (() => {
         try { return secretsOf<{ apiKey?: string }>(doc); } catch { return {} as { apiKey?: string }; }
     })();
     const apiKey = input.apiKey.trim() || previous.apiKey || "";
     if (!apiKey) throw new ProviderError("Вкажіть ключ API Нової Пошти");
+    // Ключ проверяется запросом к Новой Поште до записи: неверный ключ иначе лежал бы в базе и
+    // «работал» до первой отправки, а ошибку человек увидел бы уже при создании ТТН
+    await checkApiKey(apiKey);
     doc.set({
         name: "Нова Пошта",
         config: { senderCity: input.senderCity.trim(), senderCityRef: input.senderCityRef ?? doc.config?.senderCityRef ?? "", senderWarehouse: input.senderWarehouse.trim(), senderName: input.senderName.trim(), senderPhone: input.senderPhone.trim() },

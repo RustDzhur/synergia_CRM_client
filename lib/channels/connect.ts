@@ -16,6 +16,11 @@ import { connectTwilio, normalizePhone } from "./twilio";
 import { deleteWebhook, getMe, getWebhookInfo, setWebhook } from "./telegram";
 import { getAccount, removeViberWebhook, setViberWebhook } from "./viber";
 import { checkToken as checkUkrposhtaToken } from "@/lib/ukrposhta";
+import { requireIntegration } from "@/lib/finance/marketGuard";
+import { saveDelivery } from "@/lib/finance/delivery";
+import { saveFiscal } from "@/lib/finance/fiscal";
+import { checkMarketplace, MARKETPLACES, type MarketplaceId } from "@/lib/marketplace";
+import { PAY_PROVIDERS, verifyMonobankToken, verifyNowpaymentsToken } from "@/lib/payments";
 import { appSubscriptions, discoverWhatsAppNumbers, exchangeEmbeddedCode, exchangeWhatsAppCode, getPhoneNumber, longLivedWhatsAppToken, setWhatsAppAppWebhook, subscribeApp, whatsappOauthUrl } from "./whatsapp";
 
 // Общий адрес вебхука WhatsApp на всю платформу: Meta разрешает только один адрес на приложение,
@@ -272,6 +277,9 @@ async function registerWebhook(doc: Doc, origin: string) {
 }
 
 export async function connectIntegration(owner: string, type: string, input: Input, origin: string): Promise<ConnectResult> {
+    // Режим рынка: украинские интеграции не подключаются из немецкой фирмы и наоборот (ТЗ §3).
+    // Пока страна не выбрана, проверка пропускает — выбор страны и есть первый шаг в разделе «Финансы».
+    await requireIntegration(owner, type);
     const token = randomToken();
     let name = "";
     let config: Record<string, string> = {};
@@ -386,6 +394,88 @@ export async function connectIntegration(owner: string, type: string, input: Inp
             await checkUkrposhtaToken(upToken);
             name = "Укрпошта";
             secrets = { token: upToken };
+            break;
+        }
+        // Нова Пошта и Checkbox сохраняются профильными модулями: у них своя проверка до записи
+        // (ключ НП — запросом к API, Checkbox — входом кассира) и своя форма конфигурации отправителя
+        case "novaposhta": {
+            return {
+                doc: await saveDelivery(owner, {
+                    apiKey: str(input.apiKey, 300),
+                    senderCity: str(input.senderCity, 100),
+                    senderWarehouse: str(input.senderWarehouse, 100),
+                    senderName: str(input.senderName, 100),
+                    senderPhone: str(input.senderPhone, 30),
+                    ...(str(input.senderCityRef, 64) ? { senderCityRef: str(input.senderCityRef, 64) } : {}),
+                }),
+            };
+        }
+        case "checkbox": {
+            return {
+                doc: await saveFiscal(owner, {
+                    licenseKey: str(input.licenseKey, 300),
+                    login: str(input.login, 100),
+                    password: str(input.password, 200),
+                    cashierName: str(input.cashierName, 100),
+                    department: str(input.department, 100),
+                    autoFiscal: str(input.autoFiscal, 2) !== "0",
+                }),
+            };
+        }
+        // Маркетплейсы: перед сохранением тянем один заказ пробным подключением — так видно и
+        // неверный ключ, и непривычный набор полей, а не через день в журнале синхронизации
+        case "prom":
+        case "rozetka":
+        case "horoshop":
+        case "olx": {
+            const id = type as MarketplaceId;
+            if (type === "horoshop") {
+                config = { shop: need(str(input.shop, 200), "Shop domain") };
+                secrets = { login: need(str(input.login, 200), "API login"), password: need(str(input.password, 200), "API password") };
+            } else if (type === "olx") {
+                secrets = { clientId: need(str(input.clientId, 200), "Client ID"), clientSecret: need(str(input.clientSecret, 200), "Client secret") };
+            } else {
+                secrets = { token: need(str(input.token, 500), "API token") };
+            }
+            // Пробное подключение — на несохранённой копии: проверка ничего не пишет в базу
+            const probe = new Integration({ owner, type, token, config, secrets: packSecrets(secrets) });
+            const check = await checkMarketplace(probe);
+            if (!check.ok) throw new ProviderError(check.message);
+            name = MARKETPLACES[id].label;
+            break;
+        }
+        // Приём оплаты: monobank и NOWPayments умеют проверить ключ сами, у LiqPay и WayForPay
+        // такой возможности нет — их ключи проверит первая оплата, о чём честно говорим в предупреждении
+        case "monobank": {
+            const monoToken = need(str(input.token, 300), "Merchant token");
+            await verifyMonobankToken(monoToken);
+            name = PAY_PROVIDERS.monobank.label;
+            secrets = { token: monoToken };
+            break;
+        }
+        case "liqpay": {
+            const publicKey = need(str(input.publicKey, 200), "Public key");
+            const privateKey = need(str(input.privateKey, 200), "Private key");
+            name = PAY_PROVIDERS.liqpay.label;
+            secrets = { publicKey, privateKey };
+            messengerWarning = "Ключі LiqPay збережено. Перевірити їх можна лише першою оплатою: створіть посилання на оплату невеликого рахунку й оплатіть його";
+            break;
+        }
+        case "wayforpay": {
+            const merchantAccount = need(str(input.merchantAccount, 200), "Merchant Account");
+            const secretKey = need(str(input.secretKey, 200), "Secret Key");
+            name = PAY_PROVIDERS.wayforpay.label;
+            config = { merchantDomainName: str(input.merchantDomainName, 200) };
+            secrets = { merchantAccount, secretKey };
+            messengerWarning = "Ключі WayForPay збережено. Перевірити їх можна лише першою оплатою: створіть посилання на оплату невеликого рахунку й оплатіть його";
+            break;
+        }
+        case "cryptopay": {
+            const apiKey = need(str(input.apiKey, 300), "API key");
+            const ipnSecret = need(str(input.ipnSecret, 300), "IPN secret");
+            await verifyNowpaymentsToken(apiKey);
+            name = PAY_PROVIDERS.cryptopay.label;
+            secrets = { apiKey, ipnSecret };
             break;
         }
         case "webchat":

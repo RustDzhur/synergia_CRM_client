@@ -7,7 +7,10 @@ import { registerModel } from "@/lib/registerModel";
 const IntegrationSchema = new Schema(
     {
         owner: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
-        type: { type: String, required: true, enum: ["twilio", "sip", "vonage", "plivo", "telnyx", "gdrive", "gcal", "ads", "telegram", "viber", "whatsapp", "messenger", "webchat", "mail", "icloud"] },
+        // Перечень обязан совпадать со всеми типами, которые реально сохраняются: Mongoose проверяет enum
+        // при каждом save(), и забытый тип — это отказ сохранения уже подключённой интеграции (так и было:
+        // Новая Почта, Checkbox, OneDrive, Укрпошта, маркетплейсы и платёжки не сохранялись вовсе).
+        type: { type: String, required: true, enum: ["twilio", "sip", "vonage", "plivo", "telnyx", "gdrive", "gcal", "ads", "telegram", "viber", "whatsapp", "messenger", "webchat", "mail", "icloud", "onedrive", "novaposhta", "checkbox", "ukrposhta", "prom", "rozetka", "horoshop", "olx", "monobank", "liqpay", "wayforpay", "cryptopay"] },
         name: { type: String, default: "" },
         token: { type: String, required: true, unique: true },
         status: { type: String, enum: ["connected", "error"], default: "connected" },

@@ -1,5 +1,6 @@
 import { ProviderError } from "@/lib/http";
 import { packSecrets, secretsOf } from "@/lib/integrations";
+import { randomToken } from "@/lib/crypto";
 import Integration from "@/models/Integration";
 import Contact from "@/models/Contact";
 import Company from "@/models/Company";
@@ -89,7 +90,7 @@ export async function saveFiscal(
     org: string,
     input: { licenseKey: string; login: string; password: string; cashierName: string; department: string; autoFiscal: boolean }
 ): Promise<Doc> {
-    const doc = (await Integration.findOne({ owner: org, type: "checkbox" })) ?? new Integration({ owner: org, type: "checkbox" });
+    const doc = (await Integration.findOne({ owner: org, type: "checkbox" })) ?? new Integration({ owner: org, type: "checkbox", token: randomToken() });
     const previous = (() => {
         try { return secretsOf<{ licenseKey?: string; login?: string; password?: string }>(doc); } catch { return {}; }
     })();

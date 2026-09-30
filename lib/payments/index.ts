@@ -63,14 +63,22 @@ async function monobankLink(doc: { secrets?: string }, input: PayLinkInput): Pro
     return { url: json.pageUrl, id: String(json.invoiceId ?? "") };
 }
 
-let monobankKey: { value: string; at: number } | null = null;
-async function monobankPublicKey(token: string): Promise<string> {
-    if (monobankKey && Date.now() - monobankKey.at < 60 * 60 * 1000) return monobankKey.value;
+// Публичный ключ у каждого мерчанта свой, поэтому кэш — по токену (в кэше храним хеш, не сам токен)
+const monobankKeys = new Map<string, { value: string; at: number }>();
+const tokenHash = (token: string) => createHash("sha256").update(token).digest("hex");
+async function monobankPublicKey(token: string, failureMessage = "monobank не віддав публічний ключ для перевірки підпису"): Promise<string> {
+    const hit = monobankKeys.get(tokenHash(token));
+    if (hit && Date.now() - hit.at < 60 * 60 * 1000) return hit.value;
     const res = await fetchProvider("https://api.monobank.ua/api/merchant/pubkey", { headers: { "X-Token": token } });
     const json = (await res.json().catch(() => null)) as { key?: string } | null;
-    if (!res.ok || !json?.key) throw new ProviderError("monobank не віддав публічний ключ для перевірки підпису");
-    monobankKey = { value: json.key, at: Date.now() };
+    if (!res.ok || !json?.key) throw new ProviderError(failureMessage);
+    monobankKeys.set(tokenHash(token), { value: json.key, at: Date.now() });
     return json.key;
+}
+
+/** Проверка токена мерчанта до сохранения: публичный ключ отдаётся только рабочему токену */
+export async function verifyMonobankToken(token: string): Promise<void> {
+    await monobankPublicKey(token, "monobank відхилив токен мерчанта — перевірте токен у кабінеті (Еквайринг → API)");
 }
 
 async function monobankWebhook(doc: { secrets?: string }, raw: string, headers: Headers): Promise<PayWebhook> {
@@ -205,6 +213,13 @@ async function cryptoLink(doc: { secrets?: string }, input: PayLinkInput): Promi
     const json = (await res.json().catch(() => null)) as { id?: string | number; invoice_url?: string; message?: string } | null;
     if (!res.ok || !json?.invoice_url) throw new ProviderError(json?.message ?? `NOWPayments відповів помилкою ${res.status}`);
     return { url: json.invoice_url, id: String(json.id ?? "") };
+}
+
+/** Проверка API-ключа NOWPayments до сохранения: баланс отдаётся только рабочему ключу */
+export async function verifyNowpaymentsToken(apiKey: string): Promise<void> {
+    const res = await fetchProvider("https://api.nowpayments.io/v1/balance", { headers: { "x-api-key": apiKey } });
+    if (res.status === 401 || res.status === 403) throw new ProviderError("NOWPayments відхилив API-ключ — перевірте ключ у кабінеті (Налаштування → API keys)");
+    if (!res.ok) throw new ProviderError(`NOWPayments відповів помилкою ${res.status}`);
 }
 
 async function cryptoWebhook(doc: { secrets?: string }, raw: string, headers: Headers): Promise<PayWebhook> {

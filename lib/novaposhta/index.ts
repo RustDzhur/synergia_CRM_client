@@ -39,6 +39,39 @@ export async function checkApiKey(apiKey: string): Promise<void> {
 export interface NpCity { ref: string; name: string; area: string }
 export interface NpWarehouse { ref: string; name: string; number: string }
 
+// Новая Пошта принимает телефон только цифрами в формате 380XXXXXXXXX: «+380 67 123-45-67»
+// и «0671234567» приводим к нему; что не похоже на украинский номер — оставляем как есть
+export function normalizeNpPhone(raw: string): string {
+    const digits = (raw || "").replace(/\D/g, "");
+    if (digits.length === 10 && digits.startsWith("0")) return `38${digits}`;
+    if (digits.length === 12 && digits.startsWith("380")) return digits;
+    return digits || raw.trim();
+}
+
+// Выбор города из подсказок Нової Пошти: точное совпадение, потом начало названия, потом первая
+// подсказка (это даёт писать «Киев» — НП вернёт «Київ»). Чистая функция — проверяется тестом.
+export function pickCity(cities: NpCity[], name: string): NpCity | null {
+    const q = name.trim().toLowerCase();
+    return (
+        cities.find((c) => c.name.toLowerCase() === q) ??
+        cities.find((c) => c.name.toLowerCase().startsWith(q)) ??
+        cities[0] ??
+        null
+    );
+}
+
+// Выбор отделения: сперва по вхождению текста в название, потом по номеру («Відділення №1» → 1),
+// и только если вариант один — он и есть ответ. Иначе null: угадывать чужое отделение нельзя.
+export function pickWarehouse(list: NpWarehouse[], text: string): NpWarehouse | null {
+    const q = text.trim().toLowerCase();
+    const digits = q.match(/\d+/)?.[0];
+    return (
+        list.find((w) => w.name.toLowerCase().includes(q)) ??
+        (digits ? list.find((w) => w.number === digits) : undefined) ??
+        (list.length === 1 ? list[0] : null)
+    );
+}
+
 // Города: ищем по названию; limit ограничивает выборку, чтобы ответ не раздувался
 export async function searchCities(apiKey: string, query: string, limit = 20): Promise<NpCity[]> {
     const data = await call<{ Ref: string; Description: string; AreaDescription?: string }>(apiKey, "Address", "searchSettlements", {
