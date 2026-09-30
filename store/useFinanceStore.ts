@@ -11,6 +11,9 @@ export interface Totals { net: number; tax: number; gross: number }
 export interface Product {
 	id: string; name: string; sku: string; type: "good" | "service"; unit: string;
 	purchasePrice: number; salePrice: number; taxRate: number | null; stockQty: number; reorderLevel: number; archived: boolean;
+	image?: string;
+	// Типы цен и ступени по количеству (ТЗ §12): «опт / партнер», цена и минимальное количество
+	prices?: Array<{ type: string; price: number; minQty: number }>;
 }
 export interface OrderWaybill {
 	number: string; ref?: string; status: string; statusAt: string; cost: number;

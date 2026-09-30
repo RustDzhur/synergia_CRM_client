@@ -11,6 +11,9 @@ const toDTO = (p: any) => ({
     id: String(p._id), name: p.name, sku: p.sku, type: p.type, unit: p.unit,
     purchasePrice: p.purchasePrice, salePrice: p.salePrice, taxRate: p.taxRate,
     stockQty: p.stockQty, reorderLevel: p.reorderLevel, archived: !!p.archived,
+    image: p.image ?? "",
+    // Типы цен и ступени (ТЗ §12): «опт / партнер», цена и минимальное количество
+    prices: Array.isArray(p.prices) ? p.prices.map((x: { type?: string; price?: number; minQty?: number }) => ({ type: String(x.type ?? ""), price: Number(x.price) || 0, minQty: Number(x.minQty) || 1 })) : [],
 });
 
 // GET /api/products?q=&type=&archived= — каталог товаров и услуг (для выбора в заказе/счёте и для страницы Products)
@@ -47,6 +50,22 @@ export async function POST(req: Request) {
         taxRate: Number.isFinite(rate) ? Math.min(100, Math.max(0, rate)) : null,
         stockQty: type === "good" ? Math.max(0, Number(b.stockQty) || 0) : 0,
         reorderLevel: Math.max(0, Number(b.reorderLevel) || 0),
+        image: typeof b.image === "string" && /^https?:\/\//.test(b.image.trim()) ? b.image.trim().slice(0, 500) : "",
+        prices: cleanPrices(b.prices),
     });
     return NextResponse.json(toDTO(product), { status: 201 });
+}
+
+// Прайс товара: строки «тип цены, цена, от какого количества». Пустые и нулевые цены отбрасываются:
+// ноль в прайсе — это «не задано», а не «бесплатно» (см. priceFor в lib/finance/pricing.ts).
+function cleanPrices(raw: unknown): Array<{ type: string; price: number; minQty: number }> {
+    if (!Array.isArray(raw)) return [];
+    return raw
+        .map((x: { type?: unknown; price?: unknown; minQty?: unknown }) => ({
+            type: String(x?.type ?? "").trim().slice(0, 40),
+            price: Math.max(0, Number(x?.price) || 0),
+            minQty: Math.max(1, Math.round(Number(x?.minQty) || 1)),
+        }))
+        .filter((x) => x.price > 0)
+        .slice(0, 20);
 }

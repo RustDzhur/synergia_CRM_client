@@ -20,6 +20,10 @@ export default function CompanyEdit({ id }: { id: string }) {
         { key: "address", label: t("companyContacts"), lookup: { kind: "address" } },
         { key: "email", label: t("email"), type: "email" },
         { key: "field", label: t("field") },
+        // Оптовые условия (ТЗ §12): по типу цены выбирается прайс, лимит и отсрочка — в акте сверки
+        { key: "priceType", label: t("companyPriceType") },
+        { key: "creditLimit", label: t("companyCreditLimit") },
+        { key: "paymentDays", label: t("companyPaymentDays") },
     ];
 
     return (

@@ -11,7 +11,7 @@ import SearchBox from "../shared/SearchBox";
 import { money } from "./format";
 import Stock from "./Stock";
 
-const EMPTY = { name: "", sku: "", type: "service" as "good" | "service", unit: "pcs", purchasePrice: "0", salePrice: "0", taxRate: "", stockQty: "0", reorderLevel: "0" };
+const EMPTY = { name: "", sku: "", type: "service" as "good" | "service", unit: "pcs", purchasePrice: "0", salePrice: "0", taxRate: "", stockQty: "0", reorderLevel: "0", image: "", prices: [] as Array<{ type: string; price: string; minQty: string }> };
 
 // Каталог товаров и услуг: то же, что раньше было вкладкой «Products» в Inventory Management, но остаток теперь настоящий —
 // меняется только через движения склада (заказы), не правкой числа в этой форме.
@@ -37,7 +37,13 @@ export default function Products() {
 		const p = products.find((x) => x.id === id);
 		if (!p) return;
 		setEditId(id);
-		setForm({ name: p.name, sku: p.sku, type: p.type, unit: p.unit, purchasePrice: String(p.purchasePrice), salePrice: String(p.salePrice), taxRate: p.taxRate === null ? "" : String(p.taxRate), stockQty: String(p.stockQty), reorderLevel: String(p.reorderLevel) });
+		setForm({
+			name: p.name, sku: p.sku, type: p.type, unit: p.unit,
+			purchasePrice: String(p.purchasePrice), salePrice: String(p.salePrice),
+			taxRate: p.taxRate === null ? "" : String(p.taxRate), stockQty: String(p.stockQty), reorderLevel: String(p.reorderLevel),
+			image: p.image ?? "",
+			prices: (p.prices ?? []).map((x) => ({ type: x.type ?? "", price: String(x.price ?? ""), minQty: String(x.minQty ?? 1) })),
+		});
 		setOpen(true);
 	}
 	async function submit(e: React.FormEvent) {
@@ -49,6 +55,9 @@ export default function Products() {
 			taxRate: form.taxRate === "" ? null : Number(form.taxRate),
 			...(editId ? {} : { stockQty: Number(form.stockQty) || 0 }),
 			reorderLevel: Number(form.reorderLevel) || 0,
+			image: form.image.trim(),
+			// Прайс: строки с пустой или нулевой ценой отбрасываются на сервере — здесь отправляем как есть
+			prices: form.prices.map((x) => ({ type: x.type.trim(), price: Number(x.price) || 0, minQty: Number(x.minQty) || 1 })),
 		};
 		const err = editId ? await updateProduct(editId, data) : await createProduct(data);
 		if (err) return toast.error(err);
@@ -145,6 +154,24 @@ export default function Products() {
 							</div>
 						)}
 						{form.type === "good" && editId && <p className="text-11 text-[#9AA396]">{t("stockHint")}</p>}
+						<FormField label={t("productImage")} value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} maxLength={500} placeholder="https://…" />
+						{/* Прайс: типы цен и ступени по количеству (ТЗ §12, «Опт») */}
+						<div>
+							<span className="mb-6 block text-12 text-[#8c948b]">{t("productPrices")}</span>
+							<div className="flex flex-col gap-8">
+								{form.prices.map((row, i) => (
+									<div key={i} className="grid grid-cols-[1fr_90px_90px_32px] items-center gap-8">
+										<input value={row.type} onChange={(e) => setForm({ ...form, prices: form.prices.map((x, j) => (j === i ? { ...x, type: e.target.value } : x)) })} placeholder={t("priceTypePlaceholder")} className="fs-field h-34 w-full px-10 text-12 outline-none" />
+										<input value={row.price} onChange={(e) => setForm({ ...form, prices: form.prices.map((x, j) => (j === i ? { ...x, price: e.target.value.replace(/[^\d.]/g, "") } : x)) })} placeholder={t("colPrice")} className="fs-field h-34 w-full px-10 text-12 outline-none" />
+										<input value={row.minQty} onChange={(e) => setForm({ ...form, prices: form.prices.map((x, j) => (j === i ? { ...x, minQty: e.target.value.replace(/[^\d]/g, "") } : x)) })} placeholder={t("priceFromQty")} className="fs-field h-34 w-full px-10 text-12 outline-none" />
+										<button type="button" onClick={() => setForm({ ...form, prices: form.prices.filter((_, j) => j !== i) })} aria-label={t("delete")} className="text-[#8c948b] transition-colors hover:text-danger">
+											<TbTrash size={14} />
+										</button>
+									</div>
+								))}
+								<button type="button" onClick={() => setForm({ ...form, prices: [...form.prices, { type: "", price: "", minQty: "1" }] })} className="fs-link text-left">{t("priceAddRow")}</button>
+							</div>
+						</div>
 					</div>
 					<div className="mt-20 flex justify-end gap-10">
 						<button type="button" onClick={() => setOpen(false)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>

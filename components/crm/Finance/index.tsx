@@ -20,6 +20,7 @@ import {
 	TbSettings,
 	TbTable,
 	TbTruckDelivery,
+	TbTruckLoading,
 	TbWallet,
 } from "react-icons/tb";
 import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tabBar";
@@ -42,6 +43,7 @@ import Bank from "./Bank";
 import AuditLog from "./AuditLog";
 import Fiscal from "./Fiscal";
 import Delivery from "./Delivery";
+import Purchases from "./Purchases";
 import FinanceSettingsTab from "./Settings";
 import Taxes from "./Taxes";
 import Reports from "./Reports";
@@ -54,7 +56,7 @@ import Reports from "./Reports";
 // из проверок country === "UA" по месту. Пока страна не выбрана, раздел показывает только её выбор
 // и настройки (см. CountryPicker).
 
-type Tab = "overview" | "quotes" | "orders" | "contracts" | "invoices" | "recurring" | "dunning" | "expenses" | "assets" | "bank" | "products" | "delivery" | "fiscal" | "vat" | "eur" | "bwa" | "susa" | "audit" | "settings";
+type Tab = "overview" | "quotes" | "orders" | "contracts" | "invoices" | "recurring" | "dunning" | "expenses" | "assets" | "bank" | "products" | "purchases" | "delivery" | "fiscal" | "vat" | "eur" | "bwa" | "susa" | "audit" | "settings";
 
 interface NavLeaf { key: Tab; icon: IconType }
 // Пункт ведёт на экран; группа — только заголовок в колонке навигации (как группы сайдбара), собственного
@@ -80,6 +82,8 @@ const NAV_DE: NavNode[] = [
 	// только увиденные со стороны выписки, и сверяются они с Ausgaben и Rechnungen
 	{ kind: "item", key: "bank", icon: TbBuildingBank },
 	{ kind: "item", key: "products", icon: TbBox },
+	// Закупівлі (ТЗ §12): заказы поставщикам, приход по накладной, счета поставщиков
+	{ kind: "item", key: "purchases", icon: TbTruckLoading },
 	{ kind: "group", key: "taxes", items: [
 		{ key: "vat", icon: TbReceiptTax },
 		{ key: "eur", icon: TbScale },
@@ -108,6 +112,7 @@ const NAV_UA: NavNode[] = [
 	{ kind: "item", key: "expenses", icon: TbWallet },
 	{ kind: "item", key: "bank", icon: TbBuildingBank },
 	{ kind: "item", key: "products", icon: TbBox },
+	{ kind: "item", key: "purchases", icon: TbTruckLoading },
 	{ kind: "item", key: "delivery", icon: TbTruckDelivery },
 	{ kind: "item", key: "fiscal", icon: TbReceiptTax },
 	{ kind: "group", key: "taxes", items: [
@@ -310,6 +315,7 @@ export default function Finance() {
 					{tab === "expenses" && <Expenses />}
 					{tab === "assets" && <Assets />}
 					{tab === "bank" && <Bank />}
+					{tab === "purchases" && <Purchases />}
 					{tab === "delivery" && <Delivery />}
 					{tab === "fiscal" && <Fiscal />}
 					{tab === "vat" && <Taxes kind="vat" />}

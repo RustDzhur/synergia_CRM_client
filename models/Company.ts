@@ -17,6 +17,11 @@ const CompanySchema = new Schema(
         businessType: { type: String, default: "" }, // «Type of business entity»
         ownershipForm: { type: String, default: "" }, // «Form of ownership»
         address: { type: String, default: "" }, // «Contacts»
+        // Оптовые условия клиента (ТЗ §12): тип цены, кредитный лимит и отсрочка. Акт сверки и
+        // контроль долга считаются по ним, а не «на глаз».
+        priceType: { type: String, default: "" }, // «опт», «партнер»… — по нему выбирается цена товара
+        creditLimit: { type: Number, default: 0 }, // 0 — без лимита
+        paymentDays: { type: Number, default: 0 }, // отсрочка по умолчанию для его счетов
         activities: { type: [ActivitySchema], default: [] },
     },
     { timestamps: true }

@@ -17,6 +17,9 @@ const ProductSchema = new Schema(
         stockQty: { type: Number, default: 0 }, // только для type "good"; источник истины — сумма StockMovement
         reorderLevel: { type: Number, default: 0 }, // ниже этого — «Low stock» на дашборде
         image: { type: String, default: "" }, // ссылка на картинку товара (импорт из каталога); файлы не храним — только URL
+        // Типы цен и ступени по количеству (ТЗ §12, «Опт»): набор цен «роздріб/опт/партнер»
+        // и ступени — от какого количества какая цена действует. Пусто — работает salePrice.
+        prices: { type: [{ _id: false, type: String, price: Number, minQty: Number }], default: [] },
         archived: { type: Boolean, default: false },
     },
     { timestamps: true }
