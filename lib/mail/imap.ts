@@ -103,6 +103,46 @@ export async function sendSmtp(c: ImapSmtpConfig, msg: { to: string; subject: st
     return messageId; // по нему письмо из папки Sent при синхронизации опознаётся как уже сохранённое
 }
 
+// Тело одного письма из ящика: письмо опознаётся по Message-ID, а если его не было — по uid,
+// который сохранён в виде «uid:папка:номер» (см. fetchImap)
+export async function fetchImapMessage(c: ImapSmtpConfig, externalId: string): Promise<{ html: string; text: string }> {
+    await assertPublicHost(c.imapHost);
+    const imap = client(c);
+    try {
+        await imap.connect();
+        const byUid = /^uid:([^:]+):(\d+)$/.exec(externalId);
+        let uid: number | null = null;
+        let path = "INBOX";
+        if (byUid) {
+            path = byUid[1];
+            uid = Number(byUid[2]);
+        } else {
+            const lock = await imap.getMailboxLock("INBOX");
+            try {
+                const found = await imap.search({ header: { "message-id": externalId } }, { uid: true });
+                uid = Array.isArray(found) && found.length ? found[found.length - 1] : null;
+            } finally {
+                lock.release();
+            }
+        }
+        if (!uid) return { html: "", text: "" };
+        const lock = await imap.getMailboxLock(path);
+        try {
+            const m = await imap.fetchOne(String(uid), { source: true }, { uid: true });
+            if (!m || !m.source) return { html: "", text: "" };
+            const parsed = await simpleParser(m.source);
+            return { html: parsed.html ? String(parsed.html) : "", text: parsed.text ?? "" };
+        } finally {
+            lock.release();
+        }
+    } catch (e) {
+        imap.close();
+        throw mailError(e, "IMAP");
+    } finally {
+        try { await imap.logout(); } catch { /* соединение уже закрыто */ }
+    }
+}
+
 // Последние письма из «Входящих» и «Отправленных»
 export async function fetchImap(c: ImapSmtpConfig, limit = 40): Promise<Fetched[]> {
     await assertPublicHost(c.imapHost);

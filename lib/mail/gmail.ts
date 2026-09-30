@@ -66,6 +66,12 @@ export async function fetchGmail(token: string, known: Set<string>, limit = 30):
     return out;
 }
 
+// Тело одного письма (HTML и текст) — для писем, загруженных до того, как мы начали хранить разметку
+export async function gmailMessageBody(token: string, id: string) {
+    const m = await gmail<GMessage>(token, `/messages/${id}?format=full`);
+    return { html: findPart(m.payload, "text/html"), text: findPart(m.payload, "text/plain") };
+}
+
 export async function sendGmail(token: string, msg: { from: string; to: string; subject: string; text: string; attachments?: MailAttachment[] }) {
     // MailComposer собирает MIME целиком, включая вложения (raw — то, что ждёт /messages/send)
     const raw: Buffer = await new Promise((resolve, reject) =>

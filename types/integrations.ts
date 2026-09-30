@@ -87,6 +87,8 @@ export interface MailDTO {
     to: string;
     subject: string;
     body: string;
+    // HTML оригинала (если письмо пришло размеченным): показывается в окне письма в песочнице
+    html?: string;
     at: string;
     starred: boolean;
     snoozed: boolean;

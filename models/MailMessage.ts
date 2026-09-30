@@ -12,7 +12,9 @@ const MailMessageSchema = new Schema(
         from: { type: String, default: "" },
         to: { type: String, default: "" },
         subject: { type: String, default: "" },
-        body: { type: String, default: "" },
+        body: { type: String, default: "" }, // текстовая версия (то, что показываем, если HTML нет)
+        // HTML оригинала: приходит от провайдера при открытии письма и хранится, чтобы не тянуть дважды
+        html: { type: String, default: "" },
         at: { type: Date, required: true },
         read: { type: Boolean, default: false },
         starred: { type: Boolean, default: false },

@@ -8,10 +8,10 @@ import { createLeadsFromMail } from "@/lib/leads";
 import { notify } from "@/lib/notify";
 import { notifyTeamTelegram } from "@/lib/notifyTeam";
 import MailMessage from "@/models/MailMessage";
-import { fetchGmail, gmailEmail, sendGmail } from "./gmail";
-import { ImapSmtpConfig, fetchImap, sendSmtp, verifyImapSmtp } from "./imap";
+import { fetchGmail, gmailEmail, gmailMessageBody, sendGmail } from "./gmail";
+import { ImapSmtpConfig, fetchImap, fetchImapMessage, sendSmtp, verifyImapSmtp } from "./imap";
 import { Tokens, Vendor, refreshTokens } from "./oauth";
-import { fetchOutlook, outlookEmail, sendOutlook } from "./outlook";
+import { fetchOutlook, outlookEmail, outlookMessageBody, sendOutlook } from "./outlook";
 import { MAIL_PRESETS, MAIL_PROVIDERS } from "./providers";
 import type { Fetched, MailAttachment } from "./types";
 
@@ -47,6 +47,7 @@ export const toMailDTO = (m: Doc, withBody: boolean): MailDTO => ({
     to: m.to,
     subject: m.subject,
     body: withBody ? m.body : "",
+    html: withBody ? m.html ?? "" : "",
     at: (m.at as Date).toISOString(),
     starred: m.starred,
     snoozed: m.snoozed,
@@ -147,6 +148,14 @@ export async function sendFromAccount(d: Doc, msg: { to: string; subject: string
     }
     if (!externalId) return null;
     return MailMessage.create({ owner, account: d._id, externalId, folder: "sent", from: email, to: msg.to, subject: msg.subject, body: msg.text, at: new Date(), read: true });
+}
+
+// Тело письма у провайдера: нужно для писем, загруженных до того, как мы начали хранить HTML,
+// и для писем, у которых текст пришёл обрезанным. Результат кладём в запись — второй раз не тянем.
+export async function fetchMailBody(d: Doc, externalId: string): Promise<{ html: string; text: string }> {
+    if (!isOAuth(d)) return fetchImapMessage(imapConfig(d), externalId);
+    const token = await accessToken(d);
+    return d.config.vendor === "google" ? gmailMessageBody(token, externalId) : outlookMessageBody(token, externalId);
 }
 
 // ── подключение ───────────────────────────────────────────────────────────────

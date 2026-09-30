@@ -67,6 +67,15 @@ const graphAttachments = (list?: MailAttachment[]) =>
         contentBytes: a.content.toString("base64"),
     }));
 
+// Тело одного письма: просим у Graph разметку (обычный запрос просит текст — Prefer ниже его перебивает)
+export async function outlookMessageBody(token: string, id: string) {
+    const m = await graph<{ body?: { content?: string; contentType?: string } }>(token, `/me/messages/${encodeURIComponent(id)}?$select=body`, {
+        headers: { Prefer: 'outlook.body-content-type="html"' },
+    });
+    const content = m?.body?.content ?? "";
+    return m?.body?.contentType === "html" ? { html: content, text: "" } : { html: "", text: content };
+}
+
 export async function sendOutlook(token: string, msg: { to: string; subject: string; text: string; attachments?: MailAttachment[] }) {
     await graph(token, "/me/sendMail", {
         method: "POST",
