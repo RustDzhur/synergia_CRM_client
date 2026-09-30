@@ -72,6 +72,9 @@ const FinanceSettingsSchema = new Schema(
         uaVatPeriod: { type: String, enum: ["month", "quarter"], default: "month" }, // как отчитываться по ПДВ
         // Наценка к курсу НБУ: фирма может считать по своему курсу («НБУ + 2 %»). 0 — чистый курс.
         rateMargin: { type: Number, default: 0 },
+        // Оценка себестоимости складских запасов (ТЗ §12): средняя или FIFO — выбор фирмы, влияет
+        // на себестоимость продаж в отчётах
+        stockCosting: { type: String, enum: ["avg", "fifo"], default: "avg" },
         // счётчики последнего использованного номера по типу документа и году — атомарно инкрементируются, без пропусков
         counters: { type: Map, of: Number, default: {} },
     },

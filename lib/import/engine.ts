@@ -199,7 +199,7 @@ async function applyRow(
         const qty = num(v.qty);
         if (!qty) return "skipped";
         const moved = await moveStock(org, String(product._id), Math.abs(qty), "purchase", { note: "Імпорт залишків" });
-        if (moved) undo.stockMovements.push((moved as unknown as { _id: unknown })._id);
+        if (moved) undo.stockMovements.push(moved.movement._id);
         if (v.cost) {
             product.set({ purchasePrice: num(v.cost) });
             undo.updatedBefore.push({ id: product._id, before: { purchasePrice: (product as AnyDoc).purchasePrice } });
@@ -246,7 +246,7 @@ async function addStock(org: string, product: AnyDoc, v: Record<string, string>,
     const qty = num(v.stockQty);
     if (!qty) return;
     const moved = await moveStock(org, String(product._id), Math.abs(qty), "purchase", { note: "Імпорт каталогу" });
-    if (moved) undo.stockMovements.push((moved as unknown as { _id: unknown })._id);
+    if (moved) undo.stockMovements.push(moved.movement._id);
 }
 
 // Снимок только изменяемых полей: откат возвращает именно их, не трогая остальное
@@ -285,7 +285,7 @@ export async function rollbackImport(org: string, batchId: string): Promise<{ ok
         const movement = await StockMovement.findOne({ _id: movementId, org });
         if (!movement) continue;
         const reverse = await moveStock(org, String(movement.product), -movement.qty, "adjustment", { note: "Відкат імпорту" });
-        if (reverse) batch.stockMovements.push((reverse as unknown as { _id: unknown })._id);
+        if (reverse) batch.stockMovements.push(reverse.movement._id);
     }
 
     batch.rolledBackAt = new Date();

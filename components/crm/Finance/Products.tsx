@@ -9,6 +9,7 @@ import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
 import SearchBox from "../shared/SearchBox";
 import { money } from "./format";
+import Stock from "./Stock";
 
 const EMPTY = { name: "", sku: "", type: "service" as "good" | "service", unit: "pcs", purchasePrice: "0", salePrice: "0", taxRate: "", stockQty: "0", reorderLevel: "0" };
 
@@ -55,8 +56,26 @@ export default function Products() {
 		setOpen(false);
 	}
 
+	// Разделы «Товары» и «Склад»: каталог и складская работа (документы, остатки, отчёты) — одна
+	// вкладка навигации «Товари/склад» (ТЗ §12)
+	const [view, setView] = useState<"products" | "stock">("products");
+
 	return (
 		<div>
+			{/* Переключатель: каталог или складская работа */}
+			<div className="mb-16 flex flex-wrap gap-8">
+				{(["products", "stock"] as const).map((v) => (
+					<button
+						key={v}
+						type="button"
+						onClick={() => setView(v)}
+						className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${view === v ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#f1f4ee]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+						{t(`stockTab_${v}`)}
+					</button>
+				))}
+			</div>
+			{view === "stock" ? <Stock /> : (
+			<>
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-12">
 				<SearchBox value={query} onChange={setQuery} placeholder={t("search")} className="w-full md:w-[280px]" />
 				<button type="button" onClick={openNew} className="fs-btn fs-btn-primary h-40">
@@ -91,6 +110,9 @@ export default function Products() {
 						</tbody>
 					</table>
 				</div>
+			)}
+
+			</>
 			)}
 
 			<Modal open={open} onClose={() => setOpen(false)} label={editId ? t("editProduct") : t("newProduct")} className="w-full max-w-[480px]">

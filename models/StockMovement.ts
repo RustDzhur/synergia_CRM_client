@@ -9,7 +9,10 @@ const StockMovementSchema = new Schema(
         org: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
         product: { type: Schema.Types.ObjectId, ref: "Product", required: true, index: true },
         qty: { type: Number, required: true }, // положительное — приход, отрицательное — расход
-        reason: { type: String, enum: ["purchase", "sale", "writeoff", "adjustment", "return", "reserve", "reserve_release"], required: true }, // reserve — товар под заказ, reserve_release — резерв снят
+        reason: { type: String, enum: ["purchase", "sale", "writeoff", "adjustment", "return", "reserve", "reserve_release", "transfer_out", "transfer_in", "surplus"], required: true }, // reserve — товар под заказ, reserve_release — резерв снят, transfer_* — перемещение между складами
+        warehouse: { type: Schema.Types.ObjectId, ref: "Warehouse", default: null, index: true }, // склад движения; null — склад по умолчанию (старые записи)
+        unitCost: { type: Number, default: 0 }, // себестоимость единицы на момент движения (средняя или FIFO — настройка фирмы)
+        doc: { type: Schema.Types.ObjectId, ref: "StockDoc", default: null }, // документ, которым проведено движение
         orderId: { type: Schema.Types.ObjectId }, // Order, если движение вызвано заказом
         note: { type: String, default: "" },
         by: { type: String, default: "" }, // имя, кто провёл движение

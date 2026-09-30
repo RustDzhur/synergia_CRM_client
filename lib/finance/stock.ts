@@ -3,13 +3,31 @@ import StockMovement from "@/models/StockMovement";
 
 // Меняет остаток товара и пишет запись движения одной операцией; qty может быть отрицательным (расход).
 // Услуги (type "service") остатка не имеют — вызывать для них не нужно, но это по-тихому не ошибка (пропускаем).
-export async function moveStock(org: string, productId: string, qty: number, reason: "purchase" | "sale" | "writeoff" | "adjustment" | "return" | "reserve" | "reserve_release", opts: { orderId?: string; note?: string; by?: string } = {}) {
+export async function moveStock(
+    org: string,
+    productId: string,
+    qty: number,
+    reason: "purchase" | "sale" | "writeoff" | "adjustment" | "return" | "reserve" | "reserve_release" | "transfer_out" | "transfer_in" | "surplus",
+    opts: { orderId?: string; note?: string; by?: string; warehouse?: unknown; unitCost?: number; docId?: unknown } = {}
+) {
     const product = await Product.findOne({ _id: productId, org });
     if (!product || product.type !== "good" || !qty) return null;
     product.stockQty = (product.stockQty ?? 0) + qty;
     await product.save();
-    await StockMovement.create({ org, product: product._id, qty, reason, orderId: opts.orderId, note: opts.note ?? "", by: opts.by ?? "" });
-    return product;
+    const movement = await StockMovement.create({
+        org,
+        product: product._id,
+        qty,
+        reason,
+        orderId: opts.orderId,
+        warehouse: opts.warehouse ?? null,
+        unitCost: Number(opts.unitCost) || 0,
+        doc: opts.docId ?? null,
+        note: opts.note ?? "",
+        by: opts.by ?? "",
+    });
+    // Возвращаем и движение: вызывающему оно нужно для отката (импорт) или для аудита
+    return { product, movement };
 }
 
 // Списывает под заказ склад для всех товарных строк (услуги пропускаются); частичная нехватка не блокирует — просто
