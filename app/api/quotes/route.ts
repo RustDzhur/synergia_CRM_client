@@ -12,6 +12,7 @@ import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal, dealForCustomer } from "@/lib/deals";
 import Quote from "@/models/Quote";
 import User from "@/models/User";
+import { numberPrefix } from "@/lib/finance/documents/store";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
     ]);
     // ставку определяет фирма, а не браузер: освобождённая — 0 % во всех строках, иначе страна по умолчанию
     const items = applyTaxPolicy(rawItems, settings);
-    const number = await nextNumber(user.id, settings.quotePrefix || "AN");
+    const number = await nextNumber(user.id, await numberPrefix(user.id, "quote", settings.quotePrefix || "AN"));
     const today = new Date().toISOString().slice(0, 10);
     const validUntil = typeof b.validUntil === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.validUntil) ? b.validUntil : new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
     const quote = await Quote.create({

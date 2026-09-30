@@ -6,7 +6,9 @@ import { emit } from "@/lib/automation/emit";
 import { cleanItems } from "@/lib/finance/totals";
 import { applyTaxPolicy } from "@/lib/finance/tax";
 import { financeSettings } from "@/lib/finance/settings";
-import { consumeForOrder } from "@/lib/finance/stock";
+import { consumeForOrder, releaseForOrder } from "@/lib/finance/stock";
+import StockMovement from "@/models/StockMovement";
+import { Types } from "mongoose";
 import Order from "@/models/Order";
 import { toOrderDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
@@ -14,6 +16,20 @@ import { isTemplate } from "@/lib/finance/pdf";
 const STATUSES = ["draft", "confirmed", "fulfilled", "invoiced", "closed", "cancelled"];
 // закрытый заказ уже отражён в дашборде и счетах — редактировать его задним числом нельзя, только статус
 const LOCKED = ["invoiced", "closed", "cancelled"];
+// Снять резерв заказа ровно на то количество, что было зарезервировано (по журналу движений):
+// повторный вызов или заказ без резерва ничего не делают — склад не «пополняется» из воздуха.
+async function releaseReserve(org: string, orderId: string) {
+    const reserved = await StockMovement.aggregate([
+        { $match: { org: new Types.ObjectId(org), orderId: new Types.ObjectId(orderId), reason: { $in: ["reserve", "reserve_release"] } } },
+        { $group: { _id: "$product", qty: { $sum: "$qty" } } },
+    ]);
+    // qty отрицательный = сколько ещё «висит» в резерве (reserve -qty, reserve_release +qty)
+    const open = reserved.filter((r: { qty: number }) => r.qty < 0);
+    for (const row of open) {
+        await releaseForOrder(org, orderId, [{ product: String(row._id), qty: Math.abs(row.qty) }]);
+    }
+}
+
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
@@ -47,7 +63,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     let statusChanged = false;
     if (typeof b.status === "string" && STATUSES.includes(b.status) && b.status !== order.status) {
         if (b.status === "fulfilled" && order.status !== "fulfilled") {
+            // Резерв (если заказ его брал) снимается перед списанием: иначе склад ушёл бы в минус дважды
+            await releaseReserve(user.id, String(order._id));
             await consumeForOrder(user.id, String(order._id), (order.items as any) ?? []);
+        }
+        if (b.status === "cancelled" && order.status !== "cancelled") {
+            await releaseReserve(user.id, String(order._id));
         }
         order.status = b.status;
         statusChanged = true;
