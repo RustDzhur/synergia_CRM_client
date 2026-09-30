@@ -12,12 +12,18 @@ export interface Product {
 	id: string; name: string; sku: string; type: "good" | "service"; unit: string;
 	purchasePrice: number; salePrice: number; taxRate: number | null; stockQty: number; reorderLevel: number; archived: boolean;
 }
+export interface OrderWaybill {
+	number: string; status: string; statusAt: string; cost: number;
+	city: string; warehouse: string; recipient: string; phone: string; weight: number; cod: number;
+}
 export interface Order {
 	id: string; number: string; status: "draft" | "confirmed" | "fulfilled" | "invoiced" | "closed" | "cancelled";
 	contact: string; company: string; customerName: string; deal: string; contract: string;
 	items: LineItem[]; currency: string; notes: string; responsible: string; invoice: string; totals: Totals;
 	// Накладная (Lieferschein): номер присваивается при первой выписке, дата — фактической поставки
 	deliveryNoteNumber?: string; deliveryDate?: string;
+	// Доставка «Новою Поштою» (Украина): номер ТТН и статус посылки — null, если ТТН ещё не создана
+	waybill?: OrderWaybill | null;
 	template: string; createdAt: string; updatedAt: string;
 }
 export interface Invoice {

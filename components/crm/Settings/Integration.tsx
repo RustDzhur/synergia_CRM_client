@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
 import { FaFacebookMessenger, FaTelegram, FaViber, FaWhatsapp } from "react-icons/fa";
-import { TbCode, TbDeviceMobileMessage, TbHeadset, TbPhone } from "react-icons/tb";
+import { TbTruckDelivery, TbCode, TbDeviceMobileMessage, TbHeadset, TbPhone } from "react-icons/tb";
 import { SMS_PROVIDER_TYPES } from "@/config/smsProviders";
 import { useIntegrationsStore } from "@/store/useIntegrationsStore";
 import type { IntegrationType } from "@/types/integrations";
@@ -37,6 +37,9 @@ const INTEGRATIONS: Integration[] = [
 	{ id: "whatsapp", key: "intWhatsapp", icon: FaWhatsapp, real: "whatsapp" },
 	{ id: "onlinechat", key: "intOnlineChat", icon: TbHeadset, real: "webchat" },
 	{ id: "widget", key: "intWidget", icon: TbCode, real: "webchat" }, // код для сайта — в окне онлайн-чата
+	// Доставка: у украинских фирм заказы уходят «Новою Поштою» — из этого окна настраивается ключ
+	// и данные отправителя, а ТТН создаются в разделе «Заказы»
+	{ id: "novaposhta", key: "intNovaPoshta", icon: TbTruckDelivery, real: "novaposhta" },
 ];
 
 const STORAGE_KEY = "crm.integrations";

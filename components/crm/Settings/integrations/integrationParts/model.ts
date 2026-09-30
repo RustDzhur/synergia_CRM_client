@@ -34,6 +34,15 @@ export const FIELDS: Record<Real, FieldDef[]> = {
 		{ key: "password", label: "intfSipPassword", secret: true },
 		{ key: "displayName", label: "intfSipName", optional: true, placeholder: "Firmspace CRM" },
 	],
+	// Нова Пошта: доставка для украинских фирм — ключ берётся в кабинете Нової Пошти (Налаштування → Безпека → API),
+	// остальное (город и отделение отправки) подставляется в ТТН и правится в самом окне
+	novaposhta: [
+		{ key: "apiKey", label: "intfNpKey", secret: true },
+		{ key: "senderCity", label: "intfNpSenderCity", placeholder: "Київ" },
+		{ key: "senderWarehouse", label: "intfNpSenderWarehouse", optional: true, placeholder: "Відділення №1" },
+		{ key: "senderName", label: "intfNpSenderName", optional: true, placeholder: "ФОП Шевченко Т. Г." },
+		{ key: "senderPhone", label: "intfNpSenderPhone", optional: true, placeholder: "+380…" },
+	],
 	telegram: [{ key: "botToken", label: "intfBotToken", secret: true, placeholder: "123456:ABC…" }],
 	viber: [{ key: "authToken", label: "intfViberToken", secret: true }],
 	messenger: [

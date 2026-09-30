@@ -8,13 +8,15 @@ import {
 	TbReceipt,
 	TbTruckDelivery,
 } from "react-icons/tb";
-import { LineItem, useFinanceStore } from "@/store/useFinanceStore";
+import { type Order, LineItem, useFinanceStore } from "@/store/useFinanceStore";
+import { apiCall } from "@/store/crmApi";
 import { defaultRateFor } from "@/lib/finance/tax";
 import { STATUS_COLORS } from "@/utils/statusColors";
 import Modal from "../shared/Modal";
 import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
 import { downloadDeliveryNote, downloadDocumentPdf } from "./download";
+import WaybillDialog from "./ordersParts/WaybillDialog";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
 import { emptyItem, useDefaultTaxRate } from "./lineItems";
@@ -37,9 +39,24 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 	const [responsible, setResponsible] = useState("");
 	const [items, setItems] = useState<LineItem[]>([emptyItem(defaultTaxRate)]);
 	const [busy, setBusy] = useState<string | null>(null);
+	// Доставка «Новою Поштою»: если она подключена, у заказа появляется кнопка ТТН; иначе её нет вовсе
+	const [delivery, setDelivery] = useState<{ connected: boolean } | null>(null);
+	const [waybillFor, setWaybillFor] = useState<Order | null>(null);
 	const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
 	useEffect(() => { loadOrders(); loadProducts(); }, [loadOrders, loadProducts]);
+	useEffect(() => {
+		void apiCall<{ connected: boolean }>("/api/novaposhta").then((res) => setDelivery({ connected: !!res.data?.connected }));
+	}, []);
+
+	// Статус посылки по номеру ТТН: Нова Пошта отвечает человеческим статусом, показываем его в строке заказа
+	async function refreshWaybill(id: string) {
+		setBusy(id);
+		const res = await apiCall(`/api/orders/${id}/waybill`);
+		setBusy(null);
+		if (!res.ok) return void toast.error(res.message);
+		await loadOrders();
+	}
 	useDefaultTaxRate(settings, setItems);
 	useEffect(() => {
 		if (openId && rowRefs.current[openId]) rowRefs.current[openId]?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -127,6 +144,16 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 									title={o.deliveryNoteNumber ? t("deliveryIssued", { number: o.deliveryNoteNumber }) : t("deliveryCreate")}>
 									<TbTruckDelivery size={15} /> {o.deliveryNoteNumber || t("deliveryNote")}
 								</button>
+								{/* Доставка «Новою Поштою»: номер ТТН и статус посылки — прямо в строке заказа */}
+								{delivery?.connected && (o.waybill?.number ? (
+									<button type="button" disabled={busy === o.id} onClick={() => void refreshWaybill(o.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-60" title={t("npRefresh")}>
+										<TbTruckDelivery size={15} /> {o.waybill.number}{o.waybill.status ? ` · ${o.waybill.status}` : ""}
+									</button>
+								) : (
+									<button type="button" onClick={() => setWaybillFor(o)} className="fs-btn fs-btn-ghost h-34">
+										<TbTruckDelivery size={15} /> {t("npWaybillCreate")}
+									</button>
+								))}
 								<DocumentTemplateButton kind="orders" id={o.id} number={o.number} template={o.template} onSave={updateOrder} />
 								{o.invoice && (
 									<button type="button" onClick={() => onOpenInvoice(o.invoice)} className="fs-link">{t("viewInvoice")}</button>
@@ -138,6 +165,18 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 						</li>
 					))}
 				</ul>
+			)}
+
+			{waybillFor && (
+				<WaybillDialog
+					orderId={waybillFor.id}
+					customer={waybillFor.customerName}
+					phone=""
+					amount={waybillFor.totals?.gross ?? 0}
+					open={waybillFor !== null}
+					onClose={() => setWaybillFor(null)}
+					onCreated={() => void loadOrders()}
+				/>
 			)}
 
 			<Modal open={open} onClose={() => setOpen(false)} label={t("newOrder")} className="w-full max-w-[640px]">

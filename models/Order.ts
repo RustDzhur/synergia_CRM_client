@@ -37,6 +37,24 @@ const OrderSchema = new Schema(
         deliveryDate: { type: String, default: "" },
         invoice: { type: Schema.Types.ObjectId, ref: "Invoice" }, // счёт, выставленный по этому заказу
 
+        // Доставка «Новою Поштою» (Украина): номер ТТН называют клиенту, по нему же виден статус посылки.
+        // Данные получателя храним снимком: они уходят в накладную и не должны меняться задним числом.
+        waybill: {
+            number: { type: String, default: "" },
+            ref: { type: String, default: "" },
+            status: { type: String, default: "" },
+            statusAt: { type: Date },
+            cost: { type: Number, default: 0 },
+            city: { type: String, default: "" },
+            cityRef: { type: String, default: "" },
+            warehouse: { type: String, default: "" },
+            warehouseRef: { type: String, default: "" },
+            recipient: { type: String, default: "" },
+            phone: { type: String, default: "" },
+            weight: { type: Number, default: 0 },
+            cod: { type: Number, default: 0 }, // наложений платёж
+        },
+
         notes: { type: String, default: "" },
         // Шаблон оформления PDF: у каждого документа он свой, чтобы счёт клиенту и договор могли выглядеть по-разному
         template: { type: String, default: "" },

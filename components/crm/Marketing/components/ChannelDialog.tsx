@@ -36,6 +36,8 @@ const LABEL: Record<Needed, string> = {
 	whatsapp: "intWhatsapp",
 	messenger: "intMessenger",
 	webchat: "intOnlineChat",
+	// Доставка в кампаниях не участвует, но подпись нужна: тип интеграции общий (Settings → Integration)
+	novaposhta: "intNovaPoshta",
 };
 
 interface Props {

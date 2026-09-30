@@ -8,6 +8,15 @@ import { computeTotals } from "./totals";
 
 export const toOrderDTO = (o: any) => ({
     deliveryNoteNumber: o.deliveryNoteNumber ?? "", deliveryDate: o.deliveryDate ?? "",
+    // Доставка «Новою Поштою»: номер ТТН и последний статус посылки (см. app/api/orders/[id]/waybill)
+    waybill: o.waybill
+        ? {
+            number: o.waybill.number ?? "", status: o.waybill.status ?? "",
+            statusAt: o.waybill.statusAt ? new Date(o.waybill.statusAt).toISOString() : "",
+            cost: o.waybill.cost ?? 0, city: o.waybill.city ?? "", warehouse: o.waybill.warehouse ?? "",
+            recipient: o.waybill.recipient ?? "", phone: o.waybill.phone ?? "", weight: o.waybill.weight ?? 0, cod: o.waybill.cod ?? 0,
+        }
+        : null,
     id: String(o._id), number: o.number, status: o.status,
     contact: o.contact ? String(o.contact) : "", company: o.company ? String(o.company) : "", customerName: o.customerName,
     deal: o.deal ? String(o.deal) : "", contract: o.contract ? String(o.contract) : "",
