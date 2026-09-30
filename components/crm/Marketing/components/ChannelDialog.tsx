@@ -39,6 +39,11 @@ const LABEL: Record<Needed, string> = {
 	// Доставка в кампаниях не участвует, но подпись нужна: тип интеграции общий (Settings → Integration)
 	novaposhta: "intNovaPoshta",
 	checkbox: "intCheckbox",
+	prom: "intProm",
+	rozetka: "intRozetka",
+	horoshop: "intHoroshop",
+	olx: "intOlx",
+	ukrposhta: "intUkrposhta",
 };
 
 interface Props {

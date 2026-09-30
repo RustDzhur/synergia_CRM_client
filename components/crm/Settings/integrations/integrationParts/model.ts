@@ -52,6 +52,20 @@ export const FIELDS: Record<Real, FieldDef[]> = {
 		{ key: "cashierName", label: "intfCbCashier", optional: true, placeholder: "Шевченко Т. Г." },
 		{ key: "autoFiscal", label: "intfCbAuto", type: "bool" },
 	],
+	// Маркетплейсы: заказы площадки приезжают в воронку сами (lib/marketplace). Токен берётся в кабинете продавца.
+	prom: [{ key: "token", label: "intfMarketToken", secret: true, placeholder: "prom-api-token" }],
+	rozetka: [{ key: "token", label: "intfMarketToken", secret: true, placeholder: "rozetka-api-token" }],
+	horoshop: [
+		{ key: "shop", label: "intfHoroshopShop", placeholder: "myshop.horoshop.ua" },
+		{ key: "login", label: "intfHoroshopLogin", placeholder: "api@myshop.ua" },
+		{ key: "password", label: "intfHoroshopPassword", secret: true },
+	],
+	olx: [
+		{ key: "clientId", label: "intfOlxClientId" },
+		{ key: "clientSecret", label: "intfOlxClientSecret", secret: true },
+	],
+	// Укрпошта: bearer-токен из кабинета (выдаётся после договора) — по нему тянем статус отправления
+	ukrposhta: [{ key: "token", label: "intfUpToken", secret: true }],
 	telegram: [{ key: "botToken", label: "intfBotToken", secret: true, placeholder: "123456:ABC…" }],
 	viber: [{ key: "authToken", label: "intfViberToken", secret: true }],
 	messenger: [

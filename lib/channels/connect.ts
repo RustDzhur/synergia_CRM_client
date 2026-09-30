@@ -15,6 +15,7 @@ import { verifyVonage } from "./vonage";
 import { connectTwilio, normalizePhone } from "./twilio";
 import { deleteWebhook, getMe, getWebhookInfo, setWebhook } from "./telegram";
 import { getAccount, removeViberWebhook, setViberWebhook } from "./viber";
+import { checkToken as checkUkrposhtaToken } from "@/lib/ukrposhta";
 import { appSubscriptions, discoverWhatsAppNumbers, exchangeEmbeddedCode, exchangeWhatsAppCode, getPhoneNumber, longLivedWhatsAppToken, setWhatsAppAppWebhook, subscribeApp, whatsappOauthUrl } from "./whatsapp";
 
 // Общий адрес вебхука WhatsApp на всю платформу: Meta разрешает только один адрес на приложение,
@@ -376,6 +377,15 @@ export async function connectIntegration(owner: string, type: string, input: Inp
             name = `${sip.config.username}@${sip.config.domain}`;
             config = { ...sip.config };
             secrets = sip.secrets;
+            break;
+        }
+        case "ukrposhta": {
+            const upToken = need(str(input.token, 200), "Bearer token");
+            // Проверяем токен запросом к Укрпоште ДО сохранения: неверный токен иначе лежал бы в базе
+            // и «работал» до первого обновления статуса
+            await checkUkrposhtaToken(upToken);
+            name = "Укрпошта";
+            secrets = { token: upToken };
             break;
         }
         case "webchat":

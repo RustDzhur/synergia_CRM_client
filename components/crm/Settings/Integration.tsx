@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
 import { FaFacebookMessenger, FaTelegram, FaViber, FaWhatsapp } from "react-icons/fa";
-import { TbReceipt, TbTruckDelivery, TbCode, TbDeviceMobileMessage, TbHeadset, TbPhone } from "react-icons/tb";
+import { TbShoppingCart, TbReceipt, TbTruckDelivery, TbCode, TbDeviceMobileMessage, TbHeadset, TbPhone } from "react-icons/tb";
 import { SMS_PROVIDER_TYPES } from "@/config/smsProviders";
 import { useIntegrationsStore } from "@/store/useIntegrationsStore";
 import type { IntegrationType } from "@/types/integrations";
@@ -42,6 +42,13 @@ const INTEGRATIONS: Integration[] = [
 	{ id: "novaposhta", key: "intNovaPoshta", icon: TbTruckDelivery, real: "novaposhta" },
 	// ПРРО: фискальные чеки для украинских фирм — чек пробивается сам при оплате счёта
 	{ id: "checkbox", key: "intCheckbox", icon: TbReceipt, real: "checkbox" },
+	// Укрпошта: статус отправления по штрихкоду — вторая по популярности доставка в Украине
+	{ id: "ukrposhta", key: "intUkrposhta", icon: TbTruckDelivery, real: "ukrposhta" },
+	// Маркетплейсы: заявки и заказы площадок попадают в воронку сами, с пометкой источника
+	{ id: "prom", key: "intProm", icon: TbShoppingCart, real: "prom" },
+	{ id: "rozetka", key: "intRozetka", icon: TbShoppingCart, real: "rozetka" },
+	{ id: "horoshop", key: "intHoroshop", icon: TbShoppingCart, real: "horoshop" },
+	{ id: "olx", key: "intOlx", icon: TbShoppingCart, real: "olx" },
 ];
 
 const STORAGE_KEY = "crm.integrations";

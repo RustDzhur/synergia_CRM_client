@@ -103,6 +103,8 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 		return id === "twilio" ? items.some((i) => i.type === "twilio" && i.status === "connected") : !!sipItem && sipItem.status === "connected" && sipBrand(sipItem.config) === id;
 	};
 	const fields = FIELDS[shown];
+	// Площадки: у них, кроме сохранения ключа, есть смысл «забрать заказы» и «проверить подключение»
+	const isMarketplace = shown === "prom" || shown === "rozetka" || shown === "horoshop" || shown === "olx";
 	const isWebchat = shown === "webchat";
 	const editable = isWebchat || !current;
 	// Messenger и WhatsApp подключаются входом через Facebook; ручные поля остаются запасным путём
@@ -111,6 +113,32 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 	const fbForm = isMeta && !connectedNow;
 	// список страниц (или номеров), полученный на шаге возврата: config приходит с сервера как несекретные настройки
 	const fbOptions = (isMeta && !connectedNow ? ((current?.config?.pages ?? current?.config?.numbers) as unknown as Array<{ id: string; name: string }>) : undefined) ?? [];
+
+	// Синхронизация площадки: создаёт сделки в первой колонке воронки и показывает, сколько приехало
+	async function syncMarket() {
+		if (!shown) return;
+		setBusy(true);
+		const res = await apiCall<{ results: { created: number; skipped: number; error?: string }[] }>("/api/marketplace/sync", "POST", { provider: shown });
+		setBusy(false);
+		if (!res.ok) return void toast.error(res.message);
+		const r = res.data?.results?.[0];
+		if (!r) return void toast.error(t("intFailed"));
+		if (r.error) return void toast.error(r.error);
+		toast.success(t("marketSynced", { created: r.created, skipped: r.skipped }));
+	}
+
+	// Проверка подключения: показываем, что именно ответила площадка — так видно и неверный токен,
+	// и непривычный набор полей
+	async function checkMarket() {
+		if (!shown) return;
+		setBusy(true);
+		const res = await apiCall<{ ok: boolean; message: string }>("/api/marketplace/sync", "POST", { provider: shown, check: true });
+		setBusy(false);
+		if (!res.ok && !res.data) return void toast.error(res.message);
+		const message = res.data?.message ?? res.message;
+		if (res.data?.ok) toast.success(t("marketChecked", { message }));
+		else toast.error(message);
+	}
 
 	async function submit(e: React.FormEvent) {
 		e.preventDefault();
@@ -303,6 +331,14 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 								<CopyField label={t("intVerifyToken")} value={current.platformVerifyToken ?? ""} />
 								<p className="text-11 text-[#8c948b]">{t("intWaWebhookHelp")}</p>
 							</>
+						)}
+						{/* Маркетплейсы: заказы приезжают в воронку по расписанию, но кнопка нужна —
+						    и чтобы не ждать, и чтобы проверить подключение (площадка покажет, что она вернула) */}
+						{current && isMarketplace && (
+							<div className="flex flex-wrap items-center gap-10">
+								<button type="button" disabled={busy} onClick={syncMarket} className={`${buttonBase} fs-btn-ghost`}>{t("marketSync")}</button>
+								<button type="button" disabled={busy} onClick={checkMarket} className={`${buttonBase} fs-btn-ghost`}>{t("marketCheck")}</button>
+							</div>
 						)}
 						{current && shown === "twilio" && <p className="text-12 text-[#8c948b]">{t("intTwilioAuto")}</p>}
 						{current && shown === "sip" && <p className="text-12 text-[#8c948b]">{t("intSipConnected")}</p>}

@@ -38,6 +38,15 @@ const OrderSchema = new Schema(
         // Акт виконаних робіт (Украина): свой номер и дата, как у накладной — документ выписывается один раз
         actNumber: { type: String, default: "" },
         actDate: { type: String, default: "" },
+
+        // Укрпошта: штрихкод отправления (ШКІ) вписывает менеджер, статус тянем по нему из API Укрпошти.
+        // Создание отправления у них требует договора и адресного классификатора — это отдельная работа.
+        ukrposhta: {
+            barcode: { type: String, default: "" },
+            status: { type: String, default: "" },
+            place: { type: String, default: "" },
+            statusAt: { type: Date },
+        },
         invoice: { type: Schema.Types.ObjectId, ref: "Invoice" }, // счёт, выставленный по этому заказу
 
         // Доставка «Новою Поштою» (Украина): номер ТТН называют клиенту, по нему же виден статус посылки.

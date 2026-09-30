@@ -587,7 +587,8 @@
         "doc_contract": "Contract",
         "dealWonMark": "Mark as won",
         "dealWonUndo": "Remove won mark",
-        "chanFromMailbox": "The e-mail will be sent from {email} (Web Mails → Accounts)."
+        "chanFromMailbox": "The e-mail will be sent from {email} (Web Mails → Accounts).",
+        "dealSource": "{source}"
     },
     "dashboard": {
         "date": "Date",
@@ -943,7 +944,19 @@
         "intfCbLogin": "Cashier login",
         "intfCbPassword": "Cashier password",
         "intfCbCashier": "Cashier name printed on the receipt",
-        "intfCbAuto": "Issue the receipt automatically when the invoice is paid"
+        "intfCbAuto": "Issue the receipt automatically when the invoice is paid",
+        "intProm": "Prom.ua",
+        "intRozetka": "Rozetka",
+        "intHoroshop": "Horoshop",
+        "intOlx": "OLX",
+        "intfMarketToken": "API token (seller account → Settings → API)",
+        "intfHoroshopShop": "Shop address",
+        "intfHoroshopLogin": "API login",
+        "intfHoroshopPassword": "API password",
+        "intfOlxClientId": "OLX Client ID (partner app)",
+        "intfOlxClientSecret": "OLX Client Secret",
+        "intUkrposhta": "Укрпошта (tracking)",
+        "intfUpToken": "Bearer token (Укрпошта → API)"
     },
     "upgrade": {
         "free": "Free",
@@ -1982,7 +1995,12 @@
         "fiscalError": "Receipt not issued: {message}",
         "act": "Certificate of services",
         "actIssued": "Certificate {number} issued",
-        "actCreate": "Issue a certificate of services for this order"
+        "actCreate": "Issue a certificate of services for this order",
+        "upAdd": "Ukrposhta",
+        "upTitle": "Ukrposhta shipment",
+        "upBarcode": "Tracking number (ШКІ)",
+        "upHint": "The number is printed on the receipt from the post office. The status is fetched right away.",
+        "upSaved": "Shipment status updated"
     },
     "ads": {
         "needsUpgrade": "Ad performance needs the Professional plan.",

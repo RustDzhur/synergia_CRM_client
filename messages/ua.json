@@ -587,7 +587,8 @@
         "doc_contract": "Договір",
         "dealWonMark": "Позначити як виграну",
         "dealWonUndo": "Зняти позначку «виграно»",
-        "chanFromMailbox": "Лист буде надіслано з {email} (Web Mails → Accounts)."
+        "chanFromMailbox": "Лист буде надіслано з {email} (Web Mails → Accounts).",
+        "dealSource": "{source}"
     },
     "dashboard": {
         "date": "Дата",
@@ -943,7 +944,19 @@
         "intfCbLogin": "Логін касира",
         "intfCbPassword": "Пароль касира",
         "intfCbCashier": "Ім’я касира в чеку",
-        "intfCbAuto": "Пробивати чек автоматично, коли рахунок оплачено"
+        "intfCbAuto": "Пробивати чек автоматично, коли рахунок оплачено",
+        "intProm": "Prom.ua",
+        "intRozetka": "Rozetka",
+        "intHoroshop": "Horoshop",
+        "intOlx": "OLX",
+        "intfMarketToken": "API-токен (кабінет продавця → Налаштування → API)",
+        "intfHoroshopShop": "Адреса магазину",
+        "intfHoroshopLogin": "API-логін",
+        "intfHoroshopPassword": "API-пароль",
+        "intfOlxClientId": "OLX Client ID (застосунок партнера)",
+        "intfOlxClientSecret": "OLX Client Secret",
+        "intUkrposhta": "Укрпошта (трекінг)",
+        "intfUpToken": "Bearer-токен (Укрпошта → API)"
     },
     "upgrade": {
         "free": "Безкоштовний",
@@ -1982,7 +1995,12 @@
         "fiscalError": "Чек не пробито: {message}",
         "act": "Акт виконаних робіт",
         "actIssued": "Акт {number} виписано",
-        "actCreate": "Виписати акт виконаних робіт за цим замовленням"
+        "actCreate": "Виписати акт виконаних робіт за цим замовленням",
+        "upAdd": "Укрпошта",
+        "upTitle": "Відправлення Укрпошти",
+        "upBarcode": "Штрихкод (ШКІ)",
+        "upHint": "Номер надруковано на чеку у відділенні. Статус підтягнеться одразу.",
+        "upSaved": "Статус відправлення оновлено"
     },
     "ads": {
         "needsUpgrade": "Ефективність реклами доступна від тарифу Professional.",

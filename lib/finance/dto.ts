@@ -9,6 +9,9 @@ import { computeTotals } from "./totals";
 export const toOrderDTO = (o: any) => ({
     deliveryNoteNumber: o.deliveryNoteNumber ?? "", deliveryDate: o.deliveryDate ?? "",
     actNumber: o.actNumber ?? "", actDate: o.actDate ?? "",
+    ukrposhta: o.ukrposhta?.barcode
+        ? { barcode: o.ukrposhta.barcode, status: o.ukrposhta.status ?? "", place: o.ukrposhta.place ?? "", statusAt: o.ukrposhta.statusAt ? new Date(o.ukrposhta.statusAt).toISOString() : "" }
+        : null,
     // Доставка «Новою Поштою»: номер ТТН и последний статус посылки (см. app/api/orders/[id]/waybill)
     waybill: o.waybill
         ? {

@@ -30,6 +30,9 @@ export function toIntegrationDTO(doc: Doc, origin: string): IntegrationDTO {
 export const secretsOf = <T = Record<string, string>>(doc: Doc) => decryptJSON<T>(doc.secrets);
 export const packSecrets = (value: unknown) => encryptJSON(value);
 
+// Подключение фирмы по типу (площадки, доставка, касса): нужен сам документ, а не DTO
+export const findIntegrationByType = (owner: string, type: string) => Integration.findOne({ owner, type });
+
 // Интеграция по адресу вебхука (запрос от провайдера, без пользователя)
 export async function findByToken(type: IntegrationType, token: string) {
     return Integration.findOne({ type, token });

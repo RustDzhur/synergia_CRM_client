@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { sweepEventReminders } from "@/lib/calendar/reminders";
 import { runDueJobs } from "@/lib/automation";
 import { syncCalendars } from "@/lib/calendar/sync";
+import { syncMarketplaces } from "@/lib/marketplace";
 import { reportError } from "@/lib/reportError";
 import Event from "@/models/Event";
 import Integration from "@/models/Integration";
@@ -31,11 +32,14 @@ export async function GET(req: Request) {
 
     // Обходим фирмы с событиями-напоминаниями и фирмы с подключёнными внешними календарями:
     // проходить по всем организациям платформы каждые пять минут незачем
-    const [withReminders, withCalendars] = await Promise.all([
+    const [withReminders, withCalendars, withMarketplaces] = await Promise.all([
         Event.distinct("org", { reminder: { $gt: 0 } }),
         Integration.distinct("owner", { type: { $in: ["gcal", "icloud"] }, status: "connected" }),
+        // Заказы площадок тянем по расписанию: пока кабинет закрыт, заявка с Prom или Rozetka
+        // иначе не появилась бы в воронке до чьего-нибудь входа в CRM
+        Integration.distinct("owner", { type: { $in: ["prom", "rozetka", "horoshop", "olx"] }, status: "connected" }),
     ]);
-    const orgs = Array.from(new Set([...withReminders, ...withCalendars].map(String)));
+    const orgs = Array.from(new Set([...withReminders, ...withCalendars, ...withMarketplaces].map(String)));
 
     let reminders = 0;
     let jobs = 0;
@@ -55,6 +59,9 @@ export async function GET(req: Request) {
             void reportError(e, { where: "отложенные действия автоматизации по расписанию", org: id });
             return 0;
         });
+        // Заказы маркетплейсов: сбой одной площадки не должен останавливать остальные, поэтому
+        // ошибки уже собраны внутри syncMarketplaces, а здесь только общий перехват
+        await syncMarketplaces(id).catch((e) => reportError(e, { where: "заказы маркетплейсов по расписанию", org: id }));
     }
 
     return NextResponse.json({ orgs: orgs.length, reminders, jobs });

@@ -30,6 +30,9 @@ export interface Deal {
     hiddenSections?: string[];
     // время выигрыша: карточку вытянули за последний этап воронки; пусто — сделка ещё в работе
     wonAt?: string | null;
+    // источник заявки: "" — завели вручную, иначе код площадки (prom, rozetka, horoshop, olx)
+    source?: string;
+    externalId?: string;
     activities?: Activity[];
     createdAt?: string;
     updatedAt?: string;

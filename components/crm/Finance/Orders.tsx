@@ -46,8 +46,19 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 	const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
 	useEffect(() => { loadOrders(); loadProducts(); }, [loadOrders, loadProducts]);
+	const [deliveryMode, setDeliveryMode] = useState<"" | "novaposhta" | "ukrposhta">("");
 	useEffect(() => {
-		void apiCall<{ connected: boolean }>("/api/novaposhta").then((res) => setDelivery({ connected: !!res.data?.connected }));
+		// Какая доставка подключена у фирмы: у Новой Почты — ТТН в один клик, у Укрпошты — статус
+		// по штрихкоду. Показываем ту кнопку, которая действительно работает.
+		void apiCall<{ connected: boolean }>("/api/novaposhta").then((res) => {
+			setDelivery({ connected: !!res.data?.connected });
+			if (res.data?.connected) setDeliveryMode("novaposhta");
+		});
+		void apiCall<{ type: string; status: string }[]>("/api/integrations").then((res) => {
+			const up = (res.data ?? []).some((i) => i.type === "ukrposhta" && i.status === "connected");
+			if (up && !res.data?.some((i) => i.type === "novaposhta")) setDeliveryMode("ukrposhta");
+			else if (up) setDeliveryMode((m) => m || "ukrposhta");
+		});
 	}, []);
 
 	// Статус посылки по номеру ТТН: Нова Пошта отвечает человеческим статусом, показываем его в строке заказа
@@ -80,6 +91,21 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 	// нужен ли он ей (в отличие от ТТН, которая без подключённой доставки смысла не имеет)
 	async function downloadActPdf(id: string, actNumber: string) {
 		if (!(await downloadAct(id, actNumber, locale))) toast.error(t("pdfFailed"));
+	}
+
+	// Укрпошта: штрихкод вписывает менеджер (номер известен после регистрации в отделении),
+	// статус CRM тянет сама — кнопка обновляет его
+	const [upFor, setUpFor] = useState<Order | null>(null);
+	const [upCode, setUpCode] = useState("");
+	async function saveUkrposhta() {
+		if (!upFor) return;
+		setBusy(upFor.id);
+		const res = await apiCall(`/api/orders/${upFor.id}/ukrposhta`, "POST", { barcode: upCode.trim().toUpperCase() });
+		setBusy(null);
+		if (!res.ok) return void toast.error(res.message);
+		toast.success(t("upSaved"));
+		setUpFor(null);
+		await loadOrders();
 	}
 
 	async function downloadDelivery(id: string, noteNumber: string) {
@@ -169,6 +195,16 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 										<TbTruckDelivery size={15} /> {t("npWaybillCreate")}
 									</button>
 								))}
+								{/* Укрпошта: штрихкод и статус отправления — вторая по популярности доставка */}
+								{deliveryMode === "ukrposhta" && (
+									<button
+										type="button"
+										onClick={() => { setUpFor(o); setUpCode(o.ukrposhta?.barcode ?? ""); }}
+										className="fs-btn fs-btn-ghost h-34"
+										title={o.ukrposhta?.status || undefined}>
+										<TbTruckDelivery size={15} /> {o.ukrposhta?.barcode ? `${o.ukrposhta.barcode}${o.ukrposhta.status ? ` · ${o.ukrposhta.status.slice(0, 24)}` : ""}` : t("upAdd")}
+									</button>
+								)}
 								<DocumentTemplateButton kind="orders" id={o.id} number={o.number} template={o.template} onSave={updateOrder} />
 								{o.invoice && (
 									<button type="button" onClick={() => onOpenInvoice(o.invoice)} className="fs-link">{t("viewInvoice")}</button>
@@ -181,6 +217,19 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 					))}
 				</ul>
 			)}
+
+			{/* Укрпошта: менеджер вписывает штрихкод, CRM сохраняет его и сразу тянет статус */}
+			<Modal open={upFor !== null} onClose={() => setUpFor(null)} label={t("upTitle")} className="w-full max-w-[460px]">
+				<form onSubmit={(e) => { e.preventDefault(); void saveUkrposhta(); }} className="fs-popover p-20">
+					<h2 className="mb-12 text-16 font-semibold text-[#f1f4ee]">{t("upTitle")}</h2>
+					<FormField label={t("upBarcode")} value={upCode} onChange={(e) => setUpCode(e.target.value.toUpperCase())} placeholder="RB123456789UA" maxLength={20} autoFocus required />
+					<p className="mt-8 text-11 leading-[1.5] text-[#9AA396]">{t("upHint")}</p>
+					<div className="mt-16 flex justify-end gap-10">
+						<button type="button" onClick={() => setUpFor(null)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
+						<button type="submit" disabled={busy === upFor?.id} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{t("save")}</button>
+					</div>
+				</form>
+			</Modal>
 
 			{waybillFor && (
 				<WaybillDialog

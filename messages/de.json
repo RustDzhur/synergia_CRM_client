@@ -587,7 +587,8 @@
         "doc_contract": "Vertrag",
         "dealWonMark": "Als gewonnen markieren",
         "dealWonUndo": "Gewonnen-Markierung entfernen",
-        "chanFromMailbox": "Die E-Mail wird von {email} gesendet (Web Mails → Konten)."
+        "chanFromMailbox": "Die E-Mail wird von {email} gesendet (Web Mails → Konten).",
+        "dealSource": "{source}"
     },
     "dashboard": {
         "date": "Datum",
@@ -943,7 +944,19 @@
         "intfCbLogin": "Kassierer-Login",
         "intfCbPassword": "Kassierer-Passwort",
         "intfCbCashier": "Name des Kassierers auf dem Beleg",
-        "intfCbAuto": "Beleg automatisch ausstellen, wenn die Rechnung bezahlt ist"
+        "intfCbAuto": "Beleg automatisch ausstellen, wenn die Rechnung bezahlt ist",
+        "intProm": "Prom.ua",
+        "intRozetka": "Rozetka",
+        "intHoroshop": "Horoshop",
+        "intOlx": "OLX",
+        "intfMarketToken": "API-Token (Konto des Verkäufers → Einstellungen → API)",
+        "intfHoroshopShop": "Shop-Adresse",
+        "intfHoroshopLogin": "API-Login",
+        "intfHoroshopPassword": "API-Passwort",
+        "intfOlxClientId": "OLX Client ID (Partner-App)",
+        "intfOlxClientSecret": "OLX Client Secret",
+        "intUkrposhta": "Укрпошта (Sendungsverfolgung)",
+        "intfUpToken": "Bearer-Token (Укрпошта → API)"
     },
     "upgrade": {
         "free": "Kostenlos",
@@ -1982,7 +1995,12 @@
         "fiscalError": "Beleg nicht ausgestellt: {message}",
         "act": "Leistungsnachweis",
         "actIssued": "Leistungsnachweis {number} ausgestellt",
-        "actCreate": "Leistungsnachweis für diesen Auftrag ausstellen"
+        "actCreate": "Leistungsnachweis für diesen Auftrag ausstellen",
+        "upAdd": "Укрпошта",
+        "upTitle": "Укрпошта-Sendung",
+        "upBarcode": "Sendungsnummer (ШКІ)",
+        "upHint": "Die Nummer steht auf dem Beleg aus der Filiale. Der Status wird sofort abgerufen.",
+        "upSaved": "Sendungsstatus aktualisiert"
     },
     "ads": {
         "needsUpgrade": "Werbeleistung erfordert den Tarif Professional.",

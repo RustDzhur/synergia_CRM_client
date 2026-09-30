@@ -32,9 +32,17 @@ const DealSchema = new Schema(
         // отметка снимается, как только карточку вернули в обычный этап
         wonAt: { type: Date, default: null },
 
+        // Откуда пришла заявка: пусто — завели вручную, иначе код площадки (prom, rozetka, horoshop, olx)
+        // или канал. externalId — номер заказа у площадки: по нему повторная синхронизация не создаёт дубль.
+        source: { type: String, default: "" },
+        externalId: { type: String, default: "" },
+
         activities: { type: [ActivitySchema], default: [] },
     },
     { timestamps: true }
 );
+
+// Повторный импорт того же заказа площадки не должен создавать вторую сделку
+DealSchema.index({ owner: 1, source: 1, externalId: 1 });
 
 export default registerModel("Deal", DealSchema);

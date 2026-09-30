@@ -25,6 +25,8 @@ export interface Order {
 	actNumber?: string; actDate?: string;
 	// Доставка «Новою Поштою» (Украина): номер ТТН и статус посылки — null, если ТТН ещё не создана
 	waybill?: OrderWaybill | null;
+	// Укрпошта: штрихкод и последний статус отправления — заполняется вручную и обновляется кнопкой
+	ukrposhta?: { barcode: string; status: string; place: string; statusAt: string } | null;
 	template: string; createdAt: string; updatedAt: string;
 }
 export interface Invoice {

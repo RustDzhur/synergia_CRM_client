@@ -12,6 +12,9 @@ interface Props {
 
 const SYSTEM = ["stage", "created"];
 
+// Названия площадок — бренды, их не переводят; для остальных источников показываем код как есть
+const SOURCE_LABEL: Record<string, string> = { prom: "Prom.ua", rozetka: "Rozetka", horoshop: "Horoshop", olx: "OLX" };
+
 // Карточка сделки в колонке: название (синее), счётчик записей, значки комментариев/писем/звонков,
 // снизу «Activity» и время последней записи.
 export default function DealCard({ deal, isDragging }: Props) {
@@ -41,6 +44,12 @@ export default function DealCard({ deal, isDragging }: Props) {
 					{(deal.contactName || deal.companyName) && (
 						<p className="mt-2 truncate text-11 text-[#8c948b]">
 							{[deal.contactName, deal.companyName].filter(Boolean).join(" · ")}
+						</p>
+					)}
+					{/* Источник заявки: менеджер сразу видит, что это заказ с площадки, а не заведённый вручную */}
+					{deal.source && (
+						<p className="mt-2 truncate text-10 text-[#9AA396]">
+							{SOURCE_LABEL[deal.source] ?? deal.source}{deal.externalId ? ` №${deal.externalId}` : ""}
 						</p>
 					)}
 				</div>
