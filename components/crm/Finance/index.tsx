@@ -11,6 +11,7 @@ import {
 	TbChartBar,
 	TbClipboardList,
 	TbFileCertificate,
+	TbFileDescription,
 	TbFileText,
 	TbHistory,
 	TbLayoutDashboard,
@@ -49,6 +50,7 @@ import Fiscal from "./Fiscal";
 import Delivery from "./Delivery";
 import Purchases from "./Purchases";
 import Pos from "./Pos";
+import IssuedDocs from "./IssuedDocs";
 import Production from "./Production";
 import FinanceSettingsTab from "./Settings";
 import Taxes from "./Taxes";
@@ -62,7 +64,7 @@ import Reports from "./Reports";
 // из проверок country === "UA" по месту. Пока страна не выбрана, раздел показывает только её выбор
 // и настройки (см. CountryPicker).
 
-type Tab = "overview" | "quotes" | "orders" | "contracts" | "invoices" | "recurring" | "dunning" | "expenses" | "assets" | "bank" | "products" | "purchases" | "production" | "pos" | "delivery" | "fiscal" | "vat" | "eur" | "bwa" | "susa" | "audit" | "settings";
+type Tab = "overview" | "quotes" | "orders" | "contracts" | "invoices" | "recurring" | "dunning" | "expenses" | "assets" | "bank" | "products" | "purchases" | "production" | "pos" | "acts" | "deliveryNotes" | "delivery" | "fiscal" | "vat" | "eur" | "bwa" | "susa" | "audit" | "settings";
 
 interface NavLeaf { key: Tab; icon: IconType }
 // Пункт ведёт на экран; группа — только заголовок в колонке навигации (как группы сайдбара), собственного
@@ -76,6 +78,9 @@ const NAV_DE: NavNode[] = [
 		{ key: "quotes", icon: TbFileText },
 		{ key: "orders", icon: TbClipboardList },
 		{ key: "contracts", icon: TbFileCertificate },
+		// Акти та накладні (ТЗ §4): реєстри виписаних документів — повторна печать без поиска заказа
+		{ key: "acts", icon: TbFileDescription },
+		{ key: "deliveryNotes", icon: TbTruckDelivery },
 	] },
 	{ kind: "group", key: "invoices", items: [
 		{ key: "invoices", icon: TbReceipt },
@@ -111,6 +116,9 @@ const NAV_UA: NavNode[] = [
 		{ key: "quotes", icon: TbFileText },
 		{ key: "orders", icon: TbClipboardList },
 		{ key: "contracts", icon: TbFileCertificate },
+		// Акти та накладні (ТЗ §4): реєстри виписаних документів — повторна печать без поиска заказа
+		{ key: "acts", icon: TbFileDescription },
+		{ key: "deliveryNotes", icon: TbTruckDelivery },
 	] },
 	{ kind: "group", key: "invoices", items: [
 		{ key: "invoices", icon: TbReceipt },
@@ -370,6 +378,8 @@ export default function Finance() {
 					{tab === "purchases" && <Purchases />}
 					{tab === "production" && <Production />}
 					{tab === "pos" && <Pos />}
+					{tab === "acts" && <IssuedDocs kind="act" />}
+					{tab === "deliveryNotes" && <IssuedDocs kind="delivery_note" />}
 					{tab === "delivery" && <Delivery />}
 					{tab === "fiscal" && <Fiscal />}
 					{tab === "vat" && <Taxes kind="vat" />}
