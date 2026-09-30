@@ -7,6 +7,7 @@ import { logAudit } from "@/lib/audit";
 import { invoicePdfBuffer, pdfLocale } from "@/lib/finance/document";
 import { emailDocument, mailAccount, resolveRecipient } from "@/lib/finance/send";
 import { financeSettings } from "@/lib/finance/settings";
+import { assertCompliant } from "@/lib/finance/compliance";
 import { computeTotals } from "@/lib/finance/totals";
 import Invoice from "@/models/Invoice";
 import User from "@/models/User";
@@ -45,6 +46,25 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             financeSettings(user.id),
             User.findById(user.userId).select("firstname lastname"),
         ]);
+        // Выпуск клиенту — момент, когда проверяются обязательные реквизиты (ТЗ §14): черновик можно
+        // сохранять и печатать, но отправить неполный документ нельзя. Ошибка уходит 400 со списком кодов.
+        const gross = computeTotals(inv.items as never).gross;
+        assertCompliant(
+            {
+                kind: inv.kind === "credit_note" ? "credit_note" : "invoice",
+                number: inv.number,
+                issueDate: inv.issueDate,
+                dueDate: inv.dueDate,
+                supplyDate: inv.supplyDate,
+                supplyPeriodFrom: inv.supplyPeriodFrom,
+                supplyPeriodTo: inv.supplyPeriodTo,
+                currency: inv.currency,
+                party: { name: inv.customerName, address: inv.customerAddress },
+                items: (inv.items ?? []) as never,
+                totals: { gross },
+            },
+            settings as never
+        );
         await emailDocument(account, recipient.email, {
             kind: "invoice",
             number: inv.number,

@@ -65,7 +65,7 @@ export default function SearchBox({ value, onChange, placeholder, filters, activ
 						<TbAdjustments size={17} />
 						{chosen > 0 && <span className="font-semibold">{chosen}</span>}
 					</button>
-					<Dropdown open={open} className="right-0 top-full z-50 mt-6 w-260">
+					<Dropdown open={open} className="right-0 top-full z-50 mt-6 w-[260px]">
 						<div className="fs-popover p-12 text-left">
 							{filters.map((f) => (
 								<label key={f.key} className="mb-10 block last:mb-0">

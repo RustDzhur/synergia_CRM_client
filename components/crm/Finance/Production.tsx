@@ -145,7 +145,23 @@ export default function Production() {
 				<section className="fs-card overflow-x-auto p-16 md:p-20">
 					<div className="mb-12 flex flex-wrap items-center justify-between gap-10">
 						<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("prodOrders")}</h3>
-						<button type="button" disabled={!boms.length} onClick={() => { setPoForm({ ...poForm, product: boms[0]?.product ?? "", warehouseMaterials: warehouses[0]?.id ?? "", warehouseOutput: warehouses[0]?.id ?? "" }); setPoOpen(true); }} className="fs-btn fs-btn-ghost h-34 disabled:opacity-50">
+						<button
+							type="button"
+							onClick={() => {
+								// Без спецификации заказ создавать не из чего: открываем редактор спецификаций и говорим об этом словами
+								if (!boms.filter((b) => b.active).length) {
+									toast.error(t("prodNoBomsFirst"));
+									setSection("boms");
+									setBomForm({ product: goods[0]?.id ?? "", overheadPercent: "0" });
+									setBomComponents([{ product: "", qty: "1", wastePercent: "0" }]);
+									setBomOperations([]);
+									setBomOpen(true);
+									return;
+								}
+								setPoForm({ ...poForm, product: boms[0]?.product ?? "", warehouseMaterials: warehouses[0]?.id ?? "", warehouseOutput: warehouses[0]?.id ?? "" });
+								setPoOpen(true);
+							}}
+							className="fs-btn fs-btn-ghost h-34">
 							<TbPlus size={14} /> {t("prodNewOrder")}
 						</button>
 					</div>
@@ -180,7 +196,7 @@ export default function Production() {
 														<TbPlayerPlay size={13} /> {t("prodLaunch")}
 													</button>
 												)}
-												{(o.status === "launched" || o.status === "plan") && (
+												{o.status === "launched" && (
 													<button type="button" disabled={busy !== ""} onClick={() => { setOutputFor(o); setOutputForm({ qty: String(Math.max(0, o.planQty - o.producedQty)), scrapQty: "0", actualMinutes: "" }); }} className="fs-btn fs-btn-ghost h-30 disabled:opacity-50">
 														{t("prodOutput")}
 													</button>
@@ -275,6 +291,7 @@ export default function Production() {
 							</label>
 							<FormField label={t("prodOverhead")} value={bomForm.overheadPercent} onChange={(e) => setBomForm({ ...bomForm, overheadPercent: e.target.value.replace(/[^\d.]/g, "") })} maxLength={5} />
 						</div>
+						{goods.length === 0 && <p className="mb-10 rounded-10 bg-[rgba(244,161,0,0.10)] p-10 text-12 text-[#F4A100]">{t("prodNeedProducts")}</p>}
 						<span className="mb-6 block text-12 text-[#8c948b]">{t("prodComponents")}</span>
 						<div className="flex flex-col gap-8">
 							{bomComponents.map((line, i) => (

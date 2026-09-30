@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { TbAlertTriangle, TbArrowBackUp, TbDownload, TbFileImport, TbUpload } from "react-icons/tb";
 import PageHeader from "@/components/crm/shared/PageHeader";
 import { apiCall } from "@/store/crmApi";
+import { downloadAuthed } from "@/components/crm/Finance/download";
 import SettingsTabs from "./SettingsTabs";
 
 // Мастер импорта и экспорта (ТЗ §17): загрузить файл → проверить сопоставление колонок → увидеть
@@ -286,17 +287,17 @@ export default function ImportWizard() {
 						<p className="mb-12 text-12 text-[#8c948b]">{t("exportHint")}</p>
 						<div className="flex flex-wrap gap-8">
 							{["products", "contacts", "companies", "invoices", "orders", "quotes", "expenses"].map((k) => (
-								<a key={k} href={`/api/export?kind=${k}&format=csv`} className="fs-btn fs-btn-ghost h-32 text-12">
+								<button key={k} type="button" onClick={() => void downloadAuthed(`/api/export?kind=${k}&format=csv`, `${k}.csv`, t("importFailed"))} className="fs-btn fs-btn-ghost h-32 text-12">
 									<TbDownload size={13} /> {t(`exportKind_${k}`)}
-								</a>
+								</button>
 							))}
-							<a href="/api/export?kind=products&format=yml" className="fs-btn fs-btn-ghost h-32 text-12">
+							<button type="button" onClick={() => void downloadAuthed("/api/export?kind=products&format=yml", "products.yml", t("importFailed"))} className="fs-btn fs-btn-ghost h-32 text-12">
 								<TbDownload size={13} /> {t("exportYml")}
-							</a>
+							</button>
 							{/* DATEV: проводки для бухгалтера (EXTF, SKR03 по умолчанию) — формат подтверждает бухгалтер */}
-							<a href={`/api/export?kind=datev&year=${new Date().getFullYear()}`} className="fs-btn fs-btn-ghost h-32 text-12">
+							<button type="button" onClick={() => void downloadAuthed(`/api/export?kind=datev&year=${new Date().getFullYear()}`, `EXTF_Buchungsstapel_${new Date().getFullYear()}.csv`, t("importFailed"))} className="fs-btn fs-btn-ghost h-32 text-12">
 								<TbDownload size={13} /> {t("exportDatev")}
-							</a>
+							</button>
 						</div>
 					</section>
 				</div>

@@ -1,8 +1,10 @@
+import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { deliveryNotePdfBuffer, pdfLocale, pdfTemplate } from "@/lib/finance/document";
 import { financeSettings } from "@/lib/finance/settings";
+import { checkCompliance, complianceMessage } from "@/lib/finance/compliance";
 import { nextNumber } from "@/lib/finance/numbering";
 import { logAudit } from "@/lib/audit";
 import Order from "@/models/Order";
@@ -31,6 +33,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     if (!order.deliveryNoteNumber || deliveryDate !== order.deliveryDate) {
         const settings = await financeSettings(user.id);
+        // Чек-лист обязательных реквизитов (ТЗ §14): накладная без подписанта (Украина) не выпускается
+        const issues = checkCompliance(
+            { kind: "delivery_note", number: order.deliveryNoteNumber || "", issueDate: deliveryDate || new Date().toISOString().slice(0, 10), currency: order.currency, party: { name: order.customerName }, items: (order.items ?? []) as never },
+            settings as never
+        );
+        if (issues.length) return NextResponse.json({ message: complianceMessage(issues), code: "compliance", missing: issues.map((i) => i.code) }, { status: 400 });
         const number = order.deliveryNoteNumber || (await nextNumber(user.id, await numberPrefix(user.id, "delivery_note", settings.deliveryNotePrefix || "LS")));
         order.deliveryNoteNumber = number;
         order.deliveryDate = deliveryDate;

@@ -18,7 +18,7 @@ export default function Checkbox({ checked, onChange, label }: Props) {
 				className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
 			/>
 			<span
-				className={`flex h-18 w-18 items-center justify-center rounded-5 border transition-colors duration-150 peer-focus-visible:ring-2 peer-focus-visible:ring-[#c6ff4d] ${
+				className={`flex h-18 w-18 items-center justify-center rounded-[5px] border transition-colors duration-150 peer-focus-visible:ring-2 peer-focus-visible:ring-[#c6ff4d] ${
 					checked ? "border-[#c6ff4d] bg-[#c6ff4d]" : "border-[rgba(255,255,255,0.20)] bg-transparent"
 				}`}>
 				<TbCheck size={14} className={`text-[#0a0c0b] transition-opacity duration-150 ${checked ? "opacity-100" : "opacity-0"}`} />

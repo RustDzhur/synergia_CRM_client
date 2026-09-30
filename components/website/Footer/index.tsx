@@ -147,7 +147,7 @@ export default function Footer({ slanted = false }: { slanted?: boolean }) {
 								{socialIcons.map((social, index) => (
 									<li
 										key={index}
-										className="flex items-center justify-center w-35 h-35 rounded-35 bg-primaryColor transition-opacity hover:opacity-80 mr-6 last:mr-0">
+										className="flex items-center justify-center w-35 h-35 rounded-[35px] bg-primaryColor transition-opacity hover:opacity-80 mr-6 last:mr-0">
 										{social.icon}
 									</li>
 								))}
@@ -162,7 +162,7 @@ export default function Footer({ slanted = false }: { slanted?: boolean }) {
 							{socialIcons.map((social, index) => (
 								<li
 									key={index}
-									className="flex items-center justify-center w-35 h-35 rounded-35 bg-primaryColor transition-opacity hover:opacity-80 mr-6 last:mr-0">
+									className="flex items-center justify-center w-35 h-35 rounded-[35px] bg-primaryColor transition-opacity hover:opacity-80 mr-6 last:mr-0">
 									{social.icon}
 								</li>
 							))}

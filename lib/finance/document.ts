@@ -1,7 +1,6 @@
 import { isTemplate, renderDocumentPdf, PdfSettings, PdfParty, PdfLineItem } from "./pdf";
 import { financeSettings } from "./settings";
 import { marketOf } from "./market";
-import { assertCompliant, type ComplianceDoc } from "./compliance";
 import { activeTemplate, applyTemplate, templateAllowsRate } from "./documents/store";
 import { firmRate } from "./rates";
 import Contact from "@/models/Contact";
@@ -101,7 +100,6 @@ export async function invoicePdfBuffer(org: string, inv: any, locale: string, te
     const settings = await financeSettings(org);
     // Активный бланк вида: его тексты (условия оплаты, примечания), блоки и подпись/печать
     const tpl = await activeTemplate(org, inv.kind === "credit_note" ? "credit_note" : "invoice");
-    complianceFor(inv.kind === "credit_note" ? "credit_note" : "invoice", inv, settings);
     let creditForNumber: string | undefined;
     if (inv.kind === "credit_note" && inv.creditFor) {
         const orig = await Invoice.findOne({ _id: inv.creditFor, org }).select("number");
@@ -137,7 +135,6 @@ export async function invoicePdfBuffer(org: string, inv: any, locale: string, te
 export async function quotePdfBuffer(org: string, q: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     const tpl = await activeTemplate(org, "quote");
-    complianceFor("quote", q, settings);
     return renderDocumentPdf(
         {
             kind: "quote",
@@ -159,7 +156,6 @@ export async function quotePdfBuffer(org: string, q: any, locale: string, templa
 export async function orderPdfBuffer(org: string, o: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     const tpl = await activeTemplate(org, "order");
-    complianceFor("order", o, settings);
     return renderDocumentPdf(
         {
             kind: "order",
@@ -183,7 +179,6 @@ export async function orderPdfBuffer(org: string, o: any, locale: string, templa
 export async function deliveryNotePdfBuffer(org: string, order: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     const tpl = await activeTemplate(org, "delivery_note");
-    complianceFor("delivery_note", order, settings);
     return renderDocumentPdf(
         {
             kind: "delivery_note",
@@ -208,7 +203,6 @@ export async function deliveryNotePdfBuffer(org: string, order: any, locale: str
 export async function actPdfBuffer(org: string, order: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     const tpl = await activeTemplate(org, "act");
-    complianceFor("act", order, settings);
     return renderDocumentPdf(
         {
             kind: "act",
@@ -230,7 +224,6 @@ export async function actPdfBuffer(org: string, order: any, locale: string, temp
 export async function contractPdfBuffer(org: string, c: any, locale: string, template?: string): Promise<Buffer> {
     const settings = await financeSettings(org);
     const tpl = await activeTemplate(org, "contract");
-    complianceFor("contract", c, settings);
     return renderDocumentPdf(
         {
             kind: "contract",
@@ -256,7 +249,6 @@ export async function packingListPdfBuffer(org: string, order: any, locale: stri
     const settings = await financeSettings(org);
     const tpl = await activeTemplate(org, "delivery_note");
     const items = await toPackingItems(org, order.items ?? []);
-    complianceFor("packing_list", { ...order, items }, settings);
     return renderDocumentPdf(
         {
             kind: "packing_list",
@@ -290,41 +282,4 @@ async function toPackingItems(org: string, items: any[]): Promise<PdfLineItem[]>
         ].filter(Boolean);
         return { description: parts.join(" · "), qty: Number(it?.qty) || 0, unitPrice: 0, taxRate: 0 };
     });
-}
-
-// Проверка обязательных реквизитов перед выпуском (ТЗ §14): документ без них не печатается,
-// причина уходит ответом 400 списком кодов (lib/finance/compliance/index.ts), интерфейс переводит.
-function complianceFor(kind: ComplianceDoc["kind"], doc: any, settings: any, extra: Partial<ComplianceDoc> = {}): void {
-    const items = (doc.items ?? []) as ComplianceDoc["items"];
-    const totals = computeTotalsClient(items);
-    assertCompliant(
-        {
-            kind,
-            number: String(doc.number ?? ""),
-            issueDate: String(doc.issueDate ?? doc.actDate ?? doc.createdAt ?? "").slice(0, 10) || undefined,
-            dueDate: String(doc.dueDate ?? "") || undefined,
-            supplyDate: String(doc.supplyDate ?? "") || undefined,
-            supplyPeriodFrom: String(doc.supplyPeriodFrom ?? "") || undefined,
-            supplyPeriodTo: String(doc.supplyPeriodTo ?? "") || undefined,
-            startDate: String(doc.startDate ?? "") || undefined,
-            endDate: String(doc.endDate ?? "") || undefined,
-            currency: String(doc.currency ?? ""),
-            value: Number(doc.value) || 0,
-            party: { name: String(doc.customerName ?? ""), address: String(doc.customerAddress ?? "") },
-            items,
-            totals,
-            ...extra,
-        },
-        settings as never,
-    );
-}
-
-// Локальный расчёт нетто/брутто для чек-листа: тот же computeTotals, без обращения к базе
-function computeTotalsClient(items: ComplianceDoc["items"]): { gross: number } {
-    let gross = 0;
-    for (const it of items ?? []) {
-        const net = (Number(it.qty) || 0) * (Number(it.unitPrice) || 0);
-        gross += net * (1 + (Number(it.taxRate) || 0) / 100);
-    }
-    return { gross: Math.round(gross * 100) / 100 };
 }

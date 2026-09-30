@@ -4,6 +4,8 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { balanceAt } from "@/lib/finance/bank";
 import BankAccount from "@/models/BankAccount";
+import { orgMarket } from "@/lib/finance/marketGuard";
+import { defaultCurrency } from "@/lib/finance/settings";
 import BankTransaction from "@/models/BankTransaction";
 
 export const dynamic = "force-dynamic";
@@ -21,10 +23,17 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url);
     const to = str(url.searchParams.get("to"), 10);
-    const accounts = await BankAccount.find({ org: user.id }).sort({ kind: 1, name: 1 }).limit(100);
+    // Режимы не смешиваются: фильтруем счета по рынку фирмы. Пустой рынок у старых записей —
+    // это немецкие счета (поле появилось позже), украинская фирма их не видит.
+    const market = (await orgMarket(user.id)) ?? "DE";
+    const accounts = await BankAccount.find({ org: user.id, $or: [{ market }, { market: "" }, { market: { $exists: false } }] })
+        .sort({ kind: 1, name: 1 })
+        .limit(100);
+    // Немецкой фирме пустой рынок старых записей подходит, украинской — нет: свои счета она заводит заново
+    const visible = market === "DE" ? accounts : accounts.filter((a: { market?: string }) => a.market === market);
 
     const result = [];
-    for (const account of accounts) {
+    for (const account of visible) {
         const transactions = await BankTransaction.find({ org: user.id, account: account._id }).select("date amount matchType");
         result.push({
             id: String(account._id),
@@ -58,11 +67,13 @@ export async function POST(req: Request) {
 
     const account = await BankAccount.create({
         org: user.id,
+        // Счёт принадлежит режиму фирмы: украинская фирма не увидит немецких счетов (и наоборот)
+        market: (await orgMarket(user.id)) ?? "DE",
         kind,
         name,
         iban: str(b?.iban, 40),
         bic: str(b?.bic, 20),
-        currency: str(b?.currency, 6).toUpperCase() || "EUR",
+        currency: str(b?.currency, 6).toUpperCase() || (await defaultCurrency(user.id)),
         openingBalance: Number.isFinite(Number(b?.openingBalance)) ? Number(b?.openingBalance) : 0,
         openingDate: DATE.test(str(b?.openingDate, 10)) ? str(b?.openingDate, 10) : "",
     });

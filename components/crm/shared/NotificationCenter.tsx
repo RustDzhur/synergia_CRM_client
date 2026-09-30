@@ -89,7 +89,7 @@ export default function NotificationCenter() {
 				{notifText(t, banner)}
 			</p>
 			<Link href={`/${locale}${banner.link}`} onClick={() => { markRead([banner.id]); setBanner(null); }} className={`shrink-0 rounded-8 px-16 py-6 text-14 font-medium transition-opacity hover:opacity-80 ${isEvent ? "bg-[#c6ff4d] text-[#0a0c0b]" : "bg-[#F4A100] text-[#1A1509]"}`}>{t("open")}</Link>
-			<button type="button" aria-label={t("dismiss")} onClick={() => { markRead([banner.id]); setBanner(null); }} className={`shrink-0 transition-opacity hover:opacity-70 ${isEvent ? "text-[#c6ff4d]" : "text-[#F4A100]"}`}><MdClose size={22} /></button>
+			<button type="button" aria-label={t("dismiss")} onClick={() => { markRead([banner.id]); setBanner(null); }} className={`shrink-0 transition-opacity hover:opacity-[0.7] ${isEvent ? "text-[#c6ff4d]" : "text-[#F4A100]"}`}><MdClose size={22} /></button>
 		</div>
 	);
 }

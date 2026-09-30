@@ -131,7 +131,7 @@ export default function ShareClient({ data, token }: { data: ShareView; token: s
                         {accepted ? (
                             <p className="rounded-12 border border-[rgba(45,222,182,0.35)] bg-[rgba(45,222,182,0.08)] p-14 text-13 text-[#2DDEB6]">{t("accepted")}</p>
                         ) : (
-                            <button type="button" onClick={() => void accept()} disabled={busy || picked.length === 0} className="h-46 w-full rounded-10 bg-[#c6ff4d] text-14 font-semibold text-[#0a0a0a] transition-opacity hover:opacity-90 disabled:opacity-50 md:w-auto md:px-32">
+                            <button type="button" onClick={() => void accept()} disabled={busy || picked.length === 0} className="h-46 w-full rounded-10 bg-[#c6ff4d] text-14 font-semibold text-[#0a0a0a] transition-opacity hover:opacity-[0.9] disabled:opacity-50 md:w-auto md:px-32">
                                 {busy ? t("accepting") : t("accept")}
                             </button>
                         )}
@@ -139,7 +139,7 @@ export default function ShareClient({ data, token }: { data: ShareView; token: s
                 )}
 
                 {data.kind === "order" && data.payment && !data.payment.paid && data.payment.url && (
-                    <a href={data.payment.url} className="mt-20 inline-flex h-46 items-center justify-center rounded-10 bg-[#c6ff4d] px-32 text-14 font-semibold text-[#0a0a0a] transition-opacity hover:opacity-90">
+                    <a href={data.payment.url} className="mt-20 inline-flex h-46 items-center justify-center rounded-10 bg-[#c6ff4d] px-32 text-14 font-semibold text-[#0a0a0a] transition-opacity hover:opacity-[0.9]">
                         {t("payInvoice", { number: data.payment.number })}
                     </a>
                 )}

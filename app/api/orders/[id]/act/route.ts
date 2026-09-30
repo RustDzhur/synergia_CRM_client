@@ -1,8 +1,10 @@
+import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { actPdfBuffer, pdfLocale, pdfTemplate } from "@/lib/finance/document";
 import { financeSettings } from "@/lib/finance/settings";
+import { checkCompliance, complianceMessage } from "@/lib/finance/compliance";
 import { nextNumber } from "@/lib/finance/numbering";
 import { logAudit } from "@/lib/audit";
 import Order from "@/models/Order";
@@ -34,6 +36,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     if (!order.actNumber || actDate !== order.actDate) {
         const settings = await financeSettings(user.id);
+        // Чек-лист обязательных реквизитов (ТЗ §14): акт без подписанта и реквизитов не выпускается
+        const issues = checkCompliance(
+            { kind: "act", number: order.actNumber || "", issueDate: actDate || new Date().toISOString().slice(0, 10), currency: order.currency, party: { name: order.customerName }, items: (order.items ?? []) as never, totals: undefined },
+            settings as never
+        );
+        if (issues.length) return NextResponse.json({ message: complianceMessage(issues), code: "compliance", missing: issues.map((i) => i.code) }, { status: 400 });
         const number = order.actNumber || (await nextNumber(user.id, await numberPrefix(user.id, "act", settings.actPrefix || "АКТ")));
         order.actNumber = number;
         order.actDate = actDate;

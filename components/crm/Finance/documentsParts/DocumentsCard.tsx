@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbExternalLink, TbFileText, TbRefresh, TbUpload } from "react-icons/tb";
 import { apiCall } from "@/store/crmApi";
+import { openAuthedPreview } from "../download";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import Modal from "../../shared/Modal";
 import FormField from "../../shared/FormField";
@@ -86,7 +87,8 @@ export default function DocumentsCard() {
 
 	function preview() {
 		if (!current) return;
-		window.open(`/api/finance/document-templates/preview?kind=${encodeURIComponent(current.kind)}&id=${current.id}&locale=${current.language}`, "_blank");
+		// Предпросмотр требует токена: открываем blob-адресом, иначе сервер отвечает «Unauthorized»
+		void openAuthedPreview(`/api/finance/document-templates/preview?kind=${encodeURIComponent(current.kind)}&id=${current.id}&locale=${current.language}`, t("pdfFailed"));
 	}
 
 	const label = "mb-6 block text-12 text-[#8c948b]";
@@ -110,7 +112,7 @@ export default function DocumentsCard() {
 					</div>
 					<div className="flex flex-col gap-16 p-20 md:flex-row">
 						{/* Список бланков режима: счёт, акт, видаткова, КП… */}
-						<ul className="flex w-full shrink-0 flex-col gap-4 md:w-220">
+						<ul className="flex w-full shrink-0 flex-col gap-4 md:w-[220px]">
 							{list.map((item) => (
 								<li key={item.id}>
 									<button

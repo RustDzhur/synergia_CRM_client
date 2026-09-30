@@ -6,6 +6,8 @@ import { TbExternalLink, TbPrinter, TbRefresh, TbTrash } from "react-icons/tb";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import Modal from "../shared/Modal";
 import { apiCall } from "@/store/crmApi";
+import { downloadAuthed } from "./download";
+import Link from "next/link";
 import { money } from "./format";
 
 // Доставка (Украина): отправления «Новою Поштою» и Укрпоштою — одним списком по заказам.
@@ -88,7 +90,12 @@ export default function Delivery() {
 			<div className="fs-card p-16 md:p-20">
 				<div className="mb-12 flex flex-wrap items-center justify-between gap-10">
 					<p className="text-14 font-semibold text-[#f1f4ee]">{t("deliveryNpTitle")}</p>
-					{npConnected === false && <span className="rounded-8 border border-inkLine px-10 py-5 text-12 text-[#F4A100]">{t("deliveryNpNotConnected")}</span>}
+					{npConnected === false && (
+						<span className="flex items-center gap-8 text-12 text-[#F4A100]">
+							{t("deliveryNpNotConnected")}
+							<Link href={`/${locale}/crm/settings/integration`} className="text-[#c6ff4d] hover:underline">{t("deliveryConnectLink")}</Link>
+						</span>
+					)}
 				</div>
 				{withWaybill.length === 0 ? (
 					<p className="text-12 text-[#8c948b]">{t("deliveryNpEmpty")}</p>
@@ -118,12 +125,12 @@ export default function Delivery() {
 												<button type="button" disabled={busy !== ""} onClick={() => void refreshStatus(o, "np")} title={t("deliveryRefresh")} className="fs-btn fs-btn-ghost h-30 disabled:opacity-50">
 													<TbRefresh size={13} />
 												</button>
-												<a href={`/api/orders/${o.id}/waybill/label?kind=marking`} target="_blank" rel="noreferrer" title={t("deliveryMarking")} className="fs-btn fs-btn-ghost inline-flex h-30 items-center">
+												<button type="button" title={t("deliveryMarking")} onClick={() => void downloadAuthed(`/api/orders/${o.id}/waybill/label?kind=marking`, `waybill-${o.waybill?.number}-marking.pdf`, t("pdfFailed"))} className="fs-btn fs-btn-ghost inline-flex h-30 items-center">
 													<TbPrinter size={13} />
-												</a>
-												<a href={`/api/orders/${o.id}/waybill/label?kind=document`} target="_blank" rel="noreferrer" title={t("deliveryDocument")} className="fs-btn fs-btn-ghost inline-flex h-30 items-center">
+												</button>
+												<button type="button" title={t("deliveryDocument")} onClick={() => void downloadAuthed(`/api/orders/${o.id}/waybill/label?kind=document`, `waybill-${o.waybill?.number}.pdf`, t("pdfFailed"))} className="fs-btn fs-btn-ghost inline-flex h-30 items-center">
 													<TbExternalLink size={13} />
-												</a>
+												</button>
 												{o.waybill?.returnNumber ? (
 													<span className="text-11 text-[#2DDEB6]">{t("deliveryReturned", { number: o.waybill.returnNumber })}</span>
 												) : (
@@ -149,7 +156,12 @@ export default function Delivery() {
 			<div className="fs-card p-16 md:p-20">
 				<div className="mb-12 flex flex-wrap items-center justify-between gap-10">
 					<p className="text-14 font-semibold text-[#f1f4ee]">{t("deliveryUpTitle")}</p>
-					{!upState?.connected && <span className="rounded-8 border border-inkLine px-10 py-5 text-12 text-[#F4A100]">{t("deliveryUpNotConnected")}</span>}
+					{!upState?.connected && (
+						<span className="flex items-center gap-8 text-12 text-[#F4A100]">
+							{t("deliveryUpNotConnected")}
+							<Link href={`/${locale}/crm/settings/integration`} className="text-[#c6ff4d] hover:underline">{t("deliveryConnectLink")}</Link>
+						</span>
+					)}
 				</div>
 				{withUkrposhta.length === 0 ? (
 					<p className="text-12 text-[#8c948b]">{t("deliveryUpEmpty")}</p>
@@ -176,9 +188,9 @@ export default function Delivery() {
 													<TbRefresh size={13} />
 												</button>
 												{o.ukrposhta?.uuid && (
-													<a href={`/api/orders/${o.id}/ukrposhta/form`} target="_blank" rel="noreferrer" title={t("deliveryForm")} className="fs-btn fs-btn-ghost inline-flex h-30 items-center">
+													<button type="button" title={t("deliveryForm")} onClick={() => void downloadAuthed(`/api/orders/${o.id}/ukrposhta/form`, `ukrposhta-${o.ukrposhta?.barcode}.pdf`, t("pdfFailed"))} className="fs-btn fs-btn-ghost inline-flex h-30 items-center">
 														<TbPrinter size={13} />
-													</a>
+													</button>
 												)}
 												{o.ukrposhta?.uuid && (
 													<button type="button" disabled={busy !== ""} onClick={() => void cancelUkrposhta(o)} title={t("upCancel")} className="fs-btn fs-btn-ghost h-30 text-[#ff9f9f] disabled:opacity-50">

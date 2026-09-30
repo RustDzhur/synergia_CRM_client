@@ -35,20 +35,21 @@ export function paymentCalendar(year: number, profile: UaTaxProfile, quarters: A
         });
     }
 
-    // Єдиний податок и военный сбор — по кварталам: 40 дней после квартала (3-я группа платит поквартально)
+    // Єдиний податок и военный сбор — по кварталам. ПКУ 296.3: декларация — 40 дней после квартала,
+    // а уплата — 10 дней после граничного срока подачи, то есть 50-й день. Раньше здесь стоял 40-й
+    // день (срок декларации) — для календаря платежей это на 10 дней раньше действительного.
     if (profile.group >= 1 && profile.group <= 3) {
         for (const q of quarters) {
             const endMonth = q.quarter * 3;
-            // 40-й день после окончания квартала — предельный срок декларации и платежа (ПКУ, [проверить])
-            const dueDate = new Date(Date.UTC(year, endMonth - 1, 1));
-            dueDate.setUTCDate(dueDate.getUTCDate() + 39);
+            const dueDate = new Date(Date.UTC(year, endMonth, 0)); // последний день квартала
+            dueDate.setUTCDate(dueDate.getUTCDate() + 50); // + 50 дней: 40 на декларацию и 10 на уплату [проверить]
             const date = dueDate.toISOString().slice(0, 10);
             out.push({
                 date,
                 title: `Єдиний податок за ${q.quarter}-й квартал`,
                 amount: q.singleTax,
                 kind: "single",
-                note: `Ставка ${profile.singleRate} % від доходу кварталу (${q.income.toFixed(2)} ₴); ${check} · граничний строк декларації — 40 днів`,
+                note: `Ставка ${profile.singleRate} % від доходу кварталу (${q.income.toFixed(2)} ₴); ${check} · декларація — 40 днів після кварталу, сплата — ще 10 днів`,
             });
             if (q.military > 0) {
                 out.push({
@@ -62,18 +63,22 @@ export function paymentCalendar(year: number, profile: UaTaxProfile, quarters: A
         }
     }
 
-    // ПДВ — по периоду из настроек: ежемесячно или ежеквартально, до 20-го числа следующего месяца
+    // ПДВ: декларация — до 20-го числа следующего месяца (или 40 дней после квартала), уплата — ещё
+    // 10 дней после граничного срока подачи. Поэтому платёж стоит на 30-е число (месячный период)
+    // или на 50-й день после квартала — это и есть «когда платить» [проверить]
     if (profile.vatPayer) {
         if (profile.vatPeriod === "month") {
             for (let m = 1; m <= 12; m++) {
-                const due = m === 12 ? iso(year + 1, 1, 20) : iso(year, m + 1, 20);
-                out.push({ date: due, title: `ПДВ за ${monthName(m)}`, amount: 0, kind: "vat", note: `Сума — з реєстру ПН за місяць; ${check}` });
+                const next = m === 12 ? { y: year + 1, m: 1 } : { y: year, m: m + 1 };
+                const lastDay = new Date(Date.UTC(next.y, next.m, 0)).getUTCDate(); // 30-й день, а в феврале — 28/29
+                const due = iso(next.y, next.m, Math.min(30, lastDay));
+                out.push({ date: due, title: `ПДВ за ${monthName(m)}`, amount: 0, kind: "vat", note: `Сума — з реєстру ПН за місяць; декларація до 20-го, сплата ще 10 днів; ${check}` });
             }
         } else {
             for (let q = 1; q <= 4; q++) {
-                const dueMonth = q * 3 + 1;
-                const due = dueMonth > 12 ? iso(year + 1, dueMonth - 12, 20) : iso(year, dueMonth, 20);
-                out.push({ date: due, title: `ПДВ за ${q}-й квартал`, amount: 0, kind: "vat", note: `Сума — з реєстру ПН за квартал; ${check}` });
+                const dueDate = new Date(Date.UTC(year, q * 3, 0)); // последний день квартала
+                dueDate.setUTCDate(dueDate.getUTCDate() + 50);
+                out.push({ date: dueDate.toISOString().slice(0, 10), title: `ПДВ за ${q}-й квартал`, amount: 0, kind: "vat", note: `Сума — з реєстру ПН за квартал; ${check}` });
             }
         }
     }

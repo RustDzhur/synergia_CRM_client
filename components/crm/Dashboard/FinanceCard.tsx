@@ -73,8 +73,8 @@ function FinanceBars({ series }: { series: FinanceDashboard["series"] }) {
 				))}
 			</div>
 			<div className="mt-8 flex gap-20 text-11 text-[#8c948b]">
-				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-3 bg-[#c6ff4d]" />{t("kpiRevenue")}</span>
-				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-3 bg-[#8C948B]" />{t("kpiExpenses")}</span>
+				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#c6ff4d]" />{t("kpiRevenue")}</span>
+				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#8C948B]" />{t("kpiExpenses")}</span>
 			</div>
 		</div>
 	);

@@ -8,6 +8,10 @@ const OrganizationSchema = new Schema(
     {
         name: { type: String, required: true, trim: true },
         ownerUser: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+        // Чем занимается фирма (ТЗ §18, мастер «Чем занимается фирма?»): услуги, розница, опт,
+        // производство, импорт-экспорт. По этому списку финансовый раздел показывает только нужные
+        // вкладки; пусто — показываются все (мастер ещё не пройден или пропущен).
+        activities: { type: [String], default: [] },
         plan: { type: String, enum: ["free", "standard", "professional"], default: "free" },
         // ручное назначение тарифа из админ-кабинета: действует, пока не отменено, независимо от Stripe
         planOverride: { type: String, enum: ["", "free", "standard", "professional"], default: "" },

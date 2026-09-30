@@ -6,6 +6,7 @@ import { TbArrowBackUp, TbCash, TbCreditCard, TbReceipt, TbTrash } from "react-i
 import ConfirmDialog from "../shared/ConfirmDialog";
 import { apiCall } from "@/store/crmApi";
 import { money } from "./format";
+import Link from "next/link";
 
 // Касса (ТЗ §12, «Розница»): штрихкод (SKU), количество, скидка, готівка или картка. Продажа
 // становится оплаченным счётом — попадает в книгу доходов и реестр ПН; склад списывается, чек ПРРО
@@ -27,13 +28,19 @@ export default function Pos() {
 	const [busy, setBusy] = useState(false);
 	const [returnFor, setReturnFor] = useState<SaleRow | null>(null);
 	const [lastSale, setLastSale] = useState<{ number: string; fiscalCode: string; fiscalError: string; fiscalUrl: string } | null>(null);
+	// Состояние ПРРО: без подключённого Checkbox продажа проходит без чека, и об этом надо сказать прямо
+	const [fiscal, setFiscal] = useState<{ connected: boolean; auto: boolean; openShift: boolean } | null>(null);
 
 	const load = useCallback(async () => {
-		const res = await apiCall<{ products: ProductRow[]; recent: SaleRow[] }>("/api/pos");
+		const [res, st] = await Promise.all([
+			apiCall<{ products: ProductRow[]; recent: SaleRow[] }>("/api/pos"),
+			apiCall<{ connected: boolean; auto: boolean; shift: { open: { id: string } | null } }>("/api/finance/fiscal"),
+		]);
 		if (res.ok && res.data) {
 			setProducts(res.data.products);
 			setRecent(res.data.recent);
 		}
+		if (st.ok && st.data) setFiscal({ connected: !!st.data.connected, auto: !!st.data.auto, openShift: !!st.data.shift?.open });
 	}, []);
 	useEffect(() => { void load(); }, [load]);
 
@@ -97,6 +104,25 @@ export default function Pos() {
 
 	return (
 		<div className="flex flex-col gap-16">
+			{/* Как это работает и что настроено: продажа — оплаченный счёт, чек ПРРО обязателен на
+			    готівку и картку; без подключённого Checkbox чек не пробьётся, и это видно сразу */}
+			<div className="rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-12 text-12 text-[#8c948b]">
+				{t("posHowto")}
+				{fiscal && (
+					<span className="mt-6 block">
+						{fiscal.connected
+							? `${t("fiscalShiftOpenShort")}: ${fiscal.openShift ? t("posShiftOpenYes") : t("posShiftOpenNo")}`
+							: ""}
+						{!fiscal.connected && (
+							<>
+								{t("posNoFiscal")}{" "}
+								<Link href={`/${locale}/crm/settings/integration`} className="text-[#c6ff4d] hover:underline">{t("posFiscalLink")}</Link>
+							</>
+						)}
+					</span>
+				)}
+			</div>
+
 			{/* Последний чек: номер и фискальный код — их называют покупателю */}
 			{lastSale && (
 				<div className="rounded-10 border border-[rgba(198,255,77,0.35)] bg-[rgba(198,255,77,0.08)] p-12 text-12 text-[#cfd4cb]">
@@ -143,7 +169,7 @@ export default function Pos() {
 										onChange={(e) => setCart(cart.map((x) => (x.product === l.product ? { ...x, qty: Math.max(0.001, Number(e.target.value.replace(/[^\d.]/g, "")) || 1) } : x)))}
 										className="fs-field h-30 w-64 px-8 text-12 outline-none"
 									/>
-									<span className="w-90 text-right text-[#cfd4cb]">{money(l.qty * l.price, "UAH", locale)}</span>
+									<span className="w-[90px] text-right text-[#cfd4cb]">{money(l.qty * l.price, "UAH", locale)}</span>
 									<button type="button" onClick={() => setCart(cart.filter((x) => x.product !== l.product))} aria-label={t("delete")} className="text-[#8c948b] transition-colors hover:text-danger">
 										<TbTrash size={14} />
 									</button>

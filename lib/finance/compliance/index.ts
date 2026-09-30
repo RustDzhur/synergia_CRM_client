@@ -57,7 +57,9 @@ export function checkCompliance(doc: ComplianceDoc, seller: ComplianceSeller, ma
     need(has(doc.party?.name), "buyer_name", "buyer");
 
     // Номер и даты — общие требования обеих стран
-    const numbered = doc.kind !== "packing_list"; // упаковочный лист идёт под номером накладной/заказа
+    // Номер проверяем там, где его вводит человек (счёт, предложение). Акт, накладная и упаковочный
+    // лист получают номер от системы в момент выпуска — проверять пустое поле было бы отказом ни за что.
+    const numbered = doc.kind !== "packing_list" && doc.kind !== "act" && doc.kind !== "delivery_note";
     need(!numbered || has(doc.number), "number", "document");
     need(!numbered || DATE.test(doc.issueDate ?? ""), "issue_date", "document");
 

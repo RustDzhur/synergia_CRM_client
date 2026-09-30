@@ -7,6 +7,7 @@ import { logAudit } from "@/lib/audit";
 import { pdfLocale, quotePdfBuffer } from "@/lib/finance/document";
 import { emailDocument, mailAccount, resolveRecipient } from "@/lib/finance/send";
 import { financeSettings } from "@/lib/finance/settings";
+import { assertCompliant } from "@/lib/finance/compliance";
 import { computeTotals } from "@/lib/finance/totals";
 import Quote from "@/models/Quote";
 import User from "@/models/User";
@@ -42,6 +43,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             financeSettings(user.id),
             User.findById(user.userId).select("firstname lastname"),
         ]);
+        // Выпуск клиенту — момент проверки обязательных реквизитов (ТЗ §14)
+        const gross = computeTotals(q.items as never).gross;
+        assertCompliant(
+            { kind: "quote", number: q.number, issueDate: q.issueDate, currency: q.currency, party: { name: q.customerName }, items: (q.items ?? []) as never, totals: { gross } },
+            settings as never
+        );
         await emailDocument(account, recipient.email, {
             kind: "quote",
             number: q.number,

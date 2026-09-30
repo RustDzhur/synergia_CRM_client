@@ -7,6 +7,9 @@ import { registerModel } from "@/lib/registerModel";
 const BankAccountSchema = new Schema(
     {
         org: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
+        // Режим рынка счёта (ТЗ §1: режимы не смешиваются): счета, заведённые до появления поля,
+        // считаются немецкими — украинская фирма их не видит, свои заводит заново.
+        market: { type: String, enum: ["DE", "UA", ""], default: "" },
         kind: { type: String, enum: ["bank", "cash"], default: "bank" },
         name: { type: String, required: true },
         iban: { type: String, default: "" },

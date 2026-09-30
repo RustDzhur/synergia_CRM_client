@@ -236,7 +236,7 @@ function FinanceScreen({ t }: { t: T }) {
 		<div className="overflow-hidden rounded-10 border border-inkLine">
 			{rows.map((row) => (
 				<div key={row.number} className="flex items-center gap-8 border-b border-inkLine px-8 py-7 last:border-b-0">
-					<span className="w-70 shrink-0 text-8 text-[#8C948B]">{row.number}</span>
+					<span className="w-[70px] shrink-0 text-8 text-[#8C948B]">{row.number}</span>
 					<span className="min-w-0 flex-1 truncate text-8 text-[#f1f4ee]">{row.client}</span>
 					<span className="shrink-0 text-8 text-[#cfd4cb]">{row.sum}</span>
 					<span

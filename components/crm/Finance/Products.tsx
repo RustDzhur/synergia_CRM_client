@@ -9,6 +9,8 @@ import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
 import SearchBox from "../shared/SearchBox";
 import { money } from "./format";
+import { downloadAuthed } from "./download";
+import Link from "next/link";
 import Stock from "./Stock";
 
 const EMPTY = { name: "", sku: "", type: "service" as "good" | "service", unit: "pcs", purchasePrice: "0", salePrice: "0", taxRate: "", stockQty: "0", reorderLevel: "0", image: "", prices: [] as Array<{ type: string; price: string; minQty: string }>, hsCode: "", weightKg: "0", originCountry: "" };
@@ -93,9 +95,19 @@ export default function Products() {
 			<>
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-12">
 				<SearchBox value={query} onChange={setQuery} placeholder={t("search")} className="w-full md:w-[280px]" />
-				<button type="button" onClick={openNew} className="fs-btn fs-btn-primary h-40">
-					<TbPlus size={16} /> {t("newProduct")}
-				</button>
+				<div className="flex flex-wrap items-center gap-8">
+					{/* Импорт/экспорт каталога (ТЗ §17): мастер открывается отдельной страницей настроек,
+					    выгрузка идёт файлом с токеном — иначе сервер отвечает «Unauthorized» */}
+					<Link href={`/${locale}/crm/settings/import`} className="fs-btn fs-btn-ghost h-40">
+						{t("stockImport")}
+					</Link>
+					<button type="button" onClick={() => void downloadAuthed("/api/export?kind=products&format=csv", "products.csv", t("pdfFailed"))} className="fs-btn fs-btn-ghost h-40">
+						{t("stockExportCsv")}
+					</button>
+					<button type="button" onClick={openNew} className="fs-btn fs-btn-primary h-40">
+						<TbPlus size={16} /> {t("newProduct")}
+					</button>
+				</div>
 			</div>
 			{visible.length === 0 ? (
 				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("empty")}</p>

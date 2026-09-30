@@ -5,6 +5,7 @@ import { TbAlertTriangle, TbInfoCircle } from "react-icons/tb";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { useMarket } from "@/store/useMarket";
 import { apiCall } from "@/store/crmApi";
+import { downloadAuthed } from "./download";
 import { money } from "./format";
 import { AiAnalysis, PeriodSwitch, ReportDisclaimer, ReportFailed, ReportLoading, useReport } from "./reportParts";
 import type { IncomeSurplus, PeriodKind, VatReturn, VatLine } from "@/lib/finance/reports";
@@ -236,8 +237,8 @@ function UaVatView({ period }: { period: PeriodKind }) {
 			<p className="text-12 text-[#9AA396]">{t("uaTurnover12m")}: {fmt(report.turnover12m)} · {t("uaLimitLeft")}: {fmt(report.limitLeft)}</p>
 			{/* Подача в ДПС идёт вне CRM (нужен КЕП); отсюда — файл для кабинета */}
 			<div className="flex flex-wrap items-center gap-10">
-				<a href={`/api/finance/ua/export?kind=vat-register&year=${report.from.slice(0, 4)}&format=csv`} className="fs-btn fs-btn-ghost h-34">{t("uaExportCsv")}</a>
-				<a href={`/api/finance/ua/export?kind=vat-register&year=${report.from.slice(0, 4)}&format=xml`} className="fs-btn fs-btn-ghost h-34">{t("uaExportXml")}</a>
+				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=vat-register&year=${report.from.slice(0, 4)}&format=csv`, `vat-register-${report.from.slice(0, 4)}.csv`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportCsv")}</button>
+				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=vat-register&year=${report.from.slice(0, 4)}&format=xml`, `vat-register-${report.from.slice(0, 4)}.xml`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportXml")}</button>
 				<span className="text-11 text-[#9AA396]">{t("uaExportHint")}</span>
 			</div>
 			{report.warnings.length > 0 && (
@@ -318,8 +319,8 @@ function UaIncomeView({ currency }: { currency: string }) {
 			<PaymentCalendar year={report.year} currency={currency} />
 			{/* Подача в ДПС — вне CRM (нужен КЕП); отсюда скачивают файл для кабинета */}
 			<div className="flex flex-wrap items-center gap-10">
-				<a href={`/api/finance/ua/export?kind=income-book&year=${report.year}&format=csv`} className="fs-btn fs-btn-ghost h-34">{t("uaExportCsv")}</a>
-				<a href={`/api/finance/ua/export?kind=income-book&year=${report.year}&format=xml`} className="fs-btn fs-btn-ghost h-34">{t("uaExportXml")}</a>
+				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=income-book&year=${report.year}&format=csv`, `income-book-${report.year}.csv`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportCsv")}</button>
+				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=income-book&year=${report.year}&format=xml`, `income-book-${report.year}.xml`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportXml")}</button>
 				<span className="text-11 text-[#9AA396]">{t("uaExportHint")}</span>
 			</div>
 			<p className="text-11 text-[#9AA396]">{report.rules.notice} · {report.rules.source}</p>
@@ -377,8 +378,8 @@ function UaProfitView({ currency, year }: { currency: string; year: string }) {
 			{/* Календарь платежей и на этом экране: ТОВ на общей системе платит ещё и авансами */}
 			<PaymentCalendar year={report.year} currency={currency} />
 			<div className="flex flex-wrap items-center gap-10">
-				<a href={`/api/finance/ua/export?kind=profit&year=${report.year}&format=csv`} className="fs-btn fs-btn-ghost h-34">{t("uaExportCsv")}</a>
-				<a href={`/api/finance/ua/export?kind=profit&year=${report.year}&format=xml`} className="fs-btn fs-btn-ghost h-34">{t("uaExportXml")}</a>
+				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=profit&year=${report.year}&format=csv`, `profit-${report.year}.csv`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportCsv")}</button>
+				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=profit&year=${report.year}&format=xml`, `profit-${report.year}.xml`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportXml")}</button>
 				<span className="text-11 text-[#9AA396]">{t("uaExportHint")}</span>
 			</div>
 			{report.warnings.length > 0 && (

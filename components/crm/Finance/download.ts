@@ -103,3 +103,51 @@ export async function explainPdfFailure(res: Response, unknown: string): Promise
     } catch { /* не JSON — остаётся общий текст */ }
     return unknown;
 }
+
+// Скачивание файла с авторизацией: обычная <a href> не отправляет заголовок с токеном, поэтому
+// выгрузки (CSV/XML для ДПС, DATEV, QML) и печатные бланки провайдеров качаются через fetch —
+// иначе сервер отвечает «Unauthorized», и в браузере открывается голый JSON вместо файла.
+export async function downloadAuthed(url: string, filename: string, fallbackError: string): Promise<boolean> {
+    try {
+        const res = await fetch(url, { headers: authHeaders(false) });
+        if (!res.ok) {
+            toast.error(await explainPdfFailure(res, fallbackError));
+            return false;
+        }
+        const blob = await res.blob();
+        const href = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = href;
+        a.download = filename;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(href), 60_000);
+        return true;
+    } catch {
+        toast.error(fallbackError);
+        return false;
+    }
+}
+
+// Предпросмотр бланка: тоже требует токена — открываем blob-адресом в новой вкладке
+export async function openAuthedPreview(url: string, fallbackError: string): Promise<boolean> {
+    try {
+        const res = await fetch(url, { headers: authHeaders(false) });
+        if (!res.ok) {
+            toast.error(await explainPdfFailure(res, fallbackError));
+            return false;
+        }
+        const href = URL.createObjectURL(await res.blob());
+        const tab = window.open(href, "_blank");
+        if (!tab) {
+            const a = document.createElement("a");
+            a.href = href;
+            a.download = "preview.pdf";
+            a.click();
+        }
+        setTimeout(() => URL.revokeObjectURL(href), 60_000);
+        return true;
+    } catch {
+        toast.error(fallbackError);
+        return false;
+    }
+}
