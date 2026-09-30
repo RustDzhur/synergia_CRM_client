@@ -67,6 +67,8 @@ export default function StageColumn({ stage, index, deals, dragProvided, isDragg
         <div
             ref={dragProvided.innerRef}
             {...dragProvided.draggableProps}
+            // метки нужны доске: по ним считаются границы зон «выиграна» и «корзина»
+            data-stage-column=""
             className="w-[222px] md:w-[180px] lg:w-[222px] shrink-0"
         >
             {/* внутренняя обёртка: библиотека dnd сама двигает внешний элемент, поэтому «эффект подъёма» вешаем сюда */}
@@ -157,6 +159,7 @@ export default function StageColumn({ stage, index, deals, dragProvided, isDragg
                         <div
                             ref={provided.innerRef}
                             {...provided.droppableProps}
+                            data-stage-lane=""
                             className={`fs-card mt-8 mr-8 min-h-[420px] p-12 flex flex-col gap-10 transition-colors duration-200 ${
                                 snapshot.isDraggingOver ? "border-[rgba(198,255,77,0.45)] bg-[rgba(198,255,77,0.05)]" : ""
                             }`}

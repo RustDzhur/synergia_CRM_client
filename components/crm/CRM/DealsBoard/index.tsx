@@ -1,6 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { flushSync } from "react-dom";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -15,10 +14,13 @@ import StageColumn, { ARROW_DEPTH } from "./StageColumn";
 import DealsList from "./DealsList";
 import DealModal from "./DealModal";
 
-// Зоны за краями доски: справа — «выиграна», слева — корзина. Появляются, пока карточку тянут:
-// так «вытянуть за последний столбец» и «утащить за первый» не мешают обычной работе с доской
-const WON_ZONE = "zz-won";
-const TRASH_ZONE = "zz-trash";
+// Зоны за краями доски: справа — «выиграна», слева — корзина. Это не дропзоны dnd, а накладки:
+// они не занимают место в потоке и не появляются в реестре dnd. Так перенос не сдвигает столбцы
+// (иначе карточка уезжала из-под руки и её приходилось тащить дальше, чем нужно), а сброс
+// определяется по положению курсора в момент отпускания.
+const TRASH_WIDTH = 72; // полоса корзины у левого края доски
+const WON_WIDTH = 168; // ширина зоны «выиграна» сразу за последним столбцом
+const ZONE_GAP = 8;
 
 interface Props {
     search: string;
@@ -31,7 +33,14 @@ export default function DealsBoard({ search }: Props) {
     const [newStageName, setNewStageName] = useState("");
     // карточку сейчас тянут: показываем зоны «выиграна» и «корзина» по краям доски
     const [dragging, setDragging] = useState(false);
+    // под курсором сейчас «выиграна» или «корзина» — зона подсвечивается
+    const [hotZone, setHotZone] = useState<"won" | "trash" | null>(null);
     const [trashDealId, setTrashDealId] = useState<string | null>(null);
+    // где стоят зоны: считаем по столбцам в момент начала переноса (и при прокрутке доски)
+    const [zoneBox, setZoneBox] = useState<{ trashLeft: number; wonLeft: number; top: number; height: number } | null>(null);
+    const boardRef = useRef<HTMLDivElement | null>(null);
+    const hotZoneRef = useRef<"won" | "trash" | null>(null);
+    const pointerRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
     // Внимание: в макете Figma под подписью «List» показана доска со стрелками. Здесь «Kanban» — доска,
     // а «List» — таблица сделок; чтобы по умолчанию открывалась доска, стартуем с "kanban".
     const [view, setView] = useState<"list" | "kanban">("kanban");
@@ -50,6 +59,68 @@ export default function DealsBoard({ search }: Props) {
         window.addEventListener("blur", reset);
         return () => window.removeEventListener("blur", reset);
     }, []);
+
+    // Границы зон берём у столбцов: корзина — полоса у левого края доски, «выиграна» — сразу за
+    // последним столбцом. Пока карточку тянут, столбцы не двигаются, поэтому замер остаётся верным;
+    // при прокрутке доски пересчитываем (координаты внутри прокручиваемого содержимого).
+    useLayoutEffect(() => {
+        if (!dragging) { setZoneBox(null); return; }
+        const measure = () => {
+            const board = boardRef.current;
+            const columns = board?.querySelectorAll<HTMLElement>("[data-stage-column]");
+            const lanes = board?.querySelectorAll<HTMLElement>("[data-stage-lane]");
+            if (!board || !columns?.length || !lanes?.length) return;
+            const boardRect = board.getBoundingClientRect();
+            const first = columns[0].getBoundingClientRect();
+            const last = columns[columns.length - 1].getBoundingClientRect();
+            const lane = lanes[lanes.length - 1].getBoundingClientRect();
+            const toContent = (r: DOMRect) => r.left - boardRect.left + board.scrollLeft;
+            setZoneBox({
+                trashLeft: toContent(first),
+                wonLeft: toContent(last) + last.width + ZONE_GAP,
+                top: lane.top - boardRect.top + board.scrollTop,
+                height: Math.max(lane.height, 200),
+            });
+        };
+        measure();
+        const board = boardRef.current;
+        board?.addEventListener("scroll", measure, { passive: true });
+        window.addEventListener("resize", measure);
+        return () => {
+            board?.removeEventListener("scroll", measure);
+            window.removeEventListener("resize", measure);
+        };
+    }, [dragging, stages.length, view]);
+
+    // Пока тянут карточку, следим за курсором: по нему решается, попал ли сброс в зону. Слушатели
+    // обычные, без dnd — так зоны не участвуют в его реестре и не ломают перенос.
+    useEffect(() => {
+        if (!dragging) { hotZoneRef.current = null; setHotZone(null); return; }
+        const move = (e: MouseEvent | TouchEvent) => {
+            const point = "touches" in e ? e.touches[0] : e;
+            if (!point) return;
+            pointerRef.current = { x: point.clientX, y: point.clientY };
+            const board = boardRef.current;
+            const box = board?.getBoundingClientRect();
+            if (!board || !box || !zoneBox) return;
+            // Координаты зон хранятся внутри прокручиваемого содержимого — переводим их в экранные
+            const top = box.top + zoneBox.top - board.scrollTop;
+            const withinLane = point.clientY >= top && point.clientY <= top + zoneBox.height;
+            const trashRight = box.left + zoneBox.trashLeft + TRASH_WIDTH - board.scrollLeft;
+            const wonStart = box.left + zoneBox.wonLeft - board.scrollLeft;
+            const next: "won" | "trash" | null = !withinLane ? null : point.clientX <= trashRight ? "trash" : point.clientX >= wonStart ? "won" : null;
+            if (next !== hotZoneRef.current) {
+                hotZoneRef.current = next;
+                setHotZone(next);
+            }
+        };
+        window.addEventListener("mousemove", move);
+        window.addEventListener("touchmove", move, { passive: true });
+        return () => {
+            window.removeEventListener("mousemove", move);
+            window.removeEventListener("touchmove", move);
+        };
+    }, [dragging, zoneBox]);
 
     const sortedStages = [...stages].sort((a, b) => a.order - b.order);
     const q = search.trim().toLowerCase();
@@ -70,7 +141,21 @@ export default function DealsBoard({ search }: Props) {
 
     async function handleDragEnd(result: DropResult) {
         const { destination, source, draggableId, type } = result;
+        // зоны за краями доски: туда карточку вытягивают намеренно, поэтому смотрим, где был курсор,
+        // а не в какую дорожку карточка формально попала (корзина накрывает край первого столбца)
+        const zone = type === "DEAL" ? hotZoneRef.current : null;
         setDragging(false); // зоны «выиграна» и «корзина» снова прячутся
+        hotZoneRef.current = null;
+        setHotZone(null);
+
+        // карточку вытянули за последний столбец — сделка выиграна
+        if (zone === "won") {
+            await setWon(draggableId, true);
+            return void toast.success(t("dealWonToast"));
+        }
+        // карточку утащили за первый столбец — предлагаем удалить (сначала подтверждение)
+        if (zone === "trash") return void setTrashDealId(draggableId);
+
         if (!destination) return;
 
         // перенос целого столбца влево/вправо
@@ -78,14 +163,6 @@ export default function DealsBoard({ search }: Props) {
             if (destination.index !== source.index) await reorderStages(source.index, destination.index);
             return;
         }
-
-        // карточку вытянули за последний столбец — сделка выиграна
-        if (destination.droppableId === WON_ZONE) {
-            await setWon(draggableId, true);
-            return void toast.success(t("dealWonToast"));
-        }
-        // карточку утащили за первый столбец — предлагаем удалить (сначала подтверждение)
-        if (destination.droppableId === TRASH_ZONE) return void setTrashDealId(draggableId);
 
         // перенос карточки (в пределах столбца или в другой столбец)
         if (destination.droppableId === source.droppableId && destination.index === source.index) return;
@@ -179,47 +256,33 @@ export default function DealsBoard({ search }: Props) {
                 <TbDots size={18} className="text-[#9AA396]" />
             </div>
 
-            {/* Зоны «выиграна» и «корзина» монтируются синхронно в onBeforeCapture — до того, как dnd
-                соберёт размеры дропзон (INITIAL_PUBLISH). Если смонтировать их позже (в onDragStart), dnd
-                в конце переноса падает с «Cannot stop drag when no active drag»: карточка виснет на стрелке
-                и страницу приходится перезагружать. flushSync обязателен — обычное обновление состояния
-                React не успело бы отрисоваться до сбора размеров */}
             {view === "kanban" ? (
-                <DragDropContext
-                    onBeforeCapture={(start) => {
-                        if (deals.some((d) => d._id === start.draggableId)) flushSync(() => setDragging(true));
-                    }}
-                    onDragEnd={handleDragEnd}>
+                <DragDropContext onDragStart={(start) => setDragging(start.type === "DEAL")} onDragEnd={handleDragEnd}>
                     <Droppable droppableId="board" type="COLUMN" direction="horizontal">
                         {(boardProvided) => (
                             <div
-                                ref={boardProvided.innerRef}
+                                ref={(node) => {
+                                    boardProvided.innerRef(node);
+                                    boardRef.current = node;
+                                }}
                                 {...boardProvided.droppableProps}
-                                className="fs-scroll flex items-start overflow-x-auto pb-16 pr-[24px]"
+                                className="fs-scroll relative flex items-start overflow-x-auto pb-16 pr-[24px]"
                             >
-                                {/* Корзина слева от воронки: появляется, только пока тянут карточку, — в обычной
-								    работе доска остаётся как была. Уронив сюда карточку, её удаляют (после подтверждения) */}
-                                {dragging && (
-                                    <Droppable droppableId={TRASH_ZONE} type="DEAL">
-                                        {(provided, snapshot) => (
-                                            <div className="w-[132px] shrink-0 pr-8">
-                                                <div className="h-[54px]" aria-hidden />
-                                                <div
-                                                    ref={provided.innerRef}
-                                                    {...provided.droppableProps}
-                                                    className={`mt-8 flex min-h-[420px] flex-col items-center justify-center gap-10 rounded-12 border border-dashed p-12 text-center transition-colors duration-200 ${
-                                                        snapshot.isDraggingOver
-                                                            ? "border-[#EB5757] bg-[rgba(235,87,87,0.12)] text-[#EB5757]"
-                                                            : "border-[rgba(235,87,87,0.35)] text-[#8c948b]"
-                                                    }`}
-                                                >
-                                                    <TbTrash size={26} />
-                                                    <span className="text-12 font-medium">{t("dropToDelete")}</span>
-                                                    {provided.placeholder}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </Droppable>
+                                {/* Зоны-накладки: не занимают место в потоке (иначе при захвате карточки
+								    столбцы сдвигались бы и карточка уезжала из-под руки) и не участвуют в реестре dnd */}
+                                {dragging && zoneBox && (
+                                    <div
+                                        aria-hidden
+                                        style={{ left: zoneBox.trashLeft, top: zoneBox.top, width: TRASH_WIDTH, height: zoneBox.height }}
+                                        className={`pointer-events-none absolute z-10 flex flex-col items-center justify-center gap-8 rounded-12 border border-dashed text-center transition-colors duration-150 ${
+                                            hotZone === "trash"
+                                                ? "border-[#EB5757] bg-[rgba(235,87,87,0.22)] text-[#EB5757]"
+                                                : "border-[rgba(235,87,87,0.45)] bg-[rgba(20,24,20,0.85)] text-[#8c948b]"
+                                        }`}
+                                    >
+                                        <TbTrash size={22} />
+                                        <span className="px-4 text-11 font-medium leading-tight">{t("delete")}</span>
+                                    </div>
                                 )}
 
                                 {sortedStages.map((stage, index) => (
@@ -239,31 +302,22 @@ export default function DealsBoard({ search }: Props) {
                                 ))}
                                 {boardProvided.placeholder}
 
-                                {/* «Выиграна»: сразу за последним столбцом и только пока тянут карточку — в обычной
-								    работе доска остаётся как была. Сделка, вытянутая сюда, считается прошедшей всю
-								    воронку: карточка переезжает в последний этап с отметкой о выигрыше */}
-                                {dragging && (
-                                    <Droppable droppableId={WON_ZONE} type="DEAL">
-                                        {(provided, snapshot) => (
-                                            <div className="w-[168px] shrink-0 px-8">
-                                                <div className="h-[54px]" aria-hidden />
-                                                <div
-                                                    ref={provided.innerRef}
-                                                    {...provided.droppableProps}
-                                                    className={`mt-8 flex min-h-[420px] flex-col items-center justify-center gap-10 rounded-12 border border-dashed p-12 text-center transition-colors duration-200 ${
-                                                        snapshot.isDraggingOver
-                                                            ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.12)] text-[#c6ff4d]"
-                                                            : "border-[rgba(198,255,77,0.35)] text-[#8c948b]"
-                                                    }`}
-                                                >
-                                                    <TbTrophy size={26} />
-                                                    <span className="text-12 font-medium">{t("dropToWin")}</span>
-                                                    <span className="text-11 text-[#8c948b]">{t("dropToWinHint")}</span>
-                                                    {provided.placeholder}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </Droppable>
+                                {/* «Выиграна» — сразу за последним столбцом: сделка, вытянутая сюда, прошла
+								    всю воронку, карточка переезжает в последний этап с отметкой о выигрыше */}
+                                {dragging && zoneBox && (
+                                    <div
+                                        aria-hidden
+                                        style={{ left: zoneBox.wonLeft, top: zoneBox.top, width: WON_WIDTH, height: zoneBox.height }}
+                                        className={`pointer-events-none absolute z-10 flex flex-col items-center justify-center gap-8 rounded-12 border border-dashed px-10 text-center transition-colors duration-150 ${
+                                            hotZone === "won"
+                                                ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.20)] text-[#c6ff4d]"
+                                                : "border-[rgba(198,255,77,0.45)] bg-[rgba(20,24,20,0.85)] text-[#8c948b]"
+                                        }`}
+                                    >
+                                        <TbTrophy size={22} />
+                                        <span className="text-11 font-medium leading-tight">{t("dropToWin")}</span>
+                                        <span className="text-10 leading-tight text-[#8c948b]">{t("dropToWinHint")}</span>
+                                    </div>
                                 )}
 
                                 {/* Кнопка новой колонки стоит там, где стояла бы следующая стрелка: острие
