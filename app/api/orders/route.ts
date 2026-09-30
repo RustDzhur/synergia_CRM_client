@@ -11,6 +11,7 @@ import { toOrderDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal, ownedContract, dealForCustomer } from "@/lib/deals";
 import Order from "@/models/Order";
+import Contact from "@/models/Contact";
 import User from "@/models/User";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,21 @@ export async function GET(req: Request) {
     const filter: Record<string, unknown> = { org: user.id };
     if (status) filter.status = status;
     const list = await Order.find(filter).sort({ createdAt: -1 }).limit(300);
-    return NextResponse.json(list.map(toOrderDTO));
+    // Телефон клиента подтягиваем из связанных контактов одним запросом: он подставляется в окно ТТН,
+    // чтобы менеджер не искал его в карточке (заказы хранят только ссылку на контакт)
+    const contactIds = list.map((o) => o.contact).filter(Boolean);
+    const phones = new Map<string, string>();
+    if (contactIds.length) {
+        const contacts = await Contact.find({ _id: { $in: contactIds }, owner: user.id }).select("phone");
+        for (const c of contacts) phones.set(String(c._id), String(c.phone ?? ""));
+    }
+    return NextResponse.json(
+        list.map((o) => {
+            const dto = toOrderDTO(o) as Record<string, unknown>;
+            dto.contactPhone = o.contact ? phones.get(String(o.contact)) ?? "" : "";
+            return dto;
+        })
+    );
 }
 
 // POST /api/orders — создать заказ (сообщает автоматизации "order_created", от него можно завести уведомление

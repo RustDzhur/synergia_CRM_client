@@ -10,19 +10,23 @@ export const toOrderDTO = (o: any) => ({
     deliveryNoteNumber: o.deliveryNoteNumber ?? "", deliveryDate: o.deliveryDate ?? "",
     actNumber: o.actNumber ?? "", actDate: o.actDate ?? "",
     ukrposhta: o.ukrposhta?.barcode
-        ? { barcode: o.ukrposhta.barcode, status: o.ukrposhta.status ?? "", place: o.ukrposhta.place ?? "", statusAt: o.ukrposhta.statusAt ? new Date(o.ukrposhta.statusAt).toISOString() : "" }
+        ? { uuid: o.ukrposhta.uuid ?? "", barcode: o.ukrposhta.barcode, status: o.ukrposhta.status ?? "", place: o.ukrposhta.place ?? "", postOffice: o.ukrposhta.postOffice ?? "", cod: o.ukrposhta.cod ?? 0, statusAt: o.ukrposhta.statusAt ? new Date(o.ukrposhta.statusAt).toISOString() : "" }
         : null,
     // Доставка «Новою Поштою»: номер ТТН и последний статус посылки (см. app/api/orders/[id]/waybill)
     waybill: o.waybill
         ? {
-            number: o.waybill.number ?? "", status: o.waybill.status ?? "",
+            number: o.waybill.number ?? "", ref: o.waybill.ref ?? "", status: o.waybill.status ?? "",
             statusAt: o.waybill.statusAt ? new Date(o.waybill.statusAt).toISOString() : "",
             cost: o.waybill.cost ?? 0, city: o.waybill.city ?? "", warehouse: o.waybill.warehouse ?? "",
             recipient: o.waybill.recipient ?? "", phone: o.waybill.phone ?? "", weight: o.waybill.weight ?? 0, cod: o.waybill.cod ?? 0,
+            seats: o.waybill.seats ?? 1, street: o.waybill.street ?? "", house: o.waybill.house ?? "", flat: o.waybill.flat ?? "",
+            returnNumber: o.waybill.returnNumber ?? "", returnAt: o.waybill.returnAt ? new Date(o.waybill.returnAt).toISOString() : "",
         }
         : null,
     id: String(o._id), number: o.number, status: o.status,
     contact: o.contact ? String(o.contact) : "", company: o.company ? String(o.company) : "", customerName: o.customerName,
+    // телефон клиента — из связанного контакта (подставляется в окно ТТН), а не из заказа
+    contactPhone: o.contactPhone ?? "",
     deal: o.deal ? String(o.deal) : "", contract: o.contract ? String(o.contract) : "",
     items: (o.items ?? []).map((it: any) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice, taxRate: it.taxRate, product: it.product ? String(it.product) : "" })),
     currency: o.currency, notes: o.notes, responsible: o.responsible, template: o.template || "",

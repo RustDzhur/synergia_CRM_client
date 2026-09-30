@@ -41,6 +41,7 @@ import Assets from "./Assets";
 import Bank from "./Bank";
 import AuditLog from "./AuditLog";
 import Fiscal from "./Fiscal";
+import Delivery from "./Delivery";
 import FinanceSettingsTab from "./Settings";
 import Taxes from "./Taxes";
 import Reports from "./Reports";
@@ -119,7 +120,7 @@ const NAV_UA: NavNode[] = [
 
 // Экраны, которые режим ещё не показывает: сначала появляется функция, потом её вкладка. Список пуст,
 // когда все экраны режима готовы (в украинском режиме это огляд…налаштування из §4 ТЗ).
-const PENDING_UA: Tab[] = ["delivery"];
+const PENDING_UA: Tab[] = [];
 
 const NAV_BY_MARKET: Record<Market, NavNode[]> = { DE: NAV_DE, UA: NAV_UA };
 
@@ -309,6 +310,7 @@ export default function Finance() {
 					{tab === "expenses" && <Expenses />}
 					{tab === "assets" && <Assets />}
 					{tab === "bank" && <Bank />}
+					{tab === "delivery" && <Delivery />}
 					{tab === "fiscal" && <Fiscal />}
 					{tab === "vat" && <Taxes kind="vat" />}
 					{tab === "eur" && <Taxes kind="eur" />}

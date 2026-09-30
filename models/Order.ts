@@ -42,10 +42,13 @@ const OrderSchema = new Schema(
         // Укрпошта: штрихкод отправления (ШКІ) вписывает менеджер, статус тянем по нему из API Укрпошти.
         // Создание отправления у них требует договора и адресного классификатора — это отдельная работа.
         ukrposhta: {
+            uuid: { type: String, default: "" }, // id отправления в Укрпоште (для печати формы и отмены)
             barcode: { type: String, default: "" },
             status: { type: String, default: "" },
             place: { type: String, default: "" },
             statusAt: { type: Date },
+            postOffice: { type: String, default: "" }, // отделение получателя (как выбрали)
+            cod: { type: Number, default: 0 }, // наложенный платёж, ₴
         },
         invoice: { type: Schema.Types.ObjectId, ref: "Invoice" }, // счёт, выставленный по этому заказу
 
@@ -65,6 +68,14 @@ const OrderSchema = new Schema(
             phone: { type: String, default: "" },
             weight: { type: Number, default: 0 },
             cod: { type: Number, default: 0 }, // наложений платёж
+            seats: { type: Number, default: 1 }, // мест в посылке
+            // Адресная доставка курьером: когда заполнена улица, посылка идёт на адрес, а не в отделение
+            street: { type: String, default: "" },
+            house: { type: String, default: "" },
+            flat: { type: String, default: "" },
+            // Возврат/перенаправление по ТТН (AdditionalService Новой Пошты)
+            returnNumber: { type: String, default: "" },
+            returnAt: { type: Date },
         },
 
         notes: { type: String, default: "" },

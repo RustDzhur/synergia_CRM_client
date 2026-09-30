@@ -117,6 +117,101 @@ export interface WaybillInput {
     payerType?: "Recipient" | "Sender";
     codAmount?: number; // наложений платёж, ₴ (0 — не брать)
     seats?: number;
+    // Адресная доставка (ServiceType с Doors): улица, дом, квартира и населённый пункт текстом —
+    // Нова Пошта привязывает их к своему классификатору сама
+    address?: { cityName: string; area?: string; street: string; house: string; flat?: string };
+}
+
+// ── Расчёт стоимости ────────────────────────────────────────────────────────────────────────────────
+// Стоимость видно до создания ТТН: иначе фирма узнаёт цену доставки уже после отправки.
+
+export interface PriceEstimate {
+    cost: number; // доставка, ₴
+    redelivery: number; // обратная доставка (наложенный платёж), ₴
+    assessed: number; // оценка стоимости услуги
+}
+
+export async function documentPrice(
+    apiKey: string,
+    input: { citySender: string; cityRecipient: string; weight: number; cost: number; serviceType?: string; seats?: number; codAmount?: number }
+): Promise<PriceEstimate> {
+    const data = await call<{ Cost?: string | number; CostRedelivery?: string | number; AssessedCost?: string | number; CostOnSite?: string | number }>(
+        apiKey,
+        "InternetDocument",
+        "getDocumentPrice",
+        {
+            CitySender: input.citySender,
+            CityRecipient: input.cityRecipient,
+            Weight: String(Math.max(0.1, Number(input.weight) || 0.1)),
+            ServiceType: input.serviceType ?? "WarehouseWarehouse",
+            Cost: String(Math.max(1, Math.round(Number(input.cost) || 1))),
+            CargoType: "Cargo",
+            SeatsAmount: String(input.seats ?? 1),
+            ...(input.codAmount ? { RedeliveryCalculate: { CargoType: "Money", Amount: String(Math.round(input.codAmount)) } } : {}),
+        }
+    );
+    const row = data[0] ?? {};
+    return {
+        cost: Number(row.Cost ?? row.CostOnSite) || 0,
+        redelivery: Number(row.CostRedelivery) || 0,
+        assessed: Number(row.AssessedCost) || 0,
+    };
+}
+
+// ── Удаление и печать ───────────────────────────────────────────────────────────────────────────────
+// Отменить можно только непринятую посылку: если курьер уже забрал её, Новая Пошта отвечает отказом —
+// тогда путь один, возврат/перенаправление (AdditionalService).
+
+export async function deleteWaybills(apiKey: string, refs: string[]): Promise<void> {
+    const list = refs.filter(Boolean);
+    if (!list.length) return;
+    await call(apiKey, "InternetDocument", "delete", { DocumentRefs: list });
+}
+
+/** Печать бланков: маркировка 100×100 и полная накладная A4. Ссылки ведут на печатный сервис
+ *  Новой Пошты и содержат ключ фирмы, поэтому наружу их отдаёт только серверный прокси. */
+export function markingUrl(apiKey: string, ref: string): string {
+    return `https://my.novaposhta.ua/orders/printMarking100x100/orders/${encodeURIComponent(ref)}/type/pdf/apiKey/${encodeURIComponent(apiKey)}`;
+}
+export function documentPrintUrl(apiKey: string, ref: string): string {
+    return `https://my.novaposhta.ua/orders/printDocument/orders/${encodeURIComponent(ref)}/type/pdf/apiKey/${encodeURIComponent(apiKey)}`;
+}
+
+// ── Возврат и перенаправление ───────────────────────────────────────────────────────────────────────
+// Возврат оформляется «Дополнительной услугой» и возможен не всегда (зависит от статуса посылки) —
+// поэтому сперва спрашиваем возможность, и только потом создаём заявку.
+
+export interface ReturnPossibility { possible: boolean; reason?: string; reasons: Array<{ ref: string; name: string }> }
+
+export async function checkReturn(apiKey: string, number: string): Promise<ReturnPossibility> {
+    const [possibility, reasons, subtypes] = await Promise.all([
+        call<{ CanCreateReturn?: string | boolean; Reason?: string }>(apiKey, "AdditionalService", "CheckPossibilityCreateReturn", { Number: number }).catch(() => []),
+        call<{ Ref: string; Description?: string; Reason?: string; Name?: string }>(apiKey, "AdditionalService", "getReturnReasons", {}).catch(() => []),
+        call<{ Ref: string; Description?: string; Reason?: string; Name?: string }>(apiKey, "AdditionalService", "getReturnReasonsSubtypes", {}).catch(() => []),
+    ]);
+    const row = possibility[0] ?? {};
+    const list = (reasons.length ? reasons : subtypes).map((r) => ({ ref: String(r.Ref ?? ""), name: String(r.Description ?? r.Reason ?? r.Name ?? "") })).filter((r) => r.ref);
+    return {
+        possible: row.CanCreateReturn === true || String(row.CanCreateReturn ?? "").toLowerCase() === "true",
+        reason: row.Reason ? String(row.Reason) : undefined,
+        reasons: list,
+    };
+}
+
+export async function createReturn(
+    apiKey: string,
+    input: { number: string; reasonRef: string; subtypeRef?: string; type?: "Return" | "Redelivery"; note?: string }
+): Promise<{ ref: string; number: string }> {
+    const data = await call<{ Ref?: string; Number?: string; OrderNumber?: string }>(apiKey, "AdditionalService", "orderCargoReturn", {
+        Number: input.number,
+        ReasonRef: input.reasonRef,
+        ...(input.subtypeRef ? { SubtypeReasonRef: input.subtypeRef } : {}),
+        OrderType: input.type ?? "Return",
+        ...(input.note ? { Note: input.note.slice(0, 200) } : {}),
+    });
+    const row = data[0];
+    if (!row?.Ref && !row?.Number) throw new ProviderError("Нова Пошта не прийняла заявку на повернення");
+    return { ref: String(row.Ref ?? ""), number: String(row.Number ?? row.OrderNumber ?? "") };
 }
 
 export interface Waybill {
@@ -143,6 +238,14 @@ export async function createWaybill(apiKey: string, sender: { city: string; ware
         throw new ProviderError("В налаштуваннях Нової Пошти не вистачає даних відправника — перевірте місто й відділення");
     }
 
+    // Адресная доставка (Doors…): вместо отделения Новой Пошты передаются части адреса текстом —
+    // она сама привязывает их к классификатору. Без улицы и дома такой ТТН не создать.
+    const serviceType = input.serviceType ?? "WarehouseWarehouse";
+    const byAddress = /Doors/i.test(serviceType);
+    if (byAddress && !input.address?.street?.trim()) {
+        throw new ProviderError("Для адресної доставки вкажіть вулицю та будинок отримувача");
+    }
+
     const data = await call<{ Ref: string; IntDocNumber: string; CostOnSite?: string; EstimatedDeliveryDate?: string }>(apiKey, "InternetDocument", "save", {
         PayerType: input.payerType ?? "Recipient",
         PaymentMethod: "Cash",
@@ -150,7 +253,7 @@ export async function createWaybill(apiKey: string, sender: { city: string; ware
         CargoType: "Cargo",
         // вес считаем в килограммах целыми долями, минимум 0.1 кг — меньше Нова Пошта не принимает
         Weight: String(Math.max(0.1, Number(input.weight) || 0.1)),
-        ServiceType: input.serviceType ?? "WarehouseWarehouse",
+        ServiceType: serviceType,
         SeatsAmount: String(input.seats ?? 1),
         Description: input.description.slice(0, 200) || "Товар",
         Cost: String(Math.max(1, Math.round(Number(input.cost) || 1))),
@@ -160,7 +263,15 @@ export async function createWaybill(apiKey: string, sender: { city: string; ware
         ContactSender: contactRef,
         SendersPhone: sender.phone,
         CityRecipient: input.cityRecipient,
-        RecipientAddress: input.warehouseRecipient,
+        ...(byAddress
+            ? {
+                  RecipientCityName: input.address!.cityName,
+                  RecipientArea: input.address!.area ?? "",
+                  RecipientStreet: input.address!.street,
+                  RecipientHouse: input.address!.house,
+                  ...(input.address!.flat ? { RecipientFlat: input.address!.flat } : {}),
+              }
+            : { RecipientAddress: input.warehouseRecipient }),
         RecipientName: input.recipientName.slice(0, 100),
         RecipientsPhone: input.recipientPhone,
         ...(input.codAmount ? { BackwardDeliveryData: [{ PayerType: "Recipient", CargoType: "Money", RedeliveryString: String(Math.round(input.codAmount)) }] } : {}),

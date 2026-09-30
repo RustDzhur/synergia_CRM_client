@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import {
 	TbDownload,
+	TbSend,
 	TbFileText,
 	TbLink,
 	TbPlus,
@@ -19,6 +20,7 @@ import FormField from "../shared/FormField";
 import LineItemsEditor from "./LineItemsEditor";
 import { downloadAct, downloadDeliveryNote, downloadDocumentPdf } from "./download";
 import WaybillDialog from "./ordersParts/WaybillDialog";
+import UkrposhtaDialog from "./ordersParts/UkrposhtaDialog";
 import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
 import { emptyItem, useDefaultTaxRate } from "./lineItems";
@@ -98,6 +100,8 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 	// статус CRM тянет сама — кнопка обновляет его
 	const [upFor, setUpFor] = useState<Order | null>(null);
 	const [upCode, setUpCode] = useState("");
+	// Отправление через ecom (нужен договор): отдельное окно с адресом отправки и отделением получателя
+	const [upCreateFor, setUpCreateFor] = useState<Order | null>(null);
 	async function saveUkrposhta() {
 		if (!upFor) return;
 		setBusy(upFor.id);
@@ -107,6 +111,16 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 		toast.success(t("upSaved"));
 		setUpFor(null);
 		await loadOrders();
+	}
+
+	// Номер отправления — клиенту: в живую переписку (Telegram/Viber/WhatsApp/Messenger),
+	// а если её нет — письмом с ящика фирмы. Куда ушло, показывает ответ сервера.
+	async function notifyClient(o: Order) {
+		setBusy(o.id + "notify");
+		const res = await apiCall<{ via: string }>(`/api/orders/${o.id}/notify`, "POST", {});
+		setBusy(null);
+		if (!res.ok) return void toast.error(res.message);
+		toast.success(t("notifySent", { via: res.data?.via ?? "" }));
 	}
 
 	// Публичная ссылка на статус заказа: клиент открывает её без входа и видит, где его заказ
@@ -214,6 +228,12 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 										<TbTruckDelivery size={15} /> {t("npWaybillCreate")}
 									</button>
 								))}
+								{/* Номер отправления уходит клиенту: в переписку, иначе письмом */}
+								{(o.waybill?.number || o.ukrposhta?.barcode) && (
+									<button type="button" disabled={busy === o.id + "notify"} onClick={() => void notifyClient(o)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]" title={t("notifyHint")}>
+										<TbSend size={15} /> {t("notifyClient")}
+									</button>
+								)}
 								{/* Укрпошта: штрихкод и статус отправления — вторая по популярности доставка */}
 								{deliveryMode === "ukrposhta" && (
 									<button
@@ -243,18 +263,31 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 					<h2 className="mb-12 text-16 font-semibold text-[#f1f4ee]">{t("upTitle")}</h2>
 					<FormField label={t("upBarcode")} value={upCode} onChange={(e) => setUpCode(e.target.value.toUpperCase())} placeholder="RB123456789UA" maxLength={20} autoFocus required />
 					<p className="mt-8 text-11 leading-[1.5] text-[#9AA396]">{t("upHint")}</p>
-					<div className="mt-16 flex justify-end gap-10">
-						<button type="button" onClick={() => setUpFor(null)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
-						<button type="submit" disabled={busy === upFor?.id} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{t("save")}</button>
+					<div className="mt-16 flex flex-wrap items-center justify-between gap-10">
+						{/* Отправление можно и создать здесь: номер назначит сама Укрпошта (нужен договор) */}
+						<button
+							type="button"
+							onClick={() => { const o = upFor; setUpFor(null); if (o) setUpCreateFor(o); }}
+							className="fs-btn fs-btn-ghost h-40">
+							{t("upCreate")}
+						</button>
+						<div className="flex gap-10">
+							<button type="button" onClick={() => setUpFor(null)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
+							<button type="submit" disabled={busy === upFor?.id} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{t("save")}</button>
+						</div>
 					</div>
 				</form>
 			</Modal>
+
+			{upCreateFor && (
+				<UkrposhtaDialog orderId={upCreateFor.id} onClose={() => setUpCreateFor(null)} onDone={() => { setUpCreateFor(null); void loadOrders(); }} />
+			)}
 
 			{waybillFor && (
 				<WaybillDialog
 					orderId={waybillFor.id}
 					customer={waybillFor.customerName}
-					phone=""
+					phone={waybillFor.contactPhone ?? ""}
 					amount={waybillFor.totals?.gross ?? 0}
 					open={waybillFor !== null}
 					onClose={() => setWaybillFor(null)}

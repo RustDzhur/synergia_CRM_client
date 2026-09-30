@@ -13,8 +13,9 @@ export interface Product {
 	purchasePrice: number; salePrice: number; taxRate: number | null; stockQty: number; reorderLevel: number; archived: boolean;
 }
 export interface OrderWaybill {
-	number: string; status: string; statusAt: string; cost: number;
+	number: string; ref?: string; status: string; statusAt: string; cost: number;
 	city: string; warehouse: string; recipient: string; phone: string; weight: number; cod: number;
+	seats?: number; street?: string; house?: string; flat?: string; returnNumber?: string; returnAt?: string;
 }
 export interface Order {
 	id: string; number: string; status: "draft" | "confirmed" | "fulfilled" | "invoiced" | "closed" | "cancelled";
@@ -25,8 +26,10 @@ export interface Order {
 	actNumber?: string; actDate?: string;
 	// Доставка «Новою Поштою» (Украина): номер ТТН и статус посылки — null, если ТТН ещё не создана
 	waybill?: OrderWaybill | null;
-	// Укрпошта: штрихкод и последний статус отправления — заполняется вручную и обновляется кнопкой
-	ukrposhta?: { barcode: string; status: string; place: string; statusAt: string } | null;
+	// Укрпошта: штрихкод и последний статус отправления — заполняется вручную или создаётся через ecom
+	ukrposhta?: { uuid?: string; barcode: string; status: string; place: string; postOffice?: string; cod?: number; statusAt: string } | null;
+	// телефон клиента из связанного контакта (подставляется в окно ТТН)
+	contactPhone?: string;
 	template: string; createdAt: string; updatedAt: string;
 }
 export interface Invoice {
