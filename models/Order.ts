@@ -29,6 +29,9 @@ const OrderSchema = new Schema(
 
         items: { type: [OrderItemSchema], default: [] },
         currency: { type: String, default: "EUR" },
+        // Курс НБУ, зафиксированный на дату документа (для счетов в валюте): база, наценка фирмы и
+        // итоговый курс. Снимок — чтобы перепечатка через месяц показывала ту же сумму в ₴.
+        rate: { base: { type: Number, default: 0 }, margin: { type: Number, default: 0 }, value: { type: Number, default: 0 }, at: { type: String, default: "" } },
 
         status: { type: String, enum: ["draft", "confirmed", "fulfilled", "invoiced", "closed", "cancelled"], default: "draft" },
         // Накладная (Lieferschein): номер присваивается один раз при первой выписке, чтобы повторная

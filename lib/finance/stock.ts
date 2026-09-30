@@ -3,7 +3,7 @@ import StockMovement from "@/models/StockMovement";
 
 // Меняет остаток товара и пишет запись движения одной операцией; qty может быть отрицательным (расход).
 // Услуги (type "service") остатка не имеют — вызывать для них не нужно, но это по-тихому не ошибка (пропускаем).
-export async function moveStock(org: string, productId: string, qty: number, reason: "purchase" | "sale" | "writeoff" | "adjustment" | "return", opts: { orderId?: string; note?: string; by?: string } = {}) {
+export async function moveStock(org: string, productId: string, qty: number, reason: "purchase" | "sale" | "writeoff" | "adjustment" | "return" | "reserve" | "reserve_release", opts: { orderId?: string; note?: string; by?: string } = {}) {
     const product = await Product.findOne({ _id: productId, org });
     if (!product || product.type !== "good" || !qty) return null;
     product.stockQty = (product.stockQty ?? 0) + qty;
@@ -18,5 +18,22 @@ export async function consumeForOrder(org: string, orderId: string, items: { pro
     for (const it of items) {
         if (!it.product) continue;
         await moveStock(org, it.product, -Math.abs(it.qty), "sale", { orderId, by });
+    }
+}
+
+// Резерв под заказ (Украина): товар ещё лежит на складе, но обещан этому заказу — остаток в наличии
+// уменьшается, а движение помечается причиной reserve. При выдаче заказа резерв снимается
+// (reserve_release), и уже за ним идёт настоящее списание (sale) — иначе склад списался бы дважды.
+export async function reserveForOrder(org: string, orderId: string, items: { product?: string; qty: number }[], by = "") {
+    for (const it of items) {
+        if (!it.product) continue;
+        await moveStock(org, it.product, -Math.abs(it.qty), "reserve", { orderId, by });
+    }
+}
+
+export async function releaseForOrder(org: string, orderId: string, items: { product?: string; qty: number }[], by = "") {
+    for (const it of items) {
+        if (!it.product) continue;
+        await moveStock(org, it.product, Math.abs(it.qty), "reserve_release", { orderId, by });
     }
 }

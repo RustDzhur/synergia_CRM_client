@@ -3,13 +3,13 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { type PeriodKind, businessAnalysis, incomeSurplus, periodRange, trialBalance, vatReturn } from "@/lib/finance/reports";
-import { incomeBook, vatRegister } from "@/lib/finance/ua";
+import { incomeBook, profitReport, vatRegister } from "@/lib/finance/ua";
 import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
 
 // vat/eur/bwa/susa — немецкая отчётность; income-book и vat-register — украинская (см. lib/finance/ua.ts)
-const KINDS = ["vat", "eur", "bwa", "susa", "income-book", "vat-register"] as const;
+const KINDS = ["vat", "eur", "bwa", "susa", "income-book", "vat-register", "profit-report"] as const;
 type Kind = (typeof KINDS)[number];
 const PERIODS: PeriodKind[] = ["month", "quarter", "year"];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -22,12 +22,12 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
 
     const kind = url.searchParams.get("kind") as Kind | null;
-    if (!kind || !KINDS.includes(kind)) return badRequest("kind must be one of: vat, eur, bwa, susa, income-book, vat-register");
+    if (!kind || !KINDS.includes(kind)) return badRequest("kind must be one of: vat, eur, bwa, susa, income-book, vat-register, profit-report");
 
     // Режим рынка: немецкая отчётность не показывается украинской фирме и наоборот (ТЗ §3).
     // vat-register и income-book — украинские виды, остальные четыре — немецкие.
     await connectDB();
-    await requireMarket(user.id, kind === "income-book" || kind === "vat-register" ? "UA" : "DE");
+    await requireMarket(user.id, ["income-book", "vat-register", "profit-report"].includes(kind) ? "UA" : "DE");
 
     const periodParam = url.searchParams.get("period");
     const period: PeriodKind = PERIODS.includes(periodParam as PeriodKind) ? (periodParam as PeriodKind) : "quarter";
@@ -40,11 +40,12 @@ export async function GET(req: Request) {
     if (from > to) return badRequest("from must not be after to");
 
     // Книга доходов считается за год: у ФОП отчётность по єдиному податку годовая, а кварталы — внутри
-    if (kind === "income-book") {
+    if (kind === "income-book" || kind === "profit-report") {
         const yearParam = url.searchParams.get("year");
         const year = yearParam && /^\d{4}$/.test(yearParam) ? yearParam : from.slice(0, 4);
         await connectDB();
-        return NextResponse.json({ period: "year", report: await incomeBook(user.id, year) });
+        const report = kind === "income-book" ? await incomeBook(user.id, year) : await profitReport(user.id, year);
+        return NextResponse.json({ period: "year", report });
     }
 
     await connectDB();

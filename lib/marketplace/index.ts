@@ -213,7 +213,7 @@ async function contactFor(org: string, order: MarketOrder, source: MarketplaceId
 }
 
 /** Импорт заказов площадки: создаёт сделки в первой колонке воронки и не дублирует уже привезённые */
-export async function importOrders(org: string, source: MarketplaceId, orders: MarketOrder[]): Promise<{ created: number; skipped: number }> {
+export async function importOrders(org: string, source: MarketplaceId, orders: MarketOrder[], opts: { commissionPercent?: number } = {}): Promise<{ created: number; skipped: number }> {
     if (!orders.length) return { created: 0, skipped: 0 };
     const known = new Set(
         (await Deal.find({ owner: org, source, externalId: { $in: orders.map((o) => o.externalId) } }).select("externalId").lean<{ externalId?: string }[]>()).map((d) => String(d.externalId ?? ""))
@@ -239,6 +239,8 @@ export async function importOrders(org: string, source: MarketplaceId, orders: M
             contactName: order.customerName,
             source,
             externalId: order.externalId,
+            // Состав и сумма заявки — чтобы из сделки можно было одним действием собрать заказ, счёт и ТТН
+            market: { amount: order.amount, currency: order.currency, items: order.items.map((i) => ({ name: i.name, qty: i.qty, price: i.price })), commission: Number(opts.commissionPercent) || 0 },
             responsible: "",
             activities: [
                 { type: "created", text: order.customerName },
@@ -262,7 +264,7 @@ export async function syncMarketplaces(org: string, sinceDays = 30): Promise<{ p
     for (const doc of docs) {
         try {
             const orders = await pullOrders(doc, since);
-            const { created, skipped } = await importOrders(org, doc.type as MarketplaceId, orders);
+            const { created, skipped } = await importOrders(org, doc.type as MarketplaceId, orders, { commissionPercent: Number(doc.config?.commission) || 0 });
             doc.error = "";
             await doc.save();
             out.push({ provider: doc.type, created, skipped });

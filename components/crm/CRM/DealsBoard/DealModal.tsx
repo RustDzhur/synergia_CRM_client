@@ -268,7 +268,7 @@ export default function DealModal({ dealId, onClose }: Props) {
 							companies={companies}
 						/>
 
-						<DealDocuments dealId={deal._id} customerName={deal.contactName || deal.companyName || deal.clientName} contact={deal.contact ?? undefined} company={deal.company ?? undefined} />
+						<DealDocuments dealId={deal._id} customerName={deal.contactName || deal.companyName || deal.clientName} contact={deal.contact ?? undefined} company={deal.company ?? undefined} isMarket={!!deal.source} />
 
 						<DealTasks dealId={deal._id} />
 

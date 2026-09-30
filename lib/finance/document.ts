@@ -20,8 +20,11 @@ export const pdfLocale = (v: unknown) => (typeof v === "string" && (LOCALES as r
 // Курс к гривне для документов в валюте: у украинской фирмы в счёте печатается и сумма в ₴.
 // Курс берём из lib/finance/rates.ts (НБУ плюс наценка фирмы) и только когда он вообще нужен —
 // для гривневого документа или для фирмы без курса поле остаётся пустым.
-async function uahRateFor(org: string, currency: string) {
+async function uahRateFor(org: string, currency: string, stored?: { base?: number; margin?: number; value?: number; at?: string }) {
     if (!currency || currency.toUpperCase() === "UAH") return null;
+    // Снимок курса на дате документа важнее живого: перепечатка счёта через месяц должна показывать
+    // ту же сумму в ₴, что и в день выставления (ТЗ §8.2, находка A15)
+    if (stored?.value) return { rate: stored.value, base: stored.base ?? 0, margin: stored.margin ?? 0, at: stored.at ?? "" };
     try {
         return await firmRate(org, currency);
     } catch {
@@ -109,7 +112,7 @@ export async function invoicePdfBuffer(org: string, inv: any, locale: string, te
             customer: { name: inv.customerName, address: inv.customerAddress, taxId: inv.customerTaxId },
             items: toPdfItems(inv.items),
             currency: tpl?.currency || inv.currency,
-            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, inv.currency) : null,
+            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, inv.currency, inv.rate) : null,
             smallBusinessNote: !!inv.smallBusinessNote,
             issueDate: inv.issueDate,
             supplyDate: inv.supplyDate,
@@ -138,7 +141,7 @@ export async function quotePdfBuffer(org: string, q: any, locale: string, templa
             customer: await customerParty(org, q),
             items: toPdfItems(q.items),
             currency: tpl?.currency || q.currency,
-            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, q.currency) : null,
+            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, q.currency, q.rate) : null,
             issueDate: q.issueDate,
             validUntil: q.validUntil,
             notes: q.notes,
@@ -159,7 +162,7 @@ export async function orderPdfBuffer(org: string, o: any, locale: string, templa
             customer: await customerParty(org, o),
             items: toPdfItems(o.items),
             currency: tpl?.currency || o.currency,
-            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, o.currency) : null,
+            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, o.currency, o.rate) : null,
             issueDate: o.createdAt ? new Date(o.createdAt).toISOString().slice(0, 10) : "",
             notes: o.notes,
             template: template ?? pdfTemplate(o.template),
@@ -183,7 +186,7 @@ export async function deliveryNotePdfBuffer(org: string, order: any, locale: str
             customer: await customerParty(org, order),
             items: toPdfItems(order.items),
             currency: tpl?.currency || order.currency,
-            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, order.currency) : null,
+            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, order.currency, order.rate) : null,
             // Дата поставки: если её не указали, берём сегодняшнюю — накладная всегда про состоявшуюся передачу
             supplyDate: order.deliveryDate || new Date().toISOString().slice(0, 10),
             notes: order.notes,
@@ -207,7 +210,7 @@ export async function actPdfBuffer(org: string, order: any, locale: string, temp
             customer: await customerParty(org, order),
             items: toPdfItems(order.items),
             currency: tpl?.currency || order.currency,
-            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, order.currency) : null,
+            uahRate: templateAllowsRate(tpl) ? await uahRateFor(org, order.currency, order.rate) : null,
             issueDate: order.actDate || new Date().toISOString().slice(0, 10),
             notes: order.notes,
             template: template ?? pdfTemplate(order.template),

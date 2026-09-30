@@ -36,6 +36,15 @@ const DealSchema = new Schema(
         // или канал. externalId — номер заказа у площадки: по нему повторная синхронизация не создаёт дубль.
         source: { type: String, default: "" },
         externalId: { type: String, default: "" },
+        // Снимок заказа площадки: состав и сумма попадают в заказ при конвертации, а комиссия —
+        // в расходы, чтобы маржа сделки не выглядела больше, чем она есть
+        market: {
+            amount: { type: Number, default: 0 },
+            currency: { type: String, default: "" },
+            items: { type: [{ _id: false, name: String, qty: Number, price: Number }], default: [] },
+            commission: { type: Number, default: 0 }, // % комиссии площадки из настроек подключения
+            order: { type: Schema.Types.ObjectId, ref: "Order" }, // заказ, созданный из этой заявки
+        },
 
         activities: { type: [ActivitySchema], default: [] },
     },

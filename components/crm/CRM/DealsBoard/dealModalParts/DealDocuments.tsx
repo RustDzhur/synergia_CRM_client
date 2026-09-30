@@ -26,15 +26,26 @@ const STATUS_COLOR: Record<string, string> = {
 // Документы сделки в одном месте: предложения, счета, заказы и договоры. В Finance документ попадает
 // в карточку сам — по контакту, фирме или имени клиента (см. dealForCustomer в lib/deals.ts), а эта
 // кнопка ведёт туда же с уже подставленным клиентом.
-export default function DealDocuments({ dealId, customerName, contact, company }: { dealId: string; customerName: string; contact?: string; company?: string }) {
+export default function DealDocuments({ dealId, customerName, contact, company, isMarket }: { dealId: string; customerName: string; contact?: string; company?: string; isMarket?: boolean }) {
 	const t = useTranslations("crm");
 	const router = useRouter();
 	const locale = useLocale();
 	const [docs, setDocs] = useState<DocRow[] | null>(null);
+	const [busy, setBusy] = useState(false);
 
 	useEffect(() => {
 		apiCall<DocRow[]>(`/api/deals/${dealId}/documents`).then((r) => r.ok && r.data && setDocs(r.data));
 	}, [dealId]);
+
+	// Заявка с площадки превращается в настоящий заказ: состав, резерв склада и комиссия площадки —
+	// дальше работают обычные шаги (счёт одной кнопкой, оплата, доставка, акт)
+	async function orderFromMarket() {
+		setBusy(true);
+		const res = await apiCall<{ order: { id: string } }>(`/api/deals/${dealId}/order`, "POST", {});
+		setBusy(false);
+		if (!res.ok || !res.data) return;
+		router.push(`/${locale}/crm/finance?tab=orders&open=${res.data.order.id}`);
+	}
 
 	function openInFinance(doc: DocRow) {
 		const tab = doc.kind === "quote" ? "quotes" : doc.kind === "order" ? "orders" : doc.kind === "contract" ? "contracts" : "invoices";
@@ -54,6 +65,7 @@ export default function DealDocuments({ dealId, customerName, contact, company }
 			<header className="flex flex-wrap items-center justify-between gap-8 border-b border-inkLine px-16 py-12">
 				<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("dealDocuments")}</h3>
 				<div className="flex items-center gap-16">
+					{isMarket && <button type="button" disabled={busy} onClick={() => void orderFromMarket()} className="fs-link disabled:opacity-50">{t("dealCreateOrderFromMarket")}</button>}
 					<button type="button" onClick={() => create("quote")} className="fs-link">{t("dealCreateQuote")}</button>
 					<button type="button" onClick={() => create("invoice")} className="fs-link">{t("dealCreateInvoice")}</button>
 				</div>

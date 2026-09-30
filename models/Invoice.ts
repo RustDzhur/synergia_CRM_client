@@ -37,6 +37,9 @@ const InvoiceSchema = new Schema(
 
         items: { type: [LineItemSchema], default: [] },
         currency: { type: String, default: "EUR" },
+        // Курс НБУ, зафиксированный на дату документа (для счетов в валюте): база, наценка фирмы и
+        // итоговый курс. Снимок — чтобы перепечатка через месяц показывала ту же сумму в ₴.
+        rate: { base: { type: Number, default: 0 }, margin: { type: Number, default: 0 }, value: { type: Number, default: 0 }, at: { type: String, default: "" } },
         smallBusinessNote: { type: Boolean, default: false }, // «Kleinunternehmerregelung»-пометка вместо налоговой строки
 
         issueDate: { type: String, required: true }, // "YYYY-MM-DD"

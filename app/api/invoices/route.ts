@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
+import { firmRate } from "@/lib/finance/rates";
 import { cleanItems } from "@/lib/finance/totals";
 import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
 import { toInvoiceDTO } from "@/lib/finance/dto";
@@ -47,12 +48,18 @@ export async function POST(req: Request) {
     const number = await nextNumber(user.id, await numberPrefix(user.id, "invoice", settings.invoicePrefix || "RE"));
     const today = new Date().toISOString().slice(0, 10);
     const due = new Date(Date.now() + (settings.paymentTermsDays ?? 14) * 86400000).toISOString().slice(0, 10);
+    const currency = typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id);
+    // Снимок курса: для гривневого счёта он не нужен, для валютного — берём у НБУ с наценкой фирмы
+    const rate = currency === "UAH" ? { base: 0, margin: 0, value: 0, at: "" } : await firmRate(user.id, currency).then((r) => (r ? { base: r.base, margin: r.margin, value: r.rate, at: r.at } : { base: 0, margin: 0, value: 0, at: "" })).catch(() => ({ base: 0, margin: 0, value: 0, at: "" }));
     const invoice = await Invoice.create({
         org: user.id, number, kind: "invoice", customerName, items,
         customerAddress: typeof b.customerAddress === "string" ? b.customerAddress.trim().slice(0, 500) : "",
         customerTaxId: typeof b.customerTaxId === "string" ? b.customerTaxId.trim().slice(0, 60) : "",
         contact: contact || undefined, company: company || undefined, deal: (deal || (await dealForCustomer(user.id, contact, company, customerName))) || undefined,
-        currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id),
+        currency,
+        // Курс НБУ фиксируется на дате документа: валютный счёт печатает сумму в ₴ по этому снимку,
+        // а не по курсу того дня, когда документ открыли заново (ТЗ §8.2)
+        rate,
         smallBusinessNote: taxExempt(settings),
         issueDate: typeof b.issueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.issueDate) ? b.issueDate : today,
         dueDate: typeof b.dueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.dueDate) ? b.dueDate : due,

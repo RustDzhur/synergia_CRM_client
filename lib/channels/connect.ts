@@ -437,6 +437,10 @@ export async function connectIntegration(owner: string, type: string, input: Inp
             } else {
                 secrets = { token: need(str(input.token, 500), "API token") };
             }
+            // Комиссия площадки — процент, который она удерживает с заказа: по нему расход при
+            // конвертации заявки в заказ, чтобы маржа не выглядела больше, чем есть
+            const commission = String(input.commission ?? "").trim();
+            if (commission) config = { ...config, commission: String(Math.max(0, Math.min(50, Number(commission.replace(",", ".")) || 0))) };
             // Пробное подключение — на несохранённой копии: проверка ничего не пишет в базу
             const probe = new Integration({ owner, type, token, config, secrets: packSecrets(secrets) });
             const check = await checkMarketplace(probe);

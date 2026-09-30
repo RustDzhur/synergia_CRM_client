@@ -53,16 +53,18 @@ export const FIELDS: Record<Real, FieldDef[]> = {
 		{ key: "autoFiscal", label: "intfCbAuto", type: "bool" },
 	],
 	// Маркетплейсы: заказы площадки приезжают в воронку сами (lib/marketplace). Токен берётся в кабинете продавца.
-	prom: [{ key: "token", label: "intfMarketToken", secret: true, placeholder: "prom-api-token" }],
-	rozetka: [{ key: "token", label: "intfMarketToken", secret: true, placeholder: "rozetka-api-token" }],
+	prom: [{ key: "token", label: "intfMarketToken", secret: true, placeholder: "prom-api-token" }, { key: "commission", label: "intfMarketCommission", optional: true, placeholder: "15" }],
+	rozetka: [{ key: "token", label: "intfMarketToken", secret: true, placeholder: "rozetka-api-token" }, { key: "commission", label: "intfMarketCommission", optional: true, placeholder: "15" }],
 	horoshop: [
 		{ key: "shop", label: "intfHoroshopShop", placeholder: "myshop.horoshop.ua" },
 		{ key: "login", label: "intfHoroshopLogin", placeholder: "api@myshop.ua" },
 		{ key: "password", label: "intfHoroshopPassword", secret: true },
+		{ key: "commission", label: "intfMarketCommission", optional: true, placeholder: "15" },
 	],
 	olx: [
 		{ key: "clientId", label: "intfOlxClientId" },
 		{ key: "clientSecret", label: "intfOlxClientSecret", secret: true },
+		{ key: "commission", label: "intfMarketCommission", optional: true, placeholder: "15" },
 	],
 	// Укрпошта: bearer-токен из кабинета (выдаётся после договора) — по нему тянем статус отправления
 	ukrposhta: [{ key: "token", label: "intfUpToken", secret: true }],

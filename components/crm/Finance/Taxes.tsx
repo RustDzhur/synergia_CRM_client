@@ -1,9 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { TbAlertTriangle, TbInfoCircle } from "react-icons/tb";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { useMarket } from "@/store/useMarket";
+import { apiCall } from "@/store/crmApi";
 import { money } from "./format";
 import { AiAnalysis, PeriodSwitch, ReportDisclaimer, ReportFailed, ReportLoading, useReport } from "./reportParts";
 import type { IncomeSurplus, PeriodKind, VatReturn, VatLine } from "@/lib/finance/reports";
@@ -233,6 +234,12 @@ function UaVatView({ period }: { period: PeriodKind }) {
 			{table(t("uaIssued"), report.issued)}
 			{table(t("uaReceived"), report.received)}
 			<p className="text-12 text-[#9AA396]">{t("uaTurnover12m")}: {fmt(report.turnover12m)} · {t("uaLimitLeft")}: {fmt(report.limitLeft)}</p>
+			{/* Подача в ДПС идёт вне CRM (нужен КЕП); отсюда — файл для кабинета */}
+			<div className="flex flex-wrap items-center gap-10">
+				<a href={`/api/finance/ua/export?kind=vat-register&year=${report.from.slice(0, 4)}&format=csv`} className="fs-btn fs-btn-ghost h-34">{t("uaExportCsv")}</a>
+				<a href={`/api/finance/ua/export?kind=vat-register&year=${report.from.slice(0, 4)}&format=xml`} className="fs-btn fs-btn-ghost h-34">{t("uaExportXml")}</a>
+				<span className="text-11 text-[#9AA396]">{t("uaExportHint")}</span>
+			</div>
 			{report.warnings.length > 0 && (
 				<div className="rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
 					<p className="flex items-center gap-8 text-12 font-semibold text-[#F4A100]"><TbAlertTriangle size={15} aria-hidden /> {t("warningTitle")}</p>
@@ -252,6 +259,10 @@ function UaIncomeView({ currency }: { currency: string }) {
 	const fmt = (n: number) => money(n, currency, locale);
 	if (loading) return <ReportLoading />;
 	if (failed || !report) return <ReportFailed />;
+
+	// ТОВ на загальній системі платит податок на прибуток: у него вместо книги доходов — отчёт
+	// «доходи минус витрати», тот же экран «Єдиний податок» остаётся только ФОП и ТОВ-єдинникам
+	if (report.profile.taxSystem === "general_tov") return <UaProfitView currency={currency} year={report.year} />;
 
 	return (
 		<div className="flex flex-col gap-16">
@@ -303,6 +314,15 @@ function UaIncomeView({ currency }: { currency: string }) {
 					<span className="text-24 font-semibold text-[#c6ff4d]">{fmt(report.total)}</span>
 				</div>
 			</section>
+			{/* Календарь платежей: когда и сколько платить — ЄСВ, єдиний податок, военный сбор, ПДВ */}
+			<PaymentCalendar year={report.year} currency={currency} />
+			{/* Подача в ДПС — вне CRM (нужен КЕП); отсюда скачивают файл для кабинета */}
+			<div className="flex flex-wrap items-center gap-10">
+				<a href={`/api/finance/ua/export?kind=income-book&year=${report.year}&format=csv`} className="fs-btn fs-btn-ghost h-34">{t("uaExportCsv")}</a>
+				<a href={`/api/finance/ua/export?kind=income-book&year=${report.year}&format=xml`} className="fs-btn fs-btn-ghost h-34">{t("uaExportXml")}</a>
+				<span className="text-11 text-[#9AA396]">{t("uaExportHint")}</span>
+			</div>
+			<p className="text-11 text-[#9AA396]">{report.rules.notice} · {report.rules.source}</p>
 			{report.warnings.length > 0 && (
 				<div className="rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
 					<p className="flex items-center gap-8 text-12 font-semibold text-[#F4A100]"><TbAlertTriangle size={15} aria-hidden /> {t("warningTitle")}</p>
@@ -312,6 +332,112 @@ function UaIncomeView({ currency }: { currency: string }) {
 				</div>
 			)}
 		</div>
+	);
+}
+
+// ТОВ на загальній системі: податок на прибуток — доходи мінус витрати й амортизація (заготовка).
+// Точные суммы зависят от налоговых разниц, поэтому экран честно говорит, что это сверка для бухгалтера.
+interface ProfitReportView { year: string; income: number; expenses: number; depreciation: number; profit: number; tax: number; rate: number; rules: { notice: string; source: string }; warnings: string[] }
+
+function UaProfitView({ currency, year }: { currency: string; year: string }) {
+	const t = useTranslations("finance");
+	const locale = useLocale();
+	const [report, setReport] = useState<ProfitReportView | null>(null);
+	const [failed, setFailed] = useState(false);
+	useEffect(() => {
+		let alive = true;
+		void apiCall<{ report: ProfitReportView }>(`/api/finance/reports?kind=profit-report&year=${year}`).then((res) => {
+			if (!alive) return;
+			if (res.ok && res.data?.report) setReport(res.data.report);
+			else setFailed(true);
+		});
+		return () => { alive = false; };
+	}, [year]);
+	const fmt = (n: number) => money(n, currency, locale);
+	if (failed) return <ReportFailed />;
+	if (!report) return <ReportLoading />;
+
+	return (
+		<div className="flex flex-col gap-16">
+			<p className="text-12 text-[#9AA396]">{t("uaYearLabel")}: {report.year}</p>
+			<div className="grid grid-cols-1 gap-16 md:grid-cols-2 xl:grid-cols-4">
+				{[["uaIncome", report.income], ["uaExpensesLabel", report.expenses], ["uaDepreciationLabel", report.depreciation], ["uaProfitLabel", report.profit]].map(([key, value]) => (
+					<section key={key as string} className="fs-card p-16">
+						<p className="text-12 text-[#8c948b]">{t(key as string)}</p>
+						<p className="mt-6 text-16 font-semibold text-[#f1f4ee]">{fmt(value as number)}</p>
+					</section>
+				))}
+			</div>
+			<section className="fs-card p-16 md:p-20">
+				<div className="flex items-center justify-between gap-16">
+					<span className="text-15 font-semibold text-[#e6eae2]">{t("uaProfitTax", { rate: report.rate })}</span>
+					<span className="text-24 font-semibold text-[#c6ff4d]">{fmt(report.tax)}</span>
+				</div>
+			</section>
+			{/* Календарь платежей и на этом экране: ТОВ на общей системе платит ещё и авансами */}
+			<PaymentCalendar year={report.year} currency={currency} />
+			<div className="flex flex-wrap items-center gap-10">
+				<a href={`/api/finance/ua/export?kind=profit&year=${report.year}&format=csv`} className="fs-btn fs-btn-ghost h-34">{t("uaExportCsv")}</a>
+				<a href={`/api/finance/ua/export?kind=profit&year=${report.year}&format=xml`} className="fs-btn fs-btn-ghost h-34">{t("uaExportXml")}</a>
+				<span className="text-11 text-[#9AA396]">{t("uaExportHint")}</span>
+			</div>
+			{report.warnings.length > 0 && (
+				<div className="rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
+					<ul className="flex list-disc flex-col gap-6 pl-18 text-13 leading-[1.5] text-[#cfd4cb]">
+						{report.warnings.map((w, i) => <li key={i}>{w}</li>)}
+					</ul>
+				</div>
+			)}
+			<p className="text-11 text-[#9AA396]">{report.rules.notice} · {report.rules.source}</p>
+		</div>
+	);
+}
+
+// Календарь платежей: суммы — из книги доходов, строки — по общим правилам (сверяет бухгалтер)
+interface CalendarEntry { date: string; title: string; amount: number; kind: string; note: string }
+interface CalendarState { year: number; entries: CalendarEntry[]; summary: { total: number; next: CalendarEntry | null; notice: string } }
+
+function PaymentCalendar({ year, currency }: { year: string; currency: string }) {
+	const t = useTranslations("finance");
+	const locale = useLocale();
+	const [state, setState] = useState<CalendarState | null>(null);
+	useEffect(() => {
+		let alive = true;
+		void apiCall<CalendarState>(`/api/finance/ua/calendar?year=${year}`).then((res) => {
+			if (alive && res.ok && res.data) setState(res.data);
+		});
+		return () => { alive = false; };
+	}, [year]);
+	if (!state) return null;
+	const fmt = (n: number) => money(n, currency, locale);
+	return (
+		<section className="fs-card overflow-x-auto">
+			<div className="flex flex-wrap items-center justify-between gap-10 px-16 pt-14">
+				<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("uaCalendarTitle", { year: state.year })}</h3>
+				{state.summary.next && (
+					<span className="text-12 text-[#8c948b]">{t("uaCalendarNext", { date: state.summary.next.date, title: state.summary.next.title, amount: state.summary.next.amount.toFixed(2) })}</span>
+				)}
+			</div>
+			<table className="fs-table mt-8 min-w-[560px]">
+				<thead>
+					<tr>
+						<th className="px-16">{t("colDate")}</th>
+						<th className="px-10">{t("uaCalendarPayment")}</th>
+						<th className="px-10 text-right">{t("total")}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{state.entries.map((e, i) => (
+						<tr key={i}>
+							<td className="px-16 text-13">{e.date}</td>
+							<td className="px-10 text-13">{e.title}<span className="ml-6 text-11 text-[#8c948b]">{e.note}</span></td>
+							<td className="px-10 text-right text-13">{e.amount > 0 ? fmt(e.amount) : "—"}</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+			<p className="px-16 py-12 text-11 text-[#9AA396]">{state.summary.notice}</p>
+		</section>
 	);
 }
 

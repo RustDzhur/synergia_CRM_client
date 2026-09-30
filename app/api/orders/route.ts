@@ -7,6 +7,7 @@ import { nextNumber } from "@/lib/finance/numbering";
 import { cleanItems, computeTotals } from "@/lib/finance/totals";
 import { applyTaxPolicy } from "@/lib/finance/tax";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
+import { firmRate } from "@/lib/finance/rates";
 import { toOrderDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal, ownedContract, dealForCustomer } from "@/lib/deals";
@@ -59,10 +60,14 @@ export async function POST(req: Request) {
     ]);
     // ставку определяет фирма, а не браузер: освобождённая — 0 % во всех строках, иначе страна по умолчанию
     const items = applyTaxPolicy(rawItems, settings);
+    const currency = typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id);
+    // Курс НБУ на дату заказа — снимок, как и в счёте (см. app/api/invoices)
+    const rate = currency === "UAH" ? { base: 0, margin: 0, value: 0, at: "" } : await firmRate(user.id, currency).then((r) => (r ? { base: r.base, margin: r.margin, value: r.rate, at: r.at } : { base: 0, margin: 0, value: 0, at: "" })).catch(() => ({ base: 0, margin: 0, value: 0, at: "" }));
     const order = await Order.create({
         org: user.id, number, customerName, items,
         contact: contact || undefined, company: company || undefined, deal: (deal || (await dealForCustomer(user.id, contact, company, customerName))) || undefined, contract: contract || undefined,
-        currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id),
+        currency,
+        rate,
         notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
         template: isTemplate(b.template) ? b.template : "",
         responsible: typeof b.responsible === "string" ? b.responsible.trim().slice(0, 120) : "",
