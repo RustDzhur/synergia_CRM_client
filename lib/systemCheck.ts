@@ -3,7 +3,7 @@ import { isPublicHttps } from "@/lib/appUrl";
 import { adminEmails } from "@/lib/admin";
 import { ProviderError } from "@/lib/http";
 import { stripe, stripeConfigured } from "@/lib/stripe";
-import { checkBucket, storageProblem } from "@/lib/storage/firebase";
+import { checkBucket, storageProblem } from "@/lib/storage";
 import { metaApp } from "@/lib/platformSettings";
 
 export interface Check { id: string; ok: boolean; message: string }

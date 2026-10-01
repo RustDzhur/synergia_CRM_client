@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
-import { getObject } from "@/lib/storage/firebase";
+import { getObject } from "@/lib/storage";
 import { aiConfigured } from "@/lib/ai/provider";
 import { dailyLimit, takeQuota, log as logAi } from "@/lib/ai/run";
 import { SUPPORTED_RECEIPT_MIME, extractReceipt } from "@/lib/ai/receipt";

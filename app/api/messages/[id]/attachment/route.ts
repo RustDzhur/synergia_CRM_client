@@ -1,7 +1,7 @@
 import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { failure, notFound, unauthorized, validId } from "@/lib/api";
-import { getObject } from "@/lib/storage/firebase";
+import { getObject } from "@/lib/storage";
 import Message from "@/models/Message";
 
 export const dynamic = "force-dynamic";

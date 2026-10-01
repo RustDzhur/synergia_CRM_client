@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { storageProblem } from "@/lib/storage/firebase";
+import { storageProblem } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 

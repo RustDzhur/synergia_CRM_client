@@ -4,7 +4,7 @@ import { postTask } from "@/lib/feed";
 import { emit, emitDeal } from "@/lib/automation/emit";
 import { sendFromAccount } from "@/lib/mail";
 import { extractPdfText } from "@/lib/ai/pdf";
-import { getObject } from "@/lib/storage/firebase";
+import { getObject } from "@/lib/storage";
 import { ensureStages } from "@/lib/stages";
 import Company from "@/models/Company";
 import Contact from "@/models/Contact";

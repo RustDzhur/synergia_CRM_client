@@ -5,7 +5,7 @@ import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api"
 import { cleanName, ownedFolder, toDocDTO } from "@/lib/documents";
 import { driveParent, driveToken, findDrive } from "@/lib/google";
 import { getFile, updateFile } from "@/lib/google/drive";
-import { deleteObject } from "@/lib/storage/firebase";
+import { deleteObject } from "@/lib/storage";
 import DocItem from "@/models/DocItem";
 
 export const dynamic = "force-dynamic";

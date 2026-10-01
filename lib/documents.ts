@@ -3,7 +3,7 @@ import type { DocItemDTO, DocsState, FolderDTO } from "@/types/documents";
 import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
 import { oauthAvailable } from "@/lib/mail/oauth";
-import { storageConfigured } from "@/lib/storage/firebase";
+import { storageConfigured } from "@/lib/storage";
 import { findDrive } from "@/lib/google";
 import { findOnedrive } from "@/lib/onedrive";
 import DocFolder from "@/models/DocFolder";

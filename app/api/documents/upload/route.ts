@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, ownedFolder, quotaBytes, safeFileName, toDocDTO } from "@/lib/documents";
-import { putObject, storageConfigured } from "@/lib/storage/firebase";
+import { putObject, storageConfigured } from "@/lib/storage";
 import DocItem from "@/models/DocItem";
 import User from "@/models/User";
 

@@ -3,7 +3,7 @@ import type { HydratedDocument } from "mongoose";
 import { randomToken, safeEqual } from "@/lib/crypto";
 import { fetchProvider } from "@/lib/http";
 import { secretsOf } from "@/lib/integrations";
-import { deleteObject, putObject, storageConfigured } from "@/lib/storage/firebase";
+import { deleteObject, putObject, storageConfigured } from "@/lib/storage";
 import { downloadTelegramFile } from "./telegram";
 import { webmOpusToOgg } from "./oggOpus";
 

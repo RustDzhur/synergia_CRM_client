@@ -1,7 +1,7 @@
 import { connectDB } from "@/lib/mongodb";
 import { failure } from "@/lib/api";
 import { mimeByName, readMediaToken } from "@/lib/channels/media";
-import { getObject } from "@/lib/storage/firebase";
+import { getObject } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
