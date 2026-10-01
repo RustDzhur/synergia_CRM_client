@@ -48,7 +48,9 @@ async function openai(system: string, msgs: Msg[], tools: ToolDef[]): Promise<Re
     const j = await post<{ choices?: { message?: { content?: string | null; tool_calls?: { id: string; function: { name: string; arguments: string } }[] } }[] }>(
         `${trim(process.env.OPENAI_API_URL || "https://api.openai.com/v1")}/chat/completions`,
         { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-        { model: aiModel("openai"), messages, tools: tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) }
+        // Ограничение сверху обязательно: шлюз (OmniRoute/OpenRouter) без него считает
+        // бюджет на максимум модели (~65k токенов) и отказывает при малом балансе (402).
+        { model: aiModel("openai"), max_tokens: 2000, messages, tools: tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) }
     );
     const msg = j.choices?.[0]?.message;
     if (!msg) throw new ProviderError("The AI provider returned an empty answer");
@@ -106,6 +108,7 @@ async function openaiVision(system: string, prompt: string, image: ImageInput): 
         { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
         {
             model: aiModel("openai"),
+            max_tokens: 1000,
             messages: [
                 { role: "system", content: system },
                 { role: "user", content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: `data:${image.mimeType};base64,${image.base64}` } }] },
