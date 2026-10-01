@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
@@ -128,7 +129,9 @@ export default function AiAssistant() {
 	// Возможности голоса — только после монтирования: SpeechRecognition и speechSynthesis живут
 	// в window и в разметке сервера их нет (иначе разошлась бы гидратация)
 	const [voice, setVoice] = useState({ dictation: false, recorder: false, tts: false });
-	useEffect(() => { setVoice({ dictation: dictationSupported(), recorder: recorderSupported(), tts: ttsSupported() }); }, []);
+	// Портал в шапку ищет слот по id — на сервере и до гидратации document недоступен
+	const [ready, setReady] = useState(false);
+	useEffect(() => { setVoice({ dictation: dictationSupported(), recorder: recorderSupported(), tts: ttsSupported() }); setReady(true); }, []);
 	const micAvailable = voice.dictation || (voice.recorder && !!status?.stt);
 	const { state: micState, start: micStart, stop: micStop } = useVoiceInput({
 		locale,
@@ -272,27 +275,31 @@ export default function AiAssistant() {
 	// (и режим разговора сбрасывается: плавающий шар надёжно закрывает микрофон)
 	const close = () => { stopSpeak(); micStop(); setVoiceMode(false); hide(); };
 
-	// Плавающий шар — постоянная точка входа в разговор: нажатие открывает окно сразу в режиме
-	// разговора (слушаю и отвечаю вслух), а не прячет ассистента за кнопкой со звёздочками
+	// Шар — постоянная точка входа в разговор: нажатие открывает окно сразу в режиме
+	// разговора (слушаю и отвечаю вслух), а не прячет ассистента за кнопкой со звёздочками.
+	// Живёт в шапке кабинета (слот в Header), а не плавающим углом: там его накрывала
+	// кнопка звонилки. Переносим через портал, чтобы вся логика осталась в этом компоненте.
 	function openVoice() {
 		spokenRef.current = null;
 		show();
 		if (!blocked && voice.tts && voice.dictation) setVoiceMode(true);
 	}
 
+	const orbSlot = ready && !open && typeof document !== "undefined" ? document.getElementById("ai-orb-slot") : null;
+
 	return (
 		<>
-		{/* Виден на каждой странице кабинета: тлеющий золотой шар, по нажатию — разговор */}
-		{!open && (
+		{orbSlot && createPortal(
 			<button
 				type="button"
 				onClick={openVoice}
 				aria-label={t("orbTitle")}
 				title={t("orbTitle")}
-				className="fixed bottom-[88px] right-16 z-[55] rounded-full transition-transform duration-200 hover:scale-105 md:bottom-20 md:right-20"
+				className="rounded-full transition-transform duration-200 hover:scale-105"
 			>
-				<VoiceOrb size={64} state="idle" />
-			</button>
+				<VoiceOrb size={38} state="idle" />
+			</button>,
+			orbSlot
 		)}
 		<Modal open={open} onClose={close} align="top" label={t("title")} zIndex={90} className="mt-[6vh] w-full max-w-[720px]">
 			<div className="fs-popover flex max-h-[84vh] flex-col overflow-hidden">

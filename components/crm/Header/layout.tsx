@@ -8,12 +8,16 @@ import SwitchLanguage from "./components/SwitchLanguage";
 import Notification from "./components/Notification";
 import AiButton from "./components/AiButton";
 import MobileMenu from "./components/MobileMenu";
+import { useFeature } from "@/store/useOrgStore";
 
 // Шапка кабинета (64px): слева — где мы находимся, справа — поиск, помощник, язык, уведомления, статус доступа.
 // Имя пользователя, фирма и выход живут в подвале сайдбара, поэтому здесь их нет.
 // На телефоне сайдбара не видно — вместо крошек стоят знак бренда и кнопка меню.
 function Layout() {
 	const t = useTranslations("navBar");
+	// Шар Айрис живёт в шапке: AiAssistant переносит его сюда порталом. Без тарифа с ассистентом —
+	// прежняя кнопка со звёздочками.
+	const aiAssistant = useFeature("aiAssistant");
 	return (
 		<div className="flex w-full items-center gap-16">
 			{/* Телефон: знак бренда и название продукта — сайдбара с логотипом тут нет */}
@@ -32,7 +36,7 @@ function Layout() {
 				<div className="hidden lg:block">
 					<Search />
 				</div>
-				<AiButton />
+				{aiAssistant ? <div id="ai-orb-slot" className="flex h-40 w-40 items-center justify-center" /> : <AiButton />}
 				<div className="hidden md:block">
 					<SwitchLanguage />
 				</div>
