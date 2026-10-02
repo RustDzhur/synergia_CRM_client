@@ -2,23 +2,20 @@ import { ProviderError } from "@/lib/http";
 import { packSecrets, secretsOf } from "@/lib/integrations";
 import { randomToken } from "@/lib/crypto";
 import Integration from "@/models/Integration";
-import Contact from "@/models/Contact";
-import Company from "@/models/Company";
-import FiscalShift from "@/models/FiscalShift";
-import type { HydratedDocument } from "mongoose";
+import { prisma } from "@/lib/prisma";
 import { closeShift, currentShift, listShifts, openShift, receiptById, returnReceipt, sellReceipt, signIn, taxes, type CbGood, type CbPayType } from "@/lib/checkbox";
 
 // Фискализация счетов через ПРРО Checkbox: когда счёт оплачен, чек пробивается сам, а клиент
 // получает его от Checkbox (по почте или в SMS). Это требование украинского закона, но подключение —
 // добровольное: если ПРРО не подключён, оплата просто фиксируется без чека.
 
-type Doc = HydratedDocument<any>;
+type Doc = any;
 
-export const findFiscal = (org: string) => Integration.findOne({ owner: org, type: "checkbox", status: "connected" });
+export const findFiscal = (org: string) => prisma.integration.findFirst({ where: { owner: org, type: "checkbox", status: "connected" } });
 
 interface FiscalCredentials { licenseKey: string; login: string; password: string; cashierName: string; department: string; auto: boolean }
 
-export function fiscalConfig(doc: Doc): FiscalCredentials {
+export function fiscalConfig(doc: any): FiscalCredentials {
     const s = secretsOf<{ licenseKey?: string; login?: string; password?: string }>(doc);
     return {
         licenseKey: String(s.licenseKey ?? ""),
@@ -42,7 +39,7 @@ export interface FiscalResult { fiscalCode: string; url: string; receiptId: stri
 /**
  * Дотянуть ссылку на чек, если она не сохранилась (старые чеки, ответ без tax_url): Checkbox отдаёт
  * её при повторном чтении чека по id. Обновляет счёт и возвращает ссылку — по ней чек открывают,
- * скачивают и печатают. Владелец: «чеки должны быть кликабельные: посмотреть, скачать, распечатать».
+ * скачивают и печатают.
  */
 export async function syncReceiptUrls(org: string, inv: {
     fiscalId?: string; fiscalUrl?: string;
@@ -72,18 +69,14 @@ export async function syncReceiptUrls(org: string, inv: {
 }
 
 // ── Когда чек нужен ─────────────────────────────────────────────────────────────────────────────────
-// РРО/ПРРО по украинскому закону: чек обязателен при наличной и карточной оплате; при безналичной
-// оплате по рахунку между юрособами/ФОП обычно достаточно рахунку й акта (это место помечено в ТЗ
-// «проверить у бухгалтера»). Поэтому чек — предложение по способу оплаты, а не безусловная кнопка:
-// автофискализация срабатывает только там, где чек точно нужен.
 
 /** Оплата пришла через эквайринг (monobank/LiqPay/WayForPay/крипта) — для покупателя это карта */
 export const paidByCard = (inv: { paidVia?: string }) => ["monobank", "liqpay", "wayforpay", "cryptopay"].includes(String(inv.paidVia ?? ""));
 
 export interface FiscalAdvice {
-    needed: boolean; // чек обязателен по правилам (наличная/карточная оплата)
-    payType: CbPayType; // предполагаемый способ оплаты для чека
-    reason: string; // человеческое объяснение — его показывает интерфейс
+    needed: boolean;
+    payType: CbPayType;
+    reason: string;
 }
 
 /** Нужен ли чек по этому счёту и каким способом он, скорее всего, был оплачен. */
@@ -97,7 +90,7 @@ export function fiscalAdvice(inv: { paidVia?: string; paidAmount?: number; total
  * Копия чека уходит клиенту от самого Checkbox: почта и телефон берутся из связанного контакта
  * или фирмы, иначе чек просто остаётся в кассе.
  */
-export async function fiscalizeInvoice(org: string, invoice: Doc, amount?: number, payType?: CbPayType): Promise<FiscalResult> {
+export async function fiscalizeInvoice(org: string, invoice: any, amount?: number, payType?: CbPayType): Promise<FiscalResult> {
     const doc = await findFiscal(org);
     if (!doc) throw new ProviderError("ПРРО Checkbox не підключено до цієї фірми");
     const cfg = fiscalConfig(doc);
@@ -105,30 +98,21 @@ export async function fiscalizeInvoice(org: string, invoice: Doc, amount?: numbe
 
     // Кому отправить копию чека: сначала контакт, потом фирма
     const [contact, company] = await Promise.all([
-        invoice.contact ? Contact.findOne({ _id: invoice.contact, owner: org }).select("email phone") : null,
-        invoice.company ? Company.findOne({ _id: invoice.company, owner: org }).select("email phone") : null,
+        invoice.contact ? prisma.contact.findFirst({ where: { id: String(invoice.contact), owner: org }, select: { email: true, phone: true } }) : null,
+        invoice.company ? prisma.company.findFirst({ where: { id: String(invoice.company), owner: org }, select: { email: true } }) : null,
     ]);
     const email = String(contact?.email || company?.email || "");
-    const phone = String(contact?.phone || company?.phone || "");
+    const phone = String(contact?.phone || "");
 
     const items = (invoice.items ?? []) as { description?: string; qty?: number; unitPrice?: number }[];
     if (!items.length) throw new ProviderError("У счёте немає позицій — чек нема з чого скласти");
 
     return withToken(cfg, async (token) => {
-        // Смена: без открытой смены Checkbox чек не принимает. Открываем сами, если её нет —
-        // и запоминаем в журнале смен, чтобы кассир видел, когда она открылась
         const shift = await currentShift(cfg.licenseKey, token);
         if (!shift) {
             const opened = await openShift(cfg.licenseKey, token);
-            await FiscalShift.updateOne(
-                { org, shiftId: opened.id },
-                { $setOnInsert: { org, provider: "checkbox", shiftId: opened.id, openedAt: new Date() } },
-                { upsert: true }
-            ).catch(() => undefined);
+            await ensureShift(org, opened.id);
         }
-        // Коды налогов нужны плательщику ПДВ: касса принимает ставку по каждой позиции (20 %, 7 %,
-        // 0 %). Ищем код по ставке строки, а если касса такого не отдала — общий ПДВ-код,
-        // иначе позиция уходит без налога (так и надо неплательщику).
         const taxesList = await taxes(cfg.licenseKey, token);
         const taxForRate = (rate: number): string | undefined => {
             if (!rate) return undefined;
@@ -163,7 +147,7 @@ export async function fiscalizeInvoice(org: string, invoice: Doc, amount?: numbe
  * Чек возврата по счёту: ссылается на исходный чек кассы (previous_receipt_id). Делается, когда
  * по счёту выпустили кредит-ноту — деньги вернулись клиенту, и касса должна это видеть.
  */
-export async function fiscalizeReturn(org: string, invoice: Doc, amount?: number, payType?: CbPayType): Promise<FiscalResult> {
+export async function fiscalizeReturn(org: string, invoice: any, amount?: number, payType?: CbPayType): Promise<FiscalResult> {
     const doc = await findFiscal(org);
     if (!doc) throw new ProviderError("ПРРО Checkbox не підключено до цієї фірми");
     const cfg = fiscalConfig(doc);
@@ -173,14 +157,14 @@ export async function fiscalizeReturn(org: string, invoice: Doc, amount?: number
     const items = (invoice.items ?? []) as { description?: string; qty?: number; unitPrice?: number }[];
     if (!items.length) throw new ProviderError("У рахунку немає позицій — чек повернення нема з чого скласти");
     const [contact, company] = await Promise.all([
-        invoice.contact ? Contact.findOne({ _id: invoice.contact, owner: org }).select("email phone") : null,
-        invoice.company ? Company.findOne({ _id: invoice.company, owner: org }).select("email phone") : null,
+        invoice.contact ? prisma.contact.findFirst({ where: { id: String(invoice.contact), owner: org }, select: { email: true, phone: true } }) : null,
+        invoice.company ? prisma.company.findFirst({ where: { id: String(invoice.company), owner: org }, select: { email: true } }) : null,
     ]);
 
     return withToken(cfg, async (token) => {
         if (!(await currentShift(cfg.licenseKey, token))) {
             const opened = await openShift(cfg.licenseKey, token);
-            await FiscalShift.updateOne({ org, shiftId: opened.id }, { $setOnInsert: { org, shiftId: opened.id, openedAt: new Date() } }, { upsert: true }).catch(() => undefined);
+            await ensureShift(org, opened.id);
         }
         const taxesList = await taxes(cfg.licenseKey, token);
         const vat = taxesList.find((t) => /пдв|vat/i.test(t.label) || /^А$/i.test(t.code));
@@ -199,7 +183,7 @@ export async function fiscalizeReturn(org: string, invoice: Doc, amount?: number
             payType: payType ?? "CARD",
             delivery: {
                 ...(String(contact?.email || company?.email || "") ? { emails: [String(contact?.email || company?.email)] } : {}),
-                ...(String(contact?.phone || company?.phone || "") ? { phone: String(contact?.phone || company?.phone) } : {}),
+                ...(String(contact?.phone || "") ? { phone: String(contact?.phone) } : {}),
             },
         });
         return { fiscalCode: receipt.fiscalCode, url: receipt.url, receiptId: receipt.id };
@@ -210,14 +194,13 @@ export async function fiscalizeReturn(org: string, invoice: Doc, amount?: number
 
 export interface ShiftState {
     open: { id: string; openedAt?: string } | null;
-    /** Последние закрытые смены из журнала: Z-отчёт с оборотом */
     recent: Array<{ id: string; openedAt: string | null; closedAt: string | null; receipts: number; turnover: number }>;
 }
 
 /** Состояние смены: открыта ли, и что показывали последние Z-отчёты. */
 export async function shiftState(org: string): Promise<ShiftState> {
     const doc = await findFiscal(org);
-    const shifts = await FiscalShift.find({ org }).sort({ openedAt: -1 }).limit(10);
+    const shifts = await prisma.fiscalShift.findMany({ where: { org }, orderBy: { openedAt: "desc" }, take: 10 });
     const recent = shifts.filter((s) => s.closedAt).map((s) => ({
         id: String(s.shiftId),
         openedAt: s.openedAt ? new Date(s.openedAt).toISOString() : null,
@@ -231,7 +214,6 @@ export async function shiftState(org: string): Promise<ShiftState> {
         const shift = await withToken(cfg, (token) => currentShift(cfg.licenseKey, token));
         return { open: shift ? { id: shift.id } : null, recent };
     } catch {
-        // Касса недоступна — состояние неизвестно, но журнал смен всё равно показываем
         return { open: null, recent };
     }
 }
@@ -245,11 +227,10 @@ export async function closeFiscalShift(org: string): Promise<{ id: string; recei
         const shift = await currentShift(cfg.licenseKey, token);
         if (!shift) throw new ProviderError("Відкритої зміни немає — закривати нічого");
         const report = await closeShift(cfg.licenseKey, token, shift.id);
-        await FiscalShift.updateOne(
-            { org, shiftId: shift.id },
-            { $set: { closedAt: new Date(), receipts: report.receipts, turnover: report.turnover, zReport: report.raw } },
-            { upsert: true }
-        ).catch(() => undefined);
+        const data = { closedAt: new Date(), receipts: report.receipts, turnover: report.turnover, zReport: report.raw as any };
+        const existing = await prisma.fiscalShift.findFirst({ where: { org, shiftId: shift.id } });
+        if (existing) await prisma.fiscalShift.update({ where: { id: existing.id }, data });
+        else await prisma.fiscalShift.create({ data: { org, provider: "checkbox", shiftId: shift.id, openedAt: new Date(), ...data } });
         return { id: shift.id, receipts: report.receipts, turnover: report.turnover };
     });
 }
@@ -263,7 +244,7 @@ export async function openFiscalShift(org: string): Promise<{ id: string }> {
         const existing = await currentShift(cfg.licenseKey, token);
         if (existing) return { id: existing.id };
         const opened = await openShift(cfg.licenseKey, token);
-        await FiscalShift.updateOne({ org, shiftId: opened.id }, { $setOnInsert: { org, shiftId: opened.id, openedAt: new Date() } }, { upsert: true }).catch(() => undefined);
+        await ensureShift(org, opened.id);
         return { id: opened.id };
     });
 }
@@ -289,7 +270,6 @@ export async function saveFiscal(
     const login = input.login.trim() || String(previous.login ?? "");
     const password = input.password.trim() || String(previous.password ?? "");
     if (!licenseKey || !login || !password) throw new ProviderError("Заповніть ключ каси, логін і пароль касира");
-    // Проверяем входом: неверный пароль не должен тихо лечь в базу
     await signIn(licenseKey, login, password);
     doc.set({
         name: input.cashierName.trim() || "Checkbox",
@@ -301,4 +281,10 @@ export async function saveFiscal(
     doc.markModified("config");
     await doc.save();
     return doc;
+}
+
+// Открыть смену в журнале (upsert по org+shiftId)
+async function ensureShift(org: string, shiftId: string) {
+    const existing = await prisma.fiscalShift.findFirst({ where: { org, shiftId } });
+    if (!existing) await prisma.fiscalShift.create({ data: { org, provider: "checkbox", shiftId, openedAt: new Date() } });
 }
