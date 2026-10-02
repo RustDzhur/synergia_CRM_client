@@ -31,13 +31,10 @@ export default async function RootLayout({
 	}
 
 	return (
+		// hreflang/canonical здесь не ставим: корневой layout не знает путь страницы (params содержит только locale),
+		// из-за чего canonical у каждой страницы указывал бы на главную, а для de (язык без префикса) — на адрес,
+		// который редиректится. Правильные alternates — через generateMetadata в самих страницах.
 		<html lang={locale === "ua" ? "uk" : locale}>
-			<head>
-				{locale === "ua" && <link rel="alternate" hrefLang="uk" href={`https://firmspace.de/ua${params?.page ?? ""}`} />}
-				{locale === "en" && <link rel="alternate" hrefLang="en" href={`https://firmspace.de/en${params?.page ?? ""}`} />}
-				{locale === "de" && <link rel="alternate" hrefLang="de" href={`https://firmspace.de/de${params?.page ?? ""}`} />}
-				<link rel="canonical" href={`https://firmspace.de/${locale}${params?.page ?? ""}`} />
-			</head>
 			<body className={inter.className}>
 				<NextIntlClientProvider locale={locale} messages={messages}>
 					{children}
