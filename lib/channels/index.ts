@@ -1,13 +1,10 @@
-import type { HydratedDocument } from "mongoose";
 import type { ConversationDTO, MessageDTO, MessagingChannel } from "@/types/integrations";
 import { ProviderError } from "@/lib/http";
 import { emit } from "@/lib/automation/emit";
 import { notify } from "@/lib/notify";
 import { notifyTeamTelegram } from "@/lib/notifyTeam";
 import { secretsOf } from "@/lib/integrations";
-import Contact from "@/models/Contact";
-import Conversation from "@/models/Conversation";
-import Message from "@/models/Message";
+import { prisma } from "@/lib/prisma";
 import { sendMessenger } from "./messenger";
 import { type PlivoSecrets, sendSms as sendPlivoSms } from "./plivo";
 import { type TelnyxSecrets, sendSms as sendTelnyxSms } from "./telnyx";
@@ -18,26 +15,26 @@ import { sendTelegram, sendTelegramMedia } from "./telegram";
 import { sendViber, sendViberMedia } from "./viber";
 import { sendWhatsApp } from "./whatsapp";
 
-type Doc = HydratedDocument<any>;
+type Doc = any;
 
 export const toConversationDTO = (c: Doc): ConversationDTO => ({
-    id: c._id.toString(),
+    id: c.id,
     channel: c.channel,
-    integrationId: c.integration.toString(),
+    integrationId: String(c.integration),
     externalId: c.externalId,
     name: c.name,
     unread: c.unread,
     lastText: c.lastText,
     lastAt: (c.lastAt as Date).toISOString(),
-    contactId: c.contact?.toString() ?? "",
+    contactId: c.contact ? String(c.contact) : "",
 });
 
 export const toMessageDTO = (m: Doc): MessageDTO => ({
-    id: m._id.toString(),
+    id: m.id,
     direction: m.direction,
     kind: m.kind,
     text: m.text,
-    at: m.createdAt.toISOString(),
+    at: (m.createdAt as Date).toISOString(),
     status: m.status,
     meta: m.meta ?? {},
     attachment: m.attachment?.path
@@ -59,8 +56,8 @@ export const samePhone = (a?: string, b?: string) => {
 // (номера приходят в Twilio, SIP и WhatsApp)
 async function matchContact(owner: string, channel: string, externalId: string) {
     if (channel !== "twilio" && channel !== "sip" && channel !== "whatsapp") return null;
-    const contacts = await Contact.find({ owner, phone: { $exists: true, $ne: "" } }).select("name phone").lean();
-    return contacts.find((c: { phone?: string }) => samePhone(c.phone, externalId)) ?? null;
+    const contacts = await prisma.contact.findMany({ where: { owner, phone: { not: "" } }, select: { id: true, name: true, phone: true } });
+    return contacts.find((c) => samePhone(c.phone ?? "", externalId)) ?? null;
 }
 
 const mmss = (sec: number) => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
@@ -93,65 +90,77 @@ export async function recordMessage(integration: Doc, input: MessageInput) {
     const channel = integration.type as MessagingChannel;
     // повторная доставка того же вебхука: выходим до скачивания, чтобы не тянуть вложение второй раз
     if (direction === "in" && input.messageId) {
-        const seen = await Message.findOne({ integration: integration._id, externalId: input.messageId }).select("conversation").lean<{ conversation: unknown }>();
-        if (seen) return { conversation: await Conversation.findById(seen.conversation), message: null, duplicate: true };
+        const seen = await prisma.message.findFirst({ where: { integration: integration.id, externalId: input.messageId }, select: { conversation: true } });
+        if (seen) return { conversation: await prisma.conversation.findUnique({ where: { id: String(seen.conversation) } }), message: null, duplicate: true };
     }
     // входящий файл забираем до записи: он нужен и самому сообщению, и подписи в списке бесед
     const attachment = input.attachment ?? (input.media ? await fetchMedia(owner, integration, input.media) : null);
 
-    let conversation = await Conversation.findOne({ integration: integration._id, externalId: input.externalId });
+    let conversation = await prisma.conversation.findFirst({ where: { integration: integration.id, externalId: input.externalId } });
     if (!conversation) {
         const contact = await matchContact(owner, channel, input.externalId);
         try {
-            conversation = await Conversation.create({
-                owner,
-                integration: integration._id,
-                channel,
-                externalId: input.externalId,
-                name: contact?.name || input.name || input.externalId,
-                contact: contact?._id,
+            conversation = await prisma.conversation.create({
+                data: {
+                    owner,
+                    integration: integration.id,
+                    channel,
+                    externalId: input.externalId,
+                    name: contact?.name || input.name || input.externalId,
+                    contact: contact?.id,
+                },
             });
         } catch {
-            conversation = await Conversation.findOne({ integration: integration._id, externalId: input.externalId });
+            conversation = await prisma.conversation.findFirst({ where: { integration: integration.id, externalId: input.externalId } });
         }
     }
     if (!conversation) throw new Error("Conversation was not created");
     // звонок от номера, который добавили в контакты уже после первой беседы, тоже привязываем к контакту
-    if (input.kind === "call" && !conversation.contact) {
+    let convContact = conversation.contact;
+    let convName = conversation.name;
+    if (input.kind === "call" && !convContact) {
         const contact = await matchContact(owner, channel, input.externalId);
         if (contact) {
-            conversation.contact = contact._id;
-            conversation.name = contact.name || conversation.name;
+            convContact = contact.id;
+            convName = contact.name || convName;
         }
     }
 
-    let message;
-    try {
-        message = await Message.create({
+    // уникальный индекс Mongo был (integration, externalId) — повторную доставку проверяем заранее
+    if (input.messageId) {
+        const dup = await prisma.message.findFirst({ where: { integration: integration.id, externalId: input.messageId }, select: { id: true } });
+        if (dup) return { conversation, message: null, duplicate: true };
+    }
+    const message = await prisma.message.create({
+        data: {
             owner,
-            conversation: conversation._id,
-            integration: integration._id,
+            conversation: conversation.id,
+            integration: integration.id,
             direction,
             kind: input.kind ?? "text",
             text: input.text,
-            meta: input.meta ?? {},
+            meta: (input.meta ?? {}) as any,
             externalId: input.messageId,
-            attachment,
-        });
-    } catch (e) {
-        if ((e as { code?: number }).code === 11000) return { conversation, message: null, duplicate: true };
-        throw e;
-    }
+            attachment: attachment as any,
+        },
+    });
 
     // подпись сообщения без текста: «📷» / «🎤» / имя файла — понятно на любом языке
     const preview = input.kind === "call" ? `📞 ${input.text}` : input.text || mediaLabel(attachment);
-    conversation.lastText = preview.slice(0, 120);
-    conversation.lastAt = message.createdAt;
     // принятый входящий звонок «непрочитанным» не считается
-    if (direction === "in" && !(input.kind === "call" && input.meta?.status === "completed")) conversation.unread += 1;
+    const incUnread = direction === "in" && !(input.kind === "call" && input.meta?.status === "completed") ? 1 : 0;
     // имя из Telegram/Viber могло смениться, а вот вручную выбранное имя контакта не трогаем
-    if (direction === "in" && input.name && !conversation.contact) conversation.name = input.name;
-    await conversation.save();
+    if (direction === "in" && input.name && !convContact) convName = input.name;
+    conversation = await prisma.conversation.update({
+        where: { id: conversation.id },
+        data: {
+            lastText: preview.slice(0, 120),
+            lastAt: message.createdAt,
+            unread: (Number(conversation.unread) || 0) + incUnread,
+            ...(convContact ? { contact: convContact } : {}),
+            ...(convName !== conversation.name ? { name: convName } : {}),
+        },
+    });
     // уведомления: пропущенный звонок и новое входящее сообщение (повторная доставка вебхука уже отсеяна выше по messageId)
     if (direction === "in") {
         if (input.kind === "call") {
@@ -159,7 +168,7 @@ export async function recordMessage(integration: Doc, input: MessageInput) {
             if (input.meta?.status !== "completed") await notify(owner, { type: "missed_call", params: { name: conversation.name || input.externalId }, link: "/crm/collaboration/chat-and-calls", key: input.messageId ? `call:${input.messageId}` : undefined });
         } else {
             await emit(owner, { type: "message_received", data: { from: conversation.name || input.externalId, text: preview, channel } });
-            await notify(owner, { type: "message", params: { name: conversation.name || input.externalId, channel, text: preview.slice(0, 80) }, link: "/crm/collaboration/chat-and-calls", key: `msg:${message._id}` });
+            await notify(owner, { type: "message", params: { name: conversation.name || input.externalId, channel, text: preview.slice(0, 80) }, link: "/crm/collaboration/chat-and-calls", key: `msg:${message.id}` });
             // Команде в Telegram: посетитель написал в канал. Веб-чат уведомляет сам из своего маршрута
             // (там есть страница и признак «вопрос без ответа»), поэтому здесь его пропускаем — иначе
             // на одно сообщение приходило бы два. Бот для этих уведомлений — свой, не бот ошибок.
@@ -174,10 +183,11 @@ export async function recordMessage(integration: Doc, input: MessageInput) {
     }
     // каждый звонок фиксируется и в ленте активности контакта (карточка контакта → «Activity»)
     if (input.kind === "call" && conversation.contact) {
-        await Contact.updateOne(
-            { _id: conversation.contact, owner },
-            { $push: { activities: { type: "call", text: callActivityText(direction, String(input.meta?.status ?? ""), Number(input.meta?.duration) || 0), meta: "" } } }
-        );
+        const card = await prisma.contact.findFirst({ where: { id: String(conversation.contact), owner }, select: { id: true, activities: true } });
+        if (card) {
+            const entry = { type: "call", text: callActivityText(direction, String(input.meta?.status ?? ""), Number(input.meta?.duration) || 0), meta: "" };
+            await prisma.contact.update({ where: { id: card.id }, data: { activities: [...((card.activities as any[]) ?? []), entry] as any } });
+        }
     }
     return { conversation, message, duplicate: false };
 }
@@ -185,11 +195,11 @@ export async function recordMessage(integration: Doc, input: MessageInput) {
 // Отчёт о доставке от WhatsApp: его присылают отдельным вебхуком уже после отправки, поэтому отмечаем сообщение задним числом
 export async function markMessageFailed(integration: Doc, externalId: string, error: string) {
     if (!externalId) return false;
-    const res = await Message.updateOne(
-        { integration: integration._id, externalId, direction: "out" },
-        { $set: { status: "failed", meta: { error } } }
-    );
-    return res.modifiedCount > 0;
+    const res = await prisma.message.updateMany({
+        where: { integration: integration.id, externalId, direction: "out" },
+        data: { status: "failed", meta: { error } as any },
+    });
+    return res.count > 0;
 }
 
 // Названия каналов для уведомлений команде: пишем так, как человек их называет
@@ -225,7 +235,7 @@ export async function sendToConversation(integration: Doc, conversation: Doc, te
         }
         case "viber": {
             const token = secretsOf(integration).authToken;
-            const botName = integration.config.botName ?? "";
+            const botName = (integration.config as any).botName ?? "";
             externalId = media
                 ? await sendViberMedia(token, botName, conversation.externalId, media.attachment, mediaUrl(media.origin, media.attachment.path), text)
                 : await sendViber(token, botName, conversation.externalId, text);
@@ -235,20 +245,20 @@ export async function sendToConversation(integration: Doc, conversation: Doc, te
             externalId = await sendMessenger(secretsOf(integration).pageAccessToken, conversation.externalId, text);
             break;
         case "whatsapp":
-            externalId = await sendWhatsApp(secretsOf(integration).accessToken, integration.config.phoneNumberId, conversation.externalId, text);
+            externalId = await sendWhatsApp(secretsOf(integration).accessToken, (integration.config as any).phoneNumberId, conversation.externalId, text);
             break;
         case "twilio":
-            externalId = await sendSms(secretsOf<TwilioSecrets>(integration), integration.config.phone, conversation.externalId, text);
+            externalId = await sendSms(secretsOf<TwilioSecrets>(integration), (integration.config as any).phone, conversation.externalId, text);
             break;
         // Остальные СМС-провайдеры: у каждого свой небольшой адаптер (lib/channels/vonage.ts и соседние)
         case "vonage":
-            externalId = await sendVonageSms(secretsOf<VonageSecrets>(integration), integration.config.phone, conversation.externalId, text);
+            externalId = await sendVonageSms(secretsOf<VonageSecrets>(integration), (integration.config as any).phone, conversation.externalId, text);
             break;
         case "plivo":
-            externalId = await sendPlivoSms(secretsOf<PlivoSecrets>(integration), integration.config.phone, conversation.externalId, text);
+            externalId = await sendPlivoSms(secretsOf<PlivoSecrets>(integration), (integration.config as any).phone, conversation.externalId, text);
             break;
         case "telnyx":
-            externalId = await sendTelnyxSms(secretsOf<TelnyxSecrets>(integration), integration.config.phone, conversation.externalId, text);
+            externalId = await sendTelnyxSms(secretsOf<TelnyxSecrets>(integration), (integration.config as any).phone, conversation.externalId, text);
             break;
         case "sip":
             throw new ProviderError("SIP provider has calls only — text messages are not supported");
