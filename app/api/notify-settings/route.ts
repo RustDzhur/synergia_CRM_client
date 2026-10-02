@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, serverError, unauthorized } from "@/lib/api";
 import { getUpdates, sendTelegram } from "@/lib/channels/telegram";
 import { firmNotifyBot, setFirmNotifyBot } from "@/lib/firmNotify";
-import Organization from "@/models/Organization";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -70,7 +70,8 @@ export async function POST(req: Request) {
         // «сбросить»: отключает уведомления — токен и чат стираются
         if (action === "clear") {
             await setFirmNotifyBot(user.id, "", "");
-            await Organization.updateOne({ _id: user.id }, { $set: { "notify.botToken": "", "notify.chatId": "" } });
+            const org = await prisma.organization.findUnique({ where: { id: user.id }, select: { notify: true } });
+            await prisma.organization.update({ where: { id: user.id }, data: { notify: { ...((org?.notify ?? {}) as any), botToken: "", chatId: "" } as any } });
             return NextResponse.json({ ok: true });
         }
 

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { computeTotals } from "@/lib/finance/totals";
-import Order from "@/models/Order";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -18,21 +17,17 @@ export async function GET(req: Request) {
     const kind = url.searchParams.get("kind");
     if (kind !== "act" && kind !== "delivery_note") return badRequest("kind must be act or delivery_note");
     const q = (url.searchParams.get("q") ?? "").trim().slice(0, 60);
-    await connectDB();
-
     const field = kind === "act" ? "actNumber" : "deliveryNoteNumber";
     const dateField = kind === "act" ? "actDate" : "deliveryDate";
-    const filter: Record<string, unknown> = { org: user.id, [field]: { $nin: ["", null] } };
-    if (q) {
-        const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-        filter.$or = [{ [field]: rx }, { number: rx }, { customerName: rx }];
-    }
-    const list = await Order.find(filter).sort({ [dateField]: -1, updatedAt: -1 }).limit(300);
+    const like = { contains: q, mode: "insensitive" as const };
+    const filter: Record<string, unknown> = { org: user.id, [field]: { not: "" } };
+    if (q) filter.OR = [{ [field]: like }, { number: like }, { customerName: like }];
+    const list = await prisma.order.findMany({ where: filter as any, orderBy: [{ [dateField]: "desc" }, { updatedAt: "desc" }], take: 300 });
     return NextResponse.json(
         list.map((o) => {
-            const totals = computeTotals(o.items as never);
+            const totals = computeTotals((o.items ?? []) as never);
             return {
-                id: String(o._id),
+                id: o.id,
                 docNumber: String((o as unknown as Record<string, string>)[field] ?? ""),
                 date: String((o as unknown as Record<string, string>)[dateField] ?? ""),
                 orderNumber: o.number,

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { sendDunning } from "@/lib/finance/dunning";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
@@ -15,9 +14,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    await connectDB();
     await requireMarket(user.id, "DE");
-    const author = await User.findById(user.userId).select("firstname lastname");
+    const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
     const name = author ? `${author.firstname} ${author.lastname}`.trim() : "";
 
     const b = (await req.json().catch(() => null)) as { locale?: unknown } | null;
