@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { adsAvailable, adsPlanOk, findAds, toConnectionDTO } from "@/lib/ads";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +10,6 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     return NextResponse.json({ available: adsAvailable(), planOk: await adsPlanOk(user.id), connections: (await findAds(user.id)).map(toConnectionDTO) });
 }
 
@@ -21,14 +19,12 @@ export async function PATCH(req: Request) {
     if (!user) return unauthorized(req);
     const b = await req.json().catch(() => null);
     if (!b || !validId(String(b.id))) return badRequest("Invalid request");
-    await connectDB();
-    const doc = await Integration.findOne({ _id: b.id, owner: user.id, type: "ads" });
+    const doc = await prisma.integration.findFirst({ where: { id: String(b.id), owner: user.id, type: "ads" } });
     if (!doc) return notFound();
-    if (!(doc.config.accounts ?? []).some((a: { id: string }) => a.id === String(b.accountId))) return badRequest("Unknown ad account");
-    doc.set("config", { ...doc.config, accountId: String(b.accountId) });
-    doc.markModified("config");
-    await doc.save();
-    return NextResponse.json(toConnectionDTO(doc));
+    const config = (doc.config ?? {}) as any;
+    if (!(config.accounts ?? []).some((a: { id: string }) => a.id === String(b.accountId))) return badRequest("Unknown ad account");
+    const updated = await prisma.integration.update({ where: { id: doc.id }, data: { config: { ...config, accountId: String(b.accountId) } as any } });
+    return NextResponse.json(toConnectionDTO(updated));
 }
 
 // DELETE /api/ads?id= — отключить платформу (токены удаляются)
@@ -37,7 +33,6 @@ export async function DELETE(req: Request) {
     if (!user) return unauthorized(req);
     const id = new URL(req.url).searchParams.get("id") ?? "";
     if (!validId(id)) return badRequest("Invalid request");
-    await connectDB();
-    const res = await Integration.deleteOne({ _id: id, owner: user.id, type: "ads" });
-    return res.deletedCount ? NextResponse.json({ ok: true }) : notFound();
+    const res = await prisma.integration.deleteMany({ where: { id, owner: user.id, type: "ads" } });
+    return res.count ? NextResponse.json({ ok: true }) : notFound();
 }

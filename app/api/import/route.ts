@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { IMPORT_KINDS, type ImportKind } from "@/lib/import/kinds";
-import ImportBatch from "@/models/ImportBatch";
-import ImportMapping from "@/models/ImportMapping";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -14,15 +12,14 @@ export const dynamic = "force-dynamic";
  export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     const [batches, mappings] = await Promise.all([
-        ImportBatch.find({ org: user.id }).sort({ createdAt: -1 }).limit(20),
-        ImportMapping.find({ org: user.id }).sort({ updatedAt: -1 }).limit(50),
+        prisma.importBatch.findMany({ where: { org: user.id }, orderBy: { createdAt: "desc" }, take: 20 }),
+        prisma.importMapping.findMany({ where: { org: user.id }, orderBy: { updatedAt: "desc" }, take: 50 }),
     ]);
     return NextResponse.json({
         kinds: Object.values(IMPORT_KINDS).map((d) => ({ kind: d.kind, label: d.label, fields: d.fields.map((f) => ({ key: f.key, label: f.label, required: !!f.required, code: f.code ?? "" })) })),
         batches: batches.map((b) => ({
-            id: String(b._id),
+            id: b.id,
             kind: b.kind,
             fileName: b.fileName,
             by: b.by,
@@ -30,9 +27,9 @@ export const dynamic = "force-dynamic";
             rolledBackAt: b.rolledBackAt,
             summary: b.summary,
             // Полный журнал пакета отдаём отдельно — в списке он не нужен
-            failedRows: (b.log ?? []).filter((l: { status: string }) => l.status === "failed").slice(0, 20).map((l: { row: number; message: string }) => ({ row: l.row, message: l.message })),
+            failedRows: ((b.log ?? []) as any[]).filter((l: { status: string }) => l.status === "failed").slice(0, 20).map((l: { row: number; message: string }) => ({ row: l.row, message: l.message })),
         })),
-        mappings: mappings.map((m) => ({ id: String(m._id), kind: m.kind, name: m.name, mapping: m.mapping })),
+        mappings: mappings.map((m) => ({ id: m.id, kind: m.kind, name: m.name, mapping: m.mapping })),
     });
 }
 
@@ -47,7 +44,9 @@ export async function POST(req: Request) {
     const name = String(b.name ?? "").trim().slice(0, 80);
     if (!name) return badRequest("name is required");
     const mapping = typeof b.mapping === "object" && b.mapping ? b.mapping : {};
-    await connectDB();
-    const doc = await ImportMapping.findOneAndUpdate({ org: user.id, kind, name }, { $set: { mapping } }, { upsert: true, new: true });
-    return NextResponse.json({ id: String(doc._id), kind, name });
+    const existing = await prisma.importMapping.findFirst({ where: { org: user.id, kind, name } });
+    const doc = existing
+        ? await prisma.importMapping.update({ where: { id: existing.id }, data: { mapping: mapping as any } })
+        : await prisma.importMapping.create({ data: { org: user.id, kind, name, mapping: mapping as any } });
+    return NextResponse.json({ id: doc.id, kind, name });
 }
