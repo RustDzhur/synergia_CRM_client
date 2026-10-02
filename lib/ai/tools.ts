@@ -7,6 +7,13 @@ import { extractPdfText } from "@/lib/ai/pdf";
 import { getObject } from "@/lib/storage";
 import { ensureStages } from "@/lib/stages";
 import { prisma } from "@/lib/prisma";
+import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
+import { nextNumber } from "@/lib/finance/numbering";
+import { numberPrefix } from "@/lib/finance/documents/store";
+import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
+import { cleanItems } from "@/lib/finance/totals";
+import { firmRate } from "@/lib/finance/rates";
+import { ownedContact, contactForCustomer, dealForCustomer } from "@/lib/deals";
 import type { ToolDef } from "./provider";
 
 // Инструменты ИИ — единственное, что он умеет делать в CRM. Каждый инструмент:
@@ -62,6 +69,40 @@ const acts = (a: Act[] | undefined) => (a ?? []).slice(-15).map((x) => ({ type: 
 const schema = (properties: Record<string, unknown>, required: string[] = []) => ({ type: "object", properties, required, additionalProperties: false });
 const S = (description: string) => ({ type: "string", description });
 const N = (description: string) => ({ type: "integer", description });
+
+// Разделы CRM, в которые ассистент переходит по команде «перейди в …» (navigate)
+const NAV_SECTIONS: Record<string, { label: string; link: string }> = {
+    dashboard: { label: "Головна", link: "/crm" },
+    deals: { label: "Воронка угод", link: "/crm/crm" },
+    contacts: { label: "Контакти", link: "/crm/crm" },
+    tasks: { label: "Задачі", link: "/crm/tasks" },
+    employees: { label: "Співробітники", link: "/crm/company" },
+    calendar: { label: "Календар", link: "/crm/collaboration/calendar" },
+    chat: { label: "Чат і дзвінки", link: "/crm/collaboration/chat-and-calls" },
+    mails: { label: "Пошта", link: "/crm/collaboration/web-mails" },
+    documents: { label: "Документи", link: "/crm/collaboration/online-documents" },
+    finance: { label: "Бухгалтерія", link: "/crm/finance" },
+    marketing: { label: "Маркетинг", link: "/crm/marketing" },
+    automation: { label: "Автоматизація", link: "/crm/automation" },
+    settings: { label: "Налаштування", link: "/crm/settings" },
+};
+
+// Схема строк документа и общая проверка аргументов финансовых инструментов (idempotent:
+// check() принимает и первичные аргументы модели, и свой же прежний результат)
+const ITEMS = { type: "array", description: "line items", items: { type: "object", properties: { description: S("item name or service"), qty: N("quantity, default 1"), unitPrice: N("price per unit") }, required: ["description"] } };
+const financeCheck = (a: Args) => {
+    const items = cleanItems(a.items);
+    if (!items.length) throw new ToolError("items must contain at least one line with a description");
+    return {
+        customer_name: need(str(a.customer_name, 200), "customer_name"),
+        contact_name: str(a.contact_name ?? a.contact, 40),
+        items,
+        currency: str(a.currency, 6),
+        notes: str(a.notes, 500),
+    };
+};
+const authorName = async (userId: string) => { const u = await prisma.user.findUnique({ where: { id: userId }, select: { firstname: true, lastname: true } }); return u ? `${u.firstname} ${u.lastname}`.trim() : ""; };
+const snapshotRate = async (org: string, currency: string) => (currency === "UAH" ? { base: 0, margin: 0, value: 0, at: "" } : await firmRate(org, currency).then((r) => (r ? { base: r.base, margin: r.margin, value: r.rate, at: r.at } : { base: 0, margin: 0, value: 0, at: "" })).catch(() => ({ base: 0, margin: 0, value: 0, at: "" })));
 
 export const TOOLS: AiTool[] = [
     // ─────────── чтение ───────────
@@ -415,6 +456,122 @@ export const TOOLS: AiTool[] = [
             return { params: { name: `${emp.firstname} ${emp.lastname}`.trim() }, link: "/crm/company" };
         },
     },
+    // ─────────── навигация и финансовые документы ───────────
+    {
+        module: "crm", write: true,
+        def: { name: "navigate", description: "Open a section of the CRM: dashboard, deals board, tasks, employees, calendar, chat and calls, web-mail, documents, accounting/finance (invoices, quotes, orders, contracts, expenses), marketing, automation, settings. Use it when the user asks to go somewhere, e.g. «перейди в бухгалтерию» (finance). Needs user confirmation; the user then lands on the section.", parameters: schema({ section: { type: "string", enum: Object.keys(NAV_SECTIONS), description: "target section key" } }, ["section"]) },
+        check: (a) => {
+            const section = str(a.section, 40);
+            if (!NAV_SECTIONS[section]) throw new ToolError("Unknown section. Choose one of: " + Object.keys(NAV_SECTIONS).join(", "));
+            return { section };
+        },
+        run: async (_c, a) => ({ params: { section: NAV_SECTIONS[a.section as string].label }, link: NAV_SECTIONS[a.section as string].link }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "create_invoice", description: "Create a draft invoice for a customer. Needs user confirmation; the user can edit fields before confirming. Find the customer first (search_contacts) and pass its name in customer_name.", parameters: schema({ customer_name: S("customer/company name that appears on the invoice"), contact_name: S("contact id from search_contacts, optional"), items: ITEMS, currency: S("EUR, UAH, USD… optional"), notes: S("notes, optional") }, ["customer_name", "items"]) },
+        check: financeCheck,
+        run: async (c, a) => {
+            const settings = await financeSettings(c.org);
+            const items = applyTaxPolicy(cleanItems(a.items as never), settings);
+            const number = await nextNumber(c.org, await numberPrefix(c.org, "invoice", settings.invoicePrefix || "RE"));
+            const today = new Date().toISOString().slice(0, 10);
+            const due = new Date(Date.now() + (settings.paymentTermsDays ?? 14) * 86400000).toISOString().slice(0, 10);
+            const currency = String(a.currency).toUpperCase() || (await defaultCurrency(c.org));
+            const customerName = String(a.customer_name);
+            const linkedContact = (a.contact_name ? await ownedContact(a.contact_name, c.org) : null) || (await contactForCustomer(c.org, { contact: a.contact_name, customerName }));
+            const invoice = await prisma.invoice.create({
+                data: {
+                    org: c.org, number, kind: "invoice", customerName, items: items as any,
+                    contact: linkedContact ?? undefined,
+                    deal: (await dealForCustomer(c.org, linkedContact, undefined, customerName)) ?? undefined,
+                    currency, rate: (await snapshotRate(c.org, currency)) as any,
+                    smallBusinessNote: taxExempt(settings),
+                    issueDate: today, dueDate: due, notes: String(a.notes || ""),
+                    createdByName: await authorName(c.userId),
+                },
+            });
+            return { params: { number: invoice.number, customerName: invoice.customerName }, link: "/crm/finance" };
+        },
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "create_quote", description: "Create a draft quote (offer, proposal) for a customer. Needs user confirmation. Find the customer first (search_contacts) and pass its name in customer_name.", parameters: schema({ customer_name: S("customer/company name"), contact_name: S("contact id, optional"), items: ITEMS, currency: S("EUR, UAH… optional"), notes: S("notes, optional") }, ["customer_name", "items"]) },
+        check: financeCheck,
+        run: async (c, a) => {
+            const settings = await financeSettings(c.org);
+            const items = applyTaxPolicy(cleanItems(a.items as never), settings);
+            const number = await nextNumber(c.org, await numberPrefix(c.org, "quote", settings.quotePrefix || "AN"));
+            const today = new Date().toISOString().slice(0, 10);
+            const currency = String(a.currency).toUpperCase() || (await defaultCurrency(c.org));
+            const customerName = String(a.customer_name);
+            const linkedContact = (a.contact_name ? await ownedContact(a.contact_name, c.org) : null) || (await contactForCustomer(c.org, { contact: a.contact_name, customerName }));
+            const quote = await prisma.quote.create({
+                data: {
+                    org: c.org, number, customerName, items: items as any,
+                    contact: linkedContact ?? undefined,
+                    deal: (await dealForCustomer(c.org, linkedContact, undefined, customerName)) ?? undefined,
+                    currency, issueDate: today,
+                    validUntil: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+                    notes: String(a.notes || ""), createdByName: await authorName(c.userId),
+                },
+            });
+            return { params: { number: quote.number, customerName: quote.customerName }, link: "/crm/finance" };
+        },
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "create_order", description: "Create a draft order for a customer. Needs user confirmation. Find the customer first (search_contacts) and pass its name in customer_name.", parameters: schema({ customer_name: S("customer/company name"), contact_name: S("contact id, optional"), items: ITEMS, currency: S("EUR, UAH… optional"), notes: S("notes, optional") }, ["customer_name", "items"]) },
+        check: financeCheck,
+        run: async (c, a) => {
+            const settings = await financeSettings(c.org);
+            const items = applyTaxPolicy(cleanItems(a.items as never), settings);
+            const number = await nextNumber(c.org, "SO");
+            const currency = String(a.currency).toUpperCase() || (await defaultCurrency(c.org));
+            const customerName = String(a.customer_name);
+            const linkedContact = (a.contact_name ? await ownedContact(a.contact_name, c.org) : null) || (await contactForCustomer(c.org, { contact: a.contact_name, customerName }));
+            const order = await prisma.order.create({
+                data: {
+                    org: c.org, number, customerName, items: items as any,
+                    contact: linkedContact ?? undefined,
+                    deal: (await dealForCustomer(c.org, linkedContact, undefined, customerName)) ?? undefined,
+                    currency, rate: (await snapshotRate(c.org, currency)) as any,
+                    notes: String(a.notes || ""), createdByName: await authorName(c.userId),
+                },
+            });
+            return { params: { number: order.number, customerName: order.customerName }, link: "/crm/finance" };
+        },
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "create_contract", description: "Create a draft contract for a customer. Needs user confirmation. Find the customer first (search_contacts) and pass its name in customer_name; value is the total contract amount.", parameters: schema({ customer_name: S("customer/company name"), contact_name: S("contact id, optional"), value: N("total contract amount"), currency: S("EUR, UAH… optional"), start_date: S("YYYY-MM-DD, optional"), end_date: S("YYYY-MM-DD, optional"), notes: S("notes, optional") }, ["customer_name"]) },
+        check: (a) => ({
+            customer_name: need(str(a.customer_name, 200), "customer_name"),
+            contact_name: str(a.contact_name ?? a.contact, 40),
+            value: Math.max(0, Number(a.value) || 0),
+            currency: str(a.currency, 6),
+            start_date: day(a.start_date, "start_date"),
+            end_date: day(a.end_date, "end_date"),
+            notes: str(a.notes, 500),
+        }),
+        run: async (c, a) => {
+            const number = await nextNumber(c.org, "CT");
+            const currency = String(a.currency).toUpperCase() || (await defaultCurrency(c.org));
+            const customerName = String(a.customer_name);
+            const linkedContact = (a.contact_name ? await ownedContact(a.contact_name, c.org) : null) || (await contactForCustomer(c.org, { contact: a.contact_name, customerName }));
+            const contract = await prisma.contract.create({
+                data: {
+                    org: c.org, number, customerName,
+                    contact: linkedContact ?? undefined,
+                    deal: (await dealForCustomer(c.org, linkedContact, undefined, customerName)) ?? undefined,
+                    value: Number(a.value) || 0, currency,
+                    startDate: String(a.start_date || ""), endDate: String(a.end_date || ""),
+                    notes: String(a.notes || ""), createdByName: await authorName(c.userId),
+                },
+            });
+            return { params: { number: contract.number, customerName: contract.customerName }, link: "/crm/finance" };
+        },
+    },
 ];
 
 export const toolByName = (name: string) => TOOLS.find((t) => t.def.name === name);
@@ -437,6 +594,8 @@ export async function targetLabel(c: Pick<AiCtx, "org">, tool: string, a: Args):
             const r = await prisma.employee.findFirst({ where: { id: String(a.employee_id), owner: c.org }, select: { firstname: true, lastname: true } });
             return r ? `${r.firstname} ${r.lastname}`.trim() : "";
         }
+        if (tool === "navigate") return NAV_SECTIONS[String(a.section)]?.label ?? "";
+        if (tool === "create_invoice" || tool === "create_quote" || tool === "create_order" || tool === "create_contract") return String(a.customer_name ?? "");
     } catch { /* подпись необязательна */ }
     return "";
 }
