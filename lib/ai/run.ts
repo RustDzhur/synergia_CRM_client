@@ -1,10 +1,7 @@
 import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
 import { ProviderError } from "@/lib/http";
-import AiLog from "@/models/AiLog";
-import AiUsage from "@/models/AiUsage";
-import Organization from "@/models/Organization";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 import { AiCtx, ToolError, allowedTools, targetLabel } from "./tools";
 import { Msg, complete } from "./provider";
 
@@ -12,27 +9,28 @@ import { Msg, complete } from "./provider";
 // Можно переопределить переменной AI_DAILY_LIMIT (одно число для всех тарифов) — например, для теста.
 export async function dailyLimit(org: string) {
     if (Number(process.env.AI_DAILY_LIMIT) > 0) return Number(process.env.AI_DAILY_LIMIT);
-    const o = await Organization.findById(org).lean<{ plan?: string; planOverride?: string; planOverrideUntil?: Date | null }>();
+    const o = await prisma.organization.findUnique({ where: { id: org }, select: { plan: true, planOverride: true, planOverrideUntil: true } });
     return planFor(effectivePlan(o ?? {})).aiDailyRequests;
 }
 const today = () => new Date().toISOString().slice(0, 10);
-export const usedToday = async (org: string) => (await AiUsage.findOne({ org, day: today() }).lean<{ count: number }>())?.count ?? 0;
+export const usedToday = async (org: string) => (await prisma.aiUsage.findFirst({ where: { org, day: today() }, select: { count: true } }))?.count ?? 0;
 
 // Занимает одну попытку из дневного лимита. false — лимит исчерпан.
 export async function takeQuota(org: string, limit: number) {
-    const r = await AiUsage.findOneAndUpdate({ org, day: today(), count: { $lt: limit } }, { $inc: { count: 1 } }, { new: true }).catch(() => null);
-    if (r) return true;
+    const r = await prisma.aiUsage.updateMany({ where: { org, day: today(), count: { lt: limit } }, data: { count: { increment: 1 } } }).catch(() => null);
+    if (r && r.count > 0) return true;
     try {
-        await AiUsage.create({ org, day: today(), count: 1 });
+        await prisma.aiUsage.create({ data: { org, day: today(), count: 1 } });
         return true;
     } catch {
         // запись за сегодня уже есть: либо лимит достигнут, либо её только что создал параллельный запрос
-        return !!(await AiUsage.findOneAndUpdate({ org, day: today(), count: { $lt: limit } }, { $inc: { count: 1 } }, { new: true }).catch(() => null));
+        const retry = await prisma.aiUsage.updateMany({ where: { org, day: today(), count: { lt: limit } }, data: { count: { increment: 1 } } }).catch(() => null);
+        return !!(retry && retry.count > 0);
     }
 }
 
 export const log = (ctx: Pick<AiCtx, "org" | "userId">, kind: "read" | "proposed" | "executed" | "failed", tool: string, args: unknown, result = "") =>
-    AiLog.create({ org: ctx.org, user: ctx.userId, kind, tool, args: JSON.stringify(args ?? {}).slice(0, 1500), result: result.slice(0, 500) }).catch(() => undefined);
+    prisma.aiLog.create({ data: { org: ctx.org, user: ctx.userId, kind, tool, args: JSON.stringify(args ?? {}).slice(0, 1500), result: result.slice(0, 500) } }).catch(() => undefined);
 
 const LANG: Record<string, string> = { en: "English", de: "German", ua: "Ukrainian" };
 
@@ -59,7 +57,7 @@ const clip = (v: unknown) => JSON.stringify(v).slice(0, 12000);
 
 // Один ход разговора: модель может несколько раз вызвать инструменты чтения; вызов записи превращается в карточку подтверждения
 export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "assistant"; text: string }[]; locale: string; page: string; orgName: string }): Promise<ChatResult> {
-    const me = await User.findById(ctx.userId).select("firstname lastname").lean<{ firstname: string; lastname: string }>();
+    const me = await prisma.user.findUnique({ where: { id: ctx.userId }, select: { firstname: true, lastname: true } });
     const tools = allowedTools(ctx);
     const sys = system(ctx, { name: me ? `${me.firstname} ${me.lastname}`.trim() : "" }, opts.orgName, opts.locale, opts.page);
     const msgs: Msg[] = opts.history.map((m) => (m.role === "user" ? { role: "user", text: m.text } : { role: "assistant", text: m.text }));

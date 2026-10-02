@@ -1,5 +1,5 @@
 import { ProviderError } from "@/lib/http";
-import Organization from "@/models/Organization";
+import { prisma } from "@/lib/prisma";
 import type { AutoEvent } from "@/lib/automation";
 import { type Msg, aiConfigured, complete } from "./provider";
 import { dailyLimit, log as logAi, takeQuota } from "./run";
@@ -20,7 +20,7 @@ export async function runAiAction(org: string, instruction: string, ev: AutoEven
     const limit = await dailyLimit(org);
     if (!(await takeQuota(org, limit))) throw new ProviderError("The daily AI limit of the firm's plan is used up");
 
-    const orgDoc = await Organization.findById(org).select("ownerUser name");
+    const orgDoc = await prisma.organization.findUnique({ where: { id: org }, select: { ownerUser: true, name: true } });
     if (!orgDoc) throw new ProviderError("Firm not found");
     const today = new Date().toISOString().slice(0, 10);
     const ctx: AiCtx = { org, userId: String(orgDoc.ownerUser), role: "owner", modules: [], today, now: `${today}T09:00` };
