@@ -1,39 +1,30 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { requireMarket } from "@/lib/finance/marketGuard";
 import { logAudit } from "@/lib/audit";
 import { recentRetail, retailReturn, retailSale, type RetailLine } from "@/lib/finance/pos";
 import { toInvoiceDTO } from "@/lib/finance/dto";
-import Invoice from "@/models/Invoice";
-import Product from "@/models/Product";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // Касса (ТЗ §12, «Розница»): продажа по штрихбкоду и возврат по чеку.
-//   GET  — последние розничные чеки (для возврата) и товары для поиска;
-//   POST { action: "sale", lines, payType, discountPercent?, warehouse? } — продажа;
-//   POST { action: "return", invoiceId, warehouse? }                    — возврат по чеку.
-// UA: чек ПРРО пробивается по правилам (готівка/картка). DE: розница без сертифицированной
-// кассы не проводится — маршрут отвечает 409, чтобы продажу нельзя было оформить в обход.
 
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     await requireMarket(user.id, "UA");
     const sales = await recentRetail(user.id);
-    const products = await Product.find({ org: user.id, type: "good", archived: { $ne: true } }).select("name sku barcode salePrice unit stockQty image");
+    const products = await prisma.product.findMany({ where: { org: user.id, type: "good", archived: false }, select: { id: true, name: true, sku: true, barcode: true, salePrice: true, unit: true, stockQty: true, image: true } });
     // Возвращённые чеки: кредит-нота ссылается на исходный чек (creditFor) — в списке кассы такая
     // продажа помечается «Повернено», и повторный возврат по ней уже не предлагается
-    const credits = await Invoice.find({ org: user.id, kind: "credit_note", creditFor: { $in: sales.map((s) => s._id) } }).select("number creditFor").catch(() => []);
+    const credits = await prisma.invoice.findMany({ where: { org: user.id, kind: "credit_note", creditFor: { in: sales.map((s) => s.id) } }, select: { number: true, creditFor: true } }).catch(() => []);
     const returnedOf = new Map(credits.map((c) => [String(c.creditFor), c.number]));
     return NextResponse.json({
-        recent: sales.map((s) => ({ id: String(s._id), number: s.number, at: s.paidAt ? new Date(s.paidAt).toISOString() : "", total: Number(s.paidAmount) || 0, currency: s.currency, fiscalCode: s.fiscalCode ?? "", payType: s.paidVia ?? "", customerName: s.customerName, returnedBy: returnedOf.get(String(s._id)) ?? "" })),
-        products: products.map((p) => ({ id: String(p._id), name: p.name, sku: p.sku ?? "", barcode: p.barcode ?? "", price: p.salePrice ?? 0, unit: p.unit ?? "", stockQty: p.stockQty ?? 0, image: p.image ?? "" })),
+        recent: sales.map((s) => ({ id: s.id, number: s.number, at: s.paidAt ? new Date(s.paidAt).toISOString() : "", total: Number(s.paidAmount) || 0, currency: s.currency, fiscalCode: s.fiscalCode ?? "", payType: s.paidVia ?? "", customerName: s.customerName, returnedBy: returnedOf.get(s.id) ?? "" })),
+        products: products.map((p) => ({ id: p.id, name: p.name, sku: p.sku ?? "", barcode: p.barcode ?? "", price: p.salePrice ?? 0, unit: p.unit ?? "", stockQty: p.stockQty ?? 0, image: p.image ?? "" })),
     });
 }
 
@@ -42,9 +33,8 @@ export async function POST(req: Request) {
     if (!user) return unauthorized(req);
     const b = await req.json().catch(() => ({}));
     try {
-        await connectDB();
         await requireMarket(user.id, "UA");
-        const author = await User.findById(user.userId).select("firstname lastname");
+        const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
         const by = author ? `${author.firstname} ${author.lastname}`.trim() : "";
 
         if (b?.action === "sale") {
@@ -58,7 +48,7 @@ export async function POST(req: Request) {
                 warehouse: typeof b?.warehouse === "string" ? b.warehouse : undefined,
                 by,
             });
-            await logAudit({ org: user.id, userId: user.userId, action: "pos.sale", entityType: "invoice", entityId: String(result.invoice._id), summary: `Retail sale ${result.invoice.number}: ${result.totals.gross} ${result.invoice.currency} (${payType})`, meta: { payType, fiscal: result.fiscal?.fiscalCode ?? "" } });
+            await logAudit({ org: user.id, userId: user.userId, action: "pos.sale", entityType: "invoice", entityId: result.invoice.id, summary: `Retail sale ${result.invoice.number}: ${result.totals.gross} ${result.invoice.currency} (${payType})`, meta: { payType, fiscal: result.fiscal?.fiscalCode ?? "" } });
             return NextResponse.json({ invoice: toInvoiceDTO(result.invoice), totals: result.totals, fiscal: result.fiscal }, { status: 201 });
         }
 
@@ -66,12 +56,12 @@ export async function POST(req: Request) {
             const invoiceId = String(b?.invoiceId ?? "");
             if (!invoiceId) return badRequest("invoiceId is required");
             const result = await retailReturn(user.id, invoiceId, { warehouse: typeof b?.warehouse === "string" ? b.warehouse : undefined, by });
-            await logAudit({ org: user.id, userId: user.userId, action: "pos.return", entityType: "invoice", entityId: String(result.credit._id), summary: `Retail return ${result.credit.number} for ${invoiceId}`, meta: {} });
+            await logAudit({ org: user.id, userId: user.userId, action: "pos.return", entityType: "invoice", entityId: result.credit.id, summary: `Retail return ${result.credit.number} for ${invoiceId}`, meta: {} });
             return NextResponse.json({ credit: toInvoiceDTO(result.credit) }, { status: 201 });
         }
 
         if (b?.action === "sale-status") {
-            const inv = await Invoice.findOne({ _id: String(b?.invoiceId ?? ""), org: user.id }).select("number fiscalCode fiscalUrl fiscalError fiscalPayType");
+            const inv = await prisma.invoice.findFirst({ where: { id: String(b?.invoiceId ?? ""), org: user.id }, select: { number: true, fiscalCode: true, fiscalUrl: true, fiscalError: true, fiscalPayType: true } });
             if (!inv) return badRequest("not found");
             return NextResponse.json({ number: inv.number, fiscalCode: inv.fiscalCode ?? "", fiscalUrl: inv.fiscalUrl ?? "", fiscalError: inv.fiscalError ?? "", fiscalPayType: inv.fiscalPayType ?? "" });
         }

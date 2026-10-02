@@ -6,23 +6,17 @@ import { moveStock } from "./stock";
 import { fiscalAdvice, fiscalConfig, fiscalizeInvoice, fiscalizeReturn, findFiscal } from "./fiscal";
 import { nextNumber } from "./numbering";
 import { numberPrefix } from "./documents/store";
-import Invoice from "@/models/Invoice";
-import Product from "@/models/Product";
+import { prisma } from "@/lib/prisma";
 
 // Розница/POS (ТЗ §12): продажа за прилавком — штрихкод, количество, скидка, готівка или картка.
-//
-// Продажа — это счёт, отмеченный оплаченным: так она автоматически попадает в книгу доходов,
-// реестр ПН и отчётность, а не живёт отдельной «кассовой» сущностью мимо учёта. Склад списывается
-// движениями, фискальный чек пробивается по правилам ПРРО (наличная и карточная оплата — нужен).
-// DE: без сертифицированной кассы (TSE) розничную продажу не проводим — интерфейс об этом скажет.
 
 export interface RetailLine { product: string; qty: number; price?: number }
 
 export interface RetailSaleInput {
     lines: RetailLine[];
     payType: "cash" | "card";
-    discountPercent?: number; // скидка на весь чек
-    warehouse?: string; // склад списания
+    discountPercent?: number;
+    warehouse?: string;
     by?: string;
 }
 
@@ -31,16 +25,15 @@ export async function retailSale(org: string, input: RetailSaleInput) {
     const raw = (input.lines ?? []).filter((l) => l.product && Number(l.qty) > 0);
     if (!raw.length) throw new ProviderError("Чек порожній — додайте товар");
 
-    // Цены: из карточки товара, если кассир не перебил вручную; скидка применяется ко всем строкам
     const discount = Math.max(0, Math.min(90, Number(input.discountPercent) || 0));
-    const products = await Product.find({ _id: { $in: raw.map((l) => l.product) }, org });
-    const byId = new Map(products.map((p) => [String(p._id), p]));
+    const products = await prisma.product.findMany({ where: { id: { in: raw.map((l) => l.product) }, org } });
+    const byId = new Map(products.map((p) => [p.id, p]));
     const items = cleanItems(
         raw.map((l) => {
             const p = byId.get(String(l.product));
             if (!p) throw new ProviderError("Товар не знайдено");
             const base = Number(l.price) || Number(p.salePrice) || 0;
-            return { description: p.name, qty: Math.abs(Number(l.qty)), unitPrice: Math.round(base * (1 - discount / 100) * 100) / 100, taxRate: p.taxRate ?? undefined, product: String(p._id) };
+            return { description: p.name, qty: Math.abs(Number(l.qty)), unitPrice: Math.round(base * (1 - discount / 100) * 100) / 100, taxRate: p.taxRate ?? undefined, product: p.id };
         })
     );
     const withTax = applyTaxPolicy(items, settings);
@@ -48,21 +41,23 @@ export async function retailSale(org: string, input: RetailSaleInput) {
 
     const prefix = await numberPrefix(org, "invoice", settings.invoicePrefix || "РАХ");
     const number = await nextNumber(org, prefix);
-    const invoice = await Invoice.create({
-        org,
-        number,
-        kind: "invoice",
-        customerName: "Роздрібний покупець",
-        items: withTax,
-        currency: settings.currency || "UAH",
-        smallBusinessNote: !settings.uaVatPayer && (settings.country ?? "").toUpperCase() === "UA" ? true : !!settings.smallBusiness,
-        issueDate: new Date().toISOString().slice(0, 10),
-        dueDate: new Date().toISOString().slice(0, 10),
-        status: "paid",
-        paidAt: new Date(),
-        paidAmount: totals.gross,
-        paidVia: input.payType,
-        notes: discount > 0 ? `Роздрібний продаж, знижка ${discount} %` : "Роздрібний продаж",
+    let invoice = await prisma.invoice.create({
+        data: {
+            org,
+            number,
+            kind: "invoice",
+            customerName: "Роздрібний покупець",
+            items: withTax as any,
+            currency: settings.currency || "UAH",
+            smallBusinessNote: !settings.uaVatPayer && (settings.country ?? "").toUpperCase() === "UA" ? true : !!settings.smallBusiness,
+            issueDate: new Date().toISOString().slice(0, 10),
+            dueDate: new Date().toISOString().slice(0, 10),
+            status: "paid",
+            paidAt: new Date(),
+            paidAmount: totals.gross,
+            paidVia: input.payType,
+            notes: discount > 0 ? `Роздрібний продаж, знижка ${discount} %` : "Роздрібний продаж",
+        },
     });
 
     // Склад: товарные строки списываются, услуг каса не касается
@@ -81,37 +76,31 @@ export async function retailSale(org: string, input: RetailSaleInput) {
 
     // ПРРО: чек обязателен для готівки и картки — пробиваем сразу, ошибку храним в счёте
     let fiscal: { fiscalCode: string; url: string } | null = null;
+    let fiscalData: Record<string, any> = {};
     try {
         const doc = await findFiscal(org);
         if (doc && fiscalConfig(doc).auto) {
             const receipt = await fiscalizeInvoice(org, invoice, totals.gross, input.payType === "cash" ? "CASH" : "CARD");
-            invoice.fiscalId = receipt.receiptId;
-            invoice.fiscalCode = receipt.fiscalCode;
-            invoice.fiscalUrl = receipt.url;
-            invoice.fiscalAt = new Date();
-            invoice.fiscalPayType = input.payType === "cash" ? "CASH" : "CARD";
-            invoice.fiscalError = "";
-            await invoice.save();
+            fiscalData = { fiscalId: receipt.receiptId, fiscalCode: receipt.fiscalCode, fiscalUrl: receipt.url, fiscalAt: new Date(), fiscalPayType: input.payType === "cash" ? "CASH" : "CARD", fiscalError: "" };
             fiscal = { fiscalCode: receipt.fiscalCode, url: receipt.url };
         } else {
-            invoice.fiscalError = fiscalAdvice({ paidVia: input.payType }).reason;
-            await invoice.save();
+            fiscalData = { fiscalError: fiscalAdvice({ paidVia: input.payType }).reason };
         }
     } catch (e) {
-        invoice.fiscalError = e instanceof Error ? e.message.slice(0, 300) : "Чек не вдалося пробити";
-        await invoice.save();
+        fiscalData = { fiscalError: e instanceof Error ? e.message.slice(0, 300) : "Чек не вдалося пробити" };
     }
+    if (Object.keys(fiscalData).length) invoice = await prisma.invoice.update({ where: { id: invoice.id }, data: fiscalData });
 
     return { invoice, totals, fiscal };
 }
 
 /** Возврат по чеку: кредит-нота + возврат товара на склад + чек возврата (если чек продажи был). */
 export async function retailReturn(org: string, invoiceId: string, input: { warehouse?: string; by?: string } = {}) {
-    const source = await Invoice.findOne({ _id: invoiceId, org, kind: "invoice" });
+    const source = await prisma.invoice.findFirst({ where: { id: invoiceId, org, kind: "invoice" } });
     if (!source) throw new ProviderError("Чек не знайдено");
     if (source.status !== "paid") throw new ProviderError("Повернення роблять за оплаченим чеком");
     // Двойной возврат по одному чеку: кредит-нота уже выпущена — второй раз товар не возвращаем
-    const already = await Invoice.findOne({ org, kind: "credit_note", creditFor: source._id }).select("number");
+    const already = await prisma.invoice.findFirst({ where: { org, kind: "credit_note", creditFor: source.id }, select: { number: true } });
     if (already) throw new ProviderError(`За цим чеком уже зроблено повернення (${already.number})`);
 
     const settings = await financeSettings(org);
@@ -124,25 +113,27 @@ export async function retailReturn(org: string, invoiceId: string, input: { ware
     }));
     const prefix = await numberPrefix(org, "credit_note", settings.creditNotePrefix || "КН");
     const number = await nextNumber(org, prefix);
-    const credit = await Invoice.create({
-        org,
-        number,
-        kind: "credit_note",
-        creditFor: source._id,
-        customerName: source.customerName,
-        items,
-        currency: source.currency,
-        smallBusinessNote: source.smallBusinessNote,
-        issueDate: new Date().toISOString().slice(0, 10),
-        status: "sent",
-        sentAt: new Date(),
-        notes: `Повернення за чеком ${source.number}`,
+    let credit = await prisma.invoice.create({
+        data: {
+            org,
+            number,
+            kind: "credit_note",
+            creditFor: source.id,
+            customerName: source.customerName,
+            items: items as any,
+            currency: source.currency,
+            smallBusinessNote: source.smallBusinessNote,
+            issueDate: new Date().toISOString().slice(0, 10),
+            status: "sent",
+            sentAt: new Date(),
+            notes: `Повернення за чеком ${source.number}`,
+        },
     });
 
     // Товар возвращается на склад движением «повернення»
     for (const it of items) {
         if (!it.product) continue;
-        const product = await Product.findOne({ _id: it.product, org }).select("type purchasePrice");
+        const product = await prisma.product.findFirst({ where: { id: it.product, org }, select: { type: true, purchasePrice: true } });
         if (!product || product.type !== "good") continue;
         await moveStock(org, String(it.product), Math.abs(it.qty), "return", {
             warehouse: input.warehouse ?? null,
@@ -154,25 +145,19 @@ export async function retailReturn(org: string, invoiceId: string, input: { ware
 
     // Чек возврата: ссылается на чек продажи — без него возврат не сойдётся в кассе
     if (source.fiscalId) {
+        let fiscalReturnData: Record<string, any> = {};
         try {
             const doc = await findFiscal(org);
             if (doc && fiscalConfig(doc).auto) {
                 const receipt = await fiscalizeReturn(org, source, Math.abs(computeTotals(source.items as never).gross), (source.fiscalPayType as "CASH" | "CARD") || "CARD");
-                credit.fiscalReturnId = receipt.receiptId;
-
-                credit.fiscalReturnUrl = receipt.url;
-                credit.fiscalReturnCode = receipt.fiscalCode;
-                credit.fiscalReturnAt = new Date();
-                credit.fiscalReturnError = "";
-                await credit.save();
+                fiscalReturnData = { fiscalReturnId: receipt.receiptId, fiscalReturnUrl: receipt.url, fiscalReturnCode: receipt.fiscalCode, fiscalReturnAt: new Date(), fiscalReturnError: "" };
             } else {
-                credit.fiscalReturnError = "Чек повернення не пробито — автофіскалізацію вимкнено";
-                await credit.save();
+                fiscalReturnData = { fiscalReturnError: "Чек повернення не пробито — автофіскалізацію вимкнено" };
             }
         } catch (e) {
-            credit.fiscalReturnError = e instanceof Error ? e.message.slice(0, 300) : "Чек повернення не вдалося пробити";
-            await credit.save();
+            fiscalReturnData = { fiscalReturnError: e instanceof Error ? e.message.slice(0, 300) : "Чек повернення не вдалося пробити" };
         }
+        credit = await prisma.invoice.update({ where: { id: credit.id }, data: fiscalReturnData });
     }
 
     return { credit };
@@ -180,4 +165,4 @@ export async function retailReturn(org: string, invoiceId: string, input: { ware
 
 /** Последние розничные чеки: для списка возвратов на кассе. */
 export const recentRetail = (org: string) =>
-    Invoice.find({ org, kind: "invoice", paidVia: { $in: ["cash", "card"] }, status: "paid" }).sort({ paidAt: -1 }).limit(30);
+    prisma.invoice.findMany({ where: { org, kind: "invoice", paidVia: { in: ["cash", "card"] }, status: "paid" }, orderBy: { paidAt: "desc" }, take: 30 });
