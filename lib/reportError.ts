@@ -1,8 +1,7 @@
 import { sendTelegram } from "@/lib/channels/telegram";
 import { secretsOf } from "@/lib/integrations";
 import { errorBot } from "@/lib/platformSettings";
-import { connectDB } from "@/lib/mongodb";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 // Скрытые ошибки приложения — упавший запрос, исключение в браузере, сбой синхронизации — уходят
 // в Telegram владельцу. Куда именно: сначала переменные окружения (TELEGRAM_ERROR_CHAT_ID и
@@ -74,11 +73,11 @@ async function targetChat(org?: string): Promise<{ botToken: string; chatId: str
     const dedicated = await errorBot();
     if (dedicated.botToken && dedicated.chatId) return { botToken: dedicated.botToken, chatId: dedicated.chatId };
 
-    if (!(await connectDB().then(() => true).catch(() => false))) return null;
-    const linked = { type: "telegram", "config.errorChatId": { $exists: true, $nin: ["", null] } };
-    const doc = await Integration.findOne(org ? { ...linked, owner: org } : linked).catch(() => null);
+    const docs = await prisma.integration.findMany({ where: { type: "telegram", ...(org ? { owner: org } : {}) } }).catch(() => []);
+    // чат должен быть привязан командой /errors — пустой config.errorChatId не годится
+    const doc = docs.find((d) => String((d.config as any)?.errorChatId ?? "") !== "") ?? null;
     if (!doc) return null;
     const botToken = String(secretsOf<{ botToken?: string }>(doc).botToken ?? "");
-    const chatId = String(doc.config?.errorChatId ?? "");
+    const chatId = String((doc.config as any)?.errorChatId ?? "");
     return botToken && chatId ? { botToken, chatId } : null;
 }

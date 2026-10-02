@@ -1,7 +1,6 @@
 import { sendFromAccount } from "@/lib/mail";
 import { minutesOfDay, tzOffsetOf } from "@/lib/timezone";
-import Integration from "@/models/Integration";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 // Уведомление на почту. Настройки в профиле («уведомления по почте» и тихие часы) до этого только
 // хранились и никем не читались: письма не уходили вообще. Отправляем через почтовый ящик самой фирмы —
@@ -38,7 +37,7 @@ export function inQuietHours(
 // пояс не заполнен числом (поле свободное, см. lib/timezone.ts).
 export async function emailReminder(org: string, userId: string, subject: string, text: string, fallbackTzOffset?: number): Promise<boolean> {
     try {
-        const user = await User.findById(userId).select("email notifications timezone");
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, notifications: true, timezone: true } });
         if (!user?.email) return false;
         const prefs = (user.notifications ?? {}) as { email?: boolean; muteEmail?: boolean; muteFrom?: string; muteTo?: string };
         if (!prefs.email) return false;
@@ -46,10 +45,10 @@ export async function emailReminder(org: string, userId: string, subject: string
         if (inQuietHours(prefs, offset)) return false;
 
         // Ящик фирмы: тот же, из которого уходят письма клиентам (Web-Mails)
-        const account = await Integration.findOne({ owner: org, type: "mail", status: "connected" });
+        const account = await prisma.integration.findFirst({ where: { owner: org, type: "mail", status: "connected" } });
         if (!account) return false;
 
-        await sendFromAccount(account, { to: user.email, subject, text });
+        await sendFromAccount(account as any, { to: user.email, subject, text });
         return true;
     } catch {
         // почта не должна ронять напоминание: уведомление в колокольчике уже создано

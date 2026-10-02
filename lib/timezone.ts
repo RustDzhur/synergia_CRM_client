@@ -1,4 +1,4 @@
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 // Часовой пояс пользователя. В профиле это свободное текстовое поле, поэтому доверяем только числу
 // минут от UTC (так же его читает подключение iCloud-календаря); «Europe/Berlin» и прочие названия
@@ -16,7 +16,7 @@ export function tzOffsetOf(value: unknown): number | null {
 // Пояс пользователя по его профилю; если он не заполнен числом — null, и вызывающий решает,
 // что взять вместо него (обычно сдвиг того, кто в этот момент работает в кабинете)
 export async function tzOffsetOfUser(userId: string): Promise<number | null> {
-    const user = await User.findById(userId).select("timezone").lean<{ timezone?: string }>().catch(() => null);
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } }).catch(() => null);
     return tzOffsetOf(user?.timezone);
 }
 

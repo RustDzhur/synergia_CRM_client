@@ -1,5 +1,5 @@
 import { sendFromAccount } from "@/lib/mail";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 type Lang = "de" | "en" | "ua";
 
@@ -28,10 +28,10 @@ const TEXT: Record<Lang, (o: { firm: string; url: string; existing: boolean }) =
 // нет ящика или отправка не удалась — возвращаем false, доступ или приглашение при этом уже сохранены.
 export async function sendInviteEmail(org: string, to: string, firm: string, url: string, existing: boolean, lang: string): Promise<boolean> {
     try {
-        const account = await Integration.findOne({ owner: org, type: "mail", status: "connected" });
+        const account = await prisma.integration.findFirst({ where: { owner: org, type: "mail", status: "connected" } });
         if (!account) return false;
         const { subject, text } = TEXT[(["de", "en", "ua"].includes(lang) ? lang : "en") as Lang]({ firm, url, existing });
-        await sendFromAccount(account, { to, subject, text });
+        await sendFromAccount(account as any, { to, subject, text });
         return true;
     } catch {
         return false;
