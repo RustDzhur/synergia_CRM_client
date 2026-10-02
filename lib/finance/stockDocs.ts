@@ -1,24 +1,15 @@
-import { Types } from "mongoose";
 import { ProviderError } from "@/lib/http";
+import { prisma } from "@/lib/prisma";
+import { validId } from "@/lib/api";
 import { nextNumber } from "./numbering";
 import { financeSettings } from "./settings";
 import { averageCost, stockOnHand, type MovementLike } from "./warehouse";
 import { moveStock } from "./stock";
-import Product from "@/models/Product";
-import StockDoc from "@/models/StockDoc";
-import StockMovement from "@/models/StockMovement";
-import Warehouse from "@/models/Warehouse";
 
 // Документы склада (ТЗ §12): приход, расход, перемещение, списание, оприбуткування излишков,
 // инвентаризация. Документ проводит движения — остаток меняется только так, руками не правится.
 // Ошибку исправляет сторно: оно повторяет движения с обратным знаком и остаётся в журнале рядом
 // с исходным документом, чтобы история читалась как есть.
-//
-// Цена строки больше не спрашивается в форме: приход/списание считаются по себестоимости из карточки
-// товара (средняя по приходам или закупочная). Направление движения задаёт вид документа, а не цена —
-// раньше от цены зависела даже инвентаризация, и пустая цена превращала оприходование в списание.
-// Инвентаризация принимает ФАКТИЧЕСКОЕ количество и проводит только расхождения (излишек — приход,
-// недостача — списание), а не двигает склад на введённое число целиком.
 
 export type StockDocKind = "receipt" | "issue" | "transfer" | "writeoff" | "surplus" | "inventory";
 
@@ -38,19 +29,19 @@ export interface StockDocInput {
 
 async function ownedWarehouse(org: string, id?: string | null) {
     if (!id) return null;
-    const w = await Warehouse.findOne({ _id: id, org });
+    const w = await prisma.warehouse.findFirst({ where: { id, org } });
     if (!w) throw new ProviderError("Склад не знайдено");
     return w;
 }
 
 /** Остаток по учёту: по всему складу фирмы или по конкретному складу (как в отчёте остатков). */
 async function bookQuantities(org: string, productIds: string[], warehouseId: string | null): Promise<Map<string, number>> {
-    const movements = await StockMovement.find({ org, product: { $in: productIds } }).select("product qty warehouse");
+    const movements = await prisma.stockMovement.findMany({ where: { org, product: { in: productIds } }, select: { product: true, qty: true, warehouse: true, reason: true } });
     const list: MovementLike[] = movements.map((m) => ({
-        product: String(m.product),
-        warehouse: m.warehouse ? String(m.warehouse) : null,
+        product: m.product,
+        warehouse: m.warehouse ?? null,
         qty: m.qty,
-        reason: String(m.reason),
+        reason: m.reason,
         unitCost: 0,
         at: "",
     }));
@@ -88,20 +79,22 @@ export async function postStockDoc(org: string, input: StockDocInput) {
     let prepared = lines.map((l) => ({ product: l.product, qty: Math.abs(Number(l.qty)), price: Number(l.price) || 0, diff: 0, note: (l.note ?? "").slice(0, 200) }));
     if (input.kind === "inventory") {
         const ids = Array.from(new Set(prepared.map((l) => String(l.product))));
-        const book = await bookQuantities(org, ids, from?._id ? String(from._id) : null);
+        const book = await bookQuantities(org, ids, from ? from.id : null);
         prepared = prepared.map((l) => ({ ...l, diff: Math.round((l.qty - (book.get(String(l.product)) ?? 0)) * 10000) / 10000 }));
     }
 
-    const doc = await StockDoc.create({
-        org,
-        kind: input.kind,
-        number,
-        date,
-        warehouseFrom: from?._id ?? null,
-        warehouseTo: (to ?? (input.kind === "inventory" ? from : null))?._id ?? null,
-        lines: prepared,
-        note: (input.note ?? "").slice(0, 500),
-        by: input.by ?? "",
+    const doc = await prisma.stockDoc.create({
+        data: {
+            org,
+            kind: input.kind,
+            number,
+            date,
+            warehouseFrom: from ? from.id : null,
+            warehouseTo: (to ?? (input.kind === "inventory" ? from : null)) ? (to ?? (input.kind === "inventory" ? from : null))!.id : null,
+            lines: prepared as any,
+            note: (input.note ?? "").slice(0, 500),
+            by: input.by ?? "",
+        },
     });
 
     await applyDocMovements(org, doc, method);
@@ -112,35 +105,35 @@ export async function postStockDoc(org: string, input: StockDocInput) {
 // инвентаризация — только на расхождение (diff)
 async function applyDocMovements(org: string, doc: any, method: "avg" | "fifo", reverse = false) {
     const sign = reverse ? -1 : 1;
-    for (const line of doc.lines) {
+    for (const line of (doc.lines as any[]) ?? []) {
         const qty = Math.abs(Number(line.qty));
         const unitCost = Number(line.price) || (await currentUnitCost(org, String(line.product), method));
         if (doc.kind === "receipt" || doc.kind === "surplus") {
             // Приход и излишки: плюс на склад-получатель; цена строки (если задана) становится себестоимостью партии
             await moveStock(org, String(line.product), sign * qty, reverse ? "adjustment" : doc.kind === "receipt" ? "purchase" : "surplus", {
-                warehouse: doc.warehouseTo?._id ?? doc.warehouseTo ?? null,
+                warehouse: doc.warehouseTo ?? null,
                 unitCost,
-                docId: doc._id,
+                docId: doc.id,
                 note: `Документ ${doc.number}`,
                 by: doc.by,
             });
         } else if (doc.kind === "transfer") {
-            await moveStock(org, String(line.product), -sign * qty, reverse ? "adjustment" : "transfer_out", { warehouse: doc.warehouseFrom ?? null, unitCost, docId: doc._id, note: `Переміщення ${doc.number}`, by: doc.by });
-            await moveStock(org, String(line.product), sign * qty, reverse ? "adjustment" : "transfer_in", { warehouse: doc.warehouseTo ?? null, unitCost, docId: doc._id, note: `Переміщення ${doc.number}`, by: doc.by });
+            await moveStock(org, String(line.product), -sign * qty, reverse ? "adjustment" : "transfer_out", { warehouse: doc.warehouseFrom ?? null, unitCost, docId: doc.id, note: `Переміщення ${doc.number}`, by: doc.by });
+            await moveStock(org, String(line.product), sign * qty, reverse ? "adjustment" : "transfer_in", { warehouse: doc.warehouseTo ?? null, unitCost, docId: doc.id, note: `Переміщення ${doc.number}`, by: doc.by });
         } else if (doc.kind === "inventory") {
             // Только расхождение: излишек приходуется, недостача списывается; нулевые строки — наблюдение
             const diff = Number(line.diff) || 0;
             if (!diff) continue;
             await moveStock(org, String(line.product), sign * diff, reverse ? "adjustment" : diff > 0 ? "surplus" : "writeoff", {
-                warehouse: (diff > 0 ? doc.warehouseTo : doc.warehouseFrom)?._id ?? doc.warehouseFrom ?? doc.warehouseTo ?? null,
+                warehouse: (diff > 0 ? doc.warehouseTo : doc.warehouseFrom) ?? null,
                 unitCost,
-                docId: doc._id,
+                docId: doc.id,
                 note: `Інвентаризація ${doc.number}`,
                 by: doc.by,
             });
         } else {
             // Расход (issue) и списание: минус со склада-источника по выбранной оценке
-            await moveStock(org, String(line.product), -sign * qty, reverse ? "adjustment" : doc.kind === "writeoff" ? "writeoff" : "sale", { warehouse: doc.warehouseFrom ?? null, unitCost, docId: doc._id, note: `Документ ${doc.number}`, by: doc.by });
+            await moveStock(org, String(line.product), -sign * qty, reverse ? "adjustment" : doc.kind === "writeoff" ? "writeoff" : "sale", { warehouse: doc.warehouseFrom ?? null, unitCost, docId: doc.id, note: `Документ ${doc.number}`, by: doc.by });
         }
     }
 }
@@ -148,44 +141,45 @@ async function applyDocMovements(org: string, doc: any, method: "avg" | "fifo", 
 async function currentUnitCost(org: string, product: string, method: "avg" | "fifo"): Promise<number> {
     if (method === "avg") {
         // Средняя по всем приходам товара — цена, по которой он лежит на складе «в среднем»
-        const receipts = await StockMovement.find({ org, product, qty: { $gt: 0 } }).select("qty unitCost");
+        const receipts = await prisma.stockMovement.findMany({ where: { org, product, qty: { gt: 0 } }, select: { qty: true, unitCost: true } });
         const movements = receipts.map((m) => ({ product, qty: m.qty, unitCost: m.unitCost ?? 0, reason: "purchase", at: "" }));
         const avg = averageCost(movements as never, product);
         // Приходов ещё не было (или все с нулевой ценой) — берём закупочную цену из карточки товара:
         // иначе первый приход лёг бы на склад с себестоимостью 0 и продажа считалась бы по нулю
         if (avg > 0) return avg;
     }
-    const p = await Product.findOne({ _id: product, org }).select("purchasePrice");
+    const p = await prisma.product.findFirst({ where: { id: product, org }, select: { purchasePrice: true } });
     return Number(p?.purchasePrice) || 0;
 }
 
 /** Сторно документа: обратные движения и запись в журнал. Исходный документ не удаляется. */
 export async function reverseStockDoc(org: string, docId: string, by = "") {
-    const doc = await StockDoc.findOne({ _id: docId, org });
+    const doc = await prisma.stockDoc.findFirst({ where: { id: docId, org } });
     if (!doc) throw new ProviderError("Документ не знайдено");
     if (doc.reversedBy) throw new ProviderError("Документ вже скасовано");
     const number = await nextNumber(org, "СТОР");
-    const reversal = await StockDoc.create({
-        org,
-        kind: doc.kind,
-        number,
-        date: new Date().toISOString().slice(0, 10),
-        warehouseFrom: doc.warehouseFrom,
-        warehouseTo: doc.warehouseTo,
-        lines: doc.lines,
-        note: `Сторно до ${doc.number}`,
-        by,
-        reversalOf: doc._id,
+    const reversal = await prisma.stockDoc.create({
+        data: {
+            org,
+            kind: doc.kind,
+            number,
+            date: new Date().toISOString().slice(0, 10),
+            warehouseFrom: doc.warehouseFrom,
+            warehouseTo: doc.warehouseTo,
+            lines: doc.lines as any,
+            note: `Сторно до ${doc.number}`,
+            by,
+            reversalOf: doc.id,
+        },
     });
     await applyDocMovements(org, reversal, "avg", true);
-    doc.reversedBy = reversal._id;
-    await doc.save();
+    await prisma.stockDoc.update({ where: { id: docId }, data: { reversedBy: reversal.id } });
     return reversal;
 }
 
 /** Товары для строк документа: проверяем, что они принадлежат фирме. */
 export async function assertProducts(org: string, ids: string[]) {
-    const unique = Array.from(new Set(ids.filter((id) => Types.ObjectId.isValid(id))));
-    const found = await Product.countDocuments({ _id: { $in: unique }, org });
+    const unique = Array.from(new Set(ids.filter((id) => validId(id))));
+    const found = await prisma.product.count({ where: { id: { in: unique }, org } });
     if (found !== unique.length) throw new ProviderError("Деякі товари не знайдено");
 }

@@ -36,7 +36,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
                 by,
             });
             await logAudit({ org: user.id, userId: user.userId, action: "purchase.receive", entityType: "purchase", entityId: params.id, summary: `Purchase ${po.number} received (${result.doc.number})`, meta: { invoice: result.invoice ? result.invoice.number : "" } });
-            return NextResponse.json({ doc: { id: String(result.doc._id), number: result.doc.number }, invoice: result.invoice ? { id: String(result.invoice._id), number: result.invoice.number, amount: result.invoice.amount } : null, fullyReceived: result.fullyReceived }, { status: 201 });
+            return NextResponse.json({ doc: { id: String(result.doc.id), number: result.doc.number }, invoice: result.invoice ? { id: String(result.invoice._id), number: result.invoice.number, amount: result.invoice.amount } : null, fullyReceived: result.fullyReceived }, { status: 201 });
         }
 
         if (b?.action === "return") {
@@ -47,7 +47,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
                 by,
             });
             await logAudit({ org: user.id, userId: user.userId, action: "purchase.return", entityType: "purchase", entityId: params.id, summary: `Return to supplier for ${po.number} (${result.doc.number})`, meta: {} });
-            return NextResponse.json({ doc: { id: String(result.doc._id), number: result.doc.number } }, { status: 201 });
+            return NextResponse.json({ doc: { id: String(result.doc.id), number: result.doc.number } }, { status: 201 });
         }
 
         if (b?.action === "cancel") {

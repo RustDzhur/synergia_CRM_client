@@ -79,8 +79,8 @@ export async function POST(req: Request) {
             note: typeof b?.note === "string" ? b.note : "",
             by: author ? `${author.firstname} ${author.lastname}`.trim() : "",
         });
-        await logAudit({ org: user.id, userId: user.userId, action: `stock.${kind}`, entityType: "stock_doc", entityId: String(doc._id), summary: `Stock document ${doc.number} posted (${lines.length} lines)`, meta: { kind } });
-        return NextResponse.json({ id: String(doc._id), number: doc.number }, { status: 201 });
+        await logAudit({ org: user.id, userId: user.userId, action: `stock.${kind}`, entityType: "stock_doc", entityId: String(doc.id), summary: `Stock document ${doc.number} posted (${lines.length} lines)`, meta: { kind } });
+        return NextResponse.json({ id: String(doc.id), number: doc.number }, { status: 201 });
     } catch (e) {
         return failure(e);
     }

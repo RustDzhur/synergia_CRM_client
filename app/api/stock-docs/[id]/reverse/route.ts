@@ -19,8 +19,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         await connectDB();
         const author = await User.findById(user.userId).select("firstname lastname");
         const reversal = await reverseStockDoc(user.id, params.id, author ? `${author.firstname} ${author.lastname}`.trim() : "");
-        await logAudit({ org: user.id, userId: user.userId, action: "stock.reverse", entityType: "stock_doc", entityId: params.id, summary: `Stock document ${params.id} reversed by ${reversal.number}`, meta: { reversal: String(reversal._id) } });
-        return NextResponse.json({ id: String(reversal._id), number: reversal.number }, { status: 201 });
+        await logAudit({ org: user.id, userId: user.userId, action: "stock.reverse", entityType: "stock_doc", entityId: params.id, summary: `Stock document ${params.id} reversed by ${reversal.number}`, meta: { reversal: String(reversal.id) } });
+        return NextResponse.json({ id: String(reversal.id), number: reversal.number }, { status: 201 });
     } catch (e) {
         return failure(e);
     }
