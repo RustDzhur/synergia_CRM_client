@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Сборка для собственного сервера (Docker): Next кладёт в .next/standalone минимальный сервер.
+  // Vercel это не мешает — там используется обычный вывод.
+  output: "standalone",
   images: {
     remotePatterns: [{ protocol: "https", hostname: "avataaars.io" }],
   },

@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+.zz-*
+.mcp.json
+.env
+.env.local
+*.log
