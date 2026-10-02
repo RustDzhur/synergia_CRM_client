@@ -68,6 +68,28 @@ Variables: `ENCRYPTION_KEY` (обязательно тот же, что в ор�
 расшифруются), `GOOGLE_CLIENT_ID/SECRET`, `META_APP_ID/SECRET`, `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`,
 `STRIPE_*`, `NOWPAYMENTS_*`, `ADMIN_EMAILS`.
 
+## Переключение домена firmspace.de (боевое)
+
+Сервер уже готов принять боевой домен: Caddy настроен на `firmspace.de, www.firmspace.de` →
+`127.0.0.1:3210`, `APP_URL=https://firmspace.de`, данные догнаны из Mongo (`--upsert`).
+
+**Шаг, который делает владелец (я не имею доступа к DNS):** в панели Vercel → Domains → DNS
+заменить записи `A` для `@` и `www` на `92.208.2.202` (сейчас там IP Vercel). После этого
+трафик уйдёт на сервер, а Caddy сам получит сертификат Let's Encrypt (порты 80/443 открыты).
+Чтобы Vercel не отвечал за домен, там же домен из проекта лучше убрать.
+
+Откат: вернуть в Vercel исходные A-записи (Vercel снова начнёт обслуживать сайт).
+
+Проверка после переключения:
+
+```
+curl -s https://firmspace.de/api/health      # {"ok":true,"db":"ok"}
+dig +short firmspace.de                       # 92.208.2.202
+```
+
+Перед переключением стоит убедиться, что `MONGODB_URI` в оригинале больше не меняется —
+иначе нужен ещё один `node .zz-migrate-mongo-to-pg.mjs --upsert`.
+
 ## Публичный адрес
 
 Пока DNS на поддомен не указывает на `92.208.2.202`, наружу контур не выставляем.
