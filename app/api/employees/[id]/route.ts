@@ -1,21 +1,20 @@
 // app/api/employees/[id]/route.ts
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import { EMPLOYEE_FIELDS } from "@/lib/crmFields";
-import Employee from "@/models/Employee";
+import { prisma } from "@/lib/prisma";
+import { toDTO } from "@/lib/serialize";
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
 
-    await connectDB();
-    const employee = await Employee.findOne({ _id: params.id, owner: user.id });
+    const employee = await prisma.employee.findFirst({ where: { id: params.id, owner: user.id } });
     if (!employee) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
-    return NextResponse.json(employee);
+    return NextResponse.json(toDTO(employee));
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -28,24 +27,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         if (key in data && !data[key]) return NextResponse.json({ message: `${key} is required` }, { status: 400 });
     }
 
-    await connectDB();
-    const employee = await Employee.findOneAndUpdate(
-        { _id: params.id, owner: user.id },
-        { $set: data },
-        { new: true }
-    );
-
-    if (!employee) return NextResponse.json({ message: "Not found" }, { status: 404 });
-    return NextResponse.json(employee);
+    const existing = await prisma.employee.findFirst({ where: { id: params.id, owner: user.id } });
+    if (!existing) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    const employee = await prisma.employee.update({ where: { id: params.id }, data: data as any });
+    return NextResponse.json(toDTO(employee));
 }
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
 
-    await connectDB();
-    const employee = await Employee.findOneAndDelete({ _id: params.id, owner: user.id });
-
-    if (!employee) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    const r = await prisma.employee.deleteMany({ where: { id: params.id, owner: user.id } });
+    if (!r.count) return NextResponse.json({ message: "Not found" }, { status: 404 });
     return NextResponse.json({ ok: true });
 }
