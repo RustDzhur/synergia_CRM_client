@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { failure, unauthorized } from "@/lib/api";
 import { cities, warehouses } from "@/lib/finance/delivery";
@@ -17,8 +16,7 @@ export async function GET(req: Request) {
     const cityRef = url.searchParams.get("city") ?? "";
     const query = (url.searchParams.get("q") ?? "").trim();
     try {
-        await connectDB();
-        await requireMarket(user.id, "UA");
+            await requireMarket(user.id, "UA");
         if (cityRef) return NextResponse.json({ warehouses: await warehouses(user.id, cityRef, query) });
         if (query.length < 2) return NextResponse.json({ cities: [] });
         return NextResponse.json({ cities: await cities(user.id, query) });

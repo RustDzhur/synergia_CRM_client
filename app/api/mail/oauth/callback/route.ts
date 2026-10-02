@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { appOrigin } from "@/lib/appUrl";
 import { connectAds } from "@/lib/ads";
 import { connectDrive, connectGcal } from "@/lib/google";
@@ -36,8 +35,7 @@ export async function GET(req: Request) {
     const code = q.get("code");
     if (q.get("error") || !code) return back("denied");
     try {
-        await connectDB();
-        const tokens = await exchangeCode(state.v, code, origin);
+            const tokens = await exchangeCode(state.v, code, origin);
         if (ads) {
             await connectAds(state.sub, "google", tokens);
             return back("connected");

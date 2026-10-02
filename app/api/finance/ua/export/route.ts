@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { requireMarket } from "@/lib/finance/marketGuard";
@@ -47,7 +46,6 @@ export async function GET(req: Request) {
     const fromParam = url.searchParams.get("from");
     const toParam = url.searchParams.get("to");
 
-    await connectDB();
     await requireMarket(user.id, "UA");
 
     let body = "";

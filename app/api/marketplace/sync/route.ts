@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { findIntegrationByType } from "@/lib/integrations";
@@ -18,8 +17,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const provider = typeof body?.provider === "string" ? body.provider : "";
     try {
-        await connectDB();
-        await requireMarket(user.id, "UA");
+            await requireMarket(user.id, "UA");
         if (provider && body?.check) {
             const doc = await findIntegrationByType(user.id, provider);
             if (!doc) return NextResponse.json({ message: "Площадка не подключена" }, { status: 404 });

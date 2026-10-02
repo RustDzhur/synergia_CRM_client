@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { requireMarket } from "@/lib/finance/marketGuard";
@@ -17,8 +16,7 @@ export async function POST(req: Request) {
     const cityRef = String(b?.cityRef ?? "").trim();
     if (!cityRef) return badRequest("Вкажіть місто отримувача");
     try {
-        await connectDB();
-        await requireMarket(user.id, "UA");
+            await requireMarket(user.id, "UA");
         const price = await orderPrice(user.id, {
             cityRef,
             weight: Number(b?.weight) || 1,

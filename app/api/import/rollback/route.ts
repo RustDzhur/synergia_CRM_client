@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized, validId } from "@/lib/api";
 import { rollbackImport } from "@/lib/import/engine";
@@ -18,8 +17,7 @@ export async function POST(req: Request) {
     const batchId = String(b?.batchId ?? "");
     if (!validId(batchId)) return badRequest("batchId is required");
     try {
-        await connectDB();
-        const result = await rollbackImport(user.id, batchId);
+            const result = await rollbackImport(user.id, batchId);
         if (!result.ok) return badRequest(result.message === "already_rolled_back" ? "Пакет вже відкочено" : "Пакет не знайдено");
         await logAudit({ org: user.id, userId: user.userId, action: "import.rollback", entityType: "import", entityId: batchId, summary: `Import batch ${batchId} rolled back`, meta: {} });
         return NextResponse.json({ ok: true });

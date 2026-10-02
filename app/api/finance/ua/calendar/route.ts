@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { requireMarket } from "@/lib/finance/marketGuard";
@@ -15,7 +14,6 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     await requireMarket(user.id, "UA");
     const url = new URL(req.url);
     const yearParam = url.searchParams.get("year");

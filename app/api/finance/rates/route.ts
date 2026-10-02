@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { firmRate, nbuRates } from "@/lib/finance/rates";
@@ -11,7 +10,6 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     const rates = await nbuRates();
     const usd = await firmRate(user.id, "USD");
     const eur = await firmRate(user.id, "EUR");

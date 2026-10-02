@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { type PeriodKind, businessAnalysis, incomeSurplus, periodRange, trialBalance, vatReturn } from "@/lib/finance/reports";
@@ -26,7 +25,6 @@ export async function GET(req: Request) {
 
     // Режим рынка: немецкая отчётность не показывается украинской фирме и наоборот (ТЗ §3).
     // vat-register и income-book — украинские виды, остальные четыре — немецкие.
-    await connectDB();
     await requireMarket(user.id, ["income-book", "vat-register", "profit-report"].includes(kind) ? "UA" : "DE");
 
     const periodParam = url.searchParams.get("period");
@@ -43,12 +41,10 @@ export async function GET(req: Request) {
     if (kind === "income-book" || kind === "profit-report") {
         const yearParam = url.searchParams.get("year");
         const year = yearParam && /^\d{4}$/.test(yearParam) ? yearParam : from.slice(0, 4);
-        await connectDB();
-        const report = kind === "income-book" ? await incomeBook(user.id, year) : await profitReport(user.id, year);
+            const report = kind === "income-book" ? await incomeBook(user.id, year) : await profitReport(user.id, year);
         return NextResponse.json({ period: "year", report });
     }
 
-    await connectDB();
     const range = { from, to };
     if (kind === "vat") return NextResponse.json({ period, report: await vatReturn(user.id, range.from, range.to) });
     if (kind === "eur") return NextResponse.json({ period, report: await incomeSurplus(user.id, range.from, range.to) });

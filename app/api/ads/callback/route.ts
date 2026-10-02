@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { appOrigin } from "@/lib/appUrl";
 import { ProviderError } from "@/lib/http";
 import { connectAds, metaExchange, metaRedirectUri, readMetaState } from "@/lib/ads";
@@ -24,8 +23,7 @@ export async function GET(req: Request) {
     const code = q.get("code");
     if (q.get("error") || !code) return back("denied");
     try {
-        await connectDB();
-        await connectAds(state.sub, "meta", await metaExchange(code, metaRedirectUri(origin)));
+            await connectAds(state.sub, "meta", await metaExchange(code, metaRedirectUri(origin)));
         return back("connected");
     } catch (e) {
         if (!(e instanceof ProviderError)) void reportError(e, { where: "подключение рекламного кабинета" });

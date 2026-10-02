@@ -1,4 +1,3 @@
-import { connectDB } from "@/lib/mongodb";
 import { failure } from "@/lib/api";
 import { mimeByName, readMediaToken } from "@/lib/channels/media";
 import { getObject } from "@/lib/storage";
@@ -12,8 +11,7 @@ export async function GET(_req: Request, { params }: { params: { token: string }
     const path = readMediaToken(params.token);
     if (!path) return new Response("Forbidden", { status: 403 });
     try {
-        await connectDB();
-        const res = await getObject(path);
+            const res = await getObject(path);
         if (!res) return new Response("Not found", { status: 404 });
         const mime = mimeByName(path);
         return new Response(res.body, {

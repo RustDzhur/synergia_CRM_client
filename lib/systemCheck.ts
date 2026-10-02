@@ -1,10 +1,10 @@
-import { connectDB } from "@/lib/mongodb";
 import { isPublicHttps } from "@/lib/appUrl";
 import { adminEmails } from "@/lib/admin";
 import { ProviderError } from "@/lib/http";
 import { stripe, stripeConfigured } from "@/lib/stripe";
 import { checkBucket, storageProblem } from "@/lib/storage";
 import { metaApp } from "@/lib/platformSettings";
+import { prisma } from "@/lib/prisma";
 
 export interface Check { id: string; ok: boolean; message: string }
 
@@ -20,7 +20,7 @@ const attempt = async (id: string, fn: () => Promise<string>): Promise<Check> =>
 export async function systemCheck(): Promise<Check[]> {
     const google = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
     return Promise.all([
-        attempt("database", async () => { await connectDB(); return "MongoDB connected"; }),
+        attempt("database", async () => { await prisma.$queryRaw`SELECT 1`; return "PostgreSQL connected"; }),
         attempt("appUrl", async () => {
             const url = process.env.APP_URL ?? "";
             if (!isPublicHttps(url)) throw new Error("APP_URL must be a public https address without a trailing slash");

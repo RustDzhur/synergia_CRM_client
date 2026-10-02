@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { adsPlanOk, findAds, insightsFor, toConnectionDTO } from "@/lib/ads";
@@ -13,7 +12,6 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     const days = Math.min(90, Math.max(1, Number(new URL(req.url).searchParams.get("days")) || 30));
-    await connectDB();
     // фирма понизила тариф уже после подключения рекламы — данные больше не отдаём, но подключение остаётся (можно вернуть тариф)
     if (!(await adsPlanOk(user.id))) return NextResponse.json({ days, items: [], planOk: false });
     const docs = (await findAds(user.id)).filter((d) => d.config.accountId);

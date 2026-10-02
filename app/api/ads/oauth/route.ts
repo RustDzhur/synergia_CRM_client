@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, unauthorized } from "@/lib/api";
-import { connectDB } from "@/lib/mongodb";
 import { adsAvailable, adsPlanOk, makeMetaState, metaAuthorizeUrl } from "@/lib/ads";
 import { GOOGLE_ADS_SCOPE } from "@/lib/ads/google";
 import { authorizeUrl, makeState } from "@/lib/mail/oauth";
@@ -13,7 +12,6 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     // Имя тарифа в сообщении не называем: текст для пользователя берётся из переводов по коду plan_limit
     if (!(await adsPlanOk(user.id))) return NextResponse.json({ message: "Ad performance is not available on your plan.", code: "plan_limit" }, { status: 402 });
     const b = await req.json().catch(() => ({}));

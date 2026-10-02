@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { runDueJobs } from "@/lib/automation";
 import { sweepOverdueInvoices } from "@/lib/finance/overdue";
 import { runRecurringInvoices } from "@/lib/finance/recurring";
@@ -17,7 +16,6 @@ export const maxDuration = 60;
 export async function GET(req: Request) {
     const secret = process.env.CRON_SECRET;
     if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-    await connectDB();
 
     // Каждый шаг отдельно: сбой одного не должен отменять остальные, а сам сбой — остаться незамеченным
     // (раньше здесь не было обработки ошибок вообще, и упавший обход было видно только в журнале Vercel)

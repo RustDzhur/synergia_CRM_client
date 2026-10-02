@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, failure, unauthorized } from "@/lib/api";
@@ -30,8 +29,7 @@ export async function POST(req: Request) {
     const wabaId = String(b.wabaId ?? "").trim();
     if (!code) return badRequest("Meta не вернула код подключения");
     try {
-        await connectDB();
-        const result = await connectWhatsAppEmbedded(user.id, { code, phoneNumberId, wabaId }, appOrigin(req));
+            const result = await connectWhatsAppEmbedded(user.id, { code, phoneNumberId, wabaId }, appOrigin(req));
         return NextResponse.json(result);
     } catch (e) {
         return failure(e);

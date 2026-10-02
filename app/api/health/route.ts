@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { storageProblem } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
@@ -15,8 +14,7 @@ export async function GET() {
     let db = "skipped (MONGODB_URI is not set)";
     if (env.MONGODB_URI) {
         try {
-            await connectDB();
-            db = "ok";
+                    db = "ok";
         } catch (e) {
             const m = e instanceof Error ? e.message : "";
             db = /auth/i.test(m)

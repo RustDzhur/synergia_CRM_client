@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, unauthorized } from "@/lib/api";
@@ -16,8 +15,7 @@ export async function POST(req: Request) {
     const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const locale = ["en", "de", "ua"].includes(String(b.locale)) ? String(b.locale) : "de";
     try {
-        await connectDB();
-        const state = jwt.sign({ sub: user.id, l: locale, p: "meta" }, process.env.JWT_SECRET as string, { expiresIn: "15m" });
+            const state = jwt.sign({ sub: user.id, l: locale, p: "meta" }, process.env.JWT_SECRET as string, { expiresIn: "15m" });
         const url = await startMetaOauth(user.id, "whatsapp", String(b.appId ?? "").trim(), String(b.appSecret ?? "").trim(), appOrigin(req), state);
         return NextResponse.json({ url });
     } catch (e) {

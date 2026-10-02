@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { aiConfigured } from "@/lib/ai/provider";
@@ -23,7 +22,6 @@ export async function POST(req: Request) {
         .map((m) => ({ role: m.role, text: m.text.slice(0, 4000) }));
     if (!history.length || history[history.length - 1].role !== "user") return badRequest("The last message must be from the user");
 
-    await connectDB();
     const limit = await dailyLimit(user.id);
     if (!(await takeQuota(user.id, limit))) return NextResponse.json({ message: "The daily AI limit of your plan is used up. It resets tomorrow.", code: "limit", remaining: 0 }, { status: 429 });
 

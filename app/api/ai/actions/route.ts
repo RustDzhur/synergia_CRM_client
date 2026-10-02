@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { log } from "@/lib/ai/run";
@@ -18,7 +17,6 @@ export async function POST(req: Request) {
     const b = await req.json().catch(() => null);
     const tool = allowedTools(user).find((t) => t.write && t.def.name === b?.tool);
     if (!tool || !b.args || typeof b.args !== "object") return badRequest("This action is not available");
-    await connectDB();
     const ctx = { org: user.id, userId: user.userId, role: user.role, modules: user.modules, today: "", now: "" };
     try {
         const args = tool.check ? tool.check(b.args as Record<string, unknown>) : (b.args as Record<string, unknown>);

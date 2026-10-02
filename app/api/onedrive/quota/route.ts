@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { failure, unauthorized } from "@/lib/api";
 import { findOnedrive, onedriveQuota, onedriveToken } from "@/lib/onedrive";
@@ -12,8 +11,7 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     try {
-        await connectDB();
-        const drive = await findOnedrive(user.id);
+            const drive = await findOnedrive(user.id);
         if (!drive || drive.status !== "connected") return NextResponse.json({ connected: false });
         const quota = await onedriveQuota(await onedriveToken(drive));
         return NextResponse.json({ connected: true, ...quota });

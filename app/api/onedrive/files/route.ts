@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { failure, unauthorized } from "@/lib/api";
 import { findOnedrive, listOnedrive, onedriveToken } from "@/lib/onedrive";
@@ -13,8 +12,7 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     try {
-        await connectDB();
-        const drive = await findOnedrive(user.id);
+            const drive = await findOnedrive(user.id);
         if (!drive || drive.status !== "connected") return NextResponse.json({ message: "Connect OneDrive first", code: "not_connected" }, { status: 409 });
         const folder = new URL(req.url).searchParams.get("folder") ?? "";
         const files = await listOnedrive(await onedriveToken(drive), folder);

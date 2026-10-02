@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, serverError, unauthorized } from "@/lib/api";
 import { appOrigin } from "@/lib/appUrl";
@@ -21,7 +20,6 @@ export const maxDuration = 60;
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
 
     const [gcal, icloud] = await Promise.all([findGcal(user.id), findIcloud(user.id)]);
     return NextResponse.json({
@@ -59,8 +57,7 @@ export async function POST(req: Request) {
     const action = String(b.action ?? "");
 
     try {
-        await connectDB();
-
+    
         if (action === "google-start") {
             if (!oauthAvailable().google) return badRequest("Google is not configured on this site");
             // В state кладём ФИРМУ, а не пользователя: интеграция хранится по фирме (findGcal(user.id)),

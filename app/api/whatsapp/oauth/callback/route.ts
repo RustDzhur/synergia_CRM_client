@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import { connectDB } from "@/lib/mongodb";
 import { appOrigin } from "@/lib/appUrl";
 import { completeMetaOauth } from "@/lib/channels/connect";
 
@@ -19,8 +18,7 @@ export async function GET(req: Request) {
         locale = ["en", "de", "ua"].includes(String(state.l)) ? String(state.l) : "de";
         const code = q.get("code") ?? "";
         if (!code) throw new Error(q.get("error_description") || "Facebook did not return a code");
-        await connectDB();
-        const { options } = await completeMetaOauth(state.sub, "whatsapp", code, origin);
+            const { options } = await completeMetaOauth(state.sub, "whatsapp", code, origin);
         const status = options.length === 1 ? "connected" : "choose";
         const u = new URL(`${origin}/${locale}/crm/settings/integration`);
         u.searchParams.set("whatsapp", status);

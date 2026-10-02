@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { lookup, type LookupKind } from "@/lib/lookup";
@@ -22,8 +21,7 @@ export async function GET(req: Request) {
     if (kind !== "company" && kind !== "address") return badRequest("kind must be company or address");
     const query = url.searchParams.get("q") ?? "";
     try {
-        await connectDB();
-        const settings = await financeSettings(user.id);
+            const settings = await financeSettings(user.id);
         const country = (url.searchParams.get("country") || marketOf(settings.country) || "DE").toUpperCase();
         // Адреса украинской фирмы ищет её же Новая Пошта: справочник общий, но ключ — фирмы
         const addressSearch =

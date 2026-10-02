@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { type StripeSubscription, applySubscription } from "@/lib/billing";
@@ -24,8 +23,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ confirmed: false });
         }
         const sub = await stripe<StripeSubscription>("GET", `/subscriptions/${subId}`);
-        await connectDB();
-        const updated = await applySubscription(sub);
+            const updated = await applySubscription(sub);
         return NextResponse.json({ confirmed: !!updated, plan: updated?.plan ?? "free" });
     } catch (e) {
         return failure(e);
