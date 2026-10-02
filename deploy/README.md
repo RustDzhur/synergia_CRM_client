@@ -48,6 +48,26 @@ open http://127.0.0.1:3210
    в образ попадает `libquery_engine-debian-openssl-1.1.x`, а bookworm работает на OpenSSL 3 —
    движок не загружается, и `/api/health` отвечает «Database error». `openssl` ставится в обе стадии.
 
+## Крон на сервере
+
+На Vercel напоминания обходил Vercel Cron. На своём сервере то же делает пользовательский crontab
+(тот же секрет `CRON_SECRET` из `deploy/.env`):
+
+```
+5 7 * * * curl -s -m 120 -H "Authorization: Bearer <CRON_SECRET>" http://127.0.0.1:3210/api/cron/reminders
+```
+
+Проверка вручную: `curl -H "Authorization: Bearer <CRON_SECRET>" http://127.0.0.1:3210/api/cron/reminders`
+→ `{"orgs":1,"reminders":0,"jobs":0}`.
+
+## Чего не хватает из секретов
+
+В `/opt/projects/firmspace/.env` лежат только реквизиты инфраструктуры того проекта (Postgres/Redis/MinIO) —
+секретов CRM там нет. Если дубликату нужны интеграции и ИИ, перенесите из Vercel → Settings → Environment
+Variables: `ENCRYPTION_KEY` (обязательно тот же, что в оригинале — иначе сохранённые токены интеграций не
+расшифруются), `GOOGLE_CLIENT_ID/SECRET`, `META_APP_ID/SECRET`, `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`,
+`STRIPE_*`, `NOWPAYMENTS_*`, `ADMIN_EMAILS`.
+
 ## Публичный адрес
 
 Пока DNS на поддомен не указывает на `92.208.2.202`, наружу контур не выставляем.
