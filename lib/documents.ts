@@ -1,4 +1,3 @@
-import type { HydratedDocument } from "mongoose";
 import type { DocItemDTO, DocsState, FolderDTO } from "@/types/documents";
 import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
@@ -6,32 +5,30 @@ import { oauthAvailable } from "@/lib/mail/oauth";
 import { storageConfigured } from "@/lib/storage";
 import { findDrive } from "@/lib/google";
 import { findOnedrive } from "@/lib/onedrive";
-import DocFolder from "@/models/DocFolder";
-import DocItem from "@/models/DocItem";
-import Organization from "@/models/Organization";
+import { prisma } from "@/lib/prisma";
 
-type Doc = HydratedDocument<any>;
+type Doc = any;
 
 export const MAX_UPLOAD_MB = 4; // предел размера запроса у функций Vercel — 4,5 МБ
 export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
 // Сколько файлов и фото может хранить фирма всего — зависит от тарифа (app/config/plans.ts)
 export async function quotaBytes(org: string): Promise<number> {
-    const o = await Organization.findById(org).select("plan planOverride planOverrideUntil").lean<{ plan?: string; planOverride?: string; planOverrideUntil?: Date | null }>();
+    const o = await prisma.organization.findUnique({ where: { id: org }, select: { plan: true, planOverride: true, planOverrideUntil: true } });
     return planFor(effectivePlan(o ?? {})).storageMb * 1024 * 1024;
 }
 
-export const toFolderDTO = (f: Doc): FolderDTO => ({ id: f._id.toString(), name: f.name, parent: f.parent ? f.parent.toString() : null });
+export const toFolderDTO = (f: Doc): FolderDTO => ({ id: f.id, name: f.name, parent: f.parent ?? null });
 
 export const toDocDTO = (d: Doc): DocItemDTO => {
     // Внешнее хранилище документа. У записей, заведённых до появления OneDrive, поле cloud пустое,
     // но driveId заполнен — это Google Drive, и такие документы должны попадать в свою вкладку.
     const cloud: DocItemDTO["cloud"] = d.cloud === "onedrive" ? "onedrive" : d.driveId ? "google" : "";
     return {
-        id: d._id.toString(),
+        id: d.id,
         kind: d.kind,
         name: d.name,
-        folder: d.folder ? d.folder.toString() : null,
+        folder: d.folder ?? null,
         archived: !!d.archived,
         createdBy: d.createdByName,
         url: d.url,
@@ -49,8 +46,8 @@ export const toDocDTO = (d: Doc): DocItemDTO => {
 
 export async function docsState(owner: string): Promise<DocsState> {
     const [folders, docs, drive, onedrive, quota] = await Promise.all([
-        DocFolder.find({ owner }).sort({ name: 1 }),
-        DocItem.find({ owner }).sort({ createdAt: -1 }),
+        prisma.docFolder.findMany({ where: { owner }, orderBy: { name: "asc" } }),
+        prisma.docItem.findMany({ where: { owner }, orderBy: { createdAt: "desc" } }),
         findDrive(owner),
         findOnedrive(owner),
         quotaBytes(owner),
@@ -96,7 +93,7 @@ export async function ownedFolder(owner: string, id: unknown): Promise<Doc | nul
     if (id === null || id === undefined || id === "") return null;
     if (typeof id !== "string") return undefined;
     try {
-        return (await DocFolder.findOne({ _id: id, owner })) ?? undefined;
+        return (await prisma.docFolder.findFirst({ where: { id, owner } })) ?? undefined;
     } catch {
         return undefined;
     }
@@ -104,13 +101,13 @@ export async function ownedFolder(owner: string, id: unknown): Promise<Doc | nul
 
 // Все потомки папки (для защиты от цикла при переносе)
 export async function descendantIds(owner: string, root: string) {
-    const all = (await DocFolder.find({ owner }).select("parent").lean()) as unknown as { _id: { toString(): string }; parent?: { toString(): string } | null }[];
+    const all = await prisma.docFolder.findMany({ where: { owner }, select: { id: true, parent: true } });
     const out = new Set<string>();
     const walk = (id: string) => {
         for (const f of all) {
-            if (f.parent?.toString() === id && !out.has(f._id.toString())) {
-                out.add(f._id.toString());
-                walk(f._id.toString());
+            if (f.parent === id && !out.has(f.id)) {
+                out.add(f.id);
+                walk(f.id);
             }
         }
     };
