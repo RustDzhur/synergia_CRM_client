@@ -38,7 +38,7 @@ async function post<T>(url: string, headers: Record<string, string>, body: unkno
 }
 
 // ── OpenAI ──
-async function openai(system: string, msgs: Msg[], tools: ToolDef[]): Promise<Reply> {
+async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiModel("openai")): Promise<Reply> {
     const messages: unknown[] = [{ role: "system", content: system }];
     for (const m of msgs) {
         if (m.role === "user") messages.push({ role: "user", content: m.text });
@@ -50,7 +50,7 @@ async function openai(system: string, msgs: Msg[], tools: ToolDef[]): Promise<Re
         { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
         // Ограничение сверху обязательно: шлюз (OmniRoute/OpenRouter) без него считает
         // бюджет на максимум модели (~65k токенов) и отказывает при малом балансе (402).
-        { model: aiModel("openai"), max_tokens: 2000, messages, tools: tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) }
+        { model, max_tokens: 2000, messages, tools: tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) }
     );
     const msg = j.choices?.[0]?.message;
     if (!msg) throw new ProviderError("The AI provider returned an empty answer");
@@ -58,7 +58,7 @@ async function openai(system: string, msgs: Msg[], tools: ToolDef[]): Promise<Re
 }
 
 // ── Anthropic ──
-async function anthropic(system: string, msgs: Msg[], tools: ToolDef[]): Promise<Reply> {
+async function anthropic(system: string, msgs: Msg[], tools: ToolDef[], model = aiModel("anthropic")): Promise<Reply> {
     const messages: { role: "user" | "assistant"; content: unknown[] }[] = [];
     const push = (role: "user" | "assistant", block: unknown) => {
         const last = messages[messages.length - 1];
@@ -75,7 +75,7 @@ async function anthropic(system: string, msgs: Msg[], tools: ToolDef[]): Promise
     const j = await post<{ content?: { type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }[] }>(
         `${trim(process.env.ANTHROPIC_API_URL || "https://api.anthropic.com/v1")}/messages`,
         { "x-api-key": process.env.ANTHROPIC_API_KEY ?? "", "anthropic-version": "2023-06-01" },
-        { model: aiModel("anthropic"), max_tokens: 2000, system, messages, tools: tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters })) }
+        { model, max_tokens: 2000, system, messages, tools: tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters })) }
     );
     const blocks = j.content ?? [];
     return {
@@ -93,10 +93,21 @@ function parseArgs(raw: string): Record<string, unknown> {
     }
 }
 
-export async function complete(system: string, msgs: Msg[], tools: ToolDef[]): Promise<Reply> {
+// Быстрая модель для голосовых разговоров (AI_VOICE_MODEL): человек ждёт ответ вслух, и каждая секунда слышна.
+// Не ответила — тот же запрос уходит на основную модель, так что голос не ломается из-за капризов быстрой.
+export const voiceModel = () => process.env.AI_VOICE_MODEL || "";
+
+export async function complete(system: string, msgs: Msg[], tools: ToolDef[], opts: { model?: string } = {}): Promise<Reply> {
     const p = aiProvider();
     if (!p) throw new ProviderError("AI is not configured on this site");
-    return p === "anthropic" ? anthropic(system, msgs, tools) : openai(system, msgs, tools);
+    const run = (model?: string) => (p === "anthropic" ? anthropic(system, msgs, tools, model) : openai(system, msgs, tools, model));
+    if (!opts.model) return run();
+    try {
+        return await run(opts.model);
+    } catch (e) {
+        console.error("fast model failed, falling back", e instanceof Error ? e.message : e);
+        return run();
+    }
 }
 
 // ── одноразовое распознавание изображения (чек/квитанция) — без истории, без инструментов, просто system+картинка+текст → text ──
