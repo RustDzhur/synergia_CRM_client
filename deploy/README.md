@@ -76,6 +76,15 @@ FIREBASE_SERVICE_ACCOUNT=... FIREBASE_STORAGE_BUCKET=... LOCAL_STORAGE_ROOT=/dat
 
 Без ключей список того, что переносить, показывает и сухой прогон (без `--write`).
 
+Скрипт удобнее запускать на Mac (там есть `firebase-admin`), а файлы залить в том сервера:
+
+```
+node deploy/copy-firebase-files.mjs --write     # скачает в LOCAL_STORAGE_ROOT (задайте временный каталог)
+tar czf - -C "$LOCAL_STORAGE_ROOT" . | ssh server@10.50.0.1 'docker run --rm -i -v deploy_crm_storage:/data alpine:3.24.2 tar xzf - -C /data'
+```
+
+Пути внутри хранилища совпадают с бакетом (`users/<id>/<файл>/<имя>`), поэтому CRM найдёт файлы сразу.
+
 ### Две грабли сборки (обе учтены в Dockerfile)
 
 1. `npm ci` падает на транзитивной `@types/react@19.3.0`, которой нет в lock-файле → используем
