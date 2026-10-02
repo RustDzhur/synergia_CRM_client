@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Автоматическая выкладка на сервер без Vercel и без входящих соединений (у подключения DS-Lite
+# их нет): скрипт сам опрашивает GitHub. Раз в пару минут (см. cron) он смотрит ветку выкладки
+# и, если появился новый коммит с зелёным CI, пересобирает и перезапускает контейнер.
+#
+# Настройки — переменными окружения или в deploy/autodeploy.env:
+#   DEPLOY_BRANCH  ветка выкладки (по умолчанию feature/postgres-migration)
+#   REPO_SLUG      owner/repo на GitHub (нужен для проверки статуса CI)
+#   REQUIRE_CI     1 — выкладывать только зелёный CI (по умолчанию), 0 — выкладывать всегда
+set -uo pipefail
+
+HOME_DIR="${HOME:-/home/server}"
+[ -f "$HOME_DIR/crm-duplicate/deploy/autodeploy.env" ] && . "$HOME_DIR/crm-duplicate/deploy/autodeploy.env"
+
+REPO_DIR="${REPO_DIR:-$HOME_DIR/crm-duplicate}"
+BRANCH="${DEPLOY_BRANCH:-feature/postgres-migration}"
+REMOTE="${DEPLOY_REMOTE:-origin}"
+REPO_SLUG="${REPO_SLUG:-RustDzhur/synergia_CRM_client}"
+REQUIRE_CI="${REQUIRE_CI:-1}"
+STATE="$HOME_DIR/.crm-autodeploy.state"
+LOG="$HOME_DIR/crm-autodeploy.log"
+CI_RECHECK_SECONDS="${CI_RECHECK_SECONDS:-180}"
+
+log() { printf '%s %s\n' "$(date -Is)" "$*" >> "$LOG"; }
+
+cd "$REPO_DIR" || { log "нет каталога $REPO_DIR"; exit 1; }
+
+git fetch --quiet "$REMOTE" "$BRANCH" || { log "git fetch не удался"; exit 1; }
+LOCAL_SHA="$(git rev-parse HEAD)"
+REMOTE_SHA="$(git rev-parse "$REMOTE/$BRANCH")"
+[ "$LOCAL_SHA" = "$REMOTE_SHA" ] && exit 0
+
+# ── ждём зелёный CI нового коммита (API GitHub опрашиваем не чаще раза в CI_RECHECK_SECONDS) ──
+if [ "$REQUIRE_CI" = "1" ]; then
+    read -r CACHED_SHA CACHED_STATUS CACHED_AT < <(cat "$STATE" 2>/dev/null || echo "none none 0")
+    NOW="$(date +%s)"
+    if [ "$CACHED_SHA" != "$REMOTE_SHA" ] || { [ "$CACHED_STATUS" = "pending" ] && [ $((NOW - ${CACHED_AT:-0})) -ge "$CI_RECHECK_SECONDS" ]; }; then
+        STATUS="$(curl -s -m 20 -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO_SLUG/commits/$REMOTE_SHA/check-runs" |
+            python3 -c "
+import sys, json
+try:
+    runs = json.load(sys.stdin).get('check_runs', [])
+except Exception:
+    print('unknown'); raise SystemExit
+if not runs: print('none')
+elif any(r.get('status') != 'completed' for r in runs): print('pending')
+elif all(r.get('conclusion') == 'success' for r in runs): print('success')
+else: print('failure')
+" 2>/dev/null || echo unknown)"
+        echo "$REMOTE_SHA $STATUS $NOW" > "$STATE"
+        case "$STATUS" in
+            pending) log "новый коммит ${REMOTE_SHA:0:7}: ждём CI"; exit 0 ;;
+            failure) log "новый коммит ${REMOTE_SHA:0:7}: CI красный — выкладка пропущена"; exit 0 ;;
+        esac
+    else
+        exit 0
+    fi
+fi
+
+log "выкладываю ${REMOTE_SHA:0:7} (было ${LOCAL_SHA:0:7})"
+git reset --hard --quiet "$REMOTE_SHA" || { log "git reset не удался"; exit 1; }
+if docker compose -f deploy/docker-compose.yml up -d --build >> "$LOG" 2>&1; then
+    log "готово: запущено в $(docker inspect -f '{{.State.StartedAt}}' firmspace-crm 2>/dev/null || echo '?')"
+else
+    log "СБОЙ сборки/запуска — смотри строки выше"
+    exit 1
+fi

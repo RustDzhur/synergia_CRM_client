@@ -1,0 +1,40 @@
+# Проверки на каждый пуш и пул-реквест — то, что раньше делал Vercel перед выкладкой:
+# типы, генерация Prisma-клиента и production-сборка Next.js. Красный CI останавливает
+# автовыкладку на сервер (deploy/autodeploy.sh смотрит статус проверок этого коммита).
+name: CI
+
+on:
+  push:
+    branches: [main, feature/postgres-migration]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Сборке нужны имена переменных, но не рабочие значения: база на этом шаге не нужна
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
+      JWT_SECRET: ci-only-not-a-secret
+      APP_URL: https://example.com
+      LOCAL_STORAGE_ROOT: /tmp/ci-storage
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      # npm ci требует идеально совпадающего lock-файла (в проекте он расходится по транзитивной @types)
+      - name: Установка зависимостей
+        run: npm install --no-audit --no-fund
+
+      - name: Генерация клиента Prisma
+        run: npx prisma generate
+
+      - name: Проверка типов
+        run: npx tsc --noEmit
+
+      - name: Сборка приложения
+        run: npm run build

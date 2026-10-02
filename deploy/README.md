@@ -11,6 +11,35 @@
 - база: контейнер `postgres` (сеть `infrastructure`), база `crm`, роль `crm_app`
 - порт: `127.0.0.1:3210` (наружу не публикуется)
 
+## Автоматическая выкладка из GitHub (без Vercel)
+
+Схема: **GitHub → CI → сервер забирает сам**. Входящие соединения серверу не нужны —
+у подключения DS-Lite их нет, поэтому сервер сам опрашивает GitHub (pull-модель).
+
+1. **CI** — `.github/workflows/ci.yml`: на каждый пуш и пул-реквест ставит зависимости,
+   генерирует клиент Prisma, проверяет типы (`tsc --noEmit`) и собирает приложение (`next build`).
+2. **Автовыкладка** — `deploy/autodeploy.sh` на сервере, запускается по cron раз в 2 минуты:
+   делает `git fetch` ветки выкладки и, если появился новый коммит **с зелёным CI**,
+   выполняет `git reset --hard` и `docker compose up -d --build`.
+
+Cron на сервере:
+
+```
+*/2 * * * * flock -n /tmp/crm-autodeploy.lock /home/server/crm-duplicate/deploy/autodeploy.sh
+```
+
+Настройки (ветка, репозиторий, обязателен ли зелёный CI) — в `deploy/autodeploy.env`
+(образец: `deploy/autodeploy.env.example`). По умолчанию выкладывается ветка
+`feature/postgres-migration`, потому что в `main` пока лежит код оригинала с MongoDB.
+Когда сольёте миграцию в `main`, поменяйте `DEPLOY_BRANCH=main` — и всё.
+
+Журнал выкладок: `~/crm-autodeploy.log`. Откат: `git reset --hard <нужный коммит>` в
+`~/crm-duplicate` и `docker compose -f deploy/docker-compose.yml up -d --build`.
+
+Если хочется мгновенно, как Vercel, вместо опроса можно поставить на сервер
+self-hosted runner GitHub Actions (тогда выкладка запускается самим GitHub) — но это
+дополнительный процесс на сервере; pull-модель проще и уже работает.
+
 ## Обновление
 
 ```bash
