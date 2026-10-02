@@ -1,7 +1,6 @@
 import { notify } from "@/lib/notify";
 import { emailReminder } from "@/lib/notifyEmail";
-import Event from "@/models/Event";
-import Membership from "@/models/Membership";
+import { prisma } from "@/lib/prisma";
 import { syncCalendars } from "@/lib/calendar/sync";
 
 // Напоминания о событиях календаря. Своего расписания на каждую минуту у сервера нет: Vercel Cron ходит
@@ -43,8 +42,10 @@ export async function sweepEventReminders(org: string, tzOffsetMinutes = 0, thro
     // окно поиска берём с запасом в двое суток: у событий разные пояса, а дата — строка "YYYY-MM-DD"
     const dayFrom = new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10);
     const dayTo = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10);
-    const events = await Event.find({ org, reminder: { $gt: 0 }, date: { $gte: dayFrom, $lte: dayTo } })
-        .select("title description date startTime endDate endTime reminder calendar createdBy location tzOffset");
+    const events = await prisma.event.findMany({
+        where: { org, reminder: { gt: 0 }, date: { gte: dayFrom, lte: dayTo } },
+        select: { id: true, title: true, description: true, date: true, startTime: true, endDate: true, endTime: true, reminder: true, calendar: true, createdBy: true, location: true, tzOffset: true },
+    });
 
     let sent = 0;
     for (const event of events) {
@@ -68,7 +69,7 @@ export async function sweepEventReminders(org: string, tzOffsetMinutes = 0, thro
             type: "event",
             params: { title: String(event.title).slice(0, 120), at: moment(event.date, event.startTime) },
             link: "/crm/collaboration/calendar",
-            key: `event-reminder:${String(event._id)}:${event.date}T${event.startTime}:${event.reminder}`,
+            key: `event-reminder:${event.id}:${event.date}T${event.startTime}:${event.reminder}`,
             ...(event.calendar === "my" ? { user: String(event.createdBy) } : {}),
         });
         if (!created) continue;
@@ -95,7 +96,7 @@ export async function sweepEventReminders(org: string, tzOffsetMinutes = 0, thro
 // Кому писать письмо по общему событию: всем, у кого есть доступ к фирме. Обычно это несколько человек,
 // и каждый сам решает в профиле, хочет он письма или нет — фильтр внутри emailReminder.
 async function orgUserIds(org: string): Promise<string[]> {
-    const members = await Membership.find({ org }).select("user").limit(200);
+    const members = await prisma.membership.findMany({ where: { org }, select: { user: true }, take: 200 });
     return members.map((m) => String(m.user));
 }
 
