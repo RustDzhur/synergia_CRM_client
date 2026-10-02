@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { purchaseNumber } from "@/lib/purchases";
 import { defaultCurrency } from "@/lib/finance/settings";
-import PurchaseOrder from "@/models/PurchaseOrder";
-import Product from "@/models/Product";
-import Supplier from "@/models/Supplier";
-import User from "@/models/User";
-import Warehouse from "@/models/Warehouse";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -17,19 +12,19 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
-    const list = await PurchaseOrder.find({ org: user.id }).sort({ createdAt: -1 }).limit(200);
+    const list = await prisma.purchaseOrder.findMany({ where: { org: user.id }, orderBy: { createdAt: "desc" }, take: 200 });
+    const productIds = Array.from(new Set(list.flatMap((p) => (((p.lines ?? []) as any[]).map((l) => String(l.product))))));
     const [suppliers, products, warehouses] = await Promise.all([
-        Supplier.find({ org: user.id }).select("name"),
-        Product.find({ _id: { $in: list.flatMap((p) => p.lines.map((l: { product: unknown }) => l.product)) } }).select("name sku unit"),
-        Warehouse.find({ org: user.id }).select("name"),
+        prisma.supplier.findMany({ where: { org: user.id }, select: { id: true, name: true } }),
+        productIds.length ? prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, name: true, sku: true, unit: true } }) : [],
+        prisma.warehouse.findMany({ where: { org: user.id }, select: { id: true, name: true } }),
     ]);
-    const sName = new Map(suppliers.map((s) => [String(s._id), s.name]));
-    const wName = new Map(warehouses.map((w) => [String(w._id), w.name]));
-    const pInfo = new Map(products.map((p) => [String(p._id), { name: p.name, sku: p.sku ?? "", unit: p.unit ?? "" }]));
+    const sName = new Map(suppliers.map((s) => [s.id, s.name]));
+    const wName = new Map(warehouses.map((w) => [w.id, w.name]));
+    const pInfo = new Map(products.map((p) => [p.id, { name: p.name, sku: p.sku ?? "", unit: p.unit ?? "" }]));
     return NextResponse.json(
         list.map((po) => ({
-            id: String(po._id),
+            id: po.id,
             number: po.number,
             supplier: po.supplier ? sName.get(String(po.supplier)) ?? "" : "",
             supplierId: po.supplier ? String(po.supplier) : "",
@@ -40,7 +35,7 @@ export async function GET(req: Request) {
             warehouseId: po.warehouse ? String(po.warehouse) : "",
             currency: po.currency,
             notes: po.notes ?? "",
-            lines: (po.lines ?? []).map((l: { product: unknown; qty: number; price: number; receivedQty?: number }) => ({
+            lines: ((po.lines ?? []) as any[]).map((l: { product: unknown; qty: number; price: number; receivedQty?: number }) => ({
                 product: String(l.product),
                 name: pInfo.get(String(l.product))?.name ?? "",
                 sku: pInfo.get(String(l.product))?.sku ?? "",
@@ -62,15 +57,15 @@ export async function POST(req: Request) {
     if (!supplierId) return badRequest("supplier is required");
     if (!lines.length) return badRequest("lines are required");
     try {
-        await connectDB();
-        const supplier = await Supplier.findOne({ _id: supplierId, org: user.id });
+        const supplier = await prisma.supplier.findFirst({ where: { id: supplierId, org: user.id } });
         if (!supplier) return badRequest("supplier not found");
-        const author = await User.findById(user.userId).select("firstname lastname");
+        const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
         const number = await purchaseNumber(user.id);
-        const po = await PurchaseOrder.create({
+        const po = await prisma.purchaseOrder.create({
+            data: {
             org: user.id,
             number,
-            supplier: supplier._id,
+            supplier: supplier.id,
             date: typeof b?.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.date) ? b.date : new Date().toISOString().slice(0, 10),
             expectedDate: typeof b?.expectedDate === "string" ? b.expectedDate : "",
             status: "confirmed",
@@ -79,8 +74,9 @@ export async function POST(req: Request) {
             warehouse: typeof b?.warehouse === "string" && b.warehouse ? b.warehouse : undefined,
             notes: typeof b?.notes === "string" ? b.notes.slice(0, 600) : "",
             createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
+            },
         });
-        return NextResponse.json({ id: String(po._id), number: po.number }, { status: 201 });
+        return NextResponse.json({ id: po.id, number: po.number }, { status: 201 });
     } catch (e) {
         return failure(e);
     }

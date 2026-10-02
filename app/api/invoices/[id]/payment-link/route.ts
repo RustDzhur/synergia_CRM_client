@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { createPayLink, isPayProvider, type PayProvider } from "@/lib/payments";
 import { computeTotals } from "@/lib/finance/totals";
 import { toInvoiceDTO } from "@/lib/finance/dto";
-import Integration from "@/models/Integration";
-import Invoice from "@/models/Invoice";
 import { webhookPath } from "@/lib/integrations";
 import { sendToConversation } from "@/lib/channels";
-import Conversation from "@/models/Conversation";
 import { requireMarket } from "@/lib/finance/marketGuard";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -22,19 +19,18 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    await connectDB();
     // Приём оплаты через monobank/LiqPay/WayForPay/крипту — украинский набор
     await requireMarket(user.id, "UA");
-    const inv = await Invoice.findOne({ _id: params.id, org: user.id }).select("contact payLink");
+    const inv = await prisma.invoice.findFirst({ where: { id: params.id, org: user.id }, select: { contact: true, payLink: true } });
     if (!inv) return notFound();
     const [connected, conversations] = await Promise.all([
-        Integration.find({ owner: user.id, type: { $in: ["monobank", "liqpay", "wayforpay", "cryptopay"] }, status: "connected" }).select("type"),
-        inv.contact ? Conversation.find({ owner: user.id, contact: inv.contact }).select("channel name").limit(5) : [],
+        prisma.integration.findMany({ where: { owner: user.id, type: { in: ["monobank", "liqpay", "wayforpay", "cryptopay"] }, status: "connected" }, select: { type: true } }),
+        inv.contact ? prisma.conversation.findMany({ where: { owner: user.id, contact: String(inv.contact) }, select: { id: true, channel: true, name: true }, take: 5 }) : [],
     ]);
     return NextResponse.json({
         providers: connected.map((c) => String(c.type)),
-        conversations: conversations.map((c) => ({ id: String(c._id), channel: String(c.channel), name: String(c.name ?? "") })),
-        payLink: inv.payLink?.url ? { provider: inv.payLink.provider ?? "", url: inv.payLink.url } : null,
+        conversations: conversations.map((c) => ({ id: c.id, channel: String(c.channel), name: String(c.name ?? "") })),
+        payLink: (inv.payLink as any)?.url ? { provider: String((inv.payLink as any).provider ?? ""), url: String((inv.payLink as any).url) } : null,
     });
 }
 
@@ -52,12 +48,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const provider = String(body.provider ?? "");
     if (!isPayProvider(provider)) return badRequest("Обери спосіб оплати");
     try {
-        await connectDB();
         await requireMarket(user.id, "UA");
-        const inv = await Invoice.findOne({ _id: params.id, org: user.id });
+        const inv = await prisma.invoice.findFirst({ where: { id: params.id, org: user.id } });
         if (!inv) return notFound();
         if (inv.status === "paid") return badRequest("Рахунок уже оплачено");
-        const doc = await Integration.findOne({ owner: user.id, type: provider, status: "connected" });
+        const doc = await prisma.integration.findFirst({ where: { owner: user.id, type: provider, status: "connected" } });
         if (!doc) return badRequest(`${provider} не підключено — додайте ключі в Налаштуваннях → Інтеграції`);
 
         const { gross } = computeTotals(inv.items as never);
@@ -73,8 +68,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             returnUrl: `${origin}/pay/done`,
             locale: typeof body.locale === "string" ? body.locale : "uk",
         });
-        inv.payLink = { provider, url: link.url, id: link.id, at: new Date() };
-        await inv.save();
+        const saved = await prisma.invoice.update({ where: { id: inv.id }, data: { payLink: { provider, url: link.url, id: link.id, at: new Date().toISOString() } as any } });
 
         // Отправка ссылки в переписку с клиентом: у мессенджеров писать первым нельзя, поэтому
         // предлагаем только те беседы, что уже есть у этого контакта (окно показывает их списком)
@@ -83,8 +77,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         const conversationId = typeof body.conversationId === "string" ? body.conversationId : "";
         if (conversationId && validId(conversationId)) {
             try {
-                const conversation = await Conversation.findOne({ _id: conversationId, owner: user.id });
-                const account = conversation ? await Integration.findOne({ _id: conversation.integration, owner: user.id }) : null;
+                const conversation = await prisma.conversation.findFirst({ where: { id: conversationId, owner: user.id } });
+                const account = conversation ? await prisma.integration.findFirst({ where: { id: String(conversation.integration), owner: user.id } }) : null;
                 if (!conversation || !account) sendError = "Переписку не знайдено";
                 else {
                     await sendToConversation(account, conversation, `Оплата за рахунком ${inv.number}: ${link.url}`);
@@ -94,7 +88,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
                 sendError = e instanceof Error ? e.message : "Не вдалося надіслати посилання";
             }
         }
-        return NextResponse.json({ url: link.url, invoice: toInvoiceDTO(inv), sent, sendError }, { status: 201 });
+        return NextResponse.json({ url: link.url, invoice: toInvoiceDTO(saved), sent, sendError }, { status: 201 });
     } catch (e) {
         return failure(e);
     }
