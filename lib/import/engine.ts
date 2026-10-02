@@ -2,39 +2,31 @@ import { parseAmount, parseDate } from "@/lib/finance/bank";
 import { fieldError } from "@/lib/validation/common";
 import { cleanBarcode } from "@/lib/finance/productFields";
 import { moveStock } from "@/lib/finance/stock";
+import { prisma } from "@/lib/prisma";
 import { parseCsv } from "./csv";
 import { IMPORT_KINDS, guessMapping, type ImportKind } from "./kinds";
 import { groupBomRows, type BomImportRow } from "./bomGroup";
-import Bom from "@/models/Bom";
-import ImportBatch from "@/models/ImportBatch";
-import Product from "@/models/Product";
-import Contact from "@/models/Contact";
-import Company from "@/models/Company";
-import StockMovement from "@/models/StockMovement";
 
 // Мастер импорта (ТЗ §17): предпросмотр с проверкой → импорт → отчёт об ошибках → откат пакета.
 //
-// Порядок работы выбран так, чтобы файл нельзя было «залить и потом разбираться»:
-//   1. previewImport — чистая функция: разбирает CSV, раскладывает колонки и проверяет значения
-//      (теми же валидаторами, что и формы); ничего не пишет;
-//   2. applyImport — пишет только валидные строки, обновляет существующие по ключу (SKU/почта/код),
-//      создаёт остатки движениями склада (журнал неизменяем);
-//   3. rollbackImport — удаляет созданное этим пакетом и возвращает изменённое к прежним значениям,
-//      а созданные движения гасит обратными.
+//   1. previewImport — чистая функция: разбирает CSV и проверяет значения; ничего не пишет;
+//   2. applyImport — пишет только валидные строки, обновляет существующие по ключу, создаёт
+//      остатки движениями склада (журнал неизменяем);
+//   3. rollbackImport — удаляет созданное пакетом и возвращает изменённое, движения гасит обратными.
 
 export interface PreviewRow {
-    line: number; // номер строки в файле (1 — первая строка данных, заголовок не считается)
-    values: Record<string, string>; // поле → значение (только сопоставленные колонки)
+    line: number;
+    values: Record<string, string>;
     errors: Array<{ field: string; code: string }>;
-    empty: boolean; // строка целиком пустая — не ошибка, просто пропускается
+    empty: boolean;
 }
 
 export interface ImportPreview {
     kind: ImportKind;
     columns: string[];
-    mapping: Record<string, string>; // заголовок файла → поле
-    unknownColumns: string[]; // колонки без поля — их видно в окне, данные не теряются молча
-    missingRequired: string[]; // обязательные поля без колонки — импорт не запустится
+    mapping: Record<string, string>;
+    unknownColumns: string[];
+    missingRequired: string[];
     rows: PreviewRow[];
     summary: { total: number; valid: number; invalid: number };
 }
@@ -59,9 +51,6 @@ export function previewImport(kind: ImportKind, text: string, mapping?: Record<s
         const empty = Object.values(values).every((v) => !v);
         const errors: Array<{ field: string; code: string }> = [];
         if (!empty) {
-            // Числа и даты из файла приводятся к каноническому виду до проверки: Excel пишет «1 234,56»,
-            // «31.12.2026», а валидаторы и база ждут «1234.56» и «2026-12-31». Не разобравшееся значение
-            // остаётся как есть — его и покажет валидатор как ошибку строки.
             for (const f of def.fields) {
                 if (!values[f.key]) continue;
                 if (f.code === "amount" || f.code === "rate") {
@@ -73,7 +62,6 @@ export function previewImport(kind: ImportKind, text: string, mapping?: Record<s
                 }
             }
             for (const f of def.fields) {
-                // Обязательные поля проверяем на заполненность, остальные — валидатором (он пропускает пустоту)
                 if (f.required && !values[f.key]) {
                     errors.push({ field: f.key, code: "required" });
                     continue;
@@ -83,8 +71,6 @@ export function previewImport(kind: ImportKind, text: string, mapping?: Record<s
                     if (err) errors.push({ field: f.key, code: err });
                 }
             }
-            // Тип товара: в файлах пишут и «услуга», и «service» — приводим к словарю модели;
-            // без типа, но с остатком строка считается товаром (у услуги остатка не бывает)
             if (kind === "products") {
                 if (values.type && !/^(good|service)$/i.test(values.type)) values.type = isTruthy(values.type) ? "good" : "service";
                 if (!values.type && values.stockQty) values.type = "good";
@@ -116,17 +102,15 @@ export interface ImportReport {
 
 const num = (v: string | undefined, def = 0) => (v ? (Number.isFinite(parseAmount(v)) ? parseAmount(v) : def) : def);
 
-type AnyDoc = Record<string, any> & { _id: unknown; save(): Promise<unknown> };
+type AnyDoc = Record<string, any> & { id: string };
 
 /** Импорт предпросмотра в базу. Возвращает отчёт; изменения можно откатить по batchId. */
 export async function applyImport(org: string, preview: ImportPreview, opts: { fileName?: string; by?: string } = {}): Promise<ImportReport> {
-    // Спецификации собираются из строк, поэтому идут отдельным проходом: строка файла — компонент,
-    // а спецификация — изделие целиком
     if (preview.kind === "boms") return applyBomsImport(org, preview, opts);
     const log: ImportReport["log"] = [];
-    const createdIds: unknown[] = [];
-    const updatedBefore: Array<{ id: unknown; before: Record<string, unknown> }> = [];
-    const stockMovements: unknown[] = [];
+    const createdIds: string[] = [];
+    const updatedBefore: Array<{ id: string; before: Record<string, unknown> }> = [];
+    const stockMovements: string[] = [];
     let created = 0, updated = 0, skipped = 0, failed = 0;
 
     for (const row of preview.rows) {
@@ -148,25 +132,27 @@ export async function applyImport(org: string, preview: ImportPreview, opts: { f
         }
     }
 
-    const batch = await ImportBatch.create({
-        org,
-        kind: preview.kind,
-        fileName: opts.fileName ?? "",
-        by: opts.by ?? "",
-        summary: { total: preview.summary.total, created, updated, skipped, failed },
-        log: log.slice(0, 1000), // отчёт не должен раздувать документ на 5000 строк
-        createdIds,
-        updatedBefore,
-        stockMovements,
+    const batch = await prisma.importBatch.create({
+        data: {
+            org,
+            kind: preview.kind,
+            fileName: opts.fileName ?? "",
+            by: opts.by ?? "",
+            summary: { total: preview.summary.total, created, updated, skipped, failed } as any,
+            log: log.slice(0, 1000) as any,
+            createdIds,
+            updatedBefore: updatedBefore as any,
+            stockMovements,
+        },
     });
-    return { batchId: String(batch._id), summary: { total: preview.summary.total, created, updated, skipped, failed }, log };
+    return { batchId: batch.id, summary: { total: preview.summary.total, created, updated, skipped, failed }, log };
 }
 
 async function applyRow(
     org: string,
     kind: ImportKind,
     v: Record<string, string>,
-    undo: { createdIds: unknown[]; updatedBefore: Array<{ id: unknown; before: Record<string, unknown> }>; stockMovements: unknown[] }
+    undo: { createdIds: string[]; updatedBefore: Array<{ id: string; before: Record<string, unknown> }>; stockMovements: string[] }
 ): Promise<"created" | "updated" | "skipped"> {
     if (kind === "products") {
         const patch: Record<string, unknown> = {
@@ -180,84 +166,78 @@ async function applyRow(
             ...(v.taxRate ? { taxRate: num(v.taxRate) } : {}),
             ...(v.reorderLevel ? { reorderLevel: num(v.reorderLevel) } : {}),
             ...(v.image ? { image: v.image.slice(0, 500) } : {}),
-            // ВЭД: УКТ ЗЕД, вес единицы и страна происхождения (ТЗ §12)
             ...(v.hsCode ? { hsCode: v.hsCode.trim().slice(0, 20) } : {}),
             ...(v.weightKg ? { weightKg: num(v.weightKg) } : {}),
             ...(v.originCountry ? { originCountry: v.originCountry.trim().toUpperCase().slice(0, 2) } : {}),
         };
         const existing = v.sku
-            ? await Product.findOne({ org, sku: v.sku })
-            : await Product.findOne({ org, name: v.name });
+            ? await prisma.product.findFirst({ where: { org, sku: v.sku } })
+            : await prisma.product.findFirst({ where: { org, name: v.name } });
         let product: AnyDoc;
         if (existing) {
-            undo.updatedBefore.push({ id: existing._id, before: snapshot(existing, Object.keys(patch)) });
-            existing.set(patch);
-            await existing.save();
-            product = existing as AnyDoc;
+            undo.updatedBefore.push({ id: existing.id, before: snapshot(existing, Object.keys(patch)) });
+            const updated = await prisma.product.update({ where: { id: existing.id }, data: patch as any });
+            product = updated as AnyDoc;
             await addStock(org, product, v, undo);
             return "updated";
         }
-        const created = await Product.create({ org, ...patch });
-        undo.createdIds.push(created._id);
+        const created = await prisma.product.create({ data: { org, ...(patch as any) } });
+        undo.createdIds.push(created.id);
         product = created as AnyDoc;
         await addStock(org, product, v, undo);
         return "created";
     }
 
     if (kind === "stock") {
-        const product = v.sku ? await Product.findOne({ org, sku: v.sku }) : await Product.findOne({ org, name: v.name });
+        const product = v.sku ? await prisma.product.findFirst({ where: { org, sku: v.sku } }) : await prisma.product.findFirst({ where: { org, name: v.name } });
         if (!product) throw new Error("товар не знайдено — спочатку імпортуйте каталог");
         const qty = num(v.qty);
         if (!qty) return "skipped";
-        const moved = await moveStock(org, String(product._id), Math.abs(qty), "purchase", { note: "Імпорт залишків" });
+        const moved = await moveStock(org, product.id, Math.abs(qty), "purchase", { note: "Імпорт залишків" });
         if (moved) undo.stockMovements.push(moved.movement.id);
         if (v.cost) {
-            product.set({ purchasePrice: num(v.cost) });
-            undo.updatedBefore.push({ id: product._id, before: { purchasePrice: (product as AnyDoc).purchasePrice } });
-            await product.save();
+            undo.updatedBefore.push({ id: product.id, before: { purchasePrice: product.purchasePrice } });
+            await prisma.product.update({ where: { id: product.id }, data: { purchasePrice: num(v.cost) } });
         }
         return "updated";
     }
 
     if (kind === "contacts") {
         const existing =
-            (v.email ? await Contact.findOne({ owner: org, email: v.email }) : null) ??
-            (v.phone ? await Contact.findOne({ owner: org, phone: v.phone }) : null) ??
-            (await Contact.findOne({ owner: org, name: v.name }));
+            (v.email ? await prisma.contact.findFirst({ where: { owner: org, email: v.email } }) : null) ??
+            (v.phone ? await prisma.contact.findFirst({ where: { owner: org, phone: v.phone } }) : null) ??
+            (await prisma.contact.findFirst({ where: { owner: org, name: v.name } }));
         const patch = pick(v, ["name", "email", "phone", "position", "company", "website", "notes"]);
         if (existing) {
-            undo.updatedBefore.push({ id: existing._id, before: snapshot(existing, Object.keys(patch)) });
-            existing.set(patch);
-            await existing.save();
+            undo.updatedBefore.push({ id: existing.id, before: snapshot(existing, Object.keys(patch)) });
+            await prisma.contact.update({ where: { id: existing.id }, data: patch as any });
             return "updated";
         }
-        const created = await Contact.create({ owner: org, source: "import", ...patch });
-        undo.createdIds.push(created._id);
+        const created = await prisma.contact.create({ data: { owner: org, source: "import", ...(patch as any) } });
+        undo.createdIds.push(created.id);
         return "created";
     }
 
     // companies
-    const existing = (v.code ? await Company.findOne({ owner: org, code: v.code }) : null) ?? (await Company.findOne({ owner: org, name: v.name }));
-    const patch = pick(v, ["name", "code", "status", "address", "email", "authorisedPerson", "businessType"]);
+    const existing = (v.code ? await prisma.company.findFirst({ where: { owner: org, code: v.code } }) : null) ?? (await prisma.company.findFirst({ where: { owner: org, name: v.name } }));
+    const patch: Record<string, unknown> = pick(v, ["name", "code", "status", "address", "email", "authorisedPerson", "businessType"]);
     if (v.registrationDate) patch.registrationDate = parseDate(v.registrationDate) || "";
     if (existing) {
-        undo.updatedBefore.push({ id: existing._id, before: snapshot(existing, Object.keys(patch)) });
-        existing.set(patch);
-        await existing.save();
+        undo.updatedBefore.push({ id: existing.id, before: snapshot(existing, Object.keys(patch)) });
+        await prisma.company.update({ where: { id: existing.id }, data: patch as any });
         return "updated";
     }
-    const created = await Company.create({ owner: org, ...patch });
-    undo.createdIds.push(created._id);
+    const created = await prisma.company.create({ data: { owner: org, ...(patch as any) } });
+    undo.createdIds.push(created.id);
     return "created";
 }
 
-// Спецификации: строки «изделие; компонент; количество» собираются в BOM по изделию; существующая
-// спецификация не переписывается, а поднимает версию — старые производственные заказы считаются
-// по своей версии и не меняются задним числом (как в lib/finance/productionOrders.ts)
+// Спецификации: строки собираются в BOM по изделию; существующая спецификация не переписывается,
+// а поднимает версию — старые производственные заказы считаются по своей версии.
 async function applyBomsImport(org: string, preview: ImportPreview, opts: { fileName?: string; by?: string }): Promise<ImportReport> {
     const log: ImportReport["log"] = [];
-    const createdIds: unknown[] = [];
-    const updatedBefore: Array<{ id: unknown; before: Record<string, unknown> }> = [];
+    const createdIds: string[] = [];
+    const updatedBefore: Array<{ id: string; before: Record<string, unknown> }> = [];
     let created = 0;
     let failed = 0;
 
@@ -266,14 +246,11 @@ async function applyBomsImport(org: string, preview: ImportPreview, opts: { file
     const findProduct = async (sku: string, name: string): Promise<string | null> => {
         const key = `${sku.toLowerCase()}|${name.toLowerCase()}`;
         if (productCache.has(key)) return productCache.get(key) ?? null;
-        const doc = (sku ? await Product.findOne({ org, sku }) : null) ?? (await Product.findOne({ org, name }));
-        productCache.set(key, doc ? String(doc._id) : null);
-        return doc ? String(doc._id) : null;
+        const doc = (sku ? await prisma.product.findFirst({ where: { org, sku } }) : null) ?? (await prisma.product.findFirst({ where: { org, name } }));
+        productCache.set(key, doc ? doc.id : null);
+        return doc ? doc.id : null;
     };
 
-    // Строки с ошибками сразу в отчёт; годные собираются в спецификации ПО ИЗДЕЛИЮ:
-    // раньше документ создавался на каждую строку — изделие с четырьмя компонентами давало
-    // четыре одинаковые спецификации разных версий (нашёл тест импорта)
     const bad = valid.filter((r) => r.errors.length);
     for (const row of bad) {
         failed++;
@@ -281,7 +258,6 @@ async function applyBomsImport(org: string, preview: ImportPreview, opts: { file
     }
     const goodRows = valid.filter((r) => !r.errors.length);
     const groups = groupBomRows(goodRows.map((r) => r.values as unknown as BomImportRow));
-    // Строки каждого изделия — для отчёта (номер строки в файле)
     const rowsOfGroup = (g: { product: string; productSku: string }) =>
         goodRows.filter((r) => (r.values.product ?? "").trim().toLowerCase() === g.product.toLowerCase() && (r.values.productSku ?? "").trim().toLowerCase() === g.productSku.toLowerCase());
 
@@ -294,7 +270,6 @@ async function applyBomsImport(org: string, preview: ImportPreview, opts: { file
             }
             continue;
         }
-        // Компоненты должны существовать: иначе спецификация ссылалась бы в пустоту
         const components: Array<{ product: string; qty: number; wastePercent: number }> = [];
         let missing = "";
         for (const c of group.components) {
@@ -312,52 +287,56 @@ async function applyBomsImport(org: string, preview: ImportPreview, opts: { file
             }
             continue;
         }
-        const latest = await Bom.findOne({ org, product: productId }).sort({ version: -1 });
-        const nextVersion = (latest?.version ?? 0) + 1;
-        const doc = await Bom.create({
-            org,
-            product: productId,
-            name: group.product,
-            version: nextVersion,
-            active: true,
-            components,
-            operations: [],
-            outputs: [],
-            overheadPercent: group.overheadPercent || 0,
-            note: `Імпорт ${opts.fileName ?? ""}`.trim(),
+        const latest = await prisma.bom.findFirst({ where: { org, product: productId }, orderBy: { version: "desc" } });
+        const nextVersion = (Number(latest?.version) || 0) + 1;
+        const doc = await prisma.bom.create({
+            data: {
+                org,
+                product: productId,
+                name: group.product,
+                version: nextVersion,
+                active: true,
+                components: components as any,
+                operations: [] as any,
+                outputs: [] as any,
+                overheadPercent: group.overheadPercent || 0,
+                note: `Імпорт ${opts.fileName ?? ""}`.trim(),
+            },
         });
-        createdIds.push(doc._id);
+        createdIds.push(doc.id);
         created += rowsOfGroup(group).length;
         for (const r of rowsOfGroup(group)) log.push({ row: r.line, status: "created", message: nextVersion > 1 ? `версія ${nextVersion}` : "" });
     }
 
-    const batch = await ImportBatch.create({
-        org,
-        kind: preview.kind,
-        fileName: opts.fileName ?? "",
-        by: opts.by ?? "",
-        summary: { total: preview.summary.total, created, updated: 0, skipped: 0, failed },
-        log: log.slice(0, 1000),
-        createdIds,
-        updatedBefore,
-        stockMovements: [],
+    const batch = await prisma.importBatch.create({
+        data: {
+            org,
+            kind: preview.kind,
+            fileName: opts.fileName ?? "",
+            by: opts.by ?? "",
+            summary: { total: preview.summary.total, created, updated: 0, skipped: 0, failed } as any,
+            log: log.slice(0, 1000) as any,
+            createdIds,
+            updatedBefore: updatedBefore as any,
+            stockMovements: [],
+        },
     });
-    return { batchId: String(batch._id), summary: { total: preview.summary.total, created, updated: 0, skipped: 0, failed }, log };
+    return { batchId: batch.id, summary: { total: preview.summary.total, created, updated: 0, skipped: 0, failed }, log };
 }
 
 // Остаток из файла каталога становится приходом документом «Імпорт» — остаток не правится напрямую
-async function addStock(org: string, product: AnyDoc, v: Record<string, string>, undo: { stockMovements: unknown[] }) {
+async function addStock(org: string, product: AnyDoc, v: Record<string, string>, undo: { stockMovements: string[] }) {
     if (product.type !== "good" || !v.stockQty) return;
     const qty = num(v.stockQty);
     if (!qty) return;
-    const moved = await moveStock(org, String(product._id), Math.abs(qty), "purchase", { note: "Імпорт каталогу" });
+    const moved = await moveStock(org, product.id, Math.abs(qty), "purchase", { note: "Імпорт каталогу" });
     if (moved) undo.stockMovements.push(moved.movement.id);
 }
 
 // Снимок только изменяемых полей: откат возвращает именно их, не трогая остальное
 function snapshot(doc: AnyDoc, keys: string[]) {
     const before: Record<string, unknown> = {};
-    for (const k of keys) before[k] = doc[k] ?? doc.get?.(k);
+    for (const k of keys) before[k] = (doc as any)[k] ?? (doc as any).get?.(k);
     return before;
 }
 
@@ -369,34 +348,29 @@ function pick(v: Record<string, string>, keys: string[]) {
 
 /** Откат пакета: созданное удаляем, изменённое возвращаем, движения гасим обратными записями. */
 export async function rollbackImport(org: string, batchId: string): Promise<{ ok: boolean; message: string }> {
-    const batch = await ImportBatch.findOne({ _id: batchId, org });
+    const batch = await prisma.importBatch.findFirst({ where: { id: batchId, org } });
     if (!batch) return { ok: false, message: "not_found" };
     if (batch.rolledBackAt) return { ok: false, message: "already_rolled_back" };
 
-    const model = batch.kind === "contacts" ? Contact : batch.kind === "companies" ? Company : batch.kind === "boms" ? Bom : Product;
+    const delegate: any = batch.kind === "contacts" ? prisma.contact : batch.kind === "companies" ? prisma.company : batch.kind === "boms" ? prisma.bom : prisma.product;
     // У товаров, остатков и спецификаций владелец — org; у контактов и фирм — owner (историческое поле)
-    const scope = batch.kind === "contacts" || batch.kind === "companies" ? { owner: org } : { org };
+    const scope: any = batch.kind === "contacts" || batch.kind === "companies" ? { owner: org } : { org };
     if (batch.createdIds.length) {
-        const ids = batch.createdIds;
-        await model.deleteMany({ _id: { $in: ids }, ...scope });
+        await delegate.deleteMany({ where: { id: { in: batch.createdIds }, ...scope } });
     }
-    for (const entry of batch.updatedBefore) {
-        const doc = await model.findOne({ _id: entry.id, ...scope });
-        if (doc) {
-            doc.set(entry.before as never);
-            await doc.save();
-        }
+    for (const entry of ((batch.updatedBefore as any[]) ?? [])) {
+        const doc = await delegate.findFirst({ where: { id: entry.id, ...scope } });
+        if (doc) await delegate.update({ where: { id: entry.id }, data: entry.before });
     }
     // Движения склада неизменяемы: откат пишет обратные движения и связывает их с пакетом
+    const movements = [...batch.stockMovements];
     for (const movementId of batch.stockMovements) {
-        const movement = await StockMovement.findOne({ _id: movementId, org });
+        const movement = await prisma.stockMovement.findFirst({ where: { id: movementId, org } });
         if (!movement) continue;
         const reverse = await moveStock(org, String(movement.product), -movement.qty, "adjustment", { note: "Відкат імпорту" });
-        if (reverse) batch.stockMovements.push(reverse.movement.id);
+        if (reverse) movements.push(reverse.movement.id);
     }
 
-    batch.rolledBackAt = new Date();
-    batch.markModified("stockMovements");
-    await batch.save();
+    await prisma.importBatch.update({ where: { id: batch.id }, data: { stockMovements: movements, rolledBackAt: new Date() } });
     return { ok: true, message: "rolled_back" };
 }
