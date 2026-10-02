@@ -1,10 +1,6 @@
-import type { HydratedDocument } from "mongoose";
 import { ProviderError, fetchProvider } from "@/lib/http";
 import { secretsOf } from "@/lib/integrations";
-import Contact from "@/models/Contact";
-import Deal from "@/models/Deal";
-import Stage from "@/models/Stage";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 // Маркетплейсы: заказы и заявки с Prom.ua, Rozetka, Horoshop и OLX попадают в воронку сами.
 // Приведённые к общему виду заказы разбирают адаптеры рядом; здесь — общая часть: сохранить
@@ -36,7 +32,7 @@ export interface MarketOrder {
     note: string;
 }
 
-export type Doc = HydratedDocument<any>;
+export type Doc = any;
 
 const str = (v: unknown): string => (typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : "");
 const num = (v: unknown): number => {
@@ -122,7 +118,7 @@ async function rozetkaOrders(token: string, since: Date): Promise<MarketOrder[]>
 
 // Horoshop: у каждого магазина свой поддомен — адрес спрашиваем при подключении
 async function horoshopOrders(doc: Doc, since: Date): Promise<MarketOrder[]> {
-    const shop = str(doc.config?.shop).replace(/^https?:\/\//, "").replace(/\/+$/, "");
+    const shop = str((doc.config as any)?.shop).replace(/^https?:\/\//, "").replace(/\/+$/, "");
     const secrets = secretsOf<{ login?: string; password?: string }>(doc);
     if (!shop) throw new ProviderError("Укажите адрес магазина Horoshop (например shop.horoshop.ua)");
     const res = await fetchProvider(`https://${shop}/api/orders/`, {
@@ -200,15 +196,17 @@ export async function pullOrders(doc: Doc, since: Date): Promise<MarketOrder[]> 
 // Контакт ищем по телефону или почте: у маркетплейсов покупатель — это телефон, а не имя
 async function contactFor(org: string, order: MarketOrder, source: MarketplaceId) {
     const digits = order.phone.replace(/\D/g, "");
-    let contact = digits.length >= 9 ? await Contact.findOne({ owner: org, phone: { $regex: digits.slice(-9) } }) : null;
-    if (!contact && order.email) contact = await Contact.findOne({ owner: org, email: order.email });
+    let contact = digits.length >= 9 ? await prisma.contact.findFirst({ where: { owner: org, phone: { contains: digits.slice(-9) } } }) : null;
+    if (!contact && order.email) contact = await prisma.contact.findFirst({ where: { owner: org, email: order.email } });
     if (contact) return contact;
-    return Contact.create({
-        owner: org,
-        name: order.customerName,
-        phone: order.phone,
-        email: order.email,
-        source,
+    return prisma.contact.create({
+        data: {
+            owner: org,
+            name: order.customerName,
+            phone: order.phone,
+            email: order.email,
+            source,
+        },
     }).catch(() => null);
 }
 
@@ -216,9 +214,9 @@ async function contactFor(org: string, order: MarketOrder, source: MarketplaceId
 export async function importOrders(org: string, source: MarketplaceId, orders: MarketOrder[], opts: { commissionPercent?: number } = {}): Promise<{ created: number; skipped: number }> {
     if (!orders.length) return { created: 0, skipped: 0 };
     const known = new Set(
-        (await Deal.find({ owner: org, source, externalId: { $in: orders.map((o) => o.externalId) } }).select("externalId").lean<{ externalId?: string }[]>()).map((d) => String(d.externalId ?? ""))
+        (await prisma.deal.findMany({ where: { owner: org, source, externalId: { in: orders.map((o) => o.externalId) } }, select: { externalId: true } })).map((d) => String(d.externalId ?? ""))
     );
-    const stage = await Stage.findOne({ owner: org }).sort({ order: 1 });
+    const stage = await prisma.stage.findFirst({ where: { owner: org }, orderBy: { order: "asc" } });
     if (!stage) throw new ProviderError("В воронке нет ни одной колонки — сначала создайте этап в разделе CRM");
     let created = 0;
     let skipped = 0;
@@ -228,27 +226,29 @@ export async function importOrders(org: string, source: MarketplaceId, orders: M
             continue;
         }
         const contact = await contactFor(org, order, source);
-        const count = await Deal.countDocuments({ owner: org, stage: stage._id });
+        const count = await prisma.deal.count({ where: { owner: org, stage: stage.id } });
         const label = MARKETPLACES[source].label;
-        await Deal.create({
-            owner: org,
-            stage: stage._id,
-            clientName: order.customerName,
-            order: count,
-            contact: contact?._id,
-            contactName: order.customerName,
-            source,
-            externalId: order.externalId,
-            // Состав и сумма заявки — чтобы из сделки можно было одним действием собрать заказ, счёт и ТТН
-            market: { amount: order.amount, currency: order.currency, items: order.items.map((i) => ({ name: i.name, qty: i.qty, price: i.price })), commission: Number(opts.commissionPercent) || 0 },
-            responsible: "",
-            activities: [
-                { type: "created", text: order.customerName },
-                {
-                    type: "note",
-                    text: [`Заявка з ${label} №${order.externalId}`, order.amount ? `Сума: ${order.amount} ${order.currency}` : "", order.status ? `Статус: ${order.status}` : "", order.note].filter(Boolean).join(" · "),
-                },
-            ],
+        await prisma.deal.create({
+            data: {
+                owner: org,
+                stage: stage.id,
+                clientName: order.customerName,
+                order: count,
+                contact: contact?.id,
+                contactName: order.customerName,
+                source,
+                externalId: order.externalId,
+                // Состав и сумма заявки — чтобы из сделки можно было одним действием собрать заказ, счёт и ТТН
+                market: { amount: order.amount, currency: order.currency, items: order.items.map((i) => ({ name: i.name, qty: i.qty, price: i.price })), commission: Number(opts.commissionPercent) || 0 } as any,
+                responsible: "",
+                activities: [
+                    { type: "created", text: order.customerName },
+                    {
+                        type: "note",
+                        text: [`Заявка з ${label} №${order.externalId}`, order.amount ? `Сума: ${order.amount} ${order.currency}` : "", order.status ? `Статус: ${order.status}` : "", order.note].filter(Boolean).join(" · "),
+                    },
+                ] as any,
+            },
         });
         created += 1;
     }
@@ -257,21 +257,18 @@ export async function importOrders(org: string, source: MarketplaceId, orders: M
 
 /** Синхронизация всех подключённых площадок: одна недоступная не мешает остальным */
 export async function syncMarketplaces(org: string, sinceDays = 30): Promise<{ provider: string; created: number; skipped: number; error?: string }[]> {
-    const { default: Integration } = await import("@/models/Integration");
-    const docs = await Integration.find({ owner: org, type: { $in: Object.keys(MARKETPLACES) }, status: "connected" });
+    const docs = await prisma.integration.findMany({ where: { owner: org, type: { in: Object.keys(MARKETPLACES) }, status: "connected" } });
     const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
     const out: { provider: string; created: number; skipped: number; error?: string }[] = [];
     for (const doc of docs) {
         try {
             const orders = await pullOrders(doc, since);
-            const { created, skipped } = await importOrders(org, doc.type as MarketplaceId, orders, { commissionPercent: Number(doc.config?.commission) || 0 });
-            doc.error = "";
-            await doc.save();
+            const { created, skipped } = await importOrders(org, doc.type as MarketplaceId, orders, { commissionPercent: Number((doc.config as any)?.commission) || 0 });
+            await prisma.integration.update({ where: { id: doc.id }, data: { error: "" } });
             out.push({ provider: doc.type, created, skipped });
         } catch (e) {
             const message = e instanceof Error ? e.message : "Не удалось получить заказы";
-            doc.error = message.slice(0, 300);
-            await doc.save();
+            await prisma.integration.update({ where: { id: doc.id }, data: { error: message.slice(0, 300) } });
             out.push({ provider: doc.type, created: 0, skipped: 0, error: message });
         }
     }
@@ -290,4 +287,3 @@ export async function checkMarketplace(doc: Doc): Promise<{ ok: boolean; sample:
     }
 }
 
-export { User };
