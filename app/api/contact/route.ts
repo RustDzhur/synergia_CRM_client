@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { rateLimited } from "@/lib/rateLimit";
 import { serverError } from "@/lib/api";
-import ContactMessage from "@/models/ContactMessage";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -22,8 +21,7 @@ export async function POST(req: Request) {
     if (!name || !message || !/^\S+@\S+\.\S+$/.test(email)) return NextResponse.json({ message: "Invalid data" }, { status: 400 });
 
     try {
-        await connectDB();
-        await ContactMessage.create({ name, email, phone, message, locale });
+        await prisma.contactMessage.create({ data: { name, email, phone, message, locale } });
         return NextResponse.json({ ok: true }, { status: 201 });
     } catch (e) {
         return serverError(e);

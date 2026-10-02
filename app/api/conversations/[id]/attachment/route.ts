@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { appOrigin } from "@/lib/appUrl";
 import { sendToConversation, toMessageDTO } from "@/lib/channels";
 import { MAX_ATTACH_BYTES, MAX_ATTACH_MB, dropMedia, mediaKind, mediaName, saveMedia } from "@/lib/channels/media";
-import Conversation from "@/models/Conversation";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -28,10 +26,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (BLOCKED.test(name)) return badRequest("This file type is not allowed");
     const text = typeof form.get("text") === "string" ? (form.get("text") as string).trim().slice(0, 2000) : "";
     try {
-        await connectDB();
-        const conversation = await Conversation.findOne({ _id: params.id, owner: user.id });
+        const conversation = await prisma.conversation.findFirst({ where: { id: params.id, owner: user.id } });
         if (!conversation) return notFound();
-        const integration = await Integration.findOne({ _id: conversation.integration, owner: user.id });
+        const integration = await prisma.integration.findFirst({ where: { id: String(conversation.integration), owner: user.id } });
         if (!integration) return notFound();
         const data = Buffer.from(await file.arrayBuffer());
         const mime = (file.type || "application/octet-stream").toLowerCase();

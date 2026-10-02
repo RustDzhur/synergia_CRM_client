@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { sendToConversation, toMessageDTO } from "@/lib/channels";
-import Conversation from "@/models/Conversation";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +16,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!text) return badRequest("Text is required");
     if (text.length > 2000) return badRequest("Message is too long");
     try {
-        await connectDB();
-        const conversation = await Conversation.findOne({ _id: params.id, owner: user.id });
+        const conversation = await prisma.conversation.findFirst({ where: { id: params.id, owner: user.id } });
         if (!conversation) return notFound();
-        const integration = await Integration.findOne({ _id: conversation.integration, owner: user.id });
+        const integration = await prisma.integration.findFirst({ where: { id: String(conversation.integration), owner: user.id } });
         if (!integration) return notFound();
         const { message } = await sendToConversation(integration, conversation, text);
         return NextResponse.json(message ? toMessageDTO(message) : null, { status: 201 });
