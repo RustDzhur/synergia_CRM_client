@@ -20,7 +20,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     await connectDB();
     const integration = await findByToken("webchat", params.token);
     if (!integration) return corsJson({ message: "Not found" }, 404);
-    const conversation = await Conversation.findOne({ integration: integration._id, externalId: visitor });
+    const conversation = await Conversation.findOne({ integration: integration.id, externalId: visitor });
     if (!conversation) return corsJson({ messages: [] });
     const list = (await Message.find({ conversation: conversation._id }).sort({ createdAt: -1 }).limit(100)).reverse();
     return corsJson({ messages: list.map(toMessageDTO) });
@@ -43,13 +43,13 @@ export async function POST(req: Request, { params }: { params: { token: string }
     const lang = typeof body.lang === "string" ? body.lang.slice(0, 2) : "en";
     // страница, с которой пишет посетитель: видно в уведомлении и в переписке — «смотрит цены» помогает ответить по делу
     const page = typeof body.page === "string" ? body.page.slice(0, 300) : "";
-    const first = !(await Conversation.exists({ integration: integration._id, externalId: body.visitor }));
+    const first = !(await Conversation.exists({ integration: integration.id, externalId: body.visitor }));
     const { message } = await recordMessage(integration, { externalId: body.visitor, name, text, ...(page ? { meta: { page } } : {}) });
 
     // Готовый ответ бота: те же тексты, что были в чатботе на лендинге (app/content/chatbotFaq.ts).
     // Ответ записываем в переписку, чтобы человек в CRM видел, что посетителю уже сказали, — и отвечаем сразу.
     // Бота можно выключить в настройках канала: тогда сообщение просто ждёт человека
-    const hit = integration.config.botEnabled === "0" ? null : matchFaq(text);
+    const hit = (integration.config as any)?.botEnabled === "0" ? null : matchFaq(text);
     let reply: ReturnType<typeof toMessageDTO> | null = null;
     if (hit) {
         const { message: botMessage } = await recordMessage(integration, {

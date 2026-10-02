@@ -18,7 +18,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     await connectDB();
     const integration = await findByToken("webchat", params.token);
     if (!integration) return corsJson({ message: "Not found" }, 404);
-    const { title, greeting, color, hoursFrom, hoursTo, hoursDays, tzOffset, ctaLabel, ctaUrl } = integration.config;
+    const { title, greeting, color, hoursFrom, hoursTo, hoursDays, tzOffset, ctaLabel, ctaUrl } = (integration.config ?? {}) as any;
     const lang = new URL(req.url).searchParams.get("lang") ?? "en";
 
     // быстрые вопросы — те же готовые тексты, по которым отвечает бот (app/content/chatbotFaq.ts)

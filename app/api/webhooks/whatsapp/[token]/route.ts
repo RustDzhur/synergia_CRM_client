@@ -16,7 +16,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     await connectDB();
     const integration = await findByToken("whatsapp", params.token);
     if (!integration) return new Response("Not found", { status: 404 });
-    const challenge = verifyWhatsAppChallenge(new URL(req.url).searchParams, integration.config.verifyToken);
+    const challenge = verifyWhatsAppChallenge(new URL(req.url).searchParams, (integration.config as any)?.verifyToken);
     if (challenge === null) return new Response("Forbidden", { status: 403 });
     return new Response(challenge, { status: 200 });
 }

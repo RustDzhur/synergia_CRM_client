@@ -24,7 +24,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
     await connectDB();
     const integration = await findByToken("webchat", params.token);
     if (!integration) return corsJson({ message: "Not found" }, 404);
-    const conversation = await Conversation.findOne({ integration: integration._id, externalId: body.visitor });
+    const conversation = await Conversation.findOne({ integration: integration.id, externalId: body.visitor });
     if (!conversation) return corsJson({ message: "Not found" }, 404);
 
     // оценивают ответ бота, а не человека: ищем именно такое сообщение в этой беседе

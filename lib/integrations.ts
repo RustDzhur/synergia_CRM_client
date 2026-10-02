@@ -1,8 +1,9 @@
 import type { IntegrationDTO, IntegrationType } from "@/types/integrations";
 import { decryptJSON, encryptJSON } from "@/lib/crypto";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
-// Документ интеграции: и Mongoose-документ (старые модули), и запись Prisma — по полям они совместимы
+// Документ интеграции — запись Prisma. По полям она совместима с прежним Mongoose-документом,
+// поэтому DTO и secretsOf работают одинаково.
 type Doc = any;
 
 export function webhookPath(type: IntegrationType, token: string) {
@@ -35,9 +36,9 @@ export const secretsOf = <T = Record<string, string>>(doc: Doc) => decryptJSON<T
 export const packSecrets = (value: unknown) => encryptJSON(value);
 
 // Подключение фирмы по типу (площадки, доставка, касса): нужен сам документ, а не DTO
-export const findIntegrationByType = (owner: string, type: string) => Integration.findOne({ owner, type });
+export const findIntegrationByType = (owner: string, type: string) => prisma.integration.findFirst({ where: { owner, type } });
 
 // Интеграция по адресу вебхука (запрос от провайдера, без пользователя)
 export async function findByToken(type: IntegrationType, token: string) {
-    return Integration.findOne({ type, token });
+    return prisma.integration.findFirst({ where: { type, token } });
 }

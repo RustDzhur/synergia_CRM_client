@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { safeEqual } from "@/lib/crypto";
 import { findByToken, secretsOf } from "@/lib/integrations";
+import { prisma } from "@/lib/prisma";
 import { recordMessage } from "@/lib/channels";
 import { parseTelegramUpdate, sendTelegram } from "@/lib/channels/telegram";
 import { reportError } from "@/lib/reportError";
@@ -20,9 +21,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
     // Команда /errors привязывает этот чат для отчётов об ошибках приложения (lib/reportError.ts).
     // Её отправляет человек сам, поэтому чужая переписка адресом отчётов стать не может.
     if (message && /^\/errors(?:@\w+)?\s*$/i.test(message.text.trim())) {
-        integration.config = { ...(integration.config ?? {}), errorChatId: message.externalId };
-        integration.markModified("config");
-        await integration.save();
+        await prisma.integration.update({ where: { id: integration.id }, data: { config: { ...((integration.config ?? {}) as any), errorChatId: message.externalId } as any } });
         // Сразу отправляем проверочное сообщение тем же путём, что и настоящие отчёты: человек видит
         // и что адрес принят, и как выглядит отчёт. Иначе пришлось бы ждать первой настоящей поломки,
         // чтобы понять, работает ли настройка.
@@ -30,9 +29,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
         return NextResponse.json({ ok: true });
     }
     if (message && /^\/errors_off(?:@\w+)?\s*$/i.test(message.text.trim())) {
-        integration.config = { ...(integration.config ?? {}), errorChatId: "" };
-        integration.markModified("config");
-        await integration.save();
+        await prisma.integration.update({ where: { id: integration.id }, data: { config: { ...((integration.config ?? {}) as any), errorChatId: "" } as any } });
         await sendTelegram(secretsOf(integration).botToken, message.externalId, "Отчёты об ошибках больше не приходят в этот чат.");
         return NextResponse.json({ ok: true });
     }

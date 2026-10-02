@@ -14,7 +14,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     const integration = await findByToken("messenger", params.token);
     if (!integration) return new Response("Not found", { status: 404 });
     const q = new URL(req.url).searchParams;
-    if (q.get("hub.mode") === "subscribe" && safeEqual(q.get("hub.verify_token") ?? "", integration.config.verifyToken)) {
+    if (q.get("hub.mode") === "subscribe" && safeEqual(q.get("hub.verify_token") ?? "", (integration.config as any)?.verifyToken)) {
         return new Response(q.get("hub.challenge") ?? "", { status: 200 });
     }
     return new Response("Forbidden", { status: 403 });

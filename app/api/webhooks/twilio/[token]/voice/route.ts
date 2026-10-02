@@ -19,7 +19,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
         const to = normalizePhone(p.To ?? "");
         if (!to) return twiml("<Say>The number is not valid.</Say><Hangup/>");
         const action = `${hookBase}/voice-status?dir=out&amp;peer=${encodeURIComponent(to)}`;
-        return twiml(`<Dial callerId="${xmlEscape(integration.config.phone)}" answerOnBridge="true" action="${action}"><Number>${xmlEscape(to)}</Number></Dial>`);
+        return twiml(`<Dial callerId="${xmlEscape((integration.config as any)?.phone)}" answerOnBridge="true" action="${action}"><Number>${xmlEscape(to)}</Number></Dial>`);
     }
 
     const peer = normalizePhone(from) ?? from;

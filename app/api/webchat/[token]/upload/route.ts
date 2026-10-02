@@ -41,7 +41,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
     const saved = await saveMedia(owner, { kind, name: file.name || "file", mime }, Buffer.from(await file.arrayBuffer()));
     if (!saved) return corsJson({ message: "The file could not be stored" }, 400);
 
-    const conversation = await Conversation.findOne({ integration: integration._id, externalId: visitor });
+    const conversation = await Conversation.findOne({ integration: integration.id, externalId: visitor });
     const name = conversation?.name || `Visitor ${String(visitor).slice(-4)}`;
     const { message } = await recordMessage(integration, { externalId: String(visitor), name, text: "", attachment: saved });
     void notifyTeamTelegram(owner, ["📎 Посетитель прислал файл в чате на сайте", `От: ${name}`, `Файл: ${saved.name}`, `Вид: ${mediaLabel(saved) || "файл"}`].join("\n"));
