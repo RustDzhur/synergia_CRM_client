@@ -1,16 +1,9 @@
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { requireMarket } from "@/lib/finance/marketGuard";
 import { toCsv } from "@/lib/import/csv";
 import { computeTotals } from "@/lib/finance/totals";
-import Product from "@/models/Product";
-import Contact from "@/models/Contact";
-import Company from "@/models/Company";
-import Invoice from "@/models/Invoice";
-import Order from "@/models/Order";
-import Quote from "@/models/Quote";
-import Expense from "@/models/Expense";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -38,7 +31,6 @@ export async function GET(req: Request) {
     // (8400 выручка 19 %, 1200 банк), их можно переопределить параметрами и подтвердить с бухгалтером.
     // Формат немецкий: украинской фирме он не выгружается даже по прямой ссылке
     if (kind === "datev") {
-        await connectDB();
         try {
             await requireMarket(user.id, "DE");
         } catch (e) {
@@ -48,46 +40,45 @@ export async function GET(req: Request) {
     }
     if (!["csv", "json", "yml"].includes(format)) return badRequest("format must be csv, json or yml");
 
-    await connectDB();
     let columns: string[] = [];
     let rows: Array<Array<string | number>> = [];
 
     if (kind === "products") {
-        const list = await Product.find({ org: user.id }).sort({ name: 1 });
+        const list = await prisma.product.findMany({ where: { org: user.id }, orderBy: { name: "asc" } });
         columns = ["name", "sku", "barcode", "type", "unit", "purchasePrice", "salePrice", "taxRate", "stockQty", "reorderLevel", "image"];
         rows = list.map((p) => [p.name, p.sku ?? "", p.barcode ?? "", p.type ?? "", p.unit ?? "", p.purchasePrice ?? 0, p.salePrice ?? 0, p.taxRate ?? "", p.stockQty ?? 0, p.reorderLevel ?? 0, p.image ?? ""]);
         if (format === "yml") return ymlProducts(user.id, url.origin);
     } else if (kind === "contacts") {
-        const list = await Contact.find({ owner: user.id }).sort({ name: 1 });
+        const list = await prisma.contact.findMany({ where: { owner: user.id }, orderBy: { name: "asc" } });
         columns = ["name", "email", "phone", "position", "company", "website", "notes"];
         rows = list.map((c) => [c.name, c.email ?? "", c.phone ?? "", c.position ?? "", c.company ?? "", c.website ?? "", c.notes ?? ""]);
     } else if (kind === "companies") {
-        const list = await Company.find({ owner: user.id }).sort({ name: 1 });
+        const list = await prisma.company.findMany({ where: { owner: user.id }, orderBy: { name: "asc" } });
         columns = ["name", "code", "status", "address", "email", "registrationDate", "authorisedPerson", "businessType"];
         rows = list.map((c) => [c.name, c.code ?? "", c.status ?? "", c.address ?? "", c.email ?? "", c.registrationDate ?? "", c.authorisedPerson ?? "", c.businessType ?? ""]);
     } else if (kind === "invoices") {
-        const list = await Invoice.find({ org: user.id }).sort({ createdAt: -1 }).limit(2000);
+        const list = await prisma.invoice.findMany({ where: { org: user.id }, orderBy: { createdAt: "desc" }, take: 2000 });
         columns = ["number", "kind", "status", "customerName", "issueDate", "dueDate", "net", "tax", "gross", "currency", "paidAmount"];
         rows = list.map((i) => {
             const t = computeTotals(i.items as never, { exempt: !!i.smallBusinessNote });
             return [i.number, i.kind, i.status, i.customerName, i.issueDate ?? "", i.dueDate ?? "", t.net, t.tax, t.gross, i.currency, i.paidAmount ?? 0];
         });
     } else if (kind === "orders") {
-        const list = await Order.find({ org: user.id }).sort({ createdAt: -1 }).limit(2000);
+        const list = await prisma.order.findMany({ where: { org: user.id }, orderBy: { createdAt: "desc" }, take: 2000 });
         columns = ["number", "status", "customerName", "deliveryNoteNumber", "actNumber", "waybill", "ukrposhta", "net", "gross", "currency", "createdAt"];
         rows = list.map((o) => {
             const t = computeTotals(o.items as never);
-            return [o.number, o.status, o.customerName, o.deliveryNoteNumber ?? "", o.actNumber ?? "", o.waybill?.number ?? "", o.ukrposhta?.barcode ?? "", t.net, t.gross, o.currency, o.createdAt?.toISOString?.() ?? ""];
+            return [o.number, o.status, o.customerName, o.deliveryNoteNumber ?? "", o.actNumber ?? "", (o.waybill as any)?.number ?? "", (o.ukrposhta as any)?.barcode ?? "", t.net, t.gross, o.currency, o.createdAt?.toISOString?.() ?? ""];
         });
     } else if (kind === "quotes") {
-        const list = await Quote.find({ org: user.id }).sort({ createdAt: -1 }).limit(2000);
+        const list = await prisma.quote.findMany({ where: { org: user.id }, orderBy: { createdAt: "desc" }, take: 2000 });
         columns = ["number", "status", "customerName", "issueDate", "validUntil", "net", "gross", "currency"];
         rows = list.map((q) => {
             const t = computeTotals(q.items as never);
             return [q.number, q.status, q.customerName, q.issueDate ?? "", q.validUntil ?? "", t.net, t.gross, q.currency];
         });
     } else {
-        const list = await Expense.find({ org: user.id }).sort({ date: -1 }).limit(2000);
+        const list = await prisma.expense.findMany({ where: { org: user.id }, orderBy: { date: "desc" }, take: 2000 });
         columns = ["date", "vendor", "category", "amount", "taxRate", "currency", "notes"];
         rows = list.map((e) => [e.date, e.vendor, e.category ?? "", e.amount, e.taxRate ?? 0, e.currency, e.notes ?? ""]);
     }
@@ -106,10 +97,10 @@ export async function GET(req: Request) {
 async function ymlProducts(org: string, origin: string) {
     // Публичный адрес сайта: APP_URL или адрес запроса — маркетплейсам нужен рабочий адрес магазина
     const base = process.env.APP_URL?.replace(/\/+$/, "") || origin;
-    const list = await Product.find({ org, type: "good", archived: { $ne: true } }).sort({ name: 1 });
+    const list = await prisma.product.findMany({ where: { org, type: "good", archived: false }, orderBy: { name: "asc" } });
     const offers = list
         .map(
-            (p) => `    <offer id="${xmlEsc(p.sku || String(p._id))}" available="${(p.stockQty ?? 0) > 0 ? "true" : "false"}">
+            (p) => `    <offer id="${xmlEsc(p.sku || p.id)}" available="${(p.stockQty ?? 0) > 0 ? "true" : "false"}">
       <name>${xmlEsc(p.name)}</name>
       <price>${Number(p.salePrice ?? 0).toFixed(2)}</price>
       <currencyId>UAH</currencyId>
@@ -143,7 +134,11 @@ async function datevExport(org: string, url: URL) {
     const year = url.searchParams.get("year") ?? String(new Date().getFullYear());
     const revenueAccount = url.searchParams.get("revenueAccount") ?? "8400";
     const bankAccount = url.searchParams.get("bankAccount") ?? "1200";
-    const invoices = await Invoice.find({ org, kind: "invoice", status: "paid", paidAt: { $gte: new Date(`${year}-01-01`), $lte: new Date(`${year}-12-31T23:59:59`) } }).sort({ paidAt: 1 }).select("number customerName paidAt paidAmount currency items");
+    const invoices = await prisma.invoice.findMany({
+        where: { org, kind: "invoice", status: "paid", paidAt: { gte: new Date(`${year}-01-01`), lte: new Date(`${year}-12-31T23:59:59`) } },
+        orderBy: { paidAt: "asc" },
+        select: { number: true, customerName: true, paidAt: true, paidAmount: true, currency: true, items: true },
+    });
     const header = [
         "EXTF", "700", "21", "Buchungsstapel", "13",
         new Date().toISOString().slice(0, 19).replace(/[-:T]/g, ""),

@@ -1,4 +1,4 @@
-import FinanceSettings from "@/models/FinanceSettings";
+import { prisma } from "@/lib/prisma";
 import { MarketError } from "@/lib/http";
 import { marketOf, marketAllowsIntegration, type Market, type MarketDocumentKind, marketHasDocument } from "./market";
 
@@ -11,7 +11,7 @@ import { marketOf, marketAllowsIntegration, type Market, type MarketDocumentKind
 
 /** Режим рынка фирмы по её настройкам бухгалтерии; null — страна ещё не выбрана. */
 export async function orgMarket(org: string): Promise<Market | null> {
-    const s = await FinanceSettings.findOne({ org }).select("country");
+    const s = await prisma.financeSettings.findUnique({ where: { org }, select: { country: true } });
     return marketOf(s?.country);
 }
 
@@ -28,7 +28,7 @@ export async function requireMarket(org: string, market: Market): Promise<Market
 
 /** Проверка «документ доступен в режиме фирмы»: кнопки и маршруты выпуска документов спрашивают её до генерации. */
 export async function requireDocument(org: string, kind: MarketDocumentKind): Promise<void> {
-    const s = await FinanceSettings.findOne({ org }).select("country");
+    const s = await prisma.financeSettings.findUnique({ where: { org }, select: { country: true } });
     if (!marketHasDocument(s?.country, kind)) {
         const m = marketOf(s?.country);
         throw new MarketError(m === "UA" ? "Документ не выпускается в режиме Украины" : "Документ доступен только для Украины", m === "UA" ? "DE" : "UA");
@@ -38,7 +38,7 @@ export async function requireDocument(org: string, kind: MarketDocumentKind): Pr
 /** Проверка «интеграция разрешена в режиме фирмы»: подключать украинские сервисы из немецкого режима нельзя.
  *  Пока страна не выбрана, общие подключения (мессенджеры, почта) не блокируются — фирма выбирает страну в настройках. */
 export async function requireIntegration(org: string, type: string): Promise<void> {
-    const s = await FinanceSettings.findOne({ org }).select("country");
+    const s = await prisma.financeSettings.findUnique({ where: { org }, select: { country: true } });
     const m = marketOf(s?.country);
     if (m && !marketAllowsIntegration(m, type)) {
         const own = marketAllowsIntegration("UA", type) ? "UA" : "DE";
