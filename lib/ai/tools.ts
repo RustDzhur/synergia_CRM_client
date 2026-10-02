@@ -469,7 +469,7 @@ export const TOOLS: AiTool[] = [
     },
     {
         module: "inventory", write: true,
-        def: { name: "create_invoice", description: "Create a draft invoice for a customer. Needs user confirmation; the user can edit fields before confirming. Find the customer first (search_contacts) and pass its name in customer_name.", parameters: schema({ customer_name: S("customer/company name that appears on the invoice"), contact_name: S("contact id from search_contacts, optional"), items: ITEMS, currency: S("EUR, UAH, USD… optional"), notes: S("notes, optional") }, ["customer_name", "items"]) },
+        def: { name: "create_invoice", description: "Create a draft invoice for a customer. Needs user confirmation; the user can edit fields before confirming. Pass the customer name in customer_name — a matching contact is linked or created automatically, no need to search first.", parameters: schema({ customer_name: S("customer/company name that appears on the invoice"), contact_name: S("contact id, optional"), items: ITEMS, currency: S("EUR, UAH, USD… optional"), notes: S("notes, optional") }, ["customer_name", "items"]) },
         check: financeCheck,
         run: async (c, a) => {
             const settings = await financeSettings(c.org);
@@ -496,7 +496,7 @@ export const TOOLS: AiTool[] = [
     },
     {
         module: "inventory", write: true,
-        def: { name: "create_quote", description: "Create a draft quote (offer, proposal) for a customer. Needs user confirmation. Find the customer first (search_contacts) and pass its name in customer_name.", parameters: schema({ customer_name: S("customer/company name"), contact_name: S("contact id, optional"), items: ITEMS, currency: S("EUR, UAH… optional"), notes: S("notes, optional") }, ["customer_name", "items"]) },
+        def: { name: "create_quote", description: "Create a draft quote (offer, proposal) for a customer. Needs user confirmation. Pass the customer name in customer_name — a matching contact is linked or created automatically, no need to search first.", parameters: schema({ customer_name: S("customer/company name"), contact_name: S("contact id, optional"), items: ITEMS, currency: S("EUR, UAH… optional"), notes: S("notes, optional") }, ["customer_name", "items"]) },
         check: financeCheck,
         run: async (c, a) => {
             const settings = await financeSettings(c.org);
@@ -521,7 +521,7 @@ export const TOOLS: AiTool[] = [
     },
     {
         module: "inventory", write: true,
-        def: { name: "create_order", description: "Create a draft order for a customer. Needs user confirmation. Find the customer first (search_contacts) and pass its name in customer_name.", parameters: schema({ customer_name: S("customer/company name"), contact_name: S("contact id, optional"), items: ITEMS, currency: S("EUR, UAH… optional"), notes: S("notes, optional") }, ["customer_name", "items"]) },
+        def: { name: "create_order", description: "Create a draft order for a customer. Needs user confirmation. Pass the customer name in customer_name — a matching contact is linked or created automatically, no need to search first.", parameters: schema({ customer_name: S("customer/company name"), contact_name: S("contact id, optional"), items: ITEMS, currency: S("EUR, UAH… optional"), notes: S("notes, optional") }, ["customer_name", "items"]) },
         check: financeCheck,
         run: async (c, a) => {
             const settings = await financeSettings(c.org);
@@ -544,7 +544,7 @@ export const TOOLS: AiTool[] = [
     },
     {
         module: "inventory", write: true,
-        def: { name: "create_contract", description: "Create a draft contract for a customer. Needs user confirmation. Find the customer first (search_contacts) and pass its name in customer_name; value is the total contract amount.", parameters: schema({ customer_name: S("customer/company name"), contact_name: S("contact id, optional"), value: N("total contract amount"), currency: S("EUR, UAH… optional"), start_date: S("YYYY-MM-DD, optional"), end_date: S("YYYY-MM-DD, optional"), notes: S("notes, optional") }, ["customer_name"]) },
+        def: { name: "create_contract", description: "Create a draft contract for a customer. Needs user confirmation. Pass the customer name in customer_name — a matching contact is linked or created automatically, no need to search first; value is the total contract amount.", parameters: schema({ customer_name: S("customer/company name"), contact_name: S("contact id, optional"), value: N("total contract amount"), currency: S("EUR, UAH… optional"), start_date: S("YYYY-MM-DD, optional"), end_date: S("YYYY-MM-DD, optional"), notes: S("notes, optional") }, ["customer_name"]) },
         check: (a) => ({
             customer_name: need(str(a.customer_name, 200), "customer_name"),
             contact_name: str(a.contact_name ?? a.contact, 40),
