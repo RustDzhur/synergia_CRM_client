@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId, contentDisposition } from "@/lib/api";
 import { actPdfBuffer, customerParty, pdfLocale, pdfTemplate } from "@/lib/finance/document";
@@ -7,9 +6,8 @@ import { financeSettings } from "@/lib/finance/settings";
 import { checkCompliance, complianceMessage } from "@/lib/finance/compliance";
 import { nextNumber } from "@/lib/finance/numbering";
 import { logAudit } from "@/lib/audit";
-import Order from "@/models/Order";
-import User from "@/models/User";
 import { requireMarket } from "@/lib/finance/marketGuard";
+import { prisma } from "@/lib/prisma";
 import { numberPrefix } from "@/lib/finance/documents/store";
 
 export const dynamic = "force-dynamic";
@@ -23,12 +21,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         const user = await requireUser(req);
         if (!user) return unauthorized(req);
         if (!validId(params.id)) return notFound();
-        await connectDB();
         // Акт виконаних робіт — украинский документ: в немецком режиме его не выпускаем.
         // Отказ должен быть 409 с кодом market (его переводит интерфейс), а не 500 от брошенного исключения
         await requireMarket(user.id, "UA");
 
-        const order = await Order.findOne({ _id: params.id, org: user.id });
+        const order = await prisma.order.findFirst({ where: { id: params.id, org: user.id } });
         if (!order) return notFound();
         if (order.status === "cancelled") return badRequest("This order is cancelled");
 
@@ -48,25 +45,25 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
             );
             if (issues.length) return NextResponse.json({ message: complianceMessage(issues), code: "compliance", missing: issues.map((i) => i.code) }, { status: 400 });
             const number = order.actNumber || (await nextNumber(user.id, await numberPrefix(user.id, "act", settings.actPrefix || "АКТ")));
-            order.actNumber = number;
-            order.actDate = actDate;
-            await order.save();
-            const author = await User.findById(user.userId).select("firstname lastname");
+            await prisma.order.update({ where: { id: order.id }, data: { actNumber: number, actDate } });
+            const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
             await logAudit({
                 org: user.id,
                 userName: author ? `${author.firstname} ${author.lastname}`.trim() : "—",
                 action: "order.act_created",
                 entityType: "order",
-                entityId: String(order._id),
+                entityId: order.id,
                 summary: `Act ${number} issued for order ${order.number}`,
             });
         }
 
-        const buffer = await actPdfBuffer(user.id, order, pdfLocale(url.searchParams.get("locale")), pdfTemplate(url.searchParams.get("template")));
+        // номер и дату акта могли только что присвоить — печатаем актуальную запись
+        const fresh = (await prisma.order.findUnique({ where: { id: order.id } })) ?? order;
+        const buffer = await actPdfBuffer(user.id, fresh, pdfLocale(url.searchParams.get("locale")), pdfTemplate(url.searchParams.get("template")));
         return new Response(buffer as unknown as BodyInit, {
             headers: {
                 "Content-Type": "application/pdf",
-                "Content-Disposition": contentDisposition(`${order.actNumber}.pdf`),
+                "Content-Disposition": contentDisposition(`${fresh.actNumber}.pdf`),
                 "Cache-Control": "no-store",
             },
         });

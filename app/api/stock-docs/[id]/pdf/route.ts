@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { failure, notFound, unauthorized, validId, contentDisposition } from "@/lib/api";
 import { pdfLocale } from "@/lib/finance/document";
 import { marketOf } from "@/lib/finance/market";
 import { financeSettings } from "@/lib/finance/settings";
 import { stockDocPdfBuffer } from "@/lib/finance/stockDocPdf";
-import StockDoc from "@/models/StockDoc";
-import Product from "@/models/Product";
-import Warehouse from "@/models/Warehouse";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -19,19 +16,19 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         const user = await requireUser(req);
         if (!user) return unauthorized(req);
         if (!validId(params.id)) return notFound();
-        await connectDB();
-        const doc = await StockDoc.findOne({ _id: params.id, org: user.id });
+        const doc = await prisma.stockDoc.findFirst({ where: { id: params.id, org: user.id } });
         if (!doc) return notFound();
 
         let buffer: Buffer;
         try {
+            const productIds = Array.from(new Set(((doc.lines ?? []) as any[]).map((l) => String(l.product))));
             const [products, warehouses, settings] = await Promise.all([
-                Product.find({ _id: { $in: (doc.lines ?? []).map((l: { product: unknown }) => l.product) } }).select("name sku unit"),
-                Warehouse.find({ org: user.id }).select("name"),
+                productIds.length ? prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, name: true, sku: true, unit: true } }) : [],
+                prisma.warehouse.findMany({ where: { org: user.id }, select: { id: true, name: true } }),
                 financeSettings(user.id),
             ]);
-            const pInfo = new Map(products.map((p) => [String(p._id), p]));
-            const wName = new Map(warehouses.map((w) => [String(w._id), w.name]));
+            const pInfo = new Map(products.map((p) => [p.id, p]));
+            const wName = new Map(warehouses.map((w) => [w.id, w.name]));
             buffer = await stockDocPdfBuffer(
                 {
                     number: doc.number,
@@ -42,7 +39,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
                     note: doc.note ?? "",
                     by: doc.by ?? "",
                     reversed: !!doc.reversedBy,
-                    lines: (doc.lines ?? []).map((l: { product: unknown; qty: number; price?: number; diff?: number }) => ({
+                    lines: ((doc.lines ?? []) as any[]).map((l: { product: unknown; qty: number; price?: number; diff?: number }) => ({
                         name: pInfo.get(String(l.product))?.name ?? "",
                         sku: pInfo.get(String(l.product))?.sku ?? "",
                         unit: pInfo.get(String(l.product))?.unit ?? "",
