@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
@@ -9,21 +8,19 @@ import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
 import { fiscalConfig, fiscalizeReturn, findFiscal } from "@/lib/finance/fiscal";
 import { emit } from "@/lib/automation/emit";
 import { logAudit } from "@/lib/audit";
-import Invoice from "@/models/Invoice";
+import { prisma } from "@/lib/prisma";
 import { isTemplate } from "@/lib/finance/pdf";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import { numberPrefix } from "@/lib/finance/documents/store";
 
 // POST /api/invoices/:id/credit-note — { items?, notes? }: выпускает кредит-ноту (Gutschrift/storno) к отправленному
 // счёту. Номер счёта, однажды выданный, не меняется и не удаляется (§14 UStG) — корректировка оформляется отдельным
-// документом со своей нумерацией (creditNotePrefix), который эту сумму вычитает. Без items — зеркалит позиции исходного
-// счёта с отрицательной ценой (полная отмена); свои items — частичная или произвольная корректировка.
+// документом со своей нумерацией (creditNotePrefix), который эту сумму вычитает.
 export async function POST(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    await connectDB();
-    const source = await Invoice.findOne({ _id: params.id, org: user.id });
+    const source = await prisma.invoice.findFirst({ where: { id: params.id, org: user.id } });
     if (!source) return notFound();
     if (source.kind !== "invoice") return badRequest("Only an invoice can be credited");
     if (!["sent", "paid", "overdue"].includes(source.status)) return badRequest("Only a sent, paid or overdue invoice can be credited");
@@ -37,38 +34,36 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const settings = await financeSettings(user.id);
     const number = await nextNumber(user.id, await numberPrefix(user.id, "credit_note", settings.creditNotePrefix || "GS"));
     const today = new Date().toISOString().slice(0, 10);
-    const credit = await Invoice.create({
-        org: user.id, number, kind: "credit_note", creditFor: source._id,
-        contact: source.contact, company: source.company,
-        customerName: source.customerName, customerAddress: source.customerAddress, customerTaxId: source.customerTaxId,
-        deal: source.deal, order: source.order, contract: source.contract,
-        items: applyTaxPolicy(items, settings), currency: source.currency, smallBusinessNote: taxExempt(settings),
-        issueDate: today, dueDate: "",
-        notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
-        // кредит-нота выглядит как исправляемый счёт, если в запросе не попросили другой шаблон
-        template: isTemplate(b.template) ? b.template : source.template,
-        status: "sent", sentAt: new Date(),
+    let credit = await prisma.invoice.create({
+        data: {
+            org: user.id, number, kind: "credit_note", creditFor: source.id,
+            contact: source.contact, company: source.company,
+            customerName: source.customerName, customerAddress: source.customerAddress, customerTaxId: source.customerTaxId,
+            deal: source.deal, order: source.order, contract: source.contract,
+            items: applyTaxPolicy(items, settings) as any, currency: source.currency, smallBusinessNote: taxExempt(settings),
+            issueDate: today, dueDate: "",
+            notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
+            // кредит-нота выглядит как исправляемый счёт, если в запросе не попросили другой шаблон
+            template: isTemplate(b.template) ? b.template : source.template,
+            status: "sent", sentAt: new Date(),
+        },
     });
     // ПРРО: если по исходному счёту пробит чек продажи и включена автофискализация — пробиваем чек
     // возврата сразу (он ссылается на чек продажи). Ошибку храним в кредит-ноте, выпуск не отменяем.
     if (source.fiscalId) {
+        let fiscalData: Record<string, any> = {};
         try {
             const fiscalDoc = await findFiscal(user.id);
             if (fiscalDoc && fiscalConfig(fiscalDoc).auto) {
                 const receipt = await fiscalizeReturn(user.id, credit, undefined, "CARD");
-                credit.fiscalReturnId = receipt.receiptId;
-
-                credit.fiscalReturnUrl = receipt.url;
-                credit.fiscalReturnCode = receipt.fiscalCode;
-                credit.fiscalReturnAt = new Date();
-                await credit.save();
+                fiscalData = { fiscalReturnId: receipt.receiptId, fiscalReturnUrl: receipt.url, fiscalReturnCode: receipt.fiscalCode, fiscalReturnAt: new Date() };
             }
         } catch (e) {
-            credit.fiscalReturnError = e instanceof Error ? e.message.slice(0, 300) : "Чек повернення не вдалося пробити";
-            await credit.save();
+            fiscalData = { fiscalReturnError: e instanceof Error ? e.message.slice(0, 300) : "Чек повернення не вдалося пробити" };
         }
+        if (Object.keys(fiscalData).length) credit = await prisma.invoice.update({ where: { id: credit.id }, data: fiscalData });
     }
-    await emit(user.id, { type: "invoice_credit_note_created", data: { id: String(credit._id), number: credit.number, customerName: credit.customerName, sourceInvoice: source.number } });
-    await logAudit({ org: user.id, userId: user.userId, action: "invoice.credit_note", entityType: "invoice", entityId: String(credit._id), summary: `Credit note ${credit.number} issued for invoice ${source.number}`, meta: { sourceInvoice: source.number, currency: credit.currency } });
+    await emit(user.id, { type: "invoice_credit_note_created", data: { id: credit.id, number: credit.number, customerName: credit.customerName, sourceInvoice: source.number } });
+    await logAudit({ org: user.id, userId: user.userId, action: "invoice.credit_note", entityType: "invoice", entityId: credit.id, summary: `Credit note ${credit.number} issued for invoice ${source.number}`, meta: { sourceInvoice: source.number, currency: credit.currency } });
     return NextResponse.json(toInvoiceDTO(credit), { status: 201 });
 }

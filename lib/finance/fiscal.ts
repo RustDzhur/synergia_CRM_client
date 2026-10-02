@@ -42,9 +42,8 @@ export interface FiscalResult { fiscalCode: string; url: string; receiptId: stri
  * скачивают и печатают.
  */
 export async function syncReceiptUrls(org: string, inv: {
-    fiscalId?: string; fiscalUrl?: string;
-    fiscalReturnId?: string; fiscalReturnUrl?: string;
-    save: () => Promise<unknown>;
+    fiscalId?: string | null; fiscalUrl?: string | null;
+    fiscalReturnId?: string | null; fiscalReturnUrl?: string | null;
 }): Promise<{ url: string; returnUrl: string }> {
     const doc = await findFiscal(org);
     if (!doc) throw new ProviderError("ПРРО Checkbox не підключено до цієї фірми");
@@ -56,15 +55,12 @@ export async function syncReceiptUrls(org: string, inv: {
         if (!url && inv.fiscalId) {
             const receipt = await receiptById(cfg.licenseKey, token, inv.fiscalId);
             url = receipt.url;
-            if (url) inv.fiscalUrl = url;
         }
         if (!returnUrl && inv.fiscalReturnId) {
             const receipt = await receiptById(cfg.licenseKey, token, inv.fiscalReturnId);
             returnUrl = receipt.url;
-            if (returnUrl) inv.fiscalReturnUrl = returnUrl;
         }
     });
-    if (url || returnUrl) await inv.save();
     return { url, returnUrl };
 }
 

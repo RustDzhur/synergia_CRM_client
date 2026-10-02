@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { computeTotals } from "@/lib/finance/totals";
 import { fiscalizeInvoice, fiscalizeReturn, fiscalAdvice, syncReceiptUrls } from "@/lib/finance/fiscal";
 import { toInvoiceDTO } from "@/lib/finance/dto";
-import Invoice from "@/models/Invoice";
+import { prisma } from "@/lib/prisma";
 import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
@@ -16,16 +15,13 @@ export const maxDuration = 60;
 //   { payType: "CASH"|"CARD" } — способ оплаты в чеке (готівка или картка);
 //   { action: "return" }    — чек возврата по кредит-ноте: ссылается на чек продажи;
 //   { action: "receipt-link" } — дотянуть ссылку на чек у Checkbox, если она не сохранилась.
-// Автоматически чек продажи пробивается при полной оплате картой (см. pay/route.ts); здесь —
-// кнопка в счёте для всего остального.
 export async function POST(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    await connectDB();
     // Фискальные чеки — украинское ПРРО
     await requireMarket(user.id, "UA");
-    const inv = await Invoice.findOne({ _id: params.id, org: user.id });
+    let inv = await prisma.invoice.findFirst({ where: { id: params.id, org: user.id } });
     if (!inv) return notFound();
     const b = await req.json().catch(() => ({}));
     const payType = b?.payType === "CASH" || b?.payType === "CARD" ? b.payType : undefined;
@@ -36,6 +32,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (b?.action === "receipt-link") {
         try {
             const { url, returnUrl } = await syncReceiptUrls(user.id, inv);
+            if (url || returnUrl) inv = await prisma.invoice.update({ where: { id: inv.id }, data: { fiscalUrl: url, fiscalReturnUrl: returnUrl } });
             return NextResponse.json({ url, returnUrl, invoice: toInvoiceDTO(inv) });
         } catch (e) {
             return NextResponse.json({ message: e instanceof Error ? e.message : "Не вдалося отримати посилання на чек" }, { status: 502 });
@@ -48,18 +45,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         const amountReturn = Number.isFinite(Number(b?.amount)) ? Math.max(0, Number(b.amount)) : paid || gross;
         try {
             const receipt = await fiscalizeReturn(user.id, inv, amountReturn, payType);
-            inv.fiscalReturnId = receipt.receiptId;
-
-            inv.fiscalReturnUrl = receipt.url;
-            inv.fiscalReturnCode = receipt.fiscalCode;
-            inv.fiscalReturnAt = new Date();
-            inv.fiscalReturnError = "";
-            await inv.save();
+            inv = await prisma.invoice.update({
+                where: { id: inv.id },
+                data: { fiscalReturnId: receipt.receiptId, fiscalReturnUrl: receipt.url, fiscalReturnCode: receipt.fiscalCode, fiscalReturnAt: new Date(), fiscalReturnError: "" },
+            });
             return NextResponse.json(toInvoiceDTO(inv), { status: 201 });
         } catch (e) {
-            inv.fiscalReturnError = e instanceof Error ? e.message.slice(0, 300) : "Чек повернення не вдалося пробити";
-            await inv.save();
-            return NextResponse.json({ message: inv.fiscalReturnError, invoice: toInvoiceDTO(inv) }, { status: 502 });
+            const message = e instanceof Error ? e.message.slice(0, 300) : "Чек повернення не вдалося пробити";
+            inv = await prisma.invoice.update({ where: { id: inv.id }, data: { fiscalReturnError: message } });
+            return NextResponse.json({ message, invoice: toInvoiceDTO(inv) }, { status: 502 });
         }
     }
 
@@ -67,18 +61,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const amount = Number.isFinite(Number(b?.amount)) ? Math.max(0, Number(b.amount)) : paid || gross;
     try {
         const receipt = await fiscalizeInvoice(user.id, inv, amount, payType);
-        inv.fiscalId = receipt.receiptId;
-        inv.fiscalCode = receipt.fiscalCode;
-        inv.fiscalUrl = receipt.url;
-        inv.fiscalAt = new Date();
-        inv.fiscalPayType = payType ?? fiscalAdvice(inv).payType;
-        inv.fiscalError = "";
-        await inv.save();
+        inv = await prisma.invoice.update({
+            where: { id: inv.id },
+            data: { fiscalId: receipt.receiptId, fiscalCode: receipt.fiscalCode, fiscalUrl: receipt.url, fiscalAt: new Date(), fiscalPayType: payType ?? fiscalAdvice(inv).payType, fiscalError: "" },
+        });
         return NextResponse.json(toInvoiceDTO(inv), { status: 201 });
     } catch (e) {
         // Ошибку фискализации храним в счёте: её видит бухгалтер, и она не теряется при закрытии окна
-        inv.fiscalError = e instanceof Error ? e.message.slice(0, 300) : "Чек не вдалося пробити";
-        await inv.save();
-        return NextResponse.json({ message: inv.fiscalError, invoice: toInvoiceDTO(inv) }, { status: 502 });
+        const message = e instanceof Error ? e.message.slice(0, 300) : "Чек не вдалося пробити";
+        inv = await prisma.invoice.update({ where: { id: inv.id }, data: { fiscalError: message } });
+        return NextResponse.json({ message, invoice: toInvoiceDTO(inv) }, { status: 502 });
     }
 }
