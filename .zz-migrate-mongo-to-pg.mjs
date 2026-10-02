@@ -1,10 +1,13 @@
 // Перенос данных из MongoDB (Atlas, synergyaCRM) в PostgreSQL (таблица crm).
 // Читает MONGODB_URI и DATABASE_URL из .env.local. Только чтение из Mongo, запись в Postgres.
-// Идемпотентен: ON CONFLICT DO NOTHING по первичному ключу id.
+// Идемпотентен: по умолчанию ON CONFLICT DO NOTHING по первичному ключу id.
+// С ключом --upsert существующие записи перезаписываются значениями из Mongo — это «догон»
+// изменений, сделанных в оригинале после первого переноса (перед переключением домена).
 import fs from "node:fs";
 import mongoose from "mongoose";
 import pg from "pg";
 
+const UPSERT = process.argv.includes("--upsert");
 const env = fs.readFileSync(".env.local", "utf8");
 const mongoUri = (env.match(/^MONGODB_URI=(.*)$/m) || [])[1]?.trim();
 const pgUrl = (env.match(/^DATABASE_URL=(.*)$/m) || [])[1]?.trim();
@@ -79,7 +82,12 @@ for (const coll of COLLECTIONS) {
     const cols = keys.map(k => `"${k}"`).join(",");
     const ph = keys.map((_, i) => `$${i + 1}`).join(",");
     try {
-      await client.query(`INSERT INTO "${coll}" (${cols}) VALUES (${ph}) ON CONFLICT DO NOTHING`, keys.map(k => rec[k]));
+      // при --upsert обновляем все поля, кроме идентификатора
+      const updates = keys.filter(k => k !== "id").map(k => `"${k}"=EXCLUDED."${k}"`).join(", ");
+      const sql = UPSERT && updates
+        ? `INSERT INTO "${coll}" (${cols}) VALUES (${ph}) ON CONFLICT ("id") DO UPDATE SET ${updates}`
+        : `INSERT INTO "${coll}" (${cols}) VALUES (${ph}) ON CONFLICT DO NOTHING`;
+      await client.query(sql, keys.map(k => rec[k]));
       ok++;
     } catch (e) {
       err++;
@@ -87,7 +95,7 @@ for (const coll of COLLECTIONS) {
     }
   }
   totalOk += ok; totalErr += err;
-  console.log(`DONE ${coll}: ${ok} вставлено, ${err} ошибок`);
+  console.log(`DONE ${coll}: ${ok} ${UPSERT ? "записано" : "вставлено"}, ${err} ошибок`);
 }
 
 await client.end();
