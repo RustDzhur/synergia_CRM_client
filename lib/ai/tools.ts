@@ -1,21 +1,12 @@
 import { type Role, type Module, canAccess } from "@/lib/access";
-import { contactFullName, escapeRegex } from "@/lib/crmFields";
+import { contactFullName } from "@/lib/crmFields";
 import { postTask } from "@/lib/feed";
 import { emit, emitDeal } from "@/lib/automation/emit";
 import { sendFromAccount } from "@/lib/mail";
 import { extractPdfText } from "@/lib/ai/pdf";
 import { getObject } from "@/lib/storage";
 import { ensureStages } from "@/lib/stages";
-import Company from "@/models/Company";
-import Contact from "@/models/Contact";
-import Deal from "@/models/Deal";
-import DocItem from "@/models/DocItem";
-import Employee from "@/models/Employee";
-import Integration from "@/models/Integration";
-import MailMessage from "@/models/MailMessage";
-import Stage from "@/models/Stage";
-import Task from "@/models/Task";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 import type { ToolDef } from "./provider";
 
 // Инструменты ИИ — единственное, что он умеет делать в CRM. Каждый инструмент:
@@ -41,8 +32,10 @@ const int = (v: unknown, def: number, min: number, max: number) => {
     const n = Math.trunc(Number(v));
     return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : def;
 };
-const rx = (v: string) => new RegExp(escapeRegex(v), "i");
-const isId = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{24}$/i.test(v);
+// поиск по части строки без учёта регистра (замена регулярному выражению из Mongo)
+const like = (v: string) => ({ contains: v, mode: "insensitive" as const });
+// id принимаем и прежний mongodb-ный (24 hex), и cuid у новых записей Prisma
+const isId = (v: unknown): v is string => typeof v === "string" && v.length > 0 && v.length <= 40 && /^[A-Za-z0-9_-]+$/.test(v);
 const need = (v: string, what: string) => { if (!v) throw new ToolError(`${what} is required`); return v; };
 const day = (v: unknown, what: string) => {
     const s = str(v, 30);
@@ -78,9 +71,9 @@ export const TOOLS: AiTool[] = [
         run: async (c, a) => {
             const q = str(a.query, 100);
             const filter: Record<string, unknown> = { owner: c.org };
-            if (q) filter.$or = ["name", "email", "phone", "company"].map((k) => ({ [k]: rx(q) }));
-            const list = await Contact.find(filter).sort({ updatedAt: -1 }).limit(int(a.limit, 10, 1, 25)).lean();
-            return list.map((x) => ({ id: String(x._id), name: x.name, email: x.email, phone: x.phone, company: x.company, position: x.position, lastContact: iso(lastContactAt(x.activities, x.createdAt)) }));
+            if (q) filter.OR = ["name", "email", "phone", "company"].map((k) => ({ [k]: like(q) }));
+            const list = await prisma.contact.findMany({ where: filter as any, orderBy: { updatedAt: "desc" }, take: int(a.limit, 10, 1, 25) });
+            return list.map((x) => ({ id: x.id, name: x.name, email: x.email, phone: x.phone, company: x.company, position: x.position, lastContact: iso(lastContactAt(x.activities as unknown as Act[], x.createdAt)) }));
         },
     },
     {
@@ -89,9 +82,9 @@ export const TOOLS: AiTool[] = [
         run: async (c, a) => {
             const q = str(a.query, 100);
             const filter: Record<string, unknown> = { owner: c.org };
-            if (q) filter.$or = ["name", "field", "email", "address"].map((k) => ({ [k]: rx(q) }));
-            const list = await Company.find(filter).sort({ updatedAt: -1 }).limit(int(a.limit, 10, 1, 25)).lean();
-            return list.map((x) => ({ id: String(x._id), name: x.name, email: x.email, field: x.field, status: x.status, authorisedPerson: x.authorisedPerson, address: cut(x.address, 120) }));
+            if (q) filter.OR = ["name", "field", "email", "address"].map((k) => ({ [k]: like(q) }));
+            const list = await prisma.company.findMany({ where: filter as any, orderBy: { updatedAt: "desc" }, take: int(a.limit, 10, 1, 25) });
+            return list.map((x) => ({ id: x.id, name: x.name, email: x.email, field: x.field, status: x.status, authorisedPerson: x.authorisedPerson, address: cut(x.address, 120) }));
         },
     },
     {
@@ -99,14 +92,14 @@ export const TOOLS: AiTool[] = [
         def: { name: "find_stale_contacts", description: "Contacts with no recorded communication (e-mail, call, message, note) for at least N days, longest silence first. Based on the activity log of each contact.", parameters: schema({ days: N("minimum days without contact, default 30"), limit: N("max results, default 20, max 50") }) },
         run: async (c, a) => {
             const days = int(a.days, 30, 1, 3650);
-            const list = await Contact.find({ owner: c.org }).select("name email phone company activities createdAt").limit(1000).lean();
+            const list = await prisma.contact.findMany({ where: { owner: c.org }, select: { id: true, name: true, email: true, company: true, activities: true, createdAt: true }, take: 1000 });
             const now = Date.now();
             return list
-                .map((x) => ({ x, ts: lastContactAt(x.activities, x.createdAt) }))
+                .map((x) => ({ x, ts: lastContactAt(x.activities as unknown as Act[], x.createdAt) }))
                 .filter(({ ts }) => now - ts >= days * 86400000)
                 .sort((p, q) => p.ts - q.ts)
                 .slice(0, int(a.limit, 20, 1, 50))
-                .map(({ x, ts }) => ({ id: String(x._id), name: x.name, email: x.email, company: x.company, lastContact: iso(ts), daysSince: Math.floor((now - ts) / 86400000) }));
+                .map(({ x, ts }) => ({ id: x.id, name: x.name, email: x.email, company: x.company, lastContact: iso(ts), daysSince: Math.floor((now - ts) / 86400000) }));
         },
     },
     {
@@ -125,12 +118,12 @@ export const TOOLS: AiTool[] = [
             if (stage) {
                 const hit = stages.filter((s) => s.name.toLowerCase().includes(stage));
                 if (!hit.length) throw new ToolError(`No stage matches "${stage}". Stages: ${stages.map((s) => s.name).join(", ")}`);
-                filter.stage = { $in: hit.map((s) => s._id) };
+                filter.stage = { in: hit.map((s) => String(s._id)) };
             }
             const q = str(a.query, 100);
-            if (q) filter.$or = ["clientName", "contactName", "companyName"].map((k) => ({ [k]: rx(q) }));
-            const list = await Deal.find(filter).sort({ updatedAt: -1 }).limit(int(a.limit, 15, 1, 40)).lean();
-            return list.map((d) => ({ id: String(d._id), name: d.clientName, stage: byId.get(String(d.stage)) ?? "", contact: d.contactName, company: d.companyName, startDate: d.startDate, endDate: d.endDate, responsible: d.responsible, updated: iso(d.updatedAt) }));
+            if (q) filter.OR = ["clientName", "contactName", "companyName"].map((k) => ({ [k]: like(q) }));
+            const list = await prisma.deal.findMany({ where: filter as any, orderBy: { updatedAt: "desc" }, take: int(a.limit, 15, 1, 40) });
+            return list.map((d) => ({ id: d.id, name: d.clientName, stage: byId.get(String(d.stage)) ?? "", contact: d.contactName, company: d.companyName, startDate: d.startDate, endDate: d.endDate, responsible: d.responsible, updated: iso(d.updatedAt) }));
         },
     },
     {
@@ -138,9 +131,9 @@ export const TOOLS: AiTool[] = [
         def: { name: "get_contact", description: "Full record of one contact with its latest activity (history of communication). Use it for a customer summary.", parameters: schema({ id: S("contact id from search_contacts") }, ["id"]) },
         run: async (c, a) => {
             if (!isId(a.id)) throw new ToolError("id must be a contact id");
-            const x = await Contact.findOne({ _id: a.id, owner: c.org }).lean();
+            const x = await prisma.contact.findFirst({ where: { id: String(a.id), owner: c.org } });
             if (!x) throw new ToolError("Contact not found");
-            return { id: String(x._id), name: x.name, email: x.email, phone: x.phone, company: x.company, position: x.position, website: x.website, notes: cut(x.notes, 500), source: x.source, created: iso(x.createdAt), lastContact: iso(lastContactAt(x.activities, x.createdAt)), activity: acts(x.activities) };
+            return { id: x.id, name: x.name, email: x.email, phone: x.phone, company: x.company, position: x.position, website: x.website, notes: cut(x.notes, 500), source: x.source, created: iso(x.createdAt), lastContact: iso(lastContactAt(x.activities as unknown as Act[], x.createdAt)), activity: acts(x.activities as unknown as Act[]) };
         },
     },
     {
@@ -148,9 +141,9 @@ export const TOOLS: AiTool[] = [
         def: { name: "get_company", description: "Full record of one company with its latest activity.", parameters: schema({ id: S("company id from search_companies") }, ["id"]) },
         run: async (c, a) => {
             if (!isId(a.id)) throw new ToolError("id must be a company id");
-            const x = await Company.findOne({ _id: a.id, owner: c.org }).lean();
+            const x = await prisma.company.findFirst({ where: { id: String(a.id), owner: c.org } });
             if (!x) throw new ToolError("Company not found");
-            return { id: String(x._id), name: x.name, email: x.email, field: x.field, status: x.status, authorisedPerson: x.authorisedPerson, businessType: x.businessType, address: x.address, registrationDate: x.registrationDate, created: iso(x.createdAt), activity: acts(x.activities) };
+            return { id: x.id, name: x.name, email: x.email, field: x.field, status: x.status, authorisedPerson: x.authorisedPerson, businessType: x.businessType, address: x.address, registrationDate: x.registrationDate, created: iso(x.createdAt), activity: acts(x.activities as unknown as Act[]) };
         },
     },
     {
@@ -158,10 +151,10 @@ export const TOOLS: AiTool[] = [
         def: { name: "get_deal", description: "Full record of one deal with its history (stage changes, notes, e-mails).", parameters: schema({ id: S("deal id from list_deals") }, ["id"]) },
         run: async (c, a) => {
             if (!isId(a.id)) throw new ToolError("id must be a deal id");
-            const x = await Deal.findOne({ _id: a.id, owner: c.org }).lean();
+            const x = await prisma.deal.findFirst({ where: { id: String(a.id), owner: c.org } });
             if (!x) throw new ToolError("Deal not found");
-            const stage = await Stage.findById(x.stage).select("name").lean();
-            return { id: String(x._id), name: x.clientName, stage: stage?.name ?? "", contact: x.contactName, company: x.companyName, startDate: x.startDate, endDate: x.endDate, type: x.dealType, responsible: x.responsible, created: iso(x.createdAt), activity: acts(x.activities) };
+            const stage = await prisma.stage.findUnique({ where: { id: String(x.stage) }, select: { name: true } });
+            return { id: x.id, name: x.clientName, stage: stage?.name ?? "", contact: x.contactName, company: x.companyName, startDate: x.startDate, endDate: x.endDate, type: x.dealType, responsible: x.responsible, created: iso(x.createdAt), activity: acts(x.activities as unknown as Act[]) };
         },
     },
     {
@@ -171,13 +164,13 @@ export const TOOLS: AiTool[] = [
             const f = str(a.filter, 20) || "open";
             const filter: Record<string, unknown> = { owner: c.org };
             const who = str(a.responsible, 80);
-            if (who) filter.responsible = rx(who);
+            if (who) filter.responsible = like(who);
             if (f === "completed") filter.completed = true;
             else if (f !== "all") filter.completed = false;
-            if (f === "today") filter.deadline = { $regex: `^${c.today}` };
-            if (f === "overdue") filter.deadline = { $gt: "", $lt: c.now };
-            const list = await Task.find(filter).sort({ deadline: 1, createdAt: -1 }).limit(int(a.limit, 30, 1, 60)).lean();
-            return list.map((t) => ({ id: String(t._id), title: t.title, deadline: t.deadline, responsible: t.responsible, completed: t.completed, overdue: !t.completed && !!t.deadline && t.deadline < c.now, description: cut(t.description, 200) }));
+            if (f === "today") filter.deadline = { startsWith: c.today };
+            if (f === "overdue") filter.deadline = { gt: "", lt: c.now };
+            const list = await prisma.task.findMany({ where: filter as any, orderBy: [{ deadline: "asc" }, { createdAt: "desc" }], take: int(a.limit, 30, 1, 60) });
+            return list.map((t) => ({ id: t.id, title: t.title, deadline: t.deadline, responsible: t.responsible, completed: t.completed, overdue: !t.completed && !!t.deadline && t.deadline < c.now, description: cut(t.description, 200) }));
         },
     },
     {
@@ -186,13 +179,16 @@ export const TOOLS: AiTool[] = [
         run: async (c, a) => {
             const q = str(a.query, 80);
             const filter: Record<string, unknown> = { owner: c.org };
-            if (q) filter.$or = ["firstname", "lastname", "position", "department", "email"].map((k) => ({ [k]: rx(q) }));
-            const [people, open] = await Promise.all([Employee.find(filter).limit(int(a.limit, 20, 1, 50)).lean(), Task.find({ owner: c.org, completed: false }).select("responsible deadline title").lean()]);
+            if (q) filter.OR = ["firstname", "lastname", "position", "department", "email"].map((k) => ({ [k]: like(q) }));
+            const [people, open] = await Promise.all([
+                prisma.employee.findMany({ where: filter as any, take: int(a.limit, 20, 1, 50) }),
+                prisma.task.findMany({ where: { owner: c.org, completed: false }, select: { responsible: true, deadline: true, title: true } }),
+            ]);
             return people.map((p) => {
                 const full = `${p.firstname} ${p.lastname}`.toLowerCase();
                 const mine = open.filter((t) => [full, String(p.firstname).toLowerCase()].includes(String(t.responsible ?? "").toLowerCase().trim()));
                 const overdue = mine.filter((t) => t.deadline && t.deadline < c.now);
-                return { id: String(p._id), name: `${p.firstname} ${p.lastname}`, email: p.email, position: p.position, department: p.department, openTasks: mine.length, overdueTasks: overdue.length, overdueTitles: overdue.slice(0, 5).map((t) => t.title) };
+                return { id: p.id, name: `${p.firstname} ${p.lastname}`, email: p.email, position: p.position, department: p.department, openTasks: mine.length, overdueTasks: overdue.length, overdueTitles: overdue.slice(0, 5).map((t) => t.title) };
             });
         },
     },
@@ -200,13 +196,13 @@ export const TOOLS: AiTool[] = [
         module: "mail", write: false,
         def: { name: "search_mail", description: "Search e-mails (subject, sender, recipient, text). Newest first. Only short previews; use get_mail for the full text.", parameters: schema({ query: S("text to look for"), folder: { type: "string", enum: ["inbox", "sent"] }, limit: N("max results, default 10, max 20") }) },
         run: async (c, a) => {
-            const filter: Record<string, unknown> = { owner: c.org, deleted: { $ne: true } };
+            const filter: Record<string, unknown> = { owner: c.org, deleted: false };
             const folder = str(a.folder, 10);
             if (folder === "inbox" || folder === "sent") filter.folder = folder;
             const q = str(a.query, 100);
-            if (q) filter.$or = ["subject", "from", "to", "body"].map((k) => ({ [k]: rx(q) }));
-            const list = await MailMessage.find(filter).sort({ at: -1 }).limit(int(a.limit, 10, 1, 20)).lean();
-            return list.map((m) => ({ id: String(m._id), folder: m.folder, from: m.from, to: m.to, subject: m.subject, at: new Date(m.at).toISOString(), read: m.read, preview: cut(m.body, 200) }));
+            if (q) filter.OR = ["subject", "from", "to", "body"].map((k) => ({ [k]: like(q) }));
+            const list = await prisma.mailMessage.findMany({ where: filter as any, orderBy: { at: "desc" }, take: int(a.limit, 10, 1, 20) });
+            return list.map((m) => ({ id: m.id, folder: m.folder, from: m.from, to: m.to, subject: m.subject, at: new Date(m.at).toISOString(), read: m.read, preview: cut(m.body, 200) }));
         },
     },
     {
@@ -214,9 +210,9 @@ export const TOOLS: AiTool[] = [
         def: { name: "get_mail", description: "Full text of one e-mail.", parameters: schema({ id: S("mail id from search_mail") }, ["id"]) },
         run: async (c, a) => {
             if (!isId(a.id)) throw new ToolError("id must be a mail id");
-            const m = await MailMessage.findOne({ _id: a.id, owner: c.org, deleted: { $ne: true } }).lean();
+            const m = await prisma.mailMessage.findFirst({ where: { id: String(a.id), owner: c.org, deleted: false } });
             if (!m) throw new ToolError("E-mail not found");
-            return { id: String(m._id), folder: m.folder, from: m.from, to: m.to, subject: m.subject, at: new Date(m.at).toISOString(), body: cut(m.body, 4000) };
+            return { id: m.id, folder: m.folder, from: m.from, to: m.to, subject: m.subject, at: new Date(m.at).toISOString(), body: cut(m.body, 4000) };
         },
     },
     {
@@ -224,8 +220,8 @@ export const TOOLS: AiTool[] = [
         def: { name: "get_mail_thread", description: "The correspondence with one e-mail address (both directions), oldest first, each message shortened. Use it to summarize a long conversation.", parameters: schema({ email: S("the other person's e-mail address"), limit: N("max messages, default 20, max 40") }, ["email"]) },
         run: async (c, a) => {
             const email = need(str(a.email, 200).toLowerCase(), "email");
-            const list = await MailMessage.find({ owner: c.org, deleted: { $ne: true }, $or: [{ from: rx(email) }, { to: rx(email) }] }).sort({ at: -1 }).limit(int(a.limit, 20, 1, 40)).lean();
-            return list.reverse().map((m) => ({ id: String(m._id), direction: m.folder === "sent" ? "we wrote" : "they wrote", subject: m.subject, at: new Date(m.at).toISOString().slice(0, 16), text: cut(m.body, 600) }));
+            const list = await prisma.mailMessage.findMany({ where: { owner: c.org, deleted: false, OR: [{ from: like(email) }, { to: like(email) }] }, orderBy: { at: "desc" }, take: int(a.limit, 20, 1, 40) });
+            return list.reverse().map((m) => ({ id: m.id, direction: m.folder === "sent" ? "we wrote" : "they wrote", subject: m.subject, at: new Date(m.at).toISOString().slice(0, 16), text: cut(m.body, 600) }));
         },
     },
     {
@@ -233,10 +229,10 @@ export const TOOLS: AiTool[] = [
         def: { name: "search_documents", description: "Search uploaded files in Documents by name (not Google Docs/Sheets/Slides — only uploaded files, e.g. PDFs). Use it to find a file's id before read_document.", parameters: schema({ query: S("text in the file name"), limit: N("max results, default 10, max 25") }) },
         run: async (c, a) => {
             const q = str(a.query, 150);
-            const filter: Record<string, unknown> = { owner: c.org, kind: "file", archived: { $ne: true } };
-            if (q) filter.name = rx(q);
-            const list = await DocItem.find(filter).sort({ createdAt: -1 }).limit(int(a.limit, 10, 1, 25)).lean();
-            return list.map((d) => ({ id: String(d._id), name: d.name, mime: d.mime, sizeKb: Math.round((d.size ?? 0) / 1024), uploaded: iso(d.createdAt) }));
+            const filter: Record<string, unknown> = { owner: c.org, kind: "file", archived: false };
+            if (q) filter.name = like(q);
+            const list = await prisma.docItem.findMany({ where: filter as any, orderBy: { createdAt: "desc" }, take: int(a.limit, 10, 1, 25) });
+            return list.map((d) => ({ id: d.id, name: d.name, mime: d.mime, sizeKb: Math.round((d.size ?? 0) / 1024), uploaded: iso(d.createdAt) }));
         },
     },
     {
@@ -244,7 +240,7 @@ export const TOOLS: AiTool[] = [
         def: { name: "read_document", description: "Read the text of an uploaded PDF file (not Google Docs/Sheets/Slides, and not images or other file types — PDF only, for now). Use it to summarize a document or, for an employment contract, to find the employee name, contract type and start date before proposing save_employee_contract.", parameters: schema({ id: S("file id from search_documents") }, ["id"]) },
         run: async (c, a) => {
             if (!isId(a.id)) throw new ToolError("id must be a file id from search_documents");
-            const doc = await DocItem.findOne({ _id: a.id, owner: c.org, kind: "file" }).lean();
+            const doc = await prisma.docItem.findFirst({ where: { id: String(a.id), owner: c.org, kind: "file" } });
             if (!doc) throw new ToolError("File not found");
             if (doc.mime !== "application/pdf") throw new ToolError(`Only PDF files can be read yet (this file is ${doc.mime || "of an unknown type"})`);
             const res = await getObject(doc.storagePath);
@@ -261,10 +257,19 @@ export const TOOLS: AiTool[] = [
         def: { name: "create_task", description: "Create a task. Needs user confirmation. deadline like 2026-09-30T14:00 or 2026-09-30. responsible is a person's name.", parameters: schema({ title: S("short task title"), deadline: S("date or date-time"), responsible: S("person name"), description: S("details") }, ["title"]) },
         check: (a) => ({ title: need(str(a.title, 200), "title"), deadline: dateTime(a.deadline), responsible: str(a.responsible, 80), description: str(a.description, 500) }),
         run: async (c, a) => {
-            const author = await User.findById(c.userId).select("firstname lastname").lean<{ firstname: string; lastname: string }>();
-            const task = await Task.create({ owner: c.org, title: a.title, description: a.description, deadline: a.deadline, createdBy: author ? `${author.firstname} ${author.lastname}`.trim() : "", responsible: a.responsible || author?.firstname || "" });
+            const author = await prisma.user.findUnique({ where: { id: c.userId }, select: { firstname: true, lastname: true } });
+            const task = await prisma.task.create({
+                data: {
+                    owner: c.org,
+                    title: String(a.title),
+                    description: String(a.description ?? ""),
+                    deadline: String(a.deadline ?? ""),
+                    createdBy: author ? `${author.firstname} ${author.lastname}`.trim() : "",
+                    responsible: String(a.responsible || author?.firstname || ""),
+                },
+            });
             await postTask(c.org, c.userId, task);
-            await emit(c.org, { type: "task_created", data: { id: String(task._id), title: task.title, responsible: task.responsible ?? "" } });
+            await emit(c.org, { type: "task_created", data: { id: task.id, title: task.title, responsible: task.responsible ?? "" } });
             return { params: { title: String(a.title) }, link: "/crm/tasks" };
         },
     },
@@ -283,8 +288,9 @@ export const TOOLS: AiTool[] = [
         },
         run: async (c, a) => {
             const { id, ...set } = a;
-            const t = await Task.findOneAndUpdate({ _id: id, owner: c.org }, { $set: set }, { new: true });
-            if (!t) throw new ToolError("Task not found");
+            const found = await prisma.task.findFirst({ where: { id: String(id), owner: c.org } });
+            if (!found) throw new ToolError("Task not found");
+            const t = await prisma.task.update({ where: { id: found.id }, data: set as any });
             return { params: { title: t.title }, link: "/crm/tasks" };
         },
     },
@@ -295,8 +301,21 @@ export const TOOLS: AiTool[] = [
         run: async (c, a) => {
             const stages = await ensureStages(c.org);
             const stage = stages.find((s) => s.name.toLowerCase() === String(a.stage).toLowerCase()) ?? stages[0];
-            const order = await Deal.countDocuments({ owner: c.org, stage: stage._id });
-            const deal = await Deal.create({ owner: c.org, stage: stage._id, clientName: a.name, order, contactName: a.contact_name, companyName: a.company_name, endDate: a.end_date, responsible: a.responsible, activities: [{ type: "created", text: a.name }] });
+            const stageId = String(stage.id);
+            const order = await prisma.deal.count({ where: { owner: c.org, stage: stageId } });
+            const deal = await prisma.deal.create({
+                data: {
+                    owner: c.org,
+                    stage: stageId,
+                    clientName: String(a.name),
+                    order,
+                    contactName: String(a.contact_name ?? ""),
+                    companyName: String(a.company_name ?? ""),
+                    endDate: String(a.end_date ?? ""),
+                    responsible: String(a.responsible ?? ""),
+                    activities: [{ type: "created", text: String(a.name) }] as any,
+                },
+            });
             await emitDeal(c.org, deal, "deal_created");
             return { params: { name: String(a.name), stage: stage.name }, link: "/crm/crm" };
         },
@@ -322,8 +341,8 @@ export const TOOLS: AiTool[] = [
         },
         run: async (c, a) => {
             const name = contactFullName(a as Record<string, string>);
-            const x = await Contact.create({ ...a, name, owner: c.org });
-            await emit(c.org, { type: "contact_created", data: { id: String(x._id), name, email: x.email ?? "", phone: x.phone ?? "" } });
+            const x = await prisma.contact.create({ data: { ...(a as any), name, owner: c.org } });
+            await emit(c.org, { type: "contact_created", data: { id: x.id, name, email: x.email ?? "", phone: x.phone ?? "" } });
             return { params: { name }, link: "/crm/crm" };
         },
     },
@@ -336,9 +355,17 @@ export const TOOLS: AiTool[] = [
             return { entity: a.entity, id: a.id, text: need(str(a.text, 1000), "text") };
         },
         run: async (c, a) => {
-            const Model = a.entity === "deal" ? Deal : a.entity === "contact" ? Contact : Company;
-            const r = await Model.updateOne({ _id: a.id, owner: c.org }, { $push: { activities: { type: "note", text: a.text, meta: "" } } });
-            if (!r.matchedCount) throw new ToolError("Record not found");
+            const entry = { type: "note", text: a.text, meta: "" };
+            const id = String(a.id);
+            const found =
+                a.entity === "deal" ? await prisma.deal.findFirst({ where: { id, owner: c.org } })
+                : a.entity === "contact" ? await prisma.contact.findFirst({ where: { id, owner: c.org } })
+                : await prisma.company.findFirst({ where: { id, owner: c.org } });
+            if (!found) throw new ToolError("Record not found");
+            const activities = [...((found.activities as any[]) ?? []), entry];
+            if (a.entity === "deal") await prisma.deal.update({ where: { id }, data: { activities: activities as any } });
+            else if (a.entity === "contact") await prisma.contact.update({ where: { id }, data: { activities: activities as any } });
+            else await prisma.company.update({ where: { id }, data: { activities: activities as any } });
             return { params: { entity: String(a.entity) }, link: "/crm/crm" };
         },
     },
@@ -351,10 +378,15 @@ export const TOOLS: AiTool[] = [
             return { to, subject: need(str(a.subject, 300), "subject"), body: need(str(a.body, 8000), "body") };
         },
         run: async (c, a) => {
-            const box = await Integration.findOne({ owner: c.org, type: "mail", status: "connected" });
+            const box = await prisma.integration.findFirst({ where: { owner: c.org, type: "mail", status: "connected" } });
             if (!box) throw new ToolError("No mailbox is connected. Connect one in Web Mails first.");
             await sendFromAccount(box, { to: String(a.to), subject: String(a.subject), text: String(a.body) });
-            await Contact.updateOne({ owner: c.org, email: new RegExp(`^${escapeRegex(String(a.to))}$`, "i") }, { $push: { activities: { type: "email", text: `Email: ${a.subject}`, meta: "" } } }).catch(() => undefined);
+            // письмо попадает в ленту контакта с такой почтой (если он есть в CRM)
+            const card = await prisma.contact.findFirst({ where: { owner: c.org, email: { equals: String(a.to), mode: "insensitive" } } });
+            if (card) {
+                const activities = [...((card.activities as any[]) ?? []), { type: "email", text: `Email: ${a.subject}`, meta: "" }];
+                await prisma.contact.update({ where: { id: card.id }, data: { activities: activities as any } }).catch(() => undefined);
+            }
             return { params: { to: String(a.to) }, link: "/crm/collaboration/web-mails" };
         },
     },
@@ -377,8 +409,9 @@ export const TOOLS: AiTool[] = [
         },
         run: async (c, a) => {
             const { employee_id, ...set } = a;
-            const emp = await Employee.findOneAndUpdate({ _id: employee_id, owner: c.org }, { $set: set }, { new: true });
-            if (!emp) throw new ToolError("Employee not found");
+            const found = await prisma.employee.findFirst({ where: { id: String(employee_id), owner: c.org } });
+            if (!found) throw new ToolError("Employee not found");
+            const emp = await prisma.employee.update({ where: { id: found.id }, data: set as any });
             return { params: { name: `${emp.firstname} ${emp.lastname}`.trim() }, link: "/crm/company" };
         },
     },
@@ -392,14 +425,16 @@ export const allowedTools = (c: Pick<AiCtx, "role" | "modules">) => TOOLS.filter
 // Как называется запись, к которой относится действие (для карточки подтверждения: «Update task “Offer”»)
 export async function targetLabel(c: Pick<AiCtx, "org">, tool: string, a: Args): Promise<string> {
     try {
-        if (tool === "update_task") return (await Task.findOne({ _id: a.id, owner: c.org }).select("title").lean<{ title: string }>())?.title ?? "";
+        if (tool === "update_task") return (await prisma.task.findFirst({ where: { id: String(a.id), owner: c.org }, select: { title: true } }))?.title ?? "";
         if (tool === "add_note") {
-            const Model = a.entity === "deal" ? Deal : a.entity === "contact" ? Contact : Company;
-            const r = await Model.findOne({ _id: a.id, owner: c.org }).select("name clientName").lean<{ name?: string; clientName?: string }>();
-            return r?.name ?? r?.clientName ?? "";
+            const id = String(a.id);
+            if (a.entity === "deal") return (await prisma.deal.findFirst({ where: { id, owner: c.org }, select: { clientName: true } }))?.clientName ?? "";
+            if (a.entity === "contact") return (await prisma.contact.findFirst({ where: { id, owner: c.org }, select: { name: true } }))?.name ?? "";
+            if (a.entity === "company") return (await prisma.company.findFirst({ where: { id, owner: c.org }, select: { name: true } }))?.name ?? "";
+            return "";
         }
         if (tool === "save_employee_contract") {
-            const r = await Employee.findOne({ _id: a.employee_id, owner: c.org }).select("firstname lastname").lean<{ firstname: string; lastname: string }>();
+            const r = await prisma.employee.findFirst({ where: { id: String(a.employee_id), owner: c.org }, select: { firstname: true, lastname: true } });
             return r ? `${r.firstname} ${r.lastname}`.trim() : "";
         }
     } catch { /* подпись необязательна */ }
