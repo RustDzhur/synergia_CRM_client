@@ -1,26 +1,25 @@
-import type { HydratedDocument } from "mongoose";
 import { ProviderError } from "@/lib/http";
 import { packSecrets, secretsOf } from "@/lib/integrations";
 import { randomToken } from "@/lib/crypto";
 import { Tokens, refreshTokens } from "@/lib/mail/oauth";
-import Integration from "@/models/Integration";
-import DocFolder from "@/models/DocFolder";
+import { prisma } from "@/lib/prisma";
 import { createFolder, driveUser } from "./drive";
 
-type Doc = HydratedDocument<any>;
+type Doc = any;
 
 // Подключение Google Drive пользователя (одно на пользователя): токены зашифрованы, как у почты
-export const findDrive = (owner: string) => Integration.findOne({ owner, type: "gdrive" });
+export const findDrive = (owner: string) => prisma.integration.findFirst({ where: { owner, type: "gdrive" } });
 
 export async function connectDrive(owner: string, tokens: Tokens) {
     if (!tokens.refreshToken) throw new ProviderError("Google did not allow offline access. Remove the app in your Google account permissions and connect again.");
     const email = await driveUser(tokens.accessToken).catch(() => "");
-    const doc = (await findDrive(owner)) ?? new Integration({ owner, type: "gdrive", token: randomToken() });
+    const existing = await findDrive(owner);
     // при повторном подключении корневую папку в Drive сохраняем
-    doc.set({ name: email || "Google Drive", config: { email, rootFolderId: doc.config?.rootFolderId ?? "" }, secrets: packSecrets(tokens), status: "connected", error: "" });
-    doc.markModified("config");
-    await doc.save();
-    return doc;
+    const prev = (existing?.config ?? {}) as any;
+    const data = { name: email || "Google Drive", config: { email, rootFolderId: prev.rootFolderId ?? "" } as any, secrets: packSecrets(tokens), status: "connected", error: "" };
+    return existing
+        ? prisma.integration.update({ where: { id: existing.id }, data })
+        : prisma.integration.create({ data: { owner, type: "gdrive", token: randomToken(), ...data } });
 }
 
 // Токен доступа живёт около часа: перед запросом при необходимости обновляем его по refresh-токену
@@ -30,35 +29,32 @@ export async function driveToken(d: Doc): Promise<string> {
     if (!s.refreshToken) throw new ProviderError("Connect Google Drive again");
     try {
         const fresh = await refreshTokens("google", s.refreshToken);
-        d.secrets = packSecrets(fresh);
-        await d.save();
+        await prisma.integration.update({ where: { id: d.id }, data: { secrets: packSecrets(fresh) } });
         return fresh.accessToken;
     } catch {
-        d.status = "error";
-        d.error = "Google Drive access was revoked. Connect it again.";
-        await d.save();
-        throw new ProviderError(d.error);
+        const error = "Google Drive access was revoked. Connect it again.";
+        await prisma.integration.update({ where: { id: d.id }, data: { status: "error", error } });
+        throw new ProviderError(error);
     }
 }
 
 // Папка Drive для документа: корневая «Firmspace CRM» или зеркало папки CRM (создаются при первом документе в них)
 export async function driveParent(token: string, drive: Doc, folderId: string | null): Promise<string> {
     if (!folderId) {
-        if (!drive.config.rootFolderId) {
+        const cfg = (drive.config ?? {}) as any;
+        if (!cfg.rootFolderId) {
             const root = await createFolder(token, "Firmspace CRM");
-            drive.set("config", { ...drive.config, rootFolderId: root.id });
-            drive.markModified("config");
-            await drive.save();
+            drive.config = { ...cfg, rootFolderId: root.id };
+            await prisma.integration.update({ where: { id: drive.id }, data: { config: drive.config as any } });
         }
-        return drive.config.rootFolderId as string;
+        return (drive.config as any).rootFolderId as string;
     }
-    const folder = await DocFolder.findById(folderId);
+    const folder = await prisma.docFolder.findUnique({ where: { id: folderId } });
     if (!folder) return driveParent(token, drive, null);
     if (folder.driveId) return folder.driveId;
     const parent = await driveParent(token, drive, folder.parent ? String(folder.parent) : null);
     const created = await createFolder(token, folder.name, parent);
-    folder.driveId = created.id;
-    await folder.save();
+    await prisma.docFolder.update({ where: { id: folder.id }, data: { driveId: created.id } });
     return created.id;
 }
 
@@ -66,16 +62,15 @@ export async function driveParent(token: string, drive: Doc, folderId: string | 
 // Отдельная интеграция со своими токенами: Drive и Календарь подключаются независимо, и отзыв доступа
 // к одному не должен ломать другой. Токен обновляется так же, как у Drive.
 
-export const findGcal = (owner: string) => Integration.findOne({ owner, type: "gcal" });
+export const findGcal = (owner: string) => prisma.integration.findFirst({ where: { owner, type: "gcal" } });
 
 export async function connectGcal(owner: string, tokens: Tokens) {
     if (!tokens.refreshToken) throw new ProviderError("Google did not allow offline access. Remove the app in your Google account permissions and connect again.");
-    const doc = (await findGcal(owner)) ?? new Integration({ owner, type: "gcal", token: randomToken() });
-    // Список календарей и имя подключённого аккаунта. Основной календарь Google называется почтой
-    // владельца, поэтому он же и есть имя: через Drive его не узнать — календарное согласие прав
-    // на Drive не даёт, и тот запрос всегда отвечал отказом.
+    const existing = await findGcal(owner);
+    const prev = (existing?.config ?? {}) as any;
+    // Список календарей и имя подключённого аккаунта: основной календарь Google называется почтой владельца
     let email = "";
-    let calendars = doc.config?.calendars ?? [];
+    let calendars = prev.calendars ?? [];
     try {
         const { listCalendars, toCalendarEntries } = await import("@/lib/google/calendar");
         const list = await listCalendars(tokens.accessToken);
@@ -84,23 +79,21 @@ export async function connectGcal(owner: string, tokens: Tokens) {
         if (!Array.isArray(calendars) || !calendars.length) calendars = toCalendarEntries(list);
     } catch (e) {
         // Календарный API в проекте Google Cloud включается отдельно от Drive и почты. Пока он выключен,
-        // подключение бесполезно, и сказать об этом нужно сразу — со ссылкой на включение, которую
-        // присылает сам Google. Прочие сбои списка не критичны: его можно загрузить из окна «Календари».
+        // подключение бесполезно, и сказать об этом нужно сразу.
         const message = e instanceof Error ? e.message : "";
         if (/has not been used in project|is disabled|accessNotConfigured/i.test(message)) throw new ProviderError(message);
     }
     // Выбранные календари и календарь для записи сохраняем при переподключении: человек их уже отметил.
-    // scopes — то, что Google выдал на самом деле: по ним видно, можно ли писать в календарь.
-    doc.set({
+    const data = {
         name: email || "Google Calendar",
-        config: { email, calendars, target: doc.config?.target ?? "", scopes: tokens.scope || doc.config?.scopes || "" },
+        config: { email, calendars, target: prev.target ?? "", scopes: tokens.scope || prev.scopes || "" } as any,
         secrets: packSecrets(tokens),
         status: "connected",
         error: "",
-    });
-    doc.markModified("config");
-    await doc.save();
-    return doc;
+    };
+    return existing
+        ? prisma.integration.update({ where: { id: existing.id }, data })
+        : prisma.integration.create({ data: { owner, type: "gcal", token: randomToken(), ...data } });
 }
 
 export async function gcalToken(d: Doc): Promise<string> {
@@ -109,13 +102,11 @@ export async function gcalToken(d: Doc): Promise<string> {
     if (!s.refreshToken) throw new ProviderError("Connect Google Calendar again");
     try {
         const fresh = await refreshTokens("google", s.refreshToken);
-        d.secrets = packSecrets(fresh);
-        await d.save();
+        await prisma.integration.update({ where: { id: d.id }, data: { secrets: packSecrets(fresh) } });
         return fresh.accessToken;
     } catch {
-        d.status = "error";
-        d.error = "Google Calendar access was revoked. Connect it again.";
-        await d.save();
-        throw new ProviderError(d.error);
+        const error = "Google Calendar access was revoked. Connect it again.";
+        await prisma.integration.update({ where: { id: d.id }, data: { status: "error", error } });
+        throw new ProviderError(error);
     }
 }

@@ -1,6 +1,7 @@
 import { ProviderError, fetchProvider } from "@/lib/http";
 import { EVENT_TZ_RE, shiftDay } from "@/lib/events";
 import { findGcal, gcalToken } from "@/lib/google";
+import { prisma } from "@/lib/prisma";
 import { type ExternalEvent, upsertExternalEvents } from "@/lib/calendar/sources";
 
 // Google Calendar API v3 без SDK — как и Drive, обычными запросами.
@@ -29,13 +30,8 @@ interface GoogleEvent {
     recurringEventId?: string;
     timeZone?: string; // пояс события: храним его, чтобы правка не уехала обратно со сдвигом
 }
-interface Doc {
-    config?: { calendars?: unknown; target?: unknown; scopes?: unknown };
-    status?: string;
-    set: (path: string, value: unknown) => unknown;
-    markModified: (path: string) => unknown;
-    save: () => Promise<unknown>;
-}
+// Документ интеграции: запись Prisma (её читают/пишут эти функции)
+type Doc = any;
 
 async function calendar<T>(token: string, path: string, params: Record<string, string> = {}, init: { method?: string; body?: unknown } = {}): Promise<T> {
     const q = new URLSearchParams(params).toString();
@@ -210,18 +206,14 @@ export function toCalendarEntries(list: Array<{ id: string; summary?: string; pr
 export async function setGcalTarget(owner: string, id: string) {
     const doc = await findGcal(owner);
     if (!doc) throw new ProviderError("Google Calendar is not connected");
-    doc.set("config", { ...(doc.config ?? {}), target: id });
-    doc.markModified("config");
-    await doc.save();
+    await prisma.integration.update({ where: { id: doc.id }, data: { config: { ...((doc.config ?? {}) as any), target: id } as any } });
 }
 
 export async function setGcalCalendars(owner: string, enabledIds: string[]) {
     const doc = await findGcal(owner);
     if (!doc) throw new ProviderError("Google Calendar is not connected");
     const enabled = new Set(enabledIds);
-    doc.set("config", { ...(doc.config ?? {}), calendars: gcalCalendars(doc).map((c) => ({ ...c, enabled: enabled.has(c.id) })) });
-    doc.markModified("config");
-    await doc.save();
+    await prisma.integration.update({ where: { id: doc.id }, data: { config: { ...((doc.config ?? {}) as any), calendars: gcalCalendars(doc).map((c) => ({ ...c, enabled: enabled.has(c.id) })) } as any } });
 }
 
 // Календарь, в который мы только что записали событие, обязан вернуться в CRM при следующей
@@ -230,9 +222,7 @@ async function enableCalendar(doc: Doc, id: string) {
     const list = gcalCalendars(doc);
     const item = list.find((c) => c.id === id);
     if (!item || item.enabled) return;
-    doc.set("config", { ...(doc.config ?? {}), calendars: list.map((c) => (c.id === id ? { ...c, enabled: true } : c)) });
-    doc.markModified("config");
-    await doc.save();
+    await prisma.integration.update({ where: { id: doc.id }, data: { config: { ...((doc.config ?? {}) as any), calendars: list.map((c) => (c.id === id ? { ...c, enabled: true } : c)) } as any } });
 }
 
 // ── Связь с календарём фирмы ──────────────────────────────────────────────────────────────────────────
@@ -326,9 +316,7 @@ export async function googleSync(org: string, from: string, to: string): Promise
         const all = await listCalendars(token);
         const entries = toCalendarEntries(all);
         chosen = entries;
-        doc.set("config", { ...(doc.config ?? {}), calendars: entries });
-        doc.markModified("config");
-        await doc.save();
+        await prisma.integration.update({ where: { id: doc.id }, data: { config: { ...((doc.config ?? {}) as any), calendars: entries } as any } });
     }
 
     const events: ExternalEvent[] = [];
@@ -366,6 +354,5 @@ export async function googleSync(org: string, from: string, to: string): Promise
 /** Отключение: удаляем интеграцию вместе с токенами. Импортированные события остаются в календаре —
  *  человек их видит и решает сам, убирать ли; повторное подключение обновит их по externalId. */
 export async function disconnect(owner: string) {
-    const Integration = (await import("@/models/Integration")).default;
-    await Integration.deleteOne({ owner, type: "gcal" });
+    await prisma.integration.deleteMany({ where: { owner, type: "gcal" } });
 }

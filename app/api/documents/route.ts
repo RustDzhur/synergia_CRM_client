@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { ProviderError } from "@/lib/http";
 import { cleanName, docsState, ownedFolder, toDocDTO } from "@/lib/documents";
+import { prisma } from "@/lib/prisma";
 import { driveParent, driveToken, findDrive } from "@/lib/google";
 import { createGoogleFile, listAppFiles } from "@/lib/google/drive";
 import DocItem from "@/models/DocItem";
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
             // папку на Диске могли удалить вручную — забываем её идентификатор и создаём заново
             if (!(e instanceof ProviderError) || !/not found|File not found/i.test(e.message)) throw e;
             if (folder) await DocFolder.updateOne({ _id: folder._id }, { driveId: "" });
-            else { drive.set("config", { ...drive.config, rootFolderId: "" }); drive.markModified("config"); await drive.save(); }
+            else { await prisma.integration.update({ where: { id: drive.id }, data: { config: { ...((drive.config ?? {}) as any), rootFolderId: "" } as any } }); }
             file = await create();
         }
         const me = await User.findById(user.userId).select("firstname lastname");

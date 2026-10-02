@@ -60,7 +60,7 @@ export async function docsState(owner: string): Promise<DocsState> {
         drive: {
             configured: oauthAvailable().google,
             connected: !!drive && drive.status === "connected",
-            email: drive?.config?.email ?? "",
+            email: String((drive?.config as any)?.email ?? ""),
             // сколько документов ссылаются на файлы Google: при отключении аккаунта они остаются
             // в списке (файлы не удаляем), и об этом честно предупреждаем в интерфейсе
             googleDocs: docs.filter(isGoogle).length,

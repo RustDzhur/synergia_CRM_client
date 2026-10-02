@@ -6,6 +6,7 @@ import { appOrigin } from "@/lib/appUrl";
 import { ProviderError } from "@/lib/http";
 import { authorizeUrl, makeState, oauthAvailable } from "@/lib/mail/oauth";
 import { findGcal } from "@/lib/google";
+import { prisma } from "@/lib/prisma";
 import { GCAL_SCOPE, disconnect, gcalCalendars, gcalWritable, listCalendars, setGcalCalendars, setGcalTarget, toCalendarEntries } from "@/lib/google/calendar";
 import { connectIcloud, disconnectIcloud, findIcloud, icloudCalendars, setIcloudCalendars } from "@/lib/ical/icloud";
 import { syncCalendars } from "@/lib/calendar/sync";
@@ -27,16 +28,16 @@ export async function GET(req: Request) {
         google: {
             available: oauthAvailable().google,
             connected: !!gcal && gcal.status === "connected",
-            email: gcal?.config?.email ?? "",
+            email: (gcal?.config as any)?.email ?? "",
             error: gcal?.error ?? "",
             lastSyncAt: gcal?.lastSyncAt?.toISOString?.() ?? "",
             calendars: gcal ? gcalCalendars(gcal) : [],
             // write: соединение выдано с правом на изменение событий. Старое подключение (только чтение)
             // писать не может — интерфейс предложит подключиться заново.
-            write: gcalWritable(String(gcal?.config?.scopes ?? "")),
+            write: gcalWritable(String((gcal?.config as any)?.scopes ?? "")),
             // Выбранный календарь для записи, а не вычисленный: пустое значение в списке означает
             // «основной», и подставлять сюда id основного нельзя — иначе выбор из списка не сохранялся бы
-            target: String(gcal?.config?.target ?? ""),
+            target: String((gcal?.config as any)?.target ?? ""),
         },
         icloud: {
             connected: !!icloud && icloud.status === "connected",
@@ -116,11 +117,10 @@ export async function POST(req: Request) {
             const entries = toCalendarEntries(list, known);
             // Календарь для записи мог исчезнуть из Google (удалён или отписались): тогда возвращаемся
             // к основному, иначе новые события падали бы с ошибкой «Not Found»
-            const target = String(doc.config?.target ?? "");
-            doc.set("config", { ...(doc.config ?? {}), calendars: entries, target: entries.some((c) => c.id === target) ? target : "" });
-            doc.markModified("config");
-            await doc.save();
-            return NextResponse.json({ calendars: gcalCalendars(doc) });
+            const target = String((doc.config as any)?.target ?? "");
+            await prisma.integration.update({ where: { id: doc.id }, data: { config: { ...((doc.config ?? {}) as any), calendars: entries, target: entries.some((c) => c.id === target) ? target : "" } as any } });
+            // ответ отдаём по уже сохранённому списку: локальный doc.config не мутируем
+            return NextResponse.json({ calendars: entries });
         }
 
         return badRequest("Unknown action");
