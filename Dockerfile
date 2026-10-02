@@ -15,6 +15,10 @@ RUN npx prisma generate && npm run build
 
 # ── запуск ────────────────────────────────────────────────────────────────────
 FROM node:24-bookworm-slim AS run
+# Prisma-движку нужен OpenSSL: в slim-образе его нет, и Prisma не может определить версию
+# (падает с «Database error» вместо подключения)
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
