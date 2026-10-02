@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { notFound, unauthorized, validId } from "@/lib/api";
 import { toConversationDTO, toMessageDTO } from "@/lib/channels";
-import Conversation from "@/models/Conversation";
-import Message from "@/models/Message";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -13,14 +11,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    await connectDB();
-    const conversation = await Conversation.findOne({ _id: params.id, owner: user.id });
+    let conversation = await prisma.conversation.findFirst({ where: { id: params.id, owner: user.id } });
     if (!conversation) return notFound();
     if (new URL(req.url).searchParams.get("read") === "1" && conversation.unread > 0) {
-        conversation.unread = 0;
-        await conversation.save();
+        conversation = await prisma.conversation.update({ where: { id: conversation.id }, data: { unread: 0 } });
     }
-    const messages = (await Message.find({ conversation: conversation._id }).sort({ createdAt: -1 }).limit(200)).reverse();
+    const messages = (await prisma.message.findMany({ where: { conversation: conversation.id }, orderBy: { createdAt: "desc" }, take: 200 })).reverse();
     return NextResponse.json({ conversation: toConversationDTO(conversation), messages: messages.map(toMessageDTO) });
 }
 
@@ -29,9 +25,9 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    await connectDB();
-    const conversation = await Conversation.findOneAndDelete({ _id: params.id, owner: user.id });
+    const conversation = await prisma.conversation.findFirst({ where: { id: params.id, owner: user.id } });
     if (!conversation) return notFound();
-    await Message.deleteMany({ conversation: conversation._id });
+    await prisma.message.deleteMany({ where: { conversation: conversation.id } });
+    await prisma.conversation.deleteMany({ where: { id: conversation.id } });
     return NextResponse.json({ ok: true });
 }

@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { assertProducts, postStockDoc, type StockDocKind } from "@/lib/finance/stockDocs";
 import { logAudit } from "@/lib/audit";
-import StockDoc from "@/models/StockDoc";
-import Product from "@/models/Product";
-import User from "@/models/User";
-import Warehouse from "@/models/Warehouse";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -22,19 +18,19 @@ const KINDS: StockDocKind[] = ["receipt", "issue", "transfer", "writeoff", "surp
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     const url = new URL(req.url);
     const limit = Math.min(200, Math.max(1, Number(url.searchParams.get("limit")) || 50));
-    const list = await StockDoc.find({ org: user.id }).sort({ createdAt: -1 }).limit(limit);
+    const list = await prisma.stockDoc.findMany({ where: { org: user.id }, orderBy: { createdAt: "desc" }, take: limit });
+    const productIds = Array.from(new Set(list.flatMap((d) => (((d.lines ?? []) as any[]).map((l) => String(l.product))))));
     const [warehouses, products] = await Promise.all([
-        Warehouse.find({ org: user.id }).select("name"),
-        Product.find({ _id: { $in: list.flatMap((d) => d.lines.map((l: { product: unknown }) => l.product)) } }).select("name sku unit"),
+        prisma.warehouse.findMany({ where: { org: user.id }, select: { id: true, name: true } }),
+        productIds.length ? prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, name: true, sku: true, unit: true } }) : [],
     ]);
-    const wName = new Map(warehouses.map((w) => [String(w._id), w.name]));
-    const pInfo = new Map(products.map((p) => [String(p._id), { name: p.name, sku: p.sku ?? "", unit: p.unit ?? "" }]));
+    const wName = new Map(warehouses.map((w) => [w.id, w.name]));
+    const pInfo = new Map(products.map((p) => [p.id, { name: p.name, sku: p.sku ?? "", unit: p.unit ?? "" }]));
     return NextResponse.json(
         list.map((d) => ({
-            id: String(d._id),
+            id: d.id,
             kind: d.kind,
             number: d.number,
             date: d.date,
@@ -44,7 +40,7 @@ export async function GET(req: Request) {
             by: d.by ?? "",
             reversed: !!d.reversedBy,
             reversalOf: d.reversalOf ? String(d.reversalOf) : "",
-            lines: (d.lines ?? []).map((l: { product: unknown; qty: number; price?: number; diff?: number }) => ({
+            lines: ((d.lines ?? []) as any[]).map((l: { product: unknown; qty: number; price?: number; diff?: number }) => ({
                 product: String(l.product),
                 name: pInfo.get(String(l.product))?.name ?? "",
                 sku: pInfo.get(String(l.product))?.sku ?? "",
@@ -65,8 +61,7 @@ export async function POST(req: Request) {
     const kind = String(b?.kind ?? "") as StockDocKind;
     if (!KINDS.includes(kind)) return badRequest("kind must be one of: " + KINDS.join(", "));
     try {
-        await connectDB();
-        const author = await User.findById(user.userId).select("firstname lastname");
+        const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
         const lines = Array.isArray(b?.lines) ? b.lines : [];
         if (!lines.length) return badRequest("У документі немає рядків");
         await assertProducts(user.id, lines.map((l: { product?: string }) => String(l?.product ?? "")));
