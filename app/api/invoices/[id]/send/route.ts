@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
@@ -10,9 +9,8 @@ import { financeSettings } from "@/lib/finance/settings";
 import { marketDocumentLocale } from "@/lib/finance/market";
 import { assertCompliant } from "@/lib/finance/compliance";
 import { computeTotals } from "@/lib/finance/totals";
-import Invoice from "@/models/Invoice";
-import User from "@/models/User";
 import { toInvoiceDTO } from "@/lib/finance/dto";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -30,8 +28,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     const b = (await req.json().catch(() => null)) as { to?: unknown; accountId?: unknown; locale?: unknown } | null;
-    await connectDB();
-    const inv = await Invoice.findOne({ _id: params.id, org: user.id });
+    const inv = await prisma.invoice.findFirst({ where: { id: params.id, org: user.id } });
     if (!inv) return notFound();
     if (inv.status !== "draft") return badRequest("Only a draft invoice can be sent");
 
@@ -47,12 +44,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         const locale = (LOCALES as readonly string[]).includes(String(b?.locale)) ? pdfLocale(b?.locale) : marketDocumentLocale(settingsFirst.country) ?? "en";
         const [pdf, sender] = await Promise.all([
             invoicePdfBuffer(user.id, inv, locale),
-            User.findById(user.userId).select("firstname lastname"),
+            prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } }),
         ]);
         const settings = settingsFirst;
         // Выпуск клиенту — момент, когда проверяются обязательные реквизиты (ТЗ §14): черновик можно
         // сохранять и печатать, но отправить неполный документ нельзя. Ошибка уходит 400 со списком кодов.
-        const gross = computeTotals(inv.items as never).gross;
+        const gross = computeTotals((inv.items ?? []) as never).gross;
         assertCompliant(
             {
                 kind: inv.kind === "credit_note" ? "credit_note" : "invoice",
@@ -74,7 +71,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             number: inv.number,
             customerName: inv.customerName,
             currency: inv.currency,
-            amount: computeTotals(inv.items ?? []).gross,
+            amount: computeTotals((inv.items ?? []) as never).gross,
             dueDate: inv.dueDate,
             locale,
             senderName: sender ? `${sender.firstname} ${sender.lastname}`.trim() : "",
@@ -83,15 +80,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         });
     } catch (e) {
         // Письмо не ушло — счёт остаётся черновиком, попытка видна в журнале
-        await logAudit({ org: user.id, userId: user.userId, action: "invoice.send_failed", entityType: "invoice", entityId: String(inv._id), summary: `Invoice ${inv.number} could not be emailed to ${recipient.email}`, meta: { to: recipient.email, reason: e instanceof Error ? e.message : "error" } });
+        await logAudit({ org: user.id, userId: user.userId, action: "invoice.send_failed", entityType: "invoice", entityId: inv.id, summary: `Invoice ${inv.number} could not be emailed to ${recipient.email}`, meta: { to: recipient.email, reason: e instanceof Error ? e.message : "error" } });
         return failure(e);
     }
 
-    inv.status = "sent";
-    inv.sentAt = new Date();
-    inv.sentTo = recipient.email;
-    await inv.save();
-    await emit(user.id, { type: "invoice_sent", data: { id: String(inv._id), number: inv.number, customerName: inv.customerName, dealId: inv.deal ? String(inv.deal) : "" } });
-    await logAudit({ org: user.id, userId: user.userId, action: "invoice.sent", entityType: "invoice", entityId: String(inv._id), summary: `Invoice ${inv.number} emailed to ${recipient.email}`, meta: { currency: inv.currency, to: recipient.email, source: recipient.source } });
-    return NextResponse.json(toInvoiceDTO(inv));
+    const saved = await prisma.invoice.update({ where: { id: inv.id }, data: { status: "sent", sentAt: new Date(), sentTo: recipient.email } });
+    await emit(user.id, { type: "invoice_sent", data: { id: inv.id, number: inv.number, customerName: inv.customerName, dealId: inv.deal ?? "" } });
+    await logAudit({ org: user.id, userId: user.userId, action: "invoice.sent", entityType: "invoice", entityId: inv.id, summary: `Invoice ${inv.number} emailed to ${recipient.email}`, meta: { currency: inv.currency, to: recipient.email, source: recipient.source } });
+    return NextResponse.json(toInvoiceDTO(saved));
 }

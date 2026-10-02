@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId, contentDisposition } from "@/lib/api";
 import { customerParty, deliveryNotePdfBuffer, pdfLocale, pdfTemplate } from "@/lib/finance/document";
@@ -7,9 +6,8 @@ import { financeSettings } from "@/lib/finance/settings";
 import { checkCompliance, complianceMessage } from "@/lib/finance/compliance";
 import { nextNumber } from "@/lib/finance/numbering";
 import { logAudit } from "@/lib/audit";
-import Order from "@/models/Order";
-import User from "@/models/User";
 import { numberPrefix } from "@/lib/finance/documents/store";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +20,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         const user = await requireUser(req);
         if (!user) return unauthorized(req);
         if (!validId(params.id)) return notFound();
-        await connectDB();
-
-        const order = await Order.findOne({ _id: params.id, org: user.id });
+        const order = await prisma.order.findFirst({ where: { id: params.id, org: user.id } });
         if (!order) return notFound();
         if (order.status === "cancelled") return badRequest("This order is cancelled");
 
@@ -43,29 +39,28 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
             );
             if (issues.length) return NextResponse.json({ message: complianceMessage(issues), code: "compliance", missing: issues.map((i) => i.code) }, { status: 400 });
             const number = order.deliveryNoteNumber || (await nextNumber(user.id, await numberPrefix(user.id, "delivery_note", settings.deliveryNotePrefix || "LS")));
-            order.deliveryNoteNumber = number;
-            order.deliveryDate = deliveryDate;
-            await order.save();
-            const author = await User.findById(user.userId).select("firstname lastname");
+            await prisma.order.update({ where: { id: order.id }, data: { deliveryNoteNumber: number, deliveryDate } });
+            const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
             await logAudit({
                 org: user.id,
                 userName: author ? `${author.firstname} ${author.lastname}`.trim() : "—",
                 action: "order.delivery_note_created",
                 entityType: "order",
-                entityId: String(order._id),
+                entityId: order.id,
                 summary: `Delivery note ${number} issued for order ${order.number}`,
             });
         }
 
+        const fresh = (await prisma.order.findUnique({ where: { id: order.id } })) ?? order;
         const buffer = await deliveryNotePdfBuffer(
-            user.id, order,
+            user.id, fresh,
             pdfLocale(url.searchParams.get("locale")),
             pdfTemplate(url.searchParams.get("template"))
         );
         return new Response(buffer as unknown as BodyInit, {
             headers: {
                 "content-type": "application/pdf",
-                "content-disposition": contentDisposition(`${order.deliveryNoteNumber}.pdf`),
+                "content-disposition": contentDisposition(`${fresh.deliveryNoteNumber}.pdf`),
                 "cache-control": "private, no-store",
             },
         });
