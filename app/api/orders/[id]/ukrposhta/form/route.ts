@@ -32,7 +32,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         return new Response(res.body, {
             headers: {
                 "Content-Type": "application/pdf",
-                "Content-Disposition": contentDisposition(`ukrposhta-${order.ukrposhta.barcode}.pdf`),
+                "Content-Disposition": contentDisposition(`ukrposhta-${String((order.ukrposhta as any)?.barcode ?? "")}.pdf`),
                 "Cache-Control": "no-store",
             },
         });

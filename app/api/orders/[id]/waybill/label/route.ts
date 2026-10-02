@@ -30,7 +30,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         return new Response(res.body, {
             headers: {
                 "Content-Type": "application/pdf",
-                "Content-Disposition": contentDisposition(`waybill-${order.waybill.number}-${kind}.pdf`),
+                "Content-Disposition": contentDisposition(`waybill-${String((order.waybill as any)?.number ?? "")}-${kind}.pdf`),
                 "Cache-Control": "no-store",
             },
         });
