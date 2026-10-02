@@ -129,7 +129,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const contact = found.contact ? { _id: found.contact._id, name: found.contact.name, phone: found.contact.phone } : null;
     // Ящик, из которого уйдёт письмо: у фирмы их может быть несколько, и знать это нужно до отправки —
     // письмо уходит из первого подключённого (см. mailAccount)
-    const mailbox = (await mailAccount(user.id))?.config?.email ?? "";
+    const mailbox = ((await mailAccount(user.id))?.config as any)?.email ?? "";
     const entries = await Promise.all(CHANNELS.map(async (channel) => [channel, {
         state: await availability(user.id, channel, contact, found.deal.company),
         connected: await isConnected(user.id, channel),
