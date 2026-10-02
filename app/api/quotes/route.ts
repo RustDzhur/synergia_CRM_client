@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { isValidObjectId } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { badRequest, unauthorized } from "@/lib/api";
+import { badRequest, unauthorized, validId } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
 import { cleanItems } from "@/lib/finance/totals";
@@ -10,8 +8,7 @@ import { applyTaxPolicy } from "@/lib/finance/tax";
 import { toQuoteDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal, contactForCustomer, dealForCustomer } from "@/lib/deals";
-import Quote from "@/models/Quote";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 import { numberPrefix } from "@/lib/finance/documents/store";
 
 export const dynamic = "force-dynamic";
@@ -21,14 +18,13 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     const url = new URL(req.url);
     const status = url.searchParams.get("status");
     const deal = url.searchParams.get("deal");
     const filter: Record<string, unknown> = { org: user.id };
     if (status) filter.status = status;
-    if (deal) filter.deal = isValidObjectId(deal) ? deal : "__none__"; // невалидный id — пустой результат, не ошибка
-    const list = await Quote.find(filter).sort({ createdAt: -1 }).limit(300);
+    if (deal) filter.deal = validId(deal) ? deal : "__none__"; // невалидный id — пустой результат, не ошибка
+    const list = await prisma.quote.findMany({ where: filter as any, orderBy: { createdAt: "desc" }, take: 300 });
     return NextResponse.json(list.map(toQuoteDTO));
 }
 
@@ -41,9 +37,8 @@ export async function POST(req: Request) {
     if (!customerName) return badRequest("customerName is required");
     const rawItems = cleanItems(b.items);
     if (!rawItems.length) return badRequest("At least one line item is required");
-    await connectDB();
     const [settings, author, contact, company, deal] = await Promise.all([
-        financeSettings(user.id), User.findById(user.userId).select("firstname lastname"),
+        financeSettings(user.id), prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } }),
         ownedContact(b.contact, user.id), ownedCompany(b.company, user.id), ownedDeal(b.deal, user.id),
     ]);
     // ставку определяет фирма, а не браузер: освобождённая — 0 % во всех строках, иначе страна по умолчанию
@@ -53,15 +48,17 @@ export async function POST(req: Request) {
     const validUntil = typeof b.validUntil === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.validUntil) ? b.validUntil : new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
     // Клиент текстом без карточки: точное имя контакта — привязываем; нового клиента — заводим карточку
     const linkedContact = contact || (await contactForCustomer(user.id, { contact: b.contact, company: b.company, customerName }));
-    const quote = await Quote.create({
-        org: user.id, number, customerName, items,
-        contact: linkedContact || undefined, company: company || undefined, deal: (deal || (await dealForCustomer(user.id, linkedContact, company, customerName))) || undefined,
-        currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id),
-        issueDate: typeof b.issueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.issueDate) ? b.issueDate : today,
-        validUntil,
-        notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
-        template: isTemplate(b.template) ? b.template : "",
-        createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
+    const quote = await prisma.quote.create({
+        data: {
+            org: user.id, number, customerName, items: items as any,
+            contact: linkedContact ?? undefined, company: company ?? undefined, deal: (deal || (await dealForCustomer(user.id, linkedContact, company, customerName))) ?? undefined,
+            currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id),
+            issueDate: typeof b.issueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.issueDate) ? b.issueDate : today,
+            validUntil,
+            notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
+            template: isTemplate(b.template) ? b.template : "",
+            createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
+        },
     });
     return NextResponse.json(toQuoteDTO(quote), { status: 201 });
 }

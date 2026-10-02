@@ -1,6 +1,5 @@
 import { fetchProvider } from "@/lib/http";
-import PlatformSettings from "@/models/PlatformSettings";
-import { connectDB } from "@/lib/mongodb";
+import { prisma } from "@/lib/prisma";
 import { financeSettings } from "./settings";
 
 // Курсы валют для украинских фирм: НБУ отдаёт их открытым списком без ключа. Кэшируем на несколько
@@ -21,8 +20,7 @@ interface Cached { rates: Rates; fetchedAt: number }
 
 async function readCache(): Promise<Cached | null> {
     try {
-        await connectDB();
-        const doc = await PlatformSettings.findOne({ key: RATES_KEY });
+        const doc = await prisma.platformSettings.findUnique({ where: { key: RATES_KEY } });
         if (!doc?.value) return null;
         const parsed = JSON.parse(doc.value) as Cached;
         return parsed?.rates?.USD ? parsed : null;
@@ -33,7 +31,10 @@ async function readCache(): Promise<Cached | null> {
 
 async function writeCache(rates: Rates): Promise<void> {
     try {
-        await PlatformSettings.updateOne({ key: RATES_KEY }, { $set: { value: JSON.stringify({ rates, fetchedAt: Date.now() }) } }, { upsert: true });
+        const value = JSON.stringify({ rates, fetchedAt: Date.now() });
+        const existing = await prisma.platformSettings.findUnique({ where: { key: RATES_KEY } });
+        if (existing) await prisma.platformSettings.update({ where: { key: RATES_KEY }, data: { value } });
+        else await prisma.platformSettings.create({ data: { key: RATES_KEY, value } });
     } catch {
         // кэш — не критичная часть: без него просто спросим НБУ ещё раз
     }
