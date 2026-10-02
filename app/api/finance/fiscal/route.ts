@@ -13,7 +13,8 @@ export const maxDuration = 60;
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await requireMarket(user.id, "UA");
+    // отказ по режиму рынка — 409 с кодом market, а не 500 от исключения
+    try { await requireMarket(user.id, "UA"); } catch (e) { return failure(e); }
 
     const doc = await findFiscal(user.id);
     const connected = !!doc;

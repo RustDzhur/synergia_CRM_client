@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
-import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
+import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { sendDunning } from "@/lib/finance/dunning";
 import { prisma } from "@/lib/prisma";
 import { requireMarket } from "@/lib/finance/marketGuard";
@@ -14,7 +14,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    await requireMarket(user.id, "DE");
+    // отказ по режиму рынка — 409 с кодом market, а не 500 от исключения
+    try { await requireMarket(user.id, "DE"); } catch (e) { return failure(e); }
     const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
     const name = author ? `${author.firstname} ${author.lastname}`.trim() : "";
 

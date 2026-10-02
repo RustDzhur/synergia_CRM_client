@@ -15,7 +15,8 @@ export const maxDuration = 60;
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await requireMarket(user.id, "UA");
+    // отказ по режиму рынка — 409 с кодом market, а не 500 от исключения
+    try { await requireMarket(user.id, "UA"); } catch (e) { return failure(e); }
     const sales = await recentRetail(user.id);
     const products = await prisma.product.findMany({ where: { org: user.id, type: "good", archived: false }, select: { id: true, name: true, sku: true, barcode: true, salePrice: true, unit: true, stockQty: true, image: true } });
     // Возвращённые чеки: кредит-нота ссылается на исходный чек (creditFor) — в списке кассы такая

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
-import { unauthorized } from "@/lib/api";
+import { failure, unauthorized } from "@/lib/api";
 import { requireMarket } from "@/lib/finance/marketGuard";
 import { incomeBook, vatRegister } from "@/lib/finance/ua";
 import { calendarSummary, paymentCalendar } from "@/lib/finance/ua/calendar";
@@ -14,7 +14,8 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await requireMarket(user.id, "UA");
+    // отказ по режиму рынка — 409 с кодом market, а не 500 от исключения
+    try { await requireMarket(user.id, "UA"); } catch (e) { return failure(e); }
     const url = new URL(req.url);
     const yearParam = url.searchParams.get("year");
     const year = yearParam && /^\d{4}$/.test(yearParam) ? Number(yearParam) : new Date().getFullYear();

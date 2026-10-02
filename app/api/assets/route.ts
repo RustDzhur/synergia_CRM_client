@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
-import { badRequest, unauthorized } from "@/lib/api";
+import { badRequest, failure, unauthorized } from "@/lib/api";
 import { assetsSummary, bookValueAt } from "@/lib/finance/assets";
 import { logAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
@@ -34,7 +34,8 @@ const toDTO = (a: any) => ({
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await requireMarket(user.id, "DE"); // Anlagen — немецкий учёт основных средств
+    // отказ по режиму рынка — 409 с кодом market, а не 500 от исключения
+    try { await requireMarket(user.id, "DE"); } catch (e) { return failure(e); } // Anlagen — немецкий учёт основных средств
     const url = new URL(req.url);
     const from = url.searchParams.get("from");
     const to = url.searchParams.get("to");
@@ -62,6 +63,9 @@ export async function POST(req: Request) {
     const years = Math.round(num(b?.usefulLifeYears, 0));
     if (years < 1 || years > 100) return badRequest("usefulLifeYears must be between 1 and 100");
 
+// отказ по режиму рынка — 409 с кодом market, а не 500 от исключения
+
+try {  } catch (e) { return failure(e); }
     await requireMarket(user.id, "DE"); // Anlagen — немецкий учёт основных средств
     const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
     const asset = await prisma.asset.create({

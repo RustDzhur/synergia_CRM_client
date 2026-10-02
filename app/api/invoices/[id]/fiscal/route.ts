@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
-import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
+import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { computeTotals } from "@/lib/finance/totals";
 import { fiscalizeInvoice, fiscalizeReturn, fiscalAdvice, syncReceiptUrls } from "@/lib/finance/fiscal";
 import { toInvoiceDTO } from "@/lib/finance/dto";
@@ -20,7 +20,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     // Фискальные чеки — украинское ПРРО
-    await requireMarket(user.id, "UA");
+    // отказ по режиму рынка — 409 с кодом market, а не 500 от исключения
+    try { await requireMarket(user.id, "UA"); } catch (e) { return failure(e); }
     let inv = await prisma.invoice.findFirst({ where: { id: params.id, org: user.id } });
     if (!inv) return notFound();
     const b = await req.json().catch(() => ({}));

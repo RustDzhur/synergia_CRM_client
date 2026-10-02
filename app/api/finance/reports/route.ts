@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
-import { badRequest, unauthorized } from "@/lib/api";
+import { badRequest, failure, unauthorized } from "@/lib/api";
 import { type PeriodKind, businessAnalysis, incomeSurplus, periodRange, trialBalance, vatReturn } from "@/lib/finance/reports";
 import { incomeBook, profitReport, vatRegister } from "@/lib/finance/ua";
 import { requireMarket } from "@/lib/finance/marketGuard";
@@ -25,7 +25,8 @@ export async function GET(req: Request) {
 
     // Режим рынка: немецкая отчётность не показывается украинской фирме и наоборот (ТЗ §3).
     // vat-register и income-book — украинские виды, остальные четыре — немецкие.
-    await requireMarket(user.id, ["income-book", "vat-register", "profit-report"].includes(kind) ? "UA" : "DE");
+    // отказ по режиму рынка — 409 с кодом market, а не 500 от исключения
+    try { await requireMarket(user.id, ["income-book", "vat-register", "profit-report"].includes(kind) ? "UA" : "DE"); } catch (e) { return failure(e); }
 
     const periodParam = url.searchParams.get("period");
     const period: PeriodKind = PERIODS.includes(periodParam as PeriodKind) ? (periodParam as PeriodKind) : "quarter";

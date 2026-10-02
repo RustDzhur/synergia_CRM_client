@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
-import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
+import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { bookValueAt, depreciationInRange } from "@/lib/finance/assets";
 import { logAudit } from "@/lib/audit";
 import { requireMarket } from "@/lib/finance/marketGuard";
@@ -17,7 +17,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    await requireMarket(user.id, "DE"); // Anlagen — немецкий учёт основных средств
+    // отказ по режиму рынка — 409 с кодом market, а не 500 от исключения
+    try { await requireMarket(user.id, "DE"); } catch (e) { return failure(e); } // Anlagen — немецкий учёт основных средств
     const a = await prisma.asset.findFirst({ where: { id: params.id, org: user.id } });
     if (!a) return notFound();
 
@@ -38,7 +39,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     const b = await req.json().catch(() => ({}));
-    await requireMarket(user.id, "DE"); // Anlagen — немецкий учёт основных средств
+    // отказ по режиму рынка — 409 с кодом market, а не 500 от исключения
+    try { await requireMarket(user.id, "DE"); } catch (e) { return failure(e); } // Anlagen — немецкий учёт основных средств
     const asset = await prisma.asset.findFirst({ where: { id: params.id, org: user.id } });
     if (!asset) return notFound();
 
@@ -76,7 +78,8 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    await requireMarket(user.id, "DE"); // Anlagen — немецкий учёт основных средств
+    // отказ по режиму рынка — 409 с кодом market, а не 500 от исключения
+    try { await requireMarket(user.id, "DE"); } catch (e) { return failure(e); } // Anlagen — немецкий учёт основных средств
     const asset = await prisma.asset.findFirst({ where: { id: params.id, org: user.id } });
     if (!asset) return notFound();
     await prisma.asset.deleteMany({ where: { id: asset.id } });

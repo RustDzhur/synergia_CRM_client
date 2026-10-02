@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
-import { badRequest, unauthorized } from "@/lib/api";
+import { badRequest, failure, unauthorized } from "@/lib/api";
 import { requireMarket } from "@/lib/finance/marketGuard";
 import { incomeBook, profitReport, vatRegister } from "@/lib/finance/ua";
 import { paymentCalendar } from "@/lib/finance/ua/calendar";
@@ -46,6 +46,9 @@ export async function GET(req: Request) {
     const fromParam = url.searchParams.get("from");
     const toParam = url.searchParams.get("to");
 
+// отказ по режиму рынка — 409 с кодом market, а не 500 от исключения
+
+try {  } catch (e) { return failure(e); }
     await requireMarket(user.id, "UA");
 
     let body = "";
