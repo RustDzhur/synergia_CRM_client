@@ -33,6 +33,12 @@ jobs:
       - name: Генерация клиента Prisma
         run: npx prisma generate
 
+      # next-env.d.ts создаёт сам Next.js при сборке, и он в .gitignore: в свежем клоне
+      # его нет, из-за чего tsc не находит типы для картинок и шрифтов. Создаём заранее —
+      # ровно тем содержимым, что генерирует Next.
+      - name: Подготовка типов Next.js
+        run: printf '/// <reference types="next" />\n/// <reference types="next/image-types/global" />\n' > next-env.d.ts
+
       - name: Проверка типов
         run: npx tsc --noEmit
 
