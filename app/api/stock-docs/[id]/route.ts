@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { notFound, unauthorized, validId } from "@/lib/api";
-import StockDoc from "@/models/StockDoc";
-import StockMovement from "@/models/StockMovement";
-import Product from "@/models/Product";
-import Warehouse from "@/models/Warehouse";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -15,23 +11,23 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    await connectDB();
-    const doc = await StockDoc.findOne({ _id: params.id, org: user.id });
+    const doc = await prisma.stockDoc.findFirst({ where: { id: params.id, org: user.id } });
     if (!doc) return notFound();
 
-    const productIds = (doc.lines ?? []).map((l: { product: unknown }) => l.product);
+    const lines = ((doc.lines ?? []) as any[]) as Array<{ product: unknown; qty: number; price?: number; diff?: number; note?: string }>;
+    const productIds = Array.from(new Set(lines.map((l) => String(l.product))));
     const [products, warehouses, movements, reversal, reversalDoc] = await Promise.all([
-        Product.find({ _id: { $in: productIds } }).select("name sku unit"),
-        Warehouse.find({ org: user.id }).select("name"),
-        StockMovement.find({ org: user.id, doc: doc._id }).select("product qty reason unitCost warehouse note"),
-        doc.reversedBy ? StockDoc.findOne({ _id: doc.reversedBy }).select("number") : null,
-        doc.reversalOf ? StockDoc.findOne({ _id: doc.reversalOf }).select("number") : null,
+        productIds.length ? prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, name: true, sku: true, unit: true } }) : [],
+        prisma.warehouse.findMany({ where: { org: user.id }, select: { id: true, name: true } }),
+        prisma.stockMovement.findMany({ where: { org: user.id, doc: doc.id }, select: { id: true, product: true, qty: true, reason: true, unitCost: true, warehouse: true, note: true } }),
+        doc.reversedBy ? prisma.stockDoc.findUnique({ where: { id: String(doc.reversedBy) }, select: { number: true } }) : null,
+        doc.reversalOf ? prisma.stockDoc.findUnique({ where: { id: String(doc.reversalOf) }, select: { number: true } }) : null,
     ]);
-    const pInfo = new Map(products.map((p) => [String(p._id), p]));
-    const wName = new Map(warehouses.map((w) => [String(w._id), w.name]));
+    const pInfo = new Map(products.map((p) => [p.id, p]));
+    const wName = new Map(warehouses.map((w) => [w.id, w.name]));
 
     return NextResponse.json({
-        id: String(doc._id),
+        id: doc.id,
         kind: doc.kind,
         number: doc.number,
         date: doc.date,
@@ -43,7 +39,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         reversalNumber: reversal?.number ?? "",
         reversalOf: doc.reversalOf ? String(doc.reversalOf) : "",
         reversalOfNumber: reversalDoc?.number ?? "",
-        lines: (doc.lines ?? []).map((l: { product: unknown; qty: number; price?: number; diff?: number; note?: string }) => ({
+        lines: lines.map((l) => ({
             product: String(l.product),
             name: pInfo.get(String(l.product))?.name ?? "",
             sku: pInfo.get(String(l.product))?.sku ?? "",
@@ -54,7 +50,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
             note: l.note ?? "",
         })),
         movements: movements.map((m) => ({
-            id: String(m._id),
+            id: m.id,
             product: String(m.product),
             name: pInfo.get(String(m.product))?.name ?? "",
             qty: m.qty,
