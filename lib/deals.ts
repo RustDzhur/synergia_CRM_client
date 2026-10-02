@@ -31,7 +31,10 @@ export async function dealForCustomer(owner: string, contact?: unknown, company?
         or.push({ companyName: { equals: name, mode: "insensitive" } }, { contactName: { equals: name, mode: "insensitive" } }, { clientName: { equals: name, mode: "insensitive" } });
     }
     if (!or.length) return null;
-    return prisma.deal.findFirst({ where: { owner, wonAt: null, OR: or }, orderBy: { updatedAt: "desc" }, select: { id: true } }).catch(() => null);
+    // select { id } возвращает объект { id }, а сюда нужна строка: иначе prisma.*.create
+    // получает { id } в скалярное поле и падает «Expected String or Null, provided Object»
+    const found = await prisma.deal.findFirst({ where: { owner, wonAt: null, OR: or }, orderBy: { updatedAt: "desc" }, select: { id: true } }).catch(() => null);
+    return found ? found.id : null;
 }
 
 // Контакт клиента для финансового документа: выбранный из подсказки → найденный по точному имени →
