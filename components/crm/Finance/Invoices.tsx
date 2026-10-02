@@ -31,9 +31,11 @@ const STATUS_COLOR: Record<string, string> = {
 // "credit_note") живут в этом же списке — это отдельный юридический документ, а не правка счёта.
 // Предзаполнение из карточки сделки: клиент, привязка к сделке и контакту/фирме — счёт,
 // созданный из карточки, сразу виден в ней же
+// Фильтры списка; тот же набор знает серверный инструмент navigate (lib/ai/tools.ts)
+export const INVOICE_FILTERS = ["unpaid", "overdue", "draft", "sent", "paid", "all"] as const;
 export interface InvoicePrefill { dealId: string; customerName: string; contact?: string; company?: string }
 
-export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: string | null; prefill?: InvoicePrefill | null; onPrefillDone?: () => void }) {
+export default function Invoices({ openId, prefill, preset, onPrefillDone }: { openId?: string | null; prefill?: InvoicePrefill | null; preset?: { filter: string; n: number } | null; onPrefillDone?: () => void }) {
 	const t = useTranslations("finance");
 	const locale = useLocale();
 	const { invoices, products, loadInvoices, loadProducts, createInvoice, updateInvoice, sendInvoice, payInvoice, duplicateInvoice, issueCreditNote, settings } = useFinanceStore();
@@ -59,6 +61,17 @@ export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: 
 	// Окно отправки: адресат и ящик, с которого уйдёт письмо
 	const [sendFor, setSendFor] = useState<{ id: string } | null>(null);
 	const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
+	// Фильтр списка: «Не оплачены» — отправленные и просроченные, то есть счета, по которым ещё ждём деньги
+	const [filter, setFilter] = useState<string>("all");
+	useEffect(() => { if (preset) setFilter(preset.filter); }, [preset]);
+	const todayStr = new Date().toISOString().slice(0, 10);
+	const isLate = (inv: { status: string; dueDate?: string }) => inv.status === "overdue" || (inv.status === "sent" && !!inv.dueDate && inv.dueDate < todayStr);
+	const matches = (inv: { kind?: string; status: string; dueDate?: string }, f: string) =>
+		f === "all" ? true
+		: f === "unpaid" ? inv.kind !== "credit_note" && ["sent", "overdue"].includes(inv.status)
+		: f === "overdue" ? inv.kind !== "credit_note" && isLate(inv)
+		: inv.status === f;
+	const shownInvoices = invoices.filter((inv) => matches(inv, filter));
 
 	useEffect(() => { loadInvoices(); loadProducts(); }, [loadInvoices, loadProducts]);
 	useDefaultTaxRate(settings, setItems);
@@ -174,11 +187,23 @@ export default function Invoices({ openId, prefill, onPrefillDone }: { openId?: 
 					<TbPlus size={16} /> {t("newInvoice")}
 				</button>
 			</div>
+			{invoices.length > 0 && (
+				<div className="mb-14 flex flex-wrap gap-8" role="group" aria-label={t("filterLabel")}>
+					{(["all", "unpaid", "overdue", "draft", "paid"] as const).map((f) => (
+						<button key={f} type="button" onClick={() => setFilter(f)} aria-pressed={filter === f}
+							className={`fs-chip h-30 cursor-pointer px-12 text-12 transition-colors ${filter === f ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#f1f4ee]" : "text-[#cfd4cb] hover:text-[#f1f4ee]"}`}>
+							{f === "all" ? t("filterAll") : f === "unpaid" ? t("filterUnpaid") : t(`istatus_${f}`)} · {invoices.filter((inv) => matches(inv, f)).length}
+						</button>
+					))}
+				</div>
+			)}
 			{invoices.length === 0 ? (
 				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("empty")}</p>
+			) : shownInvoices.length === 0 ? (
+				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("filterEmpty")}</p>
 			) : (
 				<ul className="flex flex-col gap-10">
-					{invoices.map((inv) => (
+					{shownInvoices.map((inv) => (
 						<li key={inv.id} ref={(el) => { rowRefs.current[inv.id] = el; }} className={`fs-card p-14 transition-shadow md:p-18 ${openId === inv.id ? "ring-[1.5px] ring-inkAccentLine" : ""}`}>
 							<div className="flex flex-wrap items-start justify-between gap-12">
 								<div className="min-w-0">

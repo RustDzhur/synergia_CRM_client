@@ -11,11 +11,15 @@ export interface AiAction {
 	params?: Record<string, string>;
 	link?: string;
 }
-export interface AiMessage { id: string; role: "user" | "assistant"; text: string; steps?: string[]; actions?: AiAction[]; error?: boolean }
+export interface AiNav { link: string; label: string }
+// voice — сообщение родилось из голосовой команды: его озвучивает голосовое управление (а не кнопка «Слушать» в чате)
+export interface AiMessage { id: string; role: "user" | "assistant"; text: string; steps?: string[]; actions?: AiAction[]; error?: boolean; voice?: boolean; nav?: AiNav }
 export interface AiStatus {
 	configured: boolean;
 	// stt — серверная диктовка (ключ OpenAI); браузерная не нуждается ни в ключе, ни в сервере
 	stt: boolean;
+	// tts — серверная озвучка естественным голосом (lib/ai/tts.ts); недоступна — читает синтез речи браузера
+	tts?: boolean;
 	limit: number; remaining: number; canWrite: boolean; tools: { name: string; write: boolean }[];
 }
 
@@ -30,7 +34,7 @@ interface AiStore {
 	hide: () => void;
 	reset: () => void;
 	loadStatus: () => Promise<void>;
-	send: (text: string, ctx: { locale: string; page: string }) => Promise<void>;
+	send: (text: string, ctx: { locale: string; page: string; voice?: boolean }) => Promise<void>;
 	confirm: (messageId: string, actionId: string, args?: Record<string, unknown>) => Promise<void>;
 	cancel: (messageId: string, actionId: string) => void;
 }
@@ -61,12 +65,14 @@ export const useAiStore = create<AiStore>()((set, get) => {
 			if (!value || get().busy) return;
 			const history = [...get().messages.filter((m) => !m.error), { id: "", role: "user" as const, text: value }].slice(-20).map((m) => ({ role: m.role, text: m.text }));
 			set((s) => ({ busy: true, draft: "", messages: [...s.messages, { id: uid(), role: "user", text: value }] }));
-			const res = await apiCall<{ reply: string; steps: string[]; actions: Omit<AiAction, "state">[] }>("/api/ai/chat", "POST", { messages: history, locale: ctx.locale, page: ctx.page, now: localNow() });
+			const res = await apiCall<{ reply: string; steps: string[]; actions: Omit<AiAction, "state">[]; nav?: AiNav }>("/api/ai/chat", "POST", { messages: history, locale: ctx.locale, page: ctx.page, now: localNow(), voice: ctx.voice === true });
 			if (!res.ok || !res.data) {
-				set((s) => ({ busy: false, messages: [...s.messages, { id: uid(), role: "assistant", text: res.message, error: true }] }));
+				set((s) => ({ busy: false, messages: [...s.messages, { id: uid(), role: "assistant", text: res.message, error: true, voice: ctx.voice }] }));
 			} else {
 				const d = res.data;
-				set((s) => ({ busy: false, messages: [...s.messages, { id: uid(), role: "assistant", text: d.reply, steps: Array.from(new Set(d.steps)), actions: d.actions.map((a) => ({ ...a, state: "pending" as const })) }] }));
+				set((s) => ({ busy: false, messages: [...s.messages, { id: uid(), role: "assistant", text: d.reply, steps: Array.from(new Set(d.steps)), actions: d.actions.map((a) => ({ ...a, state: "pending" as const })), voice: ctx.voice, nav: d.nav }] }));
+				// Ассистент открыл страницу — её открывает AiAssistant (он знает язык и текущий адрес)
+				if (d.nav && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("iris:go", { detail: d.nav }));
 			}
 			get().loadStatus();
 		},

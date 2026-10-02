@@ -1,0 +1,38 @@
+# Естественный голос Айрис: OpenAI-совместимый /v1/audio/speech поверх нейронных голосов Microsoft Edge
+# (ru-RU-SvetlanaNeural, uk-UA-PolinaNeural, de-DE-KatjaNeural, en-US-AvaMultilingualNeural …).
+# Звучит близко к голосу ChatGPT и не требует платных ключей. Контейнер наружу не публикуется: к нему ходит
+# только CRM по внутренней сети (TTS_API_URL=http://tts:5050/v1 — это значение по умолчанию в коде).
+#
+# Запуск:  docker compose -p tts -f deploy/docker-compose.tts.yml up -d
+# Проверка: docker exec firmspace-crm node -e "fetch('http://tts:5050/v1/voices').then(r=>console.log(r.status))"
+#
+# Если нейронный сервис недоступен (сеть, смена на стороне Microsoft), CRM сама переходит на запасной голос
+# Piper внутри speaches (см. lib/ai/tts.ts), а если и он недоступен — на синтез речи браузера.
+services:
+  tts:
+    image: travisvn/openai-edge-tts:latest
+    container_name: tts
+    restart: unless-stopped
+    environment:
+      PORT: "5050"
+      # Контейнер доступен только из внутренней сети — ключ ему не нужен
+      REQUIRE_API_KEY: "False"
+      DEFAULT_VOICE: ru-RU-SvetlanaNeural
+      DEFAULT_LANGUAGE: ru-RU
+      DEFAULT_RESPONSE_FORMAT: mp3
+      DEFAULT_SPEED: "1.0"
+      # Не вычищать из текста markdown-разметку самому — это делает CRM (stripForSpeech)
+      REMOVE_FILTER: "False"
+    ports:
+      - "127.0.0.1:5050:5050"
+    networks:
+      - infrastructure
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  infrastructure:
+    external: true

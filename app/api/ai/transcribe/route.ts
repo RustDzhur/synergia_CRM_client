@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
-import { aiConfigured, sttConfigured, transcribeAudio } from "@/lib/ai/provider";
+import { aiConfigured, isPhantomTranscript, sttConfigured, transcribeAudio } from "@/lib/ai/provider";
+import { rateLimited } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -19,7 +20,7 @@ export const maxDuration = 60;
 const MAX_BYTES = 4 * 1024 * 1024;
 const OK_MIME = new Set(["audio/webm", "video/webm", "audio/ogg", "audio/mp4", "video/mp4", "audio/mpeg", "audio/wav", "audio/x-wav", "audio/x-m4a", "audio/m4a"]);
 // Интерфейс говорит на de/en/ua, распознаватель ждёт ISO-639-1 — украинская локаль это uk
-const STT_LANG: Record<string, string> = { de: "de", en: "en", ua: "uk", uk: "uk" };
+const STT_LANG: Record<string, string> = { de: "de", en: "en", ua: "uk", uk: "uk", ru: "ru" };
 
 export async function POST(req: Request) {
     const user = await requireUser(req);
@@ -33,11 +34,15 @@ export async function POST(req: Request) {
     if (file.size > MAX_BYTES) return badRequest("The recording is too long — keep dictation under a minute");
     const mime = (file.type || "audio/webm").split(";")[0];
     if (!OK_MIME.has(mime)) return badRequest("Unsupported audio format");
+    // ru нет среди языков интерфейса (de/en/ua), но говорят по-русски, и голосовое управление передаёт его явно
     const language = STT_LANG[String(form?.get("language") ?? "")] ?? "";
+    // Каждая фраза голосового управления — отдельный запрос; лимит страхует от зациклившегося клиента
+    if (rateLimited(`stt:${user.userId}`, 120, 60_000)) return NextResponse.json({ message: "Too many recognition requests", code: "rate_limited" }, { status: 429 });
 
     try {
         const text = await transcribeAudio(Buffer.from(await file.arrayBuffer()), mime, language);
-        return NextResponse.json({ text });
+        // «Субтитры сделал…», «Спасибо за просмотр» и подобное Whisper выдаёт на тишине и шуме — это не речь
+        return NextResponse.json({ text: isPhantomTranscript(text) ? "" : text });
     } catch (e) {
         return failure(e);
     }

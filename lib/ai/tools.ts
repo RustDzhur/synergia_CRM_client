@@ -7,11 +7,13 @@ import { extractPdfText } from "@/lib/ai/pdf";
 import { getObject } from "@/lib/storage";
 import { ensureStages } from "@/lib/stages";
 import { prisma } from "@/lib/prisma";
+import { toDTO } from "@/lib/serialize";
+import { mkActivity } from "@/lib/activities";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
 import { nextNumber } from "@/lib/finance/numbering";
 import { numberPrefix } from "@/lib/finance/documents/store";
 import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
-import { cleanItems } from "@/lib/finance/totals";
+import { cleanItems, computeTotals } from "@/lib/finance/totals";
 import { firmRate } from "@/lib/finance/rates";
 import { ownedContact, contactForCustomer, dealForCustomer } from "@/lib/deals";
 import type { ToolDef } from "./provider";
@@ -27,7 +29,7 @@ export class ToolError extends Error {}
 
 export interface AiTool {
     def: ToolDef;
-    module: Module;
+    module: Module | null; // null — доступно любому участнику фирмы (например, переход на главную)
     write: boolean;
     check?: (a: Args) => Args; // проверка и нормализация аргументов (бросает ToolError)
     run: (ctx: AiCtx, a: Args) => Promise<unknown>;
@@ -70,22 +72,31 @@ const schema = (properties: Record<string, unknown>, required: string[] = []) =>
 const S = (description: string) => ({ type: "string", description });
 const N = (description: string) => ({ type: "integer", description });
 
-// Разделы CRM, в которые ассистент переходит по команде «перейди в …» (navigate)
-const NAV_SECTIONS: Record<string, { label: string; link: string }> = {
-    dashboard: { label: "Головна", link: "/crm" },
-    deals: { label: "Воронка угод", link: "/crm/crm" },
-    contacts: { label: "Контакти", link: "/crm/crm" },
-    tasks: { label: "Задачі", link: "/crm/tasks" },
-    employees: { label: "Співробітники", link: "/crm/company" },
-    calendar: { label: "Календар", link: "/crm/collaboration/calendar" },
-    chat: { label: "Чат і дзвінки", link: "/crm/collaboration/chat-and-calls" },
-    mails: { label: "Пошта", link: "/crm/collaboration/web-mails" },
-    documents: { label: "Документи", link: "/crm/collaboration/online-documents" },
-    finance: { label: "Бухгалтерія", link: "/crm/finance" },
-    marketing: { label: "Маркетинг", link: "/crm/marketing" },
-    automation: { label: "Автоматизація", link: "/crm/automation" },
-    settings: { label: "Налаштування", link: "/crm/settings" },
+// Разделы CRM, в которые ассистент переходит по команде «перейди в …» (navigate). module — какой доступ нужен,
+// чтобы раздел открылся: без него ассистент не поведёт человека туда, куда ему нельзя.
+const NAV_SECTIONS: Record<string, { label: string; link: string; module: Module | null }> = {
+    dashboard: { label: "Головна", link: "/crm", module: null },
+    deals: { label: "Воронка угод", link: "/crm/crm", module: "crm" },
+    contacts: { label: "Контакти", link: "/crm/crm", module: "crm" },
+    tasks: { label: "Задачі", link: "/crm/tasks", module: "tasks" },
+    employees: { label: "Співробітники", link: "/crm/company", module: "company" },
+    calendar: { label: "Календар", link: "/crm/collaboration/calendar", module: "collab" },
+    chat: { label: "Чат і дзвінки", link: "/crm/collaboration/chat-and-calls", module: "collab" },
+    mails: { label: "Пошта", link: "/crm/collaboration/web-mails", module: "mail" },
+    documents: { label: "Документи", link: "/crm/collaboration/online-documents", module: "collab" },
+    finance: { label: "Бухгалтерія", link: "/crm/finance", module: "inventory" },
+    marketing: { label: "Маркетинг", link: "/crm/marketing", module: "marketing" },
+    automation: { label: "Автоматизація", link: "/crm/automation", module: "automation" },
+    settings: { label: "Налаштування", link: "/crm/settings", module: "settings" },
 };
+
+// Вкладки бухгалтерии (components/crm/Finance/index.tsx — тип Tab): navigate открывает нужную сразу, а не главную раздела
+const FINANCE_TABS = ["overview", "quotes", "orders", "contracts", "invoices", "recurring", "dunning", "expenses", "assets", "bank", "products", "purchases", "production", "pos", "acts", "deliveryNotes", "delivery", "fiscal", "vat", "eur", "bwa", "susa", "audit", "settings"] as const;
+// Фильтр списка счетов; unpaid = ещё не оплачены (отправлены или просрочены) — это и значит «незакрытые счета»
+export const INVOICE_FILTERS = ["unpaid", "overdue", "draft", "sent", "paid", "all"] as const;
+
+// Результат инструмента, который клиент превращает в переход по странице (см. runChat: поле nav)
+export interface NavTarget { link: string; label: string }
 
 // Схема строк документа и общая проверка аргументов финансовых инструментов (idempotent:
 // check() принимает и первичные аргументы модели, и свой же прежний результат)
@@ -458,14 +469,39 @@ export const TOOLS: AiTool[] = [
     },
     // ─────────── навигация и финансовые документы ───────────
     {
-        module: "crm", write: true,
-        def: { name: "navigate", description: "Open a section of the CRM: dashboard, deals board, tasks, employees, calendar, chat and calls, web-mail, documents, accounting/finance (invoices, quotes, orders, contracts, expenses), marketing, automation, settings. Use it when the user asks to go somewhere, e.g. «перейди в бухгалтерию» (finance). Needs user confirmation; the user then lands on the section.", parameters: schema({ section: { type: "string", enum: Object.keys(NAV_SECTIONS), description: "target section key" } }, ["section"]) },
+        // Переход — не изменение данных, поэтому выполняется сразу, без карточки подтверждения: «открой бухгалтерию»
+        // голосом должно просто открыть её. Раздел, на который у человека нет прав, не открываем.
+        module: null, write: false,
+        def: { name: "navigate", description: "Open a page of the CRM right now (no confirmation needed): dashboard, deals board, contacts, tasks, employees, calendar, chat and calls, web-mail, documents, accounting/finance, marketing, automation, settings. For accounting you can also pick the tab (invoices, quotes, orders, contracts, expenses, bank, products…) and, on the invoices tab, a filter: unpaid (sent but not paid yet — «незакрытые счета»), overdue, draft, sent, paid. Use it whenever the user asks to open, go to or show a page, e.g. «открой бухгалтерию и покажи неоплаченные счета» → section finance, tab invoices, filter unpaid.", parameters: schema({
+            section: { type: "string", enum: Object.keys(NAV_SECTIONS), description: "target section key" },
+            tab: { type: "string", enum: [...FINANCE_TABS], description: "finance only: tab to open" },
+            filter: { type: "string", enum: [...INVOICE_FILTERS], description: "finance → invoices only: which invoices to show" },
+        }, ["section"]) },
         check: (a) => {
             const section = str(a.section, 40);
             if (!NAV_SECTIONS[section]) throw new ToolError("Unknown section. Choose one of: " + Object.keys(NAV_SECTIONS).join(", "));
-            return { section };
+            const out: Args = { section };
+            const tab = str(a.tab, 20);
+            const filter = str(a.filter ?? a.status, 20);
+            if (section === "finance") {
+                if (tab && !(FINANCE_TABS as readonly string[]).includes(tab)) throw new ToolError("Unknown finance tab. Choose one of: " + FINANCE_TABS.join(", "));
+                if (filter && !(INVOICE_FILTERS as readonly string[]).includes(filter)) throw new ToolError("Unknown invoice filter. Choose one of: " + INVOICE_FILTERS.join(", "));
+                if (filter) { out.tab = tab && tab !== "invoices" ? tab : "invoices"; if (out.tab === "invoices") out.filter = filter; }
+                else if (tab) out.tab = tab;
+            }
+            return out;
         },
-        run: async (_c, a) => ({ params: { section: NAV_SECTIONS[a.section as string].label }, link: NAV_SECTIONS[a.section as string].link }),
+        run: async (c, a) => {
+            const sec = NAV_SECTIONS[a.section as string];
+            if (!canAccess(c.role, c.modules, sec.module, "GET")) throw new ToolError("The user has no access to this section");
+            const q = new URLSearchParams();
+            if (a.tab) q.set("tab", String(a.tab));
+            if (a.filter) q.set("status", String(a.filter));
+            const qs = q.toString();
+            const link = qs ? `${sec.link}?${qs}` : sec.link;
+            const nav: NavTarget = { link, label: sec.label };
+            return { opened: sec.label, tab: a.tab ?? undefined, filter: a.filter ?? undefined, _nav: nav };
+        },
     },
     {
         module: "inventory", write: true,
@@ -572,6 +608,126 @@ export const TOOLS: AiTool[] = [
             return { params: { number: contract.number, customerName: contract.customerName }, link: "/crm/finance" };
         },
     },
+    // ─────────── бухгалтерия: чтение для голосовых вопросов («какие счета не закрыты?») ───────────
+    {
+        module: "inventory", write: false,
+        def: { name: "list_invoices", description: "Invoices of the firm with amounts and due dates. filter: unpaid (sent or overdue — not paid yet; default), overdue (due date passed), draft, sent, paid, all. Returns each invoice (number, customer, total, still open, due date, days overdue) and the totals per currency. Use it for «какие счета не закрыты / просрочены / кто нам должен».", parameters: schema({ filter: { type: "string", enum: [...INVOICE_FILTERS] }, customer: S("part of the customer name"), limit: N("max invoices, default 15, max 40") }) },
+        run: async (c, a) => {
+            const filter = INVOICE_FILTERS.includes(a.filter as never) ? String(a.filter) : "unpaid";
+            const where: Record<string, unknown> = { org: c.org, kind: "invoice" };
+            if (filter === "unpaid" || filter === "overdue") where.status = { in: ["sent", "overdue"] };
+            else if (filter !== "all") where.status = filter;
+            const customer = str(a.customer, 100);
+            if (customer) where.customerName = like(customer);
+            const rows = await prisma.invoice.findMany({ where: where as any, orderBy: { dueDate: "asc" }, take: 400 });
+            const todayStr = c.today;
+            const mapped = rows.map((i) => {
+                const gross = computeTotals(i.items as never).gross;
+                const open = i.status === "paid" ? 0 : Math.max(0, Math.round((gross - (i.paidAmount ?? 0)) * 100) / 100);
+                const late = ["sent", "overdue"].includes(i.status) && !!i.dueDate && i.dueDate < todayStr;
+                const daysOverdue = late ? Math.floor((Date.parse(todayStr) - Date.parse(i.dueDate)) / 86400000) : 0;
+                return { number: i.number, customer: i.customerName, status: late && i.status === "sent" ? "overdue" : i.status, total: Math.round(gross * 100) / 100, open, currency: i.currency, issued: i.issueDate, due: i.dueDate, daysOverdue };
+            });
+            const list = filter === "overdue" ? mapped.filter((i) => i.daysOverdue > 0 || i.status === "overdue") : mapped;
+            const sums: Record<string, number> = {};
+            for (const i of list) sums[i.currency] = Math.round(((sums[i.currency] ?? 0) + i.open) * 100) / 100;
+            return { filter, count: list.length, openAmountByCurrency: sums, invoices: list.slice(0, int(a.limit, 15, 1, 40)) };
+        },
+    },
+    {
+        module: "inventory", write: false,
+        def: { name: "finance_summary", description: "Quick accounting overview: number and amount of unpaid and overdue invoices, income received and expenses this month (per currency).", parameters: schema({}) },
+        run: async (c) => {
+            const month = c.today.slice(0, 7);
+            const [open, paid, spent] = await Promise.all([
+                prisma.invoice.findMany({ where: { org: c.org, kind: "invoice", status: { in: ["sent", "overdue"] } }, select: { items: true, paidAmount: true, currency: true, dueDate: true, status: true } }),
+                prisma.invoice.findMany({ where: { org: c.org, kind: "invoice", status: "paid", paidAt: { gte: new Date(`${month}-01T00:00:00Z`) } }, select: { items: true, currency: true } }),
+                prisma.expense.findMany({ where: { org: c.org, date: { gte: `${month}-01` } }, select: { amount: true, currency: true } }),
+            ]);
+            const add = (m: Record<string, number>, cur: string, v: number) => { m[cur] = Math.round(((m[cur] ?? 0) + v) * 100) / 100; };
+            const unpaid: Record<string, number> = {}, overdue: Record<string, number> = {}, income: Record<string, number> = {}, expenses: Record<string, number> = {};
+            let overdueCount = 0;
+            for (const i of open) {
+                const left = Math.max(0, computeTotals(i.items as never).gross - (i.paidAmount ?? 0));
+                add(unpaid, i.currency, left);
+                if (i.status === "overdue" || (i.dueDate && i.dueDate < c.today)) { overdueCount++; add(overdue, i.currency, left); }
+            }
+            for (const i of paid) add(income, i.currency, computeTotals(i.items as never).gross);
+            for (const e of spent) add(expenses, e.currency, e.amount);
+            return { unpaidCount: open.length, unpaidByCurrency: unpaid, overdueCount, overdueByCurrency: overdue, receivedThisMonth: income, expensesThisMonth: expenses };
+        },
+    },
+    {
+        module: "inventory", write: false,
+        def: { name: "list_expenses", description: "Expenses (costs paid by the firm) in a period, newest first, with the total per currency.", parameters: schema({ from: S("start date YYYY-MM-DD, optional"), to: S("end date YYYY-MM-DD, optional"), query: S("part of the vendor name or category"), limit: N("max results, default 15, max 40") }) },
+        run: async (c, a) => {
+            const where: Record<string, unknown> = { org: c.org };
+            const from = day(a.from, "from"), to = day(a.to, "to");
+            if (from || to) where.date = { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) };
+            const q = str(a.query, 100);
+            if (q) where.OR = [{ vendor: like(q) }, { category: like(q) }];
+            const rows = await prisma.expense.findMany({ where: where as any, orderBy: { date: "desc" }, take: 500 });
+            const sums: Record<string, number> = {};
+            for (const e of rows) sums[e.currency] = Math.round(((sums[e.currency] ?? 0) + e.amount) * 100) / 100;
+            return { count: rows.length, totalByCurrency: sums, expenses: rows.slice(0, int(a.limit, 15, 1, 40)).map((e) => ({ vendor: e.vendor, category: e.category, amount: e.amount, currency: e.currency, date: e.date, notes: cut(e.notes, 100) })) };
+        },
+    },
+    // ─────────── запись: расходы, компании, этапы сделок ───────────
+    {
+        module: "inventory", write: true,
+        def: { name: "create_expense", description: "Record an expense (a cost the firm paid): vendor, amount, optional category, date and note. Needs user confirmation.", parameters: schema({ vendor: S("who was paid"), amount: { type: "number", description: "amount paid, gross" }, currency: S("EUR, UAH… optional"), category: S("category, optional"), date: S("YYYY-MM-DD, default today"), notes: S("note, optional") }, ["vendor", "amount"]) },
+        check: (a) => {
+            const amount = Number(a.amount);
+            if (!Number.isFinite(amount) || amount <= 0) throw new ToolError("amount must be a positive number");
+            return { vendor: need(str(a.vendor, 200), "vendor"), amount: Math.round(amount * 100) / 100, currency: str(a.currency, 6).toUpperCase(), category: str(a.category, 100), date: day(a.date, "date"), notes: str(a.notes, 500) };
+        },
+        run: async (c, a) => {
+            const e = await prisma.expense.create({
+                data: {
+                    org: c.org, vendor: String(a.vendor), amount: Number(a.amount), category: String(a.category || ""), date: String(a.date || c.today),
+                    currency: String(a.currency) || (await defaultCurrency(c.org)), notes: String(a.notes || ""), createdByName: await authorName(c.userId),
+                },
+            });
+            return { params: { vendor: e.vendor, amount: `${e.amount} ${e.currency}` }, link: "/crm/finance?tab=expenses" };
+        },
+    },
+    {
+        module: "crm", write: true,
+        def: { name: "create_company", description: "Create a company (legal entity, business customer) in the CRM. Needs user confirmation. Search first (search_companies) so you do not create a duplicate.", parameters: schema({ name: S("company name"), email: S("e-mail, optional"), field: S("field of business, optional"), address: S("address, optional") }, ["name"]) },
+        check: (a) => {
+            const f = { name: need(str(a.name, 200), "name"), email: str(a.email, 200), field: str(a.field, 200), address: str(a.address, 300) };
+            if (f.email && !/^\S+@\S+\.\S+$/.test(f.email)) throw new ToolError("email is not a valid address");
+            return f;
+        },
+        run: async (c, a) => {
+            const x = await prisma.company.create({ data: { ...(a as any), owner: c.org } });
+            return { params: { name: x.name }, link: "/crm/crm" };
+        },
+    },
+    {
+        module: "crm", write: true,
+        def: { name: "update_deal_stage", description: "Move a deal to another stage (column) of the deals board. Needs user confirmation. Find the deal with list_deals and the stage names with list_stages first.", parameters: schema({ id: S("deal id from list_deals"), stage: S("target stage name") }, ["id", "stage"]) },
+        check: (a) => {
+            if (!isId(a.id)) throw new ToolError("id must be a deal id from list_deals");
+            return { id: a.id, stage: need(str(a.stage, 60), "stage") };
+        },
+        run: async (c, a) => {
+            const stages = await ensureStages(c.org);
+            const want = String(a.stage).toLowerCase();
+            const stage = stages.find((s) => s.name.toLowerCase() === want) ?? stages.find((s) => s.name.toLowerCase().includes(want));
+            if (!stage) throw new ToolError(`No stage matches "${a.stage}". Stages: ${stages.map((s) => s.name).join(", ")}`);
+            const deal = await prisma.deal.findFirst({ where: { id: String(a.id), owner: c.org } });
+            if (!deal) throw new ToolError("Deal not found");
+            const stageId = String(stage._id);
+            if (deal.stage !== stageId) {
+                const activities = Array.isArray(deal.activities) ? [...(deal.activities as any[])] : [];
+                activities.push(mkActivity("stage", stage.name));
+                const updated = await prisma.deal.update({ where: { id: deal.id }, data: { stage: stageId, wonAt: null, activities: activities as any } });
+                await emitDeal(c.org, toDTO(updated), "deal_stage");
+            }
+            return { params: { name: deal.clientName, stage: stage.name }, link: "/crm/crm" };
+        },
+    },
 ];
 
 export const toolByName = (name: string) => TOOLS.find((t) => t.def.name === name);
@@ -594,7 +750,7 @@ export async function targetLabel(c: Pick<AiCtx, "org">, tool: string, a: Args):
             const r = await prisma.employee.findFirst({ where: { id: String(a.employee_id), owner: c.org }, select: { firstname: true, lastname: true } });
             return r ? `${r.firstname} ${r.lastname}`.trim() : "";
         }
-        if (tool === "navigate") return NAV_SECTIONS[String(a.section)]?.label ?? "";
+        if (tool === "update_deal_stage") return (await prisma.deal.findFirst({ where: { id: String(a.id), owner: c.org }, select: { clientName: true } }))?.clientName ?? "";
         if (tool === "create_invoice" || tool === "create_quote" || tool === "create_order" || tool === "create_contract") return String(a.customer_name ?? "");
     } catch { /* подпись необязательна */ }
     return "";

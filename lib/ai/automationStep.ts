@@ -24,7 +24,7 @@ export async function runAiAction(org: string, instruction: string, ev: AutoEven
     if (!orgDoc) throw new ProviderError("Firm not found");
     const today = new Date().toISOString().slice(0, 10);
     const ctx: AiCtx = { org, userId: String(orgDoc.ownerUser), role: "owner", modules: [], today, now: `${today}T09:00` };
-    const tools = allowedTools(ctx); // owner: полный набор инструментов фирмы
+    const tools = allowedTools(ctx).filter((t) => t.def.name !== "navigate"); // owner: полный набор инструментов фирмы; переходы по страницам автоматизации не нужны
 
     const sys = `You are the "AI action" step of an automation rule inside Firmspace CRM, firm "${orgDoc.name}".
 The rule just fired on the event "${ev.type}" with this data: ${clip(ev.data)}.

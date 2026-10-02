@@ -14,5 +14,5 @@ export async function GET(req: Request) {
     if (!user) return unauthorized(req);
     const [limit, used] = await Promise.all([dailyLimit(user.id), usedToday(user.id)]);
     const tools = allowedTools(user);
-    return NextResponse.json({ configured: aiConfigured(), stt: sttConfigured(), limit, remaining: Math.max(0, limit - used), canWrite: tools.some((t) => t.write), tools: tools.map((t) => ({ name: t.def.name, write: t.write })) });
+    return NextResponse.json({ configured: aiConfigured(), stt: sttConfigured(), tts: process.env.TTS_DISABLED !== "1", limit, remaining: Math.max(0, limit - used), canWrite: tools.some((t) => t.write), tools: tools.map((t) => ({ name: t.def.name, write: t.write })) });
 }

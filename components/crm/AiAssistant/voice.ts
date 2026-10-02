@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { authHeaders } from "@/store/crmApi";
+import { type VoiceLang, guessLang, isSpeaking, speakText, stopSpeech, subscribeSpeech } from "./speech";
 
 // Голос окна ассистента: диктовка вопроса (микрофон) и озвучка ответа.
 //
@@ -168,31 +169,27 @@ export function stripForSpeech(text: string): string {
 		.trim();
 }
 
+/** Язык озвучки по языку интерфейса — подсказка, окончательно язык определяется по самому тексту. */
+export const voiceLangFor = (locale: string): VoiceLang => (locale === "ua" || locale === "uk" ? "uk" : locale === "de" ? "de" : "en");
+
+// Озвучка ответов: естественный серверный голос, а если он недоступен — голос браузера (см. speech.ts)
 export function useSpeechOutput(locale: string) {
 	const [speakingId, setSpeakingId] = useState<string | null>(null);
+	// Речь могла закончиться или быть прервана в другом месте (голосовое управление, «стоп»): метка «читается» гаснет вместе с ней
+	useEffect(() => subscribeSpeech(() => { if (!isSpeaking()) setSpeakingId(null); }), []);
 
-	const stop = useCallback(() => {
-		if (ttsSupported()) speechSynthesis.cancel();
-		setSpeakingId(null);
-	}, []);
+	const stop = useCallback(() => { stopSpeech(); setSpeakingId(null); }, []);
 
 	const speak = useCallback((id: string, text: string, onDone?: () => void) => {
-		if (!ttsSupported()) return false;
-		speechSynthesis.cancel();
 		const clean = stripForSpeech(text);
 		if (!clean) return false;
-		const utterance = new SpeechSynthesisUtterance(clean.slice(0, 4000));
-		utterance.lang = speechLang(locale);
-		const finish = () => { setSpeakingId((s) => (s === id ? null : s)); onDone?.(); };
-		utterance.onend = finish;
-		utterance.onerror = finish;
-		speechSynthesis.speak(utterance);
 		setSpeakingId(id);
+		void speakText(clean.slice(0, 4000), { lang: guessLang(clean, voiceLangFor(locale)), onDone: () => { setSpeakingId((s) => (s === id ? null : s)); onDone?.(); } });
 		return true;
 	}, [locale]);
 
 	// Закрытие окна/уход со страницы останавливает чтение
-	useEffect(() => () => { if (ttsSupported()) speechSynthesis.cancel(); }, []);
+	useEffect(() => () => stopSpeech(), []);
 	return { speak, stop, speakingId };
 }
 
@@ -200,9 +197,11 @@ export function useSpeechOutput(locale: string) {
 
 // Слова-ответы: голосом подтверждают или отменяют действие, командуют «стоп». Сравнение по словам,
 // а не по вхождению подстроки — «нету планов» не должно читаться как «нет».
-const YES_WORDS = ["так", "ага", "ок", "окей", "добре", "гаразд", "підтверджую", "підтверди", "давай", "зроби", "виконуй", "yes", "ok", "okay", "confirm", "sure", "do it", "ja", "jep", "bestätige", "bestätigen", "mach"];
-const NO_WORDS = ["ні", "нет", "no", "nein", "скасуй", "відміни", "відміна", "відбій", "не треба", "cancel", "stop it", "abbrechen", "стоп"];
-const STOP_WORDS = ["стоп", "зупинись", "зупинитися", "stop", "halt", "стоп режим"];
+const YES_WORDS = ["да", "давай", "подтверждаю", "подтверди", "согласен", "согласна", "выполняй", "делай", "хорошо", "конечно", "угу", "так", "ага", "ок", "окей", "добре", "гаразд", "підтверджую", "підтверди", "давай", "зроби", "виконуй", "yes", "ok", "okay", "confirm", "sure", "do it", "ja", "jep", "bestätige", "bestätigen", "mach"];
+const NO_WORDS = ["ні", "нет", "отмена", "отмени", "отбой", "не надо", "не нужно", "не делай", "ні", "no", "nein", "скасуй", "відміни", "відміна", "відбій", "не треба", "cancel", "stop it", "abbrechen", "стоп"];
+const STOP_WORDS = ["стоп", "хватит", "замолчи", "тихо", "помолчи", "достатньо", "годі", "зупинись", "зупинитися", "stop", "halt", "стоп режим", "genug", "ruhe"];
+// «Выключись» — отключить голосовое управление совсем (а «стоп» только прерывает речь)
+const OFF_WORDS = ["выключись", "отключись", "вимкнись", "відключись", "ausschalten", "abschalten", "switch off", "turn off", "выключи голосовое управление", "отключи голосовое управление", "вимкни голосове керування"];
 
 const words = (text: string) => String(text ?? "").toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, " ").split(/\s+/).filter(Boolean);
 const hasWord = (list: string[], text: string) => {
@@ -212,6 +211,8 @@ const hasWord = (list: string[], text: string) => {
 
 /** Ответ «да» / «нет» в распознанной фразе; null — ни то ни другое. */
 export function spokenAnswer(text: string): "yes" | "no" | null {
+	// Ответом считается только короткая фраза: «создай задачу, да, на завтра» — это новая просьба, а не «да»
+	if (words(text).length > 4) return null;
 	if (hasWord(YES_WORDS, text)) return "yes";
 	if (hasWord(NO_WORDS, text)) return "no";
 	return null;
@@ -219,6 +220,8 @@ export function spokenAnswer(text: string): "yes" | "no" | null {
 
 /** Команда «стоп» — выйти из режима разговора. */
 export const isStopCommand = (text: string) => hasWord(STOP_WORDS, text);
+/** Команда «выключись» — отключить голосовое управление. */
+export const isOffCommand = (text: string) => OFF_WORDS.some((w) => text.toLowerCase().includes(w));
 
 /**
  * Что делать с распознанной фразой, когда ассистент ждёт подтверждения:
@@ -239,11 +242,11 @@ export function voiceDecision(text: string, pendingActions: number): { kind: "co
 // «пусть модель будет постоянно активная и слушающая»). Имя распознаём, чтобы снять его из текста
 // («Айрис, створи задачу» → «створи задачу») и отозваться «Слухаю», если позвали только по имени.
 
-const WAKE_WORDS = ["airis", "айріс", "айрис", "арис", "ірис", "iris"];
+const WAKE_WORDS = ["airis", "ayris", "айріс", "айрис", "эйрис", "ейрис", "арис", "ірис", "ирис", "iris"];
 // Для нечёткого сравнения (одна опечатка) — только длинные формы: короткие («ірис»/«iris» в 4 буквы)
 // с допуском на опечатку ловили бы обычные слова («рис», «ира»). Точное совпадение коротких форм
 // остаётся: «Ірис» как имя по-прежнему распознаётся
-const WAKE_FUZZY = ["airis", "айріс", "айрис", "арис"];
+const WAKE_FUZZY = ["airis", "айріс", "айрис", "эйрис", "арис"];
 
 // Расстояние Левенштейна ≤ 1: распознавание слышит имя по-разному («Айрс», «Айріз», «Ейріс») —
 // одна опечатка допускается, две уже нет
@@ -264,7 +267,8 @@ const isWakeWord = (w: string) => WAKE_WORDS.includes(w) || (w.length >= 4 && WA
 
 /** Имя во фразе: {hit — позвали, rest — сама просьба без имени}. */
 export function stripWake(text: string): { hit: boolean; rest: string } {
-	const raw = String(text ?? "");
+	// распознавание иногда делит имя на два слова («ай рис», «ай ріс»)
+	const raw = String(text ?? "").replace(/(?<![\p{L}\p{N}])(ай|эй|ей)\s+(рис|ріс)(?![\p{L}\p{N}])/giu, "$1$2");
 	const ws = words(raw);
 	if (!ws.some(isWakeWord)) return { hit: false, rest: raw.trim() };
 	// Убираем только ПЕРВОЕ имя — в остальном тексте слово «айріс» может быть частью просьбы.
@@ -348,9 +352,9 @@ export function useBargeIn({ active, onDetect }: { active: boolean; onDetect: ()
  * делает useBargeIn). Живёт только на браузерном распознавании: серверный путь требует ручной
  * остановки записи, а «Джарвис» — это именно разговор без рук.
  */
-export const SILENCE_MS = 1500; // уменьшено на 1,5 сек для быстрого ответа Ая
-export function useContinuousListening({ locale, active, onPhrase, onError }: {
-	locale: string;
+export const SILENCE_MS = 1300; // пауза, после которой фраза считается законченной
+export function useContinuousListening({ lang, active, onPhrase, onError }: {
+	lang: string; // BCP47: ru-RU, uk-UA, de-DE, en-US — язык, на котором говорит человек (не обязательно язык интерфейса)
 	active: boolean;
 	onPhrase: (text: string) => void;
 	onError: (code: MicError) => void;
@@ -379,6 +383,7 @@ export function useContinuousListening({ locale, active, onPhrase, onError }: {
 		const Ctor = recognitionCtor();
 		if (!Ctor) return;
 		let disposed = false;
+		let restartDelay = 150;
 
 		// Пауза означает конец фразы: отправляем её и останавливаем распознавание до следующего круга
 		const arm = () => {
@@ -397,7 +402,7 @@ export function useContinuousListening({ locale, active, onPhrase, onError }: {
 		const startEngine = () => {
 			if (disposed) return;
 			const recog = new Ctor();
-			recog.lang = speechLang(locale);
+			recog.lang = lang;
 			recog.continuous = true;
 			recog.interimResults = true;
 			recog.onresult = (e) => {
@@ -408,13 +413,16 @@ export function useContinuousListening({ locale, active, onPhrase, onError }: {
 					if (r.isFinal) finalText += r[0].transcript;
 					else interimText += r[0].transcript;
 				}
-				phraseRef.current = finalText;
 				const shown = (finalText + interimText).trim();
+				// Итог приходит с задержкой — если за паузу он не успел, берём то, что уже распознано (промежуточный текст обычно точен)
+				phraseRef.current = shown;
 				setInterim(shown);
 				if (shown) arm();
 			};
 			recog.onerror = (e) => {
 				if (e?.error === "not-allowed" || e?.error === "service-not-allowed") onErrorRef.current("micDenied");
+				// «network»: у браузерного распознавания нет связи со своим сервисом — не крутим перезапуск вхолостую
+				else if (e?.error === "network") restartDelay = 3000;
 			};
 			// Браузер сам завершает сессию распознавания (тишина, лимит времени) — пока режим включён,
 			// поднимаем заново. Важно и после отправки фразы: если запрос НЕ ушёл в чат (onPhrase решил
@@ -426,7 +434,9 @@ export function useContinuousListening({ locale, active, onPhrase, onError }: {
 				if (disposed) return;
 				sentRef.current = false;
 				phraseRef.current = "";
-				try { recog.start(); } catch { /* перезапустим после следующего onend */ }
+				const delay = restartDelay;
+				restartDelay = 150;
+				setTimeout(() => { if (!disposed) { try { recog.start(); } catch { /* перезапустим после следующего onend */ } } }, delay);
 			};
 			recogRef.current = recog;
 			try { recog.start(); } catch { /* уже запущен */ }
@@ -440,7 +450,7 @@ export function useContinuousListening({ locale, active, onPhrase, onError }: {
 			recogRef.current = null;
 			setInterim("");
 		};
-	}, [active, locale]);
+	}, [active, lang]);
 
 	return { interim, supported: dictationSupported() };
 }

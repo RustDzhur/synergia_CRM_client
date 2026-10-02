@@ -36,7 +36,7 @@ import type { Market } from "@/lib/finance/market";
 import CountryPicker from "./CountryPicker";
 import Overview from "./Overview";
 import Quotes, { QuotePrefill } from "./Quotes";
-import Invoices, { InvoicePrefill } from "./Invoices";
+import Invoices, { InvoicePrefill, INVOICE_FILTERS } from "./Invoices";
 import Orders from "./Orders";
 import RecurringInvoices from "./RecurringInvoices";
 import Dunning from "./Dunning";
@@ -207,6 +207,8 @@ export default function Finance() {
 	const [openOrderId, setOpenOrderId] = useState<string | null>(null);
 	const [quotePrefill, setQuotePrefill] = useState<QuotePrefill | null>(null);
 	const [invoicePrefill, setInvoicePrefill] = useState<InvoicePrefill | null>(null);
+	// фильтр списка счетов, заданный извне (голосом или ссылкой); n меняется при каждой команде, чтобы повторная срабатывала
+	const [invoicePreset, setInvoicePreset] = useState<{ filter: string; n: number } | null>(null);
 
 	// Настройки бухгалтерии нужны всем вкладкам, а не только своей: из них берутся режим рынка, валюта
 	// по умолчанию, оформление документа и адрес с IBAN. Раньше их грузила только вкладка настроек,
@@ -231,13 +233,20 @@ export default function Finance() {
 	// пришли по ссылке из карточки сделки (CRM → Deal, см. DealsBoard/dealModalParts/DealDocuments.tsx):
 	// ?tab=quotes&newFromDeal=… — сразу новое предложение, ?tab=invoices&newInvoiceFor=… — новый счёт,
 	// ?open=… — открыть уже созданный документ этой вкладки
-	useEffect(() => {
-		const q = new URLSearchParams(window.location.search);
+	// Голосовой помощник открывает вкладку и фильтр счетов тем же способом, что и ссылка: ?tab=invoices&status=unpaid.
+	// На уже открытой бухгалтерии адрес не меняется (страница не перезагружается), поэтому помощник шлёт событие iris:navigate.
+	function applyParams(q: URLSearchParams) {
 		const newFromDeal = q.get("newFromDeal");
 		const newInvoiceFor = q.get("newInvoiceFor");
 		const wantedTab = q.get("tab");
 		const open = q.get("open");
+		const status = q.get("status");
 		if (wantedTab && (ALL_TABS as readonly string[]).includes(wantedTab)) setTab(wantedTab as Tab);
+		if (status && (INVOICE_FILTERS as readonly string[]).includes(status)) {
+			setTab("invoices");
+			setOpenInvoiceId(null);
+			setInvoicePreset((p) => ({ filter: status, n: (p?.n ?? 0) + 1 }));
+		}
 		if (newFromDeal) {
 			setQuotePrefill({
 				dealId: newFromDeal,
@@ -259,7 +268,14 @@ export default function Finance() {
 			if (wantedTab === "orders") setOpenOrderId(open);
 			else setOpenInvoiceId(open);
 		}
-		if (wantedTab || newFromDeal || newInvoiceFor || open) window.history.replaceState(null, "", window.location.pathname);
+		return !!(wantedTab || status || newFromDeal || newInvoiceFor || open);
+	}
+	useEffect(() => {
+		if (applyParams(new URLSearchParams(window.location.search))) window.history.replaceState(null, "", window.location.pathname);
+		const onIris = (e: Event) => { applyParams(new URLSearchParams((e as CustomEvent<{ search?: string }>).detail?.search ?? "")); };
+		window.addEventListener("iris:navigate", onIris);
+		return () => window.removeEventListener("iris:navigate", onIris);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	// смена режима (страны) может убрать текущую вкладку — уводим на огляд, иначе остался бы пустой экран
@@ -367,7 +383,7 @@ export default function Finance() {
 					{tab === "overview" && <Overview />}
 					{tab === "quotes" && <Quotes onOpenOrder={openOrder} prefill={quotePrefill} onPrefillDone={() => setQuotePrefill(null)} />}
 					{tab === "orders" && <Orders onOpenInvoice={openInvoice} openId={openOrderId} />}
-					{tab === "invoices" && <Invoices openId={openInvoiceId} prefill={invoicePrefill} onPrefillDone={() => setInvoicePrefill(null)} />}
+					{tab === "invoices" && <Invoices openId={openInvoiceId} preset={invoicePreset} prefill={invoicePrefill} onPrefillDone={() => setInvoicePrefill(null)} />}
 					{tab === "recurring" && <RecurringInvoices />}
 					{tab === "dunning" && <Dunning />}
 					{tab === "contracts" && <Contracts />}

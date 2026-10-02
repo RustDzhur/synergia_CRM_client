@@ -139,15 +139,22 @@ export async function completeVision(system: string, prompt: string, image: Imag
     return p === "anthropic" ? anthropicVision(system, prompt, image) : openaiVision(system, prompt, image);
 }
 
-// ── Распознавание речи (диктовка в окне ассистента) ──────────────────────────────────────────────────
-// У Anthropic нет распознавания аудио, поэтому серверная диктовка работает на ключе OpenAI даже когда
-// сам разговор идёт на Claude. Ключа нет — честный отказ, а интерфейс остаётся с браузерной диктовкой
-// (SpeechRecognition), которой ключ не нужен вовсе.
-// Серверная диктовка доступна, если задан ключ провайдера ИЛИ отдельный локальный Whisper (TRANSCRIBE_API_URL)
+// ── Распознавание речи (диктовка и голосовое управление) ────────────────────────────────────────────
+// У Anthropic нет распознавания аудио, поэтому серверное распознавание работает на ключе OpenAI/шлюза даже когда
+// сам разговор идёт на Claude. Два пути, пробуются по очереди:
+//  1. облачный — тот же шлюз/OpenAI, что и для ответов (OPENAI_API_URL + OPENAI_API_KEY). На шлюзе omniroute это
+//     openrouter/openai/whisper-large-v3-turbo: ≈1 секунда на фразу, русский/украинский/немецкий определяются сами,
+//     цена ≈ 0,00003 $ за фразу. Модель меняется AI_VOICE_STT_MODEL.
+//  2. локальный Whisper (TRANSCRIBE_API_URL, speaches) — запасной: бесплатный и закрытый от внешнего мира, но на
+//     процессоре без AVX разбирает 4 секунды речи 12–25 секунд, для разговора в реальном времени он слишком медленный.
+//     STT_LOCAL_FIRST=1 ставит его первым (если у сервера есть GPU или современный процессор).
+// Браузерное распознавание (SpeechRecognition) ключей не требует вовсе — сервер нужен остальным браузерам.
 export const sttConfigured = () => !!process.env.OPENAI_API_KEY || !!process.env.TRANSCRIBE_API_URL;
-// Модель распознавания можно поменять переменной (например, gpt-4o-mini-transcribe — дешевле).
-// Для локального Whisper (speaches/faster-whisper) указывают HF-модель: Systran/faster-whisper-small
+// Модель локального Whisper — HF-имя (speaches/faster-whisper): Systran/faster-whisper-small
 export const sttModel = () => process.env.AI_TRANSCRIBE_MODEL || "whisper-1";
+// На шлюзе (не api.openai.com) нужны полные имена моделей, у самого OpenAI — короткие
+const onGateway = () => { const u = process.env.OPENAI_API_URL; return !!u && !/api\.openai\.com/.test(u); };
+export const cloudSttModel = () => process.env.AI_VOICE_STT_MODEL || (onGateway() ? "openrouter/openai/whisper-large-v3-turbo" : "whisper-1");
 
 // Расширение для имени файла: провайдеру оно помогает понять формат записи
 const AUDIO_EXT: Record<string, string> = {
@@ -155,27 +162,56 @@ const AUDIO_EXT: Record<string, string> = {
     "audio/mpeg": "mp3", "audio/wav": "wav", "audio/x-wav": "wav", "audio/x-m4a": "m4a", "audio/m4a": "m4a",
 };
 
-export async function transcribeAudio(bytes: Buffer, mime: string, language?: string): Promise<string> {
-    // Локальный Whisper (TRANSCRIBE_API_URL) имеет приоритет: он не требует ключа и не зависит от квоты шлюза
-    const url = process.env.TRANSCRIBE_API_URL || process.env.OPENAI_API_URL;
-    const key = process.env.TRANSCRIBE_API_KEY || process.env.OPENAI_API_KEY;
-    if (!url) throw new ProviderError("Speech recognition is not configured on this site");
-    const type = (mime || "audio/webm").split(";")[0];
+// Whisper на тишине и шуме «досочиняет» фразы из субтитров своих обучающих видео. Такие ответы голосовое
+// управление отбрасывает, иначе шум в офисе превращался бы в команды.
+const PHANTOM = [
+    /субтитры\s+(сделал|создал|подготовил|делал)/i, /редактор\s+субтитров/i, /корректор\s+[а-яё.]+/i, /продолжение\s+следует/i,
+    /спасибо\s+за\s+(просмотр|внимание)/i, /до\s+новых\s+встреч/i, /подписывайтесь\s+на\s+канал/i, /дякую\s+за\s+перегляд/i,
+    /субтитри\s+(зробив|створив)/i, /thanks?\s+for\s+watching/i, /thank\s+you\s+for\s+watching/i, /subtitles?\s+by/i,
+    /untertitel(ung)?\s+(von|der|im\s+auftrag)/i, /vielen\s+dank\s+f(ü|u)r\s+(ihre|eure|die)\s+aufmerksamkeit/i, /amara\.org/i,
+];
+export function isPhantomTranscript(text: string): boolean {
+    const t = String(text ?? "").trim();
+    if (!t || t.replace(/[\s.,!?…\-–—]/g, "").length < 2) return true;
+    return PHANTOM.some((re) => re.test(t));
+}
+
+interface SttTarget { url: string; key?: string; model: string }
+
+function sttTargets(): SttTarget[] {
+    const targets: SttTarget[] = [];
+    const cloudKey = process.env.OPENAI_API_KEY;
+    if (cloudKey) targets.push({ url: trim(process.env.OPENAI_API_URL || "https://api.openai.com/v1"), key: cloudKey, model: cloudSttModel() });
+    if (process.env.TRANSCRIBE_API_URL) targets.push({ url: trim(process.env.TRANSCRIBE_API_URL), key: process.env.TRANSCRIBE_API_KEY || undefined, model: sttModel() });
+    return process.env.STT_LOCAL_FIRST === "1" ? targets.reverse() : targets;
+}
+
+async function transcribeOnce(t: SttTarget, bytes: Buffer, type: string, language?: string): Promise<string> {
     const form = new FormData();
-    form.append("file", new Blob([bytes], { type }), `voice.${AUDIO_EXT[type] ?? "webm"}`);
-    form.append("model", sttModel());
+    form.append("file", new Blob([new Uint8Array(bytes)], { type }), `voice.${AUDIO_EXT[type] ?? "webm"}`);
+    form.append("model", t.model);
     // Язык записи подсказываем, но не настаиваем: whisper и так определит по речи
     if (language) form.append("language", language);
-    const res = await fetchProvider(
-        `${trim(url)}/audio/transcriptions`,
-        { method: "POST", headers: key ? { Authorization: `Bearer ${key}` } : {}, body: form },
-        55000
-    );
+    const res = await fetchProvider(`${t.url}/audio/transcriptions`, { method: "POST", headers: t.key ? { Authorization: `Bearer ${t.key}` } : {}, body: form }, 55000);
     const json = (await res.json().catch(() => null)) as ({ text?: string; error?: { message?: string } } & Record<string, unknown>) | null;
     if (!res.ok || !json) {
-        const detail = json?.error?.message;
-        console.error("transcribe error", res.status, detail);
+        console.error("transcribe error", res.status, json?.error?.message);
         throw new ProviderError(res.status === 401 ? "The AI provider rejected the API key" : res.status === 429 ? "The AI provider is busy or out of quota. Try again later." : `The AI provider returned an error (${res.status})`);
     }
     return String(json.text ?? "").trim();
+}
+
+export async function transcribeAudio(bytes: Buffer, mime: string, language?: string): Promise<string> {
+    const targets = sttTargets();
+    if (!targets.length) throw new ProviderError("Speech recognition is not configured on this site");
+    const type = (mime || "audio/webm").split(";")[0];
+    let lastError: unknown;
+    for (const t of targets) {
+        try {
+            return await transcribeOnce(t, bytes, type, language);
+        } catch (e) {
+            lastError = e; // пробуем следующий путь: облако упало — выручает локальный Whisper
+        }
+    }
+    throw lastError instanceof Error ? lastError : new ProviderError("Speech recognition failed");
 }

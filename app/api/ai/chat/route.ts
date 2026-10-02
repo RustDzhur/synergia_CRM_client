@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // POST /api/ai/chat — { messages: [{ role, text }], locale, page, today, now }
-// Ответ: { reply, steps: [названия использованных инструментов], actions: [предложенные изменения, ожидающие подтверждения], remaining }
+// voice: true — ответ будет озвучен: короткий, разговорный, на языке, на котором говорил человек.
+// Ответ: { reply, nav?: { link, label } — страница, которую нужно открыть, steps: [названия использованных инструментов], actions: [предложенные изменения, ожидающие подтверждения], remaining }
 export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
     try {
         const result = await runChat(
             { org: user.id, userId: user.userId, role: user.role, modules: user.modules, today: local.slice(0, 10), now: local },
-            { history, locale: String(b.locale ?? "en"), page: String(b.page ?? "").slice(0, 120), orgName: user.orgName }
+            { history, locale: String(b.locale ?? "en"), page: String(b.page ?? "").slice(0, 120), orgName: user.orgName, voice: b.voice === true }
         );
         return NextResponse.json(result);
     } catch (e) {

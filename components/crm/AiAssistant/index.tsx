@@ -6,12 +6,15 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdAutoAwesome, MdCheckCircle, MdClose, MdErrorOutline, MdGraphicEq, MdSearch } from "react-icons/md";
 import { TbMicrophone, TbPlayerStop, TbVolume, TbVolumeOff } from "react-icons/tb";
-import { AiAction, AiMessage, useAiStore } from "@/store/useAiStore";
+import { AiAction, AiMessage, AiNav, useAiStore } from "@/store/useAiStore";
 import { stripLocale } from "@/utils/locale";
 import Modal from "../shared/Modal";
 import Markdown from "./markdown";
 import VoiceOrb from "./VoiceOrb";
-import { dictationSupported, isStopCommand, recorderSupported, stripWake, ttsSupported, useBargeIn, useContinuousListening, useSpeechOutput, useVoiceInput, voiceDecision } from "./voice";
+import VoiceHud, { ORB_BY_PHASE, formatActionValue } from "./VoiceHud";
+import { configureSpeech, stopSpeech } from "./speech";
+import { useVoiceAgent } from "./useVoiceAgent";
+import { dictationSupported, recorderSupported, ttsSupported, useSpeechOutput, useVoiceInput } from "./voice";
 
 const AUTO_SPEAK_KEY = "ai.autospeak";
 
@@ -40,7 +43,7 @@ function ActionCard({ message, action }: { message: AiMessage; action: AiAction 
 	const [edits, setEdits] = useState<Record<string, string>>({});
 	const editable = EDITABLE[action.tool] ?? [];
 	const fields = Object.entries(action.args).filter(([k, v]) => k !== "id" && !k.endsWith("_id") && v !== "" && v !== undefined);
-	const shown = (v: unknown) => (typeof v === "boolean" ? t(v ? "yes" : "no") : String(v).replace("T", " "));
+	const shown = (v: unknown) => (typeof v === "boolean" ? t(v ? "yes" : "no") : formatActionValue(v));
 	const done = action.state === "done";
 
 	return (
@@ -122,7 +125,8 @@ export default function AiAssistant() {
 	const t = useTranslations("ai");
 	const locale = useLocale();
 	const pathname = usePathname();
-	const { open, messages, busy, status, draft, setDraft, show, hide, reset, send, confirm, cancel } = useAiStore();
+	const router = useRouter();
+	const { open, messages, busy, status, draft, setDraft, show, hide, reset, send, loadStatus } = useAiStore();
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const endRef = useRef<HTMLDivElement>(null);
 	const [recent, setRecent] = useState<string[]>([]);
@@ -153,106 +157,44 @@ export default function AiAssistant() {
 	}
 	const spokenRef = useRef<string | null>(null);
 
-	// ── Режим разговора (Джарвис): слушаю → думаю → говорю → снова слушаю ────────────────────────────
-	// Голос здесь ничего не обходит: вопросы отправляются без рук, а предложенные ИЗМЕНЕНИЯ данных
-	// по-прежнему требуют явного подтверждения — просто голосового («підтверджую»/«ні»), и только
-	// когда действие одно; при нескольких просим нажать кнопку, чтобы не перепутать.
-	const VOICE_KEY = "ai.voiceMode";
-	const [voiceMode, setVoiceMode] = useState(() => { try { return localStorage.getItem(VOICE_KEY) === "1"; } catch { return false; } });
-	useEffect(() => { try { localStorage.setItem(VOICE_KEY, voiceMode ? "1" : "0"); } catch { /* приватный режим */ } }, [voiceMode]);
+	// ── Голосовое управление (Айрис): слушает на любой странице, пока включено шаром в шапке ─────────────
+	// Всё устроено в useVoiceAgent: имя «Айрис» → команда → ответ вслух → переход по страницам; изменения данных
+	// по-прежнему требуют подтверждения (голосом «да»/«нет» или кнопкой в панели внизу экрана).
 	const blocked = status?.configured === false;
 	const empty = messages.length === 0;
-	const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
-	const pendingActions = lastAssistant?.actions?.filter((a) => a.state === "pending") ?? [];
-	// Фаза выводится из состояния, а не хранится отдельно: так её нельзя рассогласовать с реальностью
-	const phase: "listening" | "thinking" | "speaking" = busy ? "thinking" : speakingId ? "speaking" : "listening";
-	const listening = voiceMode && !blocked && voice.dictation && !busy && !speakingId;
-	// Шар на кнопке: по фазе разговора, независимо от открытости окна
-	const orbState: "idle" | "listening" | "thinking" | "speaking" = !voiceMode || (!busy && !speakingId) ? "idle" : phase;
+	const agent = useVoiceAgent({
+		locale,
+		page: stripLocale(pathname),
+		blocked,
+		onError: (code) => toast.error(t(code)),
+	});
+	useEffect(() => { void loadStatus(); }, [loadStatus]);
+	useEffect(() => { if (status) configureSpeech({ server: status.tts !== false }); }, [status]);
 
-	// Навигация голосом — сразу, без кнопки подтверждения; голосом спрашиваем только если не поняли
+	// Ассистент открыл страницу (инструмент navigate): тот же адрес — сообщаем самой странице (бухгалтерия переключает
+	// вкладку и фильтр без перезагрузки), другой — переходим. Окно чата закрываем, чтобы человек видел страницу.
 	useEffect(() => {
-		if (!voiceMode || !lastAssistant || pendingActions.length === 0) return;
-		const nav = pendingActions[0];
-		if (nav.tool === "navigate" && nav.state === "pending") {
-			void confirm(lastAssistant.id, nav.id);
-		}
-	}, [voiceMode, lastAssistant, pendingActions, confirm]);
+		const onGo = (e: Event) => {
+			const nav = (e as CustomEvent<AiNav>).detail;
+			if (!nav?.link) return;
+			const [path, search = ""] = nav.link.split("?");
+			useAiStore.getState().hide();
+			if (stripLocale(window.location.pathname) === path) window.dispatchEvent(new CustomEvent("iris:navigate", { detail: { search } }));
+			else router.push(`/${locale}${nav.link}`);
+		};
+		window.addEventListener("iris:go", onGo);
+		return () => window.removeEventListener("iris:go", onGo);
+	}, [locale, router]);
 
 	useEffect(() => {
-		if (!open || !autoSpeak || !voice.tts || voiceMode) return;
+		if (!open || !autoSpeak || !voice.tts) return;
 		const last = messages[messages.length - 1];
-		if (last?.role === "assistant" && !last.error && last.id !== spokenRef.current) {
+		// ответы на голосовые команды озвучивает голосовое управление, не автоозвучка чата
+		if (last?.role === "assistant" && !last.error && !last.voice && last.id !== spokenRef.current) {
 			spokenRef.current = last.id;
 			speak(last.id, last.text);
 		}
-	}, [messages, open, autoSpeak, voice.tts, voiceMode, speak]);
-
-	function speakVoice(text: string) {
-		if (!speak("voice-note", text)) setVoiceMode(false); // озвучки нет — режим разговора бессмыслен
-	}
-	// Разговорный режим слушает постоянно: фраза после ~3 с тишины уходит в чат как есть. Имя «Айрис»
-	// не обязательно (владелец: «постоянно активная и слушающая») — если его сказали, снимаем из текста;
-	// «стоп» работает ВСЕГДА, даже когда ассистента не звали, — выключить разговор можно в любой момент
-	function handlePhrase(text: string) {
-		if (isStopCommand(text)) {
-			stopSpeak();
-			setVoiceMode(false);
-			return;
-		}
-		// При закрытом окне — открываем автоматически (постоянное слушание), даже если не позвали по имени
-		const { hit, rest } = stripWake(text); // чат не открываем — голос идёт в чат без мешания
-		if (hit && !rest) {
-			// Позвали по имени без просьбы — отзываемся и слушаем дальше
-			speakVoice(t("voiceAwake"));
-			return;
-		}
-		const utterance = hit ? rest : text;
-		const decision = voiceDecision(utterance, pendingActions.length);
-		if (decision.kind === "confirm" && lastAssistant && pendingActions[0]) {
-			const target = lastAssistant;
-			const action = pendingActions[0];
-			void confirm(target.id, action.id).then(() => speakVoice(t("voiceDone")));
-			return;
-		}
-		if (decision.kind === "cancel" && lastAssistant && pendingActions[0]) {
-			cancel(lastAssistant.id, pendingActions[0].id);
-			speakVoice(t("voiceCancelled"));
-			return;
-		}
-		if (decision.kind === "many") {
-			speakVoice(t("voiceConfirmMany"));
-			return;
-		}
-		submit(utterance);
-	}
-	const { interim } = useContinuousListening({
-		locale,
-		active: listening,
-		onPhrase: handlePhrase,
-		onError: (code) => { toast.error(t(code)); setVoiceMode(false); },
-	});
-	// Перебивание голосом, как в голосовом режиме GPT: пока говорит ассистент, микрофон измеряет
-	// громкость (с подавлением эха) и обрывает речь, как только заговорил человек
-	useBargeIn({ active: voiceMode && open && !!speakingId, onDetect: stopSpeak });
-	// Ответ ассистента в режиме разговора читается вслух всегда (это и есть смысл режима), а если
-	// в нём одно предложенное действие — сразу и вопрос «Підтвердити?», чтобы ответить голосом
-	useEffect(() => {
-		if (!open || !voiceMode || !voice.tts) return;
-		const last = messages[messages.length - 1];
-		if (last?.role !== "assistant" || last.error || last.id === spokenRef.current) return;
-		spokenRef.current = last.id;
-		const pending = last.actions?.filter((a) => a.state === "pending") ?? [];
-		const tail = pending.length === 1 ? ` ${t("voiceAskConfirm")}` : pending.length > 1 ? ` ${t("voiceConfirmMany")}` : "";
-		speak(last.id, last.text + tail);
-	}, [messages, open, voiceMode, voice.tts, speak, t]);
-	function toggleVoiceMode() {
-		setVoiceMode((v) => {
-			if (v) { stopSpeak(); return false; }
-			spokenRef.current = null; // последний ответ можно проговорить заново
-			return true;
-		});
-	}
+	}, [messages, open, autoSpeak, voice.tts, speak]);
 
 	useEffect(() => {
 		const onKey = (e: KeyboardEvent) => {
@@ -283,53 +225,58 @@ export default function AiAssistant() {
 		if (sendNow) submit(text); else { setDraft(text); inputRef.current?.focus(); }
 	}
 
-	// Закрытие окна останавливает и чтение, и запись — микрофон не должен остаться включённым
-	// (и режим разговора сбрасывается: плавающий шар надёжно закрывает микрофон)
-	const close = () => { stopSpeak(); micStop(); hide(); }; // голосовой режим остаётся — постоянное слушание
+	// Закрытие окна останавливает чтение и диктовку; голосовое управление (если включено) продолжает слушать
+	const close = () => { stopSpeak(); micStop(); hide(); };
 
-	// Шар — постоянная точка входа в разговор: нажатие открывает окно сразу в режиме
-	// разговора (слушаю и отвечаю вслух), а не прячет ассистента за кнопкой со звёздочками.
-	// Живёт в шапке кабинета (слот в Header), а не плавающим углом: там его накрывала
-	// кнопка звонилки. Переносим через портал, чтобы вся логика осталась в этом компоненте.
-	function openVoice() {
-		spokenRef.current = null;
-		show();
-		if (!blocked && voice.tts && voice.dictation) setVoiceMode(true);
+	// Шар в шапке — переключатель голосового управления: один клик, и Айрис слушает на любой странице
+	// («Привет, Айрис, открой бухгалтерию…»). Живёт в шапке кабинета (слот в Header), а не плавающим углом:
+	// там его накрывала кнопка звонилки. Переносим через портал, чтобы вся логика осталась в этом компоненте.
+	function toggleAgent() {
+		if (blocked) return void show(); // ассистент не настроен — окно объяснит, что делать
+		if (!agent.supported) {
+			toast.error(t("agentUnsupported"));
+			return void show();
+		}
+		agent.toggle();
 	}
 
-	const orbSlot = ready && !open && typeof document !== "undefined" ? document.getElementById("ai-orb-slot") : null;
+	const orbSlot = ready && typeof document !== "undefined" ? document.getElementById("ai-orb-slot") : null;
 
 	return (
 		<>
 		{orbSlot && createPortal(
 			<button
 				type="button"
-				onClick={openVoice}
-				aria-label={t("orbTitle")}
-				title={t("orbTitle")}
-				className="rounded-full transition-transform duration-200 hover:scale-105"
+				onClick={toggleAgent}
+				aria-pressed={agent.enabled}
+				aria-label={agent.enabled ? t("agentOn") : t("agentOff")}
+				title={agent.enabled ? t("agentOn") : t("agentOff")}
+				className="relative rounded-full transition-transform duration-200 hover:scale-105"
 			>
-				<VoiceOrb size={38} state="idle" />
+				<VoiceOrb size={38} state={ORB_BY_PHASE[agent.phase]} />
+				{/* зелёная точка — микрофон включён, Айрис слушает */}
+				{agent.enabled && <span aria-hidden className="absolute bottom-0 right-0 h-10 w-10 rounded-50 border-2 border-[#0a0d0a] bg-[#c6ff4d]" />}
 			</button>,
 			orbSlot
 		)}
+		{!open && <VoiceHud agent={agent} onOpenChat={() => show()} />}
 		<Modal open={open} onClose={close} align="top" label={t("title")} zIndex={90} className="mt-[6vh] w-full max-w-[720px]">
 			<div className="fs-popover flex max-h-[84vh] flex-col overflow-hidden">
 				<header className="flex items-center gap-10 border-b border-inkLine px-16 py-12">
 					<MdAutoAwesome size={22} className="text-primaryColor" aria-hidden />
 					<h2 className="whitespace-nowrap text-18 font-medium text-[#334A74]">{t("title")}</h2>
 					{status?.configured && <span className="ml-auto hidden text-11 text-[#8c948b] md:inline">{t("remaining", { n: status.remaining })}</span>}
-					{/* Режим разговора (Джарвис): непрерывный голосовой цикл — нужен и синтез речи, и распознавание */}
-					{voice.tts && voice.dictation && !blocked && (
+					{/* Голосовое управление: слушает на любой странице, имя «Айрис» → команда → ответ вслух */}
+					{agent.supported && !blocked && (
 						<button
 							type="button"
-							onClick={toggleVoiceMode}
-							aria-pressed={voiceMode}
-							aria-label={t("voiceMode")}
-							title={t("voiceMode")}
-							className={`${status?.configured ? "" : "ml-auto"} flex h-30 items-center gap-6 rounded-8 border px-10 text-11 transition-colors ${voiceMode ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+							onClick={() => agent.toggle()}
+							aria-pressed={agent.enabled}
+							aria-label={agent.enabled ? t("agentOn") : t("agentOff")}
+							title={agent.enabled ? t("agentOn") : t("agentOff")}
+							className={`${status?.configured ? "" : "ml-auto"} flex h-30 items-center gap-6 rounded-8 border px-10 text-11 transition-colors ${agent.enabled ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
 							<MdGraphicEq size={15} aria-hidden />
-							<span className="max-md:hidden">{t("voiceMode")}</span>
+							<span className="max-md:hidden">{t("agentTitle")}</span>
 						</button>
 					)}
 					{/* Автоозвучка ответов: браузерный синтез речи, ключей не требует */}
@@ -349,28 +296,17 @@ export default function AiAssistant() {
 					<button type="button" onClick={close} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><MdClose size={18} /></button>
 				</header>
 
-				{/* Панель разговора: живой шар показывает состояние, распознаваемая фраза — рядом;
-				    нажатие на шар обрывает речь (то же делает голос — useBargeIn) */}
-				{voiceMode && !blocked && (
-					<div className="flex items-center gap-12 border-b border-inkLine bg-[rgba(198,255,77,0.05)] px-16 py-12">
-						<button
-							type="button"
-							onClick={() => { if (speakingId) stopSpeak(); }}
-							aria-label={speakingId ? t("stopSpeak") : t(`voice_${phase}`)}
-							title={speakingId ? t("stopSpeak") : t(`voice_${phase}`)}
-							className="relative shrink-0 rounded-full transition-transform hover:scale-105">
-							<VoiceOrb size={56} state={orbState} />
-							{speakingId
-								? <TbPlayerStop size={16} className="absolute inset-0 m-auto text-[#ffe9b0]" aria-hidden />
-								: <TbMicrophone size={15} className="absolute inset-0 m-auto text-[#ffe9b0]" aria-hidden />}
+				{/* Голосовое управление включено: коротко показываем, что Айрис слышит и делает */}
+				{agent.enabled && !blocked && (
+					<div className="flex items-center gap-12 border-b border-inkLine bg-[rgba(198,255,77,0.05)] px-16 py-10">
+						<button type="button" onClick={() => stopSpeech()} aria-label={t("stopSpeak")} title={t("stopSpeak")} className="relative shrink-0 rounded-full">
+							<VoiceOrb size={36} state={ORB_BY_PHASE[agent.phase]} />
 						</button>
 						<div className="min-w-0 flex-1">
-							<p className="text-13 text-[#f1f4ee]">{t(`voice_${phase}`)}</p>
-							<p className="truncate text-12 text-[#8c948b]">
-								{pendingActions.length > 0 ? t(pendingActions.length === 1 ? "voiceAskConfirm" : "voiceConfirmMany") : interim || t("voiceHint")}
-							</p>
+							<p className="text-13 text-[#f1f4ee]">{agent.phase === "sleeping" ? t("agentSleeping") : t(`voice_${agent.phase === "off" ? "listening" : agent.phase}`)}</p>
+							<p className="truncate text-12 text-[#8c948b]">{agent.caption || (agent.pending.length ? t("agentSay") : "\u00A0")}</p>
 						</div>
-						<button type="button" onClick={toggleVoiceMode} className="fs-link shrink-0 text-12">{t("voiceExit")}</button>
+						<button type="button" onClick={() => agent.setEnabled(false, false)} className="fs-link shrink-0 text-12">{t("voiceExit")}</button>
 					</div>
 				)}
 
