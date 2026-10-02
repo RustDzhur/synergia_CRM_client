@@ -1,12 +1,8 @@
 import jwt from "jsonwebtoken";
-import { isValidObjectId } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
+import { prisma } from "@/lib/prisma";
 import { type Role, canAccess, moduleForPath } from "@/lib/access";
 import { featureForApi, orgFeatures, orgPlan } from "@/lib/features";
 import type { FeatureKey, PlanId } from "@/config/plans";
-import User from "@/models/User";
-import Organization from "@/models/Organization";
-import Membership from "@/models/Membership";
 
 // Кто делает запрос. id — идентификатор ФИРМЫ, в рамках которой работает пользователь: именно он записан в поле owner
 // у всех данных CRM, поэтому маршруты, которые фильтруют по user.id, автоматически видят данные выбранной фирмы.
@@ -31,20 +27,20 @@ export const wasPlanDenied = (req?: Request) => !!req && planDenied.has(req);
 // Помета для маршрутов, которые сами проверяют тариф (например, /api/records): ответ будет 403 с кодом plan
 export const denyPlan = (req: Request) => { planDenied.add(req); };
 
-// Личная фирма пользователя (её _id == _id пользователя) создаётся при первом обращении — так данные, накопленные
+// Личная фирма пользователя (её id == id пользователя) создаётся при первом обращении — так данные, накопленные
 // до появления фирм, остаются доступны.
-async function ensurePersonalOrg(user: { _id: any; firstname: string; lastname: string; company?: string }) {
-    let org = await Organization.findById(user._id);
+async function ensurePersonalOrg(user: { id: string; firstname: string; lastname: string; company?: string | null }) {
+    let org = await prisma.organization.findUnique({ where: { id: user.id } });
     if (!org) {
         try {
-            org = await Organization.create({ _id: user._id, name: user.company?.trim() || `${user.firstname} ${user.lastname}`.trim() || "My company", ownerUser: user._id });
+            org = await prisma.organization.create({ data: { id: user.id, name: user.company?.trim() || `${user.firstname} ${user.lastname}`.trim() || "My company", ownerUser: user.id } });
         } catch {
-            org = await Organization.findById(user._id); // параллельный запрос успел раньше
+            org = await prisma.organization.findUnique({ where: { id: user.id } }); // параллельный запрос успел раньше
         }
     }
-    let m = await Membership.findOne({ org: user._id, user: user._id });
+    let m = await prisma.membership.findFirst({ where: { org: user.id, user: user.id } });
     if (!m) {
-        try { m = await Membership.create({ org: user._id, user: user._id, role: "owner" }); } catch { m = await Membership.findOne({ org: user._id, user: user._id }); }
+        try { m = await prisma.membership.create({ data: { org: user.id, user: user.id, role: "owner" } }); } catch { m = await prisma.membership.findFirst({ where: { org: user.id, user: user.id } }); }
     }
     return { org, membership: m };
 }
@@ -55,16 +51,15 @@ export async function requireUser(req: Request): Promise<AuthContext | null> {
     if (!token) return null;
     try {
         const { sub } = jwt.verify(token, process.env.JWT_SECRET as string) as { sub: string };
-        await connectDB();
-        const user = await User.findById(sub);
+        const user = await prisma.user.findUnique({ where: { id: sub } });
         if (!user) return null;
 
         const wanted = req.headers.get("x-org-id") ?? "";
         let org: any = null;
         let membership: any = null;
-        if (wanted && isValidObjectId(wanted) && wanted !== String(user._id)) {
-            membership = await Membership.findOne({ org: wanted, user: user._id });
-            if (membership) org = await Organization.findById(wanted);
+        if (wanted && wanted !== user.id) {
+            membership = await prisma.membership.findFirst({ where: { org: wanted, user: user.id } });
+            if (membership) org = await prisma.organization.findUnique({ where: { id: wanted } });
         }
         // нет такой фирмы, нет доступа или её заблокировал администратор платформы — работаем в личной фирме
         if (!org || !membership || org.blocked) ({ org, membership } = await ensurePersonalOrg(user));
@@ -87,7 +82,7 @@ export async function requireUser(req: Request): Promise<AuthContext | null> {
             planDenied.add(req);
             return null;
         }
-        return { id: String(org._id), userId: String(user._id), role: membership.role, modules: membership.modules ?? [], orgName: org.name, plan: orgPlan(org), features };
+        return { id: org.id, userId: user.id, role: membership.role, modules: membership.modules ?? [], orgName: org.name, plan: orgPlan(org), features };
     } catch {
         return null;
     }
