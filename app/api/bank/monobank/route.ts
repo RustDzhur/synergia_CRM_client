@@ -1,27 +1,18 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized, validId } from "@/lib/api";
 import { logAudit } from "@/lib/audit";
 import { decryptJSON } from "@/lib/crypto";
 import { monobankClient, monobankStatement, syncWindow } from "@/lib/banks/monobank";
 import { finishBankSync, linkBankAccount } from "@/lib/banks/link";
-import BankAccount from "@/models/BankAccount";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // POST /api/bank/monobank — выписка по API monobank (ТЗ «Банки і каса»).
 //
-// Действия:
-//   { action: "connect", token }                  — проверить токен и показать счета банка (ничего не сохранено)
-//   { action: "link", token, providerAccountId, name? } — привязать счёт CRM к счёту банка (токен шифруется)
-//   { action: "sync", accountId }                 — забрать движения с прошлой синхронизации (или за месяц)
-//   { action: "unlink", accountId }               — отвязать (движения остаются, привязка снимается)
-//
-// Токен берётся в кабинете api.monobank.ua (у ФОП там же и счета ФОП). Он хранится зашифрованным
-// (lib/crypto.ts) и в браузер не отдаётся — интерфейс видит только имя и последние цифры IBAN.
+// Действия: connect / link / sync / unlink.
 
 const str = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
@@ -40,7 +31,6 @@ export async function POST(req: Request) {
         if (!user) return unauthorized(req);
         const b = await req.json().catch(() => null);
         const action = str(b?.action, 20);
-        await connectDB();
 
         if (action === "connect") {
             const token = str(b?.token, 300);
@@ -64,32 +54,31 @@ export async function POST(req: Request) {
                 currency: bank.currency || "UAH",
                 secret: { token },
             });
-            const author = await User.findById(user.userId).select("firstname lastname");
+            const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
             await logAudit({
                 org: user.id,
                 userName: author ? `${author.firstname} ${author.lastname}`.trim() : "—",
                 action: "bank.monobank_linked",
                 entityType: "bankaccount",
-                entityId: String(doc._id),
+                entityId: doc.id,
                 summary: `Linked monobank account ${providerAccountId}`,
             });
-            return NextResponse.json({ id: String(doc._id), name: doc.name }, { status: 201 });
+            return NextResponse.json({ id: doc.id, name: doc.name }, { status: 201 });
         }
 
         if (action === "unlink") {
             const accountId = str(b?.accountId, 40);
             if (!validId(accountId)) return badRequest("accountId is required");
-            const doc = await BankAccount.findOne({ _id: accountId, org: user.id, provider: "monobank" });
+            const doc = await prisma.bankAccount.findFirst({ where: { id: accountId, org: user.id, provider: "monobank" } });
             if (!doc) return badRequest("Account not found");
-            doc.set({ provider: "", providerAccountId: "", providerSecret: "", providerSyncAt: undefined });
-            await doc.save();
+            await prisma.bankAccount.update({ where: { id: doc.id }, data: { provider: "", providerAccountId: "", providerSecret: "", providerSyncAt: null } });
             return NextResponse.json({ ok: true });
         }
 
         if (action === "sync") {
             const accountId = str(b?.accountId, 40);
             if (!validId(accountId)) return badRequest("accountId is required");
-            const doc = await BankAccount.findOne({ _id: accountId, org: user.id, provider: "monobank" });
+            const doc = await prisma.bankAccount.findFirst({ where: { id: accountId, org: user.id, provider: "monobank" } });
             if (!doc) return badRequest("Account not found");
             const { token } = decryptJSON<{ token?: string }>(doc.providerSecret) ?? {};
             if (!token) return badRequest("Токен не збережено — прив'яжіть рахунок заново");

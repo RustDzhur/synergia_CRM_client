@@ -1,7 +1,7 @@
 import { encryptJSON } from "@/lib/crypto";
 import { importBankRows } from "@/lib/finance/bankImport";
 import { orgMarket } from "@/lib/finance/marketGuard";
-import BankAccount from "@/models/BankAccount";
+import { prisma } from "@/lib/prisma";
 
 // Общий путь подключения счёта к банку по API (monobank, ПриватБанк): маршруты каждого банка
 // приводят свои данные к этому виду, а хранение и запись движений живут здесь, чтобы правила
@@ -20,28 +20,28 @@ export interface BankLinkInput {
 /** Привязать счёт CRM к счёту банка: повторная привязка обновляет запись, а не плодит двойников. */
 export async function linkBankAccount(org: string, input: BankLinkInput) {
 	const market = (await orgMarket(org)) ?? "UA";
-	const existing = await BankAccount.findOne({ org, provider: input.provider, providerAccountId: input.providerAccountId });
+	const existing = await prisma.bankAccount.findFirst({ where: { org, provider: input.provider, providerAccountId: input.providerAccountId } });
 	let name = input.name.trim().slice(0, 100) || `${input.provider} · ${(input.iban ?? input.providerAccountId).slice(-4)}`;
 	// Имя счёта уникально в фирме: второй счёт с тем же именем получает хвост номера
-	if (!existing && (await BankAccount.exists({ org, name }))) name = `${name} ${input.providerAccountId.slice(-4)}`;
-	const doc = existing ?? new BankAccount({ org, market, kind: "bank", name });
-	doc.set({
+	if (!existing && (await prisma.bankAccount.findFirst({ where: { org, name } }))) name = `${name} ${input.providerAccountId.slice(-4)}`;
+	const data = {
 		market,
-		name: existing ? doc.name : name,
-		iban: input.iban ?? doc.iban ?? "",
-		currency: input.currency || doc.currency || "UAH",
+		name: existing ? existing.name : name,
+		iban: input.iban ?? existing?.iban ?? "",
+		currency: input.currency || existing?.currency || "UAH",
 		provider: input.provider,
 		providerAccountId: input.providerAccountId,
 		providerSecret: encryptJSON(input.secret),
-	});
-	await doc.save();
+	};
+	const doc = existing
+		? await prisma.bankAccount.update({ where: { id: existing.id }, data })
+		: await prisma.bankAccount.create({ data: { org, kind: "bank", ...data } });
 	return doc;
 }
 
 /** Записать строки выписки и запомнить момент синхронизации. Возвращает отчёт импорта. */
-export async function finishBankSync(org: string, account: { _id: unknown; save(): Promise<unknown> } & Record<string, unknown>, rows: Array<{ date: string; amount: number; counterparty: string; reference: string; externalId: string }>, toSec: number) {
+export async function finishBankSync(org: string, account: { id: string; currency?: string } & Record<string, unknown>, rows: Array<{ date: string; amount: number; counterparty: string; reference: string; externalId: string }>, toSec: number) {
 	const result = await importBankRows(org, account as never, rows, "auto");
-	(account as unknown as { providerSyncAt?: Date }).providerSyncAt = new Date(toSec * 1000);
-	await account.save();
+	await prisma.bankAccount.update({ where: { id: account.id }, data: { providerSyncAt: new Date(toSec * 1000) } });
 	return result;
 }

@@ -1,26 +1,18 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized, validId } from "@/lib/api";
 import { logAudit } from "@/lib/audit";
 import { decryptJSON } from "@/lib/crypto";
 import { privatBalance, privatStatement, privatSyncWindow } from "@/lib/banks/privatbank";
 import { finishBankSync, linkBankAccount } from "@/lib/banks/link";
-import BankAccount from "@/models/BankAccount";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // POST /api/bank/privatbank — выписка ПриватБанка по АПІ «Автоклієнт» (Приват24 для бізнесу).
 //
-// Действия:
-//   { action: "link", id, token, iban, name? } — проверить пару id+token и IBAN и привязать счёт
-//   { action: "sync", accountId }              — забрать движения (окна по 31 дню, страницы по nextPageId)
-//   { action: "unlink", accountId }            — отвязать (движения остаются)
-//
-// Пара id+token выдаётся в кабинете otp24.privatbank.ua; там же нужно разрешить IP сервера —
-// без этого банк отвечает отказом, и интерфейс об этом честно предупреждает.
+// Действия: link / sync / unlink.
 
 const str = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
@@ -30,7 +22,6 @@ export async function POST(req: Request) {
         if (!user) return unauthorized(req);
         const b = await req.json().catch(() => null);
         const action = str(b?.action, 20);
-        await connectDB();
 
         if (action === "link") {
             const id = str(b?.id, 100);
@@ -48,32 +39,31 @@ export async function POST(req: Request) {
                 currency: balance.currency || "UAH",
                 secret: { id, token },
             });
-            const author = await User.findById(user.userId).select("firstname lastname");
+            const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
             await logAudit({
                 org: user.id,
                 userName: author ? `${author.firstname} ${author.lastname}`.trim() : "—",
                 action: "bank.privatbank_linked",
                 entityType: "bankaccount",
-                entityId: String(doc._id),
+                entityId: doc.id,
                 summary: `Linked PrivatBank account ${balance.account.slice(-4)}`,
             });
-            return NextResponse.json({ id: String(doc._id), name: doc.name, balance: balance.balance, currency: balance.currency }, { status: 201 });
+            return NextResponse.json({ id: doc.id, name: doc.name, balance: balance.balance, currency: balance.currency }, { status: 201 });
         }
 
         if (action === "unlink") {
             const accountId = str(b?.accountId, 40);
             if (!validId(accountId)) return badRequest("accountId is required");
-            const doc = await BankAccount.findOne({ _id: accountId, org: user.id, provider: "privatbank" });
+            const doc = await prisma.bankAccount.findFirst({ where: { id: accountId, org: user.id, provider: "privatbank" } });
             if (!doc) return badRequest("Account not found");
-            doc.set({ provider: "", providerAccountId: "", providerSecret: "", providerSyncAt: undefined });
-            await doc.save();
+            await prisma.bankAccount.update({ where: { id: doc.id }, data: { provider: "", providerAccountId: "", providerSecret: "", providerSyncAt: null } });
             return NextResponse.json({ ok: true });
         }
 
         if (action === "sync") {
             const accountId = str(b?.accountId, 40);
             if (!validId(accountId)) return badRequest("accountId is required");
-            const doc = await BankAccount.findOne({ _id: accountId, org: user.id, provider: "privatbank" });
+            const doc = await prisma.bankAccount.findFirst({ where: { id: accountId, org: user.id, provider: "privatbank" } });
             if (!doc) return badRequest("Account not found");
             const { id, token } = decryptJSON<{ id?: string; token?: string }>(doc.providerSecret) ?? {};
             if (!id || !token) return badRequest("Ключі не збережено — прив'яжіть рахунок заново");
