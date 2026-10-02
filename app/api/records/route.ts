@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { denyPlan, requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { type Module, canAccess } from "@/lib/access";
 import { randomToken } from "@/lib/crypto";
 import { type FeatureKey, planFor } from "@/config/plans";
-import SectionRecord from "@/models/SectionRecord";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +31,7 @@ export async function GET(req: Request) {
     if (!k) return badRequest("Invalid key");
     if (!canAccess(user.role, user.modules, k.module, "GET")) return unauthorized(req);
     if (!user.features[k.module as FeatureKey]) { denyPlan(req); return unauthorized(req); }
-    await connectDB();
-    const list = await SectionRecord.find({ org: user.id, key: k.key }).sort({ createdAt: -1 });
+    const list = await prisma.sectionRecord.findMany({ where: { org: user.id, key: k.key }, orderBy: { createdAt: "desc" } });
     return NextResponse.json({ initialized: list.some((r) => r.rid === INIT), records: list.filter((r) => r.rid !== INIT).map((r) => ({ id: r.rid, values: r.values ?? {} })) });
 }
 
@@ -46,23 +44,25 @@ export async function POST(req: Request) {
     if (!k || !Array.isArray(b.records) || b.records.length > 200) return badRequest("Invalid data");
     if (!canAccess(user.role, user.modules, k.module, "POST")) return unauthorized(req);
     if (!user.features[k.module as FeatureKey]) { denyPlan(req); return unauthorized(req); }
-    await connectDB();
     // число правил автоматизации и доступность шага «AI decides and acts» зависят от тарифа фирмы (см. app/config/plans.ts)
     if (k.key === "automation:rules") {
         const plan = planFor(user.plan);
         if (!user.features.aiAutomation && b.records.some((r: { values?: { action?: string } }) => r?.values?.action === "ai_action")) {
             return NextResponse.json({ message: "The autonomous AI automation step (“AI decides and acts”) needs the Professional plan.", code: "plan_limit" }, { status: 402 });
         }
-        const existing = new Set((await SectionRecord.find({ org: user.id, key: k.key, rid: { $ne: INIT } }).select("rid")).map((r) => r.rid));
+        const existing = new Set((await prisma.sectionRecord.findMany({ where: { org: user.id, key: k.key, rid: { not: INIT } }, select: { rid: true } })).map((r) => r.rid));
         const added = b.records.filter((r: { id?: string }) => !r?.id || !existing.has(r.id)).length;
         if (existing.size + added > plan.automationRules) return NextResponse.json({ message: `Your plan allows ${plan.automationRules} automation rules. Upgrade the plan to add more.`, code: "plan_limit" }, { status: 402 });
     }
-    await SectionRecord.updateOne({ org: user.id, key: k.key, rid: INIT }, { $setOnInsert: { values: {} } }, { upsert: true });
+    const initExists = await prisma.sectionRecord.findFirst({ where: { org: user.id, key: k.key, rid: INIT } });
+    if (!initExists) await prisma.sectionRecord.create({ data: { org: user.id, key: k.key, rid: INIT, values: {} } });
     const saved: { id: string; values: Record<string, string> }[] = [];
     for (const r of b.records) {
         const id = typeof r?.id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(r.id) && r.id !== INIT ? r.id : randomToken(5);
         const values = clean(r?.values);
-        await SectionRecord.updateOne({ org: user.id, key: k.key, rid: id }, { $set: { values } }, { upsert: true });
+        const existing = await prisma.sectionRecord.findFirst({ where: { org: user.id, key: k.key, rid: id } });
+        if (existing) await prisma.sectionRecord.update({ where: { id: existing.id }, data: { values: values as any } });
+        else await prisma.sectionRecord.create({ data: { org: user.id, key: k.key, rid: id, values: values as any } });
         saved.push({ id, values });
     }
     return NextResponse.json({ records: saved }, { status: 201 });
@@ -77,7 +77,6 @@ export async function DELETE(req: Request) {
     if (!k || !Array.isArray(b.ids)) return badRequest("Invalid data");
     if (!canAccess(user.role, user.modules, k.module, "DELETE")) return unauthorized(req);
     if (!user.features[k.module as FeatureKey]) { denyPlan(req); return unauthorized(req); }
-    await connectDB();
-    await SectionRecord.deleteMany({ org: user.id, key: k.key, rid: { $in: b.ids.filter((i: unknown) => typeof i === "string" && i !== INIT) } });
+    await prisma.sectionRecord.deleteMany({ where: { org: user.id, key: k.key, rid: { in: b.ids.filter((i: unknown) => typeof i === "string" && i !== INIT) } } });
     return NextResponse.json({ ok: true });
 }

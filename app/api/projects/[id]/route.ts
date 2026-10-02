@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
-import { isValidObjectId } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { badRequest, unauthorized } from "@/lib/api";
+import { badRequest, unauthorized, validId } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import { PROJECT_TEXT_FIELDS } from "@/lib/crmFields";
 import { ownedContact, ownedCompany } from "@/lib/deals";
-import Project from "@/models/Project";
-import Task from "@/models/Task";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +12,7 @@ const STATUSES = ["planned", "active", "paused", "done"];
 
 // Тот же вид, что и в списке: интерфейс работает с полем id
 const toProjectDTO = (p: any) => ({
-    id: String(p._id),
+    id: p.id,
     name: p.name,
     description: p.description ?? "",
     status: p.status ?? "planned",
@@ -23,8 +20,8 @@ const toProjectDTO = (p: any) => ({
     endDate: p.endDate ?? "",
     responsible: p.responsible ?? "",
     color: p.color ?? "#34A2E8",
-    contact: p.contact ? String(p.contact) : "",
-    company: p.company ? String(p.company) : "",
+    contact: p.contact ?? "",
+    company: p.company ?? "",
     archived: !!p.archived,
     createdByName: p.createdByName ?? "",
 });
@@ -33,11 +30,10 @@ const toProjectDTO = (p: any) => ({
 export async function GET(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    if (!isValidObjectId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
-    await connectDB();
-    const project = await Project.findOne({ _id: params.id, owner: user.id });
+    if (!validId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    const project = await prisma.project.findFirst({ where: { id: params.id, owner: user.id } });
     if (!project) return NextResponse.json({ message: "Not found" }, { status: 404 });
-    const tasks = await Task.find({ owner: user.id, project: project._id }).sort({ deadline: 1, createdAt: -1 });
+    const tasks = await prisma.task.findMany({ where: { owner: user.id, project: project.id }, orderBy: [{ deadline: "asc" }, { createdAt: "desc" }] });
     return NextResponse.json({ project: toProjectDTO(project), tasks });
 }
 
@@ -45,7 +41,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    if (!isValidObjectId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    if (!validId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
     const body = await req.json().catch(() => ({}));
     const data: Record<string, unknown> = pickStrings(body, PROJECT_TEXT_FIELDS, 1000);
@@ -53,13 +49,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (typeof data.status === "string" && !STATUSES.includes(data.status)) return badRequest("Invalid status");
     if (typeof body.archived === "boolean") data.archived = body.archived;
 
-    await connectDB();
     // заказчика меняем только на своего: чужой контакт или фирма к проекту не привяжется
-    if ("contact" in body) data.contact = (await ownedContact(body.contact, user.id))?._id;
-    if ("company" in body) data.company = (await ownedCompany(body.company, user.id))?._id;
+    if ("contact" in body) data.contact = (await ownedContact(body.contact, user.id)) ?? undefined;
+    if ("company" in body) data.company = (await ownedCompany(body.company, user.id)) ?? undefined;
 
-    const project = await Project.findOneAndUpdate({ _id: params.id, owner: user.id }, { $set: data }, { new: true });
-    if (!project) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    const existing = await prisma.project.findFirst({ where: { id: params.id, owner: user.id } });
+    if (!existing) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    const project = await prisma.project.update({ where: { id: params.id }, data: data as any });
     return NextResponse.json(toProjectDTO(project));
 }
 
@@ -68,11 +64,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    if (!isValidObjectId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    if (!validId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
-    await connectDB();
-    const project = await Project.findOneAndDelete({ _id: params.id, owner: user.id });
-    if (!project) return NextResponse.json({ message: "Not found" }, { status: 404 });
-    await Task.updateMany({ owner: user.id, project: project._id }, { $unset: { project: "" } });
+    const r = await prisma.project.deleteMany({ where: { id: params.id, owner: user.id } });
+    if (!r.count) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    await prisma.task.updateMany({ where: { owner: user.id, project: params.id }, data: { project: null } });
     return NextResponse.json({ ok: true });
 }
