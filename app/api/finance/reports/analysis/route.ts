@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, serverError, unauthorized } from "@/lib/api";
 import { aiConfigured, complete } from "@/lib/ai/provider";
@@ -10,7 +9,7 @@ import { incomeBook, vatRegister } from "@/lib/finance/ua";
 import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
 import { dailyLimit, takeQuota, usedToday } from "@/lib/ai/run";
-import Organization from "@/models/Organization";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +34,6 @@ export async function GET(req: Request) {
 
     // Режим рынка — как в /api/finance/reports: украинской фирме разбирают украинские отчёты,
     // немецкой — немецкие. Иначе квота ИИ тратилась бы на разбор чужого отчёта
-    await connectDB();
     try {
         await requireMarket(user.id, kind === "vat-register" || kind === "income-book" ? "UA" : "DE");
     } catch (e) {
@@ -52,7 +50,6 @@ export async function GET(req: Request) {
     const from = fromParam && DATE.test(fromParam) ? fromParam : preset.from;
     const to = toParam && DATE.test(toParam) ? toParam : preset.to;
 
-    await connectDB();
 
     // Разбор отчёта тратит ту же дневную квоту ИИ, что и чат с ассистентом — иначе отчёты обходили бы тариф.
     const [limit, used] = await Promise.all([dailyLimit(user.id), usedToday(user.id)]);
@@ -69,7 +66,7 @@ export async function GET(req: Request) {
 
         if (!(await takeQuota(user.id, limit))) return badRequest("The daily AI limit for your plan is used up");
 
-        const org = await Organization.findById(user.id).lean<{ name?: string; plan?: string; planOverride?: string }>();
+        const org = await prisma.organization.findUnique({ where: { id: user.id }, select: { name: true, plan: true, planOverride: true } });
         const plan = planFor(effectivePlan(org ?? {}));
 
         const system = `You are Firmspace AI, the accounting assistant inside Firmspace CRM. The firm is "${org?.name ?? "the company"}".

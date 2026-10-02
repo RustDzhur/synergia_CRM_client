@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { requireMarket } from "@/lib/finance/marketGuard";
 import { closeFiscalShift, findFiscal, fiscalAdvice, fiscalConfig, openFiscalShift, shiftState } from "@/lib/finance/fiscal";
-import Invoice from "@/models/Invoice";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -14,7 +13,6 @@ export const maxDuration = 60;
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     await requireMarket(user.id, "UA");
 
     const doc = await findFiscal(user.id);
@@ -24,17 +22,16 @@ export async function GET(req: Request) {
 
     // Последние чеки и ошибки фискализации — из счетов: отдельного журнала чеков не нужно,
     // каждый чек и так принадлежит счёту
-    const list = await Invoice.find({ org: user.id, $or: [{ fiscalCode: { $ne: "" } }, { fiscalError: { $ne: "" } }, { fiscalReturnCode: { $ne: "" } }, { fiscalReturnError: { $ne: "" } }] })
-        .sort({ fiscalAt: -1, paidAt: -1, createdAt: -1 })
-        .limit(60)
-        .select("number kind customerName status currency items paidAmount paidVia fiscalId fiscalCode fiscalUrl fiscalAt fiscalError fiscalPayType fiscalReturnId fiscalReturnCode fiscalReturnUrl fiscalReturnAt fiscalReturnError");
+    const list = await prisma.invoice.findMany({
+        where: { org: user.id, OR: [{ fiscalCode: { not: "" } }, { fiscalError: { not: "" } }, { fiscalReturnCode: { not: "" } }, { fiscalReturnError: { not: "" } }] },
+        orderBy: [{ fiscalAt: "desc" }, { paidAt: "desc" }, { createdAt: "desc" }],
+        take: 60,
+    });
 
     // Отметка «товар повернули»: кредит-нота ссылается на исходный счёт (creditFor). Без неё
     // возвращённый чек выглядел в списке как обычная продажа (жалоба владельца)
-    const ids = list.map((i) => i._id);
-    const returns = await Invoice.find({ org: user.id, kind: "credit_note", creditFor: { $in: ids } })
-        .select("number creditFor status")
-        .catch(() => []);
+    const ids = list.map((i) => i.id);
+    const returns = await prisma.invoice.findMany({ where: { org: user.id, kind: "credit_note", creditFor: { in: ids } }, select: { number: true, creditFor: true, status: true } }).catch(() => []);
     const returnOf = new Map(returns.map((r) => [String(r.creditFor), { number: r.number, status: r.status }]));
 
     return NextResponse.json({
@@ -43,9 +40,9 @@ export async function GET(req: Request) {
         shift,
         receipts: list.map((inv) => {
             const advice = fiscalAdvice(inv);
-            const returned = returnOf.get(String(inv._id));
+            const returned = returnOf.get(inv.id);
             return {
-                id: String(inv._id),
+                id: inv.id,
                 number: inv.number,
                 kind: inv.kind,
                 customerName: inv.customerName,
@@ -76,7 +73,6 @@ export async function POST(req: Request) {
     if (!user) return unauthorized(req);
     const b = await req.json().catch(() => ({}));
     try {
-        await connectDB();
         await requireMarket(user.id, "UA");
         if (b?.action === "open") {
             const opened = await openFiscalShift(user.id);
