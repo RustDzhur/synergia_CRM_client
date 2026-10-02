@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { ensureStages } from "@/lib/stages";
-import Stage from "@/models/Stage";
+import { prisma } from "@/lib/prisma";
+import { toDTO } from "@/lib/serialize";
 
 // GET /api/stages — список стадий текущего пользователя (создаёт дефолтные, если их ещё нет)
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
 
-    await connectDB();
     const stages = await ensureStages(user.id);
 
     return NextResponse.json(stages);
@@ -22,9 +21,8 @@ export async function POST(req: Request) {
     if (!user) return unauthorized(req);
 
     const { name } = await req.json();
-    await connectDB();
-    const count = await Stage.countDocuments({ owner: user.id });
-    const stage = await Stage.create({ owner: user.id, name: name || "New stage", order: count });
+    const count = await prisma.stage.count({ where: { owner: user.id } });
+    const stage = await prisma.stage.create({ data: { owner: user.id, name: name || "New stage", order: count } });
 
-    return NextResponse.json(stage, { status: 201 });
+    return NextResponse.json(toDTO(stage), { status: 201 });
 }

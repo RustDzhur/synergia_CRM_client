@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
-import Stage from "@/models/Stage";
-import Deal from "@/models/Deal";
+import { prisma } from "@/lib/prisma";
+import { toDTO } from "@/lib/serialize";
 
 // PATCH /api/stages/123 — переименовать / изменить порядок
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -12,9 +11,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     const body = await req.json();
     // только разрешённые поля: иначе через PATCH можно было записать в документ что угодно
-    const data: Record<string, unknown> = {};
-    for (const key of ["name", "order"]) {
-        if (key in body) data[key] = body[key];
+    const data: { name?: string; order?: number; color?: string } = {};
+    for (const key of ["name", "order"] as const) {
+        if (key in body) (data as Record<string, unknown>)[key] = body[key];
     }
     if (typeof body.color === "string") {
         // цвет — только "#RRGGBB" (или пустая строка = цвет по умолчанию)
@@ -24,15 +23,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         data.color = body.color;
     }
 
-    await connectDB();
-    const stage = await Stage.findOneAndUpdate(
-        { _id: params.id, owner: user.id },
-        { $set: data },
-        { new: true }
-    );
-
-    if (!stage) return NextResponse.json({ message: "Not found" }, { status: 404 });
-    return NextResponse.json(stage);
+    const r = await prisma.stage.updateMany({ where: { id: params.id, owner: user.id }, data });
+    if (!r.count) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    const stage = await prisma.stage.findUnique({ where: { id: params.id } });
+    return NextResponse.json(toDTO(stage!));
 }
 
 // DELETE /api/stages/123 — удалить колонку целиком вместе со сделками в ней
@@ -40,10 +34,9 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
 
-    await connectDB();
-    const stage = await Stage.findOneAndDelete({ _id: params.id, owner: user.id });
-    if (!stage) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    const r = await prisma.stage.deleteMany({ where: { id: params.id, owner: user.id } });
+    if (!r.count) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
-    await Deal.deleteMany({ stage: params.id, owner: user.id });
+    await prisma.deal.deleteMany({ where: { stage: params.id, owner: user.id } });
     return NextResponse.json({ ok: true });
 }

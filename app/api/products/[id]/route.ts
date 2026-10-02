@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { cleanBarcode, cleanImage, cleanPrices } from "@/lib/finance/productFields";
-import Product from "@/models/Product";
+import { prisma } from "@/lib/prisma";
 
 const toDTO = (p: any) => ({
-    id: String(p._id), name: p.name, sku: p.sku, type: p.type, unit: p.unit,
+    id: p.id, name: p.name, sku: p.sku, type: p.type, unit: p.unit,
     purchasePrice: p.purchasePrice, salePrice: p.salePrice, taxRate: p.taxRate,
     stockQty: p.stockQty, reorderLevel: p.reorderLevel, archived: !!p.archived,
     image: p.image ?? "",
@@ -25,9 +24,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     const b = await req.json().catch(() => ({}));
-    await connectDB();
-    const product = await Product.findOne({ _id: params.id, org: user.id });
-    if (!product) return notFound();
+    const product = await prisma.product.findUnique({ where: { id: params.id } });
+    if (!product || product.org !== user.id) return notFound();
     const set: Record<string, unknown> = {};
     if (typeof b.name === "string" && b.name.trim()) set.name = b.name.trim().slice(0, 200);
     if (typeof b.sku === "string") set.sku = b.sku.trim().slice(0, 60);
@@ -52,16 +50,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         }
         set.type = b.type;
     }
-    Object.assign(product, set);
-    await product.save();
-    return NextResponse.json(toDTO(product));
+    const updated = await prisma.product.update({ where: { id: params.id }, data: set as any });
+    return NextResponse.json(toDTO(updated));
 }
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    await connectDB();
-    const r = await Product.deleteOne({ _id: params.id, org: user.id });
-    return r.deletedCount ? NextResponse.json({ ok: true }) : notFound();
+    const r = await prisma.product.deleteMany({ where: { id: params.id, org: user.id } });
+    return r.count ? NextResponse.json({ ok: true }) : notFound();
 }
