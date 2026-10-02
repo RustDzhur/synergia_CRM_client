@@ -36,10 +36,14 @@ services:
         max-file: "3"
     networks:
       - infrastructure
+      - omniroute_default
 
 networks:
   # Общая сеть инфраструктуры: в ней живёт контейнер postgres (см. /opt/infrastructure)
   infrastructure:
+    external: true
+  # Сеть omniroute (ИИ-шлюз): «Айрис» ходит к нему по адресу http://omniroute:20128/v1
+  omniroute_default:
     external: true
 
 volumes:
