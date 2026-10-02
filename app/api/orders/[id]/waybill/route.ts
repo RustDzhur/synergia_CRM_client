@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { createOrderWaybill, deleteOrderWaybill, trackStatuses } from "@/lib/finance/delivery";
 import { toOrderDTO } from "@/lib/finance/dto";
-import Order from "@/models/Order";
 import { requireMarket } from "@/lib/finance/marketGuard";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -23,19 +22,20 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     try {
-        await connectDB();
         await requireMarket(user.id, "UA");
-        const order = await Order.findOne({ _id: params.id, org: user.id });
+        const order = await prisma.order.findFirst({ where: { id: params.id, org: user.id } });
         if (!order) return notFound();
-        const number = String(order.waybill?.number ?? "");
+        const waybill = { ...((order.waybill as any) ?? {}) } as any;
+        const number = String(waybill.number ?? "");
         if (!number) return NextResponse.json({ order: toOrderDTO(order) });
         const [status] = await trackStatuses(user.id, [number]);
+        let fresh = order;
         if (status) {
-            order.waybill.status = status.status;
-            order.waybill.statusAt = new Date();
-            await order.save();
+            waybill.status = status.status;
+            waybill.statusAt = new Date().toISOString();
+            fresh = await prisma.order.update({ where: { id: order.id }, data: { waybill: waybill as any } });
         }
-        return NextResponse.json({ order: toOrderDTO(order), tracking: status ?? null });
+        return NextResponse.json({ order: toOrderDTO(fresh), tracking: status ?? null });
     } catch (e) {
         return failure(e);
     }
@@ -47,11 +47,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!validId(params.id)) return notFound();
     const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     try {
-        await connectDB();
         await requireMarket(user.id, "UA");
-        const order = await Order.findOne({ _id: params.id, org: user.id });
+        const order = await prisma.order.findFirst({ where: { id: params.id, org: user.id } });
         if (!order) return notFound();
-        if (order.waybill?.number) return NextResponse.json({ order: toOrderDTO(order) }, { status: 200 });
+        if ((order.waybill as any)?.number) return NextResponse.json({ order: toOrderDTO(order) }, { status: 200 });
 
         const cityRef = String(b.cityRef ?? "").trim();
         const warehouseRef = String(b.warehouseRef ?? "").trim();
@@ -81,13 +80,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             cod,
             seats,
             ...(byAddress ? { address } : {}),
-            description: String(b.description ?? "").trim() || order.items?.[0]?.description || "Товар",
+            description: String(b.description ?? "").trim() || ((order.items as any[])?.[0]?.description ?? "") || "Товар",
         });
-        order.waybill = {
+        const waybill = {
             number: created.number,
             ref: created.ref,
             status: "Створено",
-            statusAt: new Date(),
+            statusAt: new Date().toISOString(),
             cost: created.cost,
             city: String(b.cityName ?? ""),
             cityRef,
@@ -102,9 +101,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             house: address.house,
             flat: address.flat,
         };
-        order.markModified("waybill");
-        await order.save();
-        return NextResponse.json({ order: toOrderDTO(order) }, { status: 201 });
+        const saved = await prisma.order.update({ where: { id: order.id }, data: { waybill: waybill as any } });
+        return NextResponse.json({ order: toOrderDTO(saved) }, { status: 201 });
     } catch (e) {
         return failure(e);
     }
@@ -117,17 +115,15 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     try {
-        await connectDB();
         await requireMarket(user.id, "UA");
-        const order = await Order.findOne({ _id: params.id, org: user.id });
+        const order = await prisma.order.findFirst({ where: { id: params.id, org: user.id } });
         if (!order) return notFound();
-        const ref = String(order.waybill?.ref ?? "");
+        const ref = String((order.waybill as any)?.ref ?? "");
         if (!ref) return badRequest("У замовлення немає ТТН");
         await deleteOrderWaybill(user.id, ref);
-        order.waybill = { number: "", ref: "", status: "", statusAt: undefined, cost: 0, city: "", cityRef: "", warehouse: "", warehouseRef: "", recipient: "", phone: "", weight: 0, cod: 0, seats: 1, street: "", house: "", flat: "", returnNumber: "", returnAt: undefined };
-        order.markModified("waybill");
-        await order.save();
-        return NextResponse.json({ order: toOrderDTO(order) });
+        const blank = { number: "", ref: "", status: "", statusAt: "", cost: 0, city: "", cityRef: "", warehouse: "", warehouseRef: "", recipient: "", phone: "", weight: 0, cod: 0, seats: 1, street: "", house: "", flat: "", returnNumber: "", returnAt: "" };
+        const saved = await prisma.order.update({ where: { id: order.id }, data: { waybill: blank as any } });
+        return NextResponse.json({ order: toOrderDTO(saved) });
     } catch (e) {
         return failure(e);
     }

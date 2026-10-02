@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { receivePurchase, returnToSupplier } from "@/lib/purchases";
 import { logAudit } from "@/lib/audit";
-import PurchaseOrder from "@/models/PurchaseOrder";
-import SupplierInvoice from "@/models/SupplierInvoice";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -22,10 +19,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!validId(params.id)) return notFound();
     const b = await req.json().catch(() => ({}));
     try {
-        await connectDB();
-        const author = await User.findById(user.userId).select("firstname lastname");
+        const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
         const by = author ? `${author.firstname} ${author.lastname}`.trim() : "";
-        const po = await PurchaseOrder.findOne({ _id: params.id, org: user.id });
+        const po = await prisma.purchaseOrder.findFirst({ where: { id: params.id, org: user.id } });
         if (!po) return notFound();
 
         if (b?.action === "receive") {
@@ -52,23 +48,23 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
         if (b?.action === "cancel") {
             if (po.status === "received") return badRequest("Прийнятий товар скасовують поверненням, а не відміною замовлення");
-            po.status = "cancelled";
-            await po.save();
+            await prisma.purchaseOrder.update({ where: { id: po.id }, data: { status: "cancelled" } });
             return NextResponse.json({ ok: true });
         }
 
         if (b?.action === "update") {
             // Правка черновика/подтверждённого заказа: дата, склад, примечание и строки
             if (po.status === "received") return badRequest("Прийняте замовлення не редагується");
-            if (typeof b.expectedDate === "string") po.expectedDate = b.expectedDate;
-            if (typeof b.warehouse === "string" && b.warehouse) po.warehouse = b.warehouse as never;
-            if (typeof b.notes === "string") po.notes = b.notes.slice(0, 600);
+            const data: Record<string, unknown> = {};
+            if (typeof b.expectedDate === "string") data.expectedDate = b.expectedDate;
+            if (typeof b.warehouse === "string" && b.warehouse) data.warehouse = b.warehouse;
+            if (typeof b.notes === "string") data.notes = b.notes.slice(0, 600);
             if (Array.isArray(b.lines)) {
                 const lines = b.lines.filter((l: { product?: string; qty?: unknown }) => l?.product && Number(l?.qty) > 0);
                 if (!lines.length) return badRequest("lines are required");
-                po.lines = lines.map((l: { product: string; qty: unknown; price?: unknown; note?: string; receivedQty?: unknown }) => ({ product: l.product, qty: Math.abs(Number(l.qty)), price: Number(l.price) || 0, receivedQty: Number(l.receivedQty) || 0, note: (l.note ?? "").slice(0, 200) })) as never;
+                data.lines = lines.map((l: { product: string; qty: unknown; price?: unknown; note?: string; receivedQty?: unknown }) => ({ product: l.product, qty: Math.abs(Number(l.qty)), price: Number(l.price) || 0, receivedQty: Number(l.receivedQty) || 0, note: (l.note ?? "").slice(0, 200) }));
             }
-            await po.save();
+            await prisma.purchaseOrder.update({ where: { id: po.id }, data: data as any });
             return NextResponse.json({ ok: true });
         }
 
@@ -83,15 +79,14 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    await connectDB();
-    const po = await PurchaseOrder.findOne({ _id: params.id, org: user.id });
+    const po = await prisma.purchaseOrder.findFirst({ where: { id: params.id, org: user.id } });
     if (!po) return notFound();
-    const invoices = await SupplierInvoice.find({ org: user.id, purchase: po._id });
+    const invoices = await prisma.supplierInvoice.findMany({ where: { org: user.id, purchase: po.id } });
     return NextResponse.json({
-        id: String(po._id),
+        id: po.id,
         number: po.number,
         status: po.status,
         currency: po.currency,
-        invoices: invoices.map((i) => ({ id: String(i._id), number: i.number, amount: i.amount, paidAmount: i.paidAmount, status: i.status, date: i.date, dueDate: i.dueDate })),
+        invoices: invoices.map((i) => ({ id: i.id, number: i.number, amount: i.amount, paidAmount: i.paidAmount, status: i.status, date: i.date, dueDate: i.dueDate })),
     });
 }
