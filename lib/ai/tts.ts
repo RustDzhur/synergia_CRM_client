@@ -18,11 +18,11 @@ export type VoiceLang = "ru" | "uk" | "de" | "en";
 export type VoiceGender = "f" | "m";
 
 // Нейронные голоса по умолчанию: родные голоса каждого языка. Меняются переменными окружения.
+const MULTI: Record<VoiceGender, string> = { f: "en-US-AvaMultilingualNeural", m: "en-US-AndrewMultilingualNeural" };
 const DEFAULT_VOICES: Record<VoiceLang, Record<VoiceGender, string>> = {
-    ru: { f: "ru-RU-SvetlanaNeural", m: "ru-RU-DmitryNeural" },
-    uk: { f: "uk-UA-PolinaNeural", m: "uk-UA-OstapNeural" },
-    de: { f: "de-DE-SeraphinaMultilingualNeural", m: "de-DE-FlorianMultilingualNeural" },
-    en: { f: "en-US-AvaMultilingualNeural", m: "en-US-AndrewMultilingualNeural" },
+    // Мультиязычные голоса (Ava, Andrew) звучат живее родных ru/uk-голосов и читают все четыре языка одним тембром —
+    // как голос ChatGPT; выбор владельца 02.10.2026. Родные при желании: TTS_VOICE_RU_F=ru-RU-SvetlanaNeural и т.д.
+    ru: MULTI, uk: MULTI, de: MULTI, en: MULTI,
 };
 
 // Piper (speaches): модель на язык и пол. Голоса у Piper по одному на модель, мужских для uk/de немного.
