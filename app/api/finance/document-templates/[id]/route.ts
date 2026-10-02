@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
-import DocumentTemplate from "@/models/DocumentTemplate";
+import { prisma } from "@/lib/prisma";
 import { toTemplateDTO } from "@/lib/finance/dto";
 
 export const dynamic = "force-dynamic";
@@ -19,35 +18,35 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     const b = await req.json().catch(() => ({}));
-    await connectDB();
-    const tpl = await DocumentTemplate.findOne({ _id: params.id, org: user.id });
+    const tpl = await prisma.documentTemplate.findFirst({ where: { id: params.id, org: user.id } });
     if (!tpl) return notFound();
+    const texts = (tpl.texts ?? {}) as any;
+    const data: Record<string, unknown> = {};
 
     if (typeof b.name === "string") {
         const name = str(b.name, 100);
         if (!name) return badRequest("Name is required");
-        tpl.name = name;
+        data.name = name;
     }
-    if (Array.isArray(b.blocks)) tpl.blocks = b.blocks.map((x: unknown) => String(x)).filter((x: string) => BLOCKS.includes(x));
+    if (Array.isArray(b.blocks)) data.blocks = b.blocks.map((x: unknown) => String(x)).filter((x: string) => BLOCKS.includes(x));
     if (b.texts && typeof b.texts === "object") {
-        tpl.texts = {
-            ua: str(b.texts.ua, 600) ?? tpl.texts?.ua ?? "",
-            en: str(b.texts.en, 600) ?? tpl.texts?.en ?? "",
-            de: str(b.texts.de, 600) ?? tpl.texts?.de ?? "",
-            notes: str(b.texts.notes, 600) ?? tpl.texts?.notes ?? "",
+        data.texts = {
+            ua: str(b.texts.ua, 600) ?? texts.ua ?? "",
+            en: str(b.texts.en, 600) ?? texts.en ?? "",
+            de: str(b.texts.de, 600) ?? texts.de ?? "",
+            notes: str(b.texts.notes, 600) ?? texts.notes ?? "",
         };
-        tpl.markModified("texts");
     }
     const prefix = str(b.prefix, 10);
-    if (prefix !== undefined) tpl.prefix = prefix.toUpperCase();
-    if (typeof b.showStamp === "boolean") tpl.showStamp = b.showStamp;
-    if (typeof b.showSignature === "boolean") tpl.showSignature = b.showSignature;
+    if (prefix !== undefined) data.prefix = prefix.toUpperCase();
+    if (typeof b.showStamp === "boolean") data.showStamp = b.showStamp;
+    if (typeof b.showSignature === "boolean") data.showSignature = b.showSignature;
     const footer = str(b.footer, 600);
-    if (footer !== undefined) tpl.footer = footer;
+    if (footer !== undefined) data.footer = footer;
     const paymentTerms = str(b.paymentTerms, 600);
-    if (paymentTerms !== undefined) tpl.paymentTerms = paymentTerms;
-    if (b.language === "ua" || b.language === "en" || b.language === "de") tpl.language = b.language;
-    if (typeof b.currency === "string") tpl.currency = str(b.currency, 6)?.toUpperCase() ?? "";
-    await tpl.save();
-    return NextResponse.json(toTemplateDTO(tpl));
+    if (paymentTerms !== undefined) data.paymentTerms = paymentTerms;
+    if (b.language === "ua" || b.language === "en" || b.language === "de") data.language = b.language;
+    if (typeof b.currency === "string") data.currency = str(b.currency, 6)?.toUpperCase() ?? "";
+    const saved = await prisma.documentTemplate.update({ where: { id: tpl.id }, data: data as any });
+    return NextResponse.json(toTemplateDTO(saved));
 }
