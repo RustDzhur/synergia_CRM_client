@@ -38,5 +38,8 @@ export async function GET() {
         cron: !!process.env.CRON_SECRET,
     };
     const ok = env.DATABASE_URL && env.JWT_SECRET && db === "ok";
-    return NextResponse.json({ ok, env, db, features }, { status: ok ? 200 : 503 });
+    // Задеплоенный коммит: его пишет deploy/autodeploy.sh перед сборкой — видно, какая
+    // версия кода сейчас живёт (как номер деплоя в Vercel)
+    const commit = process.env.DEPLOYED_COMMIT ?? "";
+    return NextResponse.json({ ok, commit, env, db, features }, { status: ok ? 200 : 503 });
 }

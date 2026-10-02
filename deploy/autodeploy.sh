@@ -60,6 +60,13 @@ fi
 
 log "выкладываю ${REMOTE_SHA:0:7} (было ${LOCAL_SHA:0:7})"
 git reset --hard --quiet "$REMOTE_SHA" || { log "git reset не удался"; exit 1; }
+
+# Хеш коммита в .env: контейнер отдаёт его в /api/health, видно какая версия живёт
+if grep -q '^DEPLOYED_COMMIT=' deploy/.env 2>/dev/null; then
+    sed -i "s|^DEPLOYED_COMMIT=.*|DEPLOYED_COMMIT=$REMOTE_SHA|" deploy/.env
+else
+    echo "DEPLOYED_COMMIT=$REMOTE_SHA" >> deploy/.env
+fi
 if docker compose -f deploy/docker-compose.yml up -d --build >> "$LOG" 2>&1; then
     log "готово: запущено в $(docker inspect -f '{{.State.StartedAt}}' firmspace-crm 2>/dev/null || echo '?')"
 else

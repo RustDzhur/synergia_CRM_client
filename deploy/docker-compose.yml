@@ -12,6 +12,9 @@ services:
     container_name: firmspace-crm
     restart: unless-stopped
     env_file: .env
+    environment:
+      # Хеш коммита, собранного автовыкладкой (в .env его пишет deploy/autodeploy.sh)
+      DEPLOYED_COMMIT: ${DEPLOYED_COMMIT:-}
     # Наружу порт не публикуем: сначала проверяем по SSH-туннелю, публичный адрес добавит Caddy.
     ports:
       - "127.0.0.1:3210:3000"
