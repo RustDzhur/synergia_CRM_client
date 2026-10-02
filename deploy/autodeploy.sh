@@ -69,6 +69,10 @@ else
 fi
 if docker compose -f deploy/docker-compose.yml up -d --build >> "$LOG" 2>&1; then
     log "готово: запущено в $(docker inspect -f '{{.State.StartedAt}}' firmspace-crm 2>/dev/null || echo '?')"
+    # Каждая сборка оставляет слои в кэше (до 35 ГБ за пару дней) — именно они переполнили диск VM и пул Proxmox 03.10.2026.
+    # Оставляем 4 ГБ кэша, чтобы следующая сборка шла быстро, остальное и «висячие» образы убираем.
+    docker builder prune -f --keep-storage 4gb >> "$LOG" 2>&1 || true
+    docker image prune -f >> "$LOG" 2>&1 || true
 else
     log "СБОЙ сборки/запуска — смотри строки выше"
     exit 1
