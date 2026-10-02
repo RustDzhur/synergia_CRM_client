@@ -1,8 +1,7 @@
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { failure, notFound, unauthorized, validId } from "@/lib/api";
 import { getObject } from "@/lib/storage";
-import Message from "@/models/Message";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -16,17 +15,18 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     try {
-        await connectDB();
-        const message = await Message.findOne({ _id: params.id, owner: user.id });
-        if (!message?.attachment?.path) return notFound();
-        const res = await getObject(message.attachment.path);
+        const message = await prisma.message.findFirst({ where: { id: params.id, owner: user.id } });
+        // вложение — Json-поле записи: приводим к объекту один раз
+        const attachment = (message?.attachment ?? null) as any;
+        if (!attachment?.path) return notFound();
+        const res = await getObject(attachment.path);
         if (!res) return notFound();
-        const mime = message.attachment.mime || "application/octet-stream";
+        const mime = attachment.mime || "application/octet-stream";
         const shown = inline(mime);
         return new Response(res.body, {
             headers: {
                 "Content-Type": shown ? mime : "application/octet-stream",
-                "Content-Disposition": `${shown ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(message.attachment.name)}`,
+                "Content-Disposition": `${shown ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(attachment.name)}`,
                 "Cache-Control": "private, max-age=60",
                 "X-Content-Type-Options": "nosniff",
             },

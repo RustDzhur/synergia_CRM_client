@@ -1,8 +1,7 @@
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { failure, notFound, unauthorized, validId } from "@/lib/api";
 import { getObject } from "@/lib/storage";
-import DocItem from "@/models/DocItem";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -16,8 +15,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     try {
-        await connectDB();
-        const doc = await DocItem.findOne({ _id: params.id, owner: user.id, kind: "file" });
+        const doc = await prisma.docItem.findFirst({ where: { id: params.id, owner: user.id, kind: "file" } });
         if (!doc || !doc.storagePath) return notFound();
         const res = await getObject(doc.storagePath);
         if (!res) return notFound();

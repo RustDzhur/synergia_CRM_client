@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +9,6 @@ export const dynamic = "force-dynamic";
 export async function DELETE(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
-    await Integration.deleteOne({ owner: user.id, type: "onedrive" });
+    await prisma.integration.deleteMany({ where: { owner: user.id, type: "onedrive" } });
     return NextResponse.json({ ok: true });
 }
