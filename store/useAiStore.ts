@@ -14,7 +14,7 @@ export interface AiAction {
 export interface AiNav { link: string; label: string }
 // voice — сообщение родилось из голосовой команды: его озвучивает голосовое управление (а не кнопка «Слушать» в чате)
 export interface AiMessage { id: string; role: "user" | "assistant"; text: string; steps?: string[]; actions?: AiAction[]; error?: boolean; voice?: boolean; nav?: AiNav }
-export interface AiDownload { kind: "invoices" | "quotes" | "orders" | "contracts"; id: string; number: string; mode: "download" | "open" }
+export interface AiDownload { kind: "invoices" | "quotes" | "orders" | "contracts" | "purchases"; id: string; number: string; mode: "download" | "open" }
 export interface AiStatus {
 	configured: boolean;
 	// stt — серверная диктовка (ключ OpenAI); браузерная не нуждается ни в ключе, ни в сервере

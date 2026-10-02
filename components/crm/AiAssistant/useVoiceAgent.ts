@@ -57,7 +57,7 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 	const [requireWake, setRequireWakeState] = useState(true);
 	const [awake, setAwake] = useState(false);
 	// Режим «без подтверждения»: сервер выполняет изменения сразу (кроме удаления и случаев, когда ассистент читал чужой текст)
-	const [autoApprove, setAutoApproveState] = useState(false);
+	const [autoApprove, setAutoApproveState] = useState(true); // по умолчанию включён (выбор владельца): выключается в настройках панели
 	const speaking = useSyncExternalStore(subscribeSpeech, isSpeaking, () => false);
 	const audioBlocked = useSyncExternalStore(subscribeSpeech, isAudioBlocked, () => false);
 
@@ -76,7 +76,7 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 		setLangState((["ru", "uk", "de", "en"] as VoiceLang[]).includes(savedLang as VoiceLang) ? (savedLang as VoiceLang) : defaultLang(locale));
 		setGenderState(readGender());
 		setRequireWakeState(wake !== "0");
-		try { setAutoApproveState(localStorage.getItem(AUTO_KEY) === "1"); } catch { /* приватный режим */ }
+		try { setAutoApproveState(localStorage.getItem(AUTO_KEY) !== "0"); } catch { /* приватный режим */ }
 		if (ok && on) setEnabledState(true); // после перезагрузки продолжаем слушать
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);

@@ -105,7 +105,7 @@ export const INVOICE_FILTERS = ["unpaid", "overdue", "draft", "sent", "paid", "a
 // Результат инструмента, который клиент превращает в переход по странице (см. runChat: поле nav)
 export interface NavTarget { link: string; label: string }
 // Файл, который клиент должен скачать или открыть (инструмент download_document): PDF качается с авторизацией браузера
-export interface DownloadTarget { kind: "invoices" | "quotes" | "orders" | "contracts"; id: string; number: string; mode: "download" | "open" }
+export interface DownloadTarget { kind: "invoices" | "quotes" | "orders" | "contracts" | "purchases"; id: string; number: string; mode: "download" | "open" }
 const wrap = async <T,>(fn: () => Promise<T>): Promise<T> => { try { return await fn(); } catch (e) { throw e instanceof ActionError || e instanceof BrowseError ? new ToolError(e.message) : e; } };
 
 // Схема строк документа и общая проверка аргументов финансовых инструментов (idempotent:
@@ -763,14 +763,14 @@ export const TOOLS: AiTool[] = [
     // ─────────── документы, оплата, чеки ───────────
     {
         module: "inventory", write: false,
-        def: { name: "download_document", description: "Download (save as a PDF file) or open for viewing an invoice, quote, order or contract by its number, e.g. «скачай счёт RE-2026-5». Works right away, no confirmation. Numbers spoken in Cyrillic («РЕ-2026-5») are matched to the Latin ones.", parameters: schema({ kind: { type: "string", enum: ["invoice", "quote", "order", "contract"] }, number: S("document number, e.g. RE-2026-5"), mode: { type: "string", enum: ["download", "open"], description: "download (default) or open for viewing/printing" } }, ["kind", "number"]) },
+        def: { name: "download_document", description: "Download (save as a PDF file) or open for viewing/printing an invoice, quote, order, contract or purchase order (order to a supplier) by its number, e.g. «скачай счёт RE-2026-5». Works right away, no confirmation. Numbers spoken in Cyrillic («РЕ-2026-5») are matched to the Latin ones.", parameters: schema({ kind: { type: "string", enum: ["invoice", "quote", "order", "contract", "purchase_order"] }, number: S("document number, e.g. RE-2026-5 or ЗП-2026-3 for a purchase order"), mode: { type: "string", enum: ["download", "open"], description: "download (default) or open for viewing/printing" } }, ["kind", "number"]) },
         check: (a) => {
-            if (!["invoice", "quote", "order", "contract"].includes(String(a.kind))) throw new ToolError("kind must be invoice, quote, order or contract");
+            if (!["invoice", "quote", "order", "contract", "purchase_order"].includes(String(a.kind))) throw new ToolError("kind must be invoice, quote, order, contract or purchase_order");
             return { kind: a.kind, number: need(str(a.number, 40), "number"), mode: a.mode === "open" ? "open" : "download" };
         },
         run: (c, a) => wrap(async () => {
             const doc = await findDocument(c.org, a.kind as DocKind, String(a.number));
-            const kind = ({ invoice: "invoices", quote: "quotes", order: "orders", contract: "contracts" } as const)[a.kind as DocKind];
+            const kind = ({ invoice: "invoices", quote: "quotes", order: "orders", contract: "contracts", purchase_order: "purchases" } as const)[a.kind as DocKind];
             const dl: DownloadTarget = { kind, id: doc.id, number: doc.number, mode: a.mode === "open" ? "open" : "download" };
             return { prepared: doc.number, _download: dl };
         }),
@@ -966,8 +966,8 @@ const GROUPS: { re: RegExp; tools: string[] }[] = [
       tools: ["create_quote", "create_order", "create_contract", "download_document", "browse_data", "search_contacts"] },
     { re: /расход|витрат|ausgabe|expense|налог|податк|steuer|банк|bank|выруч|доход|прибыл|money|деньг|кассов/i,
       tools: ["list_expenses", "create_expense", "finance_summary", "browse_data"] },
-    { re: /склад|остат|залишк|товар|продукт|product|stock|bestand|lager|закуп|закаж|замов|поставщ|постачальн|supplier|lieferant|bestell|purchase|приход|списан|списа|инвентар|артикул|sku|nomenclat|номенклат|заканч|закінч|нехват|не хватает|reorder/i,
-      tools: ["list_products", "create_product", "adjust_stock", "create_supplier", "create_purchase_order", "email_report", "browse_data", "list_expenses"] },
+    { re: /склад|остат|залишк|товар|продукт|product|stock|bestand|lager|закуп|закаж|замов|зп-|поставщ|постачальн|supplier|lieferant|bestell|purchase|приход|списан|списа|инвентар|артикул|sku|nomenclat|номенклат|заканч|закінч|нехват|не хватает|reorder/i,
+      tools: ["list_products", "create_product", "adjust_stock", "create_supplier", "create_purchase_order", "download_document", "email_report", "browse_data", "list_expenses"] },
     { re: /клиент|клієнт|kunde|customer|контакт|contact|компани|company|firma|сделк|угод|deal|лид|lead|воронк|воронка|pipeline|этап|етап|stage|заметк|нотатк|notiz|note|не общал|давно не/i,
       tools: ["search_contacts", "search_companies", "get_contact", "get_company", "get_deal", "list_deals", "list_stages", "find_stale_contacts", "create_contact", "create_company", "create_deal", "update_deal_stage", "add_note", "delete_record"] },
     { re: /сегодня|сьогодні|today|heute|завтра|morgen|задач|task|aufgabe|напомн|нагад|remind|календар|calendar|kalender|встреч|зустріч|termin|meeting|событ|подія|проект|project|чат|chat|whatsapp|telegram/i,

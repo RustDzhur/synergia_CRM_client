@@ -113,8 +113,8 @@ export async function fiscalReceipt(who: Who, ref: string, payType?: "CASH" | "C
     }
 }
 
-export type DocKind = "invoice" | "quote" | "order" | "contract";
-const DOC_MODEL = { invoice: "invoice", quote: "quote", order: "order", contract: "contract" } as const;
+export type DocKind = "invoice" | "quote" | "order" | "contract" | "purchase_order";
+const DOC_MODEL = { invoice: "invoice", quote: "quote", order: "order", contract: "contract", purchase_order: "purchaseOrder" } as const;
 
 /** Счёт, предложение, заказ или договор по номеру — для скачивания PDF. */
 export async function findDocument(org: string, kind: DocKind, ref: string) {

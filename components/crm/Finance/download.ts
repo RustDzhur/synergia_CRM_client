@@ -2,7 +2,7 @@ import toast from "react-hot-toast";
 import { authHeaders } from "@/store/crmApi";
 import { explainCompliance } from "@/lib/finance/complianceLabels";
 
-export type DocumentKind = "invoices" | "quotes" | "orders" | "contracts";
+export type DocumentKind = "invoices" | "quotes" | "orders" | "contracts" | "purchases";
 
 // Действия с PDF финансового документа — двумя кнопками, как просил владелец: «Просмотр» открывает
 // файл во вкладке браузера (оттуда его печатают), «Скачать» сохраняет файл. Раньше была одна кнопка,

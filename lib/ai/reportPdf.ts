@@ -30,7 +30,8 @@ export function reportPdf(r: ReportInput): Promise<Buffer> {
                 if (pdf.y > bottom() - 60) pdf.addPage();
                 pdf.fontSize(13).fillColor(INK).text(s.heading, MARGIN, pdf.y, { width }).moveDown(0.3);
             }
-            const cols = s.columns.length || 1;
+            if (!s.columns.length) { pdf.moveDown(0.5); continue; } // только заголовок (например, итоговая строка)
+            const cols = s.columns.length;
             // ширина колонки — по самому длинному содержимому (в разумных пределах), чтобы числа не растягивались, а названия не ломались
             const weights = Array.from({ length: cols }, (_, i) => Math.min(40, Math.max(6, ...[s.columns[i] ?? "", ...s.rows.map((row) => String(row[i] ?? ""))].map((x) => String(x).length))));
             const total = weights.reduce((a, b) => a + b, 0);
