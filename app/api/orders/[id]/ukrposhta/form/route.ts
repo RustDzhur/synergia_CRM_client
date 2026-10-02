@@ -1,12 +1,10 @@
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId, contentDisposition } from "@/lib/api";
 import { requireMarket } from "@/lib/finance/marketGuard";
 import { ProviderError } from "@/lib/http";
 import { secretsOf } from "@/lib/integrations";
 import { shipmentFormUrl } from "@/lib/ukrposhta";
-import Integration from "@/models/Integration";
-import Order from "@/models/Order";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -19,14 +17,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     try {
-        await connectDB();
         await requireMarket(user.id, "UA");
-        const order = await Order.findOne({ _id: params.id, org: user.id });
+        const order = await prisma.order.findFirst({ where: { id: params.id, org: user.id } });
         if (!order) return notFound();
-        const uuid = String(order.ukrposhta?.uuid ?? "");
+        const uuid = String((order.ukrposhta as any)?.uuid ?? "");
         if (!uuid) return badRequest("Ця накладна створена в кабінеті Укрпошти — роздрукуйте її там");
 
-        const doc = await Integration.findOne({ owner: user.id, type: "ukrposhta", status: "connected" });
+        const doc = await prisma.integration.findFirst({ where: { owner: user.id, type: "ukrposhta", status: "connected" } });
         const token = doc ? String(secretsOf<{ token?: string }>(doc).token ?? "") : "";
         if (!token) throw new ProviderError("У кабінеті Укрпошти не збережено токен");
 

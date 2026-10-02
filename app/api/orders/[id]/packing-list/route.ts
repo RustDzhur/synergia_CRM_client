@@ -1,11 +1,10 @@
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId, contentDisposition } from "@/lib/api";
 import { packingListPdfBuffer, pdfLocale, pdfTemplate } from "@/lib/finance/document";
 import { financeSettings } from "@/lib/finance/settings";
 import { nextNumber } from "@/lib/finance/numbering";
 import { numberPrefix } from "@/lib/finance/documents/store";
-import Order from "@/models/Order";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -18,8 +17,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    await connectDB();
-    const order = await Order.findOne({ _id: params.id, org: user.id });
+    const order = await prisma.order.findFirst({ where: { id: params.id, org: user.id } });
     if (!order) return notFound();
     if (order.status === "cancelled") return badRequest("This order is cancelled");
 
@@ -30,12 +28,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!order.packingNumber || packingDate !== order.packingDate) {
         const settings = await financeSettings(user.id);
         const number = order.packingNumber || (await nextNumber(user.id, await numberPrefix(user.id, "packing_list", settings.packingPrefix || "PL")));
-        order.packingNumber = number;
-        order.packingDate = packingDate || new Date().toISOString().slice(0, 10);
-        await order.save();
+        await prisma.order.update({ where: { id: order.id }, data: { packingNumber: number, packingDate: packingDate || new Date().toISOString().slice(0, 10) } });
     }
 
-    const buf = await packingListPdfBuffer(user.id, order, pdfLocale(url.searchParams.get("locale")), pdfTemplate(url.searchParams.get("template")));
+    const fresh = (await prisma.order.findUnique({ where: { id: order.id } })) ?? order;
+    const buf = await packingListPdfBuffer(user.id, fresh, pdfLocale(url.searchParams.get("locale")), pdfTemplate(url.searchParams.get("template")));
     if (!buf?.length) return badRequest("Не вдалося скласти пакувальний лист");
     return new Response(new Uint8Array(buf), {
         headers: {
