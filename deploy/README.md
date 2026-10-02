@@ -33,6 +33,17 @@ Cron на сервере:
 `feature/postgres-migration`, потому что в `main` пока лежит код оригинала с MongoDB.
 Когда сольёте миграцию в `main`, поменяйте `DEPLOY_BRANCH=main` — и всё.
 
+**Какая версия живёт на сервере** — видно в ответе `/api/health`:
+
+```
+curl -s https://firmspace.de/api/health
+{"ok":true,"commit":"2f0ed1e59216d7c5c158e2ed78d323382501176a","db":"ok",...}
+```
+
+Поле `commit` пишет `deploy/autodeploy.sh` в `deploy/.env` перед сборкой — это аналог номера
+деплоя в Vercel. Проверено на живом контуре: пуш → CI зелёный → сервер сам пересобрал
+и перезапустил контейнер (журнал `~/crm-autodeploy.log`, строка «готово: запущено в …»).
+
 Журнал выкладок: `~/crm-autodeploy.log`. Откат: `git reset --hard <нужный коммит>` в
 `~/crm-duplicate` и `docker compose -f deploy/docker-compose.yml up -d --build`.
 
