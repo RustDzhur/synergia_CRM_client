@@ -2,8 +2,9 @@ import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
 import { ProviderError } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
-import { AiCtx, DownloadTarget, NavTarget, ToolError, allowedTools, targetLabel } from "./tools";
+import { AiCtx, DownloadTarget, NavTarget, ToolError, allowedTools, pickTools, targetLabel } from "./tools";
 import { Msg, complete, voiceModel } from "./provider";
+import { type ToolOut, fastReply } from "./fastReply";
 
 // Сколько разговоров с ИИ в сутки у фирмы — общий счётчик для чата и автономного шага автоматизации (см. app/config/plans.ts).
 // Можно переопределить переменной AI_DAILY_LIMIT (одно число для всех тарифов) — например, для теста.
@@ -69,7 +70,9 @@ const clip = (v: unknown) => JSON.stringify(v).slice(0, 12000);
 // Один ход разговора: модель может несколько раз вызвать инструменты чтения; вызов записи превращается в карточку подтверждения
 export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "assistant"; text: string }[]; locale: string; page: string; orgName: string; voice?: boolean }): Promise<ChatResult> {
     const me = await prisma.user.findUnique({ where: { id: ctx.userId }, select: { firstname: true, lastname: true } });
-    const tools = allowedTools(ctx);
+    // Права по-прежнему считает allowedTools; pickTools только сужает набор до темы разговора (быстрее круг модели)
+    const recent = opts.history.slice(-4).map((m) => m.text).join(" ");
+    const tools = pickTools(allowedTools(ctx), recent);
     const sys = system(ctx, { name: me ? `${me.firstname} ${me.lastname}`.trim() : "" }, opts.orgName, opts.locale, opts.page, !!opts.voice);
     const msgs: Msg[] = opts.history.map((m) => (m.role === "user" ? { role: "user", text: m.text } : { role: "assistant", text: m.text }));
     const steps: string[] = [];
@@ -81,6 +84,8 @@ export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "ass
         const r = await complete(sys, msgs, tools.map((t) => t.def), opts.voice && voiceModel() ? { model: voiceModel() } : {});
         if (!r.calls.length) return { reply: r.text || "…", steps, actions, ...(nav ? { nav } : {}), ...(download ? { download } : {}) };
         msgs.push({ role: "assistant", text: r.text, calls: r.calls });
+        const stepOuts: ToolOut[] = []; // результаты чтения этого шага — для готового ответа без второго круга
+        let failed = false;
         let navigateOnly = true; // в этом шаге были только успешные переходы по страницам
         for (const call of r.calls) {
             const tool = tools.find((t) => t.def.name === call.name); // только разрешённые этому пользователю
@@ -102,6 +107,7 @@ export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "ass
                 try {
                     const out = await tool.run(ctx, tool.check ? tool.check(call.args) : call.args);
                     await log(ctx, "read", tool.def.name, call.args);
+                    if (out && typeof out === "object") stepOuts.push({ name: tool.def.name, out: out as Record<string, unknown> });
                     // _nav — не для модели, а для клиента: куда открыть страницу (инструмент navigate)
                     if (out && typeof out === "object" && "_nav" in out) {
                         const { _nav, ...rest } = out as { _nav: NavTarget } & Record<string, unknown>;
@@ -115,11 +121,17 @@ export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "ass
                     } else content = clip(out);
                 } catch (e) {
                     await log(ctx, "failed", tool.def.name, call.args, e instanceof Error ? e.message : "");
+                    failed = true;
                     content = clip({ error: e instanceof ToolError ? e.message : "The lookup failed" });
                 }
             }
             msgs.push({ role: "tool", callId: call.id, name: call.name, content });
             if (call.name !== "navigate" || !nav || content.includes('"error"')) navigateOnly = false;
+        }
+        // Голос: итог по счетам/остаткам складываем сами — второй круг модели ради пересказа нескольких чисел стоил 3–5 секунд
+        if (opts.voice && !failed && !actions.length && !r.text) {
+            const quick = fastReply(stepOuts.map((o) => (o.name === "navigate" && nav ? { ...o, out: { ...o.out, opened: nav.label } } : o)), opts.history[opts.history.length - 1]?.text ?? "");
+            if (quick) return { reply: quick, steps, actions, ...(nav ? { nav } : {}) };
         }
         // «Открой бухгалтерию» — модель уже всё решила вызовом navigate; второй круг ради слов «Открываю…» стоил бы
         // ещё нескольких секунд ожидания, поэтому отвечаем сами (когда вместе с переходом нужны данные, круг остаётся)

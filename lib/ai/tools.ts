@@ -12,7 +12,7 @@ import { ActionError, type DocKind, fiscalReceipt, findDocument, findProduct, fi
 import { moveStock } from "@/lib/finance/stock";
 import { purchaseNumber } from "@/lib/purchases";
 import { logAudit } from "@/lib/audit";
-import { BrowseError, ENTITIES, ENTITY_KEYS, browse, listProducts } from "./browse";
+import { BrowseError, ENTITY_KEYS, browse, listProducts } from "./browse";
 import { mkActivity } from "@/lib/activities";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
 import { nextNumber } from "@/lib/finance/numbering";
@@ -480,7 +480,7 @@ export const TOOLS: AiTool[] = [
         // Переход — не изменение данных, поэтому выполняется сразу, без карточки подтверждения: «открой бухгалтерию»
         // голосом должно просто открыть её. Раздел, на который у человека нет прав, не открываем.
         module: null, write: false,
-        def: { name: "navigate", description: "Open a page of the CRM right now (no confirmation needed): dashboard, deals board, contacts, tasks, employees, calendar, chat and calls, web-mail, documents, accounting/finance, marketing, automation, settings. For accounting you can also pick the tab (invoices, quotes, orders, contracts, expenses, bank, products…) and, on the invoices tab, a filter: unpaid (sent but not paid yet — «незакрытые счета»), overdue, draft, sent, paid. Use it whenever the user asks to open, go to or show a page, e.g. «открой бухгалтерию и покажи неоплаченные счета» → section finance, tab invoices, filter unpaid.", parameters: schema({
+        def: { name: "navigate", description: "Open a CRM page now, no confirmation. Finance also takes a tab and, on invoices, a filter (unpaid = «незакрытые счета»). E.g. «открой бухгалтерию, неоплаченные счета» → section finance, filter unpaid.", parameters: schema({
             section: { type: "string", enum: Object.keys(NAV_SECTIONS), description: "target section key" },
             tab: { type: "string", enum: [...FINANCE_TABS], description: "finance only: tab to open" },
             filter: { type: "string", enum: [...INVOICE_FILTERS], description: "finance → invoices only: which invoices to show" },
@@ -689,7 +689,7 @@ export const TOOLS: AiTool[] = [
     {
         // Раздел проверяется внутри — по сущности; так один инструмент закрывает все страницы кабинета
         module: null, write: false,
-        def: { name: "browse_data", description: `Read records of any other page of the CRM. entity: ${ENTITY_KEYS.map((k) => (k === "section_records" ? "section_records (custom tabs of automation/marketing/inventory — pass key like automation:rules)" : `${k} (${ENTITIES[k].label})`)).join("; ")}. Optional text query, date range from/to (YYYY-MM-DD) and limit. Returns the total count and the newest/most relevant records. Use it for any question about warehouses, stock movements, orders, quotes, contracts, suppliers, purchases, production, bank transactions, assets, calendar events, chats, projects, automation rules.`, parameters: schema({ entity: { type: "string", enum: ENTITY_KEYS }, query: S("text to look for"), from: S("start date YYYY-MM-DD"), to: S("end date YYYY-MM-DD"), key: S("only for section_records, e.g. automation:rules"), limit: N("max records, default 15, max 40") }, ["entity"]) },
+        def: { name: "browse_data", description: `Read records of other CRM pages: ${ENTITY_KEYS.join(", ")} (section_records needs key like automation:rules). Optional query, from/to dates, limit. Returns the count and records with ids.`, parameters: schema({ entity: { type: "string", enum: ENTITY_KEYS }, query: S("text to look for"), from: S("start date YYYY-MM-DD"), to: S("end date YYYY-MM-DD"), key: S("only for section_records, e.g. automation:rules"), limit: N("max records, default 15, max 40") }, ["entity"]) },
         run: async (c, a) => { try { return await browse(c, a); } catch (e) { throw e instanceof BrowseError ? new ToolError(e.message) : e; } },
     },
     // ─────────── запись: расходы, компании, этапы сделок ───────────
@@ -885,6 +885,47 @@ export const TOOLS: AiTool[] = [
         },
     },
 ];
+
+// ── Какие инструменты показать модели на этот запрос ──
+// Все ~45 инструментов с описаниями — это ~10 тысяч токенов на КАЖДЫЙ круг модели, и ответ занимал 5–13 секунд. Поэтому
+// модель получает только группы, о которых идёт речь в последних репликах (по ключевым словам на ru/uk/de/en); просьба
+// «открой страницу» обходится одним navigate. Если ни одна группа не узнана и это не переход — отдаём всё, как раньше:
+// медленнее, зато ничего не теряется.
+const GROUPS: { re: RegExp; tools: string[] }[] = [
+    { re: /сч[её]т|рахун|rechnung|invoice|оплат|оплач|чек|квитанц|receipt|kasse|pdf|скача|завантаж|download|просроч|неоплач|не закры|незакры|долж|задолж|debt|overdue|unpaid|paid|фискаль|бухгалтер|фінанс|финанс|buchhalt|financ/i,
+      tools: ["list_invoices", "finance_summary", "create_invoice", "mark_invoice_paid", "send_invoice", "issue_fiscal_receipt", "download_document", "search_contacts"] },
+    { re: /предложен|пропозиц|angebot|quote|договор|контракт|vertrag|contract|заказ|замовлен|order|auftrag/i,
+      tools: ["create_quote", "create_order", "create_contract", "download_document", "browse_data", "search_contacts"] },
+    { re: /расход|витрат|ausgabe|expense|налог|податк|steuer|банк|bank|выруч|доход|прибыл|money|деньг|кассов/i,
+      tools: ["list_expenses", "create_expense", "finance_summary", "browse_data"] },
+    { re: /склад|остат|залишк|товар|продукт|product|stock|bestand|lager|закуп|закаж|замов|поставщ|постачальн|supplier|lieferant|bestell|purchase|приход|списан|списа|инвентар|артикул|sku|nomenclat|номенклат|заканч|закінч|нехват|не хватает|reorder/i,
+      tools: ["list_products", "create_product", "adjust_stock", "create_supplier", "create_purchase_order", "browse_data", "list_expenses"] },
+    { re: /клиент|клієнт|kunde|customer|контакт|contact|компани|company|firma|сделк|угод|deal|лид|lead|воронк|воронка|pipeline|этап|етап|stage|заметк|нотатк|notiz|note|не общал|давно не/i,
+      tools: ["search_contacts", "search_companies", "get_contact", "get_company", "get_deal", "list_deals", "list_stages", "find_stale_contacts", "create_contact", "create_company", "create_deal", "update_deal_stage", "add_note", "delete_record"] },
+    { re: /сегодня|сьогодні|today|heute|завтра|morgen|задач|task|aufgabe|напомн|нагад|remind|календар|calendar|kalender|встреч|зустріч|termin|meeting|событ|подія|проект|project|чат|chat|whatsapp|telegram/i,
+      tools: ["list_tasks", "create_task", "update_task", "browse_data", "list_employees", "search_contacts"] },
+    { re: /письм|лист|почт|пошт|mail|e-mail|email|inbox|входящ|ответь|відпов|reply/i,
+      tools: ["search_mail", "get_mail", "get_mail_thread", "send_email", "search_contacts", "create_deal", "create_task"] },
+    { re: /документ|файл|document|dokument|прочитай документ|read the doc/i,
+      tools: ["search_documents", "read_document", "list_employees", "save_employee_contract", "download_document"] },
+    { re: /сотрудник|співробітник|працівник|employee|mitarbeiter|команд|team|персонал/i,
+      tools: ["list_employees", "save_employee_contract"] },
+    { re: /удал|видал|стер|delete|remove|lösch|entfern/i,
+      tools: ["delete_record", "browse_data", "search_contacts", "search_companies", "list_deals", "list_tasks", "list_expenses", "list_products", "list_invoices"] },
+    { re: /банк|транзакц|движен|заказ|замовлен|order|auftrag|производ|виробн|production|основн.* средств|asset|регуляр|recurring|автоматиз|automation|маркетинг|marketing|склады|warehouse/i,
+      tools: ["browse_data", "list_products"] },
+];
+const NAVIGATION = /открой|открыть|откройте|перейд|покажи страниц|зайди|відкрий|відкрити|перейди|покажи сторінк|open|go to|navigate|öffne|gehe zu|zeig/i;
+
+/** Подмножество инструментов под запрос; не распознали — все. navigate доступен всегда. */
+export function pickTools<T extends { def: { name: string } }>(all: T[], recentText: string): T[] {
+    const text = String(recentText ?? "");
+    const wanted = new Set<string>(["navigate"]);
+    let matched = false;
+    for (const g of GROUPS) if (g.re.test(text)) { matched = true; g.tools.forEach((t) => wanted.add(t)); }
+    if (!matched && !NAVIGATION.test(text)) return all;
+    return all.filter((t) => wanted.has(t.def.name));
+}
 
 export const toolByName = (name: string) => TOOLS.find((t) => t.def.name === name);
 
