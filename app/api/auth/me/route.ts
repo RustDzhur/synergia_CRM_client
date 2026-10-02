@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { isPlatformAdminUser } from "@/lib/admin";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 async function toPublic(user: any) {
+    const n = (user.notifications as Record<string, unknown> | null) ?? {};
     return {
-        id: user._id.toString(),
+        id: user.id,
         firstname: user.firstname,
         lastname: user.lastname,
         email: user.email,
@@ -26,11 +26,11 @@ async function toPublic(user: any) {
         company: user.company ?? "",
         isAdmin: await isPlatformAdminUser(user),
         notifications: {
-            browser: Boolean(user.notifications?.browser),
-            email: Boolean(user.notifications?.email),
-            muteEmail: Boolean(user.notifications?.muteEmail),
-            muteFrom: user.notifications?.muteFrom || "10:00",
-            muteTo: user.notifications?.muteTo || "10:00",
+            browser: Boolean(n.browser),
+            email: Boolean(n.email),
+            muteEmail: Boolean(n.muteEmail),
+            muteFrom: n.muteFrom || "10:00",
+            muteTo: n.muteTo || "10:00",
         },
     };
 }
@@ -42,8 +42,7 @@ export async function GET(req: Request) {
     if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     try {
         const { sub } = jwt.verify(token, process.env.JWT_SECRET as string) as { sub: string };
-        await connectDB();
-        const user = await User.findById(sub);
+        const user = await prisma.user.findUnique({ where: { id: sub } });
         if (!user) return unauthorized(req);
         return NextResponse.json(await toPublic(user));
     } catch {
@@ -74,7 +73,8 @@ export async function PATCH(req: Request) {
         return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
     }
 
-    const update: Record<string, string | boolean> = {};
+    const data: Record<string, string | boolean> = {};
+    const notif: Record<string, string | boolean> = {};
 
     for (const key of TEXT_FIELDS) {
         if (typeof body[key] !== "string") continue;
@@ -82,14 +82,14 @@ export async function PATCH(req: Request) {
         if (REQUIRED_FIELDS.includes(key) && !value) {
             return NextResponse.json({ message: `${key} is required` }, { status: 400 });
         }
-        update[key] = value;
+        data[key] = value;
     }
 
     if (typeof body.avatarUrl === "string") {
         const avatar = body.avatarUrl;
         const valid = avatar === "" || (avatar.length <= MAX_AVATAR_LENGTH && AVATAR_PATTERN.test(avatar));
         if (!valid) return NextResponse.json({ message: "Invalid avatar" }, { status: 400 });
-        update.avatarUrl = avatar;
+        data.avatarUrl = avatar;
     }
 
     // настройки уведомлений: только известные поля и только нужных типов
@@ -97,17 +97,18 @@ export async function PATCH(req: Request) {
     if (prefs && typeof prefs === "object") {
         const p = prefs as Record<string, unknown>;
         for (const key of ["browser", "email", "muteEmail"] as const) {
-            if (typeof p[key] === "boolean") update[`notifications.${key}`] = p[key] as boolean;
+            if (typeof p[key] === "boolean") notif[key] = p[key] as boolean;
         }
         for (const key of ["muteFrom", "muteTo"] as const) {
             if (typeof p[key] !== "string") continue;
             if (!TIME_PATTERN.test(p[key] as string)) return NextResponse.json({ message: `${key} must be HH:MM` }, { status: 400 });
-            update[`notifications.${key}`] = p[key] as string;
+            notif[key] = p[key] as string;
         }
     }
 
-    await connectDB();
-    const user = await User.findByIdAndUpdate(auth.id, { $set: update }, { new: true });
-    if (!user) return unauthorized(req);
+    const current = await prisma.user.findUnique({ where: { id: auth.id } });
+    if (!current) return unauthorized(req);
+    const notifications = { ...((current.notifications as Record<string, any>) ?? {}), ...notif };
+    const user = await prisma.user.update({ where: { id: auth.id }, data: { ...data, notifications } });
     return NextResponse.json(await toPublic(user));
 }

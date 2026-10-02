@@ -1,6 +1,5 @@
 import jwt from "jsonwebtoken";
-import { connectDB } from "@/lib/mongodb";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 // Администратор платформы — тот, кто видит кабинет администратора: фирмы, пользователей, тарифы и блог.
 //
@@ -16,9 +15,12 @@ export const adminEmails = () => (process.env.ADMIN_EMAILS ?? "").split(",").map
 
 export const isPlatformAdmin = (email?: string) => !!email && adminEmails().includes(email.toLowerCase());
 
+// user приходит и из Prisma (id), и — на время переезда — из не переведённых ещё Mongoose-модулей (_id).
+type AdminUser = { email?: string; platformAdmin?: boolean; _id?: unknown; id?: unknown };
+
 // Проверка с учётом записи пользователя и первого аккаунта. Отдельная функция, потому что
 // синхронная isPlatformAdmin используется в местах, где база недоступна.
-export async function isPlatformAdminUser(user: { email?: string; platformAdmin?: boolean; _id?: unknown } | null | undefined): Promise<boolean> {
+export async function isPlatformAdminUser(user: AdminUser | null | undefined): Promise<boolean> {
     if (!user) return false;
     if (user.platformAdmin) return true;
     if (isPlatformAdmin(user.email)) return true;
@@ -26,10 +28,10 @@ export async function isPlatformAdminUser(user: { email?: string; platformAdmin?
 
     // Ни переменной, ни флага: администратора ещё не назначали. Считаем им самый ранний аккаунт,
     // но только если среди пользователей вообще нет ни одного с флагом — иначе правило не нужно.
-    const flagged = await User.exists({ platformAdmin: true });
+    const flagged = await prisma.user.findFirst({ where: { platformAdmin: true }, select: { id: true } });
     if (flagged) return false;
-    const first = await User.findOne().sort({ createdAt: 1 }).select("_id");
-    return !!first && String(first._id) === String(user._id);
+    const first = await prisma.user.findFirst({ orderBy: { createdAt: "asc" }, select: { id: true } });
+    return !!first && first.id === String(user.id ?? user._id);
 }
 
 export async function requirePlatformAdmin(req: Request) {
@@ -38,12 +40,11 @@ export async function requirePlatformAdmin(req: Request) {
     if (!token) return null;
     try {
         const { sub } = jwt.verify(token, process.env.JWT_SECRET as string) as { sub: string };
-        await connectDB();
-        const user = await User.findById(sub);
+        const user = await prisma.user.findUnique({ where: { id: sub } });
         if (!user) return null;
         // учитываем и флаг в записи, и первый аккаунт — иначе на установке без ADMIN_EMAILS
         // кабинет администратора был бы недоступен вообще никому
-        return (await isPlatformAdminUser(user)) ? { id: String(user._id), email: user.email as string } : null;
+        return (await isPlatformAdminUser(user)) ? { id: user.id, email: user.email } : null;
     } catch {
         return null;
     }

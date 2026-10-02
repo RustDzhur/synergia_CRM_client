@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { isValidObjectId } from "mongoose";
 import { MarketError, ProviderError } from "@/lib/http";
 import { ComplianceError } from "@/lib/finance/compliance";
 import { reportError } from "@/lib/reportError";
@@ -14,7 +13,9 @@ export const unauthorized = (req?: Request) => {
 };
 export const badRequest = (message: string) => NextResponse.json({ message }, { status: 400 });
 export const notFound = () => NextResponse.json({ message: "Not found" }, { status: 404 });
-export const validId = (id: string) => isValidObjectId(id);
+// id в новой схеме — строка: ObjectId-хекс (перенесённые из Mongo) или cuid (новые записи).
+// Оба — компактные [0-9a-zA-Z_-]. Prisma на несуществующий id вернёт null → 404, поэтому здесь лишь дешёвая защита от мусора.
+export const validId = (id: string): id is string => typeof id === "string" && id.length > 0 && id.length <= 40 && /^[A-Za-z0-9_-]+$/.test(id);
 
 // Content-Disposition с именем файла, которое может быть не-ASCII: украинские номера документов —
 // «КП-2026-1», «ВН-2026-4» — в HTTP-заголовке бросают TypeError (заголовки обязаны быть
