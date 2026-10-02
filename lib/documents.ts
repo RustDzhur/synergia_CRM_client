@@ -68,7 +68,7 @@ export async function docsState(owner: string): Promise<DocsState> {
         onedrive: {
             configured: oauthAvailable().microsoft,
             connected: !!onedrive && onedrive.status === "connected",
-            email: onedrive?.config?.email ?? "",
+            email: String((onedrive?.config as any)?.email ?? ""),
             docs: docs.filter(isOnedrive).length,
         },
         storage: {

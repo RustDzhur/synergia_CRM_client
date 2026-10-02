@@ -1,11 +1,10 @@
-import type { HydratedDocument } from "mongoose";
 import { ProviderError, fetchProvider } from "@/lib/http";
 import { packSecrets, secretsOf } from "@/lib/integrations";
 import { randomToken } from "@/lib/crypto";
 import { Tokens, refreshTokens } from "@/lib/mail/oauth";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
-type Doc = HydratedDocument<any>;
+type Doc = any;
 
 // Microsoft Graph без SDK: тот же приём, что у Google Drive (lib/google/drive.ts), — обычные запросы
 // с токеном. Адрес вынесен в переменную окружения, чтобы проверять на заглушке.
@@ -34,16 +33,16 @@ export const onedriveEmail = async (token: string) => {
 };
 
 // Подключение OneDrive пользователя (одно на пользователя): токены зашифрованы, как у почты и Диска Google
-export const findOnedrive = (owner: string) => Integration.findOne({ owner, type: "onedrive" });
+export const findOnedrive = (owner: string) => prisma.integration.findFirst({ where: { owner, type: "onedrive" } });
 
 export async function connectOnedrive(owner: string, tokens: Tokens) {
     if (!tokens.refreshToken) throw new ProviderError("Microsoft did not allow offline access. Connect OneDrive again.");
     const email = await onedriveEmail(tokens.accessToken).catch(() => "");
-    const doc = (await findOnedrive(owner)) ?? new Integration({ owner, type: "onedrive", token: randomToken() });
-    doc.set({ name: email || "OneDrive", config: { email }, secrets: packSecrets(tokens), status: "connected", error: "" });
-    doc.markModified("config");
-    await doc.save();
-    return doc;
+    const existing = await findOnedrive(owner);
+    const data = { name: email || "OneDrive", config: { email } as any, secrets: packSecrets(tokens), status: "connected", error: "" };
+    return existing
+        ? prisma.integration.update({ where: { id: existing.id }, data })
+        : prisma.integration.create({ data: { owner, type: "onedrive", token: randomToken(), ...data } });
 }
 
 // Токен доступа живёт около часа: перед запросом при необходимости обновляем его по refresh-токену
@@ -53,14 +52,12 @@ export async function onedriveToken(d: Doc): Promise<string> {
     if (!s.refreshToken) throw new ProviderError("Connect OneDrive again");
     try {
         const fresh = await refreshTokens("microsoft", s.refreshToken);
-        d.secrets = packSecrets(fresh);
-        await d.save();
+        await prisma.integration.update({ where: { id: d.id }, data: { secrets: packSecrets(fresh) } });
         return fresh.accessToken;
     } catch {
-        d.status = "error";
-        d.error = "OneDrive access was revoked. Connect it again.";
-        await d.save();
-        throw new ProviderError(d.error);
+        const error = "OneDrive access was revoked. Connect it again.";
+        await prisma.integration.update({ where: { id: d.id }, data: { status: "error", error } });
+        throw new ProviderError(error);
     }
 }
 
