@@ -1,6 +1,5 @@
-import type { HydratedDocument } from "mongoose";
 import { type PlanId, PLANS, YEAR_MONTHS } from "@/config/plans";
-import Organization from "@/models/Organization";
+import { prisma } from "@/lib/prisma";
 
 // Подписки: состояние берём у Stripe и записываем в пользователя. Функции идемпотентны — повторный вебхук ничего не портит.
 export type Interval = "month" | "year";
@@ -35,24 +34,23 @@ export function effectivePlan(org: { plan?: string; planOverride?: string; planO
 }
 
 // Записывает состояние подписки в фирму; фирма находится по metadata.orgId или по id клиента Stripe
-export async function applySubscription(sub: StripeSubscription): Promise<HydratedDocument<any> | null> {
+export async function applySubscription(sub: StripeSubscription): Promise<any | null> {
     const cid = customerId(sub.customer);
     const byMeta = sub.metadata?.orgId;
-    const org = (byMeta ? await Organization.findById(byMeta).catch(() => null) : null) ?? (cid ? await Organization.findOne({ "billing.customerId": cid }) : null);
+    const org = (byMeta ? await prisma.organization.findUnique({ where: { id: byMeta } }).catch(() => null) : null)
+        ?? (cid ? await prisma.organization.findFirst({ where: { billing: { path: ["customerId"], equals: cid } } }) : null);
     if (!org) return null;
     const active = ACTIVE.includes(sub.status);
     const plan = isPaidPlan(sub.metadata?.plan) ? (sub.metadata!.plan as PlanId) : org.plan;
     const end = sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end;
     const interval = sub.items?.data?.[0]?.price?.recurring?.interval ?? sub.metadata?.interval ?? "";
-    org.plan = active ? plan : "free";
-    org.billing = {
-        customerId: cid || org.billing?.customerId || "",
+    const billing = {
+        customerId: cid || (org.billing as any)?.customerId || "",
         subscriptionId: sub.id,
         status: sub.status,
         interval: interval === "year" || interval === "month" ? interval : "",
-        currentPeriodEnd: end ? new Date(end * 1000) : undefined,
+        currentPeriodEnd: end ? new Date(end * 1000).toISOString() : "",
         cancelAtPeriodEnd: !!sub.cancel_at_period_end,
     };
-    await org.save();
-    return org;
+    return prisma.organization.update({ where: { id: org.id }, data: { plan: active ? plan : "free", billing: billing as any } });
 }
