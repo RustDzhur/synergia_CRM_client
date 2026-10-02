@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requirePlatformAdmin } from "@/lib/admin";
 import { failure, notFound, validId } from "@/lib/api";
 import { type StripeSubscription, applySubscription } from "@/lib/billing";
 import { stripe, stripeConfigured } from "@/lib/stripe";
-import Organization from "@/models/Organization";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +14,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!validId(params.id)) return notFound();
     if (!stripeConfigured()) return NextResponse.json({ message: "Payments are not configured yet" }, { status: 503 });
     try {
-        await connectDB();
-        const org = await Organization.findById(params.id);
-        if (!org?.billing?.subscriptionId) return NextResponse.json({ message: "No subscription" }, { status: 404 });
-        const sub = await stripe<StripeSubscription>("POST", `/subscriptions/${org.billing.subscriptionId}`, { cancel_at_period_end: true });
+        const org = await prisma.organization.findUnique({ where: { id: params.id } });
+        const subscriptionId = (org?.billing as any)?.subscriptionId;
+        if (!subscriptionId) return NextResponse.json({ message: "No subscription" }, { status: 404 });
+        const sub = await stripe<StripeSubscription>("POST", `/subscriptions/${subscriptionId}`, { cancel_at_period_end: true });
         await applySubscription(sub);
         return NextResponse.json({ ok: true });
     } catch (e) {

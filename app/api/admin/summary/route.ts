@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import { PLANS, YEAR_MONTHS } from "@/config/plans";
 import { requirePlatformAdmin } from "@/lib/admin";
 import { effectivePlan } from "@/lib/billing";
-import InvoiceRequest from "@/models/InvoiceRequest";
-import Organization from "@/models/Organization";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -12,23 +10,24 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const admin = await requirePlatformAdmin(req);
     if (!admin) return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-    const orgs = await Organization.find({}).select("plan planOverride planOverrideUntil billing blocked");
+    const orgs = await prisma.organization.findMany({ select: { plan: true, planOverride: true, planOverrideUntil: true, billing: true, blocked: true } });
     const byPlan: Record<string, number> = { free: 0, standard: 0, professional: 0 };
     let mrr = 0;
     for (const o of orgs) {
-        byPlan[effectivePlan(o)] = (byPlan[effectivePlan(o)] ?? 0) + 1;
+        byPlan[effectivePlan(o as never)] = (byPlan[effectivePlan(o as never)] ?? 0) + 1;
         // выручку считаем только по действующим подпискам Stripe (ручные назначения — не деньги); год приводится к месяцу
-        if (["active", "trialing", "past_due"].includes(o.billing?.status ?? "") && ["standard", "professional"].includes(o.plan)) {
+        const billing = (o.billing ?? {}) as any;
+        if (["active", "trialing", "past_due"].includes(billing.status ?? "") && ["standard", "professional"].includes(o.plan)) {
             const price = PLANS.find((p) => p.id === o.plan)?.priceMonth ?? 0;
-            mrr += o.billing?.interval === "year" ? (price * YEAR_MONTHS) / 12 : price;
+            mrr += billing.interval === "year" ? (price * YEAR_MONTHS) / 12 : price;
         }
     }
     return NextResponse.json({
         orgs: orgs.length,
-        users: await User.countDocuments({}),
+        users: await prisma.user.count(),
         byPlan,
         mrr: Math.round(mrr * 100) / 100,
         blocked: orgs.filter((o) => o.blocked).length,
-        newRequests: await InvoiceRequest.countDocuments({ status: "new" }),
+        newRequests: await prisma.invoiceRequest.count({ where: { status: "new" } }),
     });
 }

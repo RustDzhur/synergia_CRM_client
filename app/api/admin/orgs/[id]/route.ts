@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/admin";
 import { badRequest, notFound, validId } from "@/lib/api";
 import { FEATURE_KEYS } from "@/config/plans";
-import Organization from "@/models/Organization";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -16,24 +16,25 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!validId(params.id)) return notFound();
     const b = await req.json().catch(() => null);
     if (!b || typeof b !== "object") return badRequest("Invalid JSON");
-    const org = await Organization.findById(params.id);
+    const org = await prisma.organization.findUnique({ where: { id: params.id } });
     if (!org) return notFound();
+    const data: Record<string, unknown> = {};
     if ("planOverride" in b) {
         if (!["", "free", "standard", "professional"].includes(b.planOverride)) return badRequest("Invalid plan");
-        org.planOverride = b.planOverride;
-        if (!b.planOverride) org.planOverrideUntil = undefined;
+        data.planOverride = b.planOverride;
+        if (!b.planOverride) data.planOverrideUntil = null;
     }
     if ("planOverrideUntil" in b) {
-        if (b.planOverrideUntil === null || b.planOverrideUntil === "") org.planOverrideUntil = undefined;
+        if (b.planOverrideUntil === null || b.planOverrideUntil === "") data.planOverrideUntil = null;
         else {
             const d = new Date(b.planOverrideUntil);
             if (Number.isNaN(d.getTime())) return badRequest("Invalid date");
-            org.planOverrideUntil = d;
+            data.planOverrideUntil = d;
         }
     }
-    if (typeof b.blocked === "boolean") org.blocked = b.blocked;
+    if (typeof b.blocked === "boolean") data.blocked = b.blocked;
     if (b.featureOverrides !== undefined) {
-        if (b.featureOverrides === null) org.featureOverrides = {};
+        if (b.featureOverrides === null) data.featureOverrides = {};
         else if (typeof b.featureOverrides !== "object" || Array.isArray(b.featureOverrides)) return badRequest("Invalid feature overrides");
         else {
             const next: Record<string, boolean> = {};
@@ -41,10 +42,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
                 if (!(FEATURE_KEYS as readonly string[]).includes(key)) return badRequest(`Unknown section: ${key}`);
                 if (typeof value === "boolean") next[key] = value; // true — выдать сверх тарифа, false — отключить вопреки тарифу
             }
-            org.featureOverrides = next;
+            data.featureOverrides = next;
         }
-        org.markModified("featureOverrides");
     }
-    await org.save();
+    await prisma.organization.update({ where: { id: org.id }, data: data as any });
     return NextResponse.json({ ok: true });
 }
