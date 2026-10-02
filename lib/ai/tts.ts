@@ -37,8 +37,14 @@ const trim = (s: string) => s.replace(/\/+$/, "");
 const primaryUrl = () => trim(process.env.TTS_API_URL || "http://tts:5050/v1");
 const fallbackUrl = () => trim(process.env.TTS_FALLBACK_URL ?? "http://speaches:8000/v1");
 
+// Настоящий OpenAI (gpt-4o-mini-tts — голос ChatGPT): те же голоса на всех языках, язык берётся из текста.
+// Включается сам, когда TTS_API_URL указывает на api.openai.com, или явно TTS_PROVIDER=openai.
+const isOpenAi = () => process.env.TTS_PROVIDER === "openai" || /api\.openai\.com/.test(primaryUrl());
+const OPENAI_VOICES: Record<VoiceGender, string> = { f: "coral", m: "onyx" };
+const OPENAI_STYLE = "Speak like a warm, friendly, natural human assistant: relaxed pace, lively intonation, short natural pauses between sentences. Pronounce the text in its own language with a native accent.";
+
 export const voiceFor = (lang: VoiceLang, gender: VoiceGender): string =>
-    process.env[`TTS_VOICE_${lang.toUpperCase()}_${gender.toUpperCase()}`] || DEFAULT_VOICES[lang][gender];
+    process.env[`TTS_VOICE_${lang.toUpperCase()}_${gender.toUpperCase()}`] || (isOpenAi() ? OPENAI_VOICES[gender] : DEFAULT_VOICES[lang][gender]);
 
 /** Определяет язык фразы по алфавиту и характерным словам; hint — язык, который пользователь выбрал сам. */
 export function detectLang(text: string, hint?: string): VoiceLang {
@@ -120,11 +126,12 @@ export async function synthesize(rawText: string, opts: { lang?: string; gender?
     if (hit) return { audio: hit, contentType: "audio/mpeg", provider: "cache" };
 
     const key = process.env.TTS_API_KEY || undefined;
-    const model = process.env.TTS_MODEL || "tts-1";
+    const openai = isOpenAi();
+    const model = process.env.TTS_MODEL || (openai ? "gpt-4o-mini-tts" : "tts-1");
     // 1 + 1 повторная попытка к основному голосу: Edge иногда отвечает «No audio received» на ровном месте
     for (let attempt = 0; attempt < 2; attempt++) {
         try {
-            const audio = await requestSpeech(primaryUrl(), { model, input: text, voice, speed, response_format: "mp3" }, key);
+            const audio = await requestSpeech(primaryUrl(), { model, input: text, voice, speed, response_format: "mp3", ...(openai && /gpt-4o/.test(model) ? { instructions: OPENAI_STYLE } : {}) }, key);
             cachePut(cacheKey, audio);
             return { audio, contentType: "audio/mpeg", provider: "neural" };
         } catch (e) {
