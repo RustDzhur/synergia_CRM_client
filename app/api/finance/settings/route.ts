@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { COUNTRY_CODES, COUNTRY_TAX } from "@/lib/finance/taxRates";
@@ -8,7 +7,7 @@ import { UA_TAX_SYSTEMS, taxSystemOf, uaProfileErrors, formAndGroup } from "@/li
 import { financeSettings } from "@/lib/finance/settings";
 import { isTemplate } from "@/lib/finance/pdf";
 import { parseCategories } from "@/lib/finance/expenseCategories";
-import FinanceSettings from "@/models/FinanceSettings";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -82,7 +81,6 @@ function toDTO(s: any) {
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     const s = await financeSettings(user.id);
     return NextResponse.json({ settings: toDTO(s), countries: COUNTRY_CODES.map((code) => ({ code, ...COUNTRY_TAX[code] })) });
 }
@@ -92,7 +90,6 @@ export async function PATCH(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     const b = await req.json().catch(() => ({}));
-    await connectDB();
     let set: Record<string, unknown> = {};
     if (typeof b.country === "string") set.country = COUNTRY_CODES.includes(b.country) ? b.country : "";
     const currency = str(b.currency, 6); if (currency !== undefined) set.currency = currency.toUpperCase();
@@ -187,9 +184,15 @@ export async function PATCH(req: Request) {
     // Смена режима рынка может применить набор по умолчанию (валюта, префиксы, срок оплаты, шаблон,
     // налоговые прапорщики): явно присланные поля сильнее набора, существующие документы не трогаются
     if (b.applyDefaults === true) {
-        const target = marketOf(typeof set.country === "string" ? set.country : (await FinanceSettings.findOne({ org: user.id }).select("country"))?.country);
+        const current = typeof set.country === "string" ? null : await prisma.financeSettings.findUnique({ where: { org: user.id }, select: { country: true } });
+        const target = marketOf(typeof set.country === "string" ? set.country : current?.country);
         if (target) set = { ...MARKET_DEFAULTS[target], ...set };
     }
-    const s = await FinanceSettings.findOneAndUpdate({ org: user.id }, { $set: set }, { upsert: true, new: true });
+    // org уникален: upsert заменяет прежний findOneAndUpdate с upsert
+    const s = await prisma.financeSettings.upsert({
+        where: { org: user.id },
+        create: { org: user.id, ...(set as any) },
+        update: set as any,
+    });
     return NextResponse.json({ ...toDTO(s), fieldErrors: uaErrors });
 }
