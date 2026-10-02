@@ -149,7 +149,7 @@ export async function incomeBook(org: string, year: string): Promise<IncomeBook>
     if (profile.group === 0) warnings.push({ code: "general_system" });
     if (profile.group === 4) warnings.push({ code: "group4_area" });
     // Лимит группы — по правилам года, но фирма может задать своё значение (uaLimits) в настройках
-    const limit = groupLimit(settings, Number(year), profile.group);
+    const limit = groupLimit(settings as any, Number(year), profile.group);
     if (limit && income > limit * 0.8) {
         warnings.push({ code: "limit_near", params: { limit, group: profile.group, rate: rules.overLimitRate } });
     }

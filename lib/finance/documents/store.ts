@@ -1,4 +1,4 @@
-import DocumentTemplate from "@/models/DocumentTemplate";
+import { prisma } from "@/lib/prisma";
 import { marketOf, type Market } from "../market";
 import { financeSettings } from "../settings";
 import { presetsFor, DOC_PRESETS } from "./presets";
@@ -10,27 +10,29 @@ import type { PdfSettings } from "../pdf";
 
 /** Скопировать пресеты режима в базу, если их там ещё нет (идемпотентно). */
 export async function ensureTemplates(org: string, market: Market): Promise<void> {
-    const existing = await DocumentTemplate.find({ org, market }).select("kind name");
+    const existing = await prisma.documentTemplate.findMany({ where: { org, market }, select: { kind: true, name: true } });
     const have = new Set(existing.map((t) => `${t.kind}:${t.name}`));
     const missing = presetsFor(market).filter((p) => !have.has(`${p.kind}:${p.name}`));
     if (!missing.length) return;
     await Promise.all(
         missing.map((p) =>
-            DocumentTemplate.create({
-                org,
-                market,
-                kind: p.kind,
-                name: p.name,
-                blocks: p.blocks,
-                texts: { ua: p.texts.ua, en: p.texts.en, de: p.texts.de, notes: p.notes[p.language] ?? "" },
-                prefix: p.prefix,
-                numbering: { yearly: true, resetEachYear: true },
-                showStamp: p.showStamp,
-                showSignature: p.showSignature,
-                footer: p.footer,
-                paymentTerms: p.texts[p.language] ?? "",
-                language: p.language,
-                active: true,
+            prisma.documentTemplate.create({
+                data: {
+                    org,
+                    market,
+                    kind: p.kind,
+                    name: p.name,
+                    blocks: p.blocks,
+                    texts: { ua: p.texts.ua, en: p.texts.en, de: p.texts.de, notes: p.notes[p.language] ?? "" } as any,
+                    prefix: p.prefix,
+                    numbering: { yearly: true, resetEachYear: true } as any,
+                    showStamp: p.showStamp,
+                    showSignature: p.showSignature,
+                    footer: p.footer,
+                    paymentTerms: p.texts[p.language] ?? "",
+                    language: p.language,
+                    active: true,
+                },
             }).catch(() => undefined) // параллельное создание тем же запросом — не ошибка
         )
     );
@@ -38,12 +40,12 @@ export async function ensureTemplates(org: string, market: Market): Promise<void
 
 export async function listTemplates(org: string, market: Market) {
     await ensureTemplates(org, market);
-    return DocumentTemplate.find({ org, market }).sort({ kind: 1, name: 1 });
+    return prisma.documentTemplate.findMany({ where: { org, market }, orderBy: [{ kind: "asc" }, { name: "asc" }] });
 }
 
 /** Активный бланк вида (или null — тогда действуют общие настройки бухгалтерии). */
 export async function activeTemplate(org: string, kind: string) {
-    return DocumentTemplate.findOne({ org, kind, active: true }).sort({ updatedAt: -1 });
+    return prisma.documentTemplate.findFirst({ where: { org, kind, active: true }, orderBy: { updatedAt: "desc" } });
 }
 
 /**
@@ -73,7 +75,7 @@ function pickText(map: { ua?: string; en?: string; de?: string; notes?: string }
  * (логотип, QR, подпись, печать) и флаги подписи. Общие настройки фирмы остаются основой —
  * бланк лишь заменяет то, что в нём задано.
  */
-export function applyTemplate(base: PdfSettings, tpl: { blocks?: string[]; texts?: { ua?: string; en?: string; de?: string; notes?: string }; footer?: string; paymentTerms?: string; showSignature?: boolean; showStamp?: boolean; language?: string } | null, locale: string): PdfSettings {
+export function applyTemplate(base: PdfSettings, tpl: { blocks?: string[]; texts?: any; footer?: string; paymentTerms?: string; showSignature?: boolean; showStamp?: boolean; language?: string } | null, locale: string): PdfSettings {
     if (!tpl) return base;
     const blocks = Array.isArray(tpl.blocks) ? tpl.blocks : [];
     const blockOn = (id: string) => !blocks.length || blocks.includes(id);

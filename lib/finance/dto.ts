@@ -25,7 +25,7 @@ export const toOrderDTO = (o: any) => ({
             returnNumber: o.waybill.returnNumber ?? "", returnAt: o.waybill.returnAt ? new Date(o.waybill.returnAt).toISOString() : "",
         }
         : null,
-    id: String(o._id), number: o.number, status: o.status,
+    id: o.id, number: o.number, status: o.status,
     contact: o.contact ? String(o.contact) : "", company: o.company ? String(o.company) : "", customerName: o.customerName,
     // телефон клиента — из связанного контакта (подставляется в окно ТТН), а не из заказа
     contactPhone: o.contactPhone ?? "",
@@ -38,7 +38,7 @@ export const toOrderDTO = (o: any) => ({
 });
 
 export const toInvoiceDTO = (inv: any) => ({
-    id: String(inv._id), number: inv.number, kind: inv.kind, creditFor: inv.creditFor ? String(inv.creditFor) : "",
+    id: inv.id, number: inv.number, kind: inv.kind, creditFor: inv.creditFor ? String(inv.creditFor) : "",
     contact: inv.contact ? String(inv.contact) : "", company: inv.company ? String(inv.company) : "",
     customerName: inv.customerName, customerAddress: inv.customerAddress, customerTaxId: inv.customerTaxId,
     deal: inv.deal ? String(inv.deal) : "", order: inv.order ? String(inv.order) : "", contract: inv.contract ? String(inv.contract) : "",
@@ -66,7 +66,7 @@ export const toInvoiceDTO = (inv: any) => ({
 });
 
 export const toRecurringInvoiceDTO = (r: any) => ({
-    id: String(r._id), active: !!r.active,
+    id: r.id, active: !!r.active,
     contact: r.contact ? String(r.contact) : "", company: r.company ? String(r.company) : "",
     customerName: r.customerName, customerAddress: r.customerAddress, customerTaxId: r.customerTaxId,
     items: (r.items ?? []).map((it: any) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice, taxRate: it.taxRate, product: it.product ? String(it.product) : "" })),
@@ -80,7 +80,7 @@ export const toRecurringInvoiceDTO = (r: any) => ({
 const toItemDTO = (it: any) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice, taxRate: it.taxRate, product: it.product ? String(it.product) : "" });
 
 export const toQuoteDTO = (q: any) => ({
-    id: String(q._id), number: q.number, status: q.status,
+    id: q.id, number: q.number, status: q.status,
     contact: q.contact ? String(q.contact) : "", company: q.company ? String(q.company) : "", customerName: q.customerName,
     deal: q.deal ? String(q.deal) : "", order: q.order ? String(q.order) : "",
     items: (q.items ?? []).map(toItemDTO),
@@ -97,7 +97,7 @@ export const toQuoteDTO = (q: any) => ({
 });
 
 export const toContractDTO = (c: any) => ({
-    id: String(c._id), number: c.number, status: c.status,
+    id: c.id, number: c.number, status: c.status,
     contact: c.contact ? String(c.contact) : "", company: c.company ? String(c.company) : "", customerName: c.customerName,
     deal: c.deal ? String(c.deal) : "", value: c.value, currency: c.currency,
     startDate: c.startDate, endDate: c.endDate, notes: c.notes, body: c.body || "", template: c.template || "",
@@ -109,7 +109,7 @@ export const toContractDTO = (c: any) => ({
 // Живёт здесь, а не в route.ts: Next запрещает именованные экспорты из файлов маршрутов
 // (см. комментарий в начале файла), и такой экспорт ломает проверку типов при сборке.
 export const toTemplateDTO = (t: any) => ({
-    id: String(t._id),
+    id: t.id,
     market: t.market,
     kind: t.kind,
     name: t.name,
