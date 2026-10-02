@@ -10,6 +10,10 @@ COPY package.json package-lock.json ./
 # npm ci требует идеально совпадающего lock-файла; npm install ставит по package.json
 # и дозаполняет мелочи вроде транзитивных @types
 RUN npm install --no-audit --no-fund
+# Prisma выбирает движок по версии libssl В МОМЕНТ ГЕНЕРАЦИИ: без openssl она берёт 1.1.x,
+# а в runtime-образе OpenSSL 3 — движок не загрузится и подключение падает с пустой ошибкой.
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 COPY . .
 RUN npx prisma generate && npm run build
 
