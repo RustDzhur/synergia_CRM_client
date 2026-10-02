@@ -1,9 +1,9 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { announceComment, feedAvatars, toFeedDTO, userName } from "@/lib/feed";
-import FeedPost from "@/models/FeedPost";
+import { prisma } from "@/lib/prisma";
 
 // POST /api/feed/:id/comments — { text }
 export async function POST(req: Request, { params }: { params: { id: string } }) {
@@ -13,17 +13,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const b = await req.json().catch(() => null);
     const text = typeof b?.text === "string" ? b.text.trim().slice(0, 500) : "";
     if (!text) return badRequest("Text is required");
-    await connectDB();
     const authorName = await userName(user.userId);
-    const before = await FeedPost.findOne({ _id: params.id, org: user.id });
+    const before = await prisma.feedPost.findFirst({ where: { id: params.id, org: user.id } });
     if (!before) return notFound();
-    const post = await FeedPost.findOneAndUpdate(
-        { _id: params.id, org: user.id },
-        { $push: { comments: { author: user.userId, authorName, text } }, $addToSet: { followers: user.userId } }, // кто прокомментировал — следит за веткой
-        { new: true }
-    );
-    if (!post) return notFound();
-    const added = post.comments[post.comments.length - 1];
-    await announceComment(user.id, before, String(added._id), user.userId, authorName, text);
+    // Комментарий живёт в Json: id и createdAt задаём сами (в Mongo их выдавала поддокументу база)
+    const comment = { id: randomUUID(), author: user.userId, authorName, text, createdAt: new Date().toISOString() };
+    const comments = [...((before.comments as any[]) ?? []), comment];
+    // кто прокомментировал — следит за веткой
+    const followers = before.followers.includes(user.userId) ? before.followers : [...before.followers, user.userId];
+    const post = await prisma.feedPost.update({ where: { id: before.id }, data: { comments: comments as any, followers } });
+    await announceComment(user.id, before, comment.id, user.userId, authorName, text);
     return NextResponse.json(toFeedDTO(post, user.userId, await feedAvatars([post])), { status: 201 });
 }
