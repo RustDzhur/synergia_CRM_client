@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { computeTotals } from "@/lib/finance/totals";
-import Invoice from "@/models/Invoice";
-import Expense from "@/models/Expense";
-import SupplierInvoice from "@/models/SupplierInvoice";
-import Order from "@/models/Order";
-import Product from "@/models/Product";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -17,17 +12,19 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     const months = Math.min(24, Math.max(1, Number(new URL(req.url).searchParams.get("months")) || 6));
-    await connectDB();
 
     const since = new Date(); since.setMonth(since.getMonth() - months + 1); since.setDate(1);
-    const [invoices, expenses, purchaseInvoices, orders, lowStock] = await Promise.all([
-        Invoice.find({ org: user.id, kind: "invoice" }).select("status issueDate paidAt items currency"),
-        Expense.find({ org: user.id, date: { $gte: since.toISOString().slice(0, 10) } }).select("amount date"),
+    const sinceStr = since.toISOString().slice(0, 10);
+    const [invoices, expenses, purchaseInvoices, orders, products] = await Promise.all([
+        prisma.invoice.findMany({ where: { org: user.id, kind: "invoice" }, select: { status: true, issueDate: true, paidAt: true, items: true, currency: true } }),
+        prisma.expense.findMany({ where: { org: user.id, date: { gte: sinceStr } }, select: { amount: true, date: true } }),
         // Закупки — такие же расходы, как Expense: без них «Прибыль» на дашборде была завышена
-        SupplierInvoice.find({ org: user.id, status: { $ne: "cancelled" }, date: { $gte: since.toISOString().slice(0, 10) } }).select("amount date"),
-        Order.find({ org: user.id }).select("status"),
-        Product.find({ org: user.id, type: "good", archived: { $ne: true }, $expr: { $lte: ["$stockQty", "$reorderLevel"] } }).select("name stockQty reorderLevel").limit(20),
+        prisma.supplierInvoice.findMany({ where: { org: user.id, status: { not: "cancelled" }, date: { gte: sinceStr } }, select: { amount: true, date: true } }),
+        prisma.order.findMany({ where: { org: user.id }, select: { status: true } }),
+        prisma.product.findMany({ where: { org: user.id, type: "good", archived: false }, select: { id: true, name: true, stockQty: true, reorderLevel: true } }),
     ]);
+    // $expr-сравнение stockQty <= reorderLevel (между полями одной записи) считаем в JS: товаров немного
+    const lowStock = products.filter((p) => (p.stockQty ?? 0) <= (p.reorderLevel ?? 0)).slice(0, 20);
 
     const paid = invoices.filter((i) => i.status === "paid");
     const outstanding = invoices.filter((i) => i.status === "sent" || i.status === "overdue");
@@ -53,6 +50,6 @@ export async function GET(req: Request) {
         invoiceCounts: { paid: paid.length, outstanding: outstanding.length, overdue: invoices.filter((i) => i.status === "overdue").length, draft: invoices.filter((i) => i.status === "draft").length },
         orderCounts,
         series: Object.entries(series).map(([month, v]) => ({ month, ...v })),
-        lowStock: lowStock.map((p) => ({ id: String(p._id), name: p.name, stockQty: p.stockQty, reorderLevel: p.reorderLevel })),
+        lowStock: lowStock.map((p) => ({ id: p.id, name: p.name, stockQty: p.stockQty, reorderLevel: p.reorderLevel })),
     });
 }
