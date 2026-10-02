@@ -1,29 +1,19 @@
 import { decryptJSON, encryptJSON, randomToken } from "@/lib/crypto";
-import { connectDB } from "@/lib/mongodb";
-import PlatformSettings from "@/models/PlatformSettings";
+import { prisma } from "@/lib/prisma";
 
 // Приложение Meta — одно на платформу: через него любая фирма подключает свою страницу Facebook
 // или номер WhatsApp, и своего приложения у клиента нет. Поэтому ключи хранятся здесь, а не у фирмы.
-// Переменные окружения остаются запасным путём: так это уже настроено для рекламных кабинетов,
-// и на сервере, где они заданы, настройка из кабинета не нужна.
+// Переменные окружения остаются запасным путём.
 
 const KEY = "metaApp";
 const ERROR_KEY = "errorBot";
 
-// Бот платформы для отчётов об ошибках: свой отдельный бот (не бот фирмы для переписки с клиентами).
-// Чат ищется сам — бот получает сообщение, мы забираем его через getUpdates и запоминаем чат,
-// поэтому искать числовой id вручную не нужно.
-//
-// Рабочие уведомления (посетитель написал, оставил контакт) идут НЕ сюда, а боту самой фирмы —
-// у каждой он свой (lib/firmNotify.ts): уведомления о клиентах одной фирмы не должны попадать
-// ни другой фирме, ни владельцу платформы.
 export interface ErrorBot { botToken: string; chatId: string }
 
 export async function errorBot(): Promise<ErrorBot> {
     const fromEnv = { botToken: process.env.TELEGRAM_BOT_TOKEN ?? "", chatId: process.env.TELEGRAM_ERROR_CHAT_ID ?? "" };
-    // Настройка из кабинета важнее переменных окружения: там чат находится сам, а в переменных легко
-    // ошибиться — например, вписать id бота, которому Telegram писать не разрешает.
-    const doc = await connectDB().then(() => PlatformSettings.findOne({ key: ERROR_KEY })).catch(() => null);
+    // Настройка из кабинета важнее переменных окружения
+    const doc = await prisma.platformSettings.findUnique({ where: { key: ERROR_KEY } }).catch(() => null);
     if (!doc) return fromEnv;
     const secrets = doc.secrets ? decryptJSON<{ botToken?: string }>(doc.secrets) : {};
     return { botToken: String(secrets.botToken || fromEnv.botToken), chatId: String(doc.value || fromEnv.chatId) };
@@ -31,39 +21,35 @@ export async function errorBot(): Promise<ErrorBot> {
 
 /** Сохраняет бота и чат. Пустой токен оставляет прежний: его не показываем и не переписываем зря. */
 export async function setErrorBot(botToken: string, chatId: string): Promise<void> {
-    await connectDB();
-    await PlatformSettings.updateOne(
-        { key: ERROR_KEY },
-        { $set: { value: chatId.trim(), ...(botToken.trim() ? { secrets: encryptJSON({ botToken: botToken.trim() }) } : {}) } },
-        { upsert: true }
-    );
+    const value = chatId.trim();
+    const secrets = botToken.trim() ? { secrets: encryptJSON({ botToken: botToken.trim() }) } : {};
+    await prisma.platformSettings.upsert({
+        where: { key: ERROR_KEY },
+        create: { key: ERROR_KEY, value, ...secrets },
+        update: { value, ...secrets },
+    });
 }
 
 // ── Вебхук WhatsApp ───────────────────────────────────────────────────────────────────────────────────
-// Адрес вебхука у приложения Meta один на всю платформу, поэтому и маркер подтверждения общий:
-// его вписывают в Meta один раз, в поле проверки адреса.
 
 const WA_KEY = "whatsappWebhook";
 
 export async function whatsappVerifyToken(): Promise<string> {
     const fromEnv = process.env.WHATSAPP_VERIFY_TOKEN ?? "";
     if (fromEnv) return fromEnv;
-    const doc = await connectDB().then(() => PlatformSettings.findOne({ key: WA_KEY })).catch(() => null);
+    const doc = await prisma.platformSettings.findUnique({ where: { key: WA_KEY } }).catch(() => null);
     if (doc?.value) return String(doc.value);
     // маркер создаётся сам при первом обращении, чтобы его не приходилось придумывать вручную
     const token = randomToken(8);
-    await PlatformSettings.updateOne({ key: WA_KEY }, { $set: { value: token } }, { upsert: true });
+    await prisma.platformSettings.upsert({ where: { key: WA_KEY }, create: { key: WA_KEY, value: token }, update: { value: token } });
     return token;
 }
 
-// configId — идентификатор конфигурации «Facebook Login for Business» (Вход через Facebook → Конфигурации).
-// Он открывает окно Embedded Signup: клиент выбирает свой аккаунт WhatsApp в окне Meta и подключается
-// в три клика, без создания собственного приложения в Meta for Developers.
 export interface MetaApp { appId: string; appSecret: string; configId: string }
 
 export async function metaApp(): Promise<MetaApp> {
     const fromEnv = { appId: process.env.META_APP_ID ?? "", appSecret: process.env.META_APP_SECRET ?? "" };
-    const doc = await connectDB().then(() => PlatformSettings.findOne({ key: KEY })).catch(() => null);
+    const doc = await prisma.platformSettings.findUnique({ where: { key: KEY } }).catch(() => null);
     const secrets = doc?.secrets ? decryptJSON<{ appSecret?: string; configId?: string }>(doc.secrets) : {};
     return {
         appId: String(doc?.value || fromEnv.appId),
@@ -74,14 +60,11 @@ export async function metaApp(): Promise<MetaApp> {
 
 /** Сохраняет ключи приложения. Пустое значение оставляет прежнее: секрет не показываем и не переписываем зря. */
 export async function setMetaApp(appId: string, appSecret: string, configId?: string): Promise<void> {
-    await connectDB();
-    const doc = await PlatformSettings.findOne({ key: KEY });
+    const doc = await prisma.platformSettings.findUnique({ where: { key: KEY } });
     const keep = doc?.secrets ? decryptJSON<{ appSecret?: string; configId?: string }>(doc.secrets) : {};
     const nextSecret = (appSecret.trim() || keep.appSecret) ?? "";
     const nextConfig = (typeof configId === "string" ? configId.trim() : undefined) ?? keep.configId ?? "";
-    await PlatformSettings.updateOne(
-        { key: KEY },
-        { $set: { value: appId.trim(), secrets: encryptJSON({ appSecret: nextSecret, configId: nextConfig }) } },
-        { upsert: true }
-    );
+    const value = appId.trim();
+    const secrets = encryptJSON({ appSecret: nextSecret, configId: nextConfig });
+    await prisma.platformSettings.upsert({ where: { key: KEY }, create: { key: KEY, value, secrets }, update: { value, secrets } });
 }
