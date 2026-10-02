@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { failure, unauthorized } from "@/lib/api";
 import { cleanName } from "@/lib/documents";
 import { driveToken, findDrive } from "@/lib/google";
 import { DriveScopeError, MIME, listDriveFiles } from "@/lib/google/drive";
-import DocItem from "@/models/DocItem";
-import User from "@/models/User";
 import type { DocKind } from "@/types/documents";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -26,15 +24,14 @@ export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     try {
-        await connectDB();
         const drive = await findDrive(user.id);
         if (!drive || drive.status !== "connected") return NextResponse.json({ message: "Connect Google Drive first" }, { status: 409 });
         const token = await driveToken(drive);
 
         const known = new Set<string>(
-            ((await DocItem.find({ owner: user.id, driveId: { $ne: "" } }).select("driveId").lean()) as { driveId?: string }[]).map((d) => d.driveId ?? "")
+            (await prisma.docItem.findMany({ where: { owner: user.id, driveId: { not: "" } }, select: { driveId: true } })).map((d) => d.driveId ?? "")
         );
-        const me = await User.findById(user.userId).select("firstname lastname");
+        const me = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
         const createdByName = me ? `${me.firstname} ${me.lastname}` : "";
 
         const fresh: Record<string, unknown>[] = [];
@@ -65,7 +62,7 @@ export async function POST(req: Request) {
             pageToken = res.nextPageToken;
             if (!pageToken || fresh.length >= IMPORT_LIMIT) break;
         }
-        if (fresh.length) await DocItem.insertMany(fresh);
+        if (fresh.length) await prisma.docItem.createMany({ data: fresh as any });
         return NextResponse.json({ imported: fresh.length, skipped, total });
     } catch (e) {
         // Права уже подключённого Диска старые (без drive.readonly): понятная ошибка вместо «не получилось»

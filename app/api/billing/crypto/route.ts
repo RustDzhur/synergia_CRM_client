@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { amountCents, isPaidPlan } from "@/lib/billing";
 import { randomToken } from "@/lib/crypto";
 import { createInvoice, cryptoConfigured } from "@/lib/nowpayments";
-import CryptoPayment from "@/models/CryptoPayment";
-import Organization from "@/models/Organization";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -24,14 +22,14 @@ export async function POST(req: Request) {
     if (!cryptoConfigured()) return NextResponse.json({ message: "Crypto payments are not configured yet" }, { status: 503 });
     const locale = LOCALES.includes(b.locale) ? (b.locale as string) : "en";
     try {
-        await connectDB();
-        const org = await Organization.findById(user.id).select("billing name");
-        if (org?.billing?.subscriptionId && ACTIVE.includes(org.billing.status ?? "")) {
+        const org = await prisma.organization.findUnique({ where: { id: user.id }, select: { billing: true, name: true } });
+        const billing = (org?.billing ?? {}) as any;
+        if (billing.subscriptionId && ACTIVE.includes(billing.status ?? "")) {
             return NextResponse.json({ message: "You already have a card subscription. Use Manage billing to change it." }, { status: 409 });
         }
         const amountEur = amountCents(b.plan, b.interval) / 100;
         const orderId = `fs-${user.id}-${randomToken(6)}`;
-        const payment = await CryptoPayment.create({ org: user.id, plan: b.plan, interval: b.interval, amountEur, orderId });
+        const payment = await prisma.cryptoPayment.create({ data: { org: user.id, plan: b.plan, interval: b.interval, amountEur, orderId } });
         const origin = appOrigin(req);
         const invoice = await createInvoice({
             priceAmount: amountEur,
@@ -41,9 +39,7 @@ export async function POST(req: Request) {
             successUrl: `${origin}/${locale}/crm/upgrade?crypto=success`,
             cancelUrl: `${origin}/${locale}/crm/upgrade?crypto=cancel`,
         });
-        payment.invoiceId = invoice.id;
-        payment.status = "waiting";
-        await payment.save();
+        await prisma.cryptoPayment.update({ where: { id: payment.id }, data: { invoiceId: invoice.id, status: "waiting" } });
         return NextResponse.json({ url: invoice.url });
     } catch (e) {
         return failure(e);
