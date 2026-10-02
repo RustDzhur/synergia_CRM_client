@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { toCsv } from "@/lib/import/csv";
 import { abcAnalysis, deadStock, stockAt, stockByWarehouse, stockOnHand, turnover, type MovementLike } from "@/lib/finance/warehouse";
-import StockMovement from "@/models/StockMovement";
-import Product from "@/models/Product";
-import Warehouse from "@/models/Warehouse";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -20,34 +17,31 @@ export async function GET(req: Request) {
     if (!user) return unauthorized(req);
     const url = new URL(req.url);
     const kind = url.searchParams.get("kind") ?? "on-hand";
-    await connectDB();
 
-    // Свежие движения важнее старых: раньше сортировка по возрастанию с лимитом 20 000 брала САМЫЕ
-    // СТАРЫЕ движения, и у фирмы с большой историей новые выпуски/перемещения не попадали в остатки
-    // и отчёты вовсе. Берём последние 20 000 и разворачиваем в хронологический порядок для расчётов.
-    const movements = await StockMovement.find({ org: user.id }).sort({ createdAt: -1 }).limit(20000);
+    // Свежие движения важнее старых: берём последние 20 000 и разворачиваем в хронологический порядок.
+    const movements = await prisma.stockMovement.findMany({ where: { org: user.id }, orderBy: { createdAt: "desc" }, take: 20000 });
     movements.reverse();
     const list: MovementLike[] = movements.map((m) => ({
-        product: String(m.product),
-        warehouse: m.warehouse ? String(m.warehouse) : null,
+        product: m.product,
+        warehouse: m.warehouse ?? null,
         qty: m.qty,
-        reason: String(m.reason),
+        reason: m.reason,
         unitCost: m.unitCost ?? 0,
         at: (m.createdAt ?? new Date()).toISOString(),
     }));
-    const products = await Product.find({ org: user.id }).select("name sku barcode unit stockQty reorderLevel purchasePrice salePrice type image");
-    const info = new Map(products.map((p) => [String(p._id), p]));
+    const products = await prisma.product.findMany({ where: { org: user.id }, select: { id: true, name: true, sku: true, barcode: true, unit: true, stockQty: true, reorderLevel: true, purchasePrice: true, salePrice: true, type: true, image: true } });
+    const info = new Map(products.map((p) => [p.id, p]));
 
     if (kind === "on-hand") {
         // Остатки по складам: сумма движений по каждому складу, не кэш поля
-        const warehouses = await Warehouse.find({ org: user.id }).select("name");
+        const warehouses = await prisma.warehouse.findMany({ where: { org: user.id }, select: { id: true, name: true } });
         const by = stockByWarehouse(list);
         const rows = products
             .filter((p) => p.type === "good")
             .map((p) => {
-                const id = String(p._id);
+                const id = p.id;
                 const total = stockOnHand(list, id);
-                const byWh = Object.fromEntries(warehouses.map((w) => [String(w._id), by[String(w._id)]?.[id] ?? 0]));
+                const byWh = Object.fromEntries(warehouses.map((w) => [w.id, by[w.id]?.[id] ?? 0]));
                 const placed = Object.values(byWh).reduce((s, v) => s + (Number(v) || 0), 0);
                 return {
                     id,
@@ -57,23 +51,20 @@ export async function GET(req: Request) {
                     unit: p.unit ?? "",
                     total,
                     byWarehouse: byWh,
-                    // Остаток «без складу»: старые движения без склада и резервы заказов. Без этой колонки
-                    // «Разом» не сходилось с суммой складов и выглядело ошибкой
+                    // Остаток «без складу»: старые движения без склада и резервы заказов.
                     noWarehouse: Math.round((total - placed) * 1000) / 1000,
                     reorderLevel: p.reorderLevel ?? 0,
                     image: p.image ?? "",
                 };
             });
-        // Остатки файлом: кнопка «Експорт залишків» обещала CSV, а отдавала JSON — теперь форматов два,
-        // по умолчанию по-прежнему JSON (его читает мастер импорта), CSV — для таблиц и сверок
         if ((url.searchParams.get("format") ?? "json").toLowerCase() === "csv") {
             const columns = ["sku", "barcode", "name", "unit", ...warehouses.map((w) => w.name), "noWarehouse", "total", "reorderLevel"];
-            const csvRows = rows.map((r) => [r.sku, r.barcode, r.name, r.unit, ...warehouses.map((w) => r.byWarehouse[String(w._id)] ?? 0), r.noWarehouse, r.total, r.reorderLevel]);
+            const csvRows = rows.map((r) => [r.sku, r.barcode, r.name, r.unit, ...warehouses.map((w) => r.byWarehouse[w.id] ?? 0), r.noWarehouse, r.total, r.reorderLevel]);
             return new Response(toCsv(columns, csvRows), {
                 headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="stock-on-hand.csv"`, "Cache-Control": "no-store" },
             });
         }
-        return NextResponse.json({ warehouses: warehouses.map((w) => ({ id: String(w._id), name: w.name })), rows });
+        return NextResponse.json({ warehouses: warehouses.map((w) => ({ id: w.id, name: w.name })), rows });
     }
 
     if (kind === "date") {
@@ -82,7 +73,7 @@ export async function GET(req: Request) {
             date,
             rows: products
                 .filter((p) => p.type === "good")
-                .map((p) => ({ id: String(p._id), name: p.name, sku: p.sku ?? "", qty: stockAt(list, date, String(p._id)) }))
+                .map((p) => ({ id: p.id, name: p.name, sku: p.sku ?? "", qty: stockAt(list, date, p.id) }))
                 .filter((r) => r.qty !== 0),
         });
     }
@@ -101,7 +92,7 @@ export async function GET(req: Request) {
         const product = url.searchParams.get("product") ?? "";
         if (!product) return badRequest("product is required");
         const rows = movements
-            .filter((m) => String(m.product) === product)
+            .filter((m) => m.product === product)
             .map((m) => ({ at: (m.createdAt ?? new Date()).toISOString(), qty: m.qty, reason: m.reason, unitCost: m.unitCost ?? 0, note: m.note ?? "" }));
         return NextResponse.json({ product: info.get(product)?.name ?? "", unit: info.get(product)?.unit ?? "", onHand: stockOnHand(list, product), rows });
     }
@@ -117,8 +108,8 @@ export async function GET(req: Request) {
         const sales = new Map<string, number>();
         for (const m of movements) {
             if (m.reason !== "sale" && m.reason !== "issue") continue;
-            const price = Number(info.get(String(m.product))?.salePrice) || m.unitCost || 0;
-            sales.set(String(m.product), (sales.get(String(m.product)) ?? 0) + Math.abs(m.qty) * price);
+            const price = Number(info.get(m.product)?.salePrice) || m.unitCost || 0;
+            sales.set(m.product, (sales.get(m.product) ?? 0) + Math.abs(m.qty) * price);
         }
         const rows = abcAnalysis(Array.from(sales, ([product, revenue]) => ({ product, revenue }))).map((r) => ({ ...r, name: info.get(r.product)?.name ?? "", sku: info.get(r.product)?.sku ?? "" }));
         return NextResponse.json({ rows });

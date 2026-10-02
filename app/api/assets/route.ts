@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { assetsSummary, bookValueAt } from "@/lib/finance/assets";
 import { logAudit } from "@/lib/audit";
-import Asset from "@/models/Asset";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +15,7 @@ const num = (v: unknown, def: number) => (Number.isFinite(Number(v)) ? Number(v)
 // Основное средство наружу: к сохранённым полям добавляем расчётные — сколько уже списано
 // и сколько осталось, чтобы интерфейс не повторял арифметику.
 const toDTO = (a: any) => ({
-    id: String(a._id),
+    id: a.id,
     name: a.name,
     category: a.category ?? "",
     acquiredDate: a.acquiredDate,
@@ -36,12 +34,11 @@ const toDTO = (a: any) => ({
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     await requireMarket(user.id, "DE"); // Anlagen — немецкий учёт основных средств
     const url = new URL(req.url);
     const from = url.searchParams.get("from");
     const to = url.searchParams.get("to");
-    const list = await Asset.find({ org: user.id }).sort({ acquiredDate: -1 }).limit(500);
+    const list = await prisma.asset.findMany({ where: { org: user.id }, orderBy: { acquiredDate: "desc" }, take: 500 });
 
     if (from && to && DATE.test(from) && DATE.test(to)) {
         const summary = assetsSummary(list as never, from, to);
@@ -65,21 +62,21 @@ export async function POST(req: Request) {
     const years = Math.round(num(b?.usefulLifeYears, 0));
     if (years < 1 || years > 100) return badRequest("usefulLifeYears must be between 1 and 100");
 
-    await connectDB();
-
     await requireMarket(user.id, "DE"); // Anlagen — немецкий учёт основных средств
-    const author = await User.findById(user.userId).select("firstname lastname");
-    const asset = await Asset.create({
-        org: user.id, name, category: str(b?.category), acquiredDate, cost,
-        currency: str(b?.currency, 6).toUpperCase() || "EUR",
-        usefulLifeYears: years,
-        residualValue: Math.max(0, num(b?.residualValue, 0)),
-        disposalDate: DATE.test(str(b?.disposalDate, 10)) ? str(b?.disposalDate, 10) : "",
-        notes: str(b?.notes, 1000),
-        createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
+    const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
+    const asset = await prisma.asset.create({
+        data: {
+            org: user.id, name, category: str(b?.category), acquiredDate, cost,
+            currency: str(b?.currency, 6).toUpperCase() || "EUR",
+            usefulLifeYears: years,
+            residualValue: Math.max(0, num(b?.residualValue, 0)),
+            disposalDate: DATE.test(str(b?.disposalDate, 10)) ? str(b?.disposalDate, 10) : "",
+            notes: str(b?.notes, 1000),
+            createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
+        },
     });
     await logAudit({
-        org: user.id, userName: asset.createdByName || "—", action: "asset.created", entityType: "asset", entityId: String(asset._id),
+        org: user.id, userName: asset.createdByName || "—", action: "asset.created", entityType: "asset", entityId: asset.id,
         summary: `Asset ${name} registered (${cost} ${asset.currency}, ${years} years)`,
     });
     return NextResponse.json(toDTO(asset), { status: 201 });
