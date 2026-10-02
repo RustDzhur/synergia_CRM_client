@@ -1,10 +1,8 @@
-import { connectDB } from "@/lib/mongodb";
 import { rateLimited } from "@/lib/rateLimit";
 import { findByToken } from "@/lib/integrations";
 import { contactValue, corsJson, corsPreflight, validVisitor } from "@/lib/channels/webchat";
 import { notifyTeamTelegram } from "@/lib/notifyTeam";
-import Contact from "@/models/Contact";
-import Conversation from "@/models/Conversation";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +18,9 @@ export async function POST(req: Request, { params }: { params: { token: string }
     const value = contactValue(body?.value);
     if (!validVisitor(body?.visitor) || !value) return corsJson({ message: "Bad request" }, 400);
 
-    await connectDB();
     const integration = await findByToken("webchat", params.token);
     if (!integration) return corsJson({ message: "Not found" }, 404);
-    const conversation = await Conversation.findOne({ integration: integration.id, externalId: body.visitor });
+    const conversation = await prisma.conversation.findFirst({ where: { integration: integration.id, externalId: body.visitor } });
     if (!conversation) return corsJson({ message: "Not found" }, 404);
 
     const owner = String(integration.owner);
@@ -32,19 +29,21 @@ export async function POST(req: Request, { params }: { params: { token: string }
     const name = String(conversation.name || body?.name || email || phone).slice(0, 60);
 
     // контакт ищем по почте или телефону: заводить второй на того же человека не нужно
-    let contact = await Contact.findOne({ owner, ...(email ? { email } : { phone }) });
-    if (!contact) contact = await Contact.create({ owner, name, ...(email ? { email } : { phone }), source: "webchat" });
+    let contact = await prisma.contact.findFirst({ where: { owner, ...(email ? { email } : { phone }) } });
+    if (!contact) contact = await prisma.contact.create({ data: { owner, name, ...(email ? { email } : { phone }), source: "webchat" } });
     if (!conversation.contact) {
-        conversation.contact = contact._id;
-        await conversation.save();
+        await prisma.conversation.update({ where: { id: conversation.id }, data: { contact: contact.id } });
     }
     // запись в ленте контакта: откуда он взялся
-    await Contact.updateOne(
-        { _id: contact._id, owner },
-        { $push: { activities: { type: "note", text: `Контакт оставлен в чате на сайте${conversation.lastText ? `: ${conversation.lastText}` : ""}` } } }
-    ).catch(() => undefined);
+    try {
+        const card = await prisma.contact.findFirst({ where: { id: contact.id, owner }, select: { id: true, activities: true } });
+        if (card) {
+            const entry = { type: "note", text: `Контакт оставлен в чате на сайте${conversation.lastText ? `: ${conversation.lastText}` : ""}` };
+            await prisma.contact.update({ where: { id: card.id }, data: { activities: [...((card.activities as any[]) ?? []), entry] as any } });
+        }
+    } catch { /* лента не критична */ }
 
-    void notifyTeamTelegram(owner, 
+    void notifyTeamTelegram(owner,
         [
             "📇 Посетитель оставил контакт в чате на сайте",
             `Имя: ${name}`,

@@ -1,11 +1,10 @@
-import { connectDB } from "@/lib/mongodb";
 import { rateLimited } from "@/lib/rateLimit";
 import { findByToken } from "@/lib/integrations";
 import { corsJson, corsPreflight, validVisitor } from "@/lib/channels/webchat";
 import { type MediaKind, mediaLabel, saveMedia } from "@/lib/channels/media";
 import { recordMessage, toMessageDTO } from "@/lib/channels";
 import { notifyTeamTelegram } from "@/lib/notifyTeam";
-import Conversation from "@/models/Conversation";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -32,7 +31,6 @@ export async function POST(req: Request, { params }: { params: { token: string }
     // без понятного текста
     if (file.size > 4 * 1024 * 1024) return corsJson({ message: "The file is too large (max 4 MB)" }, 413);
 
-    await connectDB();
     const integration = await findByToken("webchat", params.token);
     if (!integration) return corsJson({ message: "Not found" }, 404);
     const owner = String(integration.owner);
@@ -41,7 +39,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
     const saved = await saveMedia(owner, { kind, name: file.name || "file", mime }, Buffer.from(await file.arrayBuffer()));
     if (!saved) return corsJson({ message: "The file could not be stored" }, 400);
 
-    const conversation = await Conversation.findOne({ integration: integration.id, externalId: visitor });
+    const conversation = await prisma.conversation.findFirst({ where: { integration: integration.id, externalId: String(visitor) } });
     const name = conversation?.name || `Visitor ${String(visitor).slice(-4)}`;
     const { message } = await recordMessage(integration, { externalId: String(visitor), name, text: "", attachment: saved });
     void notifyTeamTelegram(owner, ["📎 Посетитель прислал файл в чате на сайте", `От: ${name}`, `Файл: ${saved.name}`, `Вид: ${mediaLabel(saved) || "файл"}`].join("\n"));
