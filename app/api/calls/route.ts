@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
-import { isValidObjectId } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { badRequest, failure, unauthorized } from "@/lib/api";
+import { badRequest, failure, unauthorized, validId } from "@/lib/api";
 import { recordMessage } from "@/lib/channels";
 import type { CallDTO } from "@/types/integrations";
-import Integration from "@/models/Integration";
-import Message from "@/models/Message";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -14,25 +11,26 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
-    const rows = await Message.find({ owner: user.id, kind: "call" })
-        .sort({ createdAt: -1 })
-        .limit(30)
-        .populate("conversation", "externalId name channel");
+    // populate("conversation") из Mongo заменяем явной выборкой бесед одним запросом
+    const rows = await prisma.message.findMany({ where: { owner: user.id, kind: "call" }, orderBy: { createdAt: "desc" }, take: 30 });
+    const convIds = Array.from(new Set(rows.map((m) => String(m.conversation))));
+    const convs = convIds.length ? await prisma.conversation.findMany({ where: { id: { in: convIds } }, select: { id: true, externalId: true, name: true, channel: true } }) : [];
+    const byId = new Map(convs.map((c) => [c.id, c]));
     const list: CallDTO[] = rows
-        .filter((m) => m.conversation)
-        .map((m) => {
-            const c = m.conversation as unknown as { externalId: string; name: string; channel: CallDTO["channel"] };
+        .map((m) => ({ m, c: byId.get(String(m.conversation)) }))
+        .filter(({ c }) => c)
+        .map(({ m, c }) => {
+            const meta = (m.meta ?? {}) as any;
             return {
-                id: m._id.toString(),
-                direction: m.direction,
-                peer: c.externalId,
-                name: c.name,
-                status: String(m.meta?.status ?? ""),
-                duration: Number(m.meta?.duration) || 0,
+                id: m.id,
+                direction: m.direction as CallDTO["direction"],
+                peer: c!.externalId,
+                name: c!.name,
+                status: String(meta.status ?? ""),
+                duration: Number(meta.duration) || 0,
                 at: m.createdAt.toISOString(),
-                integrationId: m.integration.toString(),
-                channel: c.channel,
+                integrationId: String(m.integration),
+                channel: c!.channel as CallDTO["channel"],
             };
         });
     return NextResponse.json(list);
@@ -53,11 +51,10 @@ export async function POST(req: Request) {
     const status = STATUSES.includes(b.status) ? (b.status as string) : "";
     const callId = typeof b.callId === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(b.callId) ? b.callId : "";
     const duration = Math.min(Math.max(Math.floor(Number(b.duration) || 0), 0), 86400);
-    if (!direction || !peer || !status || !callId || !isValidObjectId(b.integrationId)) return badRequest("Invalid call data");
+    if (!direction || !peer || !status || !callId || !validId(String(b.integrationId))) return badRequest("Invalid call data");
 
     try {
-        await connectDB();
-        const integration = await Integration.findOne({ _id: b.integrationId, owner: user.id, type: "sip" });
+        const integration = await prisma.integration.findFirst({ where: { id: String(b.integrationId), owner: user.id, type: "sip" } });
         if (!integration) return NextResponse.json({ message: "Not found" }, { status: 404 });
         const { duplicate } = await recordMessage(integration, {
             externalId: peer,

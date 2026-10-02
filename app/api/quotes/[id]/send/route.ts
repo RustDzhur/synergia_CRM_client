@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
@@ -10,9 +9,8 @@ import { financeSettings } from "@/lib/finance/settings";
 import { marketDocumentLocale } from "@/lib/finance/market";
 import { assertCompliant } from "@/lib/finance/compliance";
 import { computeTotals } from "@/lib/finance/totals";
-import Quote from "@/models/Quote";
-import User from "@/models/User";
 import { toQuoteDTO } from "@/lib/finance/dto";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -27,8 +25,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     const b = (await req.json().catch(() => null)) as { to?: unknown; accountId?: unknown; locale?: unknown } | null;
-    await connectDB();
-    const q = await Quote.findOne({ _id: params.id, org: user.id });
+    const q = await prisma.quote.findFirst({ where: { id: params.id, org: user.id } });
     if (!q) return notFound();
     if (q.status !== "draft") return badRequest("Only a draft quote can be sent");
 
@@ -45,11 +42,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         const locale = (LOCALES as readonly string[]).includes(String(b?.locale)) ? pdfLocale(b?.locale) : marketDocumentLocale(settingsFirst.country) ?? "en";
         const [pdf, sender] = await Promise.all([
             quotePdfBuffer(user.id, q, locale),
-            User.findById(user.userId).select("firstname lastname"),
+            prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } }),
         ]);
         const settings = settingsFirst;
         // Выпуск клиенту — момент проверки обязательных реквизитов (ТЗ §14)
-        const gross = computeTotals(q.items as never).gross;
+        const gross = computeTotals((q.items ?? []) as never).gross;
         assertCompliant(
             { kind: "quote", number: q.number, issueDate: q.issueDate, currency: q.currency, party: { name: q.customerName }, items: (q.items ?? []) as never, totals: { gross } },
             settings as never
@@ -59,7 +56,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             number: q.number,
             customerName: q.customerName,
             currency: q.currency,
-            amount: computeTotals(q.items ?? []).gross,
+            amount: computeTotals((q.items ?? []) as never).gross,
             validUntil: q.validUntil,
             locale,
             senderName: sender ? `${sender.firstname} ${sender.lastname}`.trim() : "",
@@ -67,15 +64,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             pdf,
         });
     } catch (e) {
-        await logAudit({ org: user.id, userId: user.userId, action: "quote.send_failed", entityType: "quote", entityId: String(q._id), summary: `Quote ${q.number} could not be emailed to ${recipient.email}`, meta: { to: recipient.email, reason: e instanceof Error ? e.message : "error" } });
+        await logAudit({ org: user.id, userId: user.userId, action: "quote.send_failed", entityType: "quote", entityId: q.id, summary: `Quote ${q.number} could not be emailed to ${recipient.email}`, meta: { to: recipient.email, reason: e instanceof Error ? e.message : "error" } });
         return failure(e);
     }
 
-    q.status = "sent";
-    q.sentAt = new Date();
-    q.sentTo = recipient.email;
-    await q.save();
-    await emit(user.id, { type: "quote_sent", data: { id: String(q._id), number: q.number, customerName: q.customerName, dealId: q.deal ? String(q.deal) : "" } });
-    await logAudit({ org: user.id, userId: user.userId, action: "quote.sent", entityType: "quote", entityId: String(q._id), summary: `Quote ${q.number} emailed to ${recipient.email}`, meta: { currency: q.currency, to: recipient.email, source: recipient.source } });
-    return NextResponse.json(toQuoteDTO(q));
+    const saved = await prisma.quote.update({ where: { id: q.id }, data: { status: "sent", sentAt: new Date(), sentTo: recipient.email } });
+    await emit(user.id, { type: "quote_sent", data: { id: q.id, number: q.number, customerName: q.customerName, dealId: q.deal ?? "" } });
+    await logAudit({ org: user.id, userId: user.userId, action: "quote.sent", entityType: "quote", entityId: q.id, summary: `Quote ${q.number} emailed to ${recipient.email}`, meta: { currency: q.currency, to: recipient.email, source: recipient.source } });
+    return NextResponse.json(toQuoteDTO(saved));
 }

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized, validId } from "@/lib/api";
 import { paySupplierInvoice, supplierInvoices } from "@/lib/purchases";
-import Supplier from "@/models/Supplier";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +12,9 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     const list = await supplierInvoices(user.id);
-    const suppliers = await Supplier.find({ org: user.id }).select("name");
-    const names = new Map(suppliers.map((s) => [String(s._id), s.name]));
+    const suppliers = await prisma.supplier.findMany({ where: { org: user.id }, select: { id: true, name: true } });
+    const names = new Map(suppliers.map((s) => [s.id, s.name]));
     const today = new Date().toISOString().slice(0, 10);
     return NextResponse.json(
         list.map((i) => ({
@@ -42,16 +40,14 @@ export async function PATCH(req: Request) {
     const id = String(b?.id ?? "");
     if (!validId(id)) return badRequest("id is required");
     try {
-        await connectDB();
         if (b?.action === "pay") {
             const inv = await paySupplierInvoice(user.id, id, b.amount === undefined ? undefined : Number(b.amount));
             return NextResponse.json({ id: String(inv.id), paidAmount: inv.paidAmount, status: inv.status });
         }
         if (b?.action === "cancel") {
-            const inv = await (await import("@/models/SupplierInvoice")).default.findOne({ _id: id, org: user.id });
-            if (!inv) return badRequest("not found");
-            inv.status = "cancelled";
-            await inv.save();
+            const found = await prisma.supplierInvoice.findFirst({ where: { id, org: user.id } });
+            if (!found) return badRequest("not found");
+            await prisma.supplierInvoice.update({ where: { id: found.id }, data: { status: "cancelled" } });
             return NextResponse.json({ ok: true });
         }
         return badRequest('action must be "pay" or "cancel"');
