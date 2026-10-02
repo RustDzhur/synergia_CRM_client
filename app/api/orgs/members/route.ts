@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
 import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { appOrigin } from "@/lib/appUrl";
 import { sendInviteEmail } from "@/lib/inviteEmail";
 import { type Role, ASSIGNABLE_ROLES, GRANTABLE, NO_MODULES, effectiveModules } from "@/lib/access";
-import Invitation from "@/models/Invitation";
-import Membership from "@/models/Membership";
-import Organization from "@/models/Organization";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -20,14 +16,13 @@ const cleanModules = (v: unknown) => (Array.isArray(v) ? Array.from(new Set(v.fi
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
-    const memberships = await Membership.find({ org: user.id });
-    const users = await User.find({ _id: { $in: memberships.map((m) => m.user) } }).select("firstname lastname email avatarUrl");
+    const memberships = await prisma.membership.findMany({ where: { org: user.id } });
+    const users = await prisma.user.findMany({ where: { id: { in: memberships.map((m) => m.user) } }, select: { id: true, firstname: true, lastname: true, email: true, avatarUrl: true } });
     const members = memberships.map((m) => {
-        const u = users.find((x) => String(x._id) === String(m.user));
-        return { userId: String(m.user), name: u ? `${u.firstname} ${u.lastname}` : "—", email: u?.email ?? "", role: m.role as Role, modules: m.modules ?? [], effective: effectiveModules(m.role as Role, m.modules ?? []), you: String(m.user) === user.userId };
+        const u = users.find((x) => x.id === m.user);
+        return { userId: m.user, name: u ? `${u.firstname} ${u.lastname}` : "—", email: u?.email ?? "", role: m.role as Role, modules: m.modules ?? [], effective: effectiveModules(m.role as Role, m.modules ?? []), you: m.user === user.userId };
     });
-    const invitations = (await Invitation.find({ org: user.id, expiresAt: { $gt: new Date() } })).map((i) => ({ id: String(i._id), email: i.email, role: i.role, modules: i.modules, createdAt: i.createdAt.toISOString() }));
+    const invitations = (await prisma.invitation.findMany({ where: { org: user.id, expiresAt: { gt: new Date() } } })).map((i) => ({ id: i.id, email: i.email, role: i.role, modules: i.modules, createdAt: i.createdAt.toISOString() }));
     return NextResponse.json({ members, invitations, myRole: user.role });
 }
 
@@ -43,22 +38,24 @@ export async function POST(req: Request) {
     if (!ASSIGNABLE_ROLES.includes(role)) return badRequest("Invalid role");
     if (role === "admin" && user.role !== "owner") return NextResponse.json({ message: "Only the owner can add administrators", code: "forbidden" }, { status: 403 });
     const modules = cleanModules(body?.modules);
-    await connectDB();
-    const org = await Organization.findById(user.id).select("plan planOverride planOverrideUntil");
+    const org = await prisma.organization.findUnique({ where: { id: user.id }, select: { plan: true, planOverride: true, planOverrideUntil: true } });
     const plan = planFor(org ? effectivePlan(org) : "free");
     if (plan.users !== null) {
-        const seats = (await Membership.countDocuments({ org: user.id })) + (await Invitation.countDocuments({ org: user.id, expiresAt: { $gt: new Date() } }));
+        const seats = (await prisma.membership.count({ where: { org: user.id } })) + (await prisma.invitation.count({ where: { org: user.id, expiresAt: { gt: new Date() } } }));
         if (seats >= plan.users) return NextResponse.json({ message: `Your plan allows ${plan.users} team members. Upgrade the plan to add more.`, code: "plan_limit" }, { status: 402 });
     }
-    const existing = await User.findOne({ email });
+    const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-        if (await Membership.exists({ org: user.id, user: existing._id })) return NextResponse.json({ message: "This person is already in the firm" }, { status: 409 });
-        await Membership.create({ org: user.id, user: existing._id, role, modules });
-        await Invitation.deleteMany({ org: user.id, email });
+        if (await prisma.membership.findFirst({ where: { org: user.id, user: existing.id } })) return NextResponse.json({ message: "This person is already in the firm" }, { status: 409 });
+        await prisma.membership.create({ data: { org: user.id, user: existing.id, role, modules } });
+        await prisma.invitation.deleteMany({ where: { org: user.id, email } });
         const emailed = await sendInviteEmail(user.id, email, user.orgName, appOrigin(req), true, String(body?.lang ?? ""));
         return NextResponse.json({ added: true, invited: false, emailed }, { status: 201 });
     }
-    await Invitation.findOneAndUpdate({ org: user.id, email }, { role, modules, invitedBy: user.userId, expiresAt: new Date(Date.now() + 30 * 86400_000) }, { upsert: true });
+    const expiresAt = new Date(Date.now() + 30 * 86400_000);
+    const inv = await prisma.invitation.findFirst({ where: { org: user.id, email } });
+    if (inv) await prisma.invitation.update({ where: { id: inv.id }, data: { role, modules, invitedBy: user.userId, expiresAt } });
+    else await prisma.invitation.create({ data: { org: user.id, email, role, modules, invitedBy: user.userId, expiresAt } });
     const emailed = await sendInviteEmail(user.id, email, user.orgName, appOrigin(req), false, String(body?.lang ?? ""));
     return NextResponse.json({ added: false, invited: true, emailed }, { status: 201 });
 }

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { type Role, ASSIGNABLE_ROLES, GRANTABLE, NO_MODULES } from "@/lib/access";
-import Membership from "@/models/Membership";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -16,23 +15,24 @@ export async function PATCH(req: Request, { params }: { params: { userId: string
     if (!validId(params.userId)) return notFound();
     const body = await req.json().catch(() => null);
     if (!body) return badRequest("Invalid JSON");
-    await connectDB();
-    const m = await Membership.findOne({ org: user.id, user: params.userId });
+    const m = await prisma.membership.findFirst({ where: { org: user.id, user: params.userId } });
     if (!m) return notFound();
     if (m.role === "owner") return forbidden("The owner's access cannot be changed");
     if (m.role === "admin" && user.role !== "owner") return forbidden("Only the owner can change administrators");
+    let role = m.role;
+    let modules = m.modules;
     if ("role" in body) {
         if (!ASSIGNABLE_ROLES.includes(body.role as Role)) return badRequest("Invalid role");
         if (body.role === "admin" && user.role !== "owner") return forbidden("Only the owner can add administrators");
-        m.role = body.role;
+        role = body.role;
         // Персональный набор разделов — снимок прав роли на момент выдачи: если роль меняют, старый
         // снимок перестаёт соответствовать новой роли, и человек не получает её разделы (например,
         // повышенный до manager — «Мою фирму»). Сбрасываем, если клиент не передал набор явно.
-        if (!("modules" in body)) m.modules = [];
+        if (!("modules" in body)) modules = [];
     }
-    if ("modules" in body) m.modules = Array.isArray(body.modules) ? body.modules.filter((x: unknown) => typeof x === "string" && ((GRANTABLE as string[]).includes(x) || x === NO_MODULES)) : [];
-    await m.save();
-    return NextResponse.json({ userId: params.userId, role: m.role, modules: m.modules });
+    if ("modules" in body) modules = Array.isArray(body.modules) ? body.modules.filter((x: unknown) => typeof x === "string" && ((GRANTABLE as string[]).includes(x) || x === NO_MODULES)) : [];
+    const updated = await prisma.membership.update({ where: { id: m.id }, data: { role, modules } });
+    return NextResponse.json({ userId: params.userId, role: updated.role, modules: updated.modules });
 }
 
 // DELETE /api/orgs/members/:userId — убрать сотрудника из фирмы (владельца убрать нельзя)
@@ -40,11 +40,10 @@ export async function DELETE(req: Request, { params }: { params: { userId: strin
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.userId)) return notFound();
-    await connectDB();
-    const m = await Membership.findOne({ org: user.id, user: params.userId });
+    const m = await prisma.membership.findFirst({ where: { org: user.id, user: params.userId } });
     if (!m) return notFound();
     if (m.role === "owner") return forbidden("The owner cannot be removed");
     if (m.role === "admin" && user.role !== "owner") return forbidden("Only the owner can remove administrators");
-    await Membership.deleteOne({ _id: m._id });
+    await prisma.membership.delete({ where: { id: m.id } });
     return NextResponse.json({ ok: true });
 }
