@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { toIntegrationDTO } from "@/lib/integrations";
 import { whatsappVerifyToken } from "@/lib/platformSettings";
 import { connectIntegration, connectMetaChoice, healWebhooks } from "@/lib/channels/connect";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +13,11 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     await healWebhooks(user.id, appOrigin(req)).catch(() => undefined);
-    const list = await Integration.find({ owner: user.id, type: { $nin: ["mail", "gdrive", "gcal", "ads", "icloud"] } }).sort({ createdAt: 1 });
+    const list = await prisma.integration.findMany({
+        where: { owner: user.id, type: { notIn: ["mail", "gdrive", "gcal", "ads", "icloud"] } },
+        orderBy: { createdAt: "asc" },
+    });
     const origin = appOrigin(req);
     // WhatsApp настраивается в Meta вручную: отдаём общий маркер подтверждения, чтобы его было
     // откуда скопировать в кабинет Meta
@@ -32,14 +33,13 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => null);
     if (!body || typeof body.type !== "string") return badRequest("type is required");
     try {
-        await connectDB();
         const origin = appOrigin(req);
         // Выбор страницы (или номера) после входа через Facebook: токен уже получен на шаге возврата
         // и лежит в секретах, поэтому здесь достаточно указать, что подключаем.
         const chosen = body.type === "messenger" ? String(body.pageId ?? "") : body.type === "whatsapp" ? String(body.numberId ?? "") : "";
         if (chosen) {
             const result = await connectMetaChoice(user.id, body.type as "messenger" | "whatsapp", chosen, origin);
-            const doc = await Integration.findOne({ owner: user.id, type: body.type });
+            const doc = await prisma.integration.findFirst({ where: { owner: user.id, type: body.type } });
             if (!doc) return badRequest("Start the connection again");
             return NextResponse.json({ integration: toIntegrationDTO(doc, origin), warning: result.warning ?? "" }, { status: 201 });
         }
