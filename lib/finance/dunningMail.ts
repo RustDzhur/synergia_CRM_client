@@ -4,8 +4,7 @@ import { financeSettings } from "./settings";
 import { computeTotals } from "./totals";
 import { formatMoney } from "./money";
 import { sendFromAccount } from "@/lib/mail";
-import Invoice from "@/models/Invoice";
-import SectionRecord from "@/models/SectionRecord";
+import { prisma } from "@/lib/prisma";
 
 // Что случилось с письмом клиенту при напоминании об оплате
 export type DunningMail = "sent" | "by_rule" | "no_recipient" | "no_mailbox" | "failed";
@@ -30,8 +29,11 @@ const T = {
 
 // Есть ли у фирмы своё правило «письмо клиенту» на событие напоминания: тогда письмо шлёт оно, а не мы (иначе клиент получит два)
 async function hasEmailRule(org: string): Promise<boolean> {
-    const rows = await SectionRecord.find({ org, key: "automation:rules", rid: { $ne: "__init__" } }).select("values");
-    return rows.some((r) => r.values?.event === "invoice_reminder" && r.values?.action === "send_email" && r.values?.enabled !== "0");
+    const rows = await prisma.sectionRecord.findMany({ where: { org, key: "automation:rules", rid: { not: "__init__" } }, select: { values: true } });
+    return rows.some((r) => {
+        const v = (r.values ?? {}) as Record<string, string>;
+        return v.event === "invoice_reminder" && v.action === "send_email" && v.enabled !== "0";
+    });
 }
 
 // Письмо-напоминание клиенту из ящика фирмы, PDF счёта (с уже поднятой ступенью и сбором) во вложении.
@@ -39,7 +41,7 @@ async function hasEmailRule(org: string): Promise<boolean> {
 export async function emailDunning(org: string, invoiceId: string, level: number, dueDate: string, locale?: string): Promise<{ status: DunningMail; to?: string }> {
     try {
         if (await hasEmailRule(org)) return { status: "by_rule" };
-        const inv = await Invoice.findOne({ _id: invoiceId, org });
+        const inv = await prisma.invoice.findFirst({ where: { id: invoiceId, org } });
         if (!inv) return { status: "failed" };
         const recipient = await resolveRecipient(org, undefined, { contact: inv.contact, company: inv.company });
         if (!recipient) return { status: "no_recipient" };
@@ -50,7 +52,7 @@ export async function emailDunning(org: string, invoiceId: string, level: number
         const t = T[lang as keyof typeof T];
         const settings = await financeSettings(org);
         const pdf = await invoicePdfBuffer(org, inv, lang);
-        const total = computeTotals(inv.items ?? []).gross + (Number(inv.dunningFee) || 0);
+        const total = computeTotals((inv.items ?? []) as never).gross + (Number(inv.dunningFee) || 0);
         const lines = [
             `${t.hello} ${inv.customerName || ""}`.trim() + ",", "",
             t.body(inv.number, inv.dueDate || "—"), "",

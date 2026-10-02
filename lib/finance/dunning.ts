@@ -1,4 +1,4 @@
-import Invoice from "@/models/Invoice";
+import { prisma } from "@/lib/prisma";
 import { financeSettings } from "./settings";
 import { emit } from "@/lib/automation/emit";
 import { logAudit } from "@/lib/audit";
@@ -72,7 +72,7 @@ export async function dunningState(org: string, inv: any, today = new Date()): P
 // Отправка напоминания: поднимает ступень, начисляет сбор, пишет историю и отдаёт событие автоматизации
 // и отправляет клиенту письмо с PDF счёта из ящика фирмы (если у фирмы нет своего правила «письмо» на invoice_reminder).
 export async function sendDunning(org: string, invoiceId: string, byName: string, locale?: string): Promise<{ ok: true; level: number; fee: number; mail: DunningMail; to?: string } | { ok: false; message: string }> {
-    const inv = await Invoice.findOne({ _id: invoiceId, org });
+    const inv = await prisma.invoice.findFirst({ where: { id: invoiceId, org } });
     if (!inv) return { ok: false, message: "Invoice not found" };
     if (inv.kind !== "invoice") return { ok: false, message: "Only invoices can be reminded" };
     if (inv.status === "paid") return { ok: false, message: "This invoice is already paid" };
@@ -86,23 +86,22 @@ export async function sendDunning(org: string, invoiceId: string, byName: string
     const fee = feeForLevel(settings.dunningFees as number[], state.nextLevel);
     const level = state.nextLevel;
 
-    await Invoice.updateOne(
-        { _id: inv._id },
-        {
-            $set: {
-                dunningLevel: level,
-                dunningFee: round2((inv.dunningFee ?? 0) + fee),
-                lastReminderAt: new Date(),
-                status: "overdue",
-            },
-            $inc: { reminderCount: 1 },
-            $push: { dunningLog: { level, sentAt: new Date(), fee, dueDate: state.paymentDueDate, method: "manual" } },
-        }
-    );
+    const dunningLog = [...((inv.dunningLog as any[]) ?? []), { level, sentAt: new Date().toISOString(), fee, dueDate: state.paymentDueDate, method: "manual" }];
+    await prisma.invoice.update({
+        where: { id: inv.id },
+        data: {
+            dunningLevel: level,
+            dunningFee: round2((Number(inv.dunningFee) || 0) + fee),
+            lastReminderAt: new Date(),
+            status: "overdue",
+            reminderCount: (Number(inv.reminderCount) || 0) + 1,
+            dunningLog: dunningLog as any,
+        },
+    });
 
-    await emit(org, { type: "invoice_reminder", data: { id: String(inv._id), number: inv.number, customerName: inv.customerName, level: String(level), fee: fee ? String(fee) : "" } });
+    await emit(org, { type: "invoice_reminder", data: { id: inv.id, number: inv.number, customerName: inv.customerName, level: String(level), fee: fee ? String(fee) : "" } });
     await logAudit({
-        org, userName: byName || "—", action: "invoice.dunning_sent", entityType: "invoice", entityId: String(inv._id),
+        org, userName: byName || "—", action: "invoice.dunning_sent", entityType: "invoice", entityId: inv.id,
         summary: `Reminder level ${level} sent for invoice ${inv.number}${fee ? ` (fee ${fee})` : ""}`,
     });
     const mail = await emailDunning(org, invoiceId, level, state.paymentDueDate, locale);
