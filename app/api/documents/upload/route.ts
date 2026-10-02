@@ -11,7 +11,7 @@ export const maxDuration = 60;
 // Исполняемые файлы и скрипты не принимаем
 const BLOCKED = /\.(exe|msi|bat|cmd|com|scr|vbs|ps1|sh|jar|dll|apk|app)$/i;
 
-// POST /api/documents/upload — multipart: file, folder? — загрузка файла или фото в Firebase Storage
+// POST /api/documents/upload — multipart: file, folder? — загрузка файла или фото в локальное хранилище на диске
 export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);

@@ -35,11 +35,11 @@ export async function systemCheck(): Promise<Check[]> {
             if (!(process.env.STRIPE_WEBHOOK_SECRET ?? "").startsWith("whsec_")) throw new Error("STRIPE_WEBHOOK_SECRET is missing or does not start with whsec_");
             return "Webhook secret is set (Stripe events are verified by signature)";
         }),
-        attempt("firebase", async () => {
+        attempt("storage", async () => {
             const problem = storageProblem();
             if (problem) throw new Error(problem);
             await checkBucket();
-            return `Bucket ${process.env.FIREBASE_STORAGE_BUCKET} is reachable`;
+            return `Local storage is writable (${process.env.LOCAL_STORAGE_ROOT})`;
         }),
         attempt("google", async () => {
             if (!google) throw new Error("GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are missing (needed for Gmail and Google Drive sign-in)");

@@ -31,7 +31,7 @@ type CloudTab = "crm" | "google" | "onedrive";
 const TABS: CloudTab[] = ["crm", "google", "onedrive"];
 
 // Online Documents (/crm/collaboration/online-documents): Google Docs / Sheets / Slides создаются на Google Drive пользователя
-// (редактируются в Google в новой вкладке и сохраняются там сами), файлы и фото хранятся в Firebase Storage. Всё раскладывается по папкам.
+// (редактируются в Google в новой вкладке и сохраняются там сами), файлы и фото хранятся в локальном хранилище на диске. Всё раскладывается по папкам.
 export default function Documents() {
 	const t = useTranslations("collab");
 	const tAi = useTranslations("ai");
