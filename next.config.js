@@ -22,6 +22,14 @@ const nextConfig = {
       type: "javascript/auto",
       use: [{ loader: require.resolve("./scripts/ttf-data-uri-loader.js") }],
     });
+    // .env/.env.local не разбираем как JS: у @prisma/client есть код, который ищет env-файлы рядом
+    // со схемой. В бандле webpack превращает это в контекстный require, подхватывает .env.local и
+    // пытается его распарсить — сборка падала с «Module parse failed ... ./.env.local».
+    // Файлы читаются с диска в рантайме (Next и Prisma), в бандл их содержимое не нужно.
+    config.module.rules.push({
+      test: /[\\/]\.env(\..*)?$/,
+      type: "asset/source",
+    });
     return config;
   },
 }
