@@ -1,8 +1,7 @@
-import type { HydratedDocument } from "mongoose";
 import { ProviderError } from "@/lib/http";
 import { packSecrets, secretsOf } from "@/lib/integrations";
 import { randomToken } from "@/lib/crypto";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 import {
     checkApiKey,
     checkReturn,
@@ -29,9 +28,9 @@ import {
 // Доставка «Новою Поштою»: ключ и данные отправителя лежат в интеграции (Integration type "novaposhta"),
 // секрет зашифрован — как у почты и каналов. Здесь — доступ к ним и операции, которыми пользуются маршруты.
 
-export const findDelivery = (org: string) => Integration.findOne({ owner: org, type: "novaposhta", status: "connected" });
+export const findDelivery = (org: string) => prisma.integration.findFirst({ where: { owner: org, type: "novaposhta", status: "connected" } });
 
-type DeliveryDoc = HydratedDocument<any>;
+type DeliveryDoc = any;
 
 async function apiKeyOf(doc: DeliveryDoc): Promise<string> {
     const key = String(secretsOf<{ apiKey?: string }>(doc).apiKey ?? "");
@@ -41,14 +40,17 @@ async function apiKeyOf(doc: DeliveryDoc): Promise<string> {
 
 export interface DeliverySender { city: string; cityRef: string; warehouse: string; warehouseRef: string; name: string; phone: string }
 
-export const senderOf = (doc: { config?: Record<string, string> }): DeliverySender => ({
-    city: String(doc.config?.senderCity ?? ""),
-    cityRef: String(doc.config?.senderCityRef ?? ""),
-    warehouse: String(doc.config?.senderWarehouse ?? ""),
-    warehouseRef: String(doc.config?.senderWarehouseRef ?? ""),
-    name: String(doc.config?.senderName ?? ""),
-    phone: String(doc.config?.senderPhone ?? ""),
-});
+export const senderOf = (doc: { config?: unknown }): DeliverySender => {
+    const c = (doc.config ?? {}) as Record<string, string>;
+    return {
+        city: String(c.senderCity ?? ""),
+        cityRef: String(c.senderCityRef ?? ""),
+        warehouse: String(c.senderWarehouse ?? ""),
+        warehouseRef: String(c.senderWarehouseRef ?? ""),
+        name: String(c.senderName ?? ""),
+        phone: String(c.senderPhone ?? ""),
+    };
+};
 
 // Города и отделения ищутся по ключу фирмы: справочники у Новой Пошты общие, но ключ всё равно нужен
 export async function cities(org: string, query: string): Promise<NpCity[]> {
@@ -169,9 +171,9 @@ export async function trackStatuses(org: string, numbers: string[]): Promise<Tra
 // Сохранение подключения: ключ проверяется запросом к Новой Поште до записи — как у ботов и почты,
 // иначе неверный ключ лежал бы в базе и «работал» до первой отправки
 export async function saveDelivery(org: string, input: { apiKey: string; senderCity: string; senderWarehouse: string; senderName: string; senderPhone: string; senderCityRef?: string }) {
-    const doc = (await Integration.findOne({ owner: org, type: "novaposhta" })) ?? new Integration({ owner: org, type: "novaposhta", token: randomToken() });
+    const doc = await prisma.integration.findFirst({ where: { owner: org, type: "novaposhta" } });
     const previous = (() => {
-        try { return secretsOf<{ apiKey?: string }>(doc); } catch { return {} as { apiKey?: string }; }
+        try { return doc ? secretsOf<{ apiKey?: string }>(doc) : ({} as { apiKey?: string }); } catch { return {} as { apiKey?: string }; }
     })();
     const apiKey = input.apiKey.trim() || previous.apiKey || "";
     if (!apiKey) throw new ProviderError("Вкажіть ключ API Нової Пошти");
@@ -181,7 +183,7 @@ export async function saveDelivery(org: string, input: { apiKey: string; senderC
     // Новая Пошта принимает город и отделение отправителя по своим ref, а в окне настроек их вписывают
     // словами («Київ», «Відділення №1»). Находим ref по справочнику здесь — это и есть «склад-отправитель»,
     // без которого ТТН не создать.
-    let cityRef = input.senderCityRef ?? String(doc.config?.senderCityRef ?? "");
+    let cityRef = input.senderCityRef ?? String(((doc?.config ?? {}) as any).senderCityRef ?? "");
     if (!cityRef && input.senderCity.trim()) {
         const cities = await searchCities(apiKey, input.senderCity.trim()).catch(() => []);
         cityRef = pickCity(cities, input.senderCity)?.ref ?? "";
@@ -191,7 +193,7 @@ export async function saveDelivery(org: string, input: { apiKey: string; senderC
         const list = await cityWarehouses(apiKey, cityRef, input.senderWarehouse.trim()).catch(() => []);
         warehouseRef = pickWarehouse(list, input.senderWarehouse)?.ref ?? "";
     }
-    doc.set({
+    const data = {
         name: "Нова Пошта",
         config: {
             senderCity: input.senderCity.trim(),
@@ -200,12 +202,12 @@ export async function saveDelivery(org: string, input: { apiKey: string; senderC
             senderWarehouseRef: warehouseRef,
             senderName: input.senderName.trim(),
             senderPhone: normalizeNpPhone(input.senderPhone.trim()),
-        },
+        } as any,
         secrets: packSecrets({ apiKey }),
         status: "connected",
         error: "",
-    });
-    doc.markModified("config");
-    await doc.save();
-    return doc;
+    };
+    return doc
+        ? prisma.integration.update({ where: { id: doc.id }, data })
+        : prisma.integration.create({ data: { owner: org, type: "novaposhta", token: randomToken(), ...data } });
 }

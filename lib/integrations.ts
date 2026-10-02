@@ -1,9 +1,9 @@
-import type { HydratedDocument } from "mongoose";
 import type { IntegrationDTO, IntegrationType } from "@/types/integrations";
 import { decryptJSON, encryptJSON } from "@/lib/crypto";
 import Integration from "@/models/Integration";
 
-type Doc = HydratedDocument<any>;
+// Документ интеграции: и Mongoose-документ (старые модули), и запись Prisma — по полям они совместимы
+type Doc = any;
 
 export function webhookPath(type: IntegrationType, token: string) {
     if (type === "twilio") return `/api/webhooks/twilio/${token}`;
@@ -19,7 +19,8 @@ export function toIntegrationDTO(doc: Doc, origin: string): IntegrationDTO {
     // поэтому в окне показываем именно его, а не адрес с маркером этой фирмы
     const url = doc.type === "whatsapp" ? `${origin}/api/webhooks/whatsapp/app` : `${origin}${webhookPath(doc.type, doc.token)}`;
     return {
-        id: doc._id.toString(),
+        // id есть у Prisma-записи, _id — у Mongoose-документа
+        id: String(doc.id ?? doc._id?.toString?.() ?? ""),
         type: doc.type,
         name: doc.name,
         status: doc.status,

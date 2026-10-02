@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { findDelivery, saveDelivery, senderOf } from "@/lib/finance/delivery";
 import { secretsOf } from "@/lib/integrations";
+import { prisma } from "@/lib/prisma";
 import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,6 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     try {
-        await connectDB();
         await requireMarket(user.id, "UA");
         const doc = await findDelivery(user.id);
         if (!doc) return NextResponse.json({ connected: false, hasKey: false, sender: senderOf({ config: {} }) });
@@ -25,7 +24,7 @@ export async function GET(req: Request) {
 
 // POST /api/novaposhta — { apiKey?, senderCity, senderWarehouse, senderName, senderPhone }:
 // ключ проверяем запросом к Новой Поште ДО сохранения — иначе неверный ключ лежал бы в базе
-// и «работал» до первой отправки (та же ловушка, что была у ботов и почты)
+// и «работал» до первой отправки.
 export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
@@ -34,7 +33,6 @@ export async function POST(req: Request) {
     const senderCity = String(b.senderCity ?? "").trim();
     if (!senderCity) return badRequest("Вкажіть місто відправника");
     try {
-        await connectDB();
         await requireMarket(user.id, "UA");
         // Ключ проверяет saveDelivery до записи (и новый, и прежний при правке отправителя)
         const doc = await saveDelivery(user.id, {
@@ -55,13 +53,8 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     await requireMarket(user.id, "UA");
     const doc = await findDelivery(user.id);
-    if (doc) {
-        doc.status = "error";
-        doc.error = "";
-        await doc.deleteOne();
-    }
+    if (doc) await prisma.integration.deleteMany({ where: { id: doc.id } });
     return NextResponse.json({ connected: false, hasKey: false });
 }

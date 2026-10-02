@@ -1,7 +1,6 @@
 import { ProviderError } from "@/lib/http";
 import { packSecrets, secretsOf } from "@/lib/integrations";
 import { randomToken } from "@/lib/crypto";
-import Integration from "@/models/Integration";
 import { prisma } from "@/lib/prisma";
 import { closeShift, currentShift, listShifts, openShift, receiptById, returnReceipt, sellReceipt, signIn, taxes, type CbGood, type CbPayType } from "@/lib/checkbox";
 
@@ -258,25 +257,25 @@ export async function saveFiscal(
     org: string,
     input: { licenseKey: string; login: string; password: string; cashierName: string; department: string; autoFiscal: boolean }
 ): Promise<Doc> {
-    const doc = (await Integration.findOne({ owner: org, type: "checkbox" })) ?? new Integration({ owner: org, type: "checkbox", token: randomToken() });
+    const doc = await prisma.integration.findFirst({ where: { owner: org, type: "checkbox" } });
     const previous = (() => {
-        try { return secretsOf<{ licenseKey?: string; login?: string; password?: string }>(doc); } catch { return {}; }
+        try { return doc ? secretsOf<{ licenseKey?: string; login?: string; password?: string }>(doc) : ({} as { licenseKey?: string; login?: string; password?: string }); } catch { return {}; }
     })();
     const licenseKey = input.licenseKey.trim() || String(previous.licenseKey ?? "");
     const login = input.login.trim() || String(previous.login ?? "");
     const password = input.password.trim() || String(previous.password ?? "");
     if (!licenseKey || !login || !password) throw new ProviderError("Заповніть ключ каси, логін і пароль касира");
     await signIn(licenseKey, login, password);
-    doc.set({
+    const data = {
         name: input.cashierName.trim() || "Checkbox",
-        config: { cashierName: input.cashierName.trim(), department: input.department.trim(), autoFiscal: input.autoFiscal ? "1" : "0" },
+        config: { cashierName: input.cashierName.trim(), department: input.department.trim(), autoFiscal: input.autoFiscal ? "1" : "0" } as any,
         secrets: packSecrets({ licenseKey, login, password }),
         status: "connected",
         error: "",
-    });
-    doc.markModified("config");
-    await doc.save();
-    return doc;
+    };
+    return doc
+        ? prisma.integration.update({ where: { id: doc.id }, data })
+        : prisma.integration.create({ data: { owner: org, type: "checkbox", token: randomToken(), ...data } });
 }
 
 // Открыть смену в журнале (upsert по org+shiftId)
