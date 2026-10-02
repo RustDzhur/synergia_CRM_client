@@ -1,0 +1,40 @@
+# Локальный Whisper (speaches / faster-whisper) — серверная диктовка уровня ChatGPT без внешних ключей.
+# OpenAI-совместимый /v1/audio/transcriptions. CRM ходит к нему по TRANSCRIBE_API_URL=http://speaches:8000/v1
+# и AI_TRANSCRIBE_MODEL=Systran/faster-whisper-small.
+#
+# Запуск:  docker compose -f deploy/docker-compose.whisper.yml up -d
+# Первый старт качает модель (~1 ГБ) — наберитесь терпения, затем проверьте: /v1/models
+services:
+  speaches:
+    image: ghcr.io/speaches-ai/speaches:latest-cpu
+    container_name: speaches
+    restart: unless-stopped
+    environment:
+      WHISPER__INFERENCE_DEVICE: cpu
+      WHISPER__CPU_THREADS: "4"
+      WHISPER__COMPUTE_TYPE: int8
+      # Модель держим загруженной и предзагружаем при старте — первый запрос не ждёт загрузки
+      STT_MODEL_TTL: "-1"
+      PRELOAD_MODELS: '["Systran/faster-whisper-small"]'
+      LOG_LEVEL: info
+      ENABLE_UI: "false"
+    volumes:
+      # Кеш моделей HuggingFace переживает пересоздание контейнера
+      - speaches_cache:/home/ubuntu/.cache/huggingface/hub
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks:
+      - infrastructure
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  # Общая сеть инфраструктуры — та же, где живут postgres и контейнер CRM
+  infrastructure:
+    external: true
+
+volumes:
+  speaches_cache:

@@ -143,8 +143,10 @@ export async function completeVision(system: string, prompt: string, image: Imag
 // У Anthropic нет распознавания аудио, поэтому серверная диктовка работает на ключе OpenAI даже когда
 // сам разговор идёт на Claude. Ключа нет — честный отказ, а интерфейс остаётся с браузерной диктовкой
 // (SpeechRecognition), которой ключ не нужен вовсе.
-export const sttConfigured = () => !!process.env.OPENAI_API_KEY;
-// Модель распознавания можно поменять переменной (например, gpt-4o-mini-transcribe — дешевле)
+// Серверная диктовка доступна, если задан ключ провайдера ИЛИ отдельный локальный Whisper (TRANSCRIBE_API_URL)
+export const sttConfigured = () => !!process.env.OPENAI_API_KEY || !!process.env.TRANSCRIBE_API_URL;
+// Модель распознавания можно поменять переменной (например, gpt-4o-mini-transcribe — дешевле).
+// Для локального Whisper (speaches/faster-whisper) указывают HF-модель: Systran/faster-whisper-small
 export const sttModel = () => process.env.AI_TRANSCRIBE_MODEL || "whisper-1";
 
 // Расширение для имени файла: провайдеру оно помогает понять формат записи
@@ -154,7 +156,10 @@ const AUDIO_EXT: Record<string, string> = {
 };
 
 export async function transcribeAudio(bytes: Buffer, mime: string, language?: string): Promise<string> {
-    if (!process.env.OPENAI_API_KEY) throw new ProviderError("Speech recognition is not configured on this site");
+    // Локальный Whisper (TRANSCRIBE_API_URL) имеет приоритет: он не требует ключа и не зависит от квоты шлюза
+    const url = process.env.TRANSCRIBE_API_URL || process.env.OPENAI_API_URL;
+    const key = process.env.TRANSCRIBE_API_KEY || process.env.OPENAI_API_KEY;
+    if (!url) throw new ProviderError("Speech recognition is not configured on this site");
     const type = (mime || "audio/webm").split(";")[0];
     const form = new FormData();
     form.append("file", new Blob([bytes], { type }), `voice.${AUDIO_EXT[type] ?? "webm"}`);
@@ -162,8 +167,8 @@ export async function transcribeAudio(bytes: Buffer, mime: string, language?: st
     // Язык записи подсказываем, но не настаиваем: whisper и так определит по речи
     if (language) form.append("language", language);
     const res = await fetchProvider(
-        `${trim(process.env.OPENAI_API_URL || "https://api.openai.com/v1")}/audio/transcriptions`,
-        { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: form },
+        `${trim(url)}/audio/transcriptions`,
+        { method: "POST", headers: key ? { Authorization: `Bearer ${key}` } : {}, body: form },
         55000
     );
     const json = (await res.json().catch(() => null)) as ({ text?: string; error?: { message?: string } } & Record<string, unknown>) | null;
