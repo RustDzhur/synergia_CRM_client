@@ -1,43 +1,37 @@
-import Invoice from "@/models/Invoice";
-import Expense from "@/models/Expense";
-import SupplierInvoice from "@/models/SupplierInvoice";
+import { prisma } from "@/lib/prisma";
 import { financeSettings } from "./settings";
 import { assetsSummary } from "./assets";
-import Asset from "@/models/Asset";
 import { costsByCategory, incomeOf, inputVatByRate, monthlySeries, salesByRate, sumGross, totalNet, totalTax } from "./reportMath";
 
 // Отчёты для налоговой и для себя: UStVA (декларация по НДС), EÜR (доходы-расходы), BWA (анализ хозяйственной
 // деятельности) и SuSa (оборотно-сальдовая ведомость). Всё считается из уже имеющихся документов — счетов,
 // кредит-нот и расходов, — поэтому отдельного журнала проводок не требуется.
-//
-// Это НЕ налоговая консультация: суммы и номера строк (Kennzahl) соответствуют обычной практике в Германии,
-// но перед подачей их должен проверить бухгалтер или налоговый консультант. В интерфейсе это сказано прямо.
 
 export interface Money { net: number; tax: number }
 
 export interface VatLine extends Money { rate: number }
 
 export interface ElsterHint {
-    label: string;      // что за строка
-    value: number;      // сумма
-    kennzahl: string;   // номер строки в ELSTER (для Германии)
-    where: string;      // на каком листе и в каком поле
+    label: string;
+    value: number;
+    kennzahl: string;
+    where: string;
 }
 
 export interface VatReturn {
     from: string;
     to: string;
     country: string;
-    exempt: boolean;        // Kleinunternehmer: декларация не подаётся
-    sales: VatLine[];       // обороты по ставкам
-    inputVat: VatLine[];    // вычет по расходам
+    exempt: boolean;
+    sales: VatLine[];
+    inputVat: VatLine[];
     salesNet: number;
     salesTax: number;
     inputNet: number;
     inputTax: number;
-    payable: number;        // >0 — доплатить, <0 — вернут
+    payable: number;
     elster: ElsterHint[];
-    warnings: string[];     // что проверить перед подачей
+    warnings: string[];
 }
 
 export interface IncomeSurplus {
@@ -69,38 +63,29 @@ export interface TrialBalance { from: string; to: string; rows: TrialBalanceRow[
 const round = (n: number) => Math.round(n * 100) / 100;
 
 // ── UStVA: налог на добавленную стоимость за период ────────────────────────────────────────────────────────
-// Обороты берём по дате выставления счёта (Soll-Versteuerung — обычный вариант для большинства фирм).
-// Отменённые счета и черновики не учитываются: черновик ещё не документ, отменённый — не существует.
 export async function vatReturn(org: string, from: string, to: string): Promise<VatReturn> {
     const settings = await financeSettings(org);
     const exempt = !!settings.smallBusiness;
 
-    const invoices = await Invoice.find({
-        org,
-        kind: "invoice",
-        status: { $nin: ["draft", "cancelled"] },
-        issueDate: { $gte: from, $lte: to },
-    }).select("items issueDate");
-    const creditNotes = await Invoice.find({
-        org,
-        kind: "credit_note",
-        status: { $nin: ["draft", "cancelled"] },
-        issueDate: { $gte: from, $lte: to },
-    }).select("items issueDate");
-    const expenses = await Expense.find({ org, date: { $gte: from, $lte: to } }).select("amount taxRate");
+    const invoices = await prisma.invoice.findMany({
+        where: { org, kind: "invoice", status: { notIn: ["draft", "cancelled"] }, issueDate: { gte: from, lte: to } },
+        select: { items: true, issueDate: true },
+    });
+    const creditNotes = await prisma.invoice.findMany({
+        where: { org, kind: "credit_note", status: { notIn: ["draft", "cancelled"] }, issueDate: { gte: from, lte: to } },
+        select: { items: true, issueDate: true },
+    });
+    const expenses = await prisma.expense.findMany({ where: { org, date: { gte: from, lte: to } }, select: { amount: true, taxRate: true } });
 
-    // Всю арифметику ведёт lib/finance/reportMath.ts: те же функции проверены тестом отдельно от базы.
-    // Освобождённая фирма (§19) не начисляет налог ни в одной строке и не имеет права на вычет.
-    const sales = salesByRate(invoices, creditNotes, exempt);
-    const inputVat = inputVatByRate(expenses, exempt);
+    // Всю арифметику ведёт lib/finance/reportMath.ts
+    const sales = salesByRate(invoices as never, creditNotes as never, exempt);
+    const inputVat = inputVatByRate(expenses as never, exempt);
     const salesNet = totalNet(sales);
     const salesTax = totalTax(sales);
     const inputNet = totalNet(inputVat);
     const inputTax = totalTax(inputVat);
     const payable = round(salesTax - inputTax);
 
-    // Номера строк — из бланка UStVA (Vordruck USt 1 A). Названия строк умышленно повторяют бланк,
-    // чтобы бухгалтер мог сверить цифру, не пересчитывая её.
     const elster: ElsterHint[] = [];
     const at19 = sales.find((l) => l.rate === 19);
     const at7 = sales.find((l) => l.rate === 7);
@@ -132,10 +117,9 @@ export async function vatReturn(org: string, from: string, to: string): Promise<
     if (exempt) {
         warnings.push("Die Kleinunternehmerregelung (§19 UStG) ist aktiv: es wird keine Umsatzsteuer berechnet und keine UStVA abgegeben. Prüfen Sie die Umsatzgrenzen (25.000 € im Vorjahr, 100.000 € im laufenden Jahr).");
     }
-    // Смешанные ставки встречаются редко и почти всегда означают ошибку в строке счёта
     const mixed = sales.filter((l) => l.net > 0 && l.rate !== 0).length > 1;
     if (mixed) warnings.push("Im Zeitraum kommen mehrere Steuersätze vor. Prüfen Sie, ob jede Position den richtigen Satz hat.");
-    const foreign = await Invoice.countDocuments({ org, status: { $nin: ["draft", "cancelled"] }, issueDate: { $gte: from, $lte: to }, customerTaxId: { $ne: "" } });
+    const foreign = await prisma.invoice.count({ where: { org, status: { notIn: ["draft", "cancelled"] }, issueDate: { gte: from, lte: to }, customerTaxId: { not: "" } } });
     if (foreign > 0) warnings.push("Bei Rechnungen mit USt-IdNr. des Kunden kann es sich um innergemeinschaftliche Lieferungen handeln — sie gehören in einen eigenen Abschnitt der UStVA, nicht in Kz 81/86.");
     if (salesNet === 0 && inputNet === 0) warnings.push("Im gewählten Zeitraum gibt es keine Umsätze und keine Ausgaben.");
 
@@ -143,28 +127,26 @@ export async function vatReturn(org: string, from: string, to: string): Promise<
 }
 
 // ── EÜR: доходы минус расходы ─────────────────────────────────────────────────────────────────────────────
-// В отличие от UStVA считается по оплате (Zufluss/Abfluss), поэтому берём оплаченные счета и все расходы периода.
 export async function incomeSurplus(org: string, from: string, to: string): Promise<IncomeSurplus> {
-    const invoices = await Invoice.find({
-        org, kind: "invoice", status: "paid",
-        $or: [{ paidAt: { $gte: new Date(from), $lte: new Date(`${to}T23:59:59.999Z`) } }, { paidAt: null, issueDate: { $gte: from, $lte: to } }],
-    }).select("items paidAmount currency issueDate paidAt");
-    const creditNotes = await Invoice.find({
-        org, kind: "credit_note", status: { $nin: ["draft", "cancelled"] },
-        issueDate: { $gte: from, $lte: to },
-    }).select("items");
-    const expenses = await Expense.find({ org, date: { $gte: from, $lte: to } }).select("vendor category amount taxRate");
-    // Закупки (счета поставщиков) — такие же расходы периода: без них прибыль была завышена
-    // (владелец: «закупівлі вообще не вижу в отчётах»). Считаем по дате счёта, как и расходы
-    const purchases = await SupplierInvoice.find({ org, status: { $ne: "cancelled" }, date: { $gte: from, $lte: to } }).select("amount");
+    const invoices = await prisma.invoice.findMany({
+        where: {
+            org, kind: "invoice", status: "paid",
+            OR: [{ paidAt: { gte: new Date(from), lte: new Date(`${to}T23:59:59.999Z`) } }, { paidAt: null, issueDate: { gte: from, lte: to } }],
+        },
+        select: { items: true, paidAmount: true, currency: true, issueDate: true, paidAt: true },
+    });
+    const creditNotes = await prisma.invoice.findMany({
+        where: { org, kind: "credit_note", status: { notIn: ["draft", "cancelled"] }, issueDate: { gte: from, lte: to } },
+        select: { items: true },
+    });
+    const expenses = await prisma.expense.findMany({ where: { org, date: { gte: from, lte: to } }, select: { vendor: true, category: true, amount: true, taxRate: true } });
+    const purchases = await prisma.supplierInvoice.findMany({ where: { org, status: { not: "cancelled" }, date: { gte: from, lte: to } }, select: { amount: true } });
 
     const income = incomeOf(invoices as never, creditNotes as never);
     const cashExpenses = round(expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0));
     const purchased = round(purchases.reduce((s, p) => s + (Number(p.amount) || 0), 0));
 
-    // Амортизация основных средств: это расход периода, но не платёж, поэтому идёт отдельной строкой,
-    // а не в составе оплаченных счетов — иначе EÜR показывал бы прибыль больше реальной.
-    const assets = await Asset.find({ org }).select("name category acquiredDate cost usefulLifeYears residualValue disposalDate");
+    const assets = await prisma.asset.findMany({ where: { org }, select: { name: true, category: true, acquiredDate: true, cost: true, usefulLifeYears: true, residualValue: true, disposalDate: true } });
     const afa = assetsSummary(assets as never, from, to).depreciation;
 
     const byCategory = costsByCategory(expenses as never);
@@ -184,17 +166,16 @@ export async function incomeSurplus(org: string, from: string, to: string): Prom
 
 // ── BWA: выручка, затраты и результат по месяцам ──────────────────────────────────────────────────────────
 export async function businessAnalysis(org: string, from: string, to: string): Promise<BusinessAnalysis> {
-    const invoices = await Invoice.find({
-        org, kind: "invoice", status: { $nin: ["draft", "cancelled"] },
-        issueDate: { $gte: from, $lte: to },
-    }).select("items issueDate");
-    const creditNotes = await Invoice.find({
-        org, kind: "credit_note", status: { $nin: ["draft", "cancelled"] },
-        issueDate: { $gte: from, $lte: to },
-    }).select("items issueDate");
-    const expenses = await Expense.find({ org, date: { $gte: from, $lte: to } }).select("vendor category amount date");
-    // Закупки идут в BWA как отдельная категория расходов — по дате счёта поставщика
-    const purchases = await SupplierInvoice.find({ org, status: { $ne: "cancelled" }, date: { $gte: from, $lte: to } }).select("amount date");
+    const invoices = await prisma.invoice.findMany({
+        where: { org, kind: "invoice", status: { notIn: ["draft", "cancelled"] }, issueDate: { gte: from, lte: to } },
+        select: { items: true, issueDate: true },
+    });
+    const creditNotes = await prisma.invoice.findMany({
+        where: { org, kind: "credit_note", status: { notIn: ["draft", "cancelled"] }, issueDate: { gte: from, lte: to } },
+        select: { items: true, issueDate: true },
+    });
+    const expenses = await prisma.expense.findMany({ where: { org, date: { gte: from, lte: to } }, select: { vendor: true, category: true, amount: true, date: true } });
+    const purchases = await prisma.supplierInvoice.findMany({ where: { org, status: { not: "cancelled" }, date: { gte: from, lte: to } }, select: { amount: true, date: true } });
 
     const withDate = <T,>(docs: T[], dateOf: (d: T) => string | undefined) =>
         (docs as never[]).map((d) => ({ ...(d as object), date: dateOf(d as T) })) as never[];
@@ -209,8 +190,7 @@ export async function businessAnalysis(org: string, from: string, to: string): P
         withDate(creditNotes, (c: { issueDate?: string }) => c.issueDate),
         costDocs
     );
-    // Амортизация попадает в тот месяц, в котором она начислена, а не в месяц покупки
-    const assets = await Asset.find({ org }).select("name category acquiredDate cost usefulLifeYears residualValue disposalDate");
+    const assets = await prisma.asset.findMany({ where: { org }, select: { name: true, category: true, acquiredDate: true, cost: true, usefulLifeYears: true, residualValue: true, disposalDate: true } });
     const afaTotal = assetsSummary(assets as never, from, to).depreciation;
 
     const revenue = round(list.reduce((s, m) => s + m.revenue, 0));
@@ -229,18 +209,15 @@ export async function businessAnalysis(org: string, from: string, to: string): P
 }
 
 // ── SuSa: оборотно-сальдовая ведомость ───────────────────────────────────────────────────────────────────
-// Собственного плана счетов у системы нет, поэтому счета собираются из тех данных, что есть:
-// выручка по ставкам, дебиторка по неоплаченным счетам, кредиторка по расходам и налог.
-// Это управленческая, а не финансовая ведомость — для банка или аудитора её ведёт бухгалтер.
 export async function trialBalance(org: string, from: string, to: string): Promise<TrialBalance> {
     const vat = await vatReturn(org, from, to);
 
-    const openInvoices = await Invoice.find({
-        org, kind: "invoice", status: { $in: ["sent", "overdue"] },
-        issueDate: { $lte: to },
-    }).select("items currency");
+    const openInvoices = await prisma.invoice.findMany({
+        where: { org, kind: "invoice", status: { in: ["sent", "overdue"] }, issueDate: { lte: to } },
+        select: { items: true, currency: true },
+    });
     const openSum = round(openInvoices.reduce((s, inv) => s + sumGross(inv.items as never), 0));
-    const paidInvoices = await Invoice.find({ org, kind: "invoice", status: "paid", issueDate: { $gte: from, $lte: to } }).select("items");
+    const paidInvoices = await prisma.invoice.findMany({ where: { org, kind: "invoice", status: "paid", issueDate: { gte: from, lte: to } }, select: { items: true } });
     const paidSum = round(paidInvoices.reduce((s, inv) => s + sumGross(inv.items as never), 0));
 
     const rows: TrialBalanceRow[] = [];
@@ -263,9 +240,7 @@ export async function trialBalance(org: string, from: string, to: string): Promi
     if (expenseTotal > 0) {
         rows.push({ account: "4900", name: "Sonstige betriebliche Aufwendungen", debit: expenseTotal, credit: 0, balance: expenseTotal });
     }
-    // Кредиторка перед поставщиками: неоплаченная часть счетов поставщиков (долг фирмы). Без неё
-    // сальдо показывало расходы, но не показывало, что за них ещё должны
-    const openSupplier = await SupplierInvoice.find({ org, status: { $ne: "cancelled" }, date: { $lte: to } }).select("amount paidAmount");
+    const openSupplier = await prisma.supplierInvoice.findMany({ where: { org, status: { not: "cancelled" }, date: { lte: to } }, select: { amount: true, paidAmount: true } });
     const debt = round(openSupplier.reduce((s, p) => s + Math.max(0, (Number(p.amount) || 0) - (Number(p.paidAmount) || 0)), 0));
     if (debt > 0) {
         rows.push({ account: "3300", name: "Verbindlichkeiten aus Lieferungen und Leistungen", debit: 0, credit: debt, balance: round(-debt) });
