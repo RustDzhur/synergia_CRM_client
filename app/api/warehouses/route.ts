@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
-import Warehouse from "@/models/Warehouse";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +9,7 @@ export const dynamic = "force-dynamic";
 // выбора, но движения и документы по нему остаются в истории (склад нельзя «удалить» из прошлого).
 
 const toDTO = (w: any) => ({
-    id: String(w._id),
+    id: w.id,
     name: w.name,
     kind: w.kind ?? "warehouse",
     address: w.address ?? "",
@@ -21,8 +20,7 @@ const toDTO = (w: any) => ({
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
-    const list = await Warehouse.find({ org: user.id }).sort({ archived: 1, name: 1 });
+    const list = await prisma.warehouse.findMany({ where: { org: user.id }, orderBy: [{ archived: "asc" }, { name: "asc" }] });
     return NextResponse.json(list.map(toDTO));
 }
 
@@ -32,15 +30,12 @@ export async function POST(req: Request) {
     const b = await req.json().catch(() => ({}));
     const name = String(b?.name ?? "").trim().slice(0, 80);
     if (!name) return badRequest("name is required");
-    await connectDB();
     const kind = ["warehouse", "store", "transit"].includes(String(b?.kind)) ? String(b.kind) : "warehouse";
     const isDefault = !!b?.isDefault;
-    if (isDefault) await Warehouse.updateMany({ org: user.id }, { $set: { isDefault: false } });
-    const doc = await Warehouse.findOneAndUpdate(
-        { org: user.id, name },
-        { $set: { name, kind, address: String(b?.address ?? "").slice(0, 200), isDefault, archived: !!b?.archived } },
-        { upsert: true, new: true }
-    );
+    if (isDefault) await prisma.warehouse.updateMany({ where: { org: user.id }, data: { isDefault: false } });
+    const data = { name, kind, address: String(b?.address ?? "").slice(0, 200), isDefault, archived: !!b?.archived };
+    const existing = await prisma.warehouse.findFirst({ where: { org: user.id, name } });
+    const doc = existing ? await prisma.warehouse.update({ where: { id: existing.id }, data }) : await prisma.warehouse.create({ data: { org: user.id, ...data } });
     return NextResponse.json(toDTO(doc), { status: 201 });
 }
 
@@ -50,17 +45,17 @@ export async function PATCH(req: Request) {
     const b = await req.json().catch(() => ({}));
     const id = String(b?.id ?? "");
     if (!validId(id)) return badRequest("id is required");
-    await connectDB();
-    const doc = await Warehouse.findOne({ _id: id, org: user.id });
+    const doc = await prisma.warehouse.findFirst({ where: { id, org: user.id } });
     if (!doc) return notFound();
-    if (typeof b.name === "string" && b.name.trim()) doc.name = b.name.trim().slice(0, 80);
-    if (["warehouse", "store", "transit"].includes(String(b.kind))) doc.kind = b.kind;
-    if (typeof b.address === "string") doc.address = b.address.trim().slice(0, 200);
-    if (typeof b.archived === "boolean") doc.archived = b.archived;
+    const data: Record<string, any> = {};
+    if (typeof b.name === "string" && b.name.trim()) data.name = b.name.trim().slice(0, 80);
+    if (["warehouse", "store", "transit"].includes(String(b.kind))) data.kind = b.kind;
+    if (typeof b.address === "string") data.address = b.address.trim().slice(0, 200);
+    if (typeof b.archived === "boolean") data.archived = b.archived;
     if (b.isDefault === true) {
-        await Warehouse.updateMany({ org: user.id }, { $set: { isDefault: false } });
-        doc.isDefault = true;
+        await prisma.warehouse.updateMany({ where: { org: user.id }, data: { isDefault: false } });
+        data.isDefault = true;
     }
-    await doc.save();
-    return NextResponse.json(toDTO(doc));
+    const updated = await prisma.warehouse.update({ where: { id: doc.id }, data });
+    return NextResponse.json(toDTO(updated));
 }
