@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { logAudit } from "@/lib/audit";
-import Contract from "@/models/Contract";
 import { toContractDTO } from "@/lib/finance/dto";
+import { prisma } from "@/lib/prisma";
 
 // POST /api/contracts/:id/complete — работы по действующему договору завершены (сдача-приёмка сделана вне системы или
 // через отдельный документ в Files) — active → completed. Без своего события автоматизации: обычно к этому моменту всё
@@ -13,12 +12,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    await connectDB();
-    const c = await Contract.findOne({ _id: params.id, org: user.id });
-    if (!c) return notFound();
-    if (c.status !== "active") return badRequest("Only an active contract can be completed");
-    c.status = "completed";
-    await c.save();
-    await logAudit({ org: user.id, userId: user.userId, action: "contract.completed", entityType: "contract", entityId: String(c._id), summary: `Contract ${c.number} marked completed` });
+    const found = await prisma.contract.findFirst({ where: { id: params.id, org: user.id } });
+    if (!found) return notFound();
+    if (found.status !== "active") return badRequest("Only an active contract can be completed");
+    const c = await prisma.contract.update({ where: { id: found.id }, data: { status: "completed" } });
+    await logAudit({ org: user.id, userId: user.userId, action: "contract.completed", entityType: "contract", entityId: c.id, summary: `Contract ${c.number} marked completed` });
     return NextResponse.json(toContractDTO(c));
 }
