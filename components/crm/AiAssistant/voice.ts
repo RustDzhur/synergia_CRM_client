@@ -176,7 +176,6 @@ export function useSpeechOutput(locale: string) {
 		setSpeakingId(null);
 	}, []);
 
-	// onDone — когда фраза дочитана (или чтение сорвалось): режим разговора по нему возобновляет слушание
 	const speak = useCallback((id: string, text: string, onDone?: () => void) => {
 		if (!ttsSupported()) return false;
 		speechSynthesis.cancel();
@@ -194,7 +193,6 @@ export function useSpeechOutput(locale: string) {
 
 	// Закрытие окна/уход со страницы останавливает чтение
 	useEffect(() => () => { if (ttsSupported()) speechSynthesis.cancel(); }, []);
-
 	return { speak, stop, speakingId };
 }
 
@@ -350,7 +348,7 @@ export function useBargeIn({ active, onDetect }: { active: boolean; onDetect: ()
  * делает useBargeIn). Живёт только на браузерном распознавании: серверный путь требует ручной
  * остановки записи, а «Джарвис» — это именно разговор без рук.
  */
-export const SILENCE_MS = 3000;
+export const SILENCE_MS = 1500; // уменьшено на 1,5 сек для быстрого ответа Ая
 export function useContinuousListening({ locale, active, onPhrase, onError }: {
 	locale: string;
 	active: boolean;

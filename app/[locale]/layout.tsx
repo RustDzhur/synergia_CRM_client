@@ -31,7 +31,13 @@ export default async function RootLayout({
 	}
 
 	return (
-		<html lang={locale}>
+		<html lang={locale === "ua" ? "uk" : locale}>
+			<head>
+				{locale === "ua" && <link rel="alternate" hrefLang="uk" href={`https://firmspace.de/ua${params?.page ?? ""}`} />}
+				{locale === "en" && <link rel="alternate" hrefLang="en" href={`https://firmspace.de/en${params?.page ?? ""}`} />}
+				{locale === "de" && <link rel="alternate" hrefLang="de" href={`https://firmspace.de/de${params?.page ?? ""}`} />}
+				<link rel="canonical" href={`https://firmspace.de/${locale}${params?.page ?? ""}`} />
+			</head>
 			<body className={inter.className}>
 				<NextIntlClientProvider locale={locale} messages={messages}>
 					{children}

@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://firmspace.de/sitemap.xml

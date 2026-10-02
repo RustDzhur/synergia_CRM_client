@@ -15,7 +15,7 @@ export default function FinanceCard() {
 	// пока список фирм не загружен, неизвестно, входят ли финансы в тариф — запрос не отправляем
 	const planLoaded = useOrgStore((s) => s.loaded);
 	const { dashboard, loadDashboard, settings, loadSettings } = useFinanceStore();
-	useEffect(() => { if (planLoaded && enabled) { loadSettings(); loadDashboard(1); } }, [planLoaded, enabled, loadSettings, loadDashboard]);
+	useEffect(() => { if (planLoaded && enabled) { loadSettings(); loadDashboard(12); } }, [planLoaded, enabled, loadSettings, loadDashboard]);
 	// финансы не входят в тариф фирмы — карточки на дашборде нет (раздела всё равно нет в меню)
 	if (!planLoaded || !enabled || !dashboard) return null;
 	const currency = settings?.currency ?? "EUR";
@@ -68,7 +68,7 @@ function FinanceBars({ series }: { series: FinanceDashboard["series"] }) {
 								title={`${t("kpiExpenses")}: ${s.expenses}`}
 							/>
 						</div>
-						<span className="text-11 text-[#9AA396]">{s.month.slice(5)}</span>
+						<span className="text-11 text-[#9AA396]">{String(Number(s.month.slice(5))).padStart(2,'0')}</span>
 					</div>
 				))}
 			</div>

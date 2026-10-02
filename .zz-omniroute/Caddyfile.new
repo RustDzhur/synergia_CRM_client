@@ -1,0 +1,15 @@
+firmspace.eu, www.firmspace.eu {
+	respond "Firmspace server is online" 200
+}
+
+omiroute.firmspace.eu {
+	# The live dashboard WebSocket listens on its own port (20132). The app's
+	# HTTP port has no upgrade handler, so /live-ws needs an explicit route.
+	handle /live-ws* {
+		reverse_proxy 127.0.0.1:20132
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:3111
+	}
+}

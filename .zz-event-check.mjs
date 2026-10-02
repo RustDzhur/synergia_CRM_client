@@ -1,0 +1,16 @@
+import fs from "node:fs";
+import mongoose from "mongoose";
+import pg from "pg";
+const env = fs.readFileSync(".env.local", "utf8");
+await mongoose.connect(env.match(/^MONGODB_URI=(.*)$/m)[1].trim());
+const db = mongoose.connection.db;
+const client = new pg.Client({ connectionString: env.match(/^DATABASE_URL=(.*)$/m)[1].trim() });
+await client.connect();
+const m = await db.collection("events").find({ title: /Logop/i }).project({ title: 1, start: 1, startAt: 1, externalId: 1, source: 1 }).toArray();
+console.log("в Mongo с таким названием:", m.length);
+m.slice(0, 5).forEach((e) => console.log("  ", e._id.toString(), "|", e.title, "|", e.startAt ?? e.start, "| externalId:", e.externalId ?? "-", "| source:", e.source ?? "-"));
+const p = await client.query(`select id, title, "externalId", source, "createdAt", "updatedAt" from events where title ilike '%Logop%'`);
+console.log("в Postgres:", p.rowCount);
+p.rows.slice(0, 5).forEach((r) => console.log("  ", r.id, "|", r.title, "| externalId:", r.externalId ?? "-", "| source:", r.source ?? "-", "|", r.createdAt));
+await client.end();
+await mongoose.disconnect();

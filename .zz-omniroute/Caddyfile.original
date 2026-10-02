@@ -1,0 +1,9 @@
+firmspace.eu, www.firmspace.eu {
+	respond "Firmspace server is online" 200
+}
+
+
+
+omiroute.firmspace.eu {
+	reverse_proxy 127.0.0.1:3111
+}

@@ -157,16 +157,27 @@ export default function AiAssistant() {
 	// Голос здесь ничего не обходит: вопросы отправляются без рук, а предложенные ИЗМЕНЕНИЯ данных
 	// по-прежнему требуют явного подтверждения — просто голосового («підтверджую»/«ні»), и только
 	// когда действие одно; при нескольких просим нажать кнопку, чтобы не перепутать.
-	const [voiceMode, setVoiceMode] = useState(false);
+	const VOICE_KEY = "ai.voiceMode";
+	const [voiceMode, setVoiceMode] = useState(() => { try { return localStorage.getItem(VOICE_KEY) === "1"; } catch { return false; } });
+	useEffect(() => { try { localStorage.setItem(VOICE_KEY, voiceMode ? "1" : "0"); } catch { /* приватный режим */ } }, [voiceMode]);
 	const blocked = status?.configured === false;
 	const empty = messages.length === 0;
 	const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
 	const pendingActions = lastAssistant?.actions?.filter((a) => a.state === "pending") ?? [];
 	// Фаза выводится из состояния, а не хранится отдельно: так её нельзя рассогласовать с реальностью
 	const phase: "listening" | "thinking" | "speaking" = busy ? "thinking" : speakingId ? "speaking" : "listening";
-	const listening = voiceMode && open && !blocked && voice.dictation && !busy && !speakingId;
-	// Шар на кнопке: закрытое окно — тлеющий (ждёт нажатия), открытое — по фазе разговора
-	const orbState: "idle" | "listening" | "thinking" | "speaking" = !open || (!busy && !speakingId && !voiceMode) ? "idle" : phase;
+	const listening = voiceMode && !blocked && voice.dictation && !busy && !speakingId;
+	// Шар на кнопке: по фазе разговора, независимо от открытости окна
+	const orbState: "idle" | "listening" | "thinking" | "speaking" = !voiceMode || (!busy && !speakingId) ? "idle" : phase;
+
+	// Навигация голосом — сразу, без кнопки подтверждения; голосом спрашиваем только если не поняли
+	useEffect(() => {
+		if (!voiceMode || !lastAssistant || pendingActions.length === 0) return;
+		const nav = pendingActions[0];
+		if (nav.tool === "navigate" && nav.state === "pending") {
+			void confirm(lastAssistant.id, nav.id);
+		}
+	}, [voiceMode, lastAssistant, pendingActions, confirm]);
 
 	useEffect(() => {
 		if (!open || !autoSpeak || !voice.tts || voiceMode) return;
@@ -189,7 +200,8 @@ export default function AiAssistant() {
 			setVoiceMode(false);
 			return;
 		}
-		const { hit, rest } = stripWake(text);
+		// При закрытом окне — открываем автоматически (постоянное слушание), даже если не позвали по имени
+		const { hit, rest } = stripWake(text); // чат не открываем — голос идёт в чат без мешания
 		if (hit && !rest) {
 			// Позвали по имени без просьбы — отзываемся и слушаем дальше
 			speakVoice(t("voiceAwake"));
@@ -273,7 +285,7 @@ export default function AiAssistant() {
 
 	// Закрытие окна останавливает и чтение, и запись — микрофон не должен остаться включённым
 	// (и режим разговора сбрасывается: плавающий шар надёжно закрывает микрофон)
-	const close = () => { stopSpeak(); micStop(); setVoiceMode(false); hide(); };
+	const close = () => { stopSpeak(); micStop(); hide(); }; // голосовой режим остаётся — постоянное слушание
 
 	// Шар — постоянная точка входа в разговор: нажатие открывает окно сразу в режиме
 	// разговора (слушаю и отвечаю вслух), а не прячет ассистента за кнопкой со звёздочками.
