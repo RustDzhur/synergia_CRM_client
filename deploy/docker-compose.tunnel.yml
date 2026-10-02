@@ -1,0 +1,24 @@
+# Публичный доступ к дубликату CRM через Cloudflare Tunnel — вариант для подключений DS-Lite,
+# где входящие IPv4-соединения до сервера не доходят (см. README, «СТОП-ФАКТОР»).
+#
+# 1. В кабинете Cloudflare: Zero Trust → Networks → Tunnels → Create tunnel, скопировать токен.
+# 2. В .env добавить строку: CLOUDFLARE_TUNNEL_TOKEN=<токен>
+# 3. Поднять:  docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.tunnel.yml up -d
+# 4. В настройках туннеля Public hostname: firmspace.de → HTTP → crm:3000
+#    (имя crm — служба из docker-compose.yml, видна туннелю в общей сети)
+#
+# Наружу открывать порты не нужно: туннель сам устанавливает исходящее соединение.
+services:
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: firmspace-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?добавьте CLOUDFLARE_TUNNEL_TOKEN в deploy/.env}
+    networks:
+      - infrastructure
+
+networks:
+  infrastructure:
+    external: true
