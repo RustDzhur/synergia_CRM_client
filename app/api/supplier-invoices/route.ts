@@ -20,7 +20,7 @@ export async function GET(req: Request) {
     const today = new Date().toISOString().slice(0, 10);
     return NextResponse.json(
         list.map((i) => ({
-            id: String(i._id),
+            id: String(i.id),
             supplier: i.supplier ? names.get(String(i.supplier)) ?? "" : "",
             number: i.number,
             date: i.date,
@@ -45,7 +45,7 @@ export async function PATCH(req: Request) {
         await connectDB();
         if (b?.action === "pay") {
             const inv = await paySupplierInvoice(user.id, id, b.amount === undefined ? undefined : Number(b.amount));
-            return NextResponse.json({ id: String(inv._id), paidAmount: inv.paidAmount, status: inv.status });
+            return NextResponse.json({ id: String(inv.id), paidAmount: inv.paidAmount, status: inv.status });
         }
         if (b?.action === "cancel") {
             const inv = await (await import("@/models/SupplierInvoice")).default.findOne({ _id: id, org: user.id });
