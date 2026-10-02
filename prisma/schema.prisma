@@ -1,0 +1,1114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AiLog {
+  id        String   @id @default(cuid())
+  org       String
+  user      String
+  kind      String
+  tool      String
+  args      String   @default("")
+  result    String   @default("")
+  createdAt DateTime @default(now())
+
+  @@map("ailogs")
+}
+
+model AiUsage {
+  id    String @id @default(cuid())
+  org   String
+  day   String
+  count Float  @default(0)
+
+  @@map("aiusages")
+}
+
+model Asset {
+  id              String   @id @default(cuid())
+  org             String
+  name            String
+  category        String   @default("")
+  acquiredDate    String
+  cost            Float
+  currency        String   @default("EUR")
+  usefulLifeYears Float
+  method          String   @default("linear")
+  residualValue   Float    @default(0)
+  disposalDate    String   @default("")
+  notes           String   @default("")
+  expense         String?
+  createdByName   String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("assets")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  org        String
+  userId     String?
+  userName   String   @default("")
+  action     String
+  entityType String
+  entityId   String
+  summary    String   @default("")
+  meta       Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("auditlogs")
+}
+
+model AutomationJob {
+  id        String   @id @default(cuid())
+  org       String
+  rule      String
+  event     Json?
+  runAt     DateTime
+  done      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("automationjobs")
+}
+
+model BankAccount {
+  id                String    @id @default(cuid())
+  org               String
+  market            String    @default("")
+  kind              String    @default("bank")
+  name              String
+  iban              String    @default("")
+  bic               String    @default("")
+  currency          String    @default("EUR")
+  openingBalance    Float     @default(0)
+  openingDate       String    @default("")
+  active            Boolean   @default(true)
+  provider          String    @default("")
+  providerAccountId String    @default("")
+  providerSecret    String    @default("")
+  providerSyncAt    DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("bankaccounts")
+}
+
+model BankTransaction {
+  id           String   @id @default(cuid())
+  org          String
+  account      String
+  date         String
+  amount       Float
+  currency     String   @default("EUR")
+  counterparty String   @default("")
+  reference    String   @default("")
+  externalId   String   @default("")
+  matchType    String   @default("")
+  matchId      String?
+  source       String   @default("manual")
+  notes        String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("banktransactions")
+}
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  image       String   @default("/images/blog/code.jpg")
+  title       Json?
+  excerpt     Json?
+  body        Json?
+  published   Boolean  @default(true)
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("blogposts")
+}
+
+model Bom {
+  id              String   @id @default(cuid())
+  org             String
+  product         String
+  name            String   @default("")
+  version         Float    @default(1)
+  active          Boolean  @default(true)
+  components      Json?
+  operations      Json?
+  outputs         Json?
+  overheadPercent Float    @default(0)
+  note            String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("boms")
+}
+
+model Company {
+  id               String   @id @default(cuid())
+  owner            String
+  name             String
+  email            String   @default("")
+  field            String   @default("")
+  status           String   @default("")
+  code             String   @default("")
+  registrationDate String   @default("")
+  authorisedPerson String   @default("")
+  businessType     String   @default("")
+  ownershipForm    String   @default("")
+  address          String   @default("")
+  priceType        String   @default("")
+  creditLimit      Float    @default(0)
+  paymentDays      Float    @default(0)
+  activities       Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("companies")
+}
+
+model Contact {
+  id         String   @id @default(cuid())
+  owner      String
+  name       String
+  firstName  String   @default("")
+  lastName   String   @default("")
+  email      String?
+  phone      String?
+  company    String?
+  companyId  String?
+  position   String?
+  website    String   @default("")
+  twitter    String   @default("")
+  facebook   String   @default("")
+  notes      String?
+  source     String   @default("")
+  activities Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("contacts")
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String   @default("")
+  message   String
+  locale    String   @default("en")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("contactmessages")
+}
+
+model Contract {
+  id            String    @id @default(cuid())
+  org           String
+  number        String
+  contact       String?
+  company       String?
+  customerName  String    @default("")
+  deal          String?
+  value         Float     @default(0)
+  currency      String    @default("EUR")
+  startDate     String    @default("")
+  endDate       String    @default("")
+  status        String    @default("draft")
+  signedAt      DateTime?
+  file          String?
+  notes         String    @default("")
+  body          String    @default("")
+  template      String    @default("")
+  createdByName String    @default("")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("contracts")
+}
+
+model Conversation {
+  id          String   @id @default(cuid())
+  owner       String
+  integration String
+  channel     String
+  externalId  String
+  name        String   @default("")
+  contact     String?
+  lastText    String   @default("")
+  lastAt      DateTime @default(now())
+  unread      Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("conversations")
+}
+
+model CryptoPayment {
+  id        String   @id @default(cuid())
+  org       String
+  plan      String
+  interval  String
+  amountEur Float
+  orderId   String   @unique
+  invoiceId String   @default("")
+  status    String   @default("created")
+  applied   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cryptopayments")
+}
+
+model Deal {
+  id             String    @id @default(cuid())
+  owner          String
+  stage          String
+  clientName     String
+  order          Float
+  contactName    String    @default("")
+  companyName    String    @default("")
+  contact        String?
+  company        String?
+  startDate      String    @default("")
+  endDate        String    @default("")
+  dealType       String    @default("")
+  responsible    String    @default("")
+  availableToAll Boolean   @default(true)
+  utm            String    @default("")
+  recurring      String    @default("")
+  hiddenSections String[]  @default([])
+  wonAt          DateTime?
+  source         String    @default("")
+  externalId     String    @default("")
+  market         Json?
+  activities     Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("deals")
+}
+
+model DocFolder {
+  id        String   @id @default(cuid())
+  owner     String
+  name      String
+  parent    String?
+  driveId   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("docfolders")
+}
+
+model DocItem {
+  id            String    @id @default(cuid())
+  owner         String
+  kind          String
+  name          String
+  folder        String?
+  archived      Boolean   @default(false)
+  createdByName String    @default("")
+  cloud         String    @default("")
+  driveId       String    @default("")
+  url           String    @default("")
+  modifiedAt    DateTime?
+  imported      Boolean   @default(false)
+  driveName     String    @default("")
+  storagePath   String    @default("")
+  mime          String    @default("")
+  size          Float     @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("docitems")
+}
+
+model DocumentTemplate {
+  id            String   @id @default(cuid())
+  org           String
+  market        String
+  kind          String
+  name          String   @default("")
+  blocks        String[] @default([])
+  texts         Json?
+  prefix        String   @default("")
+  numbering     Json?
+  showStamp     Boolean  @default(false)
+  showSignature Boolean  @default(false)
+  footer        String   @default("")
+  paymentTerms  String   @default("")
+  language      String   @default("ua")
+  currency      String   @default("")
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("documenttemplates")
+}
+
+model Employee {
+  id            String   @id @default(cuid())
+  owner         String
+  firstname     String
+  lastname      String
+  email         String
+  workPhone     String?
+  internalPhone String?
+  position      String?
+  department    String?
+  avatarUrl     String?
+  contractType  String   @default("")
+  contractStart String   @default("")
+  contractNote  String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("employees")
+}
+
+model Event {
+  id                 String   @id @default(cuid())
+  org                String
+  title              String
+  description        String   @default("")
+  color              String   @default("")
+  calendar           String   @default("my")
+  date               String   @default("")
+  startTime          String   @default("")
+  endDate            String   @default("")
+  endTime            String   @default("")
+  attendees          String   @default("")
+  location           String   @default("")
+  reminder           Float    @default(0)
+  tzOffset           Float    @default(0)
+  tzName             String   @default("")
+  createdBy          String?
+  createdByName      String   @default("")
+  source             String   @default("local")
+  externalId         String?
+  externalCalendarId String   @default("")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("events")
+}
+
+model Expense {
+  id            String   @id @default(cuid())
+  org           String
+  vendor        String
+  category      String   @default("")
+  amount        Float
+  taxRate       Float    @default(0)
+  currency      String   @default("EUR")
+  date          String
+  deal          String?
+  order         String?
+  receipt       String?
+  recurring     String   @default("")
+  notes         String   @default("")
+  createdByName String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("expenses")
+}
+
+model FeedPost {
+  id            String   @id @default(cuid())
+  org           String
+  author        String
+  authorName    String   @default("")
+  kind          String   @default("post")
+  text          String   @default("")
+  taskId        String?
+  taskTitle     String   @default("")
+  responsible   String   @default("")
+  dueAt         String   @default("")
+  audience      String   @default("all")
+  audienceIds   String[] @default([])
+  audienceNames String[] @default([])
+  reactions     Json?
+  pinned        Boolean  @default(false)
+  followers     String[] @default([])
+  comments      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("feedposts")
+}
+
+model FinanceSettings {
+  id                   String   @id @default(cuid())
+  org                  String   @unique
+  country              String   @default("")
+  vatId                String   @default("")
+  currency             String   @default("EUR")
+  smallBusiness        Boolean  @default(false)
+  legalName            String   @default("")
+  address              String   @default("")
+  taxId                String   @default("")
+  phone                String   @default("")
+  email                String   @default("")
+  website              String   @default("")
+  registerNumber       String   @default("")
+  managingDirector     String   @default("")
+  logo                 String   @default("")
+  footerText           String   @default("")
+  iban                 String   @default("")
+  bic                  String   @default("")
+  paymentTermsDays     Float    @default(14)
+  template             String   @default("classic")
+  paymentQr            Boolean  @default(true)
+  invoicePrefix        String   @default("RE")
+  quotePrefix          String   @default("AN")
+  creditNotePrefix     String   @default("GS")
+  deliveryNotePrefix   String   @default("LS")
+  actPrefix            String   @default("АКТ")
+  packingPrefix        String   @default("PL")
+  reminderIntervalDays Float    @default(7)
+  dunningFees          Float[]  @default([0, 0, 2.5, 5, 10])
+  dunningInterestRate  Float    @default(0)
+  dunningPaymentDays   Float    @default(7)
+  uaLegalForm          String   @default("fop")
+  uaTaxSystem          String   @default("")
+  uaGroup              Float    @default(3)
+  uaSingleRate         Float    @default(5)
+  uaVatPayer           Boolean  @default(false)
+  uaVatRegDate         String   @default("")
+  uaVatCertificate     String   @default("")
+  uaVatRates           Float[]  @default([20, 7, 0])
+  uaEdrpou             String   @default("")
+  uaIpn                String   @default("")
+  uaKved               String[] @default([])
+  uaBank               String   @default("")
+  uaIban               String   @default("")
+  uaMfo                String   @default("")
+  uaSignerName         String   @default("")
+  uaSignerPosition     String   @default("")
+  uaSignature          String   @default("")
+  uaSeal               String   @default("")
+  uaLimits             Json?
+  uaEsvMonthly         Float    @default(1760)
+  uaMilitaryRate       Float    @default(1)
+  uaMilitaryFixed      Float    @default(800)
+  uaVatLimit           Float    @default(1000000)
+  uaVatPeriod          String   @default("month")
+  rateMargin           Float    @default(0)
+  stockCosting         String   @default("avg")
+  expenseCategories    String[] @default([])
+  contractTemplate     String   @default("")
+  counters             Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("financesettings")
+}
+
+model FiscalShift {
+  id        String    @id @default(cuid())
+  org       String
+  provider  String    @default("checkbox")
+  shiftId   String
+  openedAt  DateTime  @default(now())
+  closedAt  DateTime?
+  receipts  Float     @default(0)
+  turnover  Float     @default(0)
+  zReport   Json?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("fiscalshifts")
+}
+
+model ImportBatch {
+  id             String    @id @default(cuid())
+  org            String
+  kind           String
+  fileName       String    @default("")
+  by             String    @default("")
+  summary        Json?
+  log            Json?
+  createdIds     String[]  @default([])
+  updatedBefore  Json?
+  stockMovements String[]  @default([])
+  rolledBackAt   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("importbatches")
+}
+
+model ImportMapping {
+  id        String   @id @default(cuid())
+  org       String
+  kind      String
+  name      String
+  mapping   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("importmappings")
+}
+
+model Integration {
+  id         String    @id @default(cuid())
+  owner      String
+  type       String
+  name       String    @default("")
+  token      String    @unique
+  status     String    @default("connected")
+  error      String    @default("")
+  config     Json?
+  secrets    String    @default("")
+  lastSyncAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@map("integrations")
+}
+
+model Invitation {
+  id        String   @id @default(cuid())
+  org       String
+  email     String
+  role      String   @default("employee")
+  modules   String[] @default([])
+  invitedBy String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("invitations")
+}
+
+model Invoice {
+  id                 String    @id @default(cuid())
+  org                String
+  number             String
+  kind               String    @default("invoice")
+  creditFor          String?
+  contact            String?
+  company            String?
+  customerName       String
+  customerAddress    String    @default("")
+  customerTaxId      String    @default("")
+  deal               String?
+  order              String?
+  contract           String?
+  items              Json?
+  currency           String    @default("EUR")
+  rate               Json?
+  smallBusinessNote  Boolean   @default(false)
+  issueDate          String
+  dueDate            String    @default("")
+  supplyDate         String    @default("")
+  supplyPeriodFrom   String    @default("")
+  supplyPeriodTo     String    @default("")
+  notes              String    @default("")
+  incoterms          String    @default("")
+  customsDeclaration String    @default("")
+  template           String    @default("")
+  status             String    @default("draft")
+  sentAt             DateTime?
+  sentTo             String    @default("")
+  paidAt             DateTime?
+  paidAmount         Float     @default(0)
+  lastReminderAt     DateTime?
+  reminderCount      Float     @default(0)
+  dunningLevel       Float     @default(0)
+  dunningFee         Float     @default(0)
+  dunningLog         Json?
+  recurringSource    String?
+  fiscalId           String    @default("")
+  fiscalCode         String    @default("")
+  fiscalUrl          String    @default("")
+  fiscalAt           DateTime?
+  fiscalError        String    @default("")
+  fiscalPayType      String    @default("")
+  fiscalReturnId     String    @default("")
+  fiscalReturnCode   String    @default("")
+  fiscalReturnUrl    String    @default("")
+  fiscalReturnAt     DateTime?
+  fiscalReturnError  String    @default("")
+  payLink            Json?
+  paidVia            String    @default("")
+  createdByName      String    @default("")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@map("invoices")
+}
+
+model InvoiceRequest {
+  id          String   @id @default(cuid())
+  org         String
+  requestedBy String?
+  email       String   @default("")
+  plan        String
+  interval    String
+  company     String   @default("")
+  vatId       String   @default("")
+  note        String   @default("")
+  status      String   @default("new")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("invoicerequests")
+}
+
+model MailMessage {
+  id         String   @id @default(cuid())
+  owner      String
+  account    String
+  externalId String
+  folder     String
+  from       String   @default("")
+  to         String   @default("")
+  subject    String   @default("")
+  body       String   @default("")
+  html       String   @default("")
+  at         DateTime
+  read       Boolean  @default(false)
+  starred    Boolean  @default(false)
+  snoozed    Boolean  @default(false)
+  deleted    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("mailmessages")
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  org       String
+  user      String
+  role      String   @default("employee")
+  modules   String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("memberships")
+}
+
+model Message {
+  id           String   @id @default(cuid())
+  owner        String
+  conversation String
+  integration  String
+  direction    String
+  kind         String   @default("text")
+  text         String   @default("")
+  status       String   @default("sent")
+  externalId   String?
+  attachment   Json?
+  meta         Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("messages")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  org       String
+  user      String?
+  type      String
+  params    Json?
+  link      String   @default("")
+  key       String?
+  readBy    String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
+}
+
+model Order {
+  id                 String   @id @default(cuid())
+  org                String
+  number             String
+  contact            String?
+  company            String?
+  customerName       String   @default("")
+  deal               String?
+  contract           String?
+  items              Json?
+  currency           String   @default("EUR")
+  rate               Json?
+  status             String   @default("draft")
+  deliveryNoteNumber String   @default("")
+  deliveryDate       String   @default("")
+  actNumber          String   @default("")
+  actDate            String   @default("")
+  packingNumber      String   @default("")
+  packingDate        String   @default("")
+  ukrposhta          Json?
+  invoice            String?
+  waybill            Json?
+  notes              String   @default("")
+  template           String   @default("")
+  responsible        String   @default("")
+  createdByName      String   @default("")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("orders")
+}
+
+model Organization {
+  id                String    @id @default(cuid())
+  name              String
+  ownerUser         String
+  activities        String[]  @default([])
+  plan              String    @default("free")
+  planOverride      String    @default("")
+  planOverrideUntil DateTime?
+  billing           Json?
+  featureOverrides  Json?
+  blocked           Boolean   @default(false)
+  notify            Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("organizations")
+}
+
+model PlatformSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @default("")
+  secrets   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("platformsettings")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  org           String
+  name          String
+  sku           String   @default("")
+  barcode       String   @default("")
+  type          String   @default("service")
+  unit          String   @default("pcs")
+  purchasePrice Float    @default(0)
+  salePrice     Float    @default(0)
+  taxRate       Float?
+  stockQty      Float    @default(0)
+  reorderLevel  Float    @default(0)
+  image         String   @default("")
+  hsCode        String   @default("")
+  weightKg      Float    @default(0)
+  originCountry String   @default("")
+  prices        Json?
+  archived      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("products")
+}
+
+model ProductionOrder {
+  id                 String   @id @default(cuid())
+  org                String
+  number             String
+  bom                String
+  product            String
+  planQty            Float
+  producedQty        Float    @default(0)
+  scrapQty           Float    @default(0)
+  status             String   @default("plan")
+  warehouseMaterials String?
+  warehouseOutput    String?
+  materials          Json?
+  operations         Json?
+  costs              Json?
+  planCost           Float    @default(0)
+  due                String   @default("")
+  note               String   @default("")
+  createdByName      String   @default("")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("productionorders")
+}
+
+model Project {
+  id            String   @id @default(cuid())
+  owner         String
+  name          String
+  description   String   @default("")
+  status        String   @default("planned")
+  startDate     String   @default("")
+  endDate       String   @default("")
+  responsible   String   @default("")
+  color         String   @default("#34A2E8")
+  contact       String?
+  company       String?
+  archived      Boolean  @default(false)
+  createdByName String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("projects")
+}
+
+model PurchaseOrder {
+  id            String   @id @default(cuid())
+  org           String
+  number        String
+  supplier      String
+  date          String
+  expectedDate  String   @default("")
+  status        String   @default("draft")
+  lines         Json?
+  currency      String   @default("EUR")
+  warehouse     String?
+  notes         String   @default("")
+  createdByName String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("purchaseorders")
+}
+
+model Quote {
+  id            String    @id @default(cuid())
+  org           String
+  number        String
+  contact       String?
+  company       String?
+  customerName  String    @default("")
+  deal          String?
+  items         Json?
+  currency      String    @default("EUR")
+  issueDate     String    @default("")
+  validUntil    String    @default("")
+  status        String    @default("draft")
+  sentAt        DateTime?
+  sentTo        String    @default("")
+  order         String?
+  notes         String    @default("")
+  template      String    @default("")
+  createdByName String    @default("")
+  version       Float     @default(1)
+  versions      Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("quotes")
+}
+
+model RecurringInvoice {
+  id              String    @id @default(cuid())
+  org             String
+  active          Boolean   @default(true)
+  contact         String?
+  company         String?
+  customerName    String
+  customerAddress String    @default("")
+  customerTaxId   String    @default("")
+  items           Json?
+  currency        String    @default("EUR")
+  notes           String    @default("")
+  interval        String    @default("monthly")
+  dayOfMonth      Float     @default(1)
+  autoSend        Boolean   @default(false)
+  nextRunDate     String
+  lastRunAt       DateTime?
+  lastInvoice     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("recurringinvoices")
+}
+
+model SectionRecord {
+  id        String   @id @default(cuid())
+  org       String
+  key       String
+  rid       String
+  values    Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sectionrecords")
+}
+
+model ShareLink {
+  id            String    @id @default(cuid())
+  org           String
+  kind          String
+  ref           String
+  token         String    @unique
+  expiresAt     DateTime?
+  views         Float     @default(0)
+  lastViewAt    DateTime?
+  createdByName String    @default("")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("sharelinks")
+}
+
+model Stage {
+  id        String   @id @default(cuid())
+  owner     String
+  name      String
+  order     Float
+  color     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("stages")
+}
+
+model StockDoc {
+  id            String   @id @default(cuid())
+  org           String
+  kind          String
+  number        String
+  date          String
+  warehouseFrom String?
+  warehouseTo   String?
+  lines         Json?
+  note          String   @default("")
+  by            String   @default("")
+  reversalOf    String?
+  reversedBy    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("stockdocs")
+}
+
+model StockMovement {
+  id        String   @id @default(cuid())
+  org       String
+  product   String
+  qty       Float
+  reason    String
+  warehouse String?
+  unitCost  Float    @default(0)
+  doc       String?
+  orderId   String?
+  note      String   @default("")
+  by        String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("stockmovements")
+}
+
+model Supplier {
+  id          String   @id @default(cuid())
+  org         String
+  name        String
+  code        String   @default("")
+  contactName String   @default("")
+  phone       String   @default("")
+  email       String   @default("")
+  address     String   @default("")
+  iban        String   @default("")
+  paymentDays Float    @default(0)
+  currency    String   @default("")
+  notes       String   @default("")
+  archived    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("suppliers")
+}
+
+model SupplierInvoice {
+  id         String   @id @default(cuid())
+  org        String
+  supplier   String
+  purchase   String?
+  number     String   @default("")
+  date       String
+  dueDate    String   @default("")
+  amount     Float
+  paidAmount Float    @default(0)
+  currency   String   @default("EUR")
+  status     String   @default("open")
+  notes      String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("supplierinvoices")
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  owner       String
+  title       String
+  description String   @default("")
+  deadline    String   @default("")
+  responsible String   @default("")
+  createdBy   String   @default("")
+  completed   Boolean  @default(false)
+  pinned      Boolean  @default(false)
+  muted       Boolean  @default(false)
+  project     String?
+  deal        String?
+  activities  Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("tasks")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  firstname     String
+  lastname      String   @default("")
+  email         String   @unique
+  platformAdmin Boolean  @default(false)
+  passwordHash  String
+  avatarUrl     String   @default("")
+  phone         String   @default("")
+  position      String   @default("")
+  city          String   @default("")
+  country       String   @default("")
+  role          String   @default("")
+  department    String   @default("")
+  postCode      String   @default("")
+  languages     String   @default("")
+  timezone      String   @default("")
+  state         String   @default("")
+  company       String   @default("")
+  notifications Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Warehouse {
+  id        String   @id @default(cuid())
+  org       String
+  name      String
+  kind      String   @default("warehouse")
+  address   String   @default("")
+  isDefault Boolean  @default(false)
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("warehouses")
+}
