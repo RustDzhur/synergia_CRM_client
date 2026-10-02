@@ -3,16 +3,18 @@
 # файлы — каталог на диске (LOCAL_STORAGE_ROOT, монтируется томом).
 
 # ── сборка ────────────────────────────────────────────────────────────────────
-FROM node:22-bookworm-slim AS build
+FROM node:24-bookworm-slim AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY package.json package-lock.json ./
-RUN npm ci
+# npm ci требует идеально совпадающего lock-файла; npm install ставит по package.json
+# и дозаполняет мелочи вроде транзитивных @types
+RUN npm install --no-audit --no-fund
 COPY . .
 RUN npx prisma generate && npm run build
 
 # ── запуск ────────────────────────────────────────────────────────────────────
-FROM node:22-bookworm-slim AS run
+FROM node:24-bookworm-slim AS run
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
