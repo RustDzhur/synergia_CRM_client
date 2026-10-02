@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     try {
         const result = await runChat(
             { org: user.id, userId: user.userId, role: user.role, modules: user.modules, today: local.slice(0, 10), now: local },
-            { history, locale: String(b.locale ?? "en"), page: String(b.page ?? "").slice(0, 120), orgName: user.orgName, voice: b.voice === true }
+            { history, locale: String(b.locale ?? "en"), page: String(b.page ?? "").slice(0, 120), orgName: user.orgName, voice: b.voice === true, auto: b.auto === true }
         );
         return NextResponse.json(result);
     } catch (e) {

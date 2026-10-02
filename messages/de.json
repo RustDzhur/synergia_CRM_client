@@ -1689,7 +1689,15 @@
         "done_adjust_stock": "„{name}“: Bestand um {qty} geändert, jetzt {stock}",
         "done_delete_record": "Gelöscht: {name}",
         "step_download_document": "PDF vorbereitet",
-        "downloadFailed": "Datei konnte nicht heruntergeladen werden"
+        "downloadFailed": "Datei konnte nicht heruntergeladen werden",
+        "act_email_report": "PDF-Bericht per E-Mail senden",
+        "f_source": "Bericht",
+        "f_language": "Sprache",
+        "f_message": "Nachricht",
+        "f_sections": "Abschnitte",
+        "done_email_report": "Bericht „{title}“ an {to} gesendet",
+        "agentAuto": "Ohne Rückfrage ausführen",
+        "agentAutoHint": "Änderungen werden sofort ausgeführt. Löschen und alles nach dem Lesen von E-Mails/Dokumenten fragt weiterhin nach."
     },
     "finance": {
         "title": "Buchhaltung",

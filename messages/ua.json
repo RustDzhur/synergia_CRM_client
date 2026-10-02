@@ -1689,7 +1689,15 @@
         "done_adjust_stock": "«{name}»: залишок змінено на {qty}, тепер {stock}",
         "done_delete_record": "Видалено: {name}",
         "step_download_document": "Підготовлено PDF",
-        "downloadFailed": "Не вдалося завантажити файл"
+        "downloadFailed": "Не вдалося завантажити файл",
+        "act_email_report": "Надіслати PDF-звіт e-mail",
+        "f_source": "Звіт",
+        "f_language": "Мова",
+        "f_message": "Повідомлення",
+        "f_sections": "Розділи",
+        "done_email_report": "Звіт «{title}» надіслано на {to}",
+        "agentAuto": "Виконувати без підтвердження",
+        "agentAutoHint": "Зміни виконуються одразу, без підтвердження. Видалення і дії після читання листів/документів усе одно питають."
     },
     "finance": {
         "title": "Бухгалтерія",

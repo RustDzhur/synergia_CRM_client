@@ -68,3 +68,6 @@ export function fastReply(outs: ToolOut[], userText: string): string | null {
     }
     return parts.join(" ");
 }
+
+/** «Готово.» на языке просьбы — когда изменение выполнено сразу (режим без подтверждения), пересказывать нечего. */
+export const doneReply = (userText: string) => ({ ru: "Готово.", uk: "Готово.", de: "Erledigt.", en: "Done." })[langOf(userText)];

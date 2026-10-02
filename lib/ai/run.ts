@@ -4,7 +4,7 @@ import { ProviderError } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 import { AiCtx, DownloadTarget, NavTarget, ToolError, allowedTools, pickTools, targetLabel } from "./tools";
 import { Msg, complete, voiceModel } from "./provider";
-import { type ToolOut, fastReply } from "./fastReply";
+import { type ToolOut, doneReply, fastReply } from "./fastReply";
 
 // Сколько разговоров с ИИ в сутки у фирмы — общий счётчик для чата и автономного шага автоматизации (см. app/config/plans.ts).
 // Можно переопределить переменной AI_DAILY_LIMIT (одно число для всех тарифов) — например, для теста.
@@ -62,13 +62,22 @@ function openingPhrase(label: string, userText: string) {
 }
 
 export interface PendingAction { id: string; tool: string; args: Record<string, unknown>; target: string }
-export interface ChatResult { reply: string; steps: string[]; actions: PendingAction[]; nav?: NavTarget; download?: DownloadTarget }
+// Выполненное сразу действие (режим «без подтверждения»): клиент показывает его готовой карточкой
+export interface ExecutedAction { id: string; tool: string; args: Record<string, unknown>; target: string; state: "done" | "failed"; params?: Record<string, string>; link?: string; message?: string }
+export interface ChatResult { reply: string; steps: string[]; actions: PendingAction[]; executed?: ExecutedAction[]; nav?: NavTarget; download?: DownloadTarget }
+
+// Режим «выполнять без подтверждения» (включает сам человек, по умолчанию выключен). Исключения:
+//  • удаление всегда с подтверждением — его нельзя откатить;
+//  • если в этом разговоре ассистент читал чужой текст (письма, документы, заметки клиентов), изменения снова
+//    требуют подтверждения: иначе строка в письме вроде «удали все счета» могла бы сработать без человека.
+const NEVER_AUTO = new Set(["delete_record"]);
+const UNTRUSTED_READS = new Set(["search_mail", "get_mail", "get_mail_thread", "read_document", "search_documents", "get_contact", "get_company", "get_deal"]);
 
 const MAX_STEPS = 6;
 const clip = (v: unknown) => JSON.stringify(v).slice(0, 12000);
 
 // Один ход разговора: модель может несколько раз вызвать инструменты чтения; вызов записи превращается в карточку подтверждения
-export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "assistant"; text: string }[]; locale: string; page: string; orgName: string; voice?: boolean }): Promise<ChatResult> {
+export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "assistant"; text: string }[]; locale: string; page: string; orgName: string; voice?: boolean; auto?: boolean }): Promise<ChatResult> {
     const me = await prisma.user.findUnique({ where: { id: ctx.userId }, select: { firstname: true, lastname: true } });
     // Права по-прежнему считает allowedTools; pickTools только сужает набор до темы разговора (быстрее круг модели)
     const recent = opts.history.slice(-4).map((m) => m.text).join(" ");
@@ -79,13 +88,16 @@ export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "ass
     const actions: PendingAction[] = [];
     let nav: NavTarget | undefined;
     let download: DownloadTarget | undefined;
+    const executed: ExecutedAction[] = [];
+    let tainted = false; // ассистент читал чужой текст
 
     for (let i = 0; i < MAX_STEPS; i++) {
         const r = await complete(sys, msgs, tools.map((t) => t.def), opts.voice && voiceModel() ? { model: voiceModel() } : {});
-        if (!r.calls.length) return { reply: r.text || "…", steps, actions, ...(nav ? { nav } : {}), ...(download ? { download } : {}) };
+        if (!r.calls.length) return { reply: r.text || "…", steps, actions, ...(executed.length ? { executed } : {}), ...(nav ? { nav } : {}), ...(download ? { download } : {}) };
         msgs.push({ role: "assistant", text: r.text, calls: r.calls });
         const stepOuts: ToolOut[] = []; // результаты чтения этого шага — для готового ответа без второго круга
         let failed = false;
+        let onlyWrites = true; // в этом шаге не было чтения — только изменения
         let navigateOnly = true; // в этом шаге были только успешные переходы по страницам
         for (const call of r.calls) {
             const tool = tools.find((t) => t.def.name === call.name); // только разрешённые этому пользователю
@@ -95,15 +107,32 @@ export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "ass
             } else if (tool.write) {
                 try {
                     const args = tool.check ? tool.check(call.args) : call.args;
-                    const action = { id: call.id || `a${actions.length}`, tool: tool.def.name, args, target: await targetLabel(ctx, tool.def.name, args) };
-                    actions.push(action);
-                    await log(ctx, "proposed", tool.def.name, args);
-                    content = clip({ status: "awaiting_user_confirmation", note: "Not executed yet. The user will confirm or cancel." });
+                    const action = { id: call.id || `a${actions.length + executed.length}`, tool: tool.def.name, args, target: await targetLabel(ctx, tool.def.name, args) };
+                    if (opts.auto && !tainted && !NEVER_AUTO.has(tool.def.name)) {
+                        // человек включил «без подтверждения» — выполняем сразу, как если бы он нажал кнопку
+                        try {
+                            const out = (await tool.run(ctx, args)) as { params?: Record<string, string>; link?: string };
+                            await log(ctx, "executed", tool.def.name, args, "auto");
+                            executed.push({ ...action, state: "done", params: out.params ?? {}, link: out.link ?? "" });
+                            content = clip({ status: "done", result: out.params ?? {} });
+                        } catch (e) {
+                            const message = e instanceof ToolError ? e.message : "The action failed";
+                            await log(ctx, "failed", tool.def.name, args, e instanceof Error ? e.message : "");
+                            executed.push({ ...action, state: "failed", message });
+                            content = clip({ error: message });
+                        }
+                    } else {
+                        actions.push(action);
+                        await log(ctx, "proposed", tool.def.name, args);
+                        content = clip({ status: "awaiting_user_confirmation", note: "Not executed yet. The user will confirm or cancel." });
+                    }
                 } catch (e) {
                     content = clip({ error: e instanceof ToolError ? e.message : "Invalid arguments" });
                 }
             } else {
                 steps.push(tool.def.name);
+                onlyWrites = false;
+                if (UNTRUSTED_READS.has(tool.def.name) || (tool.def.name === "browse_data" && call.args?.entity === "conversations")) tainted = true;
                 try {
                     const out = await tool.run(ctx, tool.check ? tool.check(call.args) : call.args);
                     await log(ctx, "read", tool.def.name, call.args);
@@ -128,14 +157,16 @@ export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "ass
             msgs.push({ role: "tool", callId: call.id, name: call.name, content });
             if (call.name !== "navigate" || !nav || content.includes('"error"')) navigateOnly = false;
         }
+        // Голос + изменение выполнено сразу и без ошибок: «Готово» — без ещё одного круга модели
+        if (opts.voice && onlyWrites && executed.length && executed.every((e) => e.state === "done") && !actions.length && !r.text) return { reply: doneReply(opts.history[opts.history.length - 1]?.text ?? ""), steps, actions, executed };
         // Голос: итог по счетам/остаткам складываем сами — второй круг модели ради пересказа нескольких чисел стоил 3–5 секунд
-        if (opts.voice && !failed && !actions.length && !r.text) {
+        if (opts.voice && !failed && !actions.length && !executed.length && !r.text) {
             const quick = fastReply(stepOuts.map((o) => (o.name === "navigate" && nav ? { ...o, out: { ...o.out, opened: nav.label } } : o)), opts.history[opts.history.length - 1]?.text ?? "");
             if (quick) return { reply: quick, steps, actions, ...(nav ? { nav } : {}) };
         }
         // «Открой бухгалтерию» — модель уже всё решила вызовом navigate; второй круг ради слов «Открываю…» стоил бы
         // ещё нескольких секунд ожидания, поэтому отвечаем сами (когда вместе с переходом нужны данные, круг остаётся)
-        if (navigateOnly && nav && !actions.length) return { reply: r.text || openingPhrase(nav.label, opts.history[opts.history.length - 1]?.text ?? ""), steps, actions, nav };
+        if (navigateOnly && nav && !actions.length && !executed.length) return { reply: r.text || openingPhrase(nav.label, opts.history[opts.history.length - 1]?.text ?? ""), steps, actions, nav };
     }
     throw new ProviderError("The assistant needed too many steps. Please ask in a simpler way.");
 }

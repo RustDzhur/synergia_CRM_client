@@ -1689,7 +1689,15 @@
         "done_adjust_stock": "“{name}”: stock changed by {qty}, now {stock}",
         "done_delete_record": "Deleted: {name}",
         "step_download_document": "Prepared the PDF",
-        "downloadFailed": "Could not download the file"
+        "downloadFailed": "Could not download the file",
+        "act_email_report": "E-mail a PDF report",
+        "f_source": "Report",
+        "f_language": "Language",
+        "f_message": "Message",
+        "f_sections": "Sections",
+        "done_email_report": "Report “{title}” sent to {to}",
+        "agentAuto": "Act without asking",
+        "agentAutoHint": "Changes run immediately, no confirmation. Deleting and anything after reading e-mails/documents still asks."
     },
     "finance": {
         "title": "Accounting",

@@ -19,6 +19,7 @@ import { dictationSupported, isOffCommand, isStopCommand, stripWake, useBargeIn,
 const ON_KEY = "ai.agent";
 const LANG_KEY = "ai.agent.lang";
 const WAKE_KEY = "ai.agent.wake";
+const AUTO_KEY = "ai.auto"; // «выполнять без подтверждения» — включает сам человек
 const AWAKE_MS = 20_000;
 const AWAKE_CONFIRM_MS = 45_000;
 
@@ -55,6 +56,8 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 	const [gender, setGenderState] = useState<VoiceGender>("f");
 	const [requireWake, setRequireWakeState] = useState(true);
 	const [awake, setAwake] = useState(false);
+	// Режим «без подтверждения»: сервер выполняет изменения сразу (кроме удаления и случаев, когда ассистент читал чужой текст)
+	const [autoApprove, setAutoApproveState] = useState(false);
 	const speaking = useSyncExternalStore(subscribeSpeech, isSpeaking, () => false);
 	const audioBlocked = useSyncExternalStore(subscribeSpeech, isAudioBlocked, () => false);
 
@@ -73,6 +76,7 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 		setLangState((["ru", "uk", "de", "en"] as VoiceLang[]).includes(savedLang as VoiceLang) ? (savedLang as VoiceLang) : defaultLang(locale));
 		setGenderState(readGender());
 		setRequireWakeState(wake !== "0");
+		try { setAutoApproveState(localStorage.getItem(AUTO_KEY) === "1"); } catch { /* приватный режим */ }
 		if (ok && on) setEnabledState(true); // после перезагрузки продолжаем слушать
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
@@ -121,6 +125,7 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 
 	const setLang = (l: VoiceLang) => { setLangState(l); try { localStorage.setItem(LANG_KEY, l); } catch { /* приватный режим */ } };
 	const setGender = (g: VoiceGender) => { setGenderState(g); saveGender(g); };
+	const setAutoApprove = (v: boolean) => { setAutoApproveState(v); try { localStorage.setItem(AUTO_KEY, v ? "1" : "0"); } catch { /* приватный режим */ } };
 	const setRequireWake = (v: boolean) => { setRequireWakeState(v); try { localStorage.setItem(WAKE_KEY, v ? "1" : "0"); } catch { /* приватный режим */ } };
 
 	const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
@@ -158,7 +163,7 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 		}
 		if (decision.kind === "many") { say(PHRASES[lang].many, () => armAwake(AWAKE_MS)); return; }
 		chime("wake");
-		void send(utterance, { locale, page, voice: true });
+		void send(utterance, { locale, page, voice: true, auto: autoApprove });
 	}
 
 	const listening = enabled && supported && !blocked && !busy && !speaking;
@@ -189,5 +194,5 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 	const phase: AgentPhase = !enabled ? "off" : busy ? "thinking" : speaking ? "speaking" : awake ? "listening" : "sleeping";
 	// Распознанное показываем, только когда обращаются к Айрис: чужие разговоры на экране не нужны
 	const caption = awake || stripWake(interim).hit ? interim : "";
-	return { supported, enabled, toggle, setEnabled, phase, caption, lang, setLang, gender, setGender, requireWake, setRequireWake, pending, lastAssistant, audioBlocked, awake };
+	return { supported, enabled, toggle, setEnabled, phase, caption, lang, setLang, gender, setGender, requireWake, setRequireWake, autoApprove, setAutoApprove, pending, lastAssistant, audioBlocked, awake };
 }

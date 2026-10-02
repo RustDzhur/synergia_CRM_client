@@ -63,7 +63,7 @@ async function lookups(org: string, need: Need[] = []): Promise<Lookups> {
     return l;
 }
 
-const limitOf = (v: unknown) => { const n = Math.trunc(Number(v)); return Number.isFinite(n) ? Math.min(40, Math.max(1, n)) : 15; };
+const limitOf = (v: unknown, cap = 40) => { const n = Math.trunc(Number(v)); return Number.isFinite(n) ? Math.min(cap, Math.max(1, n)) : 15; };
 const dayOk = (v: unknown, what: string) => {
     const s = typeof v === "string" ? v.trim() : "";
     if (!s) return "";
@@ -120,6 +120,6 @@ export async function listProducts(ctx: Ctx, a: Record<string, unknown>) {
     return {
         filter,
         goodsTotal: goods.length, outOfStock: goods.filter((p) => state(p) === "out").length, lowStock: goods.filter((p) => state(p) === "low").length,
-        products: picked.slice(0, limitOf(a.limit)).map((p) => ({ id: p.id, name: p.name, sku: p.sku, type: p.type, stock: p.stockQty, unit: p.unit, reorderLevel: p.reorderLevel, state: p.type === "good" ? state(p) : "service", salePrice: p.salePrice })),
+        products: picked.slice(0, limitOf(a.limit, Number(a._cap) || 40)).map((p) => ({ id: p.id, name: p.name, sku: p.sku, type: p.type, stock: p.stockQty, unit: p.unit, reorderLevel: p.reorderLevel, state: p.type === "good" ? state(p) : "service", salePrice: p.salePrice })),
     };
 }

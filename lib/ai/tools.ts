@@ -12,6 +12,8 @@ import { ActionError, type DocKind, fiscalReceipt, findDocument, findProduct, fi
 import { moveStock } from "@/lib/finance/stock";
 import { purchaseNumber } from "@/lib/purchases";
 import { logAudit } from "@/lib/audit";
+import { mailAccount } from "@/lib/finance/send";
+import { reportPdf, type ReportSection } from "./reportPdf";
 import { BrowseError, ENTITY_KEYS, browse, listProducts } from "./browse";
 import { mkActivity } from "@/lib/activities";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
@@ -122,6 +124,36 @@ const financeCheck = (a: Args) => {
 };
 const authorName = async (userId: string) => { const u = await prisma.user.findUnique({ where: { id: userId }, select: { firstname: true, lastname: true } }); return u ? `${u.firstname} ${u.lastname}`.trim() : ""; };
 const snapshotRate = async (org: string, currency: string) => (currency === "UAH" ? { base: 0, margin: 0, value: 0, at: "" } : await firmRate(org, currency).then((r) => (r ? { base: r.base, margin: r.margin, value: r.rate, at: r.at } : { base: 0, margin: 0, value: 0, at: "" })).catch(() => ({ base: 0, margin: 0, value: 0, at: "" })));
+
+const REPORT_LABELS = {
+    ru: { report: "Отчёт", generated: "Сформировано", attached: "отчёт во вложении", product: "Товар", sku: "Артикул", stock: "Остаток", unit: "Ед.", reorder: "Порог", stockLow: "Товары, которые заканчиваются", stockOut: "Товары, которых нет в наличии", number: "Номер", customer: "Клиент", total: "Сумма", open: "Долг", due: "Срок", late: "Просрочка, дн.", invUnpaid: "Неоплаченные счета", invOverdue: "Просроченные счета", sumTotal: "Всего к оплате", invCount: "Счетов" },
+    uk: { report: "Звіт", generated: "Сформовано", attached: "звіт у вкладенні", product: "Товар", sku: "Артикул", stock: "Залишок", unit: "Од.", reorder: "Поріг", stockLow: "Товари, що закінчуються", stockOut: "Товари, яких немає в наявності", number: "Номер", customer: "Клієнт", total: "Сума", open: "Борг", due: "Строк", late: "Прострочення, дн.", invUnpaid: "Неоплачені рахунки", invOverdue: "Прострочені рахунки", sumTotal: "Всього до сплати", invCount: "Рахунків" },
+    de: { report: "Bericht", generated: "Erstellt", attached: "Bericht im Anhang", product: "Artikel", sku: "Art.-Nr.", stock: "Bestand", unit: "Einh.", reorder: "Meldebestand", stockLow: "Artikel, die knapp werden", stockOut: "Nicht vorrätige Artikel", number: "Nummer", customer: "Kunde", total: "Betrag", open: "Offen", due: "Fällig", late: "Tage überfällig", invUnpaid: "Unbezahlte Rechnungen", invOverdue: "Überfällige Rechnungen", sumTotal: "Gesamt offen", invCount: "Rechnungen" },
+    en: { report: "Report", generated: "Generated", attached: "report attached", product: "Product", sku: "SKU", stock: "Stock", unit: "Unit", reorder: "Reorder level", stockLow: "Products running low", stockOut: "Products out of stock", number: "Number", customer: "Customer", total: "Total", open: "Open", due: "Due", late: "Days overdue", invUnpaid: "Unpaid invoices", invOverdue: "Overdue invoices", sumTotal: "Total outstanding", invCount: "Invoices" },
+} as const;
+
+// Список счетов с суммами и просрочкой — общий для инструмента list_invoices и для PDF-отчёта
+export async function listInvoicesData(c: AiCtx, a: Args) {
+    const filter = INVOICE_FILTERS.includes(a.filter as never) ? String(a.filter) : "unpaid";
+    const where: Record<string, unknown> = { org: c.org, kind: "invoice" };
+    if (filter === "unpaid" || filter === "overdue") where.status = { in: ["sent", "overdue"] };
+    else if (filter !== "all") where.status = filter;
+    const customer = str(a.customer, 100);
+    if (customer) where.customerName = like(customer);
+    const rows = await prisma.invoice.findMany({ where: where as any, orderBy: { dueDate: "asc" }, take: 400 });
+    const todayStr = c.today;
+    const mapped = rows.map((i) => {
+        const gross = computeTotals(i.items as never).gross;
+        const open = i.status === "paid" ? 0 : Math.max(0, Math.round((gross - (i.paidAmount ?? 0)) * 100) / 100);
+        const late = ["sent", "overdue"].includes(i.status) && !!i.dueDate && i.dueDate < todayStr;
+        const daysOverdue = late ? Math.floor((Date.parse(todayStr) - Date.parse(i.dueDate)) / 86400000) : 0;
+        return { number: i.number, customer: i.customerName, status: late && i.status === "sent" ? "overdue" : i.status, total: Math.round(gross * 100) / 100, open, currency: i.currency, issued: i.issueDate, due: i.dueDate, daysOverdue };
+    });
+    const list = filter === "overdue" ? mapped.filter((i) => i.daysOverdue > 0 || i.status === "overdue") : mapped;
+    const sums: Record<string, number> = {};
+    for (const i of list) sums[i.currency] = Math.round(((sums[i.currency] ?? 0) + i.open) * 100) / 100;
+    return { filter, count: list.length, openAmountByCurrency: sums, invoices: list.slice(0, int(a.limit, 15, 1, Number(a._cap) || 40)) };
+}
 
 export const TOOLS: AiTool[] = [
     // ─────────── чтение ───────────
@@ -620,27 +652,7 @@ export const TOOLS: AiTool[] = [
     {
         module: "inventory", write: false,
         def: { name: "list_invoices", description: "Invoices of the firm with amounts and due dates. filter: unpaid (sent or overdue — not paid yet; default), overdue (due date passed), draft, sent, paid, all. Returns each invoice (number, customer, total, still open, due date, days overdue) and the totals per currency. Use it for «какие счета не закрыты / просрочены / кто нам должен».", parameters: schema({ filter: { type: "string", enum: [...INVOICE_FILTERS] }, customer: S("part of the customer name"), limit: N("max invoices, default 15, max 40") }) },
-        run: async (c, a) => {
-            const filter = INVOICE_FILTERS.includes(a.filter as never) ? String(a.filter) : "unpaid";
-            const where: Record<string, unknown> = { org: c.org, kind: "invoice" };
-            if (filter === "unpaid" || filter === "overdue") where.status = { in: ["sent", "overdue"] };
-            else if (filter !== "all") where.status = filter;
-            const customer = str(a.customer, 100);
-            if (customer) where.customerName = like(customer);
-            const rows = await prisma.invoice.findMany({ where: where as any, orderBy: { dueDate: "asc" }, take: 400 });
-            const todayStr = c.today;
-            const mapped = rows.map((i) => {
-                const gross = computeTotals(i.items as never).gross;
-                const open = i.status === "paid" ? 0 : Math.max(0, Math.round((gross - (i.paidAmount ?? 0)) * 100) / 100);
-                const late = ["sent", "overdue"].includes(i.status) && !!i.dueDate && i.dueDate < todayStr;
-                const daysOverdue = late ? Math.floor((Date.parse(todayStr) - Date.parse(i.dueDate)) / 86400000) : 0;
-                return { number: i.number, customer: i.customerName, status: late && i.status === "sent" ? "overdue" : i.status, total: Math.round(gross * 100) / 100, open, currency: i.currency, issued: i.issueDate, due: i.dueDate, daysOverdue };
-            });
-            const list = filter === "overdue" ? mapped.filter((i) => i.daysOverdue > 0 || i.status === "overdue") : mapped;
-            const sums: Record<string, number> = {};
-            for (const i of list) sums[i.currency] = Math.round(((sums[i.currency] ?? 0) + i.open) * 100) / 100;
-            return { filter, count: list.length, openAmountByCurrency: sums, invoices: list.slice(0, int(a.limit, 15, 1, 40)) };
-        },
+        run: (c, a) => listInvoicesData(c, a),
     },
     {
         module: "inventory", write: false,
@@ -853,6 +865,62 @@ export const TOOLS: AiTool[] = [
             return { params: { name: p.name, qty: String(a.qty), stock: String((p.stockQty ?? 0) + Number(a.qty)) }, link: "/crm/finance?tab=products" };
         }),
     },
+    // ─────────── отчёт в PDF на почту ───────────
+    {
+        module: "inventory", write: true,
+        def: { name: "email_report", description: "Build a PDF report and e-mail it as an attachment (default recipient: the user's own address). source: stock_low (goods running low or out of stock), stock_out (out of stock only), invoices_unpaid, invoices_overdue, or custom (give your own sections: columns + rows). Use it for «пришли мне список в PDF на почту». Write language in the user's language.", parameters: schema({
+            source: { type: "string", enum: ["stock_low", "stock_out", "invoices_unpaid", "invoices_overdue", "custom"] },
+            title: S("report title, optional for the standard sources"),
+            to: S("recipient e-mail; omit to send to the user"),
+            language: { type: "string", enum: ["ru", "uk", "de", "en"], description: "language of the report" },
+            message: S("short text for the e-mail body, optional"),
+            sections: { type: "array", description: "only for custom", items: { type: "object", properties: { heading: S("section heading"), columns: { type: "array", items: { type: "string" } }, rows: { type: "array", items: { type: "array", items: { type: "string" } } } }, required: ["columns", "rows"] } },
+        }, ["source"]) },
+        check: (a) => {
+            if (!["stock_low", "stock_out", "invoices_unpaid", "invoices_overdue", "custom"].includes(String(a.source))) throw new ToolError("source is not supported");
+            const to = str(a.to, 200);
+            if (to && !/^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/.test(to)) throw new ToolError("to must be a single valid e-mail address");
+            const out: Args = { source: a.source, title: str(a.title, 120), language: ["ru", "uk", "de", "en"].includes(String(a.language)) ? a.language : "ru", message: str(a.message, 500), ...(to ? { to } : {}) };
+            if (a.source === "custom") {
+                const secs = (Array.isArray(a.sections) ? a.sections : []).slice(0, 6).map((x) => {
+                    const o = (x ?? {}) as Record<string, unknown>;
+                    const columns = (Array.isArray(o.columns) ? o.columns : []).slice(0, 8).map((c) => str(c, 60));
+                    const rows = (Array.isArray(o.rows) ? o.rows : []).slice(0, 300).map((r) => (Array.isArray(r) ? r : []).slice(0, columns.length).map((c) => str(c, 200)));
+                    return { heading: str(o.heading, 100), columns, rows };
+                }).filter((x) => x.columns.length);
+                if (!secs.length) throw new ToolError("custom report needs at least one section with columns");
+                out.sections = secs;
+            }
+            return out;
+        },
+        run: (c, a) => wrap(async () => {
+            const lang = (["ru", "uk", "de", "en"].includes(String(a.language)) ? a.language : "ru") as "ru" | "uk" | "de" | "en";
+            const L = REPORT_LABELS[lang];
+            let title = String(a.title || ""), sections: ReportSection[] = [];
+            const src = String(a.source);
+            if (src === "stock_low" || src === "stock_out") {
+                const r = await listProducts(c, { filter: src === "stock_out" ? "out_of_stock" : "low_stock", limit: 200, _cap: 200 });
+                title ||= src === "stock_out" ? L.stockOut : L.stockLow;
+                sections = [{ columns: [L.product, L.sku, L.stock, L.unit, L.reorder], rows: r.products.map((p) => [p.name, p.sku || "—", p.stock, p.unit, p.reorderLevel || "—"]) }];
+            } else if (src === "invoices_unpaid" || src === "invoices_overdue") {
+                const r = await listInvoicesData(c, { filter: src === "invoices_overdue" ? "overdue" : "unpaid", limit: 200, _cap: 200 });
+                title ||= src === "invoices_overdue" ? L.invOverdue : L.invUnpaid;
+                sections = [{ columns: [L.number, L.customer, L.total, L.open, L.due, L.late], rows: r.invoices.map((i) => [i.number, i.customer, `${i.total} ${i.currency}`, `${i.open} ${i.currency}`, i.due || "—", i.daysOverdue || "—"]) }];
+                const sums = Object.entries(r.openAmountByCurrency).map(([k, v]) => `${v} ${k}`).join(", ");
+                if (sums) sections.push({ heading: L.sumTotal + ": " + sums, columns: [L.invCount], rows: [[String(r.count)]] });
+            } else sections = a.sections as ReportSection[];
+            const today = c.today || new Date().toISOString().slice(0, 10);
+            const pdf = await reportPdf({ title: title || L.report, subtitle: `${L.generated}: ${today}`, sections, footer: "Firmspace CRM · Iris" });
+            const user = await prisma.user.findUnique({ where: { id: c.userId }, select: { email: true } });
+            const to = String(a.to || user?.email || "");
+            if (!to) throw new ToolError("No recipient: the user has no e-mail address — give one in the command");
+            const account = await mailAccount(c.org, undefined);
+            if (!account) throw new ToolError("No mailbox is connected. Connect one in Web Mails first.");
+            const filename = `${(title || L.report).replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "").slice(0, 60) || "report"}-${today}.pdf`;
+            await sendFromAccount(account, { to, subject: title || L.report, text: String(a.message || "") || `${title || L.report} — ${L.attached}`, attachments: [{ filename, contentType: "application/pdf", content: pdf }] });
+            return { params: { to, title: title || L.report }, link: "/crm/collaboration/web-mails" };
+        }),
+    },
     // ─────────── удаление ───────────
     {
         module: null, write: true,
@@ -893,19 +961,21 @@ export const TOOLS: AiTool[] = [
 // медленнее, зато ничего не теряется.
 const GROUPS: { re: RegExp; tools: string[] }[] = [
     { re: /сч[её]т|рахун|rechnung|invoice|оплат|оплач|чек|квитанц|receipt|kasse|pdf|скача|завантаж|download|просроч|неоплач|не закры|незакры|долж|задолж|debt|overdue|unpaid|paid|фискаль|бухгалтер|фінанс|финанс|buchhalt|financ/i,
-      tools: ["list_invoices", "finance_summary", "create_invoice", "mark_invoice_paid", "send_invoice", "issue_fiscal_receipt", "download_document", "search_contacts"] },
+      tools: ["list_invoices", "finance_summary", "create_invoice", "mark_invoice_paid", "send_invoice", "issue_fiscal_receipt", "download_document", "email_report", "search_contacts"] },
     { re: /предложен|пропозиц|angebot|quote|договор|контракт|vertrag|contract|заказ|замовлен|order|auftrag/i,
       tools: ["create_quote", "create_order", "create_contract", "download_document", "browse_data", "search_contacts"] },
     { re: /расход|витрат|ausgabe|expense|налог|податк|steuer|банк|bank|выруч|доход|прибыл|money|деньг|кассов/i,
       tools: ["list_expenses", "create_expense", "finance_summary", "browse_data"] },
     { re: /склад|остат|залишк|товар|продукт|product|stock|bestand|lager|закуп|закаж|замов|поставщ|постачальн|supplier|lieferant|bestell|purchase|приход|списан|списа|инвентар|артикул|sku|nomenclat|номенклат|заканч|закінч|нехват|не хватает|reorder/i,
-      tools: ["list_products", "create_product", "adjust_stock", "create_supplier", "create_purchase_order", "browse_data", "list_expenses"] },
+      tools: ["list_products", "create_product", "adjust_stock", "create_supplier", "create_purchase_order", "email_report", "browse_data", "list_expenses"] },
     { re: /клиент|клієнт|kunde|customer|контакт|contact|компани|company|firma|сделк|угод|deal|лид|lead|воронк|воронка|pipeline|этап|етап|stage|заметк|нотатк|notiz|note|не общал|давно не/i,
       tools: ["search_contacts", "search_companies", "get_contact", "get_company", "get_deal", "list_deals", "list_stages", "find_stale_contacts", "create_contact", "create_company", "create_deal", "update_deal_stage", "add_note", "delete_record"] },
     { re: /сегодня|сьогодні|today|heute|завтра|morgen|задач|task|aufgabe|напомн|нагад|remind|календар|calendar|kalender|встреч|зустріч|termin|meeting|событ|подія|проект|project|чат|chat|whatsapp|telegram/i,
       tools: ["list_tasks", "create_task", "update_task", "browse_data", "list_employees", "search_contacts"] },
     { re: /письм|лист|почт|пошт|mail|e-mail|email|inbox|входящ|ответь|відпов|reply/i,
       tools: ["search_mail", "get_mail", "get_mail_thread", "send_email", "search_contacts", "create_deal", "create_task"] },
+    { re: /отч[её]т|звіт|report|bericht|на почт|на пошт|per mail|пришли|вышли|отправь мне|надішли|вишли/i,
+      tools: ["email_report", "list_products", "list_invoices", "list_expenses", "finance_summary", "browse_data"] },
     { re: /документ|файл|document|dokument|прочитай документ|read the doc/i,
       tools: ["search_documents", "read_document", "list_employees", "save_employee_contract", "download_document"] },
     { re: /сотрудник|співробітник|працівник|employee|mitarbeiter|команд|team|персонал/i,

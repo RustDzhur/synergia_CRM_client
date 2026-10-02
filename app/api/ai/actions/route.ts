@@ -17,7 +17,8 @@ export async function POST(req: Request) {
     const b = await req.json().catch(() => null);
     const tool = allowedTools(user).find((t) => t.write && t.def.name === b?.tool);
     if (!tool || !b.args || typeof b.args !== "object") return badRequest("This action is not available");
-    const ctx = { org: user.id, userId: user.userId, role: user.role, modules: user.modules, today: "", now: "" };
+    const now = new Date().toISOString().slice(0, 16);
+    const ctx = { org: user.id, userId: user.userId, role: user.role, modules: user.modules, today: now.slice(0, 10), now };
     try {
         const args = tool.check ? tool.check(b.args as Record<string, unknown>) : (b.args as Record<string, unknown>);
         const out = (await tool.run(ctx, args)) as { params?: Record<string, string>; link?: string };

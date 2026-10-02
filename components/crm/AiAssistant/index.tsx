@@ -231,7 +231,7 @@ export default function AiAssistant() {
 		const value = text.trim();
 		if (!value || busy || status?.configured === false) return;
 		rememberRecent(value);
-		send(value, { locale, page: stripLocale(pathname) });
+		send(value, { locale, page: stripLocale(pathname), auto: agent.autoApprove });
 	}
 	function pick(text: string, sendNow: boolean) {
 		if (sendNow) submit(text); else { setDraft(text); inputRef.current?.focus(); }
@@ -289,6 +289,17 @@ export default function AiAssistant() {
 							className={`${status?.configured ? "" : "ml-auto"} flex h-30 items-center gap-6 rounded-8 border px-10 text-11 transition-colors ${agent.enabled ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
 							<MdGraphicEq size={15} aria-hidden />
 							<span className="max-md:hidden">{t("agentTitle")}</span>
+						</button>
+					)}
+					{/* Без подтверждения: изменения выполняются сразу (удаление и чужой текст из писем — по-прежнему с вопросом) */}
+					{!blocked && (
+						<button
+							type="button"
+							onClick={() => agent.setAutoApprove(!agent.autoApprove)}
+							aria-pressed={agent.autoApprove}
+							title={t("agentAutoHint")}
+							className={`flex h-30 items-center gap-6 rounded-8 border px-10 text-11 transition-colors ${agent.autoApprove ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+							<span>{t("agentAuto")}</span>
 						</button>
 					)}
 					{/* Автоозвучка ответов: браузерный синтез речи, ключей не требует */}
