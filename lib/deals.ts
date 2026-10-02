@@ -1,44 +1,37 @@
-import { isValidObjectId } from "mongoose";
-import Contact from "@/models/Contact";
-import Company from "@/models/Company";
-import Deal from "@/models/Deal";
-import Contract from "@/models/Contract";
+import { prisma } from "@/lib/prisma";
+import { validId } from "@/lib/api";
 
 // Ссылка на Contact/Company/Deal/Contract принимается, только если такая запись действительно существует у этого
-// владельца — иначе через POST/PATCH можно было бы привязать документ к чужим данным, зная только чужой ObjectId.
-// Используется не только для Deal.contact/Deal.company, но и для Quote/Order/Invoice/Contract.contact/company/deal
-// (Finance-модели раньше принимали эти id вообще без проверки — тот же пробел, что был у Deal до Phase 1).
+// владельца — иначе через POST/PATCH можно было бы привязать документ к чужим данным, зная только чужой id.
+// Используется не только для Deal.contact/Deal.company, но и для Quote/Order/Invoice/Contract.contact/company/deal.
 // CRM-модели (Contact/Company/Deal) хранят владельца в поле "owner", Finance-модели (Contract) — в поле "org";
 // это одно и то же значение (id организации), просто исторически разное имя поля.
 // Возвращает: undefined — поле не прислано (не трогать), null — прислано пустым/невалидным (снять ссылку), id — привязать.
-async function ownedRef(Model: typeof Contact | typeof Company | typeof Deal | typeof Contract, field: "owner" | "org", id: unknown, owner: string) {
+async function ownedRef(delegate: any, field: "owner" | "org", id: unknown, owner: string) {
     if (id === undefined) return undefined;
-    if (typeof id !== "string" || !id || !isValidObjectId(id)) return null;
-    const doc = await Model.findOne({ _id: id, [field]: owner }).select("_id");
-    return doc ? doc._id : null;
+    if (typeof id !== "string" || !id || !validId(id)) return null;
+    const doc = await delegate.findFirst({ where: { id, [field]: owner }, select: { id: true } });
+    return doc ? doc.id : null;
 }
 
-export const ownedContact = (id: unknown, owner: string) => ownedRef(Contact, "owner", id, owner);
-export const ownedCompany = (id: unknown, owner: string) => ownedRef(Company, "owner", id, owner);
-export const ownedDeal = (id: unknown, owner: string) => ownedRef(Deal, "owner", id, owner);
-export const ownedContract = (id: unknown, owner: string) => ownedRef(Contract, "org", id, owner);
+export const ownedContact = (id: unknown, owner: string) => ownedRef(prisma.contact, "owner", id, owner);
+export const ownedCompany = (id: unknown, owner: string) => ownedRef(prisma.company, "owner", id, owner);
+export const ownedDeal = (id: unknown, owner: string) => ownedRef(prisma.deal, "owner", id, owner);
+export const ownedContract = (id: unknown, owner: string) => ownedRef(prisma.contract, "org", id, owner);
 
 // Сделка клиента для документа, созданного в финансовой части без явной привязки: берём самую свежую
 // ещё не выигранную сделку этого контакта, фирмы или клиента с тем же именем. Так счёт или договор,
 // оформленный в Finance, сам появляется в карточке клиента — ради этого привязка и нужна.
-// Имя сравниваем потому, что в формах финансов клиент вводится текстом: ссылки на контакт и фирму
-// там не выбираются, и без сверки по имени привязка не сработала бы почти никогда.
 export async function dealForCustomer(owner: string, contact?: unknown, company?: unknown, customerName?: unknown) {
-    const or: Record<string, unknown>[] = [];
-    if (contact && isValidObjectId(String(contact))) or.push({ contact });
-    if (company && isValidObjectId(String(company))) or.push({ company });
+    const or: any[] = [];
+    if (contact && validId(String(contact))) or.push({ contact: String(contact) });
+    if (company && validId(String(company))) or.push({ company: String(company) });
     const name = typeof customerName === "string" ? customerName.trim() : "";
     if (name) {
-        const exact = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
-        or.push({ companyName: exact }, { contactName: exact }, { clientName: exact });
+        or.push({ companyName: { equals: name, mode: "insensitive" } }, { contactName: { equals: name, mode: "insensitive" } }, { clientName: { equals: name, mode: "insensitive" } });
     }
     if (!or.length) return null;
-    return Deal.findOne({ owner, wonAt: null, $or: or }).sort({ updatedAt: -1 }).select("_id").catch(() => null);
+    return prisma.deal.findFirst({ where: { owner, wonAt: null, OR: or }, orderBy: { updatedAt: "desc" }, select: { id: true } }).catch(() => null);
 }
 
 // Контакт клиента для финансового документа: выбранный из подсказки → найденный по точному имени →
@@ -47,20 +40,19 @@ export async function dealForCustomer(owner: string, contact?: unknown, company?
 // клиент жил бы текстом в счёте, а в CRM его бы не было. Фирму не трогаем: если выбрана Company,
 // контакт не нужен — документ привязан к фирме.
 export async function contactForCustomer(owner: string, input: { contact?: unknown; company?: unknown; customerName?: unknown; email?: unknown }) {
-    if (input.contact && isValidObjectId(String(input.contact))) {
-        const found = await Contact.findOne({ _id: input.contact, owner }).select("_id");
-        if (found) return found._id;
+    if (input.contact && validId(String(input.contact))) {
+        const found = await prisma.contact.findFirst({ where: { id: String(input.contact), owner }, select: { id: true } });
+        if (found) return found.id;
     }
     const name = typeof input.customerName === "string" ? input.customerName.trim() : "";
     if (!name) return null;
     // Уже выбрана фирма CRM — документ и так виден в её карточке, отдельный контакт не создаём
-    if (input.company && isValidObjectId(String(input.company))) return null;
-    const exact = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
-    const existing = await Contact.findOne({ owner, name: exact }).select("_id").catch(() => null);
-    if (existing) return existing._id;
+    if (input.company && validId(String(input.company))) return null;
+    const existing = await prisma.contact.findFirst({ where: { owner, name: { equals: name, mode: "insensitive" } }, select: { id: true } }).catch(() => null);
+    if (existing) return existing.id;
     // «Роздрібний покупець» и подобные заглушки карточек не заслуживают — это не клиент
     if (/^(роздрібний покупець|рozdr|barverkauf|retail customer|laufkunde)/i.test(name)) return null;
     const email = typeof input.email === "string" && input.email.includes("@") ? input.email.trim().slice(0, 200) : "";
-    const created = await Contact.create({ owner, name: name.slice(0, 200), ...(email ? { email } : {}), source: "finance" }).catch(() => null);
-    return created ? created._id : null;
+    const created = await prisma.contact.create({ data: { owner, name: name.slice(0, 200), ...(email ? { email } : {}), source: "finance" } }).catch(() => null);
+    return created ? created.id : null;
 }

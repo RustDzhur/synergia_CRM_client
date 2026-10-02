@@ -21,6 +21,9 @@ export const ActivitySchema = new Schema({
     createdAt: { type: Date, default: Date.now },
 });
 
+// Запись активности для Json-поля activities (Prisma): _id и createdAt, которые раньше добавлял Mongoose.
+export const mkActivity = (type: string, text: string, meta = "") => ({ _id: randomUUID(), type, text, meta, createdAt: new Date().toISOString() });
+
 const MAX_TEXT = 2000;
 
 // Фабрика обработчиков для маршрутов вида /api/<сущность>/[id]/activities. Принимает имя Prisma-модели.
