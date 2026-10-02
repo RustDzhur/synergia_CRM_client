@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { sweepEventReminders } from "@/lib/calendar/reminders";
 import { runDueJobs } from "@/lib/automation";
 import { syncCalendars } from "@/lib/calendar/sync";
 import { syncMarketplaces } from "@/lib/marketplace";
 import { reportError } from "@/lib/reportError";
-import Event from "@/models/Event";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -28,16 +26,14 @@ export async function GET(req: Request) {
     if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) {
         return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
-    await connectDB();
-
     // Обходим фирмы с событиями-напоминаниями и фирмы с подключёнными внешними календарями:
     // проходить по всем организациям платформы каждые пять минут незачем
     const [withReminders, withCalendars, withMarketplaces] = await Promise.all([
-        Event.distinct("org", { reminder: { $gt: 0 } }),
-        Integration.distinct("owner", { type: { $in: ["gcal", "icloud"] }, status: "connected" }),
+        (await prisma.event.findMany({ where: { reminder: { gt: 0 } }, select: { org: true }, distinct: ["org"] })).map((e) => e.org),
+        (await prisma.integration.findMany({ where: { type: { in: ["gcal", "icloud"] }, status: "connected" }, select: { owner: true }, distinct: ["owner"] })).map((i) => i.owner),
         // Заказы площадок тянем по расписанию: пока кабинет закрыт, заявка с Prom или Rozetka
         // иначе не появилась бы в воронке до чьего-нибудь входа в CRM
-        Integration.distinct("owner", { type: { $in: ["prom", "rozetka", "horoshop", "olx"] }, status: "connected" }),
+        (await prisma.integration.findMany({ where: { type: { in: ["prom", "rozetka", "horoshop", "olx"] }, status: "connected" }, select: { owner: true }, distinct: ["owner"] })).map((i) => i.owner),
     ]);
     const orgs = Array.from(new Set([...withReminders, ...withCalendars, ...withMarketplaces].map(String)));
 
