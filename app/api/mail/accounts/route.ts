@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { connectPasswordAccount, toMailAccountDTO } from "@/lib/mail";
 import { oauthAvailable } from "@/lib/mail/oauth";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,8 +12,7 @@ export const runtime = "nodejs";
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
-    const list = await Integration.find({ owner: user.id, type: "mail" }).sort({ createdAt: 1 });
+    const list = await prisma.integration.findMany({ where: { owner: user.id, type: "mail" }, orderBy: { createdAt: "asc" } });
     return NextResponse.json({ accounts: list.map(toMailAccountDTO), oauth: oauthAvailable() });
 }
 
@@ -25,7 +23,6 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => null);
     if (!body) return badRequest("Invalid body");
     try {
-        await connectDB();
         const doc = await connectPasswordAccount(user.id, body);
         return NextResponse.json(toMailAccountDTO(doc), { status: 201 });
     } catch (e) {

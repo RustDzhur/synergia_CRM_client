@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { removeAccount, toMailAccountDTO } from "@/lib/mail";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +12,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     try {
-        await connectDB();
-        const doc = await Integration.findOne({ _id: params.id, owner: user.id, type: "mail" });
+        const doc = await prisma.integration.findFirst({ where: { id: params.id, owner: user.id, type: "mail" } });
         if (!doc) return notFound();
         await removeAccount(doc);
         return NextResponse.json({ ok: true });
@@ -31,13 +29,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const body = await req.json().catch(() => null);
     if (!body || typeof body.autoLeads !== "boolean") return badRequest("autoLeads must be true or false");
     try {
-        await connectDB();
-        const doc = await Integration.findOne({ _id: params.id, owner: user.id, type: "mail" });
+        const doc = await prisma.integration.findFirst({ where: { id: params.id, owner: user.id, type: "mail" } });
         if (!doc) return notFound();
-        doc.set("config", { ...doc.config, autoLeads: body.autoLeads });
-        doc.markModified("config");
-        await doc.save();
-        return NextResponse.json(toMailAccountDTO(doc));
+        const updated = await prisma.integration.update({ where: { id: doc.id }, data: { config: { ...((doc.config ?? {}) as any), autoLeads: body.autoLeads } as any } });
+        return NextResponse.json(toMailAccountDTO(updated));
     } catch (e) {
         return failure(e);
     }

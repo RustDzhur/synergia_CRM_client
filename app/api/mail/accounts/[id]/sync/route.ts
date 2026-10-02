@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { failure, notFound, unauthorized, validId } from "@/lib/api";
 import { syncAccount, toMailAccountDTO } from "@/lib/mail";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,11 +14,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     try {
-        await connectDB();
-        const doc = await Integration.findOne({ _id: params.id, owner: user.id, type: "mail" });
+        const doc = await prisma.integration.findFirst({ where: { id: params.id, owner: user.id, type: "mail" } });
         if (!doc) return notFound();
         const { added, leads } = await syncAccount(doc);
-        return NextResponse.json({ added, leads, account: toMailAccountDTO(doc) });
+        // статус и ошибку синхронизация уже записала — отдаём актуальную запись
+        const fresh = await prisma.integration.findUnique({ where: { id: doc.id } });
+        return NextResponse.json({ added, leads, account: toMailAccountDTO(fresh ?? doc) });
     } catch (e) {
         return failure(e);
     }

@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { randomToken } from "@/lib/crypto";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { sendFromAccount, toMailDTO } from "@/lib/mail";
-import Integration from "@/models/Integration";
-import MailMessage from "@/models/MailMessage";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -29,21 +27,24 @@ export async function POST(req: Request) {
     if (!isDraft && (recipients.length === 0 || recipients.length > 20 || !recipients.every((a: string) => ADDRESS.test(a)))) return badRequest("Enter a valid recipient address");
 
     try {
-        await connectDB();
-        const account = await Integration.findOne({ _id: b.accountId, owner: user.id, type: "mail" });
+        const account = await prisma.integration.findFirst({ where: { id: b.accountId, owner: user.id, type: "mail" } });
         if (!account) return notFound();
 
         const draftId = typeof b.draftId === "string" && validId(b.draftId) ? b.draftId : null;
         if (isDraft) {
-            const fields = { from: account.config.email, to: recipients.join(", "), subject, body: text, at: new Date() };
-            const draft = draftId
-                ? await MailMessage.findOneAndUpdate({ _id: draftId, owner: user.id, folder: "draft" }, { $set: fields }, { returnDocument: "after" })
-                : await MailMessage.create({ ...fields, owner: user.id, account: account._id, externalId: `draft:${randomToken(8)}`, folder: "draft", read: true });
+            const fields = { from: String((account.config as any)?.email ?? ""), to: recipients.join(", "), subject, body: text, at: new Date() };
+            let draft = null;
+            if (draftId) {
+                const existing = await prisma.mailMessage.findFirst({ where: { id: draftId, owner: user.id, folder: "draft" } });
+                if (existing) draft = await prisma.mailMessage.update({ where: { id: existing.id }, data: fields });
+            } else {
+                draft = await prisma.mailMessage.create({ data: { ...fields, owner: user.id, account: account.id, externalId: `draft:${randomToken(8)}`, folder: "draft", read: true } });
+            }
             return NextResponse.json(draft ? toMailDTO(draft, false) : null, { status: 201 });
         }
 
         const sent = await sendFromAccount(account, { to: recipients.join(", "), subject: subject || "(no subject)", text });
-        if (draftId) await MailMessage.updateOne({ _id: draftId, owner: user.id, folder: "draft" }, { $set: { deleted: true } });
+        if (draftId) await prisma.mailMessage.updateMany({ where: { id: draftId, owner: user.id, folder: "draft" }, data: { deleted: true } });
         return NextResponse.json(sent ? toMailDTO(sent, false) : null, { status: 201 });
     } catch (e) {
         return failure(e);
