@@ -16,8 +16,9 @@ export function formatActionValue(v: unknown): string {
 	if (Array.isArray(v)) {
 		return v.map((x) => {
 			if (x && typeof x === "object") {
-				const o = x as { description?: unknown; qty?: unknown; unitPrice?: unknown };
-				return `${Number(o.qty) || 1} × ${String(o.description ?? "")}${Number(o.unitPrice) ? ` — ${Number(o.unitPrice)}` : ""}`;
+				const o = x as { description?: unknown; product?: unknown; qty?: unknown; unitPrice?: unknown; price?: unknown };
+				const price = Number(o.unitPrice ?? o.price);
+				return `${Number(o.qty) || 1} × ${String(o.description ?? o.product ?? "")}${price ? ` — ${price}` : ""}`;
 			}
 			return String(x);
 		}).join("; ");

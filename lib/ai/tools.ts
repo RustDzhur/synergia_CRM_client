@@ -8,6 +8,10 @@ import { getObject } from "@/lib/storage";
 import { ensureStages } from "@/lib/stages";
 import { prisma } from "@/lib/prisma";
 import { toDTO } from "@/lib/serialize";
+import { ActionError, type DocKind, fiscalReceipt, findDocument, findProduct, findSupplier, markPaid, sendInvoice } from "@/lib/finance/aiActions";
+import { moveStock } from "@/lib/finance/stock";
+import { purchaseNumber } from "@/lib/purchases";
+import { logAudit } from "@/lib/audit";
 import { BrowseError, ENTITIES, ENTITY_KEYS, browse, listProducts } from "./browse";
 import { mkActivity } from "@/lib/activities";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
@@ -98,6 +102,9 @@ export const INVOICE_FILTERS = ["unpaid", "overdue", "draft", "sent", "paid", "a
 
 // Результат инструмента, который клиент превращает в переход по странице (см. runChat: поле nav)
 export interface NavTarget { link: string; label: string }
+// Файл, который клиент должен скачать или открыть (инструмент download_document): PDF качается с авторизацией браузера
+export interface DownloadTarget { kind: "invoices" | "quotes" | "orders" | "contracts"; id: string; number: string; mode: "download" | "open" }
+const wrap = async <T,>(fn: () => Promise<T>): Promise<T> => { try { return await fn(); } catch (e) { throw e instanceof ActionError || e instanceof BrowseError ? new ToolError(e.message) : e; } };
 
 // Схема строк документа и общая проверка аргументов финансовых инструментов (idempotent:
 // check() принимает и первичные аргументы модели, и свой же прежний результат)
@@ -741,6 +748,142 @@ export const TOOLS: AiTool[] = [
             return { params: { name: deal.clientName, stage: stage.name }, link: "/crm/crm" };
         },
     },
+    // ─────────── документы, оплата, чеки ───────────
+    {
+        module: "inventory", write: false,
+        def: { name: "download_document", description: "Download (save as a PDF file) or open for viewing an invoice, quote, order or contract by its number, e.g. «скачай счёт RE-2026-5». Works right away, no confirmation. Numbers spoken in Cyrillic («РЕ-2026-5») are matched to the Latin ones.", parameters: schema({ kind: { type: "string", enum: ["invoice", "quote", "order", "contract"] }, number: S("document number, e.g. RE-2026-5"), mode: { type: "string", enum: ["download", "open"], description: "download (default) or open for viewing/printing" } }, ["kind", "number"]) },
+        check: (a) => {
+            if (!["invoice", "quote", "order", "contract"].includes(String(a.kind))) throw new ToolError("kind must be invoice, quote, order or contract");
+            return { kind: a.kind, number: need(str(a.number, 40), "number"), mode: a.mode === "open" ? "open" : "download" };
+        },
+        run: (c, a) => wrap(async () => {
+            const doc = await findDocument(c.org, a.kind as DocKind, String(a.number));
+            const kind = ({ invoice: "invoices", quote: "quotes", order: "orders", contract: "contracts" } as const)[a.kind as DocKind];
+            const dl: DownloadTarget = { kind, id: doc.id, number: doc.number, mode: a.mode === "open" ? "open" : "download" };
+            return { prepared: doc.number, _download: dl };
+        }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "mark_invoice_paid", description: "Mark an invoice as paid (fully, or partially with amount) — money received. Needs user confirmation. Identify the invoice by its number.", parameters: schema({ number: S("invoice number"), amount: { type: "number", description: "amount received; omit for the full amount" } }, ["number"]) },
+        check: (a) => ({ number: need(str(a.number, 40), "number"), ...(Number(a.amount) > 0 ? { amount: Math.round(Number(a.amount) * 100) / 100 } : {}) }),
+        run: (c, a) => wrap(async () => { const r = await markPaid({ org: c.org, userId: c.userId }, String(a.number), a.amount as number | undefined); return { params: { number: r.number, customerName: r.customerName }, link: "/crm/finance?tab=invoices" }; }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "send_invoice", description: "E-mail a draft invoice (with the PDF) to the customer from the firm's mailbox and mark it as sent. Needs user confirmation. Uses the customer's saved e-mail unless to is given.", parameters: schema({ number: S("invoice number"), to: S("recipient e-mail, optional") }, ["number"]) },
+        check: (a) => {
+            const to = str(a.to, 200);
+            if (to && !/^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/.test(to)) throw new ToolError("to must be a single valid e-mail address");
+            return { number: need(str(a.number, 40), "number"), ...(to ? { to } : {}) };
+        },
+        run: (c, a) => wrap(async () => { const r = await sendInvoice({ org: c.org, userId: c.userId }, String(a.number), a.to ? String(a.to) : undefined); return { params: { number: r.number, to: r.to }, link: "/crm/finance?tab=invoices" }; }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "issue_fiscal_receipt", description: "Print a fiscal cash receipt (PRRO / Checkbox, Ukraine only) for an invoice. Needs user confirmation. pay_type: CASH or CARD.", parameters: schema({ number: S("invoice number"), pay_type: { type: "string", enum: ["CASH", "CARD"] } }, ["number"]) },
+        check: (a) => ({ number: need(str(a.number, 40), "number"), ...(a.pay_type === "CASH" || a.pay_type === "CARD" ? { pay_type: a.pay_type } : {}) }),
+        run: (c, a) => wrap(async () => { const r = await fiscalReceipt({ org: c.org, userId: c.userId }, String(a.number), a.pay_type as "CASH" | "CARD" | undefined); return { params: { number: r.number, code: r.code }, link: "/crm/finance?tab=invoices" }; }),
+    },
+    // ─────────── закупки и склад ───────────
+    {
+        module: "inventory", write: true,
+        def: { name: "create_supplier", description: "Create a supplier (vendor) to buy goods from. Needs user confirmation. An existing supplier with the same name is updated.", parameters: schema({ name: S("supplier name"), contact_name: S("contact person"), phone: S("phone"), email: S("e-mail"), address: S("address"), payment_days: N("payment term in days"), currency: S("EUR, UAH…"), notes: S("notes") }, ["name"]) },
+        check: (a) => {
+            const email = str(a.email, 120);
+            if (email && !/^\S+@\S+\.\S+$/.test(email)) throw new ToolError("email is not a valid address");
+            return { name: need(str(a.name, 120), "name"), contact_name: str(a.contact_name, 120), phone: str(a.phone, 40), email, address: str(a.address, 300), payment_days: int(a.payment_days, 0, 0, 365), currency: str(a.currency, 6).toUpperCase(), notes: str(a.notes, 600) };
+        },
+        run: async (c, a) => {
+            const data = { name: String(a.name), contactName: String(a.contact_name || ""), phone: String(a.phone || ""), email: String(a.email || ""), address: String(a.address || ""), paymentDays: Number(a.payment_days) || 0, currency: String(a.currency || ""), notes: String(a.notes || "") };
+            const existing = await prisma.supplier.findFirst({ where: { org: c.org, name: data.name } });
+            if (existing) await prisma.supplier.update({ where: { id: existing.id }, data }); else await prisma.supplier.create({ data: { org: c.org, ...data } });
+            return { params: { name: data.name }, link: "/crm/finance?tab=purchases" };
+        },
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "create_purchase_order", description: "Order goods from a supplier (purchase order). Needs user confirmation. supplier is the supplier's name (create it first with create_supplier if it does not exist); each line names a product (name, SKU or id from list_products) and a quantity. Example: reorder everything that is out of stock — list_products first, then one line per product.", parameters: schema({ supplier: S("supplier name or id"), lines: { type: "array", description: "products to order", items: { type: "object", properties: { product: S("product name, SKU or id"), qty: N("quantity"), price: { type: "number", description: "purchase price per unit, optional" } }, required: ["product", "qty"] } }, expected_date: S("expected delivery YYYY-MM-DD, optional"), notes: S("notes, optional") }, ["supplier", "lines"]) },
+        check: (a) => {
+            const raw = Array.isArray(a.lines) ? a.lines : [];
+            const lines = raw.slice(0, 100).map((l) => { const o = (l ?? {}) as Record<string, unknown>; return { product: str(o.product ?? o.name, 200), qty: Math.abs(Number(o.qty)) || 0, ...(Number(o.price) > 0 ? { price: Number(o.price) } : {}) }; }).filter((l) => l.product && l.qty > 0);
+            if (!lines.length) throw new ToolError("lines must contain at least one product with a quantity");
+            return { supplier: need(str(a.supplier, 120), "supplier"), lines, expected_date: day(a.expected_date, "expected_date"), notes: str(a.notes, 600) };
+        },
+        run: (c, a) => wrap(async () => {
+            const supplier = await findSupplier(c.org, String(a.supplier));
+            const lines = [];
+            for (const l of a.lines as { product: string; qty: number; price?: number }[]) {
+                const p = await findProduct(c.org, l.product);
+                if (p.type !== "good") throw new ToolError(`"${p.name}" is a service, not a stock item`);
+                lines.push({ product: p.id, qty: l.qty, price: l.price ?? p.purchasePrice ?? 0, note: "" });
+            }
+            const settings = await financeSettings(c.org);
+            const po = await prisma.purchaseOrder.create({
+                data: {
+                    org: c.org, number: await purchaseNumber(c.org), supplier: supplier.id, date: c.today, expectedDate: String(a.expected_date || ""), status: "confirmed", lines: lines as any,
+                    currency: supplier.currency || settings.currency || (await defaultCurrency(c.org)), notes: String(a.notes || ""), createdByName: await authorName(c.userId),
+                },
+            });
+            return { params: { number: po.number, supplier: supplier.name, count: String(lines.length) }, link: "/crm/finance?tab=purchases" };
+        }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "create_product", description: "Add a product or service to the catalog. Needs user confirmation. type: good (stock item) or service.", parameters: schema({ name: S("product name"), type: { type: "string", enum: ["good", "service"] }, sku: S("SKU / article"), unit: S("unit, e.g. pcs, kg, h"), sale_price: { type: "number" }, purchase_price: { type: "number" }, stock_qty: { type: "number", description: "starting stock (goods only)" }, reorder_level: { type: "number", description: "alert when stock falls to this level" } }, ["name"]) },
+        check: (a) => ({ name: need(str(a.name, 200), "name"), type: a.type === "good" ? "good" : "service", sku: str(a.sku, 60), unit: str(a.unit, 20), sale_price: Math.max(0, Number(a.sale_price) || 0), purchase_price: Math.max(0, Number(a.purchase_price) || 0), stock_qty: Math.max(0, Number(a.stock_qty) || 0), reorder_level: Math.max(0, Number(a.reorder_level) || 0) }),
+        run: async (c, a) => {
+            const good = a.type === "good";
+            const p = await prisma.product.create({ data: { org: c.org, name: String(a.name), type: good ? "good" : "service", sku: String(a.sku || ""), unit: String(a.unit || "") || "pcs", salePrice: Number(a.sale_price) || 0, purchasePrice: Number(a.purchase_price) || 0, stockQty: good ? Number(a.stock_qty) || 0 : 0, reorderLevel: Number(a.reorder_level) || 0 } });
+            return { params: { name: p.name }, link: "/crm/finance?tab=products" };
+        },
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "adjust_stock", description: "Change the stock of a product: positive qty = receipt/surplus, negative = write-off. Needs user confirmation. reason: purchase (goods received), writeoff, adjustment (inventory count), return.", parameters: schema({ product: S("product name, SKU or id"), qty: { type: "number", description: "change in stock, + or −" }, reason: { type: "string", enum: ["purchase", "writeoff", "adjustment", "return"] }, note: S("note, optional") }, ["product", "qty"]) },
+        check: (a) => {
+            const qty = Number(a.qty);
+            if (!Number.isFinite(qty) || qty === 0) throw new ToolError("qty must be a non-zero number");
+            return { product: need(str(a.product, 200), "product"), qty, reason: ["purchase", "writeoff", "adjustment", "return"].includes(String(a.reason)) ? a.reason : qty < 0 ? "writeoff" : "adjustment", note: str(a.note, 200) };
+        },
+        run: (c, a) => wrap(async () => {
+            const p = await findProduct(c.org, String(a.product));
+            if (p.type !== "good") throw new ToolError(`"${p.name}" is a service — it has no stock`);
+            await moveStock(c.org, p.id, Number(a.qty), a.reason as "purchase" | "writeoff" | "adjustment" | "return", { note: String(a.note || ""), by: await authorName(c.userId) });
+            return { params: { name: p.name, qty: String(a.qty), stock: String((p.stockQty ?? 0) + Number(a.qty)) }, link: "/crm/finance?tab=products" };
+        }),
+    },
+    // ─────────── удаление ───────────
+    {
+        module: null, write: true,
+        def: { name: "delete_record", description: "Delete a record of the CRM by id (ids come from the read tools: search_*, list_*, browse_data). entity: contact, company, deal, task, expense, quote, order, draft_invoice (only drafts can be deleted), supplier and product (archived, not erased). Needs user confirmation — say what is being deleted.", parameters: schema({ entity: { type: "string", enum: ["contact", "company", "deal", "task", "expense", "quote", "order", "draft_invoice", "supplier", "product"] }, id: S("record id"), name: S("human-readable name of the record, for the confirmation card") }, ["entity", "id"]) },
+        check: (a) => {
+            if (!["contact", "company", "deal", "task", "expense", "quote", "order", "draft_invoice", "supplier", "product"].includes(String(a.entity))) throw new ToolError("Unsupported entity");
+            if (!isId(a.id)) throw new ToolError("id must be a record id");
+            return { entity: a.entity, id: a.id, name: str(a.name, 120) };
+        },
+        run: async (c, a) => {
+            const id = String(a.id);
+            const owner = { id, owner: c.org }, org = { id, org: c.org };
+            const del: Record<string, () => Promise<number>> = {
+                contact: async () => (await prisma.contact.deleteMany({ where: owner })).count,
+                company: async () => (await prisma.company.deleteMany({ where: owner })).count,
+                deal: async () => (await prisma.deal.deleteMany({ where: owner })).count,
+                task: async () => (await prisma.task.deleteMany({ where: owner })).count,
+                expense: async () => (await prisma.expense.deleteMany({ where: org })).count,
+                quote: async () => (await prisma.quote.deleteMany({ where: org })).count,
+                order: async () => (await prisma.order.deleteMany({ where: org })).count,
+                // выставленный счёт удалять нельзя (нумерация и учёт): только черновик
+                draft_invoice: async () => (await prisma.invoice.deleteMany({ where: { ...org, status: "draft" } })).count,
+                supplier: async () => (await prisma.supplier.updateMany({ where: org, data: { archived: true } })).count,
+                product: async () => (await prisma.product.updateMany({ where: org, data: { archived: true } })).count,
+            };
+            const n = await del[String(a.entity)]();
+            if (!n) throw new ToolError(a.entity === "draft_invoice" ? "Draft invoice not found (only unsent drafts can be deleted)" : "Record not found");
+            await logAudit({ org: c.org, userId: c.userId, action: `${a.entity}.deleted`, entityType: String(a.entity), entityId: id, summary: `${a.entity} ${a.name || id} deleted via assistant`, meta: {} }).catch(() => undefined);
+            return { params: { entity: String(a.entity), name: String(a.name || id) }, link: "/crm" };
+        },
+    },
 ];
 
 export const toolByName = (name: string) => TOOLS.find((t) => t.def.name === name);
@@ -763,6 +906,10 @@ export async function targetLabel(c: Pick<AiCtx, "org">, tool: string, a: Args):
             const r = await prisma.employee.findFirst({ where: { id: String(a.employee_id), owner: c.org }, select: { firstname: true, lastname: true } });
             return r ? `${r.firstname} ${r.lastname}`.trim() : "";
         }
+        if (["mark_invoice_paid", "send_invoice", "issue_fiscal_receipt"].includes(tool)) return String(a.number ?? "");
+        if (tool === "create_purchase_order") return String(a.supplier ?? "");
+        if (tool === "adjust_stock") return String(a.product ?? "");
+        if (tool === "delete_record") return String(a.name ?? "");
         if (tool === "update_deal_stage") return (await prisma.deal.findFirst({ where: { id: String(a.id), owner: c.org }, select: { clientName: true } }))?.clientName ?? "";
         if (tool === "create_invoice" || tool === "create_quote" || tool === "create_order" || tool === "create_contract") return String(a.customer_name ?? "");
     } catch { /* подпись необязательна */ }

@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { MdAutoAwesome, MdCheckCircle, MdClose, MdErrorOutline, MdGraphicEq, MdSearch } from "react-icons/md";
 import { TbMicrophone, TbPlayerStop, TbVolume, TbVolumeOff } from "react-icons/tb";
-import { AiAction, AiMessage, AiNav, useAiStore } from "@/store/useAiStore";
+import { AiAction, AiDownload, AiMessage, AiNav, useAiStore } from "@/store/useAiStore";
 import { stripLocale } from "@/utils/locale";
 import Modal from "../shared/Modal";
 import Markdown from "./markdown";
@@ -14,6 +14,7 @@ import VoiceOrb from "./VoiceOrb";
 import VoiceHud, { ORB_BY_PHASE, formatActionValue } from "./VoiceHud";
 import { configureSpeech, stopSpeech } from "./speech";
 import { useVoiceAgent } from "./useVoiceAgent";
+import { downloadDocumentPdf, viewDocumentPdf } from "../Finance/download";
 import { dictationSupported, recorderSupported, ttsSupported, useSpeechOutput, useVoiceInput } from "./voice";
 
 const AUTO_SPEAK_KEY = "ai.autospeak";
@@ -185,6 +186,17 @@ export default function AiAssistant() {
 		window.addEventListener("iris:go", onGo);
 		return () => window.removeEventListener("iris:go", onGo);
 	}, [locale, router]);
+
+	// Ассистент сохраняет документ (download_document): PDF качается браузером с вашей авторизацией, как по кнопке «PDF»
+	useEffect(() => {
+		const onDownload = (e: Event) => {
+			const d = (e as CustomEvent<AiDownload>).detail;
+			if (!d?.id) return;
+			void (d.mode === "open" ? viewDocumentPdf : downloadDocumentPdf)(d.kind, d.id, d.number, locale).then((ok) => { if (!ok) toast.error(t("downloadFailed")); });
+		};
+		window.addEventListener("iris:download", onDownload);
+		return () => window.removeEventListener("iris:download", onDownload);
+	}, [locale, t]);
 
 	useEffect(() => {
 		if (!open || !autoSpeak || !voice.tts) return;

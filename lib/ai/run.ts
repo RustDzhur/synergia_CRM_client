@@ -2,7 +2,7 @@ import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
 import { ProviderError } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
-import { AiCtx, NavTarget, ToolError, allowedTools, targetLabel } from "./tools";
+import { AiCtx, DownloadTarget, NavTarget, ToolError, allowedTools, targetLabel } from "./tools";
 import { Msg, complete, voiceModel } from "./provider";
 
 // Сколько разговоров с ИИ в сутки у фирмы — общий счётчик для чата и автономного шага автоматизации (см. app/config/plans.ts).
@@ -42,9 +42,9 @@ User: ${user.name} (role: ${ctx.role}). Today is ${ctx.today}, the local time is
 Reply in ${LANG[locale] ?? "English"} unless the user writes in another language. Be concise: short sentences, short lists, no filler. Dates for people: dd.mm.yyyy.
 
 Rules:
-- You can read every page of the CRM: contacts, companies, deals, tasks, employees, mail, documents, accounting (list_invoices, finance_summary, list_expenses), warehouse stock (list_products), and everything else through browse_data (warehouses, stock movements, orders, quotes, contracts, suppliers, purchases, production, bank, assets, calendar events, chats, projects, automation rules). Never say you have no access to a page or to stock — look at the tool list and use the matching tool; if the user's role really lacks access the tool says so. You can also open any page with navigate.\n- Get facts only from the tools. Never invent customers, numbers, dates, e-mails or ids. If a tool finds nothing, say so plainly. If you lack a tool for something, say what you cannot do.
+- You can read every page of the CRM: contacts, companies, deals, tasks, employees, mail, documents, accounting (list_invoices, finance_summary, list_expenses), warehouse stock (list_products), and everything else through browse_data (warehouses, stock movements, orders, quotes, contracts, suppliers, purchases, production, bank, assets, calendar events, chats, projects, automation rules). Never say you have no access to a page or to stock — look at the tool list and use the matching tool; if the user's role really lacks access the tool says so. You can also open any page with navigate, and save an invoice/quote/order/contract as a PDF with download_document. You act like an administrator: purchasing (create_supplier + create_purchase_order — to «order everything that is out of stock» call list_products with filter out_of_stock, then one purchase order line per product), stock changes (adjust_stock, create_product), payments and cash receipts (mark_invoice_paid, issue_fiscal_receipt), e-mailing invoices (send_invoice), deleting records (delete_record with the id from a read tool). Never answer «I have no tool for that» without checking the tool list first; if something really is missing, say exactly what.\n- Get facts only from the tools. Never invent customers, numbers, dates, e-mails or ids. If a tool finds nothing, say so plainly. If you lack a tool for something, say what you cannot do.
 - If the request is ambiguous or a required detail is missing, ask ONE short clarifying question instead of guessing — then act on the answer. This matters most in the voice conversation mode, where the user speaks and hears the answer: keep spoken answers short and put the one question that unblocks you first.
-- To change anything you must call a write tool (create_task, update_task, create_deal, create_contact, create_company, update_deal_stage, add_note, send_email, save_employee_contract, create_invoice, create_quote, create_order, create_contract, create_expense). To open a page («перейди в бухгалтерию», «открой задачи», «покажи неоплаченные счета») call navigate — it opens the page immediately, no confirmation (for accounting pass tab and filter; and when the user also asks a question about the data, call list_invoices / finance_summary / list_expenses too and answer it). Other write tools (also create_expense, create_company, update_deal_stage) do NOT execute: the user sees a confirmation card and decides. After calling it, say in one or two sentences what you prepared and that it waits for their confirmation. Never say something was already done or sent.
+- To change anything you must call a write tool (create_task, update_task, create_deal, create_contact, create_company, update_deal_stage, add_note, send_email, save_employee_contract, create_invoice, create_quote, create_order, create_contract, create_expense, create_supplier, create_purchase_order, create_product, adjust_stock, mark_invoice_paid, send_invoice, issue_fiscal_receipt, delete_record). To open a page («перейди в бухгалтерию», «открой задачи», «покажи неоплаченные счета») call navigate — it opens the page immediately, no confirmation (for accounting pass tab and filter; and when the user also asks a question about the data, call list_invoices / finance_summary / list_expenses too and answer it). Other write tools (also create_expense, create_company, update_deal_stage) do NOT execute: the user sees a confirmation card and decides. After calling it, say in one or two sentences what you prepared and that it waits for their confirmation. Never say something was already done or sent.
 - Resolve relative dates ("tomorrow", "Friday") from today's date into exact dates before calling a tool. Search for a person or customer first if you need their id.
 - When the user asks to write or reply to an e-mail, first read the relevant message or thread, then write the draft in the language of the other person and show it in the chat. Do not send it unless the user asks; then call send_email.
 - For a summary of a customer or a conversation: read the record or thread with the tools, then give: who/what, current state, open points, and a recommended next action.
@@ -61,7 +61,7 @@ function openingPhrase(label: string, userText: string) {
 }
 
 export interface PendingAction { id: string; tool: string; args: Record<string, unknown>; target: string }
-export interface ChatResult { reply: string; steps: string[]; actions: PendingAction[]; nav?: NavTarget }
+export interface ChatResult { reply: string; steps: string[]; actions: PendingAction[]; nav?: NavTarget; download?: DownloadTarget }
 
 const MAX_STEPS = 6;
 const clip = (v: unknown) => JSON.stringify(v).slice(0, 12000);
@@ -75,10 +75,11 @@ export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "ass
     const steps: string[] = [];
     const actions: PendingAction[] = [];
     let nav: NavTarget | undefined;
+    let download: DownloadTarget | undefined;
 
     for (let i = 0; i < MAX_STEPS; i++) {
         const r = await complete(sys, msgs, tools.map((t) => t.def), opts.voice && voiceModel() ? { model: voiceModel() } : {});
-        if (!r.calls.length) return { reply: r.text || "…", steps, actions, ...(nav ? { nav } : {}) };
+        if (!r.calls.length) return { reply: r.text || "…", steps, actions, ...(nav ? { nav } : {}), ...(download ? { download } : {}) };
         msgs.push({ role: "assistant", text: r.text, calls: r.calls });
         let navigateOnly = true; // в этом шаге были только успешные переходы по страницам
         for (const call of r.calls) {
@@ -106,6 +107,11 @@ export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "ass
                         const { _nav, ...rest } = out as { _nav: NavTarget } & Record<string, unknown>;
                         nav = _nav;
                         content = clip(rest);
+                    } else if (out && typeof out === "object" && "_download" in out) {
+                        // файл скачает браузер человека (PDF отдаётся только с его авторизацией)
+                        const { _download, ...rest } = out as { _download: DownloadTarget } & Record<string, unknown>;
+                        download = _download;
+                        content = clip({ ...rest, status: "The file is being downloaded in the user's browser" });
                     } else content = clip(out);
                 } catch (e) {
                     await log(ctx, "failed", tool.def.name, call.args, e instanceof Error ? e.message : "");

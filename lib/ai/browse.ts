@@ -102,7 +102,7 @@ export async function browse(ctx: Ctx, a: Record<string, unknown>) {
     }
     const delegate = (prisma as unknown as Record<string, { findMany: (o: unknown) => Promise<Row[]>; count: (o: unknown) => Promise<number> }>)[ent.model];
     const [rows, total, l] = await Promise.all([delegate.findMany({ where, orderBy: ent.order, take }), delegate.count({ where }), lookups(ctx.org, ent.need)]);
-    return { entity, total, shown: rows.length, records: rows.map((r) => ent.map(r, l)) };
+    return { entity, total, shown: rows.length, records: rows.map((r) => ({ id: r.id, ...ent.map(r, l) })) };
 }
 
 /** Остатки товаров: что заканчивается и чего нет. Низкий остаток — не больше порога (reorderLevel), если порог задан. */
@@ -120,6 +120,6 @@ export async function listProducts(ctx: Ctx, a: Record<string, unknown>) {
     return {
         filter,
         goodsTotal: goods.length, outOfStock: goods.filter((p) => state(p) === "out").length, lowStock: goods.filter((p) => state(p) === "low").length,
-        products: picked.slice(0, limitOf(a.limit)).map((p) => ({ name: p.name, sku: p.sku, type: p.type, stock: p.stockQty, unit: p.unit, reorderLevel: p.reorderLevel, state: p.type === "good" ? state(p) : "service", salePrice: p.salePrice })),
+        products: picked.slice(0, limitOf(a.limit)).map((p) => ({ id: p.id, name: p.name, sku: p.sku, type: p.type, stock: p.stockQty, unit: p.unit, reorderLevel: p.reorderLevel, state: p.type === "good" ? state(p) : "service", salePrice: p.salePrice })),
     };
 }
