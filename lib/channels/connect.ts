@@ -1,12 +1,9 @@
-import type { HydratedDocument } from "mongoose";
 import { webhookPath, packSecrets, secretsOf } from "@/lib/integrations";
 import { isPublicHttps } from "@/lib/appUrl";
 import { randomToken } from "@/lib/crypto";
 import { metaApp, whatsappVerifyToken } from "@/lib/platformSettings";
 import { ProviderError } from "@/lib/http";
-import Conversation from "@/models/Conversation";
-import Integration from "@/models/Integration";
-import Message from "@/models/Message";
+import { prisma } from "@/lib/prisma";
 import { exchangeMessengerCode, getPage, listUserPages, longLivedUserToken, looksLikeUserToken, messengerCredentialsProblem, messengerOauthUrl, setMessengerAppWebhook, subscribeMessengerPage } from "./messenger";
 import { verifyPlivo } from "./plivo";
 import { parseSip } from "./sip";
@@ -27,13 +24,52 @@ import { appSubscriptions, discoverWhatsAppNumbers, exchangeEmbeddedCode, exchan
 // поэтому фирма определяется по номеру из события (см. app/api/webhooks/whatsapp/app)
 const PLATFORM_WA_WEBHOOK = "/api/webhooks/whatsapp/app";
 
-type Doc = HydratedDocument<any>;
+type Doc = any;
 type Input = Record<string, unknown>;
 const str = (v: unknown, max = 300) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const need = (v: string, label: string) => {
     if (!v) throw new ProviderError(`${label} is required`);
     return v;
 };
+
+// ── Запись интеграции через Prisma ────────────────────────────────────────────────────────────────
+// Логика подключения ниже написана как работа с документом (set/save, config как обычный объект).
+// Чтобы не переписывать её целиком, здесь небольшая обёртка над Prisma: она держит поля записи
+// и сохраняет их в базу. Принимает и готовую запись Prisma, и прежний Mongoose-документ.
+function rowOf(owner: string, type: string, existing?: any, token?: string): Doc {
+    const row: Doc = {
+        id: existing?.id,
+        owner: owner ?? existing?.owner,
+        type: type ?? existing?.type,
+        token: existing?.token ?? token,
+        name: existing?.name ?? "",
+        status: existing?.status ?? "",
+        error: existing?.error ?? "",
+        config: { ...((existing?.config ?? {}) as any) },
+        secrets: existing?.secrets ?? "",
+        set(pathOrObj: any, value?: unknown) {
+            if (typeof pathOrObj === "string") {
+                const [head, ...rest] = pathOrObj.split(".");
+                if (rest.length) this[head] = { ...(this[head] ?? {}), [rest.join(".")]: value };
+                else this[head] = value;
+            } else {
+                Object.assign(this, pathOrObj);
+            }
+            return this;
+        },
+        markModified() { return this; },
+        async save() {
+            const data = { name: this.name, status: this.status, error: this.error, config: this.config, secrets: this.secrets };
+            if (this.id) await prisma.integration.update({ where: { id: this.id }, data: data as any });
+            else {
+                const created = await prisma.integration.create({ data: { owner: this.owner, type: this.type, token: this.token ?? randomToken(), ...(data as any) } });
+                this.id = created.id;
+            }
+            return this;
+        },
+    };
+    return row;
+}
 
 export interface ConnectResult { doc: Doc; warning?: string }
 
@@ -77,7 +113,7 @@ export async function startMetaOauth(owner: string, kind: MetaKind, enteredAppId
     if (!appId) throw new ProviderError("The Meta app is not configured: add the App ID and App Secret in the admin panel, or enter them here");
     if (!/^\d{6,20}$/.test(appId)) throw new ProviderError("The App ID is a number — copy it from Meta → Settings → Basic");
     if (appSecret.length < 20 || appSecret.length > 60) throw new ProviderError("The App Secret is a 32-character string — copy it from Meta → Settings → Basic");
-    const doc = (await Integration.findOne({ owner, type: kind })) ?? new Integration({ owner, type: kind, token: randomToken() });
+    const doc = rowOf(owner, kind, await prisma.integration.findFirst({ where: { owner, type: kind } }), randomToken());
     // у ещё не подключённой интеграции секретов нет — читаем их только когда они есть
     const existing: MetaSecrets = doc.secrets ? secretsOf<MetaSecrets>(doc) : {};
     doc.secrets = packSecrets({ ...existing, pendingAppId: appId, pendingAppSecret: appSecret });
@@ -88,11 +124,11 @@ export async function startMetaOauth(owner: string, kind: MetaKind, enteredAppId
 
 /** Возврат из Facebook: получаем токены и выясняем, что доступно для подключения */
 export async function completeMetaOauth(owner: string, kind: MetaKind, code: string, origin: string): Promise<{ options: Array<{ id: string; name: string }> }> {
-    const doc = await Integration.findOne({ owner, type: kind });
-    const secrets = doc ? secretsOf<MetaSecrets>(doc) : {};
+    const doc = rowOf(owner, kind, await prisma.integration.findFirst({ where: { owner, type: kind } }));
+    const secrets = doc.id ? secretsOf<MetaSecrets>(doc) : {};
     const appId = secrets.pendingAppId ?? String(doc?.config?.appId ?? "");
     const appSecret = secrets.pendingAppSecret ?? secrets.appSecret ?? "";
-    if (!doc || !appId || !appSecret) throw new ProviderError("Start the connection again");
+    if (!doc.id || !appId || !appSecret) throw new ProviderError("Start the connection again");
     const redirect = `${origin}${metaRedirect(kind)}`;
 
     // короткий токен годится только на один шаг, поэтому сразу меняем его на долгий
@@ -153,7 +189,7 @@ export async function connectWhatsAppEmbedded(
     }
 
     const phone = await getPhoneNumber(phoneNumberId, token);
-    const doc = (await Integration.findOne({ owner, type: "whatsapp" })) ?? new Integration({ owner, type: "whatsapp", token: randomToken() });
+    const doc = rowOf(owner, "whatsapp", await prisma.integration.findFirst({ where: { owner, type: "whatsapp" } }), randomToken());
     const verifyToken = String(doc.config?.verifyToken || randomToken(8));
     doc.set({
         name: phone.display_phone_number || phone.verified_name || phoneNumberId,
@@ -179,8 +215,8 @@ export async function connectWhatsAppEmbedded(
 
 /** Подключение выбранного: токен выбранной страницы (или номера) уже лежит в секретах после возврата */
 export async function connectMetaChoice(owner: string, kind: MetaKind, id: string, origin: string): Promise<{ name: string; warning?: string }> {
-    const doc = await Integration.findOne({ owner, type: kind });
-    if (!doc) throw new ProviderError("Start the connection again");
+    const doc = rowOf(owner, kind, await prisma.integration.findFirst({ where: { owner, type: kind } }));
+    if (!doc.id) throw new ProviderError("Start the connection again");
     const secrets = secretsOf<MetaSecrets>(doc);
     const appId = String(doc.config?.appId ?? "");
     const appSecret = secrets.appSecret ?? "";
@@ -442,7 +478,8 @@ export async function connectIntegration(owner: string, type: string, input: Inp
             const commission = String(input.commission ?? "").trim();
             if (commission) config = { ...config, commission: String(Math.max(0, Math.min(50, Number(commission.replace(",", ".")) || 0))) };
             // Пробное подключение — на несохранённой копии: проверка ничего не пишет в базу
-            const probe = new Integration({ owner, type, token, config, secrets: packSecrets(secrets) });
+            // пробное подключение — на несохранённой копии: проверка ничего не пишет в базу
+            const probe = { owner, type, token, config, secrets: packSecrets(secrets) };
             const check = await checkMarketplace(probe);
             if (!check.ok) throw new ProviderError(check.message);
             name = MARKETPLACES[id].label;
@@ -491,7 +528,7 @@ export async function connectIntegration(owner: string, type: string, input: Inp
     }
 
     // одно подключение каждого типа: повторное подключение обновляет существующее (беседы сохраняются)
-    const doc = (await Integration.findOne({ owner, type })) ?? new Integration({ owner, type });
+    const doc = rowOf(owner, type, await prisma.integration.findFirst({ where: { owner, type } }));
     doc.set({ name, token, config, secrets: packSecrets(secrets), status: "connected", error: "" });
     await doc.save();
     // подписка на аккаунт WhatsApp Business: без неё Meta не станет присылать события, но подключение уже рабочее для отправки
@@ -530,7 +567,8 @@ export function webchatConfig(input: Input) {
 }
 
 // Проверка канала: у Telegram спрашиваем, дошёл ли до нас вебхук и почему нет (например, сайт закрыт паролем Vercel)
-export async function checkIntegration(doc: Doc, origin: string) {
+export async function checkIntegration(docIn: Doc, origin: string) {
+    const doc = rowOf(docIn?.owner, docIn?.type, docIn);
     // у WhatsApp проверяем доступ к номеру: токен мог истечь или номер отвязали от приложения
     if (doc.type === "whatsapp") {
         let message = "";
@@ -565,7 +603,7 @@ export async function checkIntegration(doc: Doc, origin: string) {
 // Не чаще раза в минуту на канал, чтобы не бить по провайдерам при повторной ошибке.
 export async function healWebhooks(owner: string, origin: string) {
     if (!isPublicHttps(origin)) return;
-    const docs = await Integration.find({ owner, type: { $in: ["telegram", "viber", "whatsapp"] } });
+    const docs = (await prisma.integration.findMany({ where: { owner, type: { in: ["telegram", "viber", "whatsapp"] } } })).map((r) => rowOf(r.owner, r.type, r));
     for (const d of docs) {
         if (d.type === "whatsapp") {
             await ensureWhatsAppWebhook(d, origin).catch(() => undefined);
@@ -596,7 +634,8 @@ async function ensureWhatsAppWebhook(doc: Doc, origin: string) {
     await doc.save();
 }
 
-export async function reRegisterWebhook(doc: Doc, origin: string) {
+export async function reRegisterWebhook(docIn: Doc, origin: string) {
+    const doc = rowOf(docIn?.owner, docIn?.type, docIn);
     const warning = await registerWebhook(doc, origin);
     doc.status = warning ? "error" : "connected";
     doc.error = warning ?? "";
@@ -610,7 +649,8 @@ export async function removeIntegration(doc: Doc) {
         if (doc.type === "telegram") await deleteWebhook(secretsOf(doc).botToken);
         if (doc.type === "viber") await removeViberWebhook(secretsOf(doc).authToken);
     } catch { /* токен уже отозван или провайдер недоступен — интеграцию удаляем в любом случае */ }
-    await Message.deleteMany({ integration: doc._id });
-    await Conversation.deleteMany({ integration: doc._id });
-    await Integration.deleteOne({ _id: doc._id });
+    const id = String(doc.id ?? doc._id ?? "");
+    await prisma.message.deleteMany({ where: { integration: id } });
+    await prisma.conversation.deleteMany({ where: { integration: id } });
+    await prisma.integration.deleteMany({ where: { id } });
 }
