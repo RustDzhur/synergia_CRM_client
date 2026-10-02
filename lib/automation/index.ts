@@ -3,21 +3,12 @@ import { notify } from "@/lib/notify";
 import { assertPublicHost } from "@/lib/mail/hosts";
 import { sendFromAccount } from "@/lib/mail";
 import { randomToken } from "@/lib/crypto";
-import AutomationJob from "@/models/AutomationJob";
-import Contact from "@/models/Contact";
-import Deal from "@/models/Deal";
-import Integration from "@/models/Integration";
-import Organization from "@/models/Organization";
-import SectionRecord from "@/models/SectionRecord";
-import Stage from "@/models/Stage";
-import Task from "@/models/Task";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 // Автоматизация (как триггеры в Bitrix24/HubSpot): событие CRM → подходящие правила → действие сразу или через заданное время.
 // Правила лежат в записях раздела Automation (key "automation:rules"), переменные и константы — там же, журнал — "automation:logs".
 export const EVENTS = [
     "deal_created", "deal_stage", "contact_created", "lead_created", "message_received", "call_missed", "task_created", "deadline",
-    // бухгалтерия (lib/finance): заказ, счёт, договор, предложение — см. app/api/orders, app/api/invoices
     "order_created", "order_status", "invoice_sent", "invoice_paid", "invoice_overdue", "contract_signed", "quote_sent",
     "invoice_credit_note_created", "invoice_recurring_created", "invoice_reminder",
 ] as const;
@@ -26,10 +17,8 @@ export const ACTIONS = ["notify", "create_task", "add_note", "move_stage", "send
 
 export interface AutoEvent {
     type: EventType;
-    // deal: { id, name, stageId, stageName, contactName, email }; contact: { id, name, email, phone }; task: { id, title };
-    // message: { from, text, channel }; deadline: { kind, title, stage }
     data: Record<string, string>;
-    auto?: boolean; // событие вызвано самой автоматизацией — правила на него не реагируют (защита от циклов)
+    auto?: boolean;
 }
 
 const DELAY_MIN: Record<string, number> = { immediately: 0, after_1h: 60, after_1d: 1440, after_3d: 4320 };
@@ -37,8 +26,8 @@ type Rule = { id: string; values: Record<string, string> };
 const RULES = "automation:rules";
 
 async function keyValues(org: string, key: string) {
-    const rows = await SectionRecord.find({ org, key, rid: { $ne: "__init__" } });
-    return Object.fromEntries(rows.map((r) => [String(r.values?.name ?? ""), String(r.values?.value ?? "")]).filter(([k]) => k));
+    const rows = await prisma.sectionRecord.findMany({ where: { org, key, rid: { not: "__init__" } } });
+    return Object.fromEntries(rows.map((r) => [String((r.values as any)?.name ?? ""), String((r.values as any)?.value ?? "")]).filter(([k]) => k));
 }
 
 // Какая сущность стоит за событием — на неё и «нанизываются» поля события (deal.stageName, task.title, invoice.number)
@@ -49,8 +38,6 @@ function eventBucket(type: string) {
         : "deadline";
 }
 
-// Одно и то же поле у разных событий называется по-разному: у сделки контакт — contactName, у счёта клиент — customerName,
-// у сообщения отправитель — from. Синонимы дают шаблону устойчивое имя независимо от события.
 const ALIASES: Record<string, string[]> = {
     "contact.name": ["contactName", "name", "from", "customerName"],
     "contact.email": ["email", "contactEmail"],
@@ -62,8 +49,6 @@ const ALIASES: Record<string, string[]> = {
     "message.from": ["from", "name"],
 };
 
-// Событие приходит одним плоским набором полей, поэтому {{contact.name}} в событии сделки раньше подставлял название сделки.
-// Строим канонический вид: каждое поле доступно и коротко ({{stageName}}), и как «сущность.поле» ({{deal.stageName}}).
 function eventView(ev: AutoEvent) {
     const bucket = eventBucket(ev.type);
     const view: Record<string, string> = { "event.type": ev.type };
@@ -97,10 +82,11 @@ export async function render(org: string, template: string, ev: AutoEvent) {
 
 async function log(org: string, rule: Rule, status: "success" | "error", message: string) {
     try {
-        await SectionRecord.updateOne({ org, key: "automation:logs", rid: "__init__" }, { $setOnInsert: { values: {} } }, { upsert: true });
-        await SectionRecord.create({ org, key: "automation:logs", rid: randomToken(5), values: { name: rule.values.name ?? "", date: new Date().toISOString().slice(0, 10), status, message: message.slice(0, 300) } });
-        const extra = await SectionRecord.find({ org, key: "automation:logs", rid: { $ne: "__init__" } }).sort({ createdAt: -1 }).skip(200).select("_id");
-        if (extra.length) await SectionRecord.deleteMany({ _id: { $in: extra.map((e) => e._id) } });
+        const initExists = await prisma.sectionRecord.findFirst({ where: { org, key: "automation:logs", rid: "__init__" } });
+        if (!initExists) await prisma.sectionRecord.create({ data: { org, key: "automation:logs", rid: "__init__", values: {} } });
+        await prisma.sectionRecord.create({ data: { org, key: "automation:logs", rid: randomToken(5), values: { name: rule.values.name ?? "", date: new Date().toISOString().slice(0, 10), status, message: message.slice(0, 300) } as any } });
+        const extra = await prisma.sectionRecord.findMany({ where: { org, key: "automation:logs", rid: { not: "__init__" } }, orderBy: { createdAt: "desc" }, skip: 200, select: { id: true } });
+        if (extra.length) await prisma.sectionRecord.deleteMany({ where: { id: { in: extra.map((e) => e.id) } } });
     } catch (e) {
         console.error("automation log failed", e);
     }
@@ -112,12 +98,10 @@ async function clientEmail(org: string, ev: AutoEvent) {
     if (ev.data.email) return ev.data.email;
     const name = ev.data.contactName || ev.data.name;
     if (!name) return "";
-    const c = await Contact.findOne({ owner: org, name, email: { $exists: true, $ne: "" } }).select("email");
+    const c = await prisma.contact.findFirst({ where: { owner: org, name, email: { not: "" } }, select: { email: true } });
     return c?.email ?? "";
 }
 
-// Куда ведёт уведомление: у каждого события свой раздел (счёт — в счёта раздела «Финансы», письмо-лид — в воронку).
-// Раньше ссылку выбирали только между CRM, задачами и чатом, поэтому уведомление по счёту уводило в «Chat and Calls».
 const LINKS: [string, string][] = [
     ["/crm/crm", "deal"],
     ["/crm/tasks", "task"],
@@ -134,6 +118,20 @@ function eventLink(ev: AutoEvent) {
     return LINKS.find(([, b]) => b === bucket)?.[0] ?? "/crm/collaboration/chat-and-calls";
 }
 
+// $push в activities (Json-массив): читаем, добавляем, пишем — запись одна, гонок здесь нет
+async function pushActivity(kind: "deal" | "contact", id: string, owner: string, entry: Record<string, unknown>): Promise<boolean> {
+    if (kind === "deal") {
+        const doc = await prisma.deal.findFirst({ where: { id, owner }, select: { id: true, activities: true } });
+        if (!doc) return false;
+        await prisma.deal.update({ where: { id: doc.id }, data: { activities: [...((doc.activities as any[]) ?? []), entry] as any } });
+        return true;
+    }
+    const doc = await prisma.contact.findFirst({ where: { id, owner }, select: { id: true, activities: true } });
+    if (!doc) return false;
+    await prisma.contact.update({ where: { id: doc.id }, data: { activities: [...((doc.activities as any[]) ?? []), entry] as any } });
+    return true;
+}
+
 async function perform(org: string, rule: Rule, ev: AutoEvent): Promise<string> {
     const v = rule.values;
     const text = await render(org, v.message || v.name || "", ev);
@@ -143,55 +141,53 @@ async function perform(org: string, rule: Rule, ev: AutoEvent): Promise<string> 
             return "Notification sent";
         }
         case "create_task": {
-            const owner = await Organization.findById(org).select("ownerUser");
-            const me = owner ? await User.findById(owner.ownerUser).select("firstname") : null;
-            const task = await Task.create({ owner: org, title: (text || v.name).slice(0, 200), createdBy: "Automation", responsible: v.target === "responsible" ? ev.data.responsible || me?.firstname || "" : me?.firstname || "" });
+            const owner = await prisma.organization.findUnique({ where: { id: org }, select: { ownerUser: true } });
+            const me = owner ? await prisma.user.findUnique({ where: { id: owner.ownerUser }, select: { firstname: true } }) : null;
+            const task = await prisma.task.create({ data: { owner: org, title: (text || v.name).slice(0, 200), createdBy: "Automation", responsible: v.target === "responsible" ? ev.data.responsible || me?.firstname || "" : me?.firstname || "" } });
             return `Task created: ${task.title}`;
         }
         case "add_note": {
             const entry = { type: "note", text: text.slice(0, 2000) || v.name, meta: "" };
             if (ev.data.id && (ev.type.startsWith("deal") || ev.type === "lead_created")) {
-                const r = await Deal.updateOne({ _id: ev.data.dealId || ev.data.id, owner: org }, { $push: { activities: entry } }).catch(() => ({ matchedCount: 0 }));
-                if (r.matchedCount) return "Note added to the deal";
+                if (await pushActivity("deal", ev.data.dealId || ev.data.id, org, entry)) return "Note added to the deal";
             }
             if (ev.data.contactId || ev.type === "contact_created" || ev.type === "lead_created") {
-                const id = ev.data.contactId || ev.data.id;
-                const r = await Contact.updateOne({ _id: id, owner: org }, { $push: { activities: entry } }).catch(() => ({ matchedCount: 0 }));
-                if (r.matchedCount) return "Note added to the contact";
+                if (await pushActivity("contact", ev.data.contactId || ev.data.id, org, entry)) return "Note added to the contact";
             }
             throw new ProviderError("Nothing to attach the note to for this event");
         }
         case "move_stage": {
             const dealId = ev.data.dealId || (ev.type.startsWith("deal") || ev.type === "lead_created" ? ev.data.id : "");
             if (!dealId) throw new ProviderError("This event has no deal to move");
-            const stage = await Stage.findOne({ _id: v.moveTo, owner: org });
+            const stage = await prisma.stage.findFirst({ where: { id: v.moveTo, owner: org } });
             if (!stage) throw new ProviderError("The target stage does not exist");
-            const deal = await Deal.findOne({ _id: dealId, owner: org });
+            const deal = await prisma.deal.findFirst({ where: { id: dealId, owner: org } });
             if (!deal) throw new ProviderError("The deal no longer exists");
-            if (String(deal.stage) !== String(stage._id)) {
-                deal.stage = stage._id;
-                deal.activities.push({ type: "stage", text: stage.name, meta: "" });
-                await deal.save();
+            if (String(deal.stage) !== String(stage.id)) {
+                await prisma.deal.update({ where: { id: deal.id }, data: { stage: stage.id, activities: [...((deal.activities as any[]) ?? []), { type: "stage", text: stage.name, meta: "" }] as any } });
             }
             return `Deal moved to “${stage.name}”`;
         }
         case "send_email": {
-            const account = await Integration.findOne({ owner: org, type: "mail", status: "connected" });
+            const account = await prisma.integration.findFirst({ where: { owner: org, type: "mail", status: "connected" } });
             if (!account) throw new ProviderError("No connected mailbox: connect one in Web Mails");
-            const to = v.target === "client" ? await clientEmail(org, ev) : (await User.findById((await Organization.findById(org).select("ownerUser"))?.ownerUser).select("email"))?.email ?? "";
+            let to = "";
+            if (v.target === "client") to = await clientEmail(org, ev);
+            else {
+                const ownerDoc = await prisma.organization.findUnique({ where: { id: org }, select: { ownerUser: true } });
+                const u = ownerDoc ? await prisma.user.findUnique({ where: { id: ownerDoc.ownerUser }, select: { email: true } }) : null;
+                to = u?.email ?? "";
+            }
             if (!to) throw new ProviderError(v.target === "client" ? "The client has no email address" : "The recipient has no email address");
-            await sendFromAccount(account, { to, subject: (await render(org, v.name || "Firmspace CRM", ev)).slice(0, 200), text });
+            await sendFromAccount(account as any, { to, subject: (await render(org, v.name || "Firmspace CRM", ev)).slice(0, 200), text });
             return `Email sent to ${to}`;
         }
         case "ai_action": {
-            // на случай, если фирма понизила тариф уже после того, как создала это правило на более высоком
             const { orgFeatures } = await import("@/lib/features");
-            const orgDoc = await Organization.findById(org).select("plan planOverride planOverrideUntil featureOverrides");
+            const orgDoc = await prisma.organization.findUnique({ where: { id: org }, select: { plan: true, planOverride: true, planOverrideUntil: true, featureOverrides: true } });
             if (!orgFeatures(orgDoc ?? {}).aiAutomation) {
                 throw new ProviderError("This firm's plan no longer includes the autonomous AI automation step");
             }
-            // в отличие от других действий здесь message — не текст для показа, а инструкция для модели; имя правила
-            // (v.name) не годится в качестве замены: это лейбл для человека, а не поведенческая инструкция для ИИ
             const { runAiAction } = await import("@/lib/ai/automationStep");
             return await runAiAction(org, v.message || "", ev);
         }
@@ -232,21 +228,20 @@ const matches = (rule: Rule, ev: AutoEvent) =>
 export async function fireEvent(org: string, ev: AutoEvent) {
     if (ev.auto) return;
     try {
-        const rows = await SectionRecord.find({ org, key: RULES, rid: { $ne: "__init__" } });
+        const rows = await prisma.sectionRecord.findMany({ where: { org, key: RULES, rid: { not: "__init__" } } });
         for (const row of rows) {
-            const rule: Rule = { id: row.rid, values: (row.values ?? {}) as Record<string, string> };
+            const rule: Rule = { id: row.rid, values: ((row.values ?? {}) as Record<string, string>) };
             if (!matches(rule, ev)) continue;
             const minutes = DELAY_MIN[rule.values.timing] ?? 0;
             if (minutes === 0) await runRule(org, rule, { ...ev, auto: true });
-            else await AutomationJob.create({ org, rule: rule.id, event: ev, runAt: new Date(Date.now() + minutes * 60_000) });
+            else await prisma.automationJob.create({ data: { org, rule: rule.id, event: ev as any, runAt: new Date(Date.now() + minutes * 60_000) } });
         }
     } catch (e) {
         console.error("automation fireEvent failed", e);
     }
 }
 
-// Выполняет наступившие отложенные действия. Вызывается, пока кто-то из фирмы работает в CRM (опрос уведомлений),
-// и раз в сутки по расписанию (/api/cron/automation) — на случай, когда CRM никто не открывал.
+// Выполняет наступившие отложенные действия.
 const lastRun = new Map<string, number>();
 export async function runDueJobs(org?: string, throttleMs = 20_000) {
     if (org) {
@@ -255,16 +250,18 @@ export async function runDueJobs(org?: string, throttleMs = 20_000) {
     }
     let done = 0;
     for (let i = 0; i < 25; i++) {
-        const job = await AutomationJob.findOneAndUpdate({ ...(org ? { org } : {}), done: false, runAt: { $lte: new Date() } }, { done: true }, { sort: { runAt: 1 } });
+        // Атомарный «claim»: находим ближайшую готовую задачу и сразу помечаем её выполненной
+        const job = await prisma.automationJob.findFirst({ where: { ...(org ? { org } : {}), done: false, runAt: { lte: new Date() } }, orderBy: { runAt: "asc" } });
         if (!job) break;
+        await prisma.automationJob.update({ where: { id: job.id }, data: { done: true } });
         const orgId = String(job.org);
-        const row = await SectionRecord.findOne({ org: orgId, key: RULES, rid: job.rule });
-        if (!row || row.values?.enabled === "0") continue; // правило удалили или выключили, пока ждало
-        const rule: Rule = { id: row.rid, values: row.values as Record<string, string> };
-        const ev = job.event as AutoEvent;
+        const row = await prisma.sectionRecord.findFirst({ where: { org: orgId, key: RULES, rid: job.rule } });
+        if (!row || (row.values as any)?.enabled === "0") continue; // правило удалили или выключили, пока ждало
+        const rule: Rule = { id: row.rid, values: (row.values ?? {}) as Record<string, string> };
+        const ev = job.event as unknown as AutoEvent;
         // сделка ушла с этапа, к которому привязано правило, — действие уже не нужно
         if (rule.values.stage && ["deal_created", "deal_stage"].includes(ev.type)) {
-            const deal = await Deal.findOne({ _id: ev.data.id, owner: orgId }).select("stage");
+            const deal = await prisma.deal.findFirst({ where: { id: ev.data.id, owner: orgId }, select: { stage: true } });
             if (!deal || String(deal.stage) !== rule.values.stage) { await log(orgId, rule, "success", "Skipped: the deal left this stage"); continue; }
         }
         await runRule(orgId, rule, { ...ev, auto: true });
@@ -274,8 +271,9 @@ export async function runDueJobs(org?: string, throttleMs = 20_000) {
 }
 
 // Данные сделки для события
-export async function dealEvent(org: string, deal: { _id: unknown; clientName: string; stage: unknown; contactName?: string; responsible?: string }, type: "deal_created" | "deal_stage"): Promise<AutoEvent> {
-    const stage = await Stage.findOne({ _id: deal.stage, owner: org }).select("name");
-    const contact = deal.contactName ? await Contact.findOne({ owner: org, name: deal.contactName }).select("email") : null;
-    return { type, data: { id: String(deal._id), name: deal.clientName, stageId: String(deal.stage), stageName: stage?.name ?? "", contactName: deal.contactName ?? "", email: contact?.email ?? "", responsible: deal.responsible ?? "" } };
+export async function dealEvent(org: string, deal: { id?: string; _id?: unknown; clientName: string; stage: unknown; contactName?: string; responsible?: string }, type: "deal_created" | "deal_stage"): Promise<AutoEvent> {
+    const dealId = deal.id ?? String(deal._id ?? "");
+    const stage = await prisma.stage.findFirst({ where: { id: String(deal.stage), owner: org }, select: { name: true } });
+    const contact = deal.contactName ? await prisma.contact.findFirst({ where: { owner: org, name: deal.contactName }, select: { email: true } }) : null;
+    return { type, data: { id: dealId, name: deal.clientName, stageId: String(deal.stage), stageName: stage?.name ?? "", contactName: deal.contactName ?? "", email: contact?.email ?? "", responsible: deal.responsible ?? "" } };
 }
