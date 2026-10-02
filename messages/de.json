@@ -1652,7 +1652,9 @@
         "agentLang_ru": "Русский",
         "agentLang_uk": "Українська",
         "agentLang_de": "Deutsch",
-        "agentLang_en": "English"
+        "agentLang_en": "English",
+        "step_list_products": "Lagerbestände gelesen",
+        "step_browse_data": "Datensätze gelesen"
     },
     "finance": {
         "title": "Buchhaltung",

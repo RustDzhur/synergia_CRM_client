@@ -1652,7 +1652,9 @@
         "agentLang_ru": "Русский",
         "agentLang_uk": "Українська",
         "agentLang_de": "Deutsch",
-        "agentLang_en": "English"
+        "agentLang_en": "English",
+        "step_list_products": "Read the stock levels",
+        "step_browse_data": "Read the records"
     },
     "finance": {
         "title": "Accounting",

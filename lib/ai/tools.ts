@@ -8,6 +8,7 @@ import { getObject } from "@/lib/storage";
 import { ensureStages } from "@/lib/stages";
 import { prisma } from "@/lib/prisma";
 import { toDTO } from "@/lib/serialize";
+import { BrowseError, ENTITIES, ENTITY_KEYS, browse, listProducts } from "./browse";
 import { mkActivity } from "@/lib/activities";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
 import { nextNumber } from "@/lib/finance/numbering";
@@ -671,6 +672,18 @@ export const TOOLS: AiTool[] = [
             for (const e of rows) sums[e.currency] = Math.round(((sums[e.currency] ?? 0) + e.amount) * 100) / 100;
             return { count: rows.length, totalByCurrency: sums, expenses: rows.slice(0, int(a.limit, 15, 1, 40)).map((e) => ({ vendor: e.vendor, category: e.category, amount: e.amount, currency: e.currency, date: e.date, notes: cut(e.notes, 100) })) };
         },
+    },
+    // ─────────── чтение остальных разделов: склад, заказы, поставщики, банк, календарь, чаты… ───────────
+    {
+        module: "inventory", write: false,
+        def: { name: "list_products", description: "Products and stock levels (warehouse). filter: low_stock (running out: at or below the reorder level, or out of stock — default), out_of_stock, all. Returns the counts and the products with current stock, unit and reorder level. Use it for «что заканчивается на складе / какие остатки / есть ли товар X».", parameters: schema({ filter: { type: "string", enum: ["low_stock", "out_of_stock", "all"] }, query: S("part of the product name, SKU or barcode"), limit: N("max products, default 15, max 40") }) },
+        run: async (c, a) => { try { return await listProducts(c, a); } catch (e) { throw e instanceof BrowseError ? new ToolError(e.message) : e; } },
+    },
+    {
+        // Раздел проверяется внутри — по сущности; так один инструмент закрывает все страницы кабинета
+        module: null, write: false,
+        def: { name: "browse_data", description: `Read records of any other page of the CRM. entity: ${ENTITY_KEYS.map((k) => (k === "section_records" ? "section_records (custom tabs of automation/marketing/inventory — pass key like automation:rules)" : `${k} (${ENTITIES[k].label})`)).join("; ")}. Optional text query, date range from/to (YYYY-MM-DD) and limit. Returns the total count and the newest/most relevant records. Use it for any question about warehouses, stock movements, orders, quotes, contracts, suppliers, purchases, production, bank transactions, assets, calendar events, chats, projects, automation rules.`, parameters: schema({ entity: { type: "string", enum: ENTITY_KEYS }, query: S("text to look for"), from: S("start date YYYY-MM-DD"), to: S("end date YYYY-MM-DD"), key: S("only for section_records, e.g. automation:rules"), limit: N("max records, default 15, max 40") }, ["entity"]) },
+        run: async (c, a) => { try { return await browse(c, a); } catch (e) { throw e instanceof BrowseError ? new ToolError(e.message) : e; } },
     },
     // ─────────── запись: расходы, компании, этапы сделок ───────────
     {
