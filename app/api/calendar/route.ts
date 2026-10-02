@@ -41,7 +41,7 @@ export async function GET(req: Request) {
         },
         icloud: {
             connected: !!icloud && icloud.status === "connected",
-            appleId: icloud?.config?.appleId ?? "",
+            appleId: String((icloud?.config as any)?.appleId ?? ""),
             error: icloud?.error ?? "",
             lastSyncAt: icloud?.lastSyncAt?.toISOString?.() ?? "",
             calendars: icloud ? icloudCalendars(icloud) : [],
