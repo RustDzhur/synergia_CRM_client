@@ -1,39 +1,27 @@
-import Invoice from "@/models/Invoice";
-import Expense from "@/models/Expense";
-import SupplierInvoice from "@/models/SupplierInvoice";
+import { prisma } from "@/lib/prisma";
 import { financeSettings } from "./settings";
 import { groupLimit, rulesFor, rulesNotice } from "./ua/rules";
 import { formAndGroup, taxSystemOf, type UaTaxSystem } from "@/lib/validation/ua";
+import { depreciationInRange } from "./assets";
 
 // Украинский учёт: он устроен иначе, чем немецкий, и это не «другой перевод», а другая логика.
-//
-// — ФОП на єдиному податку считает доход **по оплате**: деньги пришли — доход возник, независимо от
-//   того, когда выставлен рахунок. Поэтому книга доходов строится по оплаченным счетам, а не по датам
-//   выставления (в немецком EÜR тоже кассовый метод, но ставки, отчётность и сроки другие).
-// — ПДВ у плательщика считается по **податковим накладним**: выданным (на продажи) и полученным
-//   (на покупки). Отсюда реестр, а не только итог.
-// — Кроме единого налога есть военный сбор и ЄСВ — они считаются отдельно и не входят в него.
-//
-// Это НЕ налоговая консультация: ставки и лимиты — настройки фирмы (FinanceSettings), а перед подачей
-// отчётности цифры должен проверить бухгалтер. В интерфейсе это сказано прямо.
 
 const round = (n: number) => Math.round(n * 100) / 100;
 
 export interface UaTaxProfile {
-    taxSystem: UaTaxSystem; // система налогообложения (ФОП 1–4, общая, ТОВ: прибуток или єдиний)
+    taxSystem: UaTaxSystem;
     legalForm: "fop" | "tov";
-    group: number; // 0 — общая система
-    singleRate: number; // % единого налога (для 3-й группы: 3 или 5)
+    group: number;
+    singleRate: number;
     vatPayer: boolean;
     esvMonthly: number;
-    militaryRate: number; // % военного сбора с дохода (3-я группа)
-    militaryFixed: number; // ₴ в месяц (1, 2 и 4 группы)
+    militaryRate: number;
+    militaryFixed: number;
     vatLimit: number;
     vatPeriod: "month" | "quarter";
 }
 
 export function uaProfile(settings: any): UaTaxProfile {
-    // Система налогообложения — источник правды; если её ещё не выбрали, выводим из формы и группы
     const taxSystem = taxSystemOf(settings ?? {});
     const { legalForm, group } = formAndGroup(taxSystem, Number(settings?.uaSingleRate) === 3 ? 3 : 5);
     return {
@@ -50,16 +38,11 @@ export function uaProfile(settings: any): UaTaxProfile {
     };
 }
 
-// ── Книга обліку доходів ─────────────────────────────────────────────────────────────────────────────
-// Доход ФОП на єдиному податку — это полученные деньги. Берём счета (не черновики и не отменённые)
-// с оплатой в этом году: каждая оплата — строка книги; кредит-ноты уменьшают доход (возврат клиенту).
-// Считаем и налоги: единый налог, военный сбор и ЄСВ — тремя отдельными строками, как в жизни.
-
 export interface IncomeBookRow {
-    date: string; // когда пришли деньги
-    number: string; // номер счёта
+    date: string;
+    number: string;
     customer: string;
-    amount: number; // получено
+    amount: number;
     note: string;
 }
 
@@ -69,11 +52,9 @@ export interface IncomeBookQuarter {
     income: number;
     singleTax: number;
     military: number;
-    esv: number; // ЄСВ за три месяца квартала
+    esv: number;
 }
 
-// Предупреждение отчёта: код и параметры, а не готовый текст — тексты живут в messages/*.json
-// (требование R6: строки в коде не оставляем), интерфейс подставляет их переводом.
 export interface ReportWarning { code: string; params?: Record<string, string | number> }
 
 export interface IncomeBook {
@@ -84,9 +65,8 @@ export interface IncomeBook {
     singleTax: number;
     military: number;
     esv: number;
-    total: number; // всё вместе к уплате за год
-    limitLeft: number | null; // сколько осталось до лимита группы (null — лимита нет)
-    /** На какой год действуют правила и откуда цифры — в интерфейсе видно «сверьтесь с бухгалтером» */
+    total: number;
+    limitLeft: number | null;
     rules: { year: number; source: string; notice: string };
     warnings: ReportWarning[];
 }
@@ -98,22 +78,18 @@ export async function incomeBook(org: string, year: string): Promise<IncomeBook>
     const from = `${year}-01-01`;
     const to = `${year}-12-31`;
 
-    const invoices = await Invoice.find({
-        org,
-        kind: "invoice",
-        status: { $nin: ["draft", "cancelled"] },
-        paidAt: { $gte: new Date(`${from}T00:00:00.000Z`), $lte: new Date(`${to}T23:59:59.999Z`) },
-    }).select("number customerName paidAt paidAmount items currency");
-    const creditNotes = await Invoice.find({
-        org,
-        kind: "credit_note",
-        status: { $nin: ["draft", "cancelled"] },
-        issueDate: { $gte: from, $lte: to },
-    }).select("number customerName issueDate items currency");
+    const invoices = await prisma.invoice.findMany({
+        where: { org, kind: "invoice", status: { notIn: ["draft", "cancelled"] }, paidAt: { gte: new Date(`${from}T00:00:00.000Z`), lte: new Date(`${to}T23:59:59.999Z`) } },
+        select: { number: true, customerName: true, paidAt: true, paidAmount: true, items: true, currency: true },
+    });
+    const creditNotes = await prisma.invoice.findMany({
+        where: { org, kind: "credit_note", status: { notIn: ["draft", "cancelled"] }, issueDate: { gte: from, lte: to } },
+        select: { number: true, customerName: true, issueDate: true, items: true, currency: true },
+    });
 
     const rows: IncomeBookRow[] = invoices.map((inv) => {
         const paid = Number(inv.paidAmount) || 0;
-        const gross = Number(inv.totalGross ?? 0);
+        const gross = Number((inv as any).totalGross ?? 0);
         return {
             date: (inv.paidAt as Date).toISOString().slice(0, 10),
             number: String(inv.number ?? ""),
@@ -127,7 +103,6 @@ export async function incomeBook(org: string, year: string): Promise<IncomeBook>
     const quarters: IncomeBookQuarter[] = ([1, 2, 3, 4] as const).map((quarter) => {
         const months = [quarter * 3 - 2, quarter * 3 - 1, quarter * 3];
         const own = rows.filter((r) => months.includes(Number(r.date.slice(5, 7)))).sort((a, b) => (a.date < b.date ? -1 : 1));
-        // возвраты клиенту в этом квартале уменьшают доход
         const refunds = creditNotes
             .filter((c) => months.includes(Number(String(c.issueDate).slice(5, 7))))
             .reduce((sum, c) => sum + Number((c as unknown as { totalGross?: number }).totalGross ?? 0), 0);
@@ -148,7 +123,6 @@ export async function incomeBook(org: string, year: string): Promise<IncomeBook>
     if (profile.legalForm === "tov") warnings.push({ code: "tov_book" });
     if (profile.group === 0) warnings.push({ code: "general_system" });
     if (profile.group === 4) warnings.push({ code: "group4_area" });
-    // Лимит группы — по правилам года, но фирма может задать своё значение (uaLimits) в настройках
     const limit = groupLimit(settings as any, Number(year), profile.group);
     if (limit && income > limit * 0.8) {
         warnings.push({ code: "limit_near", params: { limit, group: profile.group, rate: rules.overLimitRate } });
@@ -170,12 +144,6 @@ export async function incomeBook(org: string, year: string): Promise<IncomeBook>
     };
 }
 
-// ── Реєстр податкових накладних (ПДВ) ────────────────────────────────────────────────────────────────
-// Выданные — счета с налогом за период (по дате выставления: налоговая накладная регистрируется
-// в ЄРПН по дате возникновения обязательств), полученные — расходы с налогом. Разница и есть ПДВ
-// к уплате или к возмещению. Заодно проверяем лимит 1 000 000 ₴ за 12 месяцев: за ним регистрация
-// плательщиком ПДВ становится обязательной.
-
 export interface VatRegisterRow {
     date: string;
     number: string;
@@ -196,8 +164,8 @@ export interface VatRegister {
     issuedTax: number;
     receivedNet: number;
     receivedTax: number;
-    payable: number; // >0 — доплатить, <0 — к возмещению
-    turnover12m: number; // оборот за 12 месяцев — для лимита регистрации плательщиком ПДВ
+    payable: number;
+    turnover12m: number;
     limitLeft: number;
     warnings: ReportWarning[];
 }
@@ -219,12 +187,12 @@ export async function vatRegister(org: string, from: string, to: string): Promis
     const settings = await financeSettings(org);
     const profile = uaProfile(settings);
 
-    const invoices = await Invoice.find({ org, kind: "invoice", status: { $nin: ["draft", "cancelled"] }, issueDate: { $gte: from, $lte: to } }).select("number customerName issueDate items");
-    const expenses = await Expense.find({ org, date: { $gte: from, $lte: to } }).select("vendor date amount taxRate category");
+    const invoices = await prisma.invoice.findMany({ where: { org, kind: "invoice", status: { notIn: ["draft", "cancelled"] }, issueDate: { gte: from, lte: to } }, select: { number: true, customerName: true, issueDate: true, items: true } });
+    const expenses = await prisma.expense.findMany({ where: { org, date: { gte: from, lte: to } }, select: { vendor: true, date: true, amount: true, taxRate: true, category: true } });
 
     const issued: VatRegisterRow[] = invoices
         .map((inv) => {
-            const t = itemsTotals(inv.items ?? []);
+            const t = itemsTotals((inv.items as any) ?? []);
             const rate = t.rates.size ? Math.max(...Array.from(t.rates)) : 0;
             return { date: String(inv.issueDate ?? ""), number: String(inv.number ?? ""), counterparty: String(inv.customerName ?? ""), net: round(t.net), tax: round(t.tax), gross: round(t.net + t.tax), rate };
         })
@@ -233,9 +201,6 @@ export async function vatRegister(org: string, from: string, to: string): Promis
     const received: VatRegisterRow[] = expenses
         .filter((e) => Number(e.taxRate) > 0)
         .map((e) => {
-            // У расхода amount — сумма БЕЗ налога (models/Expense.ts): налог сверху, а не вычленяется из общей.
-            // Раньше он считался как «из общей суммы» и занижал налоговый кредит (1000 ₴ при 20 % давали 166,67 ₴
-            // вместо 200 ₴) — реестр расходился с книгой расходов
             const net = round(Number(e.amount) || 0);
             const rate = Number(e.taxRate) || 0;
             const tax = round((net * rate) / 100);
@@ -247,10 +212,9 @@ export async function vatRegister(org: string, from: string, to: string): Promis
     const receivedNet = round(received.reduce((s, r) => s + r.net, 0));
     const receivedTax = round(received.reduce((s, r) => s + r.tax, 0));
 
-    // Оборот за 12 месяцев до конца периода — по нему определяется обязательная регистрация плательщиком ПДВ
     const yearAgo = new Date(new Date(`${to}T00:00:00.000Z`).getTime() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const lastYear = await Invoice.find({ org, kind: "invoice", status: { $nin: ["draft", "cancelled"] }, issueDate: { $gte: yearAgo, $lte: to } }).select("items");
-    const turnover12m = round(lastYear.reduce((sum, inv) => sum + itemsTotals(inv.items ?? []).net, 0));
+    const lastYear = await prisma.invoice.findMany({ where: { org, kind: "invoice", status: { notIn: ["draft", "cancelled"] }, issueDate: { gte: yearAgo, lte: to } }, select: { items: true } });
+    const turnover12m = round(lastYear.reduce((sum, inv) => sum + itemsTotals((inv.items as any) ?? []).net, 0));
 
     const warnings: ReportWarning[] = [];
     if (!profile.vatPayer) warnings.push({ code: "not_vat_payer" });
@@ -274,19 +238,15 @@ export async function vatRegister(org: string, from: string, to: string): Promis
     };
 }
 
-// ── Податок на прибуток (ТОВ на загальній системі) ──────────────────────────────────────────────────
-// У ТОВ на общей системе объект налогообложения — прибыль: доходы минус расходы и амортизация.
-// Это заготовка для бухгалтера: точные суммы зависят от налоговых разниц, которые CRM не знает.
-
 export interface ProfitReport {
     year: string;
     from: string;
     to: string;
-    income: number; // доход по выставленным счетам (метод начислений — как принято у юрлиц)
-    expenses: number; // расходы за период
-    depreciation: number; // амортизация основных средств (если ведётся в Anlagen)
-    profit: number; // прибыль до налога
-    tax: number; // 18 % — справочно; фирма может переопределить в настройках отчёта
+    income: number;
+    expenses: number;
+    depreciation: number;
+    profit: number;
+    tax: number;
     rate: number;
     rules: { year: number; source: string; notice: string };
     warnings: ReportWarning[];
@@ -298,12 +258,10 @@ export async function profitReport(org: string, year: string, rate = 18): Promis
     const from = `${year}-01-01`;
     const to = `${year}-12-31`;
 
-    const invoices = await Invoice.find({ org, kind: "invoice", status: { $nin: ["draft", "cancelled"] }, issueDate: { $gte: from, $lte: to } }).select("items");
-    const expenses = await Expense.find({ org, date: { $gte: from, $lte: to } }).select("amount");
-    // Закупівлі: счета поставщиков — расход года, как и обычные расходы (по дате счёта). Без них
-    // прибыль до налога была завышена на всю закупочную стоимость товара
-    const purchases = await SupplierInvoice.find({ org, status: { $ne: "cancelled" }, date: { $gte: from, $lte: to } }).select("amount");
-    const income = round(invoices.reduce((sum, inv) => sum + itemsTotals(inv.items ?? []).net, 0));
+    const invoices = await prisma.invoice.findMany({ where: { org, kind: "invoice", status: { notIn: ["draft", "cancelled"] }, issueDate: { gte: from, lte: to } }, select: { items: true } });
+    const expenses = await prisma.expense.findMany({ where: { org, date: { gte: from, lte: to } }, select: { amount: true } });
+    const purchases = await prisma.supplierInvoice.findMany({ where: { org, status: { not: "cancelled" }, date: { gte: from, lte: to } }, select: { amount: true } });
+    const income = round(invoices.reduce((sum, inv) => sum + itemsTotals((inv.items as any) ?? []).net, 0));
     const costs = round(
         expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) +
         purchases.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
@@ -323,9 +281,7 @@ export async function profitReport(org: string, year: string, rate = 18): Promis
 // Амортизация за год — из основного средства (Anlagen), если оно ведётся: у ТОВ она уменьшает прибыль
 async function depreciationInYear(org: string, year: number): Promise<number> {
     try {
-        const { default: Asset } = await import("@/models/Asset");
-        const { depreciationInRange } = await import("./assets");
-        const assets = await Asset.find({ org });
+        const assets = await prisma.asset.findMany({ where: { org } });
         return assets.reduce(
             (sum, a) => sum + depreciationInRange(a as never, `${year}-01-01`, `${year}-12-31`),
             0
