@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { PLANS } from "@/config/plans";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { type Interval, amountCents, isPaidPlan } from "@/lib/billing";
 import { stripe, stripeConfigured } from "@/lib/stripe";
-import Organization from "@/models/Organization";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -29,15 +27,15 @@ export async function POST(req: Request) {
     const locale = LOCALES.includes(body.locale) ? (body.locale as string) : "en";
 
     try {
-        await connectDB();
-        const doc = await Organization.findById(user.id);
+        const doc = await prisma.organization.findUnique({ where: { id: user.id } });
         if (!doc) return unauthorized(req);
-        const owner = await User.findById(doc.ownerUser).select("email firstname lastname");
+        const billing = (doc.billing ?? {}) as any;
+        const owner = await prisma.user.findUnique({ where: { id: doc.ownerUser }, select: { email: true, firstname: true, lastname: true } });
         // уже есть действующая подписка — тариф меняют в кабинете оплаты (Manage billing), иначе получилась бы вторая подписка
-        if (doc.billing?.subscriptionId && ACTIVE.includes(doc.billing.status ?? "")) {
+        if (billing.subscriptionId && ACTIVE.includes(billing.status ?? "")) {
             return NextResponse.json({ message: "You already have a subscription. Use Manage billing to change it." }, { status: 409 });
         }
-        let customer = doc.billing?.customerId ?? "";
+        let customer = billing.customerId ?? "";
         if (!customer) {
             const c = await stripe<{ id: string }>("POST", "/customers", {
                 email: owner?.email,
@@ -45,8 +43,7 @@ export async function POST(req: Request) {
                 metadata: { orgId: user.id },
             });
             customer = c.id;
-            doc.set("billing.customerId", customer);
-            await doc.save();
+            await prisma.organization.update({ where: { id: doc.id }, data: { billing: { ...billing, customerId: customer } as any } });
         }
         const origin = appOrigin(req);
         const label = PLANS.find((p) => p.id === plan) ? plan[0].toUpperCase() + plan.slice(1) : plan;
