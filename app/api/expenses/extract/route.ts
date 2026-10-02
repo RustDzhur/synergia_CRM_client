@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { getObject } from "@/lib/storage";
 import { aiConfigured } from "@/lib/ai/provider";
 import { dailyLimit, takeQuota, log as logAi } from "@/lib/ai/run";
 import { SUPPORTED_RECEIPT_MIME, extractReceipt } from "@/lib/ai/receipt";
-import DocItem from "@/models/DocItem";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -22,8 +21,7 @@ export async function POST(req: Request) {
     const b = await req.json().catch(() => null);
     if (!validId(b?.documentId)) return badRequest("documentId is required");
     try {
-        await connectDB();
-        const doc = await DocItem.findOne({ _id: b.documentId, owner: user.id, kind: "file" });
+        const doc = await prisma.docItem.findFirst({ where: { id: b.documentId, owner: user.id, kind: "file" } });
         if (!doc || !doc.storagePath) return notFound();
         if (!SUPPORTED_RECEIPT_MIME.has(doc.mime)) return badRequest("Upload a photo (JPEG/PNG) or a PDF of the receipt");
 

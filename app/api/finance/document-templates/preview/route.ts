@@ -1,11 +1,10 @@
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { renderDocumentPdf, type DocKind, type PdfDocumentData } from "@/lib/finance/pdf";
 import { pdfLocale, toPdfSettings } from "@/lib/finance/document";
 import { applyTemplate, templateAllowsRate, activeTemplate } from "@/lib/finance/documents/store";
 import { financeSettings } from "@/lib/finance/settings";
-import DocumentTemplate from "@/models/DocumentTemplate";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -29,13 +28,12 @@ const PACKING_ITEMS = [
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     const url = new URL(req.url);
     const kind = url.searchParams.get("kind") as DocKind | null;
     if (!kind || !KINDS.includes(kind)) return badRequest("kind must be one of: " + KINDS.join(", "));
     const locale = pdfLocale(url.searchParams.get("locale"));
     const id = url.searchParams.get("id");
-    const tpl = id && validId(id) ? await DocumentTemplate.findOne({ _id: id, org: user.id }) : await activeTemplate(user.id, kind);
+    const tpl = id && validId(id) ? await prisma.documentTemplate.findFirst({ where: { id, org: user.id } }) : await activeTemplate(user.id, kind);
 
     const settings = await financeSettings(user.id);
     const today = new Date().toISOString().slice(0, 10);
