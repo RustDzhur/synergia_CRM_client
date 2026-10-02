@@ -1,26 +1,23 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import { TASK_TEXT_FIELDS } from "@/lib/crmFields";
 import { emit } from "@/lib/automation/emit";
 import { postTask } from "@/lib/feed";
-import Deal from "@/models/Deal";
-import Project from "@/models/Project";
-import Task from "@/models/Task";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
+import { toDTO } from "@/lib/serialize";
 
 // Проект задачи: возвращаем только свой — чужой id из запроса игнорируем
 async function ownedProject(id: unknown, org: string) {
     if (typeof id !== "string" || !id) return null;
-    return Project.findOne({ _id: id, owner: org }).select("_id").catch(() => null);
+    return prisma.project.findFirst({ where: { id, owner: org }, select: { id: true } }).catch(() => null);
 }
 
 // Сделка, из карточки которой поставлена задача: тоже только своя
 async function ownedDeal(id: unknown, org: string) {
     if (typeof id !== "string" || !id) return null;
-    return Deal.findOne({ _id: id, owner: org }).select("_id clientName").catch(() => null);
+    return prisma.deal.findFirst({ where: { id, owner: org }, select: { id: true, clientName: true } }).catch(() => null);
 }
 
 // GET /api/tasks — все задачи текущего пользователя (ближайшие сроки первыми)
@@ -28,12 +25,12 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
 
-    await connectDB();
-    const tasks = await Task.find({ owner: user.id }).sort({ deadline: 1, createdAt: -1 });
+    const tasks = await prisma.task.findMany({ where: { owner: user.id }, orderBy: [{ deadline: "asc" }, { createdAt: "desc" }] });
     // у задач из карточки сделки отдаём её название: в списке задач по нему видно, откуда задача пришла
-    const deals = await Deal.find({ owner: user.id, _id: { $in: tasks.map((t) => t.deal).filter(Boolean) } }).select("clientName");
-    const names = new Map(deals.map((d) => [String(d._id), String(d.clientName ?? "")]));
-    return NextResponse.json(tasks.map((t) => ({ ...t.toObject(), dealName: t.deal ? names.get(String(t.deal)) ?? "" : "" })));
+    const dealIds = tasks.map((t) => t.deal).filter((d): d is string => !!d);
+    const deals = await prisma.deal.findMany({ where: { owner: user.id, id: { in: dealIds } }, select: { id: true, clientName: true } });
+    const names = new Map(deals.map((d) => [d.id, String(d.clientName ?? "")]));
+    return NextResponse.json(tasks.map((t) => ({ ...toDTO(t), dealName: t.deal ? names.get(t.deal) ?? "" : "" })));
 }
 
 // POST /api/tasks — создать задачу
@@ -45,19 +42,20 @@ export async function POST(req: Request) {
     const fields = pickStrings(body, TASK_TEXT_FIELDS, 500);
     if (!fields.title) return NextResponse.json({ message: "Title is required" }, { status: 400 });
 
-    await connectDB();
-    const author = await User.findById(user.userId);
+    const author = await prisma.user.findUnique({ where: { id: user.userId } });
     // проект и сделку проверяем на принадлежность фирме: чужой id привязывать нельзя
     const [project, deal] = await Promise.all([ownedProject(body?.project, user.id), ownedDeal(body?.deal, user.id)]);
-    const task = await Task.create({
-        ...fields,
-        owner: user.id,
-        project: project?._id,
-        deal: deal?._id,
-        createdBy: author ? `${author.firstname} ${author.lastname}`.trim() : "",
-        responsible: fields.responsible || (author ? author.firstname : ""),
+    const task = await prisma.task.create({
+        data: {
+            ...(fields as any),
+            owner: user.id,
+            project: project?.id ?? null,
+            deal: deal?.id ?? null,
+            createdBy: author ? `${author.firstname} ${author.lastname}`.trim() : "",
+            responsible: fields.responsible || (author ? author.firstname : ""),
+        },
     });
-    await postTask(user.id, user.userId, task); // карточка в ленте фирмы + уведомление коллегам
-    await emit(user.id, { type: "task_created", data: { id: String(task._id), title: task.title, responsible: task.responsible ?? "" } });
-    return NextResponse.json(task, { status: 201 });
+    await postTask(user.id, user.userId, toDTO(task)); // карточка в ленте фирмы + уведомление коллегам
+    await emit(user.id, { type: "task_created", data: { id: task.id, title: task.title, responsible: task.responsible ?? "" } });
+    return NextResponse.json(toDTO(task), { status: 201 });
 }

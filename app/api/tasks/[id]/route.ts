@@ -1,48 +1,45 @@
 import { NextResponse } from "next/server";
-import { isValidObjectId } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
-import { unauthorized } from "@/lib/api";
+import { unauthorized, validId } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import { TASK_TEXT_FIELDS } from "@/lib/crmFields";
-import Project from "@/models/Project";
-import Task from "@/models/Task";
+import { prisma } from "@/lib/prisma";
+import { toDTO } from "@/lib/serialize";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    if (!isValidObjectId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    if (!validId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
     const body = await req.json();
-    const data: Record<string, unknown> = pickStrings(body, TASK_TEXT_FIELDS, 500);
+    const data: Record<string, any> = pickStrings(body, TASK_TEXT_FIELDS, 500);
     if ("title" in data && !data.title) return NextResponse.json({ message: "Title is required" }, { status: 400 });
     for (const flag of ["completed", "pinned", "muted"] as const) {
         if (typeof body[flag] === "boolean") data[flag] = body[flag];
     }
 
-    await connectDB();
     // привязку к проекту проверяем отдельно: чужой проект привязать нельзя, а пустая строка снимает привязку
     if ("project" in body) {
         const id = body.project;
         if (typeof id === "string" && id) {
-            const owned = await Project.findOne({ _id: id, owner: user.id }).select("_id").catch(() => null);
+            const owned = await prisma.project.findFirst({ where: { id, owner: user.id }, select: { id: true } }).catch(() => null);
             if (!owned) return NextResponse.json({ message: "Project not found" }, { status: 400 });
-            data.project = owned._id;
+            data.project = owned.id;
         } else {
-            data.project = undefined;
+            data.project = null;
         }
     }
-    const task = await Task.findOneAndUpdate({ _id: params.id, owner: user.id }, data.project === undefined && "project" in body ? { $set: data, $unset: { project: "" } } : { $set: data }, { new: true });
-    if (!task) return NextResponse.json({ message: "Not found" }, { status: 404 });
-    return NextResponse.json(task);
+    const existing = await prisma.task.findUnique({ where: { id: params.id } });
+    if (!existing || existing.owner !== user.id) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    const task = await prisma.task.update({ where: { id: params.id }, data: data as any });
+    return NextResponse.json(toDTO(task));
 }
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
 
-    await connectDB();
-    const task = await Task.findOneAndDelete({ _id: params.id, owner: user.id });
-    if (!task) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    const r = await prisma.task.deleteMany({ where: { id: params.id, owner: user.id } });
+    if (!r.count) return NextResponse.json({ message: "Not found" }, { status: 404 });
     return NextResponse.json({ ok: true });
 }

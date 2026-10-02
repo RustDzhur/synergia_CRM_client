@@ -2,8 +2,8 @@ import { emit } from "@/lib/automation/emit";
 import { notify } from "@/lib/notify";
 import type { Fetched } from "@/lib/mail/types";
 import { ensureStages } from "@/lib/stages";
-import Contact from "@/models/Contact";
-import Deal from "@/models/Deal";
+import { mkActivity } from "@/lib/activities";
+import { prisma } from "@/lib/prisma";
 
 // Автоматические лиды из входящей почты: письмо от нового человека → контакт в CRM и карточка в первой колонке
 // доски сделок («New Lead»). Письмо от уже известного контакта просто попадает в его ленту активности.
@@ -28,8 +28,6 @@ export function parseSender(from: string): Sender | null {
 
 export const isRobotAddress = (email: string) => NOISE.test(email.split("@")[0]);
 
-const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
 // Создаёт лиды из свежих входящих писем ящика ownEmail; возвращает число созданных лидов
 export async function createLeadsFromMail(owner: string, ownEmail: string, mails: Fetched[]): Promise<number> {
     const inbox = mails
@@ -43,42 +41,53 @@ export async function createLeadsFromMail(owner: string, ownEmail: string, mails
         const sender = parseSender(mail.from);
         if (!sender || sender.email === ownEmail.toLowerCase() || isRobotAddress(sender.email)) continue;
         const subject = (mail.subject || "(no subject)").slice(0, 200);
-        const activity = { type: "email", text: `Email: ${subject}`, meta: "" };
+        const activity = () => mkActivity("email", `Email: ${subject}`);
 
-        const existing = await Contact.findOne({ owner, email: new RegExp(`^${escapeRe(sender.email)}$`, "i") }).select("_id");
+        const existing = await prisma.contact.findFirst({ where: { owner, email: { equals: sender.email, mode: "insensitive" } } });
         if (existing) {
-            await Contact.updateOne({ _id: existing._id }, { $push: { activities: activity } });
+            const acts = Array.isArray(existing.activities) ? existing.activities : [];
+            acts.push(activity());
+            await prisma.contact.update({ where: { id: existing.id }, data: { activities: acts } });
             continue;
         }
         if (seen.has(sender.email)) {
-            await Contact.updateOne({ owner, email: sender.email }, { $push: { activities: activity } });
+            const c = await prisma.contact.findFirst({ where: { owner, email: sender.email } });
+            if (c) {
+                const acts = Array.isArray(c.activities) ? c.activities : [];
+                acts.push(activity());
+                await prisma.contact.update({ where: { id: c.id }, data: { activities: acts } });
+            }
             continue;
         }
         seen.add(sender.email);
 
         const [firstName, ...rest] = sender.name.split(" ");
-        const contactDoc = await Contact.create({
-            owner,
-            name: sender.name,
-            firstName: rest.length ? firstName : "",
-            lastName: rest.join(" "),
-            email: sender.email,
-            source: "email",
-            activities: [activity],
+        const contactDoc = await prisma.contact.create({
+            data: {
+                owner,
+                name: sender.name,
+                firstName: rest.length ? firstName : "",
+                lastName: rest.join(" "),
+                email: sender.email,
+                source: "email",
+                activities: [activity()],
+            },
         });
 
         firstStage = firstStage ?? String((await ensureStages(owner))[0]._id);
-        const order = await Deal.countDocuments({ owner, stage: firstStage });
-        const dealDoc = await Deal.create({
-            owner,
-            stage: firstStage,
-            clientName: subject,
-            contactName: sender.name,
-            order,
-            activities: [{ type: "created", text: subject }, { type: "email", text: `Email from ${sender.name} <${sender.email}>` }],
+        const order = await prisma.deal.count({ where: { owner, stage: firstStage } });
+        const dealDoc = await prisma.deal.create({
+            data: {
+                owner,
+                stage: firstStage,
+                clientName: subject,
+                contactName: sender.name,
+                order,
+                activities: [mkActivity("created", subject), mkActivity("email", `Email from ${sender.name} <${sender.email}>`)],
+            },
         });
         created += 1;
-        await emit(owner, { type: "lead_created", data: { id: String(dealDoc._id), dealId: String(dealDoc._id), contactId: String(contactDoc._id), name: sender.name, contactName: sender.name, email: sender.email, subject } });
+        await emit(owner, { type: "lead_created", data: { id: dealDoc.id, dealId: dealDoc.id, contactId: contactDoc.id, name: sender.name, contactName: sender.name, email: sender.email, subject } });
         await notify(owner, { type: "lead", params: { name: sender.name, subject }, link: "/crm/crm", key: `lead:${sender.email}:${new Date().toISOString().slice(0, 10)}` });
     }
     return created;
