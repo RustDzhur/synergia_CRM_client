@@ -2,7 +2,7 @@ import { icloudSync } from "@/lib/ical/icloud";
 import { googleSync } from "@/lib/google/calendar";
 import { findGcal } from "@/lib/google";
 import { findIcloud } from "@/lib/ical/icloud";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 // Синхронизация внешних календарей. Провайдеры независимы: если один отключён или упал,
 // второй всё равно должен отработать — иначе одна отвалившаяся авторизация остановила бы весь календарь.
@@ -19,6 +19,9 @@ export interface SyncResult {
     icloud?: { created: number; updated: number; removed: number } | null;
     errors: string[];
 }
+
+// Интеграция приходит и Mongoose-документом (провайдеры календарей ещё на Mongoose), и записью Prisma
+const integrationId = (doc: any): string => String(doc?.id ?? doc?._id ?? "");
 
 /** Окно синхронизации: назад на месяц, вперёд на полгода — больше в календаре фирмы и не нужно */
 export function syncWindow(now = new Date()): { from: string; to: string } {
@@ -48,7 +51,7 @@ export async function syncCalendars(org: string, opts: { force?: boolean; now?: 
             const message = e instanceof Error ? e.message : "Google sync failed";
             result.errors.push(`Google: ${message}`);
             // Ошибку запоминаем в интеграции, чтобы интерфейс показал её и предложил переподключиться
-            await Integration.updateOne({ _id: gcal._id }, { $set: { status: "error", error: message } }).catch(() => undefined);
+            await prisma.integration.updateMany({ where: { id: integrationId(gcal) }, data: { status: "error", error: message } }).catch(() => undefined);
         }
     }
 
@@ -60,16 +63,16 @@ export async function syncCalendars(org: string, opts: { force?: boolean; now?: 
             // синхронизируются, а причину показываем в окне настроек.
             // Статус «error» здесь не ставим — с ним синхронизация прекратилась бы совсем.
             if (warning) result.errors.push(`iCloud: ${warning}`);
-            await Integration.updateOne({ _id: icloud._id }, { $set: { error: warning ?? "" } }).catch(() => undefined);
+            await prisma.integration.updateMany({ where: { id: integrationId(icloud) }, data: { error: warning ?? "" } }).catch(() => undefined);
         } catch (e) {
             const message = e instanceof Error ? e.message : "iCloud sync failed";
             result.errors.push(`iCloud: ${message}`);
-            await Integration.updateOne({ _id: icloud._id }, { $set: { status: "error", error: message } }).catch(() => undefined);
+            await prisma.integration.updateMany({ where: { id: integrationId(icloud) }, data: { status: "error", error: message } }).catch(() => undefined);
         }
     }
 
-    if (gcal && gcal.status === "connected") await Integration.updateOne({ _id: gcal._id }, { $set: { lastSyncAt: now } }).catch(() => undefined);
-    if (icloud && icloud.status === "connected") await Integration.updateOne({ _id: icloud._id }, { $set: { lastSyncAt: now } }).catch(() => undefined);
+    if (gcal && gcal.status === "connected") await prisma.integration.updateMany({ where: { id: integrationId(gcal) }, data: { lastSyncAt: now } }).catch(() => undefined);
+    if (icloud && icloud.status === "connected") await prisma.integration.updateMany({ where: { id: integrationId(icloud) }, data: { lastSyncAt: now } }).catch(() => undefined);
 
     return result;
 }
