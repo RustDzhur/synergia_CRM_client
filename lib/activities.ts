@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { Schema, isValidObjectId } from "mongoose";
-import type { Model } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
+import { Schema } from "mongoose";
+import { randomUUID } from "node:crypto";
+import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
-import { unauthorized } from "@/lib/api";
+import { unauthorized, validId } from "@/lib/api";
+import { toDTO } from "@/lib/serialize";
 
 // Записи «ленты активности» у сделки, контакта и компании: заметки, комментарии, звонки, письма и т.д.
 // Типы "stage" и "created" — системные, их создаёт сервер, через API их добавить нельзя.
@@ -11,6 +12,8 @@ export const USER_ACTIVITY_TYPES = [
     "activity", "comment", "task", "sms", "viber", "telegram", "email", "note", "call", "schedule",
 ] as const;
 
+// Остаётся Mongoose-схемой до тех пор, пока не переведены модели Contact/Deal/Task/Company,
+// которые вкладывают её в поле activities.
 export const ActivitySchema = new Schema({
     type: { type: String, required: true },
     text: { type: String, default: "" },
@@ -20,16 +23,17 @@ export const ActivitySchema = new Schema({
 
 const MAX_TEXT = 2000;
 
-// Фабрика обработчиков для маршрутов вида /api/<сущность>/[id]/activities
+// Фабрика обработчиков для маршрутов вида /api/<сущность>/[id]/activities. Принимает имя Prisma-модели.
 //   POST   { type, text, meta? }  — добавить запись, ответ: обновлённый документ
 //   DELETE ?activityId=<id>       — удалить запись, ответ: обновлённый документ
-export function activityHandlers(Entity: Model<any>) {
+export function activityHandlers(model: "contact" | "task" | "deal" | "company") {
+    const delegate = prisma[model] as any;
     type Ctx = { params: { id: string } };
 
     async function POST(req: Request, { params }: Ctx) {
         const user = await requireUser(req);
         if (!user) return unauthorized(req);
-        if (!isValidObjectId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
+        if (!validId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
         let body: { type?: unknown; text?: unknown; meta?: unknown };
         try {
@@ -46,14 +50,12 @@ export function activityHandlers(Entity: Model<any>) {
         }
         if (!text) return NextResponse.json({ message: "Text is required" }, { status: 400 });
 
-        await connectDB();
-        const doc = await Entity.findOneAndUpdate(
-            { _id: params.id, owner: user.id },
-            { $push: { activities: { type, text, meta } } },
-            { new: true }
-        );
+        const doc = await delegate.findFirst({ where: { id: params.id, owner: user.id } });
         if (!doc) return NextResponse.json({ message: "Not found" }, { status: 404 });
-        return NextResponse.json(doc, { status: 201 });
+        const activities = Array.isArray(doc.activities) ? doc.activities : [];
+        activities.push({ _id: randomUUID(), type, text, meta, createdAt: new Date().toISOString() });
+        const updated = await delegate.update({ where: { id: params.id }, data: { activities } });
+        return NextResponse.json(toDTO(updated), { status: 201 });
     }
 
     async function DELETE(req: Request, { params }: Ctx) {
@@ -61,18 +63,15 @@ export function activityHandlers(Entity: Model<any>) {
         if (!user) return unauthorized(req);
 
         const activityId = new URL(req.url).searchParams.get("activityId") ?? "";
-        if (!isValidObjectId(params.id) || !isValidObjectId(activityId)) {
+        if (!validId(params.id) || !validId(activityId)) {
             return NextResponse.json({ message: "Not found" }, { status: 404 });
         }
 
-        await connectDB();
-        const doc = await Entity.findOneAndUpdate(
-            { _id: params.id, owner: user.id },
-            { $pull: { activities: { _id: activityId } } },
-            { new: true }
-        );
+        const doc = await delegate.findFirst({ where: { id: params.id, owner: user.id } });
         if (!doc) return NextResponse.json({ message: "Not found" }, { status: 404 });
-        return NextResponse.json(doc);
+        const activities = Array.isArray(doc.activities) ? doc.activities.filter((a: any) => String(a?._id) !== activityId) : [];
+        const updated = await delegate.update({ where: { id: params.id }, data: { activities } });
+        return NextResponse.json(toDTO(updated));
     }
 
     return { POST, DELETE };

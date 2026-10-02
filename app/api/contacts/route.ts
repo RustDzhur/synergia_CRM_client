@@ -1,20 +1,19 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import { CONTACT_FIELDS, contactFullName } from "@/lib/crmFields";
 import { emit } from "@/lib/automation/emit";
-import Contact from "@/models/Contact";
+import { prisma } from "@/lib/prisma";
+import { toDTO, toDTOs } from "@/lib/serialize";
 
 // GET /api/contacts — список всех контактов текущего пользователя
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
 
-    await connectDB();
-    const contacts = await Contact.find({ owner: user.id }).sort({ createdAt: -1 });
-    return NextResponse.json(contacts);
+    const contacts = await prisma.contact.findMany({ where: { owner: user.id }, orderBy: { createdAt: "desc" } });
+    return NextResponse.json(toDTOs(contacts));
 }
 
 // POST /api/contacts — создать контакт
@@ -27,8 +26,7 @@ export async function POST(req: Request) {
     const name = contactFullName(fields, body.name);
     if (!name) return NextResponse.json({ message: "Name is required" }, { status: 400 });
 
-    await connectDB();
-    const contact = await Contact.create({ ...fields, name, owner: user.id });
-    await emit(user.id, { type: "contact_created", data: { id: String(contact._id), name: contact.name, email: contact.email ?? "", phone: contact.phone ?? "" } });
-    return NextResponse.json(contact, { status: 201 });
+    const contact = await prisma.contact.create({ data: { ...fields, name, owner: user.id } });
+    await emit(user.id, { type: "contact_created", data: { id: contact.id, name: contact.name, email: contact.email ?? "", phone: contact.phone ?? "" } });
+    return NextResponse.json(toDTO(contact), { status: 201 });
 }
