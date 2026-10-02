@@ -1,0 +1,30 @@
+# Дубликат CRM на своём сервере: тот же код, но база — PostgreSQL, файлы — каталог на диске.
+# Оригинал на Vercel продолжает работать на MongoDB + Firebase Storage; это отдельный контур.
+#
+# Запуск (на сервере, из каталога с Dockerfile и .env):
+#   docker compose -f deploy/docker-compose.yml up -d --build
+services:
+  crm:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: firmspace-crm:latest
+    container_name: firmspace-crm
+    restart: unless-stopped
+    env_file: .env
+    # Наружу порт не публикуем: сначала проверяем по SSH-туннелю, публичный адрес добавит Caddy.
+    ports:
+      - "127.0.0.1:3210:3000"
+    volumes:
+      # Файлы и фото: каталог внутри тома, LOCAL_STORAGE_ROOT указывает сюда
+      - crm_storage:/data/storage
+    networks:
+      - infrastructure
+
+networks:
+  # Общая сеть инфраструктуры: в ней живёт контейнер postgres (см. /opt/infrastructure)
+  infrastructure:
+    external: true
+
+volumes:
+  crm_storage:
