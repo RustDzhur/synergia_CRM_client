@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { notFound } from "@/lib/api";
 import { toBlogDTO } from "@/lib/blog";
-import BlogPost from "@/models/BlogPost";
+import { prisma } from "@/lib/prisma";
 
 // GET /api/blog/:slug — одна опубликованная статья, публично
 export async function GET(_req: Request, { params }: { params: { slug: string } }) {
-    await connectDB();
-    const post = await BlogPost.findOne({ slug: params.slug, published: true });
-    return post ? NextResponse.json(toBlogDTO(post)) : notFound();
+    const post = await prisma.blogPost.findUnique({ where: { slug: params.slug } });
+    return post && post.published ? NextResponse.json(toBlogDTO(post)) : notFound();
 }
