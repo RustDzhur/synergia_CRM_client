@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { Schema } from "mongoose";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
@@ -14,12 +13,6 @@ export const USER_ACTIVITY_TYPES = [
 
 // Остаётся Mongoose-схемой до тех пор, пока не переведены модели Contact/Deal/Task/Company,
 // которые вкладывают её в поле activities.
-export const ActivitySchema = new Schema({
-    type: { type: String, required: true },
-    text: { type: String, default: "" },
-    meta: { type: String, default: "" }, // например, дата и время для запланированной активности
-    createdAt: { type: Date, default: Date.now },
-});
 
 // Запись активности для Json-поля activities (Prisma): _id и createdAt, которые раньше добавлял Mongoose.
 export const mkActivity = (type: string, text: string, meta = "") => ({ _id: randomUUID(), type, text, meta, createdAt: new Date().toISOString() });

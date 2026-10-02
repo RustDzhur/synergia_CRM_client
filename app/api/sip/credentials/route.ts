@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { secretsOf } from "@/lib/integrations";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -12,12 +11,11 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
-    const doc = await Integration.findOne({ owner: user.id, type: "sip", status: "connected" });
+    const doc = await prisma.integration.findFirst({ where: { owner: user.id, type: "sip", status: "connected" } });
     if (!doc) return NextResponse.json({ message: "Not connected" }, { status: 404 });
     const { password } = secretsOf<{ password: string }>(doc);
     return NextResponse.json(
-        { integrationId: doc._id.toString(), ...doc.config, password },
+        { integrationId: doc.id, ...((doc.config ?? {}) as any), password },
         { headers: { "Cache-Control": "no-store" } }
     );
 }

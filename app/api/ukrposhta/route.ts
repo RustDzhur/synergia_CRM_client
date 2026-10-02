@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { failure, unauthorized } from "@/lib/api";
 import { requireMarket } from "@/lib/finance/marketGuard";
 import { ProviderError } from "@/lib/http";
 import { secretsOf } from "@/lib/integrations";
 import { counterparties, postOffices, senderAddresses } from "@/lib/ukrposhta";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -17,7 +16,7 @@ export const maxDuration = 60;
 // Договор с Укрпоштою обязателен: без него справочники вернутся пустыми, и интерфейс скажет об этом.
 
 async function token(org: string): Promise<string> {
-    const doc = await Integration.findOne({ owner: org, type: "ukrposhta", status: "connected" });
+    const doc = await prisma.integration.findFirst({ where: { owner: org, type: "ukrposhta", status: "connected" } });
     if (!doc) throw new ProviderError("Укрпошту не підключено — додайте bearer-токен у Налаштуваннях → Інтеграції");
     const value = String(secretsOf<{ token?: string }>(doc).token ?? "");
     if (!value) throw new ProviderError("У кабінеті Укрпошти не збережено токен");
@@ -29,7 +28,6 @@ export async function GET(req: Request) {
     if (!user) return unauthorized(req);
     const url = new URL(req.url);
     try {
-        await connectDB();
         await requireMarket(user.id, "UA");
         const t = await token(user.id);
 

@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized, contentDisposition } from "@/lib/api";
 import { reconciliation, creditRoom } from "@/lib/finance/pricing";
 import { toCsv } from "@/lib/import/csv";
-import Company from "@/models/Company";
-import Invoice from "@/models/Invoice";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -21,11 +19,10 @@ export async function GET(req: Request) {
     const to = url.searchParams.get("to") ?? new Date().toISOString().slice(0, 10);
     const from = url.searchParams.get("from") ?? new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
 
-    await connectDB();
-    const company = await Company.findOne({ _id: companyId, owner: user.id });
+    const company = await prisma.company.findFirst({ where: { id: companyId, owner: user.id } });
     if (!company) return badRequest("company not found");
 
-    const invoices = await Invoice.find({ org: user.id, company: company._id, kind: "invoice", status: { $ne: "cancelled" } }).select("number issueDate items paidAmount smallBusinessNote currency");
+    const invoices = await prisma.invoice.findMany({ where: { org: user.id, company: company.id, kind: "invoice", status: { not: "cancelled" } }, select: { number: true, issueDate: true, items: true, paidAmount: true, smallBusinessNote: true, currency: true } });
     const rowsInput = invoices.map((inv) => {
         const items = (inv.items ?? []) as Array<{ qty?: number; unitPrice?: number; taxRate?: number }>;
         const gross = items.reduce((sum, it) => {

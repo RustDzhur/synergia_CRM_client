@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
-import { connectDB } from "@/lib/mongodb";
-import BlogPost from "@/models/BlogPost";
+import { prisma } from "@/lib/prisma";
 
 export const revalidate = 3600;
 
@@ -15,8 +14,7 @@ const entries = (path: string, lastModified?: Date): MetadataRoute.Sitemap =>
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const pages = PAGES.flatMap((p) => entries(p));
 	try {
-		await connectDB();
-		const posts = await BlogPost.find({ published: true }).select("slug publishedAt").lean<{ slug: string; publishedAt: Date }[]>();
+		const posts = await prisma.blogPost.findMany({ where: { published: true }, select: { slug: true, publishedAt: true } });
 		return [...pages, ...posts.flatMap((p) => entries(`/blog/${p.slug}`, p.publishedAt))];
 	} catch {
 		return pages;

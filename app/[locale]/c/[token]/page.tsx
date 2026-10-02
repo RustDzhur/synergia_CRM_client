@@ -1,6 +1,5 @@
 import { getTranslations } from "next-intl/server";
 import { notFound as nextNotFound } from "next/navigation";
-import { connectDB } from "@/lib/mongodb";
 import { shareData } from "@/lib/share";
 import ShareClient from "./ShareClient";
 
@@ -10,7 +9,6 @@ export const dynamic = "force-dynamic";
 // Работает без входа в CRM — ссылка и есть пропуск, и она открывает ровно один документ.
 export default async function SharePage({ params }: { params: { token: string } }) {
     const t = await getTranslations("share");
-    await connectDB();
     const data = await shareData(params.token).catch(() => null);
     if (!data) {
         return (

@@ -1,5 +1,4 @@
 import { createHmac } from "crypto";
-import type { HydratedDocument } from "mongoose";
 import { randomToken, safeEqual } from "@/lib/crypto";
 import { fetchProvider } from "@/lib/http";
 import { secretsOf } from "@/lib/integrations";
@@ -7,7 +6,7 @@ import { deleteObject, putObject, storageConfigured } from "@/lib/storage";
 import { downloadTelegramFile } from "./telegram";
 import { webmOpusToOgg } from "./oggOpus";
 
-type Doc = HydratedDocument<any>;
+type Doc = any;
 
 // Вложения в переписке (фото, файлы, голосовые). Файл забирается у провайдера во входящем сообщении
 // или приходит из CRM в исходящем и лежит в том же хранилище, что и документы фирмы.

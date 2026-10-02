@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { cancelProductionOrder, launchProductionOrder, produceOutput } from "@/lib/finance/productionOrders";
 import { logAudit } from "@/lib/audit";
-import User from "@/models/User";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -19,8 +18,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!validId(params.id)) return notFound();
     const b = await req.json().catch(() => ({}));
     try {
-        await connectDB();
-        const author = await User.findById(user.userId).select("firstname lastname");
+        const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
         const by = author ? `${author.firstname} ${author.lastname}`.trim() : "";
 
         if (b?.action === "launch") {
