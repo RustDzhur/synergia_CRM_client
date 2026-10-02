@@ -1,6 +1,4 @@
-import { Types } from "mongoose";
-import Notification from "@/models/Notification";
-import Membership from "@/models/Membership";
+import { prisma } from "@/lib/prisma";
 
 export interface NotifyInput {
     type: string;
@@ -10,13 +8,18 @@ export interface NotifyInput {
     user?: string; // только этому участнику
 }
 
-// Создаёт уведомление фирме. Ошибки не пробрасываем: уведомление не должно ломать основное действие (приём письма, звонка…).
+// Создаёт уведомление фирме. Ошибки не пробрасываем: уведомление не должно ломать основное действие.
 export async function notify(org: string, n: NotifyInput) {
     try {
-        await Notification.create({ org, user: n.user, type: n.type, params: n.params ?? {}, link: n.link ?? "", key: n.key });
+        // Повтор с тем же ключом игнорируется: раньше это держал уникальный индекс (org+key) в Mongo
+        if (n.key) {
+            const existing = await prisma.notification.findFirst({ where: { org, key: n.key }, select: { id: true } });
+            if (existing) return false;
+        }
+        await prisma.notification.create({ data: { org, user: n.user, type: n.type, params: (n.params ?? {}) as any, link: n.link ?? "", key: n.key } });
         return true;
     } catch (e) {
-        if ((e as { code?: number }).code !== 11000) console.error("notify failed", e);
+        console.error("notify failed", e);
         return false;
     }
 }
@@ -24,7 +27,7 @@ export async function notify(org: string, n: NotifyInput) {
 // Уведомляет участников фирмы, кроме автора действия (свои же сообщения не уведомляют). only — ограничить получателей.
 export async function notifyMembers(org: string, n: Omit<NotifyInput, "user">, opts: { except?: string; only?: string[] } = {}) {
     try {
-        const members = await Membership.find({ org }).select("user").lean();
+        const members = await prisma.membership.findMany({ where: { org }, select: { user: true } });
         const ids = members.map((m) => String(m.user)).filter((id) => id !== opts.except && (!opts.only || opts.only.includes(id)));
         await Promise.all(ids.map((user) => notify(org, { ...n, user, key: n.key ? `${n.key}:${user}` : undefined })));
     } catch (e) {
@@ -33,14 +36,9 @@ export async function notifyMembers(org: string, n: Omit<NotifyInput, "user">, o
 }
 
 // Кто видит уведомление: вся фирма (поле user пусто) и адресованные лично этому участнику.
-// Один и тот же фильтр нужен списку (GET /api/notifications) и отметке «прочитано» (POST /api/notifications/read):
-// если они разойдутся, число непрочитанных и сама отметка перестанут совпадать и счётчик «залипнет».
 export function visibleTo(org: string, userId: string) {
-    return {
-        org: new Types.ObjectId(org),
-        $or: [{ user: { $exists: false } }, { user: null }, { user: new Types.ObjectId(userId) }],
-    };
+    return { org, OR: [{ user: null }, { user: userId }] };
 }
 
 // То же самое плюс «я ещё не читал» — для подсчёта непрочитанных.
-export const unreadFor = (org: string, userId: string) => ({ ...visibleTo(org, userId), readBy: { $ne: new Types.ObjectId(userId) } });
+export const unreadFor = (org: string, userId: string) => ({ org, OR: [{ user: null }, { user: userId }], NOT: { readBy: { has: userId } } });

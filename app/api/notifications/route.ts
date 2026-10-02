@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { emit } from "@/lib/automation/emit";
 import { sweepEventReminders } from "@/lib/calendar/reminders";
 import { notify, unreadFor, visibleTo } from "@/lib/notify";
-import Deal from "@/models/Deal";
-import Notification from "@/models/Notification";
-import Task from "@/models/Task";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -15,19 +12,18 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    await connectDB();
     // отложенные действия автоматизации выполняются, пока кто-то из фирмы работает в CRM (этот запрос приходит каждые 30 секунд)
     await (await import("@/lib/automation")).runDueJobs(user.id).catch(() => undefined);
     // то же и для напоминаний календаря: суточный крон Vercel для минутных напоминаний слишком редок
     await sweepEventReminders(user.id, tzOffset(req)).catch(() => undefined);
     const mine = visibleTo(user.id, user.userId);
     const [items, unread] = await Promise.all([
-        Notification.find(mine).sort({ createdAt: -1 }).limit(50),
-        Notification.countDocuments(unreadFor(user.id, user.userId)),
+        prisma.notification.findMany({ where: mine as any, orderBy: { createdAt: "desc" }, take: 50 }),
+        prisma.notification.count({ where: unreadFor(user.id, user.userId) as any }),
     ]);
     return NextResponse.json({
         unread,
-        items: items.map((n) => ({ id: String(n._id), type: n.type, params: n.params ?? {}, link: n.link, at: n.createdAt.toISOString(), read: (n.readBy ?? []).some((id: unknown) => String(id) === user.userId) })),
+        items: items.map((n) => ({ id: n.id, type: n.type, params: n.params ?? {}, link: n.link, at: n.createdAt.toISOString(), read: (n.readBy ?? []).some((id) => String(id) === user.userId) })),
     });
 }
 
@@ -48,15 +44,14 @@ export async function POST(req: Request) {
     if (!user) return unauthorized(req);
     const b = await req.json().catch(() => null);
     if (!b || !["task", "deal"].includes(b.kind) || !validId(String(b.id)) || !STAGES.includes(b.stage)) return badRequest("Invalid notification");
-    await connectDB();
-    const doc = b.kind === "task" ? await Task.findOne({ _id: b.id, owner: user.id }) : await Deal.findOne({ _id: b.id, owner: user.id });
+    const doc = b.kind === "task" ? await prisma.task.findFirst({ where: { id: b.id, owner: user.id } }) : await prisma.deal.findFirst({ where: { id: b.id, owner: user.id } });
     if (!doc) return notFound();
-    const title = String(b.kind === "task" ? doc.title : doc.clientName).slice(0, 120);
+    const title = String(b.kind === "task" ? (doc as any).title : (doc as any).clientName).slice(0, 120);
     const created = await notify(user.id, {
         type: "deadline",
         params: { kind: b.kind, title, stage: b.stage },
         link: b.kind === "task" ? "/crm/tasks" : "/crm/crm",
-        key: `deadline:${b.kind}:${b.id}:${b.stage}:${b.kind === "task" ? doc.deadline : doc.endDate}`, // новый срок — новое уведомление
+        key: `deadline:${b.kind}:${b.id}:${b.stage}:${b.kind === "task" ? (doc as any).deadline : (doc as any).endDate}`, // новый срок — новое уведомление
     });
     if (created) await emit(user.id, { type: "deadline", data: { kind: b.kind, title, stage: b.stage, id: String(b.id) } });
     return NextResponse.json({ created });
