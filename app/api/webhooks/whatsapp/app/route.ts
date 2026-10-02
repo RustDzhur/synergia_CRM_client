@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { metaApp, whatsappVerifyToken } from "@/lib/platformSettings";
 import { reportError } from "@/lib/reportError";
 import { markMessageFailed, recordMessage } from "@/lib/channels";
 import { secretsOf } from "@/lib/integrations";
 import { parseWhatsAppWebhookByNumber, verifyWhatsAppChallenge, verifyWhatsAppSignature } from "@/lib/channels/whatsapp";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -15,19 +14,21 @@ export const dynamic = "force-dynamic";
 
 async function integrationFor(phoneNumberId: string) {
     if (!phoneNumberId) return null;
-    return Integration.findOne({ type: "whatsapp", status: "connected", "config.phoneNumberId": phoneNumberId });
+    // номер лежит в Json-конфиге — ищем среди подключённых WhatsApp в JS
+    const list = await prisma.integration.findMany({ where: { type: "whatsapp", status: "connected" } });
+    return list.find((d) => String((d.config as any)?.phoneNumberId ?? "") === phoneNumberId) ?? null;
 }
 
 // GET — проверка адреса при настройке вебхука в кабинете Meta
 export async function GET(req: Request) {
-    await connectDB();
     const query = new URL(req.url).searchParams;
     const expected = await whatsappVerifyToken();
     let challenge = verifyWhatsAppChallenge(query, expected);
     // Запасной путь: адрес мог быть настроен раньше, с маркером конкретной фирмы
     if (challenge === null) {
         const token = query.get("hub.verify_token") ?? "";
-        const doc = token ? await Integration.findOne({ type: "whatsapp", "config.verifyToken": token }) : null;
+        const list = token ? await prisma.integration.findMany({ where: { type: "whatsapp" } }) : [];
+        const doc = list.find((d) => String((d.config as any)?.verifyToken ?? "") === token) ?? null;
         if (doc) challenge = query.get("hub.challenge") ?? "";
     }
     if (challenge === null) return new Response("Forbidden", { status: 403 });
@@ -36,7 +37,6 @@ export async function GET(req: Request) {
 
 // POST — события WhatsApp: сообщения собеседников и отчёты о доставке
 export async function POST(req: Request) {
-    await connectDB();
     const raw = await req.text();
 
     let body;

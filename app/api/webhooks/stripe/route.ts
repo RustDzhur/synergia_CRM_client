@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { type StripeSubscription, applySubscription } from "@/lib/billing";
 import { stripe, verifyStripeSignature } from "@/lib/stripe";
 import { reportError } from "@/lib/reportError";
@@ -22,7 +21,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
     }
     try {
-        await connectDB();
         const obj = event.data.object;
         if (event.type.startsWith("customer.subscription.")) {
             await applySubscription(obj as StripeSubscription);

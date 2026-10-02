@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { verifyIpn } from "@/lib/nowpayments";
 import { reportError } from "@/lib/reportError";
-import CryptoPayment from "@/models/CryptoPayment";
-import Organization from "@/models/Organization";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -19,30 +17,27 @@ export async function POST(req: Request) {
     let p: { order_id?: string; payment_status?: string; price_amount?: number | string; price_currency?: string };
     try { p = JSON.parse(raw); } catch { return NextResponse.json({ message: "Invalid JSON" }, { status: 400 }); }
     try {
-        await connectDB();
-        const payment = await CryptoPayment.findOne({ orderId: String(p.order_id ?? "") });
+        const payment = await prisma.cryptoPayment.findUnique({ where: { orderId: String(p.order_id ?? "") } });
         if (!payment) return NextResponse.json({ received: true }); // чужой или старый счёт
         const status = String(p.payment_status ?? "");
         if (PAID.includes(status)) {
             const amountOk = Number(p.price_amount) === payment.amountEur && String(p.price_currency ?? "").toLowerCase() === "eur";
-            if (!payment.applied && amountOk) {
-                const org = await Organization.findById(payment.org);
+            let applied = payment.applied;
+            if (!applied && amountOk) {
+                const org = await prisma.organization.findUnique({ where: { id: payment.org } });
                 if (org) {
                     // оплата продлевает тот же тариф с конца текущего срока, иначе — отсчёт от сегодня
                     const now = new Date();
                     const from = org.planOverride === payment.plan && org.planOverrideUntil && org.planOverrideUntil > now ? new Date(org.planOverrideUntil) : now;
                     if (payment.interval === "year") from.setFullYear(from.getFullYear() + 1); else from.setMonth(from.getMonth() + 1);
-                    org.planOverride = payment.plan;
-                    org.planOverrideUntil = from;
-                    await org.save();
-                    payment.applied = true;
+                    await prisma.organization.update({ where: { id: org.id }, data: { planOverride: payment.plan, planOverrideUntil: from } });
+                    applied = true;
                 }
             }
-            payment.status = "finished";
+            await prisma.cryptoPayment.update({ where: { id: payment.id }, data: { status: "finished", applied } });
         } else if (ENDED.includes(status) || ["waiting", "confirming", "sending", "partially_paid"].includes(status)) {
-            if (!payment.applied) payment.status = status;
+            await prisma.cryptoPayment.update({ where: { id: payment.id }, data: { ...(payment.applied ? {} : { status }) } });
         }
-        await payment.save();
         return NextResponse.json({ received: true });
     } catch (e) {
         // Провайдер повторит доставку, но о сбое сообщаем сразу — как и в вебхуке Stripe

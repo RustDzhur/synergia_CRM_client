@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { findByToken, secretsOf } from "@/lib/integrations";
 import { markMessageFailed, recordMessage } from "@/lib/channels";
 import { WaIncoming, WaStatus, parseWhatsAppWebhookByNumber, verifyWhatsAppChallenge, verifyWhatsAppSignature } from "@/lib/channels/whatsapp";
-import Integration from "@/models/Integration";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +12,6 @@ export const dynamic = "force-dynamic";
 
 // GET — проверка адреса при настройке вебхука в кабинете Meta (verify token виден в окне интеграции)
 export async function GET(req: Request, { params }: { params: { token: string } }) {
-    await connectDB();
     const integration = await findByToken("whatsapp", params.token);
     if (!integration) return new Response("Not found", { status: 404 });
     const challenge = verifyWhatsAppChallenge(new URL(req.url).searchParams, (integration.config as any)?.verifyToken);
@@ -23,7 +21,6 @@ export async function GET(req: Request, { params }: { params: { token: string } 
 
 // POST — сообщения собеседников и отчёты о доставке наших сообщений; тело подписано секретом приложения (X-Hub-Signature-256)
 export async function POST(req: Request, { params }: { params: { token: string } }) {
-    await connectDB();
     const integration = await findByToken("whatsapp", params.token);
     if (!integration) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
@@ -39,7 +36,10 @@ export async function POST(req: Request, { params }: { params: { token: string }
     const groups = parseWhatsAppWebhookByNumber(body);
     let fallback: { messages: WaIncoming[]; statuses: WaStatus[] } = { messages: [], statuses: [] };
     for (const [phoneNumberId, group] of Array.from(groups.entries())) {
-        const target = phoneNumberId ? await Integration.findOne({ type: "whatsapp", status: "connected", "config.phoneNumberId": phoneNumberId }) : null;
+        // номер телефона лежит в Json-конфиге, поэтому ищем среди подключённых ящиков WhatsApp в JS
+        const target = phoneNumberId
+            ? (await prisma.integration.findMany({ where: { type: "whatsapp", status: "connected" } })).find((d) => String((d.config as any)?.phoneNumberId ?? "") === phoneNumberId) ?? null
+            : null;
         const doc = target ?? integration;
         if (!phoneNumberId) fallback = group;
         for (const message of group.messages) await recordMessage(doc, message);
