@@ -84,7 +84,22 @@ FIREBASE_SERVICE_ACCOUNT=... FIREBASE_STORAGE_BUCKET=... LOCAL_STORAGE_ROOT=/dat
    в образ попадает `libquery_engine-debian-openssl-1.1.x`, а bookworm работает на OpenSSL 3 —
    движок не загружается, и `/api/health` отвечает «Database error». `openssl` ставится в обе стадии.
 
-## Крон на сервере
+## Крон на сервере (включить при переключении)
+
+**Пока оригинал работает, крон дубликата выключен.** У оригинала на Vercel есть свои расписания
+(`vercel.json`: `/api/cron/automation` в 06:00 UTC и `/api/cron/reminders` в 07:00 UTC). Если
+запустить обход и здесь, обе системы обработают одни и те же задачи — клиенты получат письма
+и уведомления дважды. Крон включается в момент переключения:
+
+```
+crontab -e
+# добавить строку (секрет — из deploy/.env):
+5 7 * * * curl -s -m 120 -H "Authorization: Bearer <CRON_SECRET>" http://127.0.0.1:3210/api/cron/reminders
+```
+
+Сторожевая проверка `/api/health` раз в 15 минут работает постоянно — она ничего не отправляет
+
+## Крон: как это устроено
 
 На Vercel напоминания обходил Vercel Cron. На своём сервере то же делает пользовательский crontab
 (тот же секрет `CRON_SECRET` из `deploy/.env`):
