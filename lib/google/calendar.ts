@@ -278,7 +278,13 @@ export async function removeExternal(org: string, event: EventDoc): Promise<void
 
 interface SyncableEvent extends EventDoc {
     calendar?: string;
-    save: () => Promise<unknown>;
+}
+
+export interface SyncResult {
+    error: string;
+    source?: string;
+    externalId?: string;
+    externalCalendarId?: string;
 }
 
 // Предупреждение для событий из iCloud: их правки и удаления не уходят в Apple, и синхронизация
@@ -291,24 +297,20 @@ export const ICLOUD_NOT_WRITABLE = "iCloud is read-only: the change stays in Fir
  * Ошибка не отменяет сохранение: событие уже лежит в CRM, важно лишь сказать человеку, что в Google
  * его нет, — иначе он будет ждать его в телефоне.
  */
-export async function syncEvent(org: string, event: SyncableEvent): Promise<string> {
+export async function syncEvent(org: string, event: SyncableEvent): Promise<SyncResult> {
     // iCloud подключается только на чтение: правка в CRM туда не уедет и будет перезаписана
     // следующей синхронизацией. Молчать об этом нельзя — иначе человек решит, что изменил событие
-    if (event.source === "icloud") return ICLOUD_NOT_WRITABLE;
+    if (event.source === "icloud") return { error: ICLOUD_NOT_WRITABLE };
     // Личное событие в Google не записываем: календарь для записи принадлежит фирме и может быть
     // виден нескольким людям, а приватная встреча туда попадать не должна. Ранее записанное личное
     // событие отвязывает вызывающий (app/api/events/[id])
-    if (event.calendar === "my") return "";
+    if (event.calendar === "my") return { error: "" };
     try {
         const pushed = await pushEvent(org, event);
-        if (!pushed) return "";
-        event.source = "google";
-        event.externalId = pushed.id;
-        event.externalCalendarId = pushed.calendarId;
-        await event.save();
-        return "";
+        if (!pushed) return { error: "" };
+        return { error: "", source: "google", externalId: pushed.id, externalCalendarId: pushed.calendarId };
     } catch (e) {
-        return e instanceof Error ? e.message : "Google Calendar did not accept the event";
+        return { error: e instanceof Error ? e.message : "Google Calendar did not accept the event" };
     }
 }
 

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { eventDay, eventMinutes, eventText, eventTime, tzNameOf, tzOffsetOf, visibleEvents } from "@/lib/events";
 import { ICLOUD_NOT_WRITABLE, removeExternal, syncEvent } from "@/lib/google/calendar";
-import Event from "@/models/Event";
+import { prisma } from "@/lib/prisma";
+import { toDTO } from "@/lib/serialize";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +14,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
 
-    await connectDB();
-    const event = await Event.findOne({ _id: params.id, ...visibleEvents(user) });
-    return event ? NextResponse.json(event) : notFound();
+    const event = await prisma.event.findFirst({ where: { id: params.id, ...visibleEvents(user) } as any });
+    return event ? NextResponse.json(toDTO(event)) : notFound();
 }
 
 // PATCH /api/events/:id — правка события. Принимаются только присланные поля; личные события правит
@@ -48,8 +47,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (typeof b.location === "string") data.location = eventText(b.location, 200);
     if (b.reminder !== undefined) data.reminder = eventMinutes(b.reminder);
 
-    await connectDB();
-    const existing = await Event.findOne({ _id: params.id, ...visibleEvents(user) }).select("source externalId");
+    const existing = await prisma.event.findFirst({ where: { id: params.id, ...visibleEvents(user) } as any, select: { source: true, externalId: true } });
     if (!existing) return notFound();
     // Пояс берём из запроса: событие могли перенести, находясь в другом часовом поясе, и напоминание
     // должно считаться по новому времени. Но у события из внешнего календаря пояс свой, пришедший
@@ -59,30 +57,34 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         data.tzName = tzNameOf(req);
     }
 
-    const event = await Event.findOneAndUpdate({ _id: params.id, ...visibleEvents(user) }, { $set: data }, { new: true });
-    if (!event) return notFound();
+    let event = await prisma.event.update({ where: { id: params.id }, data: data as any });
     // Правка уходит в Google: календари должны совпадать в обе стороны. Если события там ещё нет
     // (календарь подключили позже), оно создаётся. Личное событие из Google, наоборот, убираем:
     // календарь для записи общий для фирмы, и приватная встреча не должна в нём оставаться.
-    const syncError = event.calendar === "my" && event.source === "google" && event.externalId
-        ? await unlink(user.id, event)
-        : await syncEvent(user.id, event);
-    return NextResponse.json({ ...event.toObject(), ...(syncError ? { syncError } : {}) });
+    let syncError = "";
+    if (event.calendar === "my" && event.source === "google" && event.externalId) {
+        syncError = await unlink(user.id, event);
+        event = { ...event, source: "local", externalId: null, externalCalendarId: "" };
+    } else {
+        const sync = await syncEvent(user.id, event as any);
+        syncError = sync.error;
+        if (sync.source) {
+            event = await prisma.event.update({ where: { id: params.id }, data: { source: sync.source, externalId: sync.externalId ?? null, externalCalendarId: sync.externalCalendarId ?? "" } });
+        }
+    }
+    return NextResponse.json({ ...toDTO(event), ...(syncError ? { syncError } : {}) });
 }
 
 // Событие стало личным: убираем его из Google и снимаем связь. Ошибка удаления не мешает:
 // связь всё равно снимается, иначе событие снова уехало бы туда при следующей правке
-async function unlink(org: string, event: InstanceType<typeof Event>): Promise<string> {
+async function unlink(org: string, event: { id: string; externalId?: string | null; externalCalendarId?: string }): Promise<string> {
     let error = "";
     try {
-        await removeExternal(org, event);
+        await removeExternal(org, event as any);
     } catch (e) {
         error = e instanceof Error ? e.message : "Google Calendar did not accept the change";
     }
-    await Event.updateOne({ _id: event._id }, { $unset: { externalId: "" }, $set: { source: "local", externalCalendarId: "" } });
-    event.source = "local";
-    event.externalId = undefined;
-    event.externalCalendarId = "";
+    await prisma.event.update({ where: { id: event.id }, data: { externalId: null, source: "local", externalCalendarId: "" } });
     return error;
 }
 
@@ -91,17 +93,14 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
 
-    await connectDB();
-    const event = await Event.findOneAndDelete({ _id: params.id, ...visibleEvents(user) });
+    const event = await prisma.event.findFirst({ where: { id: params.id, ...visibleEvents(user) } as any });
     if (!event) return notFound();
-    // Удаляем и в Google, иначе событие вернулось бы в CRM следующей же синхронизацией. Если Google
-    // не ответил, удаление всё равно состоялось, но человеку об этом говорим: событие вернётся
-    // при синхронизации, и тогда его можно убрать уже в самом Google.
-    // Событие из iCloud убрать оттуда нельзя — синхронизация вернёт его, и это тоже нужно сказать.
+    await prisma.event.delete({ where: { id: params.id } });
+    // Удаляем и в Google, иначе событие вернулось бы в CRM следующей же синхронизацией.
     let syncError = "";
     if (event.source === "google") {
         try {
-            await removeExternal(user.id, event);
+            await removeExternal(user.id, event as any);
         } catch (e) {
             syncError = e instanceof Error ? e.message : "Google Calendar did not accept the deletion";
         }

@@ -12,7 +12,7 @@ export const EVENT_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 // «my» — личное событие автора: видит только он; «company» — общее, видит вся фирма.
 export function visibleEvents(user: AuthContext) {
-    return { org: user.id, $or: [{ calendar: "company" }, { calendar: "my", createdBy: user.userId }] };
+    return { org: user.id, OR: [{ calendar: "company" }, { calendar: "my", createdBy: user.userId }] };
 }
 
 // Поля события из тела запроса: строки обрезаются по длине, даты и время принимаются только по шаблону.

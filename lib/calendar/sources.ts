@@ -1,4 +1,4 @@
-import Event from "@/models/Event";
+import { prisma } from "@/lib/prisma";
 import { EVENT_DATE_RE, EVENT_TIME_RE, eventText } from "@/lib/events";
 
 // Общий слой для внешних календарей (Google, iCloud): провайдер приводит свои события к виду
@@ -75,24 +75,28 @@ export async function upsertExternalEvents(
             source,
             externalId: e.externalId,
         };
-        const res = await Event.updateOne({ org, source, externalId: e.externalId }, { $set: fields, $setOnInsert: fresh }, { upsert: true });
-        if (res.upsertedCount) created++;
-        else if (res.modifiedCount) updated++;
+        const existing = await prisma.event.findFirst({ where: { org, source, externalId: e.externalId } });
+        if (existing) {
+            await prisma.event.update({ where: { id: existing.id }, data: fields });
+            updated++;
+        } else {
+            await prisma.event.create({ data: { org, ...fields, ...fresh } });
+            created++;
+        }
     }
 
     // Удаляем только те события источника, что попадают в синхронизированное окно, исчезли у провайдера
     // и приходили из календаря, который мы в этот раз обошли. События за пределами окна мы просто
     // не запрашивали, а события из выключенного календаря не удаляем: человек отключил обновление,
     // а не сами события.
-    // «"", null» в списке — события без известного календаря: строки, записанные до появления этого поля,
-    // и присланные клиентом с source провайдера, но без календаря. Для них правило то же, что и раньше:
-    // не пришло от провайдера — убираем, иначе они остались бы в календаре навсегда.
-    const removed = await Event.deleteMany({
-        org, source,
-        externalId: { $nin: Array.from(seen) },
-        externalCalendarId: { $in: [...calendars, "", null] },
-        date: { $gte: from, $lte: to },
+    const removed = await prisma.event.deleteMany({
+        where: {
+            org, source,
+            externalId: { notIn: Array.from(seen) },
+            externalCalendarId: { in: [...calendars, ""] },
+            date: { gte: from, lte: to },
+        },
     });
 
-    return { created, updated, removed: removed.deletedCount ?? 0 };
+    return { created, updated, removed: removed.count };
 }
