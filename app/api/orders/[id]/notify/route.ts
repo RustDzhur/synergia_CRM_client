@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { requireMarket } from "@/lib/finance/marketGuard";
 import { sendToConversation } from "@/lib/channels";
 import { mailAccount } from "@/lib/finance/send";
 import { sendFromAccount, mailboxCanSend } from "@/lib/mail";
-import Contact from "@/models/Contact";
-import Conversation from "@/models/Conversation";
-import Integration from "@/models/Integration";
-import Order from "@/models/Order";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -29,13 +25,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!validId(params.id)) return notFound();
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     try {
-        await connectDB();
         await requireMarket(user.id, "UA");
-        const order = await Order.findOne({ _id: params.id, org: user.id });
+        const order = await prisma.order.findFirst({ where: { id: params.id, org: user.id } });
         if (!order) return notFound();
 
-        const waybill = String(order.waybill?.number ?? "");
-        const ukr = String(order.ukrposhta?.barcode ?? "");
+        const waybill = String((order.waybill as any)?.number ?? "");
+        const ukr = String((order.ukrposhta as any)?.barcode ?? "");
         if (!waybill && !ukr) return badRequest("У замовлення ще немає номера відправлення");
 
         const text =
@@ -47,14 +42,14 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
         // 1) Живая переписка с контактом: сначала по контакту, потом по совпадению телефона
         if (order.contact) {
-            const contact = await Contact.findOne({ _id: order.contact, owner: user.id }).select("phone");
-            const conversations = await Conversation.find({ owner: user.id, channel: { $in: MESSAGING } }).select("channel contact externalId");
+            const contact = await prisma.contact.findFirst({ where: { id: String(order.contact), owner: user.id }, select: { phone: true } });
+            const conversations = await prisma.conversation.findMany({ where: { owner: user.id, channel: { in: MESSAGING } }, select: { id: true, channel: true, contact: true, externalId: true } });
             const phone = digits(String(contact?.phone ?? ""));
             const conversation =
                 conversations.find((c) => String(c.contact ?? "") === String(order.contact)) ??
                 (phone ? conversations.find((c) => digits(String(c.externalId ?? "")) === phone) : undefined);
             if (conversation) {
-                const integration = await Integration.findOne({ owner: user.id, type: conversation.channel, status: "connected" });
+                const integration = await prisma.integration.findFirst({ where: { owner: user.id, type: conversation.channel, status: "connected" } });
                 if (integration) {
                     await sendToConversation(integration, conversation, text);
                     return NextResponse.json({ ok: true, via: conversation.channel });
@@ -63,7 +58,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         }
 
         // 2) Письмо с ящика фирмы — когда человек оставил почту, а переписки в мессенджере нет
-        const contact = order.contact ? await Contact.findOne({ _id: order.contact, owner: user.id }).select("email") : null;
+        const contact = order.contact ? await prisma.contact.findFirst({ where: { id: String(order.contact), owner: user.id }, select: { email: true } }) : null;
         const email = String(contact?.email ?? "");
         if (email) {
             const account = await mailAccount(user.id);
