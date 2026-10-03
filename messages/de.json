@@ -1142,7 +1142,8 @@
         "statusClaimed": "wartet auf Bestätigung",
         "statusNew": "wartet auf Zahlung",
         "renew": "Verlängern",
-        "methodsLine": "Banküberweisung (SEPA / Ukraine) · USDT (TRC-20)"
+        "methodsLine": "Banküberweisung (SEPA / Ukraine) · USDT (TRC-20)",
+        "changePlan": "Tarif ändern"
     },
     "collab": {
         "calButton": "Kalender",

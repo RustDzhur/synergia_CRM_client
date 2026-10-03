@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 // PATCH /api/admin/orgs/:id — { planOverride?, planOverrideUntil?, blocked?, featureOverrides? }
-// Ручное назначение тарифа (например, после оплаты по счёту) главнее подписки Stripe, пока не истекло; blocked закрывает фирме доступ.
+// Ручное назначение тарифа (например, после оплаты по счёту) главнее базового тарифа, пока не истекло; blocked закрывает фирме доступ.
 // featureOverrides — { раздел: true | false | null }: отдельные разделы сверх тарифа (true), отключённые вопреки тарифу (false)
 // и возврат к тарифу (null). Разделы из app/config/plans.ts.
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {

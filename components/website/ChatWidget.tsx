@@ -19,7 +19,7 @@ const GREETING: Record<string, string> = {
 	ua: "Привіт! Я Айріс, ШІ-асистентка Firmspace. Питайте мене про платформу будь-що — відповім одразу.",
 	en: "Hi! I'm Ayris, Firmspace's AI assistant. Ask me anything about the platform – I'll answer right away.",
 };
-const VERSION = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ?? "dev";
+const VERSION = process.env.NEXT_PUBLIC_COMMIT_SHA ?? "dev";
 
 // Окно виджета одно на страницу, а компонентов может оказаться несколько — считаем их сами
 let mounts = 0;

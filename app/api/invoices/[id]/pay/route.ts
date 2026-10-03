@@ -11,7 +11,7 @@ import { fiscalAdvice, fiscalConfig, fiscalizeInvoice, findFiscal } from "@/lib/
 
 // POST /api/invoices/:id/pay — { amount? }: отметить оплату (без amount — вся сумма, с amount — частично).
 // Оплата фиксируется вручную: деньги приходят переводом или наличными, а в CRM их вносят человек
-// или сверка с банком (app/api/bank/transactions). Подписки на тарифы оплачиваются отдельно, через Stripe.
+// или сверка с банком (app/api/bank/transactions). Тарифы платформы оплачиваются отдельно, переводом (lib/transferPay.ts).
 export async function POST(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);

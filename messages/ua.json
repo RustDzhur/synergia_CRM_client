@@ -1142,7 +1142,8 @@
         "statusClaimed": "очікує підтвердження",
         "statusNew": "очікує оплати",
         "renew": "Продовжити",
-        "methodsLine": "Банківський переказ (SEPA / Україна) · USDT (TRC-20)"
+        "methodsLine": "Банківський переказ (SEPA / Україна) · USDT (TRC-20)",
+        "changePlan": "Змінити тариф"
     },
     "collab": {
         "calButton": "Календарі",

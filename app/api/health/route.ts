@@ -36,7 +36,7 @@ export async function GET() {
     };
     const ok = env.DATABASE_URL && env.JWT_SECRET && db === "ok";
     // Задеплоенный коммит: его пишет deploy/autodeploy.sh перед сборкой — видно, какая
-    // версия кода сейчас живёт (как номер деплоя в Vercel)
+    // версия кода сейчас живёт (как номер деплоя)
     const commit = process.env.DEPLOYED_COMMIT ?? "";
     return NextResponse.json({ ok, commit, env, db, features }, { status: ok ? 200 : 503 });
 }

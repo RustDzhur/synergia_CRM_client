@@ -4,16 +4,15 @@ import { reportError } from "@/lib/reportError";
 
 export const dynamic = "force-dynamic";
 
-// Вебхук для сборок: сломанный деплой на Vercel и упавшая сборка в GitHub должны попадать в тот же
-// Telegram, что и ошибки приложения — иначе о поломке узнаёшь, только зайдя в панель.
+// Вебхук для сборок: упавшая сборка в GitHub должна попадать в тот же Telegram, что и ошибки приложения —
+// иначе о поломке узнаёшь, только зайдя в панель.
 //
-// Настраивается в двух местах (см. docs/PLATFORM.md):
-//   Vercel → Project → Settings → Webhooks → https://<домен>/api/hooks/deploy?secret=<DEPLOY_HOOK_SECRET>
-//   GitHub → репозиторий → Settings → Webhooks → тот же адрес, content type application/json
+// Настраивается так (см. docs/PLATFORM.md):
+//   GitHub → репозиторий → Settings → Webhooks → https://<домен>/api/hooks/deploy?secret=<DEPLOY_HOOK_SECRET>, content type application/json
 // Без переменной DEPLOY_HOOK_SECRET маршрут выключен: публичная ручка, которую может дёрнуть кто угодно,
 // хуже, чем отсутствие уведомлений.
 //
-// Отвечаем всегда 200 (кроме отказа по секрету): Vercel и GitHub считают не-2xx сбоем доставки и будут
+// Отвечаем всегда 200 (кроме отказа по секрету): GitHub считает не-2xx сбоем доставки и будут
 // повторять запрос, а повтор ничего не изменит — сообщение уже ушло или уже отброшено троттлингом.
 
 function allowed(secret: string | null, expected: string): boolean {
@@ -26,16 +25,6 @@ function allowed(secret: string | null, expected: string): boolean {
 // Что случилось и куда смотреть. Разбираем только то, что нам нужно, остальное игнорируем молча:
 // вебхуки шлют много событий, и «успешная сборка» — не повод для сообщения.
 function describe(type: string, body: Record<string, unknown>): { text: string; detail: Record<string, unknown> } | null {
-    // Vercel: { type: "deployment.error", payload: { url, target, meta: { githubCommitRef, githubCommitMessage } } }
-    if (type.startsWith("deployment.")) {
-        const payload = (body.payload ?? {}) as Record<string, unknown>;
-        if (type !== "deployment.error") return null;
-        const meta = (payload.meta ?? {}) as Record<string, unknown>;
-        return {
-            text: `Сборка на Vercel не удалась (${payload.target ?? "production"}): ${payload.url ?? ""}`,
-            detail: { ветка: meta.githubCommitRef, коммит: meta.githubCommitMessage, автор: meta.githubCommitAuthorLogin, проект: payload.name },
-        };
-    }
     // GitHub: X-GitHub-Event в заголовке, тело — как у события
     if (type === "workflow_run") {
         const run = (body.workflow_run ?? {}) as Record<string, unknown>;
@@ -62,8 +51,8 @@ export async function POST(req: Request) {
     }
 
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-    // У Vercel тип события лежит в теле, у GitHub — в заголовке
-    const type = String(body.type ?? req.headers.get("x-github-event") ?? "").toLowerCase();
+    // Тип события GitHub лежит в заголовке
+    const type = String(req.headers.get("x-github-event") ?? "").toLowerCase();
     const failure = describe(type, body);
     if (!failure) return NextResponse.json({ ok: true, ignored: type || "unknown" });
 

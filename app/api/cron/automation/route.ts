@@ -10,9 +10,9 @@ import { startTelegramControl } from "@/lib/ai/telegramBot";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// GET /api/cron/automation — ежесуточный запуск Vercel Cron: выполняет отложенные действия автоматизации, переводит
+// GET /api/cron/automation — запуск по cron сервера: выполняет отложенные действия автоматизации, переводит
 // просроченные счета в статус "overdue", генерирует очередные счета по шаблонам повторяющихся счетов и шлёт
-// напоминания об оплате. Защищён секретом CRON_SECRET (Vercel Cron передаёт его в заголовке Authorization).
+// напоминания об оплате. Защищён секретом CRON_SECRET (cron сервера передаёт его в заголовке Authorization).
 // Шаги идут последовательно (не Promise.all): overdue должен отработать раньше reminders, иначе счёт, ставший
 // просроченным сегодня же, не попадёт в выборку напоминаний в этом самом запуске.
 export async function GET(req: Request) {
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
     if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ message: "Forbidden" }, { status: 403 });
 
     // Каждый шаг отдельно: сбой одного не должен отменять остальные, а сам сбой — остаться незамеченным
-    // (раньше здесь не было обработки ошибок вообще, и упавший обход было видно только в журнале Vercel)
+    // (раньше здесь не было обработки ошибок вообще, и упавший обход было видно только в журнале сервера)
     const step = async <T>(name: string, run: () => Promise<T>): Promise<T | null> => {
         try {
             return await run();
