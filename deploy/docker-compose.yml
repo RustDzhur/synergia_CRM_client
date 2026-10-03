@@ -21,6 +21,8 @@ services:
     volumes:
       # Файлы и фото: каталог внутри тома, LOCAL_STORAGE_ROOT указывает сюда
       - crm_storage:/data/storage
+      # Выдача токенов агентам из админки: сайт кладёт сюда файл <агент>.env, Harness видит его как /workspace/_creds/<агент>.env
+      - ${AGENT_CREDS_DIR:-/home/server/agents/_creds}:/agent-creds
     # Проверка живости на уровне Docker: видно в docker ps и перезапускается сам
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]

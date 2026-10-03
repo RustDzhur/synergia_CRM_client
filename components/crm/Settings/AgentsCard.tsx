@@ -17,7 +17,7 @@ export default function AgentsCard() {
 	const [picked, setPicked] = useState<string[]>(["blog"]);
 	const [envNames, setEnvNames] = useState("");
 	const [editing, setEditing] = useState<{ id: string; scopes: string[]; envNames: string } | null>(null);
-	const [fresh, setFresh] = useState<{ name: string; token: string; scopes: string[]; envNames: string } | null>(null);
+	const [fresh, setFresh] = useState<{ name: string; token: string; scopes: string[]; envNames: string; delivered: boolean; file: string } | null>(null);
 	const [busy, setBusy] = useState(false);
 
 	const load = useCallback(async () => {
@@ -31,10 +31,10 @@ export default function AgentsCard() {
 
 	async function create() {
 		setBusy(true);
-		const res = await apiCall<{ token: string }>("/api/agents", "POST", { action: "create", name, scopes: picked, envNames });
+		const res = await apiCall<{ token: string; delivered: boolean; file: string }>("/api/agents", "POST", { action: "create", name, scopes: picked, envNames });
 		setBusy(false);
 		if (!res.ok || !res.data) return void toast.error(res.message);
-		setFresh({ name, token: res.data.token, scopes: picked, envNames });
+		setFresh({ name, token: res.data.token, scopes: picked, envNames, delivered: res.data.delivered, file: res.data.file });
 		setName("");
 		setEnvNames("");
 		void load();
@@ -51,6 +51,15 @@ export default function AgentsCard() {
 		void load();
 	}
 
+	// Новый токен для уже существующего агента: старый перестаёт работать, новый сразу записывается в файл агента
+	async function rotate(a: Agent) {
+		if (!window.confirm(t("agentsRotateAsk", { name: a.name }))) return;
+		const res = await apiCall<{ token: string; delivered: boolean; file: string }>("/api/agents", "POST", { action: "rotate", id: a.id });
+		if (!res.ok || !res.data) return void toast.error(res.message);
+		setFresh({ name: a.name, token: res.data.token, scopes: a.scopes, envNames: (a.envNames ?? []).join(", "), delivered: res.data.delivered, file: res.data.file });
+		void load();
+	}
+
 	async function revoke(a: Agent) {
 		if (!window.confirm(t("agentsRevokeAsk", { name: a.name }))) return;
 		const res = await apiCall("/api/agents", "POST", { action: "revoke", id: a.id });
@@ -61,9 +70,9 @@ export default function AgentsCard() {
 
 	// Готовое сообщение для самого агента: его можно вставить ему в чат — он сам сохранит токен в свой .env (терминал не нужен)
 	const forAgent = (f: NonNullable<typeof fresh>) => [
-		`Твои данные доступа к платформе Firmspace. Сохрани их в свой файл .env рядом с рабочей папкой и не выводи токен в чат и логи:`,
-		`FIRMSPACE_API=http://127.0.0.1:3210`,
-		`FIRMSPACE_TOKEN=${f.token}`,
+		f.delivered
+			? `Твои данные доступа к платформе Firmspace уже лежат в файле ${f.file} (FIRMSPACE_API и FIRMSPACE_TOKEN). Читай их оттуда, токен не выводи в чат и логи.`
+			: `Твои данные доступа к платформе Firmspace. Сохрани их в свой файл .env рядом с рабочей папкой и не выводи токен в чат и логи:\nFIRMSPACE_API=http://127.0.0.1:3210\nFIRMSPACE_TOKEN=${f.token}`,
 		`Все запросы: заголовок "Authorization: Bearer $FIRMSPACE_TOKEN".`,
 		f.scopes.includes("blog") ? `Блог: GET/POST $FIRMSPACE_API/api/agent/blog (статья на en/de/ua, сохраняется черновиком) — формат в docs/AGENTS.md.` : "",
 		f.scopes.includes("env") ? `Секреты: GET $FIRMSPACE_API/api/agent/env (список имён) и GET $FIRMSPACE_API/api/agent/env?name=ИМЯ (значение; для фирмы добавь &org=<id>). Тебе разрешено: ${f.envNames || "—"}.` : "",
@@ -87,6 +96,7 @@ export default function AgentsCard() {
 							</div>
 							<div className="flex gap-8">
 								<button type="button" onClick={() => setEditing(editing?.id === a.id ? null : { id: a.id, scopes: a.scopes, envNames: (a.envNames ?? []).join(", ") })} className="fs-btn fs-btn-ghost h-30 px-12 text-12">{t("agentsEdit")}</button>
+								<button type="button" onClick={() => rotate(a)} className="fs-btn fs-btn-ghost h-30 px-12 text-12">{t("agentsRotate")}</button>
 								<button type="button" onClick={() => revoke(a)} className="fs-btn fs-btn-ghost h-30 px-12 text-12 text-[#F4A100]">{t("agentsRevoke")}</button>
 							</div>
 							{editing?.id === a.id && (
@@ -108,12 +118,21 @@ export default function AgentsCard() {
 
 			{fresh && (
 				<div className="mt-12 rounded-10 border border-[rgba(198,255,77,0.4)] bg-[rgba(198,255,77,0.06)] p-12">
-					<p className="text-12 text-[#f1f4ee]">{t("agentsToken", { name: fresh.name })}</p>
-					<code className="mt-6 block break-all rounded-8 bg-[rgba(0,0,0,0.35)] p-8 text-12 text-[#c6ff4d]">{fresh.token}</code>
+					{fresh.delivered ? (
+						<>
+							<p className="text-12 text-[#f1f4ee]">{t("agentsDelivered", { name: fresh.name })}</p>
+							<code className="mt-6 block break-all rounded-8 bg-[rgba(0,0,0,0.35)] p-8 text-12 text-[#c6ff4d]">{fresh.file}</code>
+						</>
+					) : (
+						<>
+							<p className="text-12 text-[#f1f4ee]">{t("agentsToken", { name: fresh.name })}</p>
+							<code className="mt-6 block break-all rounded-8 bg-[rgba(0,0,0,0.35)] p-8 text-12 text-[#c6ff4d]">{fresh.token}</code>
+						</>
+					)}
 					<p className="mt-6 text-11 text-[#8c948b]">API: {api} · {base || "https://www.firmspace.de"}/api/agent/env · docs/AGENTS.md</p>
 					<div className="mt-8 flex gap-8">
 						<button type="button" onClick={() => { void navigator.clipboard?.writeText(forAgent(fresh)); toast.success(t("agentsCopied")); }} className="fs-btn fs-btn-primary h-30 px-12 text-12">{t("agentsCopyForAgent")}</button>
-						<button type="button" onClick={() => { void navigator.clipboard?.writeText(fresh.token); toast.success(t("agentsCopied")); }} className="fs-btn fs-btn-ghost h-30 px-12 text-12">{t("agentsCopy")}</button>
+						{!fresh.delivered && <button type="button" onClick={() => { void navigator.clipboard?.writeText(fresh.token); toast.success(t("agentsCopied")); }} className="fs-btn fs-btn-ghost h-30 px-12 text-12">{t("agentsCopy")}</button>}
 						<button type="button" onClick={() => setFresh(null)} className="fs-btn fs-btn-ghost h-30 px-12 text-12">{t("agentsDone")}</button>
 					</div>
 				</div>

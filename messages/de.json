@@ -1079,7 +1079,10 @@
         "agentsEdit": "Rechte",
         "agentsSave": "Rechte speichern",
         "agentsSaved": "Rechte gespeichert (Token unverändert)",
-        "agentsCopyForAgent": "Für den Agenten kopieren (in dessen Chat einfügen)"
+        "agentsCopyForAgent": "Hinweis für den Agenten kopieren",
+        "agentsDelivered": "Das Token für „{name}“ liegt bereits in einer Datei – der Agent liest sie selbst, nichts zu kopieren:",
+        "agentsRotate": "Neues Token",
+        "agentsRotateAsk": "„{name}“ ein neues Token ausstellen? Das alte funktioniert nicht mehr, das neue wird sofort in die Datei des Agenten geschrieben."
     },
     "upgrade": {
         "free": "Kostenlos",

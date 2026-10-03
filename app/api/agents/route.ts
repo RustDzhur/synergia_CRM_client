@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { badRequest, serverError, unauthorized } from "@/lib/api";
 import { isPlatformAdminUser } from "@/lib/admin";
-import { AGENT_SCOPES, createAgent, listAgents, revokeAgent, updateAgent } from "@/lib/agents";
+import { AGENT_SCOPES, createAgent, listAgents, revokeAgent, rotateAgent, updateAgent } from "@/lib/agents";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 // Реестр агентов платформы (CRM → Настройки → Интеграции → «Агенты»). Только для администратора платформы: агент получает
 // доступ к платформе, а не к одной фирме.
 //   GET  — список агентов (без токенов) и доступные права
-//   POST — { action: "create", name, scopes, envNames? } → токен (показывается ОДИН раз) | { action: "update", id, scopes, envNames? } (права без смены токена) | { action: "revoke", id }
+//   POST — { action: "create", name, scopes, envNames? } → токен (показывается ОДИН раз) | { action: "rotate", id } (новый токен, сразу в файл агента) | { action: "update", id, scopes, envNames? } (права без смены токена) | { action: "revoke", id }
 async function admin(req: Request) {
     const user = await requireUser(req);
     if (!user) return { res: unauthorized(req) };
@@ -37,6 +37,10 @@ export async function POST(req: Request) {
         if (b.action === "create") {
             const r = await createAgent(String(b.name ?? ""), Array.isArray(b.scopes) ? b.scopes.map(String) : [], a.user.userId, b.envNames);
             return NextResponse.json({ ok: true, ...r }, { status: 201 });
+        }
+        if (b.action === "rotate") {
+            const r = await rotateAgent(String(b.id ?? ""));
+            return r ? NextResponse.json({ ok: true, ...r }) : badRequest("No such agent");
         }
         if (b.action === "update") {
             return (await updateAgent(String(b.id ?? ""), Array.isArray(b.scopes) ? b.scopes.map(String) : [], b.envNames)) ? NextResponse.json({ ok: true }) : badRequest("No such agent");

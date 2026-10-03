@@ -1,4 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { prisma } from "@/lib/prisma";
 
 // Реестр внешних агентов (DeepSeek Harness и др.), которые работают с платформой. У каждого агента свой токен и свой набор прав
@@ -27,7 +29,37 @@ export function cleanEnvNames(raw: unknown): string[] {
     return Array.from(new Set(list.filter((n) => /^[A-Z][A-Z0-9_]{1,63}$/.test(n)))).slice(0, 100);
 }
 
-export async function createAgent(name: string, scopes: string[], createdBy: string, envNames: unknown = []): Promise<{ id: string; token: string }> {
+// Выдача токена агенту без ручного копирования: сайт сам кладёт файл <имя>.env в общую папку учётных данных. Папка ~/agents/_creds на сервере
+// подключена к контейнеру сайта как /agent-creds (deploy/docker-compose.yml), а у Harness она видна как /workspace/_creds. Туда пишется только
+// этот файл (0600), больше сайт в папки агентов не лезет.
+const CREDS_DIR = () => process.env.AGENT_CREDS_PATH || "/agent-creds";
+export const agentSlug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "agent";
+
+export interface Delivery { delivered: boolean; file: string }
+export async function deliverToken(name: string, token: string): Promise<Delivery> {
+    const slug = agentSlug(name);
+    const file = `/workspace/_creds/${slug}.env`; // путь глазами агента внутри Harness
+    try {
+        await mkdir(CREDS_DIR(), { recursive: true });
+        const base = (process.env.APP_URL_INTERNAL || "http://127.0.0.1:3210").replace(/\/+$/, "");
+        await writeFile(path.join(CREDS_DIR(), `${slug}.env`), `FIRMSPACE_API=${base}\nFIRMSPACE_TOKEN=${token}\n`, { mode: 0o600 });
+        return { delivered: true, file };
+    } catch {
+        return { delivered: false, file };
+    }
+}
+
+/** Новый токен для существующего агента (старый перестаёт работать) — сразу кладётся в файл агента. Нужен, когда токен потерян. */
+export async function rotateAgent(id: string): Promise<{ token: string } & Delivery | null> {
+    const row = await prisma.sectionRecord.findFirst({ where: { org: ORG, key: KEY, rid: id } });
+    if (!row) return null;
+    const v = row.values as { name?: string };
+    const token = `fsa_${randomBytes(32).toString("hex")}`;
+    await prisma.sectionRecord.update({ where: { id: row.id }, data: { values: { ...(row.values as object), hash: sha(token) } as never } });
+    return { token, ...(await deliverToken(String(v.name ?? "agent"), token)) };
+}
+
+export async function createAgent(name: string, scopes: string[], createdBy: string, envNames: unknown = []): Promise<{ id: string; token: string } & Delivery> {
     const clean = name.trim().replace(/\s+/g, " ").slice(0, 60);
     if (clean.length < 2) throw new Error("Give the agent a name (at least 2 characters)");
     const sc = Array.from(new Set(scopes.filter((s): s is AgentScope => (AGENT_SCOPES as readonly string[]).includes(s))));
@@ -38,7 +70,7 @@ export async function createAgent(name: string, scopes: string[], createdBy: str
     const token = `fsa_${randomBytes(32).toString("hex")}`;
     const id = `a${Date.now().toString(36)}${randomBytes(3).toString("hex")}`;
     await prisma.sectionRecord.create({ data: { org: ORG, key: KEY, rid: id, values: { name: clean, scopes: sc, envNames: names, hash: sha(token), createdAt: new Date().toISOString(), lastUsedAt: "", createdBy } as never } });
-    return { id, token };
+    return { id, token, ...(await deliverToken(clean, token)) };
 }
 
 /** Меняет права существующего агента, не трогая его токен (токен у агента в .env остаётся рабочим). */

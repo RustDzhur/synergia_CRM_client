@@ -1079,7 +1079,10 @@
         "agentsEdit": "Permissions",
         "agentsSave": "Save permissions",
         "agentsSaved": "Permissions saved (the token did not change)",
-        "agentsCopyForAgent": "Copy for the agent (paste it into its chat)"
+        "agentsCopyForAgent": "Copy the hint for the agent",
+        "agentsDelivered": "The token for “{name}” is already written to a file — the agent reads it itself, nothing to copy:",
+        "agentsRotate": "New token",
+        "agentsRotateAsk": "Issue “{name}” a new token? The old one stops working and the new one is written to the agent’s file at once."
     },
     "upgrade": {
         "free": "Free",
