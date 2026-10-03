@@ -29,9 +29,8 @@ Cron на сервере:
 ```
 
 Настройки (ветка, репозиторий, обязателен ли зелёный CI) — в `deploy/autodeploy.env`
-(образец: `deploy/autodeploy.env.example`). По умолчанию выкладывается ветка
-`feature/postgres-migration`, потому что в `main` пока лежит код оригинала с MongoDB.
-Когда сольёте миграцию в `main`, поменяйте `DEPLOY_BRANCH=main` — и всё.
+(образец: `deploy/autodeploy.env.example`). Выкладывается ветка `main` — единственная основная ветка (с 03.10.2026 миграцию на
+PostgreSQL слили в `main`; прежняя линия на MongoDB сохранена тегом `backup/main-before-merge-20261003`).
 
 **Какая версия живёт на сервере** — видно в ответе `/api/health`:
 

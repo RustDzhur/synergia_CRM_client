@@ -5,7 +5,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feature/postgres-migration]
+    branches: [main]
   pull_request:
 
 jobs:

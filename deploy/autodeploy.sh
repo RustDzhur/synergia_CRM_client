@@ -4,7 +4,7 @@
 # и, если появился новый коммит с зелёным CI, пересобирает и перезапускает контейнер.
 #
 # Настройки — переменными окружения или в deploy/autodeploy.env:
-#   DEPLOY_BRANCH  ветка выкладки (по умолчанию feature/postgres-migration)
+#   DEPLOY_BRANCH  ветка выкладки (по умолчанию main — единственная основная ветка проекта)
 #   REPO_SLUG      owner/repo на GitHub (нужен для проверки статуса CI)
 #   REQUIRE_CI     1 — выкладывать только зелёный CI (по умолчанию), 0 — выкладывать всегда
 set -uo pipefail
@@ -13,7 +13,7 @@ HOME_DIR="${HOME:-/home/server}"
 [ -f "$HOME_DIR/crm-duplicate/deploy/autodeploy.env" ] && . "$HOME_DIR/crm-duplicate/deploy/autodeploy.env"
 
 REPO_DIR="${REPO_DIR:-$HOME_DIR/crm-duplicate}"
-BRANCH="${DEPLOY_BRANCH:-feature/postgres-migration}"
+BRANCH="${DEPLOY_BRANCH:-main}"
 REMOTE="${DEPLOY_REMOTE:-origin}"
 REPO_SLUG="${REPO_SLUG:-RustDzhur/synergia_CRM_client}"
 REQUIRE_CI="${REQUIRE_CI:-1}"
