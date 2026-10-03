@@ -1,7 +1,6 @@
 import "./styles/globals.css";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { notFound } from "next/navigation";
@@ -9,10 +8,8 @@ import ErrorReporter from "@/components/crm/shared/ErrorReporter";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-	title: "Firmspace AI",
-	description: "CRM, Team-Kommunikation, Projekte und Buchhaltung in einer Plattform — für kleine und mittlere Unternehmen.",
-};
+// Метаданные уровня сайта (metadataBase, языкозависимые title/description) — в layout.metadata.ts.
+export { generateMetadata } from "./layout.metadata";
 
 export default async function RootLayout({
 	children,

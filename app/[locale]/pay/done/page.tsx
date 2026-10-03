@@ -1,5 +1,7 @@
 import { getTranslations } from "next-intl/server";
 
+export { generateMetadata } from "./metadata";
+
 // Публичная страница возврата после оплаты: клиент фирмы попадает сюда с сайта эквайринга.
 // Ничего не показывает про счёт — только подтверждение, что платёж прошёл и можно вернуться к делам.
 export default async function PayDonePage() {

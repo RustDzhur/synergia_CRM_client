@@ -16,6 +16,19 @@ const nextConfig = {
       { source: "/:locale(ua|en|de)/crm/inventory", destination: "/:locale/crm/finance", permanent: true },
     ];
   },
+  // Служебные разделы не должны попадать в поиск. Заголовок надёжнее метатега: app/[locale]/crm/layout.tsx —
+  // клиентский компонент, из него нельзя экспортировать metadata. Дублирует запрет в app/robots.ts:
+  // если URL уже попал в индекс, robots.txt его не уберёт, а X-Robots-Tag — да.
+  async headers() {
+    const noindex = [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }];
+    const closed = [
+      "/crm", "/crm/:path*",
+      "/en/crm", "/en/crm/:path*", "/ua/crm", "/ua/crm/:path*", "/de/crm", "/de/crm/:path*",
+      // Персональные ссылки на документы клиента (страница /c/<token>).
+      "/c/:path*", "/en/c/:path*", "/ua/c/:path*", "/de/c/:path*",
+    ];
+    return closed.map((source) => ({ source, headers: noindex }));
+  },
   webpack: (config) => {
     // Шрифт документов (assets/fonts/*.ttf) кладём в бандл как data-URI: у pdfkit данные его собственной
     // гарнитуры подгружаются в рантайме через createRequire("#standard-fonts/...") относительно

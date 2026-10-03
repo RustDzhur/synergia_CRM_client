@@ -5,6 +5,9 @@ import ShareClient from "./ShareClient";
 
 export const dynamic = "force-dynamic";
 
+// Страница персональной ссылки на документ: только noindex-метаданные.
+export { generateMetadata } from "./metadata";
+
 // Публичная страница клиента: статус заказа или предложение с выбором позиций.
 // Работает без входа в CRM — ссылка и есть пропуск, и она открывает ровно один документ.
 export default async function SharePage({ params }: { params: { token: string } }) {
