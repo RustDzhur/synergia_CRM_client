@@ -4,7 +4,7 @@ import { ProviderError } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 import { AiCtx, DownloadTarget, NavTarget, ToolError, allowedTools, pickTools, targetLabel } from "./tools";
 import { Msg, complete, voiceModel } from "./provider";
-import { type ToolOut, doneReply, fastReply } from "./fastReply";
+import { type ToolOut, doneReply, fastReply, shouldFastReply } from "./fastReply";
 
 // Сколько разговоров с ИИ в сутки у фирмы — общий счётчик для чата и автономного шага автоматизации (см. app/config/plans.ts).
 // Можно переопределить переменной AI_DAILY_LIMIT (одно число для всех тарифов) — например, для теста.
@@ -163,7 +163,10 @@ export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "ass
         // Голос + изменение выполнено сразу и без ошибок: «Готово» — без ещё одного круга модели
         if (opts.voice && onlyWrites && executed.length && executed.every((e) => e.state === "done") && !actions.length && !r.text) return { reply: doneReply(opts.history[opts.history.length - 1]?.text ?? ""), steps, actions, executed };
         // Голос: итог по счетам/остаткам складываем сами — второй круг модели ради пересказа нескольких чисел стоил 3–5 секунд
-        if (opts.voice && !failed && !actions.length && !executed.length && !r.text) {
+        const lastUser = opts.history[opts.history.length - 1]?.text ?? "";
+        // Итог по спискам — только на вопрос про итог; запрос «открой последний счёт» должен дойти до самого документа
+        const summaryOk = stepOuts.every((o) => o.name === "navigate") || shouldFastReply(lastUser);
+        if (opts.voice && summaryOk && !failed && !actions.length && !executed.length && !r.text) {
             const quick = fastReply(stepOuts.map((o) => (o.name === "navigate" && nav ? { ...o, out: { ...o.out, opened: nav.label } } : o)), opts.history[opts.history.length - 1]?.text ?? "");
             if (quick) return { reply: quick, steps, actions, ...(nav ? { nav } : {}) };
         }

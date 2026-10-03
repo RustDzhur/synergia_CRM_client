@@ -140,7 +140,7 @@ export async function listInvoicesData(c: AiCtx, a: Args) {
     else if (filter !== "all") where.status = filter;
     const customer = str(a.customer, 100);
     if (customer) where.customerName = like(customer);
-    const rows = await prisma.invoice.findMany({ where: where as any, orderBy: { dueDate: "asc" }, take: 400 });
+    const rows = await prisma.invoice.findMany({ where: where as any, orderBy: a.sort === "newest" ? [{ issueDate: "desc" as const }, { createdAt: "desc" as const }] : { dueDate: "asc" as const }, take: 400 });
     const todayStr = c.today;
     const mapped = rows.map((i) => {
         const gross = computeTotals(i.items as never).gross;
@@ -651,7 +651,7 @@ export const TOOLS: AiTool[] = [
     // ─────────── бухгалтерия: чтение для голосовых вопросов («какие счета не закрыты?») ───────────
     {
         module: "inventory", write: false,
-        def: { name: "list_invoices", description: "Invoices of the firm with amounts and due dates. filter: unpaid (sent or overdue — not paid yet; default), overdue (due date passed), draft, sent, paid, all. Returns each invoice (number, customer, total, still open, due date, days overdue) and the totals per currency. Use it for «какие счета не закрыты / просрочены / кто нам должен».", parameters: schema({ filter: { type: "string", enum: [...INVOICE_FILTERS] }, customer: S("part of the customer name"), limit: N("max invoices, default 15, max 40") }) },
+        def: { name: "list_invoices", description: "Invoices of the firm with amounts and due dates. filter: unpaid (sent or overdue — not paid yet; default), overdue (due date passed), draft, sent, paid, all. Returns each invoice (number, customer, total, still open, due date, days overdue) and the totals per currency. Use it for «какие счета не закрыты / просрочены / кто нам должен».", parameters: schema({ filter: { type: "string", enum: [...INVOICE_FILTERS] }, customer: S("part of the customer name"), sort: { type: "string", enum: ["due", "newest"], description: "due = by due date (default); newest = most recently issued first — use it with filter all and limit 1 for «the last / latest invoice»" }, limit: N("max invoices, default 15, max 40") }) },
         run: (c, a) => listInvoicesData(c, a),
     },
     {
