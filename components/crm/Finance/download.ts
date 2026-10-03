@@ -61,6 +61,11 @@ export async function downloadDocumentPdf(kind: DocumentKind, id: string, number
     return true;
 }
 
+/** PDF документа как Blob — для просмотра внутри страницы (окно ассистента), без всплывающих окон и скачивания. */
+export async function fetchDocumentPdfBlob(kind: DocumentKind, id: string, locale: string, template?: string): Promise<Blob | null> {
+    return fetchPdf(docUrl(kind, id, locale, template), kind);
+}
+
 export async function viewDocumentPdf(kind: DocumentKind, id: string, number: string, locale: string, template?: string): Promise<boolean> {
     const blob = await fetchPdf(docUrl(kind, id, locale, template), kind);
     if (!blob) return false;

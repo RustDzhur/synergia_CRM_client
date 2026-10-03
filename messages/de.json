@@ -1710,7 +1710,8 @@
         "done_invoice_order": "Rechnung „{number}“ für Auftrag „{order}“ erstellt",
         "done_decide_quote": "Angebot „{number}“: {result}",
         "done_quote_to_order": "Auftrag „{number}“ aus Angebot „{quote}“ erstellt",
-        "done_contract_action": "Vertrag „{number}“: {action}"
+        "done_contract_action": "Vertrag „{number}“: {action}",
+        "pdfDownload": "Herunterladen"
     },
     "finance": {
         "title": "Buchhaltung",

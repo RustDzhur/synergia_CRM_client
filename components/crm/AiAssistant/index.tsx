@@ -14,7 +14,7 @@ import VoiceOrb from "./VoiceOrb";
 import VoiceHud, { ORB_BY_PHASE, formatActionValue } from "./VoiceHud";
 import { configureSpeech, stopSpeech } from "./speech";
 import { useVoiceAgent } from "./useVoiceAgent";
-import { downloadDocumentPdf, viewDocumentPdf } from "../Finance/download";
+import { downloadDocumentPdf, fetchDocumentPdfBlob } from "../Finance/download";
 import { dictationSupported, recorderSupported, spokenAnswer, ttsSupported, useSpeechOutput, useVoiceInput } from "./voice";
 
 const AUTO_SPEAK_KEY = "ai.autospeak";
@@ -131,6 +131,8 @@ export default function AiAssistant() {
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const endRef = useRef<HTMLDivElement>(null);
 	const [recent, setRecent] = useState<string[]>([]);
+	const [pdfView, setPdfView] = useState<{ url: string; title: string } | null>(null); // PDF, открытый голосом/чатом («покажи заказ»)
+	const closePdf = () => setPdfView((old) => { if (old) URL.revokeObjectURL(old.url); return null; });
 	// Возможности голоса — только после монтирования: SpeechRecognition и speechSynthesis живут
 	// в window и в разметке сервера их нет (иначе разошлась бы гидратация)
 	const [voice, setVoice] = useState({ dictation: false, recorder: false, tts: false });
@@ -192,7 +194,16 @@ export default function AiAssistant() {
 		const onDownload = (e: Event) => {
 			const d = (e as CustomEvent<AiDownload>).detail;
 			if (!d?.id) return;
-			void (d.mode === "open" ? viewDocumentPdf : downloadDocumentPdf)(d.kind, d.id, d.number, locale).then((ok) => { if (!ok) toast.error(t("downloadFailed")); });
+			if (d.mode === "open") {
+				// Просмотр показываем прямо на странице: window.open после запроса (не по клику) браузер блокирует как всплывающее
+				// окно, и файл вместо просмотра скачивался. Окно с PDF внутри страницы блокировать нечем.
+				void fetchDocumentPdfBlob(d.kind, d.id, locale).then((blob) => {
+					if (!blob) return void toast.error(t("downloadFailed"));
+					setPdfView((old) => { if (old) URL.revokeObjectURL(old.url); return { url: URL.createObjectURL(blob), title: d.number }; });
+				});
+				return;
+			}
+			void downloadDocumentPdf(d.kind, d.id, d.number, locale).then((ok) => { if (!ok) toast.error(t("downloadFailed")); });
 		};
 		window.addEventListener("iris:download", onDownload);
 		return () => window.removeEventListener("iris:download", onDownload);
@@ -281,6 +292,17 @@ export default function AiAssistant() {
 			orbSlot
 		)}
 		{!open && <VoiceHud agent={agent} onOpenChat={() => show()} />}
+		{/* Просмотр PDF прямо в странице: открывается по команде «открой/покажи документ», закрывается крестиком или Esc */}
+		<Modal open={!!pdfView} onClose={closePdf} align="top" label={pdfView?.title ?? "PDF"} zIndex={95} className="mt-[3vh] w-full max-w-[960px]">
+			<div className="fs-popover flex h-[92vh] flex-col overflow-hidden">
+				<header className="flex items-center gap-12 border-b border-inkLine px-16 py-10">
+					<h2 className="min-w-0 flex-1 truncate text-15 font-medium text-[#f1f4ee]">{pdfView?.title}</h2>
+					{pdfView && <a href={pdfView.url} download={`${pdfView.title}.pdf`} className="fs-btn fs-btn-ghost h-30 px-12 text-12">{t("pdfDownload")}</a>}
+					<button type="button" onClick={closePdf} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><MdClose size={18} /></button>
+				</header>
+				{pdfView && <iframe src={pdfView.url} title={pdfView.title} className="min-h-0 flex-1 bg-white" />}
+			</div>
+		</Modal>
 		<Modal open={open} onClose={close} align="top" label={t("title")} zIndex={90} className="mt-[6vh] w-full max-w-[720px]">
 			<div className="fs-popover flex max-h-[84vh] flex-col overflow-hidden">
 				<header className="flex items-center gap-10 border-b border-inkLine px-16 py-12">

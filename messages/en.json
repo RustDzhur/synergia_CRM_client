@@ -1710,7 +1710,8 @@
         "done_invoice_order": "Invoice “{number}” issued for order “{order}”",
         "done_decide_quote": "Quote “{number}”: {result}",
         "done_quote_to_order": "Order “{number}” created from quote “{quote}”",
-        "done_contract_action": "Contract “{number}”: {action}"
+        "done_contract_action": "Contract “{number}”: {action}",
+        "pdfDownload": "Download"
     },
     "finance": {
         "title": "Accounting",
