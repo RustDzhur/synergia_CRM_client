@@ -1078,7 +1078,8 @@
         "agentsEnvAllowed": "May read",
         "agentsEdit": "Permissions",
         "agentsSave": "Save permissions",
-        "agentsSaved": "Permissions saved (the token did not change)"
+        "agentsSaved": "Permissions saved (the token did not change)",
+        "agentsCopyForAgent": "Copy for the agent (paste it into its chat)"
     },
     "upgrade": {
         "free": "Free",

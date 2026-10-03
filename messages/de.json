@@ -1078,7 +1078,8 @@
         "agentsEnvAllowed": "Darf lesen",
         "agentsEdit": "Rechte",
         "agentsSave": "Rechte speichern",
-        "agentsSaved": "Rechte gespeichert (Token unverändert)"
+        "agentsSaved": "Rechte gespeichert (Token unverändert)",
+        "agentsCopyForAgent": "Für den Agenten kopieren (in dessen Chat einfügen)"
     },
     "upgrade": {
         "free": "Kostenlos",

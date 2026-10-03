@@ -17,7 +17,7 @@ export default function AgentsCard() {
 	const [picked, setPicked] = useState<string[]>(["blog"]);
 	const [envNames, setEnvNames] = useState("");
 	const [editing, setEditing] = useState<{ id: string; scopes: string[]; envNames: string } | null>(null);
-	const [fresh, setFresh] = useState<{ name: string; token: string } | null>(null);
+	const [fresh, setFresh] = useState<{ name: string; token: string; scopes: string[]; envNames: string } | null>(null);
 	const [busy, setBusy] = useState(false);
 
 	const load = useCallback(async () => {
@@ -34,7 +34,7 @@ export default function AgentsCard() {
 		const res = await apiCall<{ token: string }>("/api/agents", "POST", { action: "create", name, scopes: picked, envNames });
 		setBusy(false);
 		if (!res.ok || !res.data) return void toast.error(res.message);
-		setFresh({ name, token: res.data.token });
+		setFresh({ name, token: res.data.token, scopes: picked, envNames });
 		setName("");
 		setEnvNames("");
 		void load();
@@ -59,6 +59,15 @@ export default function AgentsCard() {
 		void load();
 	}
 
+	// Готовое сообщение для самого агента: его можно вставить ему в чат — он сам сохранит токен в свой .env (терминал не нужен)
+	const forAgent = (f: NonNullable<typeof fresh>) => [
+		`Твои данные доступа к платформе Firmspace. Сохрани их в свой файл .env рядом с рабочей папкой и не выводи токен в чат и логи:`,
+		`FIRMSPACE_API=http://127.0.0.1:3210`,
+		`FIRMSPACE_TOKEN=${f.token}`,
+		`Все запросы: заголовок "Authorization: Bearer $FIRMSPACE_TOKEN".`,
+		f.scopes.includes("blog") ? `Блог: GET/POST $FIRMSPACE_API/api/agent/blog (статья на en/de/ua, сохраняется черновиком) — формат в docs/AGENTS.md.` : "",
+		f.scopes.includes("env") ? `Секреты: GET $FIRMSPACE_API/api/agent/env (список имён) и GET $FIRMSPACE_API/api/agent/env?name=ИМЯ (значение; для фирмы добавь &org=<id>). Тебе разрешено: ${f.envNames || "—"}.` : "",
+	].filter(Boolean).join("\n");
 	if (agents === null) return null;
 	const api = `${base || "https://www.firmspace.de"}/api/agent/blog`;
 
@@ -103,7 +112,8 @@ export default function AgentsCard() {
 					<code className="mt-6 block break-all rounded-8 bg-[rgba(0,0,0,0.35)] p-8 text-12 text-[#c6ff4d]">{fresh.token}</code>
 					<p className="mt-6 text-11 text-[#8c948b]">API: {api} · {base || "https://www.firmspace.de"}/api/agent/env · docs/AGENTS.md</p>
 					<div className="mt-8 flex gap-8">
-						<button type="button" onClick={() => { void navigator.clipboard?.writeText(fresh.token); toast.success(t("agentsCopied")); }} className="fs-btn fs-btn-primary h-30 px-12 text-12">{t("agentsCopy")}</button>
+						<button type="button" onClick={() => { void navigator.clipboard?.writeText(forAgent(fresh)); toast.success(t("agentsCopied")); }} className="fs-btn fs-btn-primary h-30 px-12 text-12">{t("agentsCopyForAgent")}</button>
+						<button type="button" onClick={() => { void navigator.clipboard?.writeText(fresh.token); toast.success(t("agentsCopied")); }} className="fs-btn fs-btn-ghost h-30 px-12 text-12">{t("agentsCopy")}</button>
 						<button type="button" onClick={() => setFresh(null)} className="fs-btn fs-btn-ghost h-30 px-12 text-12">{t("agentsDone")}</button>
 					</div>
 				</div>
