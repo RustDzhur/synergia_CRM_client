@@ -1075,7 +1075,10 @@
         "connectSection_automation": "Automation",
         "agentScope_env": "Secrets: read allowed variables",
         "agentsEnvNames": "Variables it may read (comma-separated, * for all)",
-        "agentsEnvAllowed": "May read"
+        "agentsEnvAllowed": "May read",
+        "agentsEdit": "Permissions",
+        "agentsSave": "Save permissions",
+        "agentsSaved": "Permissions saved (the token did not change)"
     },
     "upgrade": {
         "free": "Free",

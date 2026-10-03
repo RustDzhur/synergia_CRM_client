@@ -16,6 +16,7 @@ export default function AgentsCard() {
 	const [name, setName] = useState("");
 	const [picked, setPicked] = useState<string[]>(["blog"]);
 	const [envNames, setEnvNames] = useState("");
+	const [editing, setEditing] = useState<{ id: string; scopes: string[]; envNames: string } | null>(null);
 	const [fresh, setFresh] = useState<{ name: string; token: string } | null>(null);
 	const [busy, setBusy] = useState(false);
 
@@ -36,6 +37,17 @@ export default function AgentsCard() {
 		setFresh({ name, token: res.data.token });
 		setName("");
 		setEnvNames("");
+		void load();
+	}
+
+	async function saveEdit() {
+		if (!editing) return;
+		setBusy(true);
+		const res = await apiCall("/api/agents", "POST", { action: "update", id: editing.id, scopes: editing.scopes, envNames: editing.envNames });
+		setBusy(false);
+		if (!res.ok) return void toast.error(res.message);
+		toast.success(t("agentsSaved"));
+		setEditing(null);
 		void load();
 	}
 
@@ -64,7 +76,22 @@ export default function AgentsCard() {
 								{a.scopes.includes("env") && <p className="text-11 text-[#8c948b]">{t("agentsEnvAllowed")}: {a.envNames?.join(", ") || "—"}</p>}
 								<p className="text-11 text-[#8c948b]">{t("agentsCreated")}: {a.createdAt.slice(0, 10)} · {t("agentsLastUsed")}: {a.lastUsedAt ? a.lastUsedAt.slice(0, 16).replace("T", " ") : "—"}</p>
 							</div>
-							<button type="button" onClick={() => revoke(a)} className="fs-btn fs-btn-ghost h-30 px-12 text-12 text-[#F4A100]">{t("agentsRevoke")}</button>
+							<div className="flex gap-8">
+								<button type="button" onClick={() => setEditing(editing?.id === a.id ? null : { id: a.id, scopes: a.scopes, envNames: (a.envNames ?? []).join(", ") })} className="fs-btn fs-btn-ghost h-30 px-12 text-12">{t("agentsEdit")}</button>
+								<button type="button" onClick={() => revoke(a)} className="fs-btn fs-btn-ghost h-30 px-12 text-12 text-[#F4A100]">{t("agentsRevoke")}</button>
+							</div>
+							{editing?.id === a.id && (
+								<div className="flex w-full flex-wrap items-end gap-12 border-t border-inkLine pt-10">
+									{scopes.map((s) => (
+										<label key={s} className="flex cursor-pointer items-center gap-6 text-12 text-[#cfd4cb]">
+											<input type="checkbox" checked={editing.scopes.includes(s)} onChange={(e) => setEditing((v) => v && ({ ...v, scopes: e.target.checked ? [...v.scopes, s] : v.scopes.filter((x) => x !== s) }))} className="h-14 w-14 accent-[#c6ff4d]" />
+											{t(`agentScope_${s}`)}
+										</label>
+									))}
+									{editing.scopes.includes("env") && <input value={editing.envNames} onChange={(e) => setEditing((v) => v && ({ ...v, envNames: e.target.value }))} placeholder="MAIL_PASSWORD, BLOG_TOKEN" aria-label={t("agentsEnvNames")} className="fs-field h-36 min-w-[240px] flex-1 px-12 text-13 outline-none" />}
+									<button type="button" onClick={saveEdit} disabled={busy || !editing.scopes.length} className="fs-btn fs-btn-primary h-36 disabled:opacity-60">{busy ? "…" : t("agentsSave")}</button>
+								</div>
+							)}
 						</li>
 					))}
 				</ul>

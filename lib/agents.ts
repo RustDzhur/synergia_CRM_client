@@ -41,6 +41,18 @@ export async function createAgent(name: string, scopes: string[], createdBy: str
     return { id, token };
 }
 
+/** Меняет права существующего агента, не трогая его токен (токен у агента в .env остаётся рабочим). */
+export async function updateAgent(id: string, scopes: string[], envNames: unknown): Promise<boolean> {
+    const sc = Array.from(new Set(scopes.filter((s): s is AgentScope => (AGENT_SCOPES as readonly string[]).includes(s))));
+    if (!sc.length) throw new Error("Choose at least one permission");
+    const names = sc.includes("env") ? cleanEnvNames(envNames) : [];
+    if (sc.includes("env") && !names.length) throw new Error("List the variables this agent may read (or * for all)");
+    const row = await prisma.sectionRecord.findFirst({ where: { org: ORG, key: KEY, rid: id } });
+    if (!row) return false;
+    await prisma.sectionRecord.update({ where: { id: row.id }, data: { values: { ...(row.values as object), scopes: sc, envNames: names } as never } });
+    return true;
+}
+
 export async function revokeAgent(id: string): Promise<boolean> {
     const r = await prisma.sectionRecord.deleteMany({ where: { org: ORG, key: KEY, rid: id } });
     return r.count > 0;

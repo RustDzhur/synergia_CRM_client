@@ -1075,7 +1075,10 @@
         "connectSection_automation": "Automatisierung",
         "agentScope_env": "Geheimnisse: erlaubte Variablen lesen",
         "agentsEnvNames": "Welche Variablen er lesen darf (kommagetrennt, * für alle)",
-        "agentsEnvAllowed": "Darf lesen"
+        "agentsEnvAllowed": "Darf lesen",
+        "agentsEdit": "Rechte",
+        "agentsSave": "Rechte speichern",
+        "agentsSaved": "Rechte gespeichert (Token unverändert)"
     },
     "upgrade": {
         "free": "Kostenlos",
