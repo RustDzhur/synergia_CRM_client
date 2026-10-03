@@ -28,10 +28,23 @@ cd "$REPO_DIR" || { log "нет каталога $REPO_DIR"; exit 1; }
 git fetch --quiet "$REMOTE" "$BRANCH" || { log "git fetch не удался"; exit 1; }
 LOCAL_SHA="$(git rev-parse HEAD)"
 REMOTE_SHA="$(git rev-parse "$REMOTE/$BRANCH")"
-[ "$LOCAL_SHA" = "$REMOTE_SHA" ] && exit 0
+# Метка «этот коммит реально запущен»: пишется только после успешной сборки. Без неё авария посреди сборки (03.10.2026 упала ВМ) оставляла
+# репозиторий на новом коммите, скрипт видел «локальный = удалённый» и больше никогда не пересобирал контейнер.
+DEPLOYED_FILE="$HOME_DIR/.crm-deployed"
+RETRY=0
+if [ "$LOCAL_SHA" = "$REMOTE_SHA" ]; then
+    DEPLOYED_SHA="$(cat "$DEPLOYED_FILE" 2>/dev/null || true)"
+    [ -z "$DEPLOYED_SHA" ] && { echo "$LOCAL_SHA" > "$DEPLOYED_FILE"; exit 0; }  # первая версия скрипта: считаем текущий коммит запущенным
+    [ "$DEPLOYED_SHA" = "$LOCAL_SHA" ] && exit 0
+    # коммит скачан, но не собран: CI для него уже был зелёным — пересобираем, но не больше 3 попыток подряд (иначе поломанная сборка крутилась бы каждые 2 минуты)
+    TRIES="$(cat "$HOME_DIR/.crm-deploy-tries" 2>/dev/null || echo 0)"
+    if [ "$TRIES" -ge 3 ]; then exit 0; fi
+    echo $((TRIES + 1)) > "$HOME_DIR/.crm-deploy-tries"
+    RETRY=1
+fi
 
 # ── ждём зелёный CI нового коммита (API GitHub опрашиваем не чаще раза в CI_RECHECK_SECONDS) ──
-if [ "$REQUIRE_CI" = "1" ]; then
+if [ "$REQUIRE_CI" = "1" ] && [ "$RETRY" = "0" ]; then
     read -r CACHED_SHA CACHED_STATUS CACHED_AT < <(cat "$STATE" 2>/dev/null || echo "none none 0")
     NOW="$(date +%s)"
     if [ "$CACHED_SHA" != "$REMOTE_SHA" ] || { [ "$CACHED_STATUS" = "pending" ] && [ $((NOW - ${CACHED_AT:-0})) -ge "$CI_RECHECK_SECONDS" ]; }; then
@@ -68,6 +81,7 @@ else
     echo "DEPLOYED_COMMIT=$REMOTE_SHA" >> deploy/.env
 fi
 if docker compose -f deploy/docker-compose.yml up -d --build >> "$LOG" 2>&1; then
+    echo "$REMOTE_SHA" > "$DEPLOYED_FILE"; rm -f "$HOME_DIR/.crm-deploy-tries"
     log "готово: запущено в $(docker inspect -f '{{.State.StartedAt}}' firmspace-crm 2>/dev/null || echo '?')"
     # Каждая сборка оставляет слои в кэше (до 35 ГБ за пару дней) — именно они переполнили диск VM и пул Proxmox 03.10.2026.
     # Оставляем 4 ГБ кэша, чтобы следующая сборка шла быстро, остальное и «висячие» образы убираем.
