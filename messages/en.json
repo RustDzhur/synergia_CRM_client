@@ -1827,7 +1827,20 @@
         "f_approve": "Approve",
         "f_summary": "Request",
         "done_decide_agent_request": "Agent request: {result}",
-        "step_list_agent_requests": "Read the agents' requests"
+        "step_list_agent_requests": "Read the agents' requests",
+        "act_restock_goods": "Order, receive into stock and pay",
+        "done_restock_goods": "Order “{number}” to “{supplier}”: {count} items, {total} · in stock: {received} · paid: {paid}",
+        "act_receive_purchase_order": "Receive the order into stock",
+        "done_receive_purchase_order": "Order “{number}” received into stock · paid: {paid}",
+        "act_pay_supplier_invoice": "Pay the supplier invoice",
+        "done_pay_supplier_invoice": "Supplier invoices paid: {count}, total {total}",
+        "f_mode": "What to order",
+        "f_qty_each": "Quantity of each",
+        "f_receive": "Receive into stock",
+        "f_pay": "Pay",
+        "f_warehouse": "Warehouse",
+        "f_order": "Order",
+        "f_all_open": "All open"
     },
     "finance": {
         "title": "Accounting",

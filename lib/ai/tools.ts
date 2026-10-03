@@ -10,7 +10,8 @@ import { prisma } from "@/lib/prisma";
 import { toDTO } from "@/lib/serialize";
 import { ActionError, type DocKind, ORDER_STATUSES, contractAction, decideQuote, fiscalReceipt, invoiceFromOrder, quoteToOrder, setOrderStatus, findDocument, findProduct, findSupplier, markPaid, sendInvoice } from "@/lib/finance/aiActions";
 import { moveStock } from "@/lib/finance/stock";
-import { purchaseNumber } from "@/lib/purchases";
+import { paySupplierInvoice, purchaseNumber, receivePurchase } from "@/lib/purchases";
+import { ProviderError } from "@/lib/http";
 import { logAudit } from "@/lib/audit";
 import { mailAccount } from "@/lib/finance/send";
 import { reportPdf, type ReportSection } from "./reportPdf";
@@ -119,7 +120,7 @@ export interface NavTarget { link: string; label: string }
 // Прокрутка страницы (инструмент scroll_page): выполняет браузер человека
 export interface ScrollTarget { dir: "down" | "up" | "top" | "bottom"; pages: number }
 export interface DownloadTarget { kind: "invoices" | "quotes" | "orders" | "contracts" | "purchases"; id: string; number: string; mode: "download" | "open" }
-const wrap = async <T,>(fn: () => Promise<T>): Promise<T> => { try { return await fn(); } catch (e) { throw e instanceof ActionError || e instanceof BrowseError || e instanceof RecordError || e instanceof LeadToolError ? new ToolError(e.message) : e; } };
+const wrap = async <T,>(fn: () => Promise<T>): Promise<T> => { try { return await fn(); } catch (e) { throw e instanceof ActionError || e instanceof BrowseError || e instanceof RecordError || e instanceof LeadToolError || e instanceof ProviderError ? new ToolError(e.message) : e; } };
 // Проверка правки карточки: нужна сама карточка (id или название) и хотя бы одно допустимое поле
 const recordEditCheck = (a: Args, allowed: readonly string[]): Args => {
     const out: Args = {};
@@ -1065,6 +1066,111 @@ export const TOOLS: AiTool[] = [
         }),
     },
     {
+        // Один шаг вместо цепочки «список остатков → заказ → приход → оплата»: так «закажи всё, проведи и оплати» укладывается в один ход ассистента
+        module: "inventory", write: true,
+        def: { name: "restock_goods", description: "ONE-STEP restock: order goods from a supplier, receive them into the warehouse (so they are really in stock) and pay the supplier invoice. Use it for «заказать все товары, провести и сразу оплатить, чтобы были на складе» — do NOT split that into several calls. Needs user confirmation. mode: low_stock (default) = every stock item that is out of stock or at/below its reorder level (quantity is worked out automatically, up to twice the reorder level, at least 1); all_goods = every stock item; lines = only the products listed in lines. qty_each overrides the computed quantity. supplier: name or id — may be omitted when the firm has exactly one supplier. receive (default true) posts the receipt so stock grows; pay (default true) pays the supplier invoice in full. warehouse: name or id, default warehouse otherwise.", parameters: schema({ mode: { type: "string", enum: ["low_stock", "all_goods", "lines"] }, supplier: S("supplier name or id"), lines: { type: "array", description: "only for mode=lines", items: { type: "object", properties: { product: S("product name, SKU or id"), qty: N("quantity") }, required: ["product", "qty"] } }, qty_each: N("same quantity for every product, optional"), receive: { type: "boolean" }, pay: { type: "boolean" }, warehouse: S("warehouse name or id, optional") }, []) },
+        check: (a) => ({
+            mode: ["all_goods", "lines"].includes(String(a.mode)) ? String(a.mode) : "low_stock",
+            supplier: str(a.supplier, 120),
+            lines: (Array.isArray(a.lines) ? a.lines : []).slice(0, 100).map((l) => { const o = (l ?? {}) as Record<string, unknown>; return { product: str(o.product ?? o.name, 200), qty: Math.abs(Number(o.qty)) || 0 }; }).filter((l) => l.product && l.qty > 0),
+            qty_each: Math.abs(Number(a.qty_each)) || 0,
+            receive: a.receive !== false,
+            pay: a.pay !== false,
+            warehouse: str(a.warehouse, 120),
+        }),
+        run: (c, a) => wrap(async () => {
+            // 1. поставщик: назван или единственный в справочнике
+            let supplier;
+            if (a.supplier) supplier = await findSupplier(c.org, String(a.supplier));
+            else {
+                const all = await prisma.supplier.findMany({ where: { org: c.org }, take: 3 });
+                if (all.length !== 1) throw new ToolError(all.length ? "Several suppliers exist — ask the user which one to order from" : "There is no supplier yet — create one first with create_supplier");
+                supplier = all[0];
+            }
+            // 2. что заказываем
+            const lines: { product: string; qty: number; price: number; name: string }[] = [];
+            if (a.mode === "lines") {
+                const given = a.lines as { product: string; qty: number }[];
+                if (!given.length) throw new ToolError("lines must contain at least one product with a quantity");
+                for (const l of given) {
+                    const p = await findProduct(c.org, l.product);
+                    if (p.type !== "good") throw new ToolError(`"${p.name}" is a service, not a stock item`);
+                    lines.push({ product: p.id, qty: l.qty, price: p.purchasePrice ?? 0, name: p.name });
+                }
+            } else {
+                const goods = (await prisma.product.findMany({ where: { org: c.org, archived: false, type: "good" }, orderBy: { name: "asc" }, take: 500 }));
+                for (const p of goods) {
+                    if (p.type !== "good" || p.archived) continue;
+                    const stock = p.stockQty ?? 0, level = p.reorderLevel ?? 0;
+                    const need = a.mode === "all_goods" || stock <= 0 || (level > 0 && stock <= level);
+                    if (!need) continue;
+                    const qty = Number(a.qty_each) > 0 ? Number(a.qty_each) : Math.max(Math.ceil(Math.max(level * 2, 1) - stock), 1);
+                    lines.push({ product: p.id, qty, price: p.purchasePrice ?? 0, name: p.name });
+                }
+                if (!lines.length) throw new ToolError("Nothing to order: every stock item is above its reorder level");
+            }
+            // 3. заказ поставщику
+            const settings = await financeSettings(c.org);
+            const wh = a.warehouse ? await prisma.warehouse.findFirst({ where: { org: c.org, archived: false, OR: [{ id: String(a.warehouse) }, { name: { contains: String(a.warehouse), mode: "insensitive" } }] } }) : (await prisma.warehouse.findFirst({ where: { org: c.org, archived: false, isDefault: true } })) ?? (await prisma.warehouse.findFirst({ where: { org: c.org, archived: false } }));
+            if (a.receive && !wh) throw new ToolError("There is no warehouse to receive the goods into — create one first");
+            const po = await prisma.purchaseOrder.create({
+                data: {
+                    org: c.org, number: await purchaseNumber(c.org), supplier: supplier.id, date: c.today, expectedDate: "", status: "confirmed",
+                    lines: lines.map((l) => ({ product: l.product, qty: l.qty, price: l.price, note: "" })) as any,
+                    currency: supplier.currency || settings.currency || (await defaultCurrency(c.org)), warehouse: wh?.id ?? null, notes: "Автозаказ (ассистент)", createdByName: await authorName(c.userId),
+                },
+            });
+            const total = Math.round(lines.reduce((sum, l) => sum + l.qty * l.price, 0) * 100) / 100;
+            const params: Record<string, string> = { number: po.number, supplier: supplier.name, count: String(lines.length), total: `${total} ${po.currency}`, received: "—", paid: "—" };
+            // 4. приход на склад — товар реально появляется в остатках
+            let invoiceId = "";
+            if (a.receive && wh) {
+                const r = await receivePurchase(c.org, po.id, { warehouse: wh.id, by: await authorName(c.userId) });
+                params.received = "✓";
+                invoiceId = r.invoice ? String(r.invoice.id) : "";
+            }
+            // 5. оплата счёта поставщика (есть только после прихода)
+            if (a.pay && invoiceId) {
+                if (total <= 0) params.paid = "— (purchase prices are 0)";
+                else { await paySupplierInvoice(c.org, invoiceId); params.paid = "✓"; }
+            } else if (a.pay && !a.receive) params.paid = "— (not received yet)";
+            await logAudit({ org: c.org, userId: c.userId, action: "purchase.restock", entityType: "purchase", entityId: po.id, summary: `Restock ${po.number}: ${lines.length} items, received=${params.received}, paid=${params.paid} (via assistant)`, meta: { total } });
+            return { params, link: "/crm/finance?tab=purchases" };
+        }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "receive_purchase_order", description: "Post the receipt of an existing purchase order (ЗП-… number) so the goods appear in stock; optionally pay the supplier invoice right away. Needs user confirmation. Use after create_purchase_order or for an order the user already has.", parameters: schema({ order: S("purchase order number, e.g. ЗП-2026-3"), pay: { type: "boolean", description: "also pay the supplier invoice" }, warehouse: S("warehouse name or id, optional") }, ["order"]) },
+        check: (a) => ({ order: need(str(a.order, 60), "order"), pay: a.pay === true, warehouse: str(a.warehouse, 120) }),
+        run: (c, a) => wrap(async () => {
+            const po = await prisma.purchaseOrder.findFirst({ where: { org: c.org, number: { contains: String(a.order), mode: "insensitive" } } });
+            if (!po) throw new ToolError(`Purchase order "${a.order}" not found`);
+            const wh = a.warehouse ? await prisma.warehouse.findFirst({ where: { org: c.org, archived: false, OR: [{ id: String(a.warehouse) }, { name: { contains: String(a.warehouse), mode: "insensitive" } }] } }) : null;
+            const r = await receivePurchase(c.org, po.id, { ...(wh ? { warehouse: wh.id } : {}), by: await authorName(c.userId) });
+            let paid = "—";
+            if (a.pay && r.invoice) { await paySupplierInvoice(c.org, String(r.invoice.id)); paid = "✓"; }
+            return { params: { number: po.number, paid }, link: "/crm/finance?tab=purchases" };
+        }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "pay_supplier_invoice", description: "Pay a supplier invoice in full. Needs user confirmation. order = the purchase order number (ЗП-…) whose invoice to pay; or all_open = true to pay every open supplier invoice.", parameters: schema({ order: S("purchase order number whose supplier invoice to pay"), all_open: { type: "boolean", description: "pay every open supplier invoice" } }, []) },
+        check: (a) => { const order = str(a.order, 60); if (!order && a.all_open !== true) throw new ToolError("Give the purchase order number or set all_open"); return { order, all_open: a.all_open === true }; },
+        run: (c, a) => wrap(async () => {
+            let invoices;
+            if (a.all_open) invoices = await prisma.supplierInvoice.findMany({ where: { org: c.org, status: { not: "paid" } }, take: 200 });
+            else {
+                const po = await prisma.purchaseOrder.findFirst({ where: { org: c.org, number: { contains: String(a.order), mode: "insensitive" } } });
+                if (!po) throw new ToolError(`Purchase order "${a.order}" not found`);
+                invoices = await prisma.supplierInvoice.findMany({ where: { org: c.org, purchase: po.id, status: { not: "paid" } } });
+            }
+            if (!invoices.length) throw new ToolError("There are no unpaid supplier invoices for this");
+            let sum = 0;
+            for (const inv of invoices) { await paySupplierInvoice(c.org, inv.id); sum += Math.max(0, inv.amount - inv.paidAmount); }
+            return { params: { count: String(invoices.length), total: String(Math.round(sum * 100) / 100) }, link: "/crm/finance?tab=purchases" };
+        }),
+    },
+    {
         module: "inventory", write: true,
         def: { name: "create_product", description: "Add a product or service to the catalog. Needs user confirmation. type: good (stock item) or service.", parameters: schema({ name: S("product name"), type: { type: "string", enum: ["good", "service"] }, sku: S("SKU / article"), unit: S("unit, e.g. pcs, kg, h"), sale_price: { type: "number" }, purchase_price: { type: "number" }, stock_qty: { type: "number", description: "starting stock (goods only)" }, reorder_level: { type: "number", description: "alert when stock falls to this level" } }, ["name"]) },
         check: (a) => ({ name: need(str(a.name, 200), "name"), type: a.type === "good" ? "good" : "service", sku: str(a.sku, 60), unit: str(a.unit, 20), sale_price: Math.max(0, Number(a.sale_price) || 0), purchase_price: Math.max(0, Number(a.purchase_price) || 0), stock_qty: Math.max(0, Number(a.stock_qty) || 0), reorder_level: Math.max(0, Number(a.reorder_level) || 0) }),
@@ -1191,7 +1297,7 @@ const GROUPS: { re: RegExp; tools: string[] }[] = [
     { re: /расход|витрат|ausgabe|expense|налог|податк|steuer|банк|bank|выруч|доход|прибыл|money|деньг|кассов/i,
       tools: ["list_expenses", "create_expense", "finance_summary", "browse_data"] },
     { re: /склад|остат|залишк|товар|продукт|product|stock|bestand|lager|закуп|закаж|замов|зп-|поставщ|постачальн|supplier|lieferant|bestell|purchase|приход|списан|списа|инвентар|артикул|sku|nomenclat|номенклат|заканч|закінч|нехват|не хватает|reorder/i,
-      tools: ["list_products", "create_product", "adjust_stock", "create_supplier", "create_purchase_order", "download_document", "email_report", "browse_data", "list_expenses"] },
+      tools: ["list_products", "create_product", "adjust_stock", "create_supplier", "create_purchase_order", "restock_goods", "receive_purchase_order", "pay_supplier_invoice", "download_document", "email_report", "browse_data", "list_expenses"] },
     { re: /клиент|клієнт|kunde|customer|контакт|contact|компани|company|firma|сделк|угод|deal|лид|lead|воронк|воронка|pipeline|этап|етап|stage|заметк|нотатк|notiz|note|не общал|давно не|карточк|картк|card|заполни|заповни|поле|поля|field|измени|змін|обнови|поменяй|поставь|впиши|напиши в|запиши в|крм|срм|\bcrm\b/i,
       tools: ["search_contacts", "search_companies", "get_contact", "get_company", "get_deal", "list_deals", "list_stages", "find_stale_contacts", "create_contact", "create_company", "create_deal", "update_deal_stage", "update_deal", "update_contact", "update_company", "open_record", "add_note", "delete_record"] },
     { re: /сегодня|сьогодні|today|heute|завтра|morgen|задач|task|aufgabe|напомн|нагад|remind|календар|calendar|kalender|встреч|зустріч|termin|meeting|событ|подія|проект|project|чат|chat|whatsapp|telegram/i,
@@ -1248,7 +1354,8 @@ export async function targetLabel(c: Pick<AiCtx, "org">, tool: string, a: Args):
             return r ? `${r.firstname} ${r.lastname}`.trim() : "";
         }
         if (["mark_invoice_paid", "send_invoice", "issue_fiscal_receipt", "update_order_status", "invoice_order", "decide_quote", "quote_to_order", "contract_action"].includes(tool)) return String(a.number ?? "");
-        if (tool === "create_purchase_order") return String(a.supplier ?? "");
+        if (tool === "create_purchase_order" || tool === "restock_goods") return String(a.supplier ?? "");
+        if (tool === "receive_purchase_order" || tool === "pay_supplier_invoice") return String(a.order ?? "");
         if (tool === "adjust_stock") return String(a.product ?? "");
         if (tool === "delete_record") return String(a.name ?? "");
         if (tool === "update_deal" || tool === "update_contact" || tool === "update_company") return String(a.name ?? a.lookup ?? "");

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { doneReply, langOf } from "./fastReply";
 import { type AiCtx } from "./tools";
-import { type ChatResult, type RunOpts, runChat } from "./run";
+import { type ChatResult, type RunOpts, StepBudgetError, continuationTask, runChat } from "./run";
 
 // Очередь задач Айрис: длинное сообщение с несколькими поручениями («создай расход…, подтверди заказы…, пришли отчёт…»)
 // модель раскладывает инструментом queue_tasks, а здесь задачи выполняются по одной в фоне; результат каждой человек
@@ -42,8 +42,21 @@ export async function runTasks(ctx: AiCtx, base: RunOpts, tasks: string[], onRes
         const task = tasks[i];
         let r: JobResult;
         try {
-            const res = await runChat(ctx, { ...base, noQueue: true, history: [...prior, ...carried.slice(-6), { role: "user", text: task }] });
-            r = { ...res, task, index: i };
+            // Задача может не уложиться в шаги одного круга: тогда повторяем с описанием сделанного (до двух раз), а не сдаёмся
+            let current = task, res: ChatResult | null = null;
+            const carriedActions: ChatResult["actions"] = [], carriedExecuted: NonNullable<ChatResult["executed"]> = [], carriedSteps: string[] = [];
+            for (let attempt = 0; attempt < 3 && !res; attempt++) {
+                try {
+                    res = await runChat(ctx, { ...base, noQueue: true, history: [...prior, ...carried.slice(-6), { role: "user", text: current }] });
+                } catch (e) {
+                    if (!(e instanceof StepBudgetError) || attempt === 2) throw e;
+                    // что уже предложено/выполнено в прерванном круге, не теряем: оно войдёт в итог задачи
+                    carriedActions.push(...e.actions); carriedExecuted.push(...e.executed); carriedSteps.push(...e.steps);
+                    current = continuationTask(task, e.progress);
+                }
+            }
+            const merged = { ...res!, actions: [...carriedActions, ...res!.actions], steps: [...carriedSteps, ...res!.steps], ...(carriedExecuted.length || res!.executed?.length ? { executed: [...carriedExecuted, ...(res!.executed ?? [])] } : {}) };
+            r = { ...merged, task, index: i };
         } catch (e) {
             r = { reply: e instanceof Error && e.message ? e.message : "The task failed", steps: [], actions: [], task, index: i, error: true };
         }

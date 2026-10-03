@@ -1827,7 +1827,20 @@
         "f_approve": "Схвалити",
         "f_summary": "Запит",
         "done_decide_agent_request": "Запит агента: {result}",
-        "step_list_agent_requests": "Прочитано запити агентів"
+        "step_list_agent_requests": "Прочитано запити агентів",
+        "act_restock_goods": "Закупити, прийняти на склад і оплатити",
+        "done_restock_goods": "Замовлення «{number}» у «{supplier}»: {count} поз. на {total} · на складі: {received} · оплачено: {paid}",
+        "act_receive_purchase_order": "Прийняти замовлення на склад",
+        "done_receive_purchase_order": "Замовлення «{number}» прийнято на склад · оплачено: {paid}",
+        "act_pay_supplier_invoice": "Оплатити рахунок постачальника",
+        "done_pay_supplier_invoice": "Оплачено рахунків постачальників: {count} на суму {total}",
+        "f_mode": "Що замовляти",
+        "f_qty_each": "Кількість кожного",
+        "f_receive": "Прийняти на склад",
+        "f_pay": "Оплатити",
+        "f_warehouse": "Склад",
+        "f_order": "Замовлення",
+        "f_all_open": "Усі відкриті"
     },
     "finance": {
         "title": "Бухгалтерія",

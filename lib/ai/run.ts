@@ -1,6 +1,5 @@
 import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
-import { ProviderError } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 import { AiCtx, DownloadTarget, NavTarget, ScrollTarget, ToolError, allowedTools, pickTools, targetLabel } from "./tools";
 import { Msg, complete, voiceModel } from "./provider";
@@ -63,7 +62,7 @@ How to behave (this matters most):
 - Names: «CRM» (alone) = navigate crm (the CRM section with the deals board), NOT the dashboard; «клиенты / контакты» = contacts tab; «главная / панель» = dashboard. «Last / latest X» = the newest one (list with sort newest, limit 1). «This / that card» = the record just mentioned or opened.
 - When the user explains how they want something done, or corrects you, call remember(text) at once (silently, no permission needed), then do the task. Apply what you remember below. A new instruction beats an old memory — forget the old one and remember the new.
 - Lead filter: incoming e-mails and chats are checked automatically and only potential customers reach the kanban; analyze_leads checks what is already there (deals, contacts, companies, mail, chats), lead_log shows what was filtered and why, restore_lead brings a wrongly filtered one back, cleanup_leads removes junk (always asks), set_lead_rules saves the company's own definition of a customer.
-- If one message holds two or more separate tasks, call queue_tasks once with the tasks in order (never try to do several tasks in one go). You never ask the user to click anything. When an action waits for confirmation (deleting always does), say in one short line what is about to happen and that they just need to answer «да» (or «нет»); one «да» confirms everything that is waiting. Deletions need that one word even in auto mode. After acting, say what you did in one short sentence. Do not repeat the same answer twice; if the last attempt did not work, try a different tool or approach.${memory ? `\n\nWhat you remember about this user (apply it):\n${memory}` : ""}${voice ? VOICE_RULES : ""}${auto ? AUTO_RULES : ""}`;
+- If one message holds two or more separate tasks, or one big task with several stages (for example order goods → receive them into stock → pay), call queue_tasks once with the stages in order, each stage self-contained (never try to do several tasks in one go). Exception: «order everything, receive and pay» is ONE call of restock_goods — use it instead of splitting. You never ask the user to click anything. When an action waits for confirmation (deleting always does), say in one short line what is about to happen and that they just need to answer «да» (or «нет»); one «да» confirms everything that is waiting. Deletions need that one word even in auto mode. After acting, say what you did in one short sentence. Do not repeat the same answer twice; if the last attempt did not work, try a different tool or approach.${memory ? `\n\nWhat you remember about this user (apply it):\n${memory}` : ""}${voice ? VOICE_RULES : ""}${auto ? AUTO_RULES : ""}`;
 
 function queuedPhrase(n: number, userText: string) {
     const lang = langOf(userText);
@@ -90,7 +89,22 @@ export interface ChatResult { reply: string; steps: string[]; actions: PendingAc
 const NEVER_AUTO = new Set(["delete_record", "cleanup_leads"]);
 const UNTRUSTED_READS = new Set(["search_mail", "get_mail", "get_mail_thread", "read_document", "search_documents", "get_contact", "get_company", "get_deal", "analyze_leads", "lead_log"]);
 
-const MAX_STEPS = 6;
+// Шагов на один круг: в обычном разговоре 10 (уложиться в 60 секунд маршрута), в фоновой задаче очереди — 16. Если не хватило, задача не
+// «ломается», а продолжается в фоне с того места, где остановилась (continuationTask), — человек может начитать сколько угодно поручений.
+const MAX_STEPS = 10;
+const MAX_STEPS_TASK = 16;
+
+/** Бюджет шагов исчерпан внутри фоновой задачи: очередь повторит задачу с описанием уже сделанного. */
+export class StepBudgetError extends Error {
+    constructor(public progress: string, public actions: PendingAction[] = [], public executed: ExecutedAction[] = [], public steps: string[] = []) { super("The assistant needed too many steps"); }
+}
+
+/** Текст задачи-продолжения: исходная просьба + что уже выполнено/ждёт подтверждения, чтобы ничего не делать дважды. */
+export function continuationTask(request: string, progress: string): string {
+    return `Продолжи и доведи до конца задачу — она большая и не уложилась в один круг. Исходная просьба: «${request.slice(0, 600)}». ${progress ? `Уже сделано или ждёт подтверждения (НЕ повторяй и не предлагай заново): ${progress}.` : ""} Сначала посмотри текущее состояние данных, затем сделай только то, чего ещё не сделано.`;
+}
+
+const continuingPhrase = (userText: string) => ({ ru: "Задача большая — продолжаю в фоне и пришлю результат.", uk: "Завдання велике — продовжую у фоні й надішлю результат.", de: "Die Aufgabe ist groß — ich mache im Hintergrund weiter und melde das Ergebnis.", en: "This is a big task — I'm carrying on in the background and will report the result." })[langOf(userText)];
 const clip = (v: unknown) => JSON.stringify(v).slice(0, 12000);
 
 // Один ход разговора: модель может несколько раз вызвать инструменты чтения; вызов записи превращается в карточку подтверждения
@@ -114,7 +128,8 @@ export async function runChat(ctx: AiCtx, opts: RunOpts): Promise<ChatResult> {
     const executed: ExecutedAction[] = [];
     let tainted = false; // ассистент читал чужой текст
 
-    for (let i = 0; i < MAX_STEPS; i++) {
+    const stepLimit = opts.noQueue ? MAX_STEPS_TASK : MAX_STEPS;
+    for (let i = 0; i < stepLimit; i++) {
         const r = await complete(sys, msgs, tools.map((t) => t.def), opts.voice && voiceModel() ? { model: voiceModel() } : {});
         if (!r.calls.length) return { reply: r.text || "…", steps, actions, ...(executed.length ? { executed } : {}), ...(nav ? { nav } : {}), ...(download ? { download } : {}), ...(scroll ? { scroll } : {}) };
         msgs.push({ role: "assistant", text: r.text, calls: r.calls });
@@ -203,5 +218,12 @@ export async function runChat(ctx: AiCtx, opts: RunOpts): Promise<ChatResult> {
         // ещё нескольких секунд ожидания, поэтому отвечаем сами (когда вместе с переходом нужны данные, круг остаётся)
         if (navigateOnly && nav && !actions.length && !executed.length) return { reply: r.text || openingPhrase(nav.label, opts.history[opts.history.length - 1]?.text ?? ""), steps, actions, nav };
     }
-    throw new ProviderError("The assistant needed too many steps. Please ask in a simpler way.");
+    // Не хватило шагов: описываем уже сделанное и передаём остаток очереди (в обычном разговоре — новой фоновой задачей, в фоновой — повтором)
+    const doneList = [
+        ...executed.map((e) => `${e.tool}${e.target ? ` (${e.target})` : ""}${e.state === "failed" ? " — failed" : ""}`),
+        ...actions.map((a) => `${a.tool}${a.target ? ` (${a.target})` : ""} — waiting for the user's confirmation`),
+    ].join("; ");
+    const request = opts.history[opts.history.length - 1]?.text ?? "";
+    if (opts.noQueue) throw new StepBudgetError(doneList, actions, executed, steps);
+    return { reply: continuingPhrase(request), steps, actions, ...(executed.length ? { executed } : {}), queue: [continuationTask(request, doneList)] };
 }

@@ -1827,7 +1827,20 @@
         "f_approve": "Freigeben",
         "f_summary": "Anfrage",
         "done_decide_agent_request": "Agenten-Anfrage: {result}",
-        "step_list_agent_requests": "Agenten-Anfragen gelesen"
+        "step_list_agent_requests": "Agenten-Anfragen gelesen",
+        "act_restock_goods": "Bestellen, einlagern und bezahlen",
+        "done_restock_goods": "Bestellung „{number}“ bei „{supplier}“: {count} Positionen, {total} · eingelagert: {received} · bezahlt: {paid}",
+        "act_receive_purchase_order": "Bestellung einlagern",
+        "done_receive_purchase_order": "Bestellung „{number}“ eingelagert · bezahlt: {paid}",
+        "act_pay_supplier_invoice": "Lieferantenrechnung bezahlen",
+        "done_pay_supplier_invoice": "Lieferantenrechnungen bezahlt: {count}, Summe {total}",
+        "f_mode": "Was bestellen",
+        "f_qty_each": "Menge je Artikel",
+        "f_receive": "Einlagern",
+        "f_pay": "Bezahlen",
+        "f_warehouse": "Lager",
+        "f_order": "Bestellung",
+        "f_all_open": "Alle offenen"
     },
     "finance": {
         "title": "Buchhaltung",
