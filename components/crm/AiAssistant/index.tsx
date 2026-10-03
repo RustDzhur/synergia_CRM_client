@@ -268,11 +268,11 @@ export default function AiAssistant() {
 	function submit(text = draft) {
 		const value = text.trim();
 		if (!value || busy || status?.configured === false) return;
-		// Остались карточки, ждущие нажатия: при включённом «без подтверждения» достаточно написать «отправляй» / «да» —
+		// Остались карточки, ждущие подтверждения: достаточно написать «отправляй» / «да» —
 		// подтверждаем их сами, ассистента для этого не вызываем
 		const last = [...messages].reverse().find((m) => m.role === "assistant");
 		const waiting = last?.actions?.filter((a) => a.state === "pending") ?? [];
-		if (agent.autoApprove && last && waiting.length && spokenAnswer(value) === "yes") {
+		if (last && waiting.length && spokenAnswer(value) === "yes") {
 			setDraft("");
 			void Promise.all(waiting.map((a) => confirm(last.id, a.id)));
 			return;

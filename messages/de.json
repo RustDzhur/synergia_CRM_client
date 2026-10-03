@@ -1755,7 +1755,12 @@
         "done_restore_lead": "„{name}“ ist zurück in der Pipeline",
         "done_set_lead_rules": "Lead-Regeln gespeichert",
         "step_analyze_leads": "Geprüft, wer ein echter Interessent ist",
-        "step_lead_log": "Filterprotokoll gelesen"
+        "step_lead_log": "Filterprotokoll gelesen",
+        "act_publish_blog_post": "Blogartikel veröffentlichen",
+        "f_slug": "Artikel",
+        "f_publish": "Veröffentlichen",
+        "done_publish_blog_post": "„{title}“: {state}",
+        "step_list_blog_posts": "Blogartikel gelesen"
     },
     "finance": {
         "title": "Buchhaltung",

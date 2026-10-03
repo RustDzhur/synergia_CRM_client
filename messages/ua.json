@@ -1755,7 +1755,12 @@
         "done_restore_lead": "«{name}» повернуто у воронку",
         "done_set_lead_rules": "Правила для лідів збережено",
         "step_analyze_leads": "Перевірено, хто справжній клієнт",
-        "step_lead_log": "Прочитано журнал фільтра"
+        "step_lead_log": "Прочитано журнал фільтра",
+        "act_publish_blog_post": "Опублікувати статтю блогу",
+        "f_slug": "Стаття",
+        "f_publish": "Опублікувати",
+        "done_publish_blog_post": "«{title}»: {state}",
+        "step_list_blog_posts": "Прочитано статті блогу"
     },
     "finance": {
         "title": "Бухгалтерія",

@@ -1755,7 +1755,12 @@
         "done_restore_lead": "“{name}” is back in the pipeline",
         "done_set_lead_rules": "Lead rules saved",
         "step_analyze_leads": "Checked who is a real prospect",
-        "step_lead_log": "Read the filter log"
+        "step_lead_log": "Read the filter log",
+        "act_publish_blog_post": "Publish a blog article",
+        "f_slug": "Article",
+        "f_publish": "Publish",
+        "done_publish_blog_post": "“{title}” is now {state}",
+        "step_list_blog_posts": "Read the blog articles"
     },
     "finance": {
         "title": "Accounting",

@@ -147,8 +147,8 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 		armAwake(AWAKE_MS);
 		const { msg, pending: acts } = pendingRef.current;
 		const decision = voiceDecision(utterance, acts.length);
-		// «Без подтверждения» включено, а карточки остались от прошлых просьб: «да» подтверждает все (человек так и просил)
-		if (autoApprove && decision.kind === "many" && msg) {
+		// Ждут несколько действий: одно «да» подтверждает все (человек просил обходиться без кнопок)
+		if (decision.kind === "many" && msg) {
 			void Promise.all(acts.map((a) => confirm(msg.id, a.id))).then(() => { chime("ok"); say(PHRASES[lang].done, () => armAwake(AWAKE_MS)); });
 			return;
 		}

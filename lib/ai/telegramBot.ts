@@ -53,7 +53,7 @@ export function chunkText(text: string, max = 3800): string[] {
     return out.length ? out : [""];
 }
 
-const YES = ["да", "ок", "окей", "давай", "подтверждаю", "подтверди", "выполняй", "делай", "отправляй", "так", "гаразд", "добре", "yes", "ok", "okay", "ja", "go"];
+const YES = ["удаляй", "удали", "удалить", "чисти", "чисть", "очищай", "очисти", "очисть", "стирай", "убирай", "убери", "подтверждай", "продолжай", "вперёд", "вперед", "валяй", "разрешаю", "видаляй", "видали", "löschen", "delete", "remove", "clean", "confirm", "proceed", "да", "ок", "окей", "давай", "подтверждаю", "подтверди", "выполняй", "делай", "отправляй", "так", "гаразд", "добре", "yes", "ok", "okay", "ja", "go"];
 const NO = ["нет", "отмена", "отмени", "не надо", "не нужно", "ні", "скасуй", "no", "nein", "cancel"];
 const words = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter(Boolean);
 export const isYes = (t: string) => { const w = words(t); return w.length > 0 && w.length <= 4 && w.some((x) => YES.includes(x)); };

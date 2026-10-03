@@ -15,6 +15,7 @@ import { logAudit } from "@/lib/audit";
 import { mailAccount } from "@/lib/finance/send";
 import { reportPdf, type ReportSection } from "./reportPdf";
 import { type Entity, COMPANY_EDITABLE, CONTACT_EDITABLE, DEAL_EDITABLE, RecordError, forget, loadMemory, recordLink, remember, resolveRecord, titleOf, updateRecord } from "./records";
+import { isPlatformAdminUser } from "@/lib/admin";
 import { LeadToolError, SCOPES as LEAD_SCOPES, analyze as analyzeLeads, cleanup as cleanupLeads, leadLog, restoreLead, saveRules } from "./leadTools";
 import { BrowseError, ENTITY_KEYS, browse, listProducts } from "./browse";
 import { mkActivity } from "@/lib/activities";
@@ -839,6 +840,30 @@ export const TOOLS: AiTool[] = [
         },
         run: async (_c, a) => ({ queued: (a.tasks as string[]).length, _queue: a.tasks }),
     },
+    // ─────────── блог лендинга: черновики от агентов ───────────
+    {
+        module: null, write: false,
+        def: { name: "list_blog_posts", description: "Articles of the landing-page blog including drafts written by agents (slug, status, title). Platform administrators only. Use it for «какие статьи написал агент», «есть ли черновики».", parameters: schema({ drafts_only: { type: "boolean" } }) },
+        run: async (c, a) => {
+            const me = await prisma.user.findUnique({ where: { id: c.userId } });
+            if (!(await isPlatformAdminUser(me as never))) throw new ToolError("Only a platform administrator can manage the blog");
+            const rows = await prisma.blogPost.findMany({ where: a.drafts_only === true ? { published: false } : {}, orderBy: { createdAt: "desc" }, take: 30 });
+            return { posts: rows.map((p) => ({ slug: p.slug, published: p.published, title: (p.title as { en?: string } | null)?.en ?? "", created: p.createdAt.toISOString().slice(0, 10) })) };
+        },
+    },
+    {
+        module: null, write: true,
+        def: { name: "publish_blog_post", description: "Publish a blog draft (written by an agent) on the landing page, or take a published article back to draft (publish = false). Platform administrators only. Needs user confirmation unless auto mode is on. slug comes from list_blog_posts.", parameters: schema({ slug: S("article slug"), publish: { type: "boolean", description: "true = publish (default), false = back to draft" } }, ["slug"]) },
+        check: (a) => ({ slug: need(str(a.slug, 80), "slug"), publish: a.publish !== false }),
+        run: (c, a) => wrap(async () => {
+            const me = await prisma.user.findUnique({ where: { id: c.userId } });
+            if (!(await isPlatformAdminUser(me as never))) throw new ToolError("Only a platform administrator can manage the blog");
+            const post = await prisma.blogPost.findUnique({ where: { slug: String(a.slug) } });
+            if (!post) throw new ToolError("No article with this slug");
+            await prisma.blogPost.update({ where: { slug: post.slug }, data: { published: a.publish === true, ...(a.publish === true && !post.published ? { publishedAt: new Date() } : {}) } });
+            return { params: { title: (post.title as { en?: string } | null)?.en ?? post.slug, state: a.publish === true ? "published" : "draft" }, link: `/blog/${post.slug}` };
+        }),
+    },
     // ─────────── отбор потенциальных клиентов ───────────
     {
         module: "crm", write: false,
@@ -1156,6 +1181,8 @@ const GROUPS: { re: RegExp; tools: string[] }[] = [
       tools: ["email_report", "list_products", "list_invoices", "list_expenses", "finance_summary", "browse_data"] },
     { re: /лид|lead|потенциал|клиент.*(мусор|не клиент)|спам|spam|рассылк|мусор|отсе[яи]|отфильтр|фильтр|junk|newsletter|разбер[иё]|проанализ|анализ|качеств|ненужн|лишн|почисти|очисти|канбан|воронк|kanban/i,
       tools: ["analyze_leads", "lead_log", "restore_lead", "cleanup_leads", "set_lead_rules", "list_deals", "search_contacts", "search_companies", "get_deal", "search_mail", "delete_record"] },
+    { re: /блог|статьи|статей|статья|article|blog|черновик|draft|опублику|publish/i,
+      tools: ["list_blog_posts", "publish_blog_post"] },
     { re: /документ|файл|document|dokument|прочитай документ|read the doc/i,
       tools: ["search_documents", "read_document", "list_employees", "save_employee_contract", "download_document"] },
     { re: /сотрудник|співробітник|працівник|employee|mitarbeiter|команд|team|персонал/i,
