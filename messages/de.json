@@ -1072,7 +1072,10 @@
         "connectSection_mail": "E-Mail",
         "connectSection_marketing": "Marketing",
         "connectSection_inventory": "Finanzen & Lager",
-        "connectSection_automation": "Automatisierung"
+        "connectSection_automation": "Automatisierung",
+        "agentScope_env": "Geheimnisse: erlaubte Variablen lesen",
+        "agentsEnvNames": "Welche Variablen er lesen darf (kommagetrennt, * für alle)",
+        "agentsEnvAllowed": "Darf lesen"
     },
     "upgrade": {
         "free": "Kostenlos",
@@ -3179,7 +3182,7 @@
         "envButton": "Variablen",
         "envTitle": "Firmen-Variablen",
         "envHeading": "Variablen von „{name}“",
-        "envHelp": "Umgebungsvariablen dieser Firma – z. B. der Schlüssel einer Fremd-API, den der Kunde Ihnen gegeben hat. Werte werden verschlüsselt gespeichert und nie wieder angezeigt; ersetzen durch erneutes Speichern desselben Namens. Servercode liest sie mit getFirmEnv(Firma, NAME); in Automatisierungsregeln funktioniert {{env.NAME}} in der Webhook-Adresse.",
+        "envHelp": "Firmenvariablen: Ein Kunde hat Ihnen einen API-Schlüssel gegeben — tragen Sie ihn hier ein. Werte sind in der Datenbank verschlüsselt; „Anzeigen“ zeigt Ihnen einen Wert (Audit-Eintrag). Ein externer Agent liest sie über /api/agent/env mit eigenem Token; in Automatisierungsregeln funktioniert {{env.NAME}} in der Webhook-Adresse.",
         "envNone": "Noch keine Variablen.",
         "envName": "Name",
         "envValue": "Wert",
@@ -3214,7 +3217,11 @@
         "reqSave": "Zahlungsdaten speichern",
         "sys_payments": "Zahlungsdaten",
         "sys_storage": "Dateispeicher",
-        "metaSave": "Speichern"
+        "metaSave": "Speichern",
+        "envReveal": "Anzeigen",
+        "envHide": "Verbergen",
+        "envPlatformTitle": "Plattform-Variablen (für Agenten)",
+        "envPlatformHelp": "Geheime Codes, die Sie Ihren Agenten geben (Mail, Blog usw.). Ein Agent liest nur die, die Sie ihm namentlich erlauben."
     },
     "capabilities": {
         "title": "Was Firmspace AI für Sie tut",

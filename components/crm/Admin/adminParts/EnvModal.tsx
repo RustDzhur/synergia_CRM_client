@@ -4,25 +4,28 @@ import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { apiCall } from "@/store/crmApi";
 import Modal from "../../shared/Modal";
-import { inputClass, OrgRow } from "./model";
+import { inputClass } from "./model";
 
 interface Var { name: string; length: number; updatedAt: string; updatedBy: string }
 
 // Переменные окружения фирмы: клиент прислал ключ нужного ему API — администратор вносит его здесь, и серверная интеграция читает его
-// как getFirmEnv(фирма, "ИМЯ"); в правилах автоматизации доступно {{env.ИМЯ}} в адресе вебхука. Значения шифруются и обратно не показываются.
-export default function EnvModal({ org, onClose }: { org: OrgRow | null; onClose: () => void }) {
+// как getFirmEnv(фирма, "ИМЯ"); в правилах автоматизации доступно {{env.ИМЯ}} в адресе вебхука. Значения шифруются в базе; администратор
+// может показать значение кнопкой «глаз» (в журнал аудита), а внешний агент читает их через /api/agent/env по своему токену.
+// org.id === "platform" — общие переменные платформы (для агентов).
+export default function EnvModal({ org, onClose }: { org: { id: string; name: string } | null; onClose: () => void }) {
 	const t = useTranslations("admin");
 	const [vars, setVars] = useState<Var[]>([]);
 	const [name, setName] = useState("");
 	const [value, setValue] = useState("");
 	const [busy, setBusy] = useState(false);
+	const [shown, setShown] = useState<Record<string, string>>({});
 
 	const load = useCallback(async () => {
 		if (!org) return;
 		const res = await apiCall<Var[]>(`/api/admin/orgs/${org.id}/env`);
 		if (res.data) setVars(res.data);
 	}, [org]);
-	useEffect(() => { setName(""); setValue(""); setVars([]); void load(); }, [load]);
+	useEffect(() => { setName(""); setValue(""); setVars([]); setShown({}); void load(); }, [load]);
 
 	async function save() {
 		if (!org) return;
@@ -33,6 +36,13 @@ export default function EnvModal({ org, onClose }: { org: OrgRow | null; onClose
 		toast.success(t("saved"));
 		setName(""); setValue("");
 		void load();
+	}
+	async function reveal(v: Var) {
+		if (!org) return;
+		if (shown[v.name] !== undefined) return setShown(({ [v.name]: _, ...rest }) => rest);
+		const res = await apiCall<{ value: string }>(`/api/admin/orgs/${org.id}/env?reveal=${encodeURIComponent(v.name)}`);
+		if (!res.ok || !res.data) return void toast.error(res.message);
+		setShown((s) => ({ ...s, [v.name]: res.data!.value }));
 	}
 	async function remove(v: Var) {
 		if (!org || !window.confirm(t("envDeleteAsk", { name: v.name }))) return;
@@ -52,10 +62,14 @@ export default function EnvModal({ org, onClose }: { org: OrgRow | null; onClose
 							{vars.map((v) => (
 								<li key={v.name} className="flex items-center justify-between gap-10 rounded-10 border border-inkLine px-12 py-8">
 									<div className="min-w-0">
-										<p className="text-13 text-[#f1f4ee]"><code>{v.name}</code> <span className="ml-6 text-11 text-[#8c948b]">•••• ({v.length})</span></p>
+										<p className="text-13 text-[#f1f4ee]"><code>{v.name}</code> <span className="ml-6 text-11 text-[#8c948b]">{shown[v.name] === undefined ? `•••• (${v.length})` : ""}</span></p>
+										{shown[v.name] !== undefined && <code className="mt-4 block select-all break-all rounded-8 bg-[rgba(0,0,0,0.35)] p-6 text-12 text-[#c6ff4d]">{shown[v.name]}</code>}
 										<p className="text-11 text-[#9AA396]">{v.updatedAt.slice(0, 16).replace("T", " ")} {v.updatedBy}</p>
 									</div>
-									<button type="button" onClick={() => remove(v)} className="text-12 text-danger hover:underline">{t("envDelete")}</button>
+									<div className="flex shrink-0 gap-12">
+										<button type="button" onClick={() => reveal(v)} className="text-12 text-[#c6ff4d] hover:underline">{shown[v.name] === undefined ? t("envReveal") : t("envHide")}</button>
+										<button type="button" onClick={() => remove(v)} className="text-12 text-danger hover:underline">{t("envDelete")}</button>
+									</div>
 								</li>
 							))}
 						</ul>

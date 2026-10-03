@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     try {
         if (b.action === "create") {
-            const r = await createAgent(String(b.name ?? ""), Array.isArray(b.scopes) ? b.scopes.map(String) : [], a.user.userId);
+            const r = await createAgent(String(b.name ?? ""), Array.isArray(b.scopes) ? b.scopes.map(String) : [], a.user.userId, b.envNames);
             return NextResponse.json({ ok: true, ...r }, { status: 201 });
         }
         if (b.action === "revoke") {
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         }
         return badRequest("Unknown action");
     } catch (e) {
-        if (e instanceof Error && /^(Give the agent|Choose at least|Too many)/.test(e.message)) return badRequest(e.message);
+        if (e instanceof Error && /^(Give the agent|Choose at least|Too many|List the variables)/.test(e.message)) return badRequest(e.message);
         return serverError(e);
     }
 }

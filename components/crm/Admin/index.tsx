@@ -29,7 +29,7 @@ export default function AdminPanel() {
 	const [orgs, setOrgs] = useState<OrgRow[]>([]);
 	const [orders, setOrders] = useState<OrderRow[]>([]);
 	const [q, setQ] = useState("");
-	const [envFor, setEnvFor] = useState<OrgRow | null>(null); // фирма, которой сейчас правим переменные окружения
+	const [envFor, setEnvFor] = useState<{ id: string; name: string } | null>(null); // фирма, которой сейчас правим переменные окружения
 	const [featuresFor, setFeaturesFor] = useState<OrgRow | null>(null); // фирма, которой сейчас правим разделы
 
 	const load = useCallback(async () => {
@@ -74,6 +74,10 @@ export default function AdminPanel() {
 			<PageHeader />
 			<h1 className="mb-16 text-20 font-semibold text-[#f1f4ee]">{t("title")}</h1>
 			<SystemCheckCard />
+			<div className="fs-card mb-24 flex flex-wrap items-center justify-between gap-12 p-16">
+				<span><span className="block text-14 font-medium text-[#f1f4ee]">{t("envPlatformTitle")}</span><span className="block text-12 text-[#8c948b]">{t("envPlatformHelp")}</span></span>
+				<button type="button" onClick={() => setEnvFor({ id: "platform", name: t("envPlatformTitle") })} className="fs-btn fs-btn-primary h-36">{t("envButton")}</button>
+			</div>
 			<PayRequisitesCard />
 			<MetaCard />
 			<ErrorsCard />

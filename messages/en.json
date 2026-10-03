@@ -1072,7 +1072,10 @@
         "connectSection_mail": "Mail",
         "connectSection_marketing": "Marketing",
         "connectSection_inventory": "Finance & stock",
-        "connectSection_automation": "Automation"
+        "connectSection_automation": "Automation",
+        "agentScope_env": "Secrets: read allowed variables",
+        "agentsEnvNames": "Variables it may read (comma-separated, * for all)",
+        "agentsEnvAllowed": "May read"
     },
     "upgrade": {
         "free": "Free",
@@ -3179,7 +3182,7 @@
         "envButton": "Variables",
         "envTitle": "Firm variables",
         "envHeading": "Variables of “{name}”",
-        "envHelp": "Environment variables of this firm — e.g. the key of a third-party API the customer gave you. Values are stored encrypted and never shown again; replace one by saving the same name. Server code reads them with getFirmEnv(firm, NAME); in automation rules {{env.NAME}} works in the webhook address.",
+        "envHelp": "Firm variables: a customer gave you a key to their API — enter it here. Values are encrypted in the database; “Show” reveals a value to you (logged in the audit). An external agent reads them through /api/agent/env with its own token; in automation rules {{env.NAME}} works in a webhook address.",
         "envNone": "No variables yet.",
         "envName": "Name",
         "envValue": "Value",
@@ -3214,7 +3217,11 @@
         "reqSave": "Save requisites",
         "sys_payments": "Payment requisites",
         "sys_storage": "File storage",
-        "metaSave": "Save"
+        "metaSave": "Save",
+        "envReveal": "Show",
+        "envHide": "Hide",
+        "envPlatformTitle": "Platform variables (for agents)",
+        "envPlatformHelp": "Secret codes you give your agents (mail, blog, etc.). An agent reads only the ones you allow it by name."
     },
     "capabilities": {
         "title": "What Firmspace AI actually does",
