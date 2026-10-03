@@ -15,6 +15,7 @@ import { logAudit } from "@/lib/audit";
 import { mailAccount } from "@/lib/finance/send";
 import { reportPdf, type ReportSection } from "./reportPdf";
 import { type Entity, COMPANY_EDITABLE, CONTACT_EDITABLE, DEAL_EDITABLE, RecordError, forget, loadMemory, recordLink, remember, resolveRecord, titleOf, updateRecord } from "./records";
+import { LeadToolError, SCOPES as LEAD_SCOPES, analyze as analyzeLeads, cleanup as cleanupLeads, leadLog, restoreLead, saveRules } from "./leadTools";
 import { BrowseError, ENTITY_KEYS, browse, listProducts } from "./browse";
 import { mkActivity } from "@/lib/activities";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
@@ -116,7 +117,7 @@ export interface NavTarget { link: string; label: string }
 // Прокрутка страницы (инструмент scroll_page): выполняет браузер человека
 export interface ScrollTarget { dir: "down" | "up" | "top" | "bottom"; pages: number }
 export interface DownloadTarget { kind: "invoices" | "quotes" | "orders" | "contracts" | "purchases"; id: string; number: string; mode: "download" | "open" }
-const wrap = async <T,>(fn: () => Promise<T>): Promise<T> => { try { return await fn(); } catch (e) { throw e instanceof ActionError || e instanceof BrowseError || e instanceof RecordError ? new ToolError(e.message) : e; } };
+const wrap = async <T,>(fn: () => Promise<T>): Promise<T> => { try { return await fn(); } catch (e) { throw e instanceof ActionError || e instanceof BrowseError || e instanceof RecordError || e instanceof LeadToolError ? new ToolError(e.message) : e; } };
 // Проверка правки карточки: нужна сама карточка (id или название) и хотя бы одно допустимое поле
 const recordEditCheck = (a: Args, allowed: readonly string[]): Args => {
     const out: Args = {};
@@ -838,6 +839,44 @@ export const TOOLS: AiTool[] = [
         },
         run: async (_c, a) => ({ queued: (a.tasks as string[]).length, _queue: a.tasks }),
     },
+    // ─────────── отбор потенциальных клиентов ───────────
+    {
+        module: "crm", write: false,
+        def: { name: "analyze_leads", description: "Bulk-analyse existing records and decide which are POTENTIAL CUSTOMERS and which are junk (newsletters, notifications, invoices from vendors, sales pitches to us, spam, empty). scope: deals (cards on the kanban), contacts, companies, mail (inbox, last 30 days), conversations (chats and calls). Returns counts and the junk/unsure items with ids and reasons. Read-only — to delete junk afterwards use cleanup_leads. Use it for «разбери канбан», «проверь контакты на мусор», «какие письма не клиенты».", parameters: schema({ scope: { type: "string", enum: [...LEAD_SCOPES] }, limit: N("how many newest records to check, default 40, max 80") }, ["scope"]) },
+        check: (a) => {
+            if (!(LEAD_SCOPES as readonly string[]).includes(String(a.scope))) throw new ToolError("scope must be one of: " + LEAD_SCOPES.join(", "));
+            return { scope: a.scope, limit: int(a.limit, 40, 5, 80) };
+        },
+        run: async (c, a) => wrap(async () => { const org = await prisma.organization.findUnique({ where: { id: c.org }, select: { name: true } }); return analyzeLeads(c.org, org?.name ?? "", a.scope as (typeof LEAD_SCOPES)[number], a.limit); }),
+    },
+    {
+        module: "crm", write: false,
+        def: { name: "lead_log", description: "What the automatic lead filter decided recently and why: which incoming e-mails/chats became leads and which were filtered out (junk / unsure), plus the company's own lead rules. Use it for «что ты отсеяла», «почему это письмо не попало в канбан».", parameters: schema({ verdict: { type: "string", enum: ["lead", "junk", "unsure"] }, limit: N("max entries, default 15") }) },
+        run: (c, a) => wrap(async () => leadLog(c.org, a.verdict, a.limit)),
+    },
+    {
+        module: "crm", write: true,
+        def: { name: "restore_lead", description: "Put an item the filter rejected back into the pipeline (creates the contact and a card in the first column). id comes from lead_log. Needs user confirmation unless auto mode is on.", parameters: schema({ id: S("log entry id from lead_log"), name: S("who it is, for the confirmation card") }, ["id"]) },
+        check: (a) => ({ id: need(str(a.id, 40), "id"), name: str(a.name, 80) }),
+        run: (c, a) => wrap(async () => { const r = await restoreLead(c.org, String(a.id)); return { params: { name: r.name }, link: "/crm/crm" }; }),
+    },
+    {
+        module: "crm", write: true,
+        def: { name: "cleanup_leads", description: "Delete junk cards/contacts/companies found by analyze_leads (pass their ids; up to 100). ALWAYS asks the user first, even in auto mode. entity: deal, contact or company.", parameters: schema({ entity: { type: "string", enum: ["deal", "contact", "company"] }, ids: { type: "array", items: { type: "string" }, description: "ids from analyze_leads" }, note: S("what is being removed, for the confirmation card") }, ["entity", "ids"]) },
+        check: (a) => {
+            if (!["deal", "contact", "company"].includes(String(a.entity))) throw new ToolError("entity must be deal, contact or company");
+            const ids = (Array.isArray(a.ids) ? a.ids : []).map((x) => str(x, 40)).filter(isId).slice(0, 100);
+            if (!ids.length) throw new ToolError("ids must contain at least one record id");
+            return { entity: a.entity, ids, note: str(a.note, 120) };
+        },
+        run: (c, a) => wrap(async () => { const r = await cleanupLeads(c.org, c.userId, a.entity as "deal" | "contact" | "company", a.ids as string[]); return { params: { count: String(r.count), entity: String(a.entity) }, link: "/crm/crm" }; }),
+    },
+    {
+        module: "crm", write: true,
+        def: { name: "set_lead_rules", description: "Save the company's own rules for what counts as a potential customer, in plain words (e.g. «клиент — только тот, кто спрашивает про ремонт ноутбуков; заказы от посредников не берём»). They are added to the filter for all future incoming mail and chats. Replaces the previous rules; empty text clears them. Needs user confirmation unless auto mode is on.", parameters: schema({ text: S("the rules, empty to clear") }, ["text"]) },
+        check: (a) => ({ text: str(a.text, 1500) }),
+        run: (c, a) => wrap(async () => { await saveRules(c.org, String(a.text)); return { params: { rules: String(a.text).slice(0, 80) || "—" }, link: "/crm/crm" }; }),
+    },
     // ─────────── память Айрис и карточки CRM ───────────
     {
         // Запоминание — не изменение данных CRM, поэтому без подтверждения и в любом режиме
@@ -1115,6 +1154,8 @@ const GROUPS: { re: RegExp; tools: string[] }[] = [
       tools: ["search_mail", "get_mail", "get_mail_thread", "send_email", "search_contacts", "create_deal", "create_task"] },
     { re: /отч[её]т|звіт|report|bericht|на почт|на пошт|per mail|пришли|вышли|отправь мне|надішли|вишли/i,
       tools: ["email_report", "list_products", "list_invoices", "list_expenses", "finance_summary", "browse_data"] },
+    { re: /лид|lead|потенциал|клиент.*(мусор|не клиент)|спам|spam|рассылк|мусор|отсе[яи]|отфильтр|фильтр|junk|newsletter|разбер[иё]|проанализ|анализ|качеств|ненужн|лишн|почисти|очисти|канбан|воронк|kanban/i,
+      tools: ["analyze_leads", "lead_log", "restore_lead", "cleanup_leads", "set_lead_rules", "list_deals", "search_contacts", "search_companies", "get_deal", "search_mail", "delete_record"] },
     { re: /документ|файл|document|dokument|прочитай документ|read the doc/i,
       tools: ["search_documents", "read_document", "list_employees", "save_employee_contract", "download_document"] },
     { re: /сотрудник|співробітник|працівник|employee|mitarbeiter|команд|team|персонал/i,

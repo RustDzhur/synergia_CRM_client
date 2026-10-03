@@ -1746,7 +1746,16 @@
         "step_list_memory": "Gedächtnis gelesen",
         "step_open_record": "Karte geöffnet",
         "step_scroll_page": "Seite gescrollt",
-        "step_queue_tasks": "Aufgaben eingereiht"
+        "step_queue_tasks": "Aufgaben eingereiht",
+        "act_cleanup_leads": "Müll aus der Pipeline löschen",
+        "act_restore_lead": "Aussortierten Lead zurückholen",
+        "act_set_lead_rules": "Lead-Regeln speichern",
+        "f_rules": "Regeln",
+        "done_cleanup_leads": "{count} Müll-Einträge entfernt",
+        "done_restore_lead": "„{name}“ ist zurück in der Pipeline",
+        "done_set_lead_rules": "Lead-Regeln gespeichert",
+        "step_analyze_leads": "Geprüft, wer ein echter Interessent ist",
+        "step_lead_log": "Filterprotokoll gelesen"
     },
     "finance": {
         "title": "Buchhaltung",

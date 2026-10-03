@@ -69,7 +69,7 @@ export default function VoiceHud({ agent, onOpenChat }: { agent: Agent; onOpenCh
 					<div key={a.id} className="mt-10 rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-10">
 						<p className="text-13 font-medium text-[#f1f4ee]">{t(`act_${a.tool}`)}{a.target ? `: ${a.target}` : ""}</p>
 						<dl className="mt-6 grid gap-x-10 gap-y-[2px] text-12 grid-cols-[auto_minmax(0,1fr)]">
-							{Object.entries(a.args).filter(([k, v]) => k !== "id" && !k.endsWith("_id") && v !== "" && v !== undefined).map(([k, v]) => (
+							{Object.entries(a.args).filter(([k, v]) => k !== "id" && k !== "ids" && !k.endsWith("_id") && v !== "" && v !== undefined).map(([k, v]) => (
 								<React.Fragment key={k}>
 									<dt className="text-[#8c948b]">{t(`f_${k}`)}</dt>
 									<dd className="min-w-0 break-words text-[#cfd4cb]">{formatActionValue(v)}</dd>

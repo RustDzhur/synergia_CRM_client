@@ -1,3 +1,4 @@
+import { leadFromConversation } from "@/lib/leads/conversation";
 import type { ConversationDTO, MessageDTO, MessagingChannel } from "@/types/integrations";
 import { ProviderError } from "@/lib/http";
 import { emit } from "@/lib/automation/emit";
@@ -188,6 +189,10 @@ export async function recordMessage(integration: Doc, input: MessageInput) {
             const entry = { type: "call", text: callActivityText(direction, String(input.meta?.status ?? ""), Number(input.meta?.duration) || 0), meta: "" };
             await prisma.contact.update({ where: { id: card.id }, data: { activities: [...((card.activities as any[]) ?? []), entry] as any } });
         }
+    }
+    // Незнакомый человек написал или позвонил: потенциальный клиент ли это — решает отбор лидов (в фоне, вебхук не задерживаем)
+    if (direction === "in") {
+        void leadFromConversation(owner, channel, { id: conversation.id, contact: conversation.contact, name: conversation.name, externalId: input.externalId }, { kind: input.kind, text: input.text, missed: input.meta?.status !== "completed" }).catch(() => undefined);
     }
     return { conversation, message, duplicate: false };
 }

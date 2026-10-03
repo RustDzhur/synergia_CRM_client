@@ -1746,7 +1746,16 @@
         "step_list_memory": "Read the memory",
         "step_open_record": "Opened a card",
         "step_scroll_page": "Scrolled the page",
-        "step_queue_tasks": "Queued the tasks"
+        "step_queue_tasks": "Queued the tasks",
+        "act_cleanup_leads": "Delete junk from the pipeline",
+        "act_restore_lead": "Bring back a filtered lead",
+        "act_set_lead_rules": "Save lead rules",
+        "f_rules": "Rules",
+        "done_cleanup_leads": "Removed {count} junk record(s)",
+        "done_restore_lead": "“{name}” is back in the pipeline",
+        "done_set_lead_rules": "Lead rules saved",
+        "step_analyze_leads": "Checked who is a real prospect",
+        "step_lead_log": "Read the filter log"
     },
     "finance": {
         "title": "Accounting",

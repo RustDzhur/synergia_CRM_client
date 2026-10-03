@@ -1746,7 +1746,16 @@
         "step_list_memory": "Прочитано пам’ять",
         "step_open_record": "Відкрито картку",
         "step_scroll_page": "Прокручено сторінку",
-        "step_queue_tasks": "Завдання поставлено в чергу"
+        "step_queue_tasks": "Завдання поставлено в чергу",
+        "act_cleanup_leads": "Видалити сміття з воронки",
+        "act_restore_lead": "Повернути відсіяного ліда",
+        "act_set_lead_rules": "Зберегти правила для лідів",
+        "f_rules": "Правила",
+        "done_cleanup_leads": "Видалено сміттєвих записів: {count}",
+        "done_restore_lead": "«{name}» повернуто у воронку",
+        "done_set_lead_rules": "Правила для лідів збережено",
+        "step_analyze_leads": "Перевірено, хто справжній клієнт",
+        "step_lead_log": "Прочитано журнал фільтра"
     },
     "finance": {
         "title": "Бухгалтерія",

@@ -4,6 +4,7 @@ import type { Fetched } from "@/lib/mail/types";
 import { ensureStages } from "@/lib/stages";
 import { mkActivity } from "@/lib/activities";
 import { prisma } from "@/lib/prisma";
+import { type Candidate, filterEnabled, logDecision, qualifyBatch } from "@/lib/leads/qualify";
 
 // Автоматические лиды из входящей почты: письмо от нового человека → контакт в CRM и карточка в первой колонке
 // доски сделок («New Lead»). Письмо от уже известного контакта просто попадает в его ленту активности.
@@ -28,7 +29,10 @@ export function parseSender(from: string): Sender | null {
 
 export const isRobotAddress = (email: string) => NOISE.test(email.split("@")[0]);
 
-// Создаёт лиды из свежих входящих писем ящика ownEmail; возвращает число созданных лидов
+// Создаёт лиды из свежих входящих писем ящика ownEmail; возвращает число созданных лидов.
+// В воронку попадают только потенциальные клиенты: письмо нового человека сначала проверяется (lib/leads/qualify.ts —
+// правила, затем модель); рассылки, уведомления, счета, предложения «купите у нас», автоответы и пустые письма контакта
+// и карточки не создают. Решение пишется в журнал (Айрис покажет, что отсеяла и почему, и вернёт по просьбе).
 export async function createLeadsFromMail(owner: string, ownEmail: string, mails: Fetched[]): Promise<number> {
     const inbox = mails
         .filter((m) => m.folder === "inbox" && !m.bulk)
@@ -37,6 +41,9 @@ export async function createLeadsFromMail(owner: string, ownEmail: string, mails
     const seen = new Set<string>(); // от одного отправителя за раз — один лид
     let firstStage: string | null = null;
 
+    // 1. Кто из отправителей новый: письма известных контактов идут в их ленту, а по новым нужно решение
+    interface Fresh { mail: Fetched; sender: Sender; subject: string }
+    const fresh: Fresh[] = [];
     for (const mail of inbox) {
         const sender = parseSender(mail.from);
         if (!sender || sender.email === ownEmail.toLowerCase() || isRobotAddress(sender.email)) continue;
@@ -50,17 +57,30 @@ export async function createLeadsFromMail(owner: string, ownEmail: string, mails
             await prisma.contact.update({ where: { id: existing.id }, data: { activities: acts } });
             continue;
         }
-        if (seen.has(sender.email)) {
-            const c = await prisma.contact.findFirst({ where: { owner, email: sender.email } });
-            if (c) {
-                const acts = Array.isArray(c.activities) ? c.activities : [];
-                acts.push(activity());
-                await prisma.contact.update({ where: { id: c.id }, data: { activities: acts } });
-            }
+        if (seen.has(sender.email)) continue; // дальнейшие письма того же нового человека — вместе с первым
+        seen.add(sender.email);
+        fresh.push({ mail, sender, subject });
+    }
+    if (!fresh.length) return 0;
+
+    // 2. Решение по каждому новому отправителю (одной пачкой)
+    let verdicts: Awaited<ReturnType<typeof qualifyBatch>> | null = null;
+    if (filterEnabled()) {
+        const org = await prisma.organization.findUnique({ where: { id: owner }, select: { name: true } }).catch(() => null);
+        const cands: Candidate[] = fresh.map((f) => ({ source: "email", from: f.sender.email, name: f.sender.name, subject: f.subject, text: f.mail.body ?? "", bulk: f.mail.bulk }));
+        verdicts = await qualifyBatch(owner, org?.name ?? "", cands, { ownDomains: [ownEmail.split("@")[1]?.toLowerCase()].filter(Boolean) });
+    }
+
+    // 3. Потенциальные клиенты → контакт и карточка в первой колонке; остальные — только в журнал
+    for (let i = 0; i < fresh.length; i++) {
+        const { mail, sender, subject } = fresh[i];
+        const q = verdicts?.[i];
+        const entry = { source: "email", from: sender.email, name: sender.name, subject, snippet: String(mail.body ?? "").replace(/\s+/g, " ").trim().slice(0, 400) };
+        if (q && q.verdict !== "lead") {
+            await logDecision(owner, { ...entry, verdict: q.verdict, category: q.category, score: q.score, reason: q.reason, by: q.by });
             continue;
         }
-        seen.add(sender.email);
-
+        const activity = () => mkActivity("email", `Email: ${subject}`);
         const [firstName, ...rest] = sender.name.split(" ");
         const contactDoc = await prisma.contact.create({
             data: {
@@ -83,10 +103,11 @@ export async function createLeadsFromMail(owner: string, ownEmail: string, mails
                 clientName: subject,
                 contactName: sender.name,
                 order,
-                activities: [mkActivity("created", subject), mkActivity("email", `Email from ${sender.name} <${sender.email}>`)],
+                activities: [mkActivity("created", subject), mkActivity("email", `Email from ${sender.name} <${sender.email}>`), ...(q ? [mkActivity("note", `Айрис: потенциальный клиент (${q.category}, ${q.score}%) — ${q.reason}`)] : [])],
             },
         });
         created += 1;
+        if (q) await logDecision(owner, { ...entry, verdict: "lead", category: q.category, score: q.score, reason: q.reason, by: q.by, dealId: dealDoc.id });
         await emit(owner, { type: "lead_created", data: { id: dealDoc.id, dealId: dealDoc.id, contactId: contactDoc.id, name: sender.name, contactName: sender.name, email: sender.email, subject } });
         await notify(owner, { type: "lead", params: { name: sender.name, subject }, link: "/crm/crm", key: `lead:${sender.email}:${new Date().toISOString().slice(0, 10)}` });
     }
