@@ -51,6 +51,7 @@ Firmspace AI is an all-in-one business platform for small and medium companies, 
 - Chat inside the CRM that reads real CRM data (contacts, deals, tasks, e-mails, documents, invoices, stock) and prepares or performs actions: create tasks, deals, contacts, invoices, quotes, orders, contracts, expenses; move deals; confirm orders; mark invoices paid; order from suppliers; send invoices and reports by e-mail; read PDF documents and e-mails; summarize customers; draft replies.
 - Voice control: the user says "Hi Ayris, open accounting and show unpaid invoices" on any page; she opens pages, answers aloud with a natural voice, creates and changes records, fills cards. Works in Chrome, Edge and Safari. Several tasks in one message are processed one by one.
 - Telegram: the user can talk to Ayris in her own Telegram bot by text or voice message.
+- Connect your own AI agent or bot: in Settings → Integrations a firm creates an access key, chooses the sections and whether the agent may only read or also change things (changes wait for the owner's approval by default), and pastes one address and the key into Claude, ChatGPT, Cursor, n8n, Zapier or any MCP-compatible agent — no servers or files needed. Included in plans with the AI assistant.
 - Safety: she works with the user's own rights, changes can be confirmed before they run (or run immediately if the user turns that on); deleting always asks first; she remembers what the user teaches her.
 - AI assistant availability depends on the plan (see plans).
 

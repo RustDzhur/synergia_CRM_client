@@ -17,6 +17,7 @@ import SettingsTabs from "./SettingsTabs";
 import NotifyBotCard from "./NotifyBotCard";
 import IrisBotCard from "./IrisBotCard";
 import AgentsCard from "./AgentsCard";
+import ConnectCard from "./ConnectCard";
 
 interface Integration {
 	id: string;
@@ -121,6 +122,7 @@ export default function IntegrationSettings() {
 			{/* Бот уведомлений — над плитками каналов: это про то, куда приходят сообщения о клиентах */}
 			<NotifyBotCard />
 			<IrisBotCard />
+			<ConnectCard />
 			<AgentsCard />
 			<div className="flex flex-col gap-20 lg:flex-row">
 				<SettingsTabs className="shrink-0 md:self-start" />

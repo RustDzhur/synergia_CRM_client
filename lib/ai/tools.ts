@@ -16,6 +16,7 @@ import { mailAccount } from "@/lib/finance/send";
 import { reportPdf, type ReportSection } from "./reportPdf";
 import { type Entity, COMPANY_EDITABLE, CONTACT_EDITABLE, DEAL_EDITABLE, RecordError, forget, loadMemory, recordLink, remember, resolveRecord, titleOf, updateRecord } from "./records";
 import { isPlatformAdminUser } from "@/lib/admin";
+import { decideRequest, listRequests } from "@/lib/connect/tools";
 import { LeadToolError, SCOPES as LEAD_SCOPES, analyze as analyzeLeads, cleanup as cleanupLeads, leadLog, restoreLead, saveRules } from "./leadTools";
 import { BrowseError, ENTITY_KEYS, browse, listProducts } from "./browse";
 import { mkActivity } from "@/lib/activities";
@@ -840,6 +841,26 @@ export const TOOLS: AiTool[] = [
         },
         run: async (_c, a) => ({ queued: (a.tasks as string[]).length, _queue: a.tasks }),
     },
+    // ─────────── запросы внешних агентов ───────────
+    {
+        module: null, write: false,
+        def: { name: "list_agent_requests", description: "Changes that connected external agents/bots (Settings → Integrations → Connect an agent) proposed and that wait for the owner's approval. Use it for «что просят агенты», «есть запросы от ботов».", parameters: schema({}) },
+        run: async (c) => {
+            if (c.role !== "owner" && c.role !== "admin") throw new ToolError("Only the owner or an administrator can see agent requests");
+            return { requests: (await listRequests(c.org)).map((r) => ({ id: r.id, agent: r.agent, tool: r.tool, target: r.target, at: r.at.slice(0, 16).replace("T", " "), args: r.args })) };
+        },
+    },
+    {
+        module: null, write: true,
+        def: { name: "decide_agent_request", description: "Approve (runs the change) or reject a change proposed by a connected agent. id comes from list_agent_requests. Owner/admin only.", parameters: schema({ id: S("request id"), approve: { type: "boolean", description: "true = approve and run, false = reject" }, summary: S("what the agent wants, for the confirmation card") }, ["id", "approve"]) },
+        check: (a) => ({ id: need(str(a.id, 40), "id"), approve: a.approve !== false, summary: str(a.summary, 120) }),
+        run: (c, a) => wrap(async () => {
+            if (c.role !== "owner" && c.role !== "admin") throw new ToolError("Only the owner or an administrator can decide agent requests");
+            const r = await decideRequest(c, String(a.id), a.approve === true);
+            if (!r.done) throw new ToolError(r.message);
+            return { params: { result: r.message }, link: "/crm/settings/integration" };
+        }),
+    },
     // ─────────── блог лендинга: черновики от агентов ───────────
     {
         module: null, write: false,
@@ -1181,6 +1202,8 @@ const GROUPS: { re: RegExp; tools: string[] }[] = [
       tools: ["email_report", "list_products", "list_invoices", "list_expenses", "finance_summary", "browse_data"] },
     { re: /лид|lead|потенциал|клиент.*(мусор|не клиент)|спам|spam|рассылк|мусор|отсе[яи]|отфильтр|фильтр|junk|newsletter|разбер[иё]|проанализ|анализ|качеств|ненужн|лишн|почисти|очисти|канбан|воронк|kanban/i,
       tools: ["analyze_leads", "lead_log", "restore_lead", "cleanup_leads", "set_lead_rules", "list_deals", "search_contacts", "search_companies", "get_deal", "search_mail", "delete_record"] },
+    { re: /агент|бот|запрос.* от|agent|bot\b|одобр|approve|разреш/i,
+      tools: ["list_agent_requests", "decide_agent_request"] },
     { re: /блог|статьи|статей|статья|article|blog|черновик|draft|опублику|publish/i,
       tools: ["list_blog_posts", "publish_blog_post"] },
     { re: /документ|файл|document|dokument|прочитай документ|read the doc/i,
