@@ -17,4 +17,6 @@
    `FIRMSPACE_TOKEN=<токен>`) и текст задачи (пример — `~/agents/_template/TASK.md`).
 3. Запустите. Отозвать доступ — кнопка «Отозвать» в тех же настройках, пересоздавать контейнеры не нужно.
 
+Ссылка для входа в Harness (с постоянным токеном из `.env`): `./deploy/agents/url.sh` (снаружи) или `./deploy/agents/url.sh local`.
+
 Запуск самой площадки: `docker compose -p dsh -f deploy/agents/docker-compose.yml up -d` (autodeploy делает это сам).
