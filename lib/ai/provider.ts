@@ -169,7 +169,7 @@ export const cloudSttModel = () => process.env.AI_VOICE_STT_MODEL || (onGateway(
 
 // Расширение для имени файла: провайдеру оно помогает понять формат записи
 const AUDIO_EXT: Record<string, string> = {
-    "audio/webm": "webm", "video/webm": "webm", "audio/ogg": "ogg", "audio/mp4": "mp4", "video/mp4": "mp4",
+    "audio/webm": "webm", "video/webm": "webm", "audio/ogg": "ogg", "audio/opus": "ogg", "application/ogg": "ogg", "audio/mp4": "mp4", "video/mp4": "mp4",
     "audio/mpeg": "mp3", "audio/wav": "wav", "audio/x-wav": "wav", "audio/x-m4a": "m4a", "audio/m4a": "m4a",
 };
 

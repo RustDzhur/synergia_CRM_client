@@ -16,15 +16,13 @@ export default function NotifyBotCard() {
 	const [chat, setChat] = useState("");
 	const [name, setName] = useState("");
 	const [hasToken, setHasToken] = useState(false);
-	const [control, setControl] = useState(false); // управление Айрис через этого бота
 	const [busy, setBusy] = useState(false);
 
 	const load = useCallback(async () => {
-		const res = await apiCall<{ hasToken: boolean; chatId: string; control?: boolean }>("/api/notify-settings");
+		const res = await apiCall<{ hasToken: boolean; chatId: string }>("/api/notify-settings");
 		if (!res.data) return;
 		setHasToken(res.data.hasToken);
 		setChat(res.data.chatId);
-		setControl(res.data.control === true);
 	}, []);
 	useEffect(() => { void load(); }, [load]);
 
@@ -70,16 +68,6 @@ export default function NotifyBotCard() {
 		toast.success(t("notifySent"));
 	}
 
-	// Управление Айрис из Telegram: бот начинает принимать команды от этого чата и выполнять их с вашими правами
-	async function toggleControl(enabled: boolean) {
-		setBusy(true);
-		const res = await apiCall("/api/notify-settings", "POST", { action: "control", enabled });
-		setBusy(false);
-		if (!res.ok) return void toast.error(res.message);
-		setControl(enabled);
-		toast.success(t(enabled ? "controlOn" : "controlOff"));
-	}
-
 	const input = "fs-field h-40 w-full px-12 text-13 outline-none";
 
 	return (
@@ -107,16 +95,6 @@ export default function NotifyBotCard() {
 					</span>
 				)}
 			</div>
-			{/* Управление Айрис: писать боту «открой последний счёт», «подтверди заказы» — Айрис делает это в CRM и отвечает в чат */}
-			{chat && hasToken && (
-				<label className="mt-14 flex cursor-pointer items-start gap-10 rounded-10 border border-inkLine p-12">
-					<input type="checkbox" checked={control} disabled={busy} onChange={(e) => void toggleControl(e.target.checked)} className="mt-[2px] h-16 w-16 shrink-0 accent-[#c6ff4d]" />
-					<span className="min-w-0">
-						<span className="block text-13 font-medium text-[#f1f4ee]">{t("controlTitle")}</span>
-						<span className="mt-[2px] block text-12 leading-[1.5] text-[#8c948b]">{t("controlHelp")}</span>
-					</span>
-				</label>
-			)}
 		</div>
 	);
 }

@@ -1020,10 +1020,13 @@
         "intfWfpSecret": "Secret key",
         "intfCryptoKey": "NOWPayments API key",
         "intfCryptoIpn": "IPN secret",
-        "controlTitle": "Control Iris from Telegram",
-        "controlHelp": "Message this bot (text or voice) what to do in the CRM — Iris does it and replies in the chat. Only this chat is accepted, actions run with your rights. Several tasks in one message run one by one. Deleting and anything after reading e-mails asks «yes/no» first.",
-        "controlOn": "Telegram control is on",
-        "controlOff": "Telegram control is off"
+        "irisTitle": "Iris bot in Telegram",
+        "irisHelp": "A separate bot for Iris (create it with @BotFather, give it her picture) — not the bot that sends notifications. Open her profile in Telegram and write or send a voice message: Iris does it in the CRM and replies in the chat. Only the chat you find below is accepted, actions run with your rights. Several tasks in one message run one by one; deleting and anything after reading e-mails asks «yes/no» first.",
+        "irisToken": "Iris bot token (from @BotFather)",
+        "irisConnect": "Connect Iris",
+        "irisOn": "Iris bot connected",
+        "irisOff": "Iris bot disconnected",
+        "irisActive": "active"
     },
     "upgrade": {
         "free": "Free",

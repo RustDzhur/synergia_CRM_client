@@ -21,8 +21,7 @@ export async function GET(req: Request) {
     if (!user) return unauthorized(req);
     try {
         const bot = await firmNotifyBot(user.id);
-        const org = await prisma.organization.findUnique({ where: { id: user.id }, select: { notify: true } });
-        return NextResponse.json({ hasToken: !!bot.botToken, chatId: bot.chatId, control: (org?.notify as { control?: boolean } | null)?.control === true });
+        return NextResponse.json({ hasToken: !!bot.botToken, chatId: bot.chatId });
     } catch (e) {
         return serverError(e);
     }
@@ -68,25 +67,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ ok: true });
         }
 
-        // Управление Айрис через этого бота: включается отдельно и только когда бот и чат уже настроены; команды выполняются
-        // с правами того, кто включил (его роль и разрешённые разделы)
-        if (action === "control") {
-            const bot = await firmNotifyBot(user.id);
-            const enabled = b.enabled === true;
-            if (enabled && (!bot.botToken || !bot.chatId)) return badRequest("Сначала подключите бота и найдите чат");
-            const org = await prisma.organization.findUnique({ where: { id: user.id }, select: { notify: true } });
-            await prisma.organization.update({ where: { id: user.id }, data: { notify: { ...((org?.notify ?? {}) as object), control: enabled, ...(enabled ? { controlUser: user.userId } : {}) } as never } });
-            if (enabled) {
-                try { await sendTelegram(bot.botToken, bot.chatId, "🤖 Управление Айрис включено. Напишите мне, что сделать в CRM (текстом или голосовым). /help — подсказка."); } catch { /* бот отвечает, когда сможет */ }
-            }
-            return NextResponse.json({ ok: true, control: enabled });
-        }
-
         // «сбросить»: отключает уведомления — токен и чат стираются
         if (action === "clear") {
             await setFirmNotifyBot(user.id, "", "");
             const org = await prisma.organization.findUnique({ where: { id: user.id }, select: { notify: true } });
-            await prisma.organization.update({ where: { id: user.id }, data: { notify: { ...((org?.notify ?? {}) as any), botToken: "", chatId: "", control: false } as any } });
+            await prisma.organization.update({ where: { id: user.id }, data: { notify: { ...((org?.notify ?? {}) as any), botToken: "", chatId: "" } as any } });
             return NextResponse.json({ ok: true });
         }
 

@@ -15,6 +15,7 @@ import PageHeader from "@/components/crm/shared/PageHeader";
 import IntegrationDialog from "./integrations/IntegrationDialog";
 import SettingsTabs from "./SettingsTabs";
 import NotifyBotCard from "./NotifyBotCard";
+import IrisBotCard from "./IrisBotCard";
 
 interface Integration {
 	id: string;
@@ -118,6 +119,7 @@ export default function IntegrationSettings() {
 			<PageHeader />
 			{/* Бот уведомлений — над плитками каналов: это про то, куда приходят сообщения о клиентах */}
 			<NotifyBotCard />
+			<IrisBotCard />
 			<div className="flex flex-col gap-20 lg:flex-row">
 				<SettingsTabs className="shrink-0 md:self-start" />
 				<ul className="grid min-w-0 flex-1 grid-cols-2 gap-12 md:gap-16 lg:grid-cols-3 lg:gap-16">

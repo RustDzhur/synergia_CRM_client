@@ -1,5 +1,5 @@
 import { fetchProvider } from "@/lib/http";
-import { firmNotifyBot } from "@/lib/firmNotify";
+import { irisBot, setIrisBot } from "@/lib/firmNotify";
 import { prisma } from "@/lib/prisma";
 import { invoicePdfBuffer, pdfLocale } from "@/lib/finance/document";
 import { findInvoice } from "@/lib/finance/aiActions";
@@ -9,13 +9,13 @@ import { type AiCtx, ToolError, allowedTools } from "./tools";
 import { langOf } from "./fastReply";
 import { runTasks } from "./jobs";
 
-// Управление Айрис из Telegram. Человек пишет (или наговаривает голосовым) своему боту фирмы — тому же, что присылает
-// уведомления (Настройки → Интеграции → «Уведомления команде»), — а Айрис делает это в CRM и отвечает в чат.
+// Управление Айрис из Telegram. Человек пишет (или наговаривает голосовым) ОТДЕЛЬНОМУ боту Айрис — не тому, что присылает
+// рабочие уведомления (Настройки → Интеграции → «Бот Айрис») — а Айрис делает это в CRM и отвечает в чат.
 //
 // Как это устроено:
 //  • сервер сам забирает сообщения (getUpdates каждые пару секунд): у домашнего сервера нет входящего IPv4, вебхук Telegram
 //    до него не дошёл бы, а исходящее соединение работает всегда;
-//  • слушаем ТОЛЬКО чат, сохранённый в настройках бота (notify.chatId) — это чат того, кто подключал бота; чужие сообщения
+//  • слушаем ТОЛЬКО чат, сохранённый в настройках бота Айрис (notify.iris.chatId) — это чат того, кто подключал бота; чужие сообщения
 //    игнорируются, действия выполняются с правами этого человека;
 //  • изменения выполняются сразу (в Telegram нет кнопок «Подтвердить»), кроме удаления и случаев, когда Айрис читала чужой
 //    текст: тогда она спрашивает, и достаточно ответить «да» / «нет»;
@@ -174,20 +174,20 @@ async function voiceToText(token: string, fileId: string, mime: string): Promise
     return transcribeAudio(bytes, mime || "audio/ogg");
 }
 
-export async function pollOrg(orgId: string, notify: Record<string, any>) {
-    const bot = await firmNotifyBot(orgId);
-    if (!bot.botToken || !bot.chatId) return;
+export async function pollOrg(orgId: string, _notify?: Record<string, any>) {
+    const bot = await irisBot(orgId);
+    if (!bot.enabled || !bot.botToken || !bot.chatId) return;
     const allowedChat = String(bot.chatId);
-    const known = offsets.get(orgId) ?? (Number(notify.offset) || 0);
+    const known = offsets.get(orgId) ?? bot.offset;
     const updates = await tg<TgUpdate[]>(bot.botToken, "getUpdates", { offset: known || undefined, limit: 20, timeout: 0, allowed_updates: ["message"] });
     if (!updates.length) return;
     // Запоминаем позицию ДО выполнения: после перезапуска старые команды не должны выполниться повторно
     const next = Math.max(...updates.map((u) => u.update_id)) + 1;
     offsets.set(orgId, next);
-    await prisma.organization.update({ where: { id: orgId }, data: { notify: { ...notify, offset: next } as never } }).catch(() => undefined);
+    await setIrisBot(orgId, { offset: next }).catch(() => undefined);
 
     const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { name: true } });
-    const userId = String(notify.controlUser ?? "");
+    const userId = bot.controlUser;
     const member = userId ? await prisma.membership.findFirst({ where: { org: orgId, user: userId } }) : null;
     const now = new Date();
     for (const u of updates) {
@@ -200,7 +200,7 @@ export async function pollOrg(orgId: string, notify: Record<string, any>) {
             continue;
         }
         if (Date.now() / 1000 - m.date > 600) continue; // сообщение старше 10 минут (бот был выключен) — не выполняем вдогонку
-        if (!member) { await send("Управление Айрис не настроено: включите его в CRM, Настройки → Интеграции → «Уведомления команде».").catch(() => undefined); continue; }
+        if (!member) { await send("Бот Айрис не настроен до конца: подключите его в CRM, Настройки → Интеграции → «Бот Айрис».").catch(() => undefined); continue; }
         const ctx: AiCtx = { org: orgId, userId: member.user, role: member.role as AiCtx["role"], modules: (member.modules ?? []) as string[], today: now.toISOString().slice(0, 10), now: now.toISOString().slice(0, 16) };
         const deps: ControlDeps = {
             ctx, orgName: org?.name ?? "", chatKey: `${orgId}:${m.chat.id}`, send,
@@ -233,7 +233,7 @@ async function tick() {
     if (busyLoop) return;
     busyLoop = true;
     try {
-        const orgs = await prisma.organization.findMany({ where: { notify: { path: ["control"], equals: true } }, select: { id: true, notify: true } });
+        const orgs = await prisma.organization.findMany({ where: { notify: { path: ["iris", "enabled"], equals: true } }, select: { id: true, notify: true } });
         for (const o of orgs) {
             try { await pollOrg(o.id, (o.notify ?? {}) as Record<string, any>); } catch (e) { if (process.env.NODE_ENV !== "production") console.error("telegram control:", e instanceof Error ? e.message : e); }
         }
