@@ -1,16 +1,7 @@
-// app/[locale]/blog.metadata.ts — SEO страницы блога (/blog).
+// app/[locale]/blog/metadata.ts — SEO страницы блога (/blog).
 //
-// Куда положить: /site/app/[locale]/blog/metadata.ts (новый файл).
-// Как подключить: в app/[locale]/blog/page.tsx добавить
-//
-//   import { JsonLd } from "@/lib/seo";
-//   export { generateMetadata, pageJsonLd } from "./metadata";
-//   export default function Blog({ params }: { params: { locale: string } }) { ... <JsonLd data={pageJsonLd(params.locale)} /> ... }
-//
-// ВАЖНО (SEO-находка): сама страница блога — клиентский компонент, который тянет статьи
-// через fetch("/api/blog") в useEffect. В HTML при первой отдаче статей нет, поэтому для
-// поисковика это пустая страница. См. REPORT.md, раздел «Находки»: список статей стоит
-// рендерить на сервере (prisma прямо в page.tsx) и передавать в BlogPage готовым.
+// Метаданные списка не зависят от статей: они заданы на каждом языке ниже. Сами статьи
+// страница берёт из БД на сервере (lib/blogPosts.ts) и рендерит в HTML — см. app/[locale]/blog/page.tsx.
 
 import type { Metadata } from "next";
 import { asLocale, breadcrumbLd, pageMetadata, siteUrl, type Locale } from "@/lib/seo";

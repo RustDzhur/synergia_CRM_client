@@ -1,32 +1,18 @@
-// app/[locale]/blog/[slug].metadata.ts — SEO отдельной статьи блога (/blog/<slug>).
+// app/[locale]/blog/[slug]/metadata.ts — динамические SEO-метаданные статьи блога (/blog/<slug>).
 //
-// Куда положить: /site/app/[locale]/blog/[slug]/metadata.ts (новый файл).
-// Как подключить: в app/[locale]/blog/[slug]/page.tsx добавить
+// Данные берутся из той же таблицы, что и app/sitemap.ts и app/api/blog (BlogPost: title/excerpt — Json
+// с ключами de/en/ua), теперь на сервере во время запроса. Если статья не найдена, не опубликована
+// или БД недоступна — отдаём noindex, чтобы в индексе не появлялись пустые и битые адреса.
 //
-//   export { generateMetadata } from "./metadata";
-//
-// Данные берутся из той же таблицы, что и в app/sitemap.ts (BlogPost: title/excerpt — Json
-// с ключами de/en/ua). Если статья не найдена или БД недоступна — отдаём noindex, чтобы
-// в индексе не появлялись пустые/битые адреса.
-//
-// JSON-LD BlogPosting здесь не подключён: страница статьи — клиентский компонент,
-// который получает текст только через fetch в браузере. Чтобы отдать разметку,
-// страницу нужно сделать серверной и передать статью в BlogPost пропсом
-// (см. PATCHES.md, шаг «blog/[slug] — опционально»).
+// JSON-LD BlogPosting (headline, datePublished, image, inLanguage) собирается в pageJsonLd и
+// рендерится серверной страницей: <JsonLd data={pageJsonLd(post, locale)} />.
 
 import type { Metadata } from "next";
 import { asLocale, breadcrumbLd, blogPostingLd, pageMetadata, truncate, type Locale } from "@/lib/seo";
-import { prisma } from "@/lib/prisma";
+import { blogText, type BlogPostDTO } from "@/lib/blog";
+import { getPublishedPost } from "@/lib/blogPosts";
 
 export const PATH_PREFIX = "/blog";
-
-export interface BlogPostSeo {
-	slug: string;
-	title: unknown;
-	excerpt: unknown;
-	publishedAt: Date;
-	updatedAt: Date;
-}
 
 const FALLBACK: Record<Locale, { title: string; description: string }> = {
 	de: { title: "Beitrag – Firmspace AI", description: "Beitrag im Blog von Firmspace AI." },
@@ -40,23 +26,20 @@ const KEYWORDS: Record<Locale, string[]> = {
 	ua: ["блог Firmspace", "CRM", "ШІ-автоматизація", "робота з клієнтами"],
 };
 
-function pick(value: unknown, locale: Locale): string | undefined {
-	if (!value || typeof value !== "object") return undefined;
-	const record = value as Record<string, unknown>;
-	const raw = record[locale] ?? record.en ?? record.de ?? record.ua;
-	return typeof raw === "string" && raw.trim() ? raw.trim() : undefined;
+/** Заголовок статьи для <h1> и breadcrumb: текст из БД для нужной локали, иначе запасной. */
+export function postHeading(post: BlogPostDTO, localeCode: string): string {
+	const locale = asLocale(localeCode);
+	return blogText(post.title, locale) || FALLBACK[locale].title;
 }
 
-export async function loadPost(slug: string): Promise<BlogPostSeo | null> {
-	try {
-		const post = await prisma.blogPost.findFirst({
-			where: { slug, published: true },
-			select: { slug: true, title: true, excerpt: true, publishedAt: true, updatedAt: true },
-		});
-		return (post as BlogPostSeo | null) ?? null;
-	} catch {
-		return null;
-	}
+// Заголовок из БД → title страницы: короткие дополняем названием продукта, длинные обрезаем до 60 символов.
+function titleFor(post: BlogPostDTO, locale: Locale): string {
+	const raw = postHeading(post, locale);
+	return raw.length <= 44 ? `${raw} – Firmspace AI` : truncate(raw, 60);
+}
+
+function descriptionFor(post: BlogPostDTO, locale: Locale): string {
+	return truncate(blogText(post.excerpt, locale) || FALLBACK[locale].description, 158);
 }
 
 export async function generateMetadata({
@@ -66,7 +49,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
 	const locale = asLocale(params.locale);
 	const path = `${PATH_PREFIX}/${params.slug}`;
-	const post = await loadPost(params.slug);
+	const post = await getPublishedPost(params.slug).catch(() => null);
 
 	if (!post) {
 		return pageMetadata({
@@ -79,27 +62,20 @@ export async function generateMetadata({
 		});
 	}
 
-	const rawTitle = pick(post.title, locale) ?? FALLBACK[locale].title;
-	// Название статьи приходит из админки и может быть длинным: держим title в пределах 60 символов.
-	const title = rawTitle.length <= 44 ? `${rawTitle} – Firmspace AI` : truncate(rawTitle, 60);
-	const description = truncate(pick(post.excerpt, locale) ?? FALLBACK[locale].description, 158);
-
 	return pageMetadata({
 		path: `${PATH_PREFIX}/${post.slug}`,
 		locale,
-		title,
-		description,
+		title: titleFor(post, locale),
+		description: descriptionFor(post, locale),
 		keywords: KEYWORDS[locale],
 		ogType: "article",
-		publishedTime: post.publishedAt.toISOString(),
-		modifiedTime: post.updatedAt.toISOString(),
+		publishedTime: new Date(post.publishedAt).toISOString(),
 	});
 }
 
-export function pageJsonLd(post: BlogPostSeo, localeCode: string) {
+export function pageJsonLd(post: BlogPostDTO, localeCode: string) {
 	const locale = asLocale(localeCode);
-	const title = pick(post.title, locale) ?? FALLBACK[locale].title;
-	const description = truncate(pick(post.excerpt, locale) ?? FALLBACK[locale].description, 158);
+	const title = postHeading(post, locale);
 	return [
 		breadcrumbLd(locale, [
 			{ name: "Firmspace AI", path: "/" },
@@ -109,9 +85,9 @@ export function pageJsonLd(post: BlogPostSeo, localeCode: string) {
 		blogPostingLd(locale, {
 			slug: post.slug,
 			title,
-			description,
-			publishedAt: post.publishedAt.toISOString(),
-			updatedAt: post.updatedAt.toISOString(),
+			description: descriptionFor(post, locale),
+			publishedAt: new Date(post.publishedAt).toISOString(),
+			image: post.image,
 		}),
 	];
 }
