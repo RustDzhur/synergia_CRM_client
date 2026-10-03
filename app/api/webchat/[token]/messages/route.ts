@@ -1,6 +1,7 @@
 import { rateLimited } from "@/lib/rateLimit";
 import { tx } from "@/content/i18n";
 import { matchFaq } from "@/lib/chatbotMatch";
+import { answerVisitor } from "@/lib/ai/publicIris";
 import { notifyTeamTelegram } from "@/lib/notifyTeam";
 import { findByToken } from "@/lib/integrations";
 import { recordMessage, toMessageDTO } from "@/lib/channels";
@@ -42,22 +43,37 @@ export async function POST(req: Request, { params }: { params: { token: string }
     const first = !(await prisma.conversation.findFirst({ where: { integration: integration.id, externalId: body.visitor }, select: { id: true } }));
     const { message } = await recordMessage(integration, { externalId: body.visitor, name, text, ...(page ? { meta: { page } } : {}) });
 
-    // Готовый ответ бота: те же тексты, что были в чатботе на лендинге.
-    // Бота можно выключить в настройках канала: тогда сообщение просто ждёт человека
-    const hit = (integration.config as any)?.botEnabled === "0" ? null : matchFaq(text);
+    // Ответ бота. Основной — Айрис (lib/ai/publicIris.ts): отвечает по базе знаний о платформе, а чего не знает — зовёт человека.
+    // Если Айрис недоступна (выключена, суточный лимит, сбой), отвечают прежние готовые тексты по ключевым словам.
+    // Бота можно выключить в настройках канала (botEnabled = "0"): тогда сообщение просто ждёт человека.
+    // Пока в разговоре недавно отвечал человек, бот молчит — оператора он перебивать не должен.
+    const botOn = (integration.config as any)?.botEnabled !== "0";
     let reply: ReturnType<typeof toMessageDTO> | null = null;
-    if (hit) {
-        const { message: botMessage } = await recordMessage(integration, {
-            externalId: body.visitor,
-            name: "Bot",
-            direction: "out",
-            meta: { bot: 1 },
-            text: tx(hit.a, lang),
-        });
-        if (botMessage) reply = toMessageDTO(botMessage);
+    let answered = false;
+    const botSay = async (text: string, ai: boolean) => {
+        const { message: botMessage } = await recordMessage(integration, { externalId: body.visitor, name: "Bot", direction: "out", meta: { bot: 1, ...(ai ? { ai: 1 } : {}) }, text });
+        return botMessage ? toMessageDTO(botMessage) : null;
+    };
+    if (botOn && message) {
+        const convo = await prisma.conversation.findFirst({ where: { integration: integration.id, externalId: body.visitor }, select: { id: true } });
+        const recent = convo ? await prisma.message.findMany({ where: { conversation: convo.id }, orderBy: { createdAt: "desc" }, take: 12 }) : [];
+        const humanActive = recent.some((m) => m.direction === "out" && !(m.meta as { bot?: number } | null)?.bot && Date.now() - new Date(m.createdAt).getTime() < 30 * 60_000);
+        if (humanActive) {
+            answered = true; // с посетителем уже говорит человек
+        } else {
+            const history = recent.reverse().map((m) => ({ role: (m.direction === "in" ? "user" : "assistant") as "user" | "assistant", text: String(m.text ?? "") }));
+            if (history[history.length - 1]?.role !== "user" || history[history.length - 1]?.text !== text) history.push({ role: "user", text }); // вопрос всегда последний
+            const ai = await answerVisitor({ history, lang, page });
+            if (ai && !ai.handoff) { reply = await botSay(ai.text, true); answered = true; }
+            else if (ai && ai.handoff) { await botSay(ai.text, true); /* ответ человеку: reply остаётся пустым — виджет предложит оставить контакт */ }
+            else {
+                const hit = matchFaq(text);
+                if (hit) { reply = await botSay(tx(hit.a, lang), false); answered = true; }
+            }
+        }
     }
 
-    if (first || !hit) {
+    if (first || !answered) {
         void notifyTeamTelegram(String(integration.owner),
             [
                 first ? "💬 Новое обращение в чат на сайте" : "💬 Вопрос без готового ответа (нужен человек)",

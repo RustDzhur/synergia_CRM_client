@@ -75,6 +75,10 @@
   // Акцент по умолчанию — лаймовый, как на сайте и в кабинете: фирма может выбрать свой в настройках канала,
   // но новый канал должен совпадать с сайтом сразу, а не становиться синим
   var cfg = { title: "Chat with us", greeting: "Hello! How can we help?", color: "#C6FF4D", quick: [], links: {}, hours: null, cta: null };
+  // Оформление можно задать прямо в теге скрипта (так лендинг показывает Айрис): data-title, data-greeting, data-avatar (адрес картинки)
+  var attrTitle = script.getAttribute("data-title"), attrGreeting = script.getAttribute("data-greeting"), attrAvatar = script.getAttribute("data-avatar");
+  if (attrTitle) cfg.title = attrTitle;
+  if (attrGreeting) cfg.greeting = attrGreeting;
   var open = false, messages = [], seen = 0, timer = null;
 
   // Оформление под тёмный сайт: почти чёрные слои и лаймовый акцент, как в кабинете и на лендинге
@@ -187,8 +191,15 @@
     $(".ava").style.background = cfg.color;
     $(".ava").style.color = onAccent(cfg.color);
     $(".ava").textContent = String(cfg.title || "?").trim().charAt(0).toUpperCase();
+    // картинка вместо буквы (аватарка Айрис): круглая, поверх цветного кружка
+    if (attrAvatar) {
+      $(".ava").style.background = "#0a0c0b url('" + attrAvatar.replace(/'/g, "%27") + "') center/cover no-repeat";
+      $(".ava").textContent = "";
+    }
     btn.style.background = cfg.color;
     btn.style.color = onAccent(cfg.color);
+    // кнопка открытия чата — тоже лицо Айрис, если задана аватарка
+    if (attrAvatar) { btn.style.background = "#0a0c0b url('" + attrAvatar.replace(/'/g, "%27") + "') center/cover no-repeat"; btn.style.border = "2px solid " + cfg.color; var ic = btn.querySelector("svg"); if (ic) ic.style.display = "none"; }
     $("form .send").style.background = cfg.color;
     $("form .send").style.color = onAccent(cfg.color);
     $(".ask button").style.background = cfg.color;
@@ -485,8 +496,8 @@
 
   request("?lang=" + encodeURIComponent(lang)).then(function (c) {
     cfg = {
-      title: c.title || cfg.title,
-      greeting: c.greeting || cfg.greeting,
+      title: attrTitle || c.title || cfg.title,
+      greeting: attrGreeting || c.greeting || cfg.greeting,
       color: c.color || cfg.color,
       quick: c.quick || [],
       links: c.links || {},

@@ -13,6 +13,12 @@ const WIDGET_TOKEN = "d206c7942ee379b931c9d5d58692f2942084";
 // Виджет берём со своего домена, а не с боевого адреса: на локальной и тестовой сборке должна работать
 // её же версия файла, иначе правки в public/widget.js видны только после заливки на прод
 const WIDGET_BASE = "/widget.js";
+// Лицо чата — Айрис: имя, приветствие и аватарка задаются здесь (виджет их принимает атрибутами скрипта), а отвечает ИИ по базе знаний о платформе
+const GREETING: Record<string, string> = {
+	de: "Hallo! Ich bin Ayris, die KI-Assistentin von Firmspace. Frag mich alles zur Plattform – ich antworte sofort.",
+	ua: "Привіт! Я Айріс, ШІ-асистентка Firmspace. Питайте мене про платформу будь-що — відповім одразу.",
+	en: "Hi! I'm Ayris, Firmspace's AI assistant. Ask me anything about the platform – I'll answer right away.",
+};
 const VERSION = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ?? "dev";
 
 // Окно виджета одно на страницу, а компонентов может оказаться несколько — считаем их сами
@@ -42,6 +48,9 @@ export default function ChatWidget() {
 		script.setAttribute("data-token", WIDGET_TOKEN);
 		// язык берём у страницы, а не у браузера: на немецком сайте окно должно быть немецким
 		script.setAttribute("data-lang", locale);
+		script.setAttribute("data-title", "Ayris");
+		script.setAttribute("data-greeting", GREETING[locale] ?? GREETING.en);
+		script.setAttribute("data-avatar", "/iris-avatar-sm.png");
 		script.setAttribute("data-firmspace-chat", "1");
 		script.async = true;
 		document.body.appendChild(script);
