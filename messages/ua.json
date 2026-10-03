@@ -1697,7 +1697,20 @@
         "f_sections": "Розділи",
         "done_email_report": "Звіт «{title}» надіслано на {to}",
         "agentAuto": "Виконувати без підтвердження",
-        "agentAutoHint": "Зміни виконуються одразу, без підтвердження. Видалення і дії після читання листів/документів усе одно питають."
+        "agentAutoHint": "Зміни виконуються одразу, без підтвердження. Видалення і дії після читання листів/документів усе одно питають.",
+        "act_update_order_status": "Змінити статус замовлення",
+        "act_invoice_order": "Виставити рахунок за замовленням",
+        "act_decide_quote": "Зафіксувати рішення по пропозиції",
+        "act_quote_to_order": "Створити замовлення з пропозиції",
+        "act_contract_action": "Дія з договором",
+        "f_status": "Статус",
+        "f_accepted": "Прийнято",
+        "f_action": "Дія",
+        "done_update_order_status": "Замовлення «{number}»: статус {status}",
+        "done_invoice_order": "Рахунок «{number}» виставлено за замовленням «{order}»",
+        "done_decide_quote": "Пропозиція «{number}»: {result}",
+        "done_quote_to_order": "Замовлення «{number}» створено з пропозиції «{quote}»",
+        "done_contract_action": "Договір «{number}»: {action}"
     },
     "finance": {
         "title": "Бухгалтерія",

@@ -9,6 +9,9 @@ import { applyPayment, statusAfterPayment } from "@/lib/finance/payments";
 import { computeTotals } from "@/lib/finance/totals";
 import { fiscalAdvice, fiscalConfig, fiscalizeInvoice, findFiscal } from "@/lib/finance/fiscal";
 import { requireMarket } from "@/lib/finance/marketGuard";
+import { nextNumber } from "@/lib/finance/numbering";
+import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
+import { consumeForOrder, releaseForOrder } from "@/lib/finance/stock";
 import { prisma } from "@/lib/prisma";
 
 // Действия бухгалтерии для ассистента Айрис: оплата счёта, отправка клиенту, фискальный чек. Это те же шаги, что
@@ -152,4 +155,93 @@ export async function findSupplier(org: string, ref: string) {
     const hit = exact.length ? exact : rows;
     if (hit.length === 1) return hit[0];
     throw new ActionError(hit.length ? `Several suppliers match "${r}": ${hit.slice(0, 6).map((x) => x.name).join(", ")}` : `Supplier "${r}" not found — create it first with create_supplier`);
+}
+
+// ── Заказы, предложения, договоры: смена состояния (те же шаги, что кнопки «Підтвердити», «Виставити рахунок» и др.) ──
+const authorOf = async (userId: string) => { const u = await prisma.user.findUnique({ where: { id: userId }, select: { firstname: true, lastname: true } }); return u ? `${u.firstname} ${u.lastname}`.trim() : ""; };
+
+// Снять резерв заказа ровно на то количество, что было зарезервировано (копия releaseReserve из app/api/orders/[id]/route.ts)
+async function releaseReserve(org: string, orderId: string) {
+    const reserved = await prisma.stockMovement.groupBy({ by: ["product"], where: { org, orderId, reason: { in: ["reserve", "reserve_release"] } }, _sum: { qty: true } });
+    for (const row of reserved.filter((r) => (r._sum.qty ?? 0) < 0)) await releaseForOrder(org, orderId, [{ product: row.product, qty: Math.abs(row._sum.qty ?? 0) }]);
+}
+
+export const ORDER_STATUSES = ["draft", "confirmed", "fulfilled", "invoiced", "closed", "cancelled"] as const;
+
+export async function setOrderStatus(who: Who, ref: string, status: string) {
+    if (!(ORDER_STATUSES as readonly string[]).includes(status)) throw new ActionError("Unknown order status");
+    const doc = await findDocument(who.org, "order", ref);
+    const order = await prisma.order.findFirst({ where: { id: doc.id, org: who.org } });
+    if (!order) throw new ActionError("Order not found");
+    if (order.status === status) return { number: order.number, status };
+    if (status === "fulfilled") { await releaseReserve(who.org, order.id); await consumeForOrder(who.org, order.id, (order.items as any) ?? []); } // выдача списывает склад
+    if (status === "cancelled") await releaseReserve(who.org, order.id);
+    const updated = await prisma.order.update({ where: { id: order.id }, data: { status } });
+    await emit(who.org, { type: "order_status", data: { id: updated.id, number: updated.number, status: updated.status, customerName: updated.customerName } });
+    return { number: updated.number, status };
+}
+
+export async function invoiceFromOrder(who: Who, ref: string) {
+    const doc = await findDocument(who.org, "order", ref);
+    const order = await prisma.order.findFirst({ where: { id: doc.id, org: who.org } });
+    if (!order) throw new ActionError("Order not found");
+    if (order.invoice) throw new ActionError("This order already has an invoice");
+    if (!((order.items as any[]) ?? []).length) throw new ActionError("The order has no line items to invoice");
+    const settings = await financeSettings(who.org);
+    const number = await nextNumber(who.org, settings.invoicePrefix || "RE");
+    const today = new Date().toISOString().slice(0, 10);
+    const due = new Date(Date.now() + (settings.paymentTermsDays ?? 14) * 86400000).toISOString().slice(0, 10);
+    const invoice = await prisma.invoice.create({
+        data: {
+            org: who.org, number, kind: "invoice", contact: order.contact, company: order.company, customerName: order.customerName, deal: order.deal, order: order.id, contract: order.contract,
+            items: applyTaxPolicy((order.items as any[]) ?? [], settings) as any, currency: order.currency, smallBusinessNote: taxExempt(settings), issueDate: today, dueDate: due, template: order.template, createdByName: await authorOf(who.userId),
+        },
+    });
+    await prisma.order.update({ where: { id: order.id }, data: { invoice: invoice.id, status: "invoiced" } });
+    await emit(who.org, { type: "order_status", data: { id: order.id, number: order.number, status: "invoiced", customerName: order.customerName } });
+    return { number: invoice.number, order: order.number, customerName: invoice.customerName };
+}
+
+export async function decideQuote(who: Who, ref: string, accepted: boolean) {
+    const doc = await findDocument(who.org, "quote", ref);
+    const q = await prisma.quote.findFirst({ where: { id: doc.id, org: who.org } });
+    if (!q) throw new ActionError("Quote not found");
+    if (q.status !== "sent") throw new ActionError("Only a sent quote can be accepted or declined");
+    await prisma.quote.update({ where: { id: q.id }, data: { status: accepted ? "accepted" : "declined" } });
+    return { number: q.number, result: accepted ? "accepted" : "declined" };
+}
+
+export async function quoteToOrder(who: Who, ref: string) {
+    const doc = await findDocument(who.org, "quote", ref);
+    const quote = await prisma.quote.findFirst({ where: { id: doc.id, org: who.org } });
+    if (!quote) throw new ActionError("Quote not found");
+    if (quote.status !== "accepted") throw new ActionError("Only an accepted quote can become an order — accept it first");
+    if (quote.order) throw new ActionError("This quote already has an order");
+    const number = await nextNumber(who.org, "SO");
+    const order = await prisma.order.create({ data: { org: who.org, number, contact: quote.contact, company: quote.company, customerName: quote.customerName, deal: quote.deal, items: (quote.items ?? undefined) as any, currency: quote.currency, template: quote.template, createdByName: await authorOf(who.userId) } });
+    await prisma.quote.update({ where: { id: quote.id }, data: { order: order.id } });
+    const total = ((order.items as any[]) ?? []).reduce((s, it) => s + it.qty * it.unitPrice, 0);
+    await emit(who.org, { type: "order_created", data: { id: order.id, number: order.number, customerName: order.customerName, total: String(total), currency: order.currency } });
+    return { number: order.number, quote: quote.number };
+}
+
+export async function contractAction(who: Who, ref: string, action: "sign" | "complete" | "cancel") {
+    const doc = await findDocument(who.org, "contract", ref);
+    const c = await prisma.contract.findFirst({ where: { id: doc.id, org: who.org } });
+    if (!c) throw new ActionError("Contract not found");
+    if (action === "sign") {
+        if (c.status !== "draft") throw new ActionError("Only a draft contract can be signed");
+        const u = await prisma.contract.update({ where: { id: c.id }, data: { status: "active", signedAt: new Date() } });
+        await emit(who.org, { type: "contract_signed", data: { id: u.id, number: u.number, customerName: u.customerName, value: String(u.value), currency: u.currency, dealId: u.deal ?? "" } });
+        await logAudit({ org: who.org, userId: who.userId, action: "contract.signed", entityType: "contract", entityId: u.id, summary: `Contract ${u.number} signed by ${u.customerName} — ${u.value} ${u.currency} (via assistant)`, meta: {} });
+    } else if (action === "complete") {
+        if (c.status !== "active") throw new ActionError("Only an active contract can be completed");
+        await prisma.contract.update({ where: { id: c.id }, data: { status: "completed" } });
+        await logAudit({ org: who.org, userId: who.userId, action: "contract.completed", entityType: "contract", entityId: c.id, summary: `Contract ${c.number} marked completed (via assistant)` });
+    } else {
+        if (c.status !== "draft" && c.status !== "active") throw new ActionError("This contract cannot be cancelled");
+        await prisma.contract.update({ where: { id: c.id }, data: { status: "cancelled" } });
+        await logAudit({ org: who.org, userId: who.userId, action: "contract.cancelled", entityType: "contract", entityId: c.id, summary: `Contract ${c.number} cancelled (via assistant)` });
+    }
+    return { number: c.number, action };
 }

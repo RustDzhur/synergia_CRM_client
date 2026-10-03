@@ -1697,7 +1697,20 @@
         "f_sections": "Abschnitte",
         "done_email_report": "Bericht „{title}“ an {to} gesendet",
         "agentAuto": "Ohne Rückfrage ausführen",
-        "agentAutoHint": "Änderungen werden sofort ausgeführt. Löschen und alles nach dem Lesen von E-Mails/Dokumenten fragt weiterhin nach."
+        "agentAutoHint": "Änderungen werden sofort ausgeführt. Löschen und alles nach dem Lesen von E-Mails/Dokumenten fragt weiterhin nach.",
+        "act_update_order_status": "Auftragsstatus ändern",
+        "act_invoice_order": "Auftrag abrechnen",
+        "act_decide_quote": "Angebotsentscheidung erfassen",
+        "act_quote_to_order": "Auftrag aus Angebot erstellen",
+        "act_contract_action": "Vertragsaktion",
+        "f_status": "Status",
+        "f_accepted": "Angenommen",
+        "f_action": "Aktion",
+        "done_update_order_status": "Auftrag „{number}“: Status {status}",
+        "done_invoice_order": "Rechnung „{number}“ für Auftrag „{order}“ erstellt",
+        "done_decide_quote": "Angebot „{number}“: {result}",
+        "done_quote_to_order": "Auftrag „{number}“ aus Angebot „{quote}“ erstellt",
+        "done_contract_action": "Vertrag „{number}“: {action}"
     },
     "finance": {
         "title": "Buchhaltung",

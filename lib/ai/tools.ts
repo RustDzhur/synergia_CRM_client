@@ -8,7 +8,7 @@ import { getObject } from "@/lib/storage";
 import { ensureStages } from "@/lib/stages";
 import { prisma } from "@/lib/prisma";
 import { toDTO } from "@/lib/serialize";
-import { ActionError, type DocKind, fiscalReceipt, findDocument, findProduct, findSupplier, markPaid, sendInvoice } from "@/lib/finance/aiActions";
+import { ActionError, type DocKind, ORDER_STATUSES, contractAction, decideQuote, fiscalReceipt, invoiceFromOrder, quoteToOrder, setOrderStatus, findDocument, findProduct, findSupplier, markPaid, sendInvoice } from "@/lib/finance/aiActions";
 import { moveStock } from "@/lib/finance/stock";
 import { purchaseNumber } from "@/lib/purchases";
 import { logAudit } from "@/lib/audit";
@@ -797,6 +797,43 @@ export const TOOLS: AiTool[] = [
         check: (a) => ({ number: need(str(a.number, 40), "number"), ...(a.pay_type === "CASH" || a.pay_type === "CARD" ? { pay_type: a.pay_type } : {}) }),
         run: (c, a) => wrap(async () => { const r = await fiscalReceipt({ org: c.org, userId: c.userId }, String(a.number), a.pay_type as "CASH" | "CARD" | undefined); return { params: { number: r.number, code: r.code }, link: "/crm/finance?tab=invoices" }; }),
     },
+    // ─────────── заказы, предложения, договоры: кнопки статусов ───────────
+    {
+        module: "inventory", write: true,
+        def: { name: "update_order_status", description: "Change the status of a sales order (the «Підтвердити» / confirm button and the others): confirmed, fulfilled (shipped — writes stock off), invoiced, closed, cancelled. Needs user confirmation unless auto mode is on. Identify the order by its number, e.g. SO-2026-3.", parameters: schema({ number: S("order number, e.g. SO-2026-3"), status: { type: "string", enum: [...ORDER_STATUSES] } }, ["number", "status"]) },
+        check: (a) => {
+            if (!(ORDER_STATUSES as readonly string[]).includes(String(a.status))) throw new ToolError("status must be one of: " + ORDER_STATUSES.join(", "));
+            return { number: need(str(a.number, 40), "number"), status: a.status };
+        },
+        run: (c, a) => wrap(async () => { const r = await setOrderStatus({ org: c.org, userId: c.userId }, String(a.number), String(a.status)); return { params: { number: r.number, status: r.status }, link: "/crm/finance?tab=orders" }; }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "invoice_order", description: "Issue an invoice for a sales order (one order — one invoice; the order becomes «invoiced»). Needs user confirmation unless auto mode is on.", parameters: schema({ number: S("order number, e.g. SO-2026-3") }, ["number"]) },
+        check: (a) => ({ number: need(str(a.number, 40), "number") }),
+        run: (c, a) => wrap(async () => { const r = await invoiceFromOrder({ org: c.org, userId: c.userId }, String(a.number)); return { params: { number: r.number, order: r.order, customerName: r.customerName }, link: "/crm/finance?tab=invoices" }; }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "decide_quote", description: "Record the customer's decision on a SENT quote: accepted = true or declined (false). Needs user confirmation unless auto mode is on.", parameters: schema({ number: S("quote number"), accepted: { type: "boolean" } }, ["number", "accepted"]) },
+        check: (a) => ({ number: need(str(a.number, 40), "number"), accepted: a.accepted === true || a.accepted === "true" }),
+        run: (c, a) => wrap(async () => { const r = await decideQuote({ org: c.org, userId: c.userId }, String(a.number), a.accepted === true); return { params: { number: r.number, result: r.result }, link: "/crm/finance?tab=quotes" }; }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "quote_to_order", description: "Turn an ACCEPTED quote into a sales order. Needs user confirmation unless auto mode is on.", parameters: schema({ number: S("quote number") }, ["number"]) },
+        check: (a) => ({ number: need(str(a.number, 40), "number") }),
+        run: (c, a) => wrap(async () => { const r = await quoteToOrder({ org: c.org, userId: c.userId }, String(a.number)); return { params: { number: r.number, quote: r.quote }, link: "/crm/finance?tab=orders" }; }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "contract_action", description: "Contract state: sign (draft → active), complete (active → completed) or cancel (draft/active). Needs user confirmation unless auto mode is on.", parameters: schema({ number: S("contract number"), action: { type: "string", enum: ["sign", "complete", "cancel"] } }, ["number", "action"]) },
+        check: (a) => {
+            if (!["sign", "complete", "cancel"].includes(String(a.action))) throw new ToolError("action must be sign, complete or cancel");
+            return { number: need(str(a.number, 40), "number"), action: a.action };
+        },
+        run: (c, a) => wrap(async () => { const r = await contractAction({ org: c.org, userId: c.userId }, String(a.number), a.action as "sign" | "complete" | "cancel"); return { params: { number: r.number, action: r.action }, link: "/crm/finance?tab=contracts" }; }),
+    },
     // ─────────── закупки и склад ───────────
     {
         module: "inventory", write: true,
@@ -962,8 +999,8 @@ export const TOOLS: AiTool[] = [
 const GROUPS: { re: RegExp; tools: string[] }[] = [
     { re: /сч[её]т|рахун|rechnung|invoice|оплат|оплач|чек|квитанц|receipt|kasse|pdf|скача|завантаж|download|просроч|неоплач|не закры|незакры|долж|задолж|debt|overdue|unpaid|paid|фискаль|бухгалтер|фінанс|финанс|buchhalt|financ/i,
       tools: ["list_invoices", "finance_summary", "create_invoice", "mark_invoice_paid", "send_invoice", "issue_fiscal_receipt", "download_document", "email_report", "search_contacts"] },
-    { re: /предложен|пропозиц|angebot|quote|договор|контракт|vertrag|contract|заказ|замовлен|order|auftrag/i,
-      tools: ["create_quote", "create_order", "create_contract", "download_document", "browse_data", "search_contacts"] },
+    { re: /предложен|пропозиц|angebot|quote|договор|контракт|vertrag|contract|заказ|замовлен|order|auftrag|подтверд|підтверд|подпиш|підпиш|завершив|so-|отгруз|відвант/i,
+      tools: ["create_quote", "create_order", "create_contract", "update_order_status", "invoice_order", "decide_quote", "quote_to_order", "contract_action", "download_document", "browse_data", "search_contacts"] },
     { re: /расход|витрат|ausgabe|expense|налог|податк|steuer|банк|bank|выруч|доход|прибыл|money|деньг|кассов/i,
       tools: ["list_expenses", "create_expense", "finance_summary", "browse_data"] },
     { re: /склад|остат|залишк|товар|продукт|product|stock|bestand|lager|закуп|закаж|замов|зп-|поставщ|постачальн|supplier|lieferant|bestell|purchase|приход|списан|списа|инвентар|артикул|sku|nomenclat|номенклат|заканч|закінч|нехват|не хватает|reorder/i,
@@ -1017,7 +1054,7 @@ export async function targetLabel(c: Pick<AiCtx, "org">, tool: string, a: Args):
             const r = await prisma.employee.findFirst({ where: { id: String(a.employee_id), owner: c.org }, select: { firstname: true, lastname: true } });
             return r ? `${r.firstname} ${r.lastname}`.trim() : "";
         }
-        if (["mark_invoice_paid", "send_invoice", "issue_fiscal_receipt"].includes(tool)) return String(a.number ?? "");
+        if (["mark_invoice_paid", "send_invoice", "issue_fiscal_receipt", "update_order_status", "invoice_order", "decide_quote", "quote_to_order", "contract_action"].includes(tool)) return String(a.number ?? "");
         if (tool === "create_purchase_order") return String(a.supplier ?? "");
         if (tool === "adjust_stock") return String(a.product ?? "");
         if (tool === "delete_record") return String(a.name ?? "");

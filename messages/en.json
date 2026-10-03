@@ -1697,7 +1697,20 @@
         "f_sections": "Sections",
         "done_email_report": "Report “{title}” sent to {to}",
         "agentAuto": "Act without asking",
-        "agentAutoHint": "Changes run immediately, no confirmation. Deleting and anything after reading e-mails/documents still asks."
+        "agentAutoHint": "Changes run immediately, no confirmation. Deleting and anything after reading e-mails/documents still asks.",
+        "act_update_order_status": "Change order status",
+        "act_invoice_order": "Invoice an order",
+        "act_decide_quote": "Record quote decision",
+        "act_quote_to_order": "Create order from quote",
+        "act_contract_action": "Contract action",
+        "f_status": "Status",
+        "f_accepted": "Accepted",
+        "f_action": "Action",
+        "done_update_order_status": "Order “{number}” is now {status}",
+        "done_invoice_order": "Invoice “{number}” issued for order “{order}”",
+        "done_decide_quote": "Quote “{number}”: {result}",
+        "done_quote_to_order": "Order “{number}” created from quote “{quote}”",
+        "done_contract_action": "Contract “{number}”: {action}"
     },
     "finance": {
         "title": "Accounting",
