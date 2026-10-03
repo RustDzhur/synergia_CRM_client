@@ -1,0 +1,99 @@
+"use client";
+import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
+import toast from "react-hot-toast";
+import { apiCall } from "@/store/crmApi";
+
+interface Agent { id: string; name: string; scopes: string[]; createdAt: string; lastUsedAt: string }
+
+// Площадка агентов: список внешних агентов (DeepSeek Harness и др.), у каждого свой токен и свои права. Видна только
+// администратору платформы (для остальных сервер отвечает 403 — карточка не рисуется). Токен показывается один раз.
+export default function AgentsCard() {
+	const t = useTranslations("settings");
+	const [agents, setAgents] = useState<Agent[] | null>(null); // null — нет доступа или ещё грузится
+	const [scopes, setScopes] = useState<string[]>([]);
+	const [base, setBase] = useState("");
+	const [name, setName] = useState("");
+	const [picked, setPicked] = useState<string[]>(["blog"]);
+	const [fresh, setFresh] = useState<{ name: string; token: string } | null>(null);
+	const [busy, setBusy] = useState(false);
+
+	const load = useCallback(async () => {
+		const res = await apiCall<{ agents: Agent[]; scopes: string[]; base: string }>("/api/agents");
+		if (!res.ok || !res.data) return setAgents(null);
+		setAgents(res.data.agents);
+		setScopes(res.data.scopes);
+		setBase(res.data.base);
+	}, []);
+	useEffect(() => { void load(); }, [load]);
+
+	async function create() {
+		setBusy(true);
+		const res = await apiCall<{ token: string }>("/api/agents", "POST", { action: "create", name, scopes: picked });
+		setBusy(false);
+		if (!res.ok || !res.data) return void toast.error(res.message);
+		setFresh({ name, token: res.data.token });
+		setName("");
+		void load();
+	}
+
+	async function revoke(a: Agent) {
+		if (!window.confirm(t("agentsRevokeAsk", { name: a.name }))) return;
+		const res = await apiCall("/api/agents", "POST", { action: "revoke", id: a.id });
+		if (!res.ok) return void toast.error(res.message);
+		toast.success(t("agentsRevoked"));
+		void load();
+	}
+
+	if (agents === null) return null;
+	const api = `${base || "https://www.firmspace.de"}/api/agent/blog`;
+
+	return (
+		<div className="fs-card mb-20 p-16">
+			<p className="text-14 font-medium text-[#f1f4ee]">{t("agentsTitle")}</p>
+			<p className="mt-4 max-w-[720px] text-12 leading-[1.5] text-[#8c948b]">{t("agentsHelp")}</p>
+
+			{agents.length > 0 && (
+				<ul className="mt-12 flex flex-col gap-8">
+					{agents.map((a) => (
+						<li key={a.id} className="flex flex-wrap items-center justify-between gap-10 rounded-10 border border-inkLine px-12 py-10">
+							<div className="min-w-0">
+								<p className="text-13 text-[#f1f4ee]">{a.name} <span className="ml-6 text-11 text-[#c6ff4d]">{a.scopes.map((s) => t(`agentScope_${s}`)).join(", ")}</span></p>
+								<p className="text-11 text-[#8c948b]">{t("agentsCreated")}: {a.createdAt.slice(0, 10)} · {t("agentsLastUsed")}: {a.lastUsedAt ? a.lastUsedAt.slice(0, 16).replace("T", " ") : "—"}</p>
+							</div>
+							<button type="button" onClick={() => revoke(a)} className="fs-btn fs-btn-ghost h-30 px-12 text-12 text-[#F4A100]">{t("agentsRevoke")}</button>
+						</li>
+					))}
+				</ul>
+			)}
+
+			{fresh && (
+				<div className="mt-12 rounded-10 border border-[rgba(198,255,77,0.4)] bg-[rgba(198,255,77,0.06)] p-12">
+					<p className="text-12 text-[#f1f4ee]">{t("agentsToken", { name: fresh.name })}</p>
+					<code className="mt-6 block break-all rounded-8 bg-[rgba(0,0,0,0.35)] p-8 text-12 text-[#c6ff4d]">{fresh.token}</code>
+					<p className="mt-6 text-11 text-[#8c948b]">API: {api} · docs/AGENTS.md</p>
+					<div className="mt-8 flex gap-8">
+						<button type="button" onClick={() => { void navigator.clipboard?.writeText(fresh.token); toast.success(t("agentsCopied")); }} className="fs-btn fs-btn-primary h-30 px-12 text-12">{t("agentsCopy")}</button>
+						<button type="button" onClick={() => setFresh(null)} className="fs-btn fs-btn-ghost h-30 px-12 text-12">{t("agentsDone")}</button>
+					</div>
+				</div>
+			)}
+
+			<div className="mt-12 flex flex-wrap items-end gap-12">
+				<label className="flex min-w-[220px] flex-1 flex-col gap-6">
+					<span className="text-11 text-[#8c948b]">{t("agentsName")}</span>
+					<input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder={t("agentsNamePh")} className="fs-field h-40 w-full px-12 text-13 outline-none" />
+				</label>
+				<div className="flex flex-wrap items-center gap-12 pb-10">
+					{scopes.map((s) => (
+						<label key={s} className="flex cursor-pointer items-center gap-6 text-12 text-[#cfd4cb]">
+							<input type="checkbox" checked={picked.includes(s)} onChange={(e) => setPicked((p) => (e.target.checked ? [...p, s] : p.filter((x) => x !== s)))} className="h-14 w-14 accent-[#c6ff4d]" />
+							{t(`agentScope_${s}`)}
+						</label>
+					))}
+				</div>
+				<button type="button" onClick={create} disabled={busy || name.trim().length < 2 || !picked.length} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{busy ? "…" : t("agentsCreate")}</button>
+			</div>
+		</div>
+	);
+}

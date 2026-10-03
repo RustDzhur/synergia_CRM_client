@@ -1,0 +1,26 @@
+# Площадка агентов: DeepSeek Harness (dsh web) — веб-панель, из которой запускаются и контролируются круглосуточные агенты.
+# Живёт рядом с сайтом и выкладывается тем же autodeploy.sh. Секреты (DSH_WEB_TOKEN, OMNIROUTE_API_KEY) — в deploy/agents/.env
+# (его нет в git). Проект compose называется «dsh», чтобы подхватить том dsh_dsh-home с настройками Harness.
+#
+# Что видит агент внутри контейнера:
+#   /workspace — общая папка агентов (на сервере ~/agents): у каждого агента своя подпапка;
+#   /site      — код сайта, ТОЛЬКО ЧТЕНИЕ (боевой репозиторий; менять сайт можно только через git);
+#   сеть host  — сам сайт доступен как http://127.0.0.1:3210 (API агентов: /api/agent/…, токены — в CRM, Настройки → Агенты).
+#
+# Запуск:  docker compose -p dsh -f deploy/agents/docker-compose.yml up -d
+services:
+  dsh:
+    build: .
+    image: dsh-web:0.2.0-rc.2
+    container_name: dsh
+    restart: always
+    network_mode: host
+    env_file: .env
+    volumes:
+      - dsh-home:/root/.dsh
+      - ${AGENTS_DIR:-/home/server/agents}:/workspace
+      - ${SITE_DIR:-/home/server/crm-duplicate}:/site:ro
+    environment:
+      DSH_TRUSTED_HOSTS: "harness.firmspace.de www.harness.firmspace.de 127.0.0.1:3080 localhost:3080"
+volumes:
+  dsh-home:

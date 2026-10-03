@@ -1026,7 +1026,22 @@
         "irisConnect": "Connect Iris",
         "irisOn": "Iris bot connected",
         "irisOff": "Iris bot disconnected",
-        "irisActive": "active"
+        "irisActive": "active",
+        "agentsTitle": "Agents",
+        "agentsHelp": "External agents that work with the platform around the clock (e.g. from DeepSeek Harness). Each agent gets its own token and its own permissions; the token is shown once and can be revoked here at any time. Only platform administrators see this card. Setup and API: docs/AGENTS.md.",
+        "agentsCreated": "Created",
+        "agentsLastUsed": "Last used",
+        "agentsRevoke": "Revoke",
+        "agentsRevokeAsk": "Revoke access of “{name}”? The agent stops working immediately.",
+        "agentsRevoked": "Access revoked",
+        "agentsToken": "Token for “{name}” — shown only now. Copy it into the agent's settings:",
+        "agentsCopy": "Copy",
+        "agentsCopied": "Copied",
+        "agentsDone": "Done",
+        "agentsName": "New agent",
+        "agentsNamePh": "e.g. Blog writer",
+        "agentsCreate": "Create agent",
+        "agentScope_blog": "Blog: read articles, save drafts"
     },
     "upgrade": {
         "free": "Free",

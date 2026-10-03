@@ -80,6 +80,11 @@ fi
 
 # Естественный голос Айрис — отдельный контейнер `tts` (свой проект compose). up -d без изменений в
 # конфиге ничего не перезапускает; если он не поднялся, сайт работает дальше — озвучка уйдёт на голос браузера.
+# Площадка агентов (Harness): определение — deploy/agents, секреты — deploy/agents/.env (в git их нет). Без изменений в конфиге
+# up -d ничего не перезапускает; сбой Harness сайт не затрагивает.
+if [ -f deploy/agents/docker-compose.yml ] && [ -f deploy/agents/.env ]; then
+    docker compose -p dsh -f deploy/agents/docker-compose.yml up -d >> "$LOG" 2>&1 || log "агенты: Harness не запустился (сайт работает)"
+fi
 if [ -f deploy/docker-compose.tts.yml ]; then
     docker compose -p tts -f deploy/docker-compose.tts.yml up -d >> "$LOG" 2>&1 || log "tts: контейнер озвучки не запустился (Айрис говорит голосом браузера)"
 fi

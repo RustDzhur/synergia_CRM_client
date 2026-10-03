@@ -1,19 +1,7 @@
-import { timingSafeEqual } from "node:crypto";
-
-// Доступ внешнего агента (например, из DeepSeek Harness) к блогу лендинга. Токен AGENT_BLOG_TOKEN даёт ровно одно право —
-// читать список статей и класть статьи в блог (по умолчанию черновиками); к данным фирм, пользователям и настройкам он
-// доступа не даёт. Отозвать — убрать переменную из .env сервера и перезапустить контейнер.
+// Статья от внешнего агента (например, из DeepSeek Harness): разбор и проверка. Токены и права агентов — в lib/agents.ts
+// (реестр в CRM → Настройки → «Агенты»; право «blog» — читать список статей и класть статьи в блог, по умолчанию черновиками).
 export const LANGS = ["en", "de", "ua"] as const;
 export type Tx3 = { en: string; de: string; ua: string };
-
-export function agentAuthorized(req: Request): "ok" | "off" | "denied" {
-    const secret = process.env.AGENT_BLOG_TOKEN ?? "";
-    if (secret.length < 24) return "off"; // не задан или слишком короткий — доступ агентов выключен
-    const header = req.headers.get("authorization") ?? "";
-    const token = header.startsWith("Bearer ") ? header.slice(7) : "";
-    const a = Buffer.from(token), b = Buffer.from(secret);
-    return a.length === b.length && timingSafeEqual(a, b) ? "ok" : "denied";
-}
 
 // Только текст: теги вырезаем, чтобы статья не принесла на лендинг чужую разметку или скрипт
 const plain = (v: unknown, max: number) => String(v ?? "").replace(/<[^>]*>/g, "").replace(/\r/g, "").trim().slice(0, max);

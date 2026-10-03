@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { agentAuthorized, parsePost } from "@/lib/agentBlog";
+import { parsePost } from "@/lib/agentBlog";
+import { authorizeAgent } from "@/lib/agents";
 import { rateLimited } from "@/lib/rateLimit";
 import { prisma } from "@/lib/prisma";
 
@@ -12,11 +13,11 @@ export const dynamic = "force-dynamic";
 //        статья сохраняется ЧЕРНОВИКОМ; публикует её владелец (Айрис: «опубликуй статью …»). Автопубликация — только если
 //        на сервере включено AGENT_BLOG_AUTOPUBLISH=1 и агент прислал publish:true.
 const denied = (why: "off" | "denied") =>
-    why === "off" ? NextResponse.json({ message: "Agent access is not enabled on this server (AGENT_BLOG_TOKEN is not set)" }, { status: 503 }) : NextResponse.json({ message: "Invalid token" }, { status: 401 });
+    why === "off" ? NextResponse.json({ message: "Agent access is not enabled: create an agent in the CRM (Settings → Integration → Agents)" }, { status: 503 }) : NextResponse.json({ message: "Invalid token" }, { status: 401 });
 
 export async function GET(req: Request) {
-    const auth = agentAuthorized(req);
-    if (auth !== "ok") return denied(auth);
+    const auth = await authorizeAgent(req, "blog");
+    if (auth.state !== "ok") return denied(auth.state);
     const slug = new URL(req.url).searchParams.get("slug");
     if (slug) {
         const p = await prisma.blogPost.findUnique({ where: { slug } });
@@ -27,8 +28,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-    const auth = agentAuthorized(req);
-    if (auth !== "ok") return denied(auth);
+    const auth = await authorizeAgent(req, "blog");
+    if (auth.state !== "ok") return denied(auth.state);
     if (rateLimited("agent-blog", 30, 3_600_000)) return NextResponse.json({ message: "Too many posts this hour" }, { status: 429 });
     const body = await req.json().catch(() => null);
     let post;
