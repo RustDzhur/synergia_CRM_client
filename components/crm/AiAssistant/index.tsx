@@ -182,8 +182,11 @@ export default function AiAssistant() {
 			if (!nav?.link) return;
 			const [path, search = ""] = nav.link.split("?");
 			useAiStore.getState().hide();
-			if (stripLocale(window.location.pathname) === path) window.dispatchEvent(new CustomEvent("iris:navigate", { detail: { search } }));
-			else router.push(`/${locale}${nav.link}`);
+			const same = stripLocale(window.location.pathname) === path;
+			// Бухгалтерия на этой же странице переключает вкладку/фильтр сама (событие); остальное — обычный переход
+			// по адресу (вкладки CRM, карточка сделки ?deal=… читают адрес). Уже здесь и без параметров — оставляем как есть.
+			if (same && path === "/crm/finance") window.dispatchEvent(new CustomEvent("iris:navigate", { detail: { search } }));
+			else if (!(same && !search)) router.push(`/${locale}${nav.link}`);
 		};
 		window.addEventListener("iris:go", onGo);
 		return () => window.removeEventListener("iris:go", onGo);

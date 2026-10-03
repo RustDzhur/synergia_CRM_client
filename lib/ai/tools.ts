@@ -14,6 +14,7 @@ import { purchaseNumber } from "@/lib/purchases";
 import { logAudit } from "@/lib/audit";
 import { mailAccount } from "@/lib/finance/send";
 import { reportPdf, type ReportSection } from "./reportPdf";
+import { type Entity, COMPANY_EDITABLE, CONTACT_EDITABLE, DEAL_EDITABLE, RecordError, forget, loadMemory, recordLink, remember, resolveRecord, titleOf, updateRecord } from "./records";
 import { BrowseError, ENTITY_KEYS, browse, listProducts } from "./browse";
 import { mkActivity } from "@/lib/activities";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
@@ -82,11 +83,17 @@ const N = (description: string) => ({ type: "integer", description });
 // Разделы CRM, в которые ассистент переходит по команде «перейди в …» (navigate). module — какой доступ нужен,
 // чтобы раздел открылся: без него ассистент не поведёт человека туда, куда ему нельзя.
 const NAV_SECTIONS: Record<string, { label: string; link: string; module: Module | null }> = {
+    // Названия и порядок — как в боковом меню (components/crm/Sidebar/menuItems.ts). «CRM» в меню — это /crm/crm
+    // (вкладки Угоды / Контакти / Компанії), а не главная: главная — «Інформаційна панель» (dashboard).
     dashboard: { label: "Головна", link: "/crm", module: null },
+    crm: { label: "CRM", link: "/crm/crm", module: "crm" },
     deals: { label: "Воронка угод", link: "/crm/crm", module: "crm" },
-    contacts: { label: "Контакти", link: "/crm/crm", module: "crm" },
+    contacts: { label: "Контакти", link: "/crm/crm?tab=contacts", module: "crm" },
+    companies: { label: "Компанії", link: "/crm/crm?tab=companies", module: "crm" },
     tasks: { label: "Задачі", link: "/crm/tasks", module: "tasks" },
+    my_company: { label: "Моя фірма", link: "/crm/company", module: "company" },
     employees: { label: "Співробітники", link: "/crm/company", module: "company" },
+    feed: { label: "Стрічка", link: "/crm/collaboration/feed", module: "collab" },
     calendar: { label: "Календар", link: "/crm/collaboration/calendar", module: "collab" },
     chat: { label: "Чат і дзвінки", link: "/crm/collaboration/chat-and-calls", module: "collab" },
     mails: { label: "Пошта", link: "/crm/collaboration/web-mails", module: "mail" },
@@ -95,6 +102,7 @@ const NAV_SECTIONS: Record<string, { label: string; link: string; module: Module
     marketing: { label: "Маркетинг", link: "/crm/marketing", module: "marketing" },
     automation: { label: "Автоматизація", link: "/crm/automation", module: "automation" },
     settings: { label: "Налаштування", link: "/crm/settings", module: "settings" },
+    upgrade: { label: "Тариф", link: "/crm/upgrade", module: "billing" },
 };
 
 // Вкладки бухгалтерии (components/crm/Finance/index.tsx — тип Tab): navigate открывает нужную сразу, а не главную раздела
@@ -106,7 +114,19 @@ export const INVOICE_FILTERS = ["unpaid", "overdue", "draft", "sent", "paid", "a
 export interface NavTarget { link: string; label: string }
 // Файл, который клиент должен скачать или открыть (инструмент download_document): PDF качается с авторизацией браузера
 export interface DownloadTarget { kind: "invoices" | "quotes" | "orders" | "contracts" | "purchases"; id: string; number: string; mode: "download" | "open" }
-const wrap = async <T,>(fn: () => Promise<T>): Promise<T> => { try { return await fn(); } catch (e) { throw e instanceof ActionError || e instanceof BrowseError ? new ToolError(e.message) : e; } };
+const wrap = async <T,>(fn: () => Promise<T>): Promise<T> => { try { return await fn(); } catch (e) { throw e instanceof ActionError || e instanceof BrowseError || e instanceof RecordError ? new ToolError(e.message) : e; } };
+// Проверка правки карточки: нужна сама карточка (id или название) и хотя бы одно допустимое поле
+const recordEditCheck = (a: Args, allowed: readonly string[]): Args => {
+    const out: Args = {};
+    const id = str(a.id, 40), name = str(a.name, 120);
+    if (!id && !name) throw new ToolError("id or name of the record is required");
+    if (id) out.id = id;
+    if (name) out.name = name;
+    let n = 0;
+    for (const k of allowed) if (a[k] !== undefined) { out[k] = str(a[k], k === "notes" ? 4000 : 400); n++; }
+    if (!n) throw new ToolError("Nothing to change: give at least one field to fill in");
+    return out;
+};
 
 // Схема строк документа и общая проверка аргументов финансовых инструментов (idempotent:
 // check() принимает и первичные аргументы модели, и свой же прежний результат)
@@ -512,7 +532,7 @@ export const TOOLS: AiTool[] = [
         // Переход — не изменение данных, поэтому выполняется сразу, без карточки подтверждения: «открой бухгалтерию»
         // голосом должно просто открыть её. Раздел, на который у человека нет прав, не открываем.
         module: null, write: false,
-        def: { name: "navigate", description: "Open a CRM page now, no confirmation. Finance also takes a tab and, on invoices, a filter (unpaid = «незакрытые счета»). E.g. «открой бухгалтерию, неоплаченные счета» → section finance, filter unpaid.", parameters: schema({
+        def: { name: "navigate", description: "Open a CRM page now, no confirmation. Sections as in the sidebar: dashboard (home page, «главная»), crm (the CRM section with the deals board — «перейди в CRM / CRM / воронка»), contacts and companies (tabs of CRM; «клиенты» = contacts), tasks, my_company/employees, feed, calendar, chat, mails, documents, finance (accounting), marketing, automation, settings. Finance also takes a tab and, on invoices, a filter (unpaid = «незакрытые счета»). If the user says only «CRM» go to crm, NOT dashboard.", parameters: schema({
             section: { type: "string", enum: Object.keys(NAV_SECTIONS), description: "target section key" },
             tab: { type: "string", enum: [...FINANCE_TABS], description: "finance only: tab to open" },
             filter: { type: "string", enum: [...INVOICE_FILTERS], description: "finance → invoices only: which invoices to show" },
@@ -538,7 +558,7 @@ export const TOOLS: AiTool[] = [
             if (a.tab) q.set("tab", String(a.tab));
             if (a.filter) q.set("status", String(a.filter));
             const qs = q.toString();
-            const link = qs ? `${sec.link}?${qs}` : sec.link;
+            const link = qs ? `${sec.link}${sec.link.includes("?") ? "&" : "?"}${qs}` : sec.link;
             const nav: NavTarget = { link, label: sec.label };
             return { opened: sec.label, tab: a.tab ?? undefined, filter: a.filter ?? undefined, _nav: nav };
         },
@@ -797,6 +817,67 @@ export const TOOLS: AiTool[] = [
         check: (a) => ({ number: need(str(a.number, 40), "number"), ...(a.pay_type === "CASH" || a.pay_type === "CARD" ? { pay_type: a.pay_type } : {}) }),
         run: (c, a) => wrap(async () => { const r = await fiscalReceipt({ org: c.org, userId: c.userId }, String(a.number), a.pay_type as "CASH" | "CARD" | undefined); return { params: { number: r.number, code: r.code }, link: "/crm/finance?tab=invoices" }; }),
     },
+    // ─────────── память Айрис и карточки CRM ───────────
+    {
+        // Запоминание — не изменение данных CRM, поэтому без подтверждения и в любом режиме
+        module: null, write: false,
+        def: { name: "remember", description: "Save something the user taught you so you do not ask again: how they name things, how they want something done, preferences, corrections. Call it IMMEDIATELY and silently whenever the user explains or corrects you (e.g. «перейди в CRM — это раздел CRM, а не главная»), without asking permission. One short rule per call, in the user's words, self-contained.", parameters: schema({ text: S("the rule or fact to remember, e.g. «“CRM” means the CRM section (deals board), not the dashboard»") }, ["text"]) },
+        check: (a) => ({ text: need(str(a.text, 400), "text") }),
+        run: (c, a) => wrap(async () => { const r = await remember(c.org, c.userId, String(a.text)); return { remembered: r.text, new: r.saved }; }),
+    },
+    {
+        module: null, write: false,
+        def: { name: "forget", description: "Remove something from your memory when the user says to forget it or it is wrong. Give a few words of the memory or its id.", parameters: schema({ text: S("words from the memory item, or its id") }, ["text"]) },
+        check: (a) => ({ text: need(str(a.text, 200), "text") }),
+        run: (c, a) => wrap(async () => forget(c.org, c.userId, String(a.text))),
+    },
+    {
+        module: null, write: false,
+        def: { name: "list_memory", description: "Show what you have remembered about this user («что ты помнишь»).", parameters: schema({}) },
+        run: async (c) => ({ memory: (await loadMemory(c.org, c.userId)).map((m) => ({ id: m.id, text: m.text })) }),
+    },
+    {
+        module: "crm", write: false,
+        def: { name: "open_record", description: "Open the card of a deal, contact or company on screen so the user can SEE it («открой карточку», «покажи что внутри»). Works right away, nothing to click. Give the id from search/list tools, or just the name.", parameters: schema({ entity: { type: "string", enum: ["deal", "contact", "company"] }, id: S("record id, optional"), name: S("name to look for if no id") }, ["entity"]) },
+        check: (a) => {
+            if (!["deal", "contact", "company"].includes(String(a.entity))) throw new ToolError("entity must be deal, contact or company");
+            return { entity: a.entity, id: str(a.id, 40), name: str(a.name, 120) };
+        },
+        run: (c, a) => wrap(async () => {
+            const e = a.entity as Entity;
+            const row = await resolveRecord(c.org, e, { id: a.id, name: a.name });
+            const nav: NavTarget = { link: recordLink(e, row.id), label: titleOf(e, row) };
+            return { opened: nav.label, entity: e, _nav: nav };
+        }),
+    },
+    {
+        module: "crm", write: true,
+        def: { name: "update_deal", description: "Fill in or change fields of a deal card: title, contactName, companyName, startDate, endDate (YYYY-MM-DD), dealType, responsible, utm, recurring. Identify the deal by id or name. Only pass the fields to change.", parameters: schema({ id: S("deal id, optional"), name: S("deal name if no id"), title: S("new deal title"), contactName: S("contact name"), companyName: S("company name"), startDate: S("start date"), endDate: S("end date"), dealType: S("deal type"), responsible: S("responsible person"), utm: S("utm"), recurring: S("recurring") }) },
+        check: (a) => recordEditCheck(a, DEAL_EDITABLE as readonly string[]),
+        run: (c, a) => wrap(async () => { const r = await updateRecord(c.org, "deal", { id: a.id, name: a.name }, a); return { params: { name: r.title, fields: r.changed.join(", ") }, link: recordLink("deal", r.id) }; }),
+    },
+    {
+        module: "crm", write: true,
+        def: { name: "update_contact", description: "Fill in or change fields of a contact card: firstName, lastName, email, phone, company, position, website, twitter, facebook, notes. Identify the contact by id or name. Only pass the fields to change.", parameters: schema({ id: S("contact id, optional"), name: S("contact name if no id"), firstName: S("first name"), lastName: S("last name"), email: S("e-mail"), phone: S("phone"), company: S("company name"), position: S("position"), website: S("website"), twitter: S("twitter"), facebook: S("facebook"), notes: S("notes (free text)") }) },
+        check: (a) => recordEditCheck(a, CONTACT_EDITABLE as readonly string[]),
+        run: (c, a) => wrap(async () => { const r = await updateRecord(c.org, "contact", { id: a.id, name: a.name }, a); return { params: { name: r.title, fields: r.changed.join(", ") }, link: recordLink("contact", r.id) }; }),
+    },
+    {
+        module: "crm", write: true,
+        def: { name: "update_company", description: "Fill in or change fields of a company card: name, email, field, status, code, registrationDate, authorisedPerson, businessType, ownershipForm, address. Identify the company by id or name. Only pass the fields to change.", parameters: schema({ id: S("company id, optional"), lookup: S("company name to find if no id"), name: S("new company name"), email: S("e-mail"), field: S("field of business"), status: S("status"), code: S("registration code"), registrationDate: S("registration date"), authorisedPerson: S("authorised person"), businessType: S("business type"), ownershipForm: S("ownership form"), address: S("address") }) },
+        check: (a) => {
+            const out: Args = {};
+            const id = str(a.id, 40), lookup = str(a.lookup, 120);
+            if (!id && !lookup) throw new ToolError("id or lookup (company name) is required");
+            if (id) out.id = id;
+            if (lookup) out.lookup = lookup;
+            let n = 0;
+            for (const k of COMPANY_EDITABLE) if (a[k] !== undefined) { out[k] = str(a[k], 400); n++; }
+            if (!n) throw new ToolError("Nothing to change: give at least one field to fill in");
+            return out;
+        },
+        run: (c, a) => wrap(async () => { const { lookup, id, ...fields } = a; const r = await updateRecord(c.org, "company", { id, name: lookup }, fields); return { params: { name: r.title, fields: r.changed.join(", ") }, link: recordLink("company", r.id) }; }),
+    },
     // ─────────── заказы, предложения, договоры: кнопки статусов ───────────
     {
         module: "inventory", write: true,
@@ -1005,8 +1086,8 @@ const GROUPS: { re: RegExp; tools: string[] }[] = [
       tools: ["list_expenses", "create_expense", "finance_summary", "browse_data"] },
     { re: /склад|остат|залишк|товар|продукт|product|stock|bestand|lager|закуп|закаж|замов|зп-|поставщ|постачальн|supplier|lieferant|bestell|purchase|приход|списан|списа|инвентар|артикул|sku|nomenclat|номенклат|заканч|закінч|нехват|не хватает|reorder/i,
       tools: ["list_products", "create_product", "adjust_stock", "create_supplier", "create_purchase_order", "download_document", "email_report", "browse_data", "list_expenses"] },
-    { re: /клиент|клієнт|kunde|customer|контакт|contact|компани|company|firma|сделк|угод|deal|лид|lead|воронк|воронка|pipeline|этап|етап|stage|заметк|нотатк|notiz|note|не общал|давно не/i,
-      tools: ["search_contacts", "search_companies", "get_contact", "get_company", "get_deal", "list_deals", "list_stages", "find_stale_contacts", "create_contact", "create_company", "create_deal", "update_deal_stage", "add_note", "delete_record"] },
+    { re: /клиент|клієнт|kunde|customer|контакт|contact|компани|company|firma|сделк|угод|deal|лид|lead|воронк|воронка|pipeline|этап|етап|stage|заметк|нотатк|notiz|note|не общал|давно не|карточк|картк|card|заполни|заповни|поле|поля|field|измени|змін|обнови|поменяй|поставь|впиши|напиши в|запиши в|крм|срм|\bcrm\b/i,
+      tools: ["search_contacts", "search_companies", "get_contact", "get_company", "get_deal", "list_deals", "list_stages", "find_stale_contacts", "create_contact", "create_company", "create_deal", "update_deal_stage", "update_deal", "update_contact", "update_company", "open_record", "add_note", "delete_record"] },
     { re: /сегодня|сьогодні|today|heute|завтра|morgen|задач|task|aufgabe|напомн|нагад|remind|календар|calendar|kalender|встреч|зустріч|termin|meeting|событ|подія|проект|project|чат|chat|whatsapp|telegram/i,
       tools: ["list_tasks", "create_task", "update_task", "browse_data", "list_employees", "search_contacts"] },
     { re: /письм|лист|почт|пошт|mail|e-mail|email|inbox|входящ|ответь|відпов|reply/i,
@@ -1027,7 +1108,7 @@ const NAVIGATION = /открой|открыть|откройте|перейд|п
 /** Подмножество инструментов под запрос; не распознали — все. navigate доступен всегда. */
 export function pickTools<T extends { def: { name: string } }>(all: T[], recentText: string): T[] {
     const text = String(recentText ?? "");
-    const wanted = new Set<string>(["navigate"]);
+    const wanted = new Set<string>(["navigate", "remember", "forget", "list_memory"]);
     let matched = false;
     for (const g of GROUPS) if (g.re.test(text)) { matched = true; g.tools.forEach((t) => wanted.add(t)); }
     if (!matched && !NAVIGATION.test(text)) return all;
@@ -1058,6 +1139,7 @@ export async function targetLabel(c: Pick<AiCtx, "org">, tool: string, a: Args):
         if (tool === "create_purchase_order") return String(a.supplier ?? "");
         if (tool === "adjust_stock") return String(a.product ?? "");
         if (tool === "delete_record") return String(a.name ?? "");
+        if (tool === "update_deal" || tool === "update_contact" || tool === "update_company") return String(a.name ?? a.lookup ?? "");
         if (tool === "update_deal_stage") return (await prisma.deal.findFirst({ where: { id: String(a.id), owner: c.org }, select: { clientName: true } }))?.clientName ?? "";
         if (tool === "create_invoice" || tool === "create_quote" || tool === "create_order" || tool === "create_contract") return String(a.customer_name ?? "");
     } catch { /* подпись необязательна */ }

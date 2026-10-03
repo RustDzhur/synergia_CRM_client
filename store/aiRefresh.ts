@@ -9,7 +9,7 @@ import { useFinanceStore } from "./useFinanceStore";
 // старую картинку до перезагрузки (карточки не двигались, кнопки заказа не «нажимались»). После каждого выполненного
 // действия перечитываем те данные, которых оно касается, и сообщаем событием iris:changed страницам, у которых данные
 // не в общих хранилищах (например, закупки).
-const CRM = new Set(["create_deal", "update_deal_stage", "create_contact", "create_company", "add_note"]);
+const CRM = new Set(["create_deal", "update_deal_stage", "update_deal", "update_contact", "update_company", "create_contact", "create_company", "add_note"]);
 const TASKS = new Set(["create_task", "update_task"]);
 const FINANCE = new Set([
     "create_invoice", "create_quote", "create_order", "create_contract", "create_expense", "mark_invoice_paid", "send_invoice", "issue_fiscal_receipt",

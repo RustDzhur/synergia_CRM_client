@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { TbChevronDown, TbDots, TbTrash, TbTrophy } from "react-icons/tb";
@@ -50,6 +51,10 @@ export default function DealsBoard({ search }: Props) {
     const [view, setView] = useState<"list" | "kanban">("kanban");
     const [moreOpen, setMoreOpen] = useState(false);
     const [openDealId, setOpenDealId] = useState<string | null>(null);
+    // Айрис открывает карточку сделки адресом ?deal=<id> (n — метка, чтобы повторная команда сработала снова)
+    const params = useSearchParams();
+    const dealParam = params.get("deal"), dealNonce = params.get("n");
+    useEffect(() => { if (dealParam) setOpenDealId(dealParam); }, [dealParam, dealNonce]);
     const moreRef = useRef<HTMLDivElement>(null);
     const stageInputRef = useRef<HTMLInputElement>(null);
 
