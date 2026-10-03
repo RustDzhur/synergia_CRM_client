@@ -61,6 +61,12 @@ export default function Purchases() {
 		if (wh.ok && wh.data) setWarehouses(wh.data);
 	}, []);
 	useEffect(() => { void load(); loadProducts(); }, [load, loadProducts]);
+	// Айрис оформила закупку/поставщика — список обновляется на глазах (событие шлёт store/aiRefresh.ts)
+	useEffect(() => {
+		const onChanged = () => { void load(); };
+		window.addEventListener("iris:changed", onChanged);
+		return () => window.removeEventListener("iris:changed", onChanged);
+	}, [load]);
 
 	const goods = useMemo(() => products.filter((p) => !p.archived), [products]);
 

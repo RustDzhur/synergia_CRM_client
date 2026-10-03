@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { apiCall } from "./crmApi";
+import { refreshAfterActions } from "./aiRefresh";
 
 export interface AiAction {
 	id: string;
@@ -72,6 +73,8 @@ export const useAiStore = create<AiStore>()((set, get) => {
 			} else {
 				const d = res.data;
 				set((s) => ({ busy: false, messages: [...s.messages, { id: uid(), role: "assistant", text: d.reply, steps: Array.from(new Set(d.steps)), actions: [...(d.executed ?? []), ...d.actions.map((a) => ({ ...a, state: "pending" as const }))], voice: ctx.voice, nav: d.nav }] }));
+				// Действия, выполненные сразу (режим «без подтверждения»): обновить открытые страницы
+				refreshAfterActions((d.executed ?? []).filter((a) => a.state === "done"));
 				// Ассистент открыл страницу — её открывает AiAssistant (он знает язык и текущий адрес)
 				if (d.nav && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("iris:go", { detail: d.nav }));
 				if (d.download && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("iris:download", { detail: d.download }));
@@ -83,7 +86,7 @@ export const useAiStore = create<AiStore>()((set, get) => {
 			if (!action || action.state === "running" || action.state === "done") return;
 			patchAction(mid, aid, { state: "running" });
 			const res = await apiCall<{ params: Record<string, string>; link: string }>("/api/ai/actions", "POST", { tool: action.tool, args: args ?? action.args });
-			if (res.ok && res.data) patchAction(mid, aid, { state: "done", params: res.data.params, link: res.data.link });
+			if (res.ok && res.data) { patchAction(mid, aid, { state: "done", params: res.data.params, link: res.data.link }); refreshAfterActions([{ tool: action.tool, args: action.args }]); }
 			else patchAction(mid, aid, { state: "failed", message: res.message });
 		},
 		cancel: (mid, aid) => patchAction(mid, aid, { state: "cancelled" }),

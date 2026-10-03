@@ -47,6 +47,7 @@ interface CrmStore {
     deals: Deal[];
     isLoading: boolean;
     fetchAll: () => Promise<void>;
+    refresh: () => Promise<void>;
 
     addStage: (name: string) => Promise<void>;
     updateStage: (id: string, data: Partial<Pick<Stage, "name" | "color">>) => Promise<void>;
@@ -77,6 +78,12 @@ export const useCrmStore = create<CrmStore>((set, get) => {
         stages: [],
         deals: [],
         isLoading: false,
+
+        // Тихое обновление (без индикатора загрузки): после действий ассистента доска должна обновиться на глазах, без мигания
+        refresh: async () => {
+            const [stages, deals] = await Promise.all([api<Stage[]>("/api/stages"), api<Deal[]>("/api/deals")]);
+            if (stages && deals) set({ stages, deals });
+        },
 
         fetchAll: async () => {
             set({ isLoading: true });
