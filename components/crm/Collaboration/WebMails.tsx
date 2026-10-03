@@ -106,6 +106,18 @@ export default function WebMails() {
 		}
 	}, [accountId, loadMails, t]);
 	usePolling(() => sync(false), 60_000, accountId !== null);
+	// Айрис отправила письмо: через несколько секунд (сервер сам подтягивает ящик) обновляем список — письмо себе появится во входящих
+	const syncRef = useRef(sync);
+	syncRef.current = sync;
+	useEffect(() => {
+		const onChanged = (e: Event) => {
+			const tools = (e as CustomEvent<{ tools?: string[] }>).detail?.tools ?? [];
+			if (!tools.some((x) => ["send_email", "email_report", "send_invoice"].includes(x))) return;
+			setTimeout(() => { void syncRef.current(false); }, 7000);
+		};
+		window.addEventListener("iris:changed", onChanged);
+		return () => window.removeEventListener("iris:changed", onChanged);
+	}, []);
 
 	// «Создавать лиды из новых писем» — настройка ящика
 	async function toggleAutoLeads(value: boolean) {

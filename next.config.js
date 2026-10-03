@@ -3,6 +3,8 @@ const nextConfig = {
   // Сборка для собственного сервера (Docker): Next кладёт в .next/standalone минимальный сервер.
   // Vercel это не мешает — там используется обычный вывод.
   output: "standalone",
+  // instrumentation.ts: запуск фоновых задач при старте сервера (опрос Telegram для управления Айрис)
+  experimental: { instrumentationHook: true },
   images: {
     remotePatterns: [{ protocol: "https", hostname: "avataaars.io" }],
   },

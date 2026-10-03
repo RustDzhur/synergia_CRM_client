@@ -1019,7 +1019,11 @@
         "intfWfpDomain": "Shop domain",
         "intfWfpSecret": "Secret key",
         "intfCryptoKey": "NOWPayments API key",
-        "intfCryptoIpn": "IPN secret"
+        "intfCryptoIpn": "IPN secret",
+        "controlTitle": "Control Iris from Telegram",
+        "controlHelp": "Message this bot (text or voice) what to do in the CRM — Iris does it and replies in the chat. Only this chat is accepted, actions run with your rights. Several tasks in one message run one by one. Deleting and anything after reading e-mails asks «yes/no» first.",
+        "controlOn": "Telegram control is on",
+        "controlOff": "Telegram control is off"
     },
     "upgrade": {
         "free": "Free",

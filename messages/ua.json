@@ -1019,7 +1019,11 @@
         "intfWfpDomain": "Домен магазину",
         "intfWfpSecret": "Secret Key",
         "intfCryptoKey": "API-ключ NOWPayments",
-        "intfCryptoIpn": "IPN Secret"
+        "intfCryptoIpn": "IPN Secret",
+        "controlTitle": "Керувати Айріс із Telegram",
+        "controlHelp": "Пишіть цьому боту (текстом або голосовим), що зробити в CRM — Айріс виконає і відповість у чаті. Приймається лише цей чат, дії виконуються з вашими правами. Кілька завдань в одному повідомленні виконуються по черзі. Видалення і дії після читання листів спершу питають «так/ні».",
+        "controlOn": "Керування через Telegram увімкнено",
+        "controlOff": "Керування через Telegram вимкнено"
     },
     "upgrade": {
         "free": "Безкоштовний",

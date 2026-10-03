@@ -4,6 +4,8 @@ import { sweepOverdueInvoices } from "@/lib/finance/overdue";
 import { runRecurringInvoices } from "@/lib/finance/recurring";
 import { sweepPaymentReminders } from "@/lib/finance/reminders";
 import { reportError } from "@/lib/reportError";
+import { syncAllAccounts } from "@/lib/mail";
+import { startTelegramControl } from "@/lib/ai/telegramBot";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -32,5 +34,8 @@ export async function GET(req: Request) {
     const overdue = await step("просроченные счета", () => sweepOverdueInvoices());
     const recurring = await step("повторяющиеся счета", () => runRecurringInvoices());
     const reminders = await step("напоминания об оплате", () => sweepPaymentReminders());
-    return NextResponse.json({ ran, overdue, recurring, reminders });
+    // входящая почта: обновляется и когда страница почты закрыта (раньше — только пока она открыта)
+    const mail = await step("почта", () => syncAllAccounts());
+    startTelegramControl(); // запасной запуск опроса Telegram, если instrumentation не сработал (ничего не делает, если уже идёт)
+    return NextResponse.json({ ran, overdue, recurring, reminders, mail });
 }

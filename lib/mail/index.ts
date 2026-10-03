@@ -131,6 +131,16 @@ export async function syncAccount(d: Doc) {
 }
 
 // Отправка письма. Копию в «Отправленных» сохраняем сразу (для Outlook её подтянет синхронизация).
+// После отправки подтягиваем ящик через пару секунд: письмо самому себе или ответ, пришедший сразу, появляется во входящих
+// без ожидания ручного обновления. Один запланированный запуск на ящик — серия писем не плодит синхронизации.
+const syncScheduled = new Set<string>();
+function syncSoon(d: Doc, ms = 6000) {
+    const id = String(d.id);
+    if (syncScheduled.has(id)) return;
+    syncScheduled.add(id);
+    setTimeout(() => { syncScheduled.delete(id); void syncAccount(d).catch(() => undefined); }, ms).unref?.();
+}
+
 export async function sendFromAccount(d: Doc, msg: { to: string; subject: string; text: string; attachments?: MailAttachment[] }) {
     const owner = String(d.owner);
     const email: string = (d.config as any).email;
@@ -144,6 +154,7 @@ export async function sendFromAccount(d: Doc, msg: { to: string; subject: string
         externalId = null;
         await syncAccount(d).catch(() => undefined);
     }
+    syncSoon(d);
     if (!externalId) return null;
     return prisma.mailMessage.create({ data: { owner, account: d.id, externalId, folder: "sent", from: email, to: msg.to, subject: msg.subject, body: msg.text, at: new Date(), read: true } });
 }
@@ -217,4 +228,17 @@ export async function connectOAuthAccount(owner: string, vendor: Vendor, tokens:
 export async function removeAccount(d: Doc) {
     await prisma.mailMessage.deleteMany({ where: { account: d.id } });
     await prisma.integration.deleteMany({ where: { id: d.id } });
+}
+
+/** Фоновая синхронизация всех подключённых ящиков (вызывает пятиминутный cron): входящие приходят, даже когда страница почты закрыта. */
+export async function syncAllAccounts(budgetMs = 45_000) {
+    const started = Date.now();
+    const list = await prisma.integration.findMany({ where: { type: "mail", status: { in: ["connected", "error"] } }, orderBy: { lastSyncAt: "asc" }, take: 30 });
+    let synced = 0, failed = 0;
+    for (const d of list) {
+        if (Date.now() - started > budgetMs) break;
+        if (d.lastSyncAt && Date.now() - new Date(d.lastSyncAt).getTime() < 90_000) continue; // только что обновлён
+        try { await syncAccount(d); synced++; } catch { failed++; }
+    }
+    return { accounts: list.length, synced, failed };
 }
