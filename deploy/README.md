@@ -165,7 +165,7 @@ crontab -e
 секретов CRM там нет. Если дубликату нужны интеграции и ИИ, перенесите из Vercel → Settings → Environment
 Variables: `ENCRYPTION_KEY` (обязательно тот же, что в оригинале — иначе сохранённые токены интеграций не
 расшифруются), `GOOGLE_CLIENT_ID/SECRET`, `META_APP_ID/SECRET`, `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`,
-`STRIPE_*`, `NOWPAYMENTS_*`, `ADMIN_EMAILS`.
+`ADMIN_EMAILS`.
 
 ## Переключение домена firmspace.de (боевое)
 

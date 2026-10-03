@@ -21,7 +21,7 @@
    дойдут (Telegram дошёл, у платёжных систем IPv6 часто нет). Лечится Dual Stack у Vodafone
    (публичный IPv4) или Cloudflare Tunnel — вариант уже описан в README.
 3. **17 файлов из Firebase Storage** — нужны `FIREBASE_SERVICE_ACCOUNT` и `FIREBASE_STORAGE_BUCKET`.
-4. **Необязательные секреты**: `STRIPE_*`, `GOOGLE_CLIENT_ID/SECRET`, `META_APP_*`,
+4. **Необязательные секреты**: `GOOGLE_CLIENT_ID/SECRET`, `META_APP_*`,
    `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`, `ADMIN_EMAILS` — без них выключены оплата картой,
    вход через Google, ИИ и раздел администратора платформы.
 
@@ -109,5 +109,5 @@ crontab -e
 - перенести 17 файлов из Firebase Storage (нужны `FIREBASE_SERVICE_ACCOUNT` и
   `FIREBASE_STORAGE_BUCKET`): `deploy/copy-firebase-files.mjs --write`;
 - добавить отсутствующие секреты, если нужны платежи картой, вход через Google и ИИ:
-  `STRIPE_*`, `GOOGLE_CLIENT_ID/SECRET`, `META_APP_*`, `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`, `ADMIN_EMAILS`;
+  `GOOGLE_CLIENT_ID/SECRET`, `META_APP_*`, `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`, `ADMIN_EMAILS`;
 - следить за AAAA: префикс IPv6 у DS-Lite может меняться — `deploy/update-aaaa.sh --write` в cron.

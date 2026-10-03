@@ -1,7 +1,7 @@
 // Тариф, выбранный на лендинге ДО регистрации (кнопка "Choose Plan" на платной карточке): запоминается в localStorage
 // и используется после успешного входа, чтобы сразу отправить нового пользователя на оплату этого тарифа,
 // а не просто в пустой CRM. См. PaidPlan.tsx (пишет), SigninForm.tsx (читает и ведёт на /crm/upgrade), Upgrade/index.tsx
-// (по query-параметрам startPlan/interval сама запускает Stripe Checkout).
+// (по query-параметрам startPlan/interval сама открывает оформление счёта).
 export const PENDING_PLAN_KEY = "crm.pendingPlanUpgrade";
 
 export type PendingPlan = { plan: "standard" | "professional"; interval: "month" | "year" };

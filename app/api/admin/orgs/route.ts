@@ -24,21 +24,14 @@ export async function GET(req: Request) {
     return NextResponse.json(
         orgs.map((o) => {
             const u = owners.find((x) => x.id === o.ownerUser);
-            const billing = (o.billing ?? {}) as any;
             return {
                 id: o.id,
                 name: o.name,
                 ownerEmail: u?.email ?? "",
                 ownerName: u ? `${u.firstname} ${u.lastname}` : "",
                 plan: effectivePlan(o),
-                stripePlan: o.plan,
                 override: o.planOverride || "",
                 overrideUntil: o.planOverrideUntil ? o.planOverrideUntil.toISOString() : "",
-                status: billing.status ?? "",
-                interval: billing.interval ?? "",
-                periodEnd: billing.currentPeriodEnd ? new Date(billing.currentPeriodEnd).toISOString() : "",
-                cancelAtPeriodEnd: !!billing.cancelAtPeriodEnd,
-                hasSubscription: !!billing.subscriptionId && ["active", "trialing", "past_due"].includes(billing.status ?? ""),
                 members: counts.find((c) => c.org === o.id)?._count._all ?? 0,
                 blocked: !!o.blocked,
                 // что реально доступно фирме: набор тарифа плюс ручные переключатели разделов

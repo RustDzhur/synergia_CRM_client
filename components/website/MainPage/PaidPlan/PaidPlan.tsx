@@ -26,7 +26,7 @@ export default function PaidPlan() {
 	const yearly = active === t("year");
 
 	// Free — как раньше (открыть регистрацию/сразу в CRM для уже вошедших). Платный тариф: у вошедшего пользователя —
-	// сразу на оплату (Stripe Checkout со страницы Upgrade); у нового — открываем регистрацию, запомнив выбор в
+	// сразу на оплату (счёт переводом со страницы Upgrade); у нового — открываем регистрацию, запомнив выбор в
 	// localStorage, чтобы сразу после входа отправить его на оплату этого тарифа (см. SigninForm + Upgrade).
 	const choosePlan = (planId: PlanId) => {
 		let hasToken = false;

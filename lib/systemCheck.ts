@@ -1,7 +1,7 @@
 import { isPublicHttps } from "@/lib/appUrl";
 import { adminEmails } from "@/lib/admin";
 import { ProviderError } from "@/lib/http";
-import { stripe, stripeConfigured } from "@/lib/stripe";
+import { getRequisites, readiness } from "@/lib/transferPay";
 import { checkBucket, storageProblem } from "@/lib/storage";
 import { metaApp } from "@/lib/platformSettings";
 import { prisma } from "@/lib/prisma";
@@ -26,14 +26,12 @@ export async function systemCheck(): Promise<Check[]> {
             if (!isPublicHttps(url)) throw new Error("APP_URL must be a public https address without a trailing slash");
             return url;
         }),
-        attempt("stripe", async () => {
-            if (!stripeConfigured()) throw new Error("STRIPE_SECRET_KEY is not set");
-            await stripe("GET", "/balance");
-            return (process.env.STRIPE_SECRET_KEY ?? "").startsWith("sk_live") ? "Stripe reachable (live mode)" : "Stripe reachable (test mode)";
-        }),
-        attempt("stripeWebhook", async () => {
-            if (!(process.env.STRIPE_WEBHOOK_SECRET ?? "").startsWith("whsec_")) throw new Error("STRIPE_WEBHOOK_SECRET is missing or does not start with whsec_");
-            return "Webhook secret is set (Stripe events are verified by signature)";
+        attempt("payments", async () => {
+            const r = await getRequisites();
+            const de = readiness(r, "DE"), ua = readiness(r, "UA");
+            const missing = [!de.bank && "bank transfer (Germany, EUR)", !ua.bank && "bank transfer (Ukraine, UAH: requisites and UAH prices)", !de.usdt && "USDT wallet"].filter(Boolean);
+            if (missing.length) throw new Error(`Payment requisites are not filled in: ${missing.join("; ")} (Admin → Payment requisites)`);
+            return "Bank transfer (EUR, UAH) and USDT requisites are set";
         }),
         attempt("storage", async () => {
             const problem = storageProblem();
@@ -46,8 +44,10 @@ export async function systemCheck(): Promise<Check[]> {
             return "Google sign-in keys are set (enable the Google Drive API in Google Cloud for documents)";
         }),
         attempt("admin", async () => {
-            if (!adminEmails().length) throw new Error("ADMIN_EMAILS is not set");
-            return `${adminEmails().length} administrator address(es)`;
+            // Доступ к админ-кабинету не зависит от переменной: администратором считается адрес из ADMIN_EMAILS, пользователь с отметкой
+            // «администратор» или самый первый аккаунт (lib/admin.ts). Переменная нужна лишь чтобы закрепить конкретный адрес.
+            const pinned = adminEmails().length;
+            return pinned ? `${pinned} administrator address(es) pinned by ADMIN_EMAILS` : "Administrator is the first registered account (optional: set ADMIN_EMAILS to pin an address)";
         }),
         attempt("cron", async () => {
             if (!process.env.CRON_SECRET) throw new Error("CRON_SECRET is not set");
