@@ -193,7 +193,9 @@ async function perform(org: string, rule: Rule, ev: AutoEvent): Promise<string> 
         }
         case "webhook": {
             let url: URL;
-            try { url = new URL(v.url); } catch { throw new ProviderError("Webhook address is not valid"); }
+            // {{env.ИМЯ}} в адресе — переменная фирмы, внесённая администратором (ключ стороннего API); значение кодируется для адреса
+            const { expandFirmEnv } = await import("@/lib/firmEnv");
+            try { url = new URL(await expandFirmEnv(org, v.url)); } catch { throw new ProviderError("Webhook address is not valid"); }
             if (url.protocol !== "https:") throw new ProviderError("Webhook address must start with https://");
             await assertPublicHost(url.hostname);
             const res = await fetchProvider(url.toString(), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rule: v.name, event: ev.type, data: ev.data, text }) });

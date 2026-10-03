@@ -9,6 +9,7 @@ import PageHeader from "@/components/crm/shared/PageHeader";
 import BlogAdmin from "./BlogAdmin";
 import ErrorsCard from "./adminParts/ErrorsCard";
 import FeaturesModal from "./adminParts/FeaturesModal";
+import EnvModal from "./adminParts/EnvModal";
 import MetaCard from "./adminParts/MetaCard";
 import OrgsTable from "./adminParts/OrgsTable";
 import RequestsList from "./adminParts/RequestsList";
@@ -27,6 +28,7 @@ export default function AdminPanel() {
 	const [orgs, setOrgs] = useState<OrgRow[]>([]);
 	const [reqs, setReqs] = useState<Req[]>([]);
 	const [q, setQ] = useState("");
+	const [envFor, setEnvFor] = useState<OrgRow | null>(null); // фирма, которой сейчас правим переменные окружения
 	const [featuresFor, setFeaturesFor] = useState<OrgRow | null>(null); // фирма, которой сейчас правим разделы
 
 	const load = useCallback(async () => {
@@ -83,7 +85,8 @@ export default function AdminPanel() {
 			<ErrorsCard />
 			{summary && <StatsGrid summary={summary} />}
 			{newRequests.length > 0 && <RequestsList requests={newRequests} onActivate={activate} onDismiss={dismiss} />}
-			<OrgsTable orgs={orgs} query={q} onQuery={setQ} onPatch={patch} onFeatures={setFeaturesFor} onCancel={cancel} />
+			<OrgsTable orgs={orgs} query={q} onQuery={setQ} onPatch={patch} onFeatures={setFeaturesFor} onEnv={setEnvFor} onCancel={cancel} />
+			<EnvModal org={envFor} onClose={() => setEnvFor(null)} />
 			<FeaturesModal org={featuresFor} onClose={() => setFeaturesFor(null)} onToggle={(key, value) => featuresFor && toggleFeature(featuresFor, key, value)} />
 			<BlogAdmin />
 		</div>

@@ -3180,7 +3180,17 @@
         "featExtra": "Gewährt",
         "featOff": "Aus",
         "metaConfigId": "Config-ID (Facebook Login for Business)",
-        "metaConfigHelp": "Ohne diese ID erscheint im Kundenkonto kein Fenster „Über Facebook verbinden“. Erstellen Sie sie in Meta: Facebook-Login for Business → Konfigurationen → WhatsApp Embedded Signup."
+        "metaConfigHelp": "Ohne diese ID erscheint im Kundenkonto kein Fenster „Über Facebook verbinden“. Erstellen Sie sie in Meta: Facebook-Login for Business → Konfigurationen → WhatsApp Embedded Signup.",
+        "envButton": "Variablen",
+        "envTitle": "Firmen-Variablen",
+        "envHeading": "Variablen von „{name}“",
+        "envHelp": "Umgebungsvariablen dieser Firma – z. B. der Schlüssel einer Fremd-API, den der Kunde Ihnen gegeben hat. Werte werden verschlüsselt gespeichert und nie wieder angezeigt; ersetzen durch erneutes Speichern desselben Namens. Servercode liest sie mit getFirmEnv(Firma, NAME); in Automatisierungsregeln funktioniert {{env.NAME}} in der Webhook-Adresse.",
+        "envNone": "Noch keine Variablen.",
+        "envName": "Name",
+        "envValue": "Wert",
+        "envSave": "Speichern",
+        "envDelete": "Löschen",
+        "envDeleteAsk": "Variable {name} löschen?"
     },
     "capabilities": {
         "title": "Was Firmspace AI für Sie tut",

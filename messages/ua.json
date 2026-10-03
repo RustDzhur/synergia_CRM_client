@@ -3180,7 +3180,17 @@
         "featExtra": "Надано",
         "featOff": "Вимкнено",
         "metaConfigId": "Config ID (Facebook Login for Business)",
-        "metaConfigHelp": "Без нього в кабінеті клієнта не з’явиться вікно «Підключити через Facebook». Створіть його в Meta: Facebook Login for Business → Конфігурації → WhatsApp Embedded Signup."
+        "metaConfigHelp": "Без нього в кабінеті клієнта не з’явиться вікно «Підключити через Facebook». Створіть його в Meta: Facebook Login for Business → Конфігурації → WhatsApp Embedded Signup.",
+        "envButton": "Змінні",
+        "envTitle": "Змінні фірми",
+        "envHeading": "Змінні «{name}»",
+        "envHelp": "Змінні оточення цієї фірми — наприклад, ключ стороннього API, який дав клієнт. Значення зберігаються зашифровано й більше не показуються; замінити — зберегти те саме ім’я. Серверний код читає їх через getFirmEnv(фірма, ІМ’Я); у правилах автоматизації {{env.ІМ’Я}} працює в адресі вебхука.",
+        "envNone": "Змінних ще немає.",
+        "envName": "Ім’я",
+        "envValue": "Значення",
+        "envSave": "Зберегти",
+        "envDelete": "Видалити",
+        "envDeleteAsk": "Видалити змінну {name}?"
     },
     "capabilities": {
         "title": "Що Firmspace AI робить насправді",
