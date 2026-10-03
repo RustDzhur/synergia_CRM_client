@@ -17,9 +17,9 @@ export function addDays(date: Date, days: number): Date {
 	return next;
 }
 
-// Неделя начинается с воскресенья — как в макете (Sun 23, Mon 24 ...)
+// Неделя начинается с понедельника (Пн … Вс) — так принято и в Германии, и в Украине
 export function startOfWeek(date: Date): Date {
-	return addDays(new Date(date.getFullYear(), date.getMonth(), date.getDate()), -date.getDay());
+	return addDays(new Date(date.getFullYear(), date.getMonth(), date.getDate()), -((date.getDay() + 6) % 7));
 }
 
 export function localeTag(locale: string): string {

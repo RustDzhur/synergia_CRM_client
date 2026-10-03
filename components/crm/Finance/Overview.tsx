@@ -18,7 +18,8 @@ export default function Overview() {
 	const t = useTranslations("finance");
 	const locale = useLocale();
 	const { dashboard, loadDashboard, settings } = useFinanceStore();
-	useEffect(() => { loadDashboard(6); }, [loadDashboard]);
+	// календарный год: все 12 месяцев, январь–декабрь
+	useEffect(() => { loadDashboard(12, new Date().getFullYear()); }, [loadDashboard]);
 	if (!dashboard) return null;
 	const currency = settings?.currency ?? "EUR";
 	const maxSeries = Math.max(1, ...dashboard.series.map((s) => Math.max(s.revenue, s.expenses)));

@@ -11,10 +11,17 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    const months = Math.min(24, Math.max(1, Number(new URL(req.url).searchParams.get("months")) || 6));
+    const q = new URL(req.url).searchParams;
+    // ?year=2026 — календарный год: всегда 12 столбцов, с января по декабрь (будущие месяцы пустые).
+    // Без year — последние ?months= месяцев (по умолчанию 6).
+    const year = Number(q.get("year"));
+    const byYear = Number.isInteger(year) && year >= 2000 && year <= 2100;
+    const months = byYear ? 12 : Math.min(24, Math.max(1, Number(q.get("months")) || 6));
 
-    const since = new Date(); since.setMonth(since.getMonth() - months + 1); since.setDate(1);
-    const sinceStr = since.toISOString().slice(0, 10);
+    const since = byYear ? new Date(year, 0, 1) : new Date();
+    if (!byYear) { since.setMonth(since.getMonth() - months + 1); since.setDate(1); }
+    // дата начала строкой без перевода в UTC: иначе 1 января по местному времени превращалось в 31 декабря
+    const sinceStr = `${since.getFullYear()}-${String(since.getMonth() + 1).padStart(2, "0")}-01`;
     const [invoices, expenses, purchaseInvoices, orders, products] = await Promise.all([
         prisma.invoice.findMany({ where: { org: user.id, kind: "invoice" }, select: { status: true, issueDate: true, paidAt: true, items: true, currency: true } }),
         prisma.expense.findMany({ where: { org: user.id, date: { gte: sinceStr } }, select: { amount: true, date: true } }),

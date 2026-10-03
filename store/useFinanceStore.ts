@@ -136,7 +136,8 @@ interface FinanceStore {
 	loadContracts: () => Promise<void>;
 	loadRecurringInvoices: () => Promise<void>;
 	loadSettings: () => Promise<void>;
-	loadDashboard: (months?: number) => Promise<void>;
+	/** months — последние N месяцев; year — календарный год (12 столбцов, январь–декабрь) */
+	loadDashboard: (months?: number, year?: number) => Promise<void>;
 	saveSettings: (patch: Partial<FinanceSettings>) => Promise<string | null>;
 	createProduct: (data: Partial<Product>) => Promise<string | null>;
 	updateProduct: (id: string, data: Partial<Product>) => Promise<string | null>;
@@ -185,9 +186,9 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 		const r = await apiCall<{ settings: FinanceSettings; countries: CountryOption[] }>("/api/finance/settings");
 		if (r.ok && r.data) set({ settings: r.data.settings, countries: r.data.countries });
 	},
-	loadDashboard: async (months = 6) => {
+	loadDashboard: async (months = 6, year) => {
 		set({ loading: true });
-		const r = await apiCall<FinanceDashboard>(`/api/finance/dashboard?months=${months}`);
+		const r = await apiCall<FinanceDashboard>(`/api/finance/dashboard?${year ? `year=${year}` : `months=${months}`}`);
 		set({ loading: false, ...(r.ok && r.data ? { dashboard: r.data } : {}) });
 	},
 	saveSettings: async (patch) => {

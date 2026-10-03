@@ -14,7 +14,7 @@ function inPeriod(deadline: string | undefined, period: Period, now: Date): bool
 	if (Number.isNaN(d.getTime())) return false;
 	if (period === "year") return d.getFullYear() === now.getFullYear();
 	if (period === "month") return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-	const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+	const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7)); // неделя с понедельника
 	const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7);
 	return d >= start && d < end;
 }
