@@ -192,6 +192,30 @@ export default function AiAssistant() {
 		return () => window.removeEventListener("iris:go", onGo);
 	}, [locale, router]);
 
+	// Прокрутка по просьбе («прокрути вниз»): берём прокручиваемый элемент под центром экрана — открытое окно/карточку
+	// или саму страницу; панель Айрис и окно PDF не трогаем
+	useEffect(() => {
+		const scrollable = (el: Element) => {
+			const st = getComputedStyle(el);
+			return /(auto|scroll|overlay)/.test(st.overflowY) && el.scrollHeight > el.clientHeight + 4;
+		};
+		const onScroll = (e: Event) => {
+			const d = (e as CustomEvent<{ dir: string; pages: number }>).detail;
+			if (!d) return;
+			let target: Element | null = null;
+			for (const el of document.elementsFromPoint(Math.round(window.innerWidth / 2), Math.round(window.innerHeight / 3))) {
+				if (el.closest("[data-iris-hud]")) continue;
+				if (scrollable(el)) { target = el; break; }
+			}
+			const box = target ?? document.scrollingElement ?? document.documentElement;
+			const step = (target ? target.clientHeight : window.innerHeight) * (d.pages || 0.8);
+			const top = d.dir === "top" ? 0 : d.dir === "bottom" ? box.scrollHeight : box.scrollTop + (d.dir === "up" ? -step : step);
+			box.scrollTo({ top, behavior: "smooth" });
+		};
+		window.addEventListener("iris:scroll", onScroll);
+		return () => window.removeEventListener("iris:scroll", onScroll);
+	}, []);
+
 	// Ассистент сохраняет документ (download_document): PDF качается браузером с вашей авторизацией, как по кнопке «PDF»
 	useEffect(() => {
 		const onDownload = (e: Event) => {

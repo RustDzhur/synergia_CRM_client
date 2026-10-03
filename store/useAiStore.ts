@@ -16,6 +16,7 @@ export interface AiNav { link: string; label: string }
 // voice — сообщение родилось из голосовой команды: его озвучивает голосовое управление (а не кнопка «Слушать» в чате)
 export interface AiMessage { id: string; role: "user" | "assistant"; text: string; steps?: string[]; actions?: AiAction[]; error?: boolean; voice?: boolean; nav?: AiNav }
 export interface AiDownload { kind: "invoices" | "quotes" | "orders" | "contracts" | "purchases"; id: string; number: string; mode: "download" | "open" }
+interface JobItem { index: number; task: string; reply: string; steps: string[]; actions: Omit<AiAction, "state">[]; executed?: AiAction[]; error?: boolean; nav?: AiNav; download?: AiDownload; scroll?: { dir: string; pages: number } }
 export interface AiStatus {
 	configured: boolean;
 	// stt — серверная диктовка (ключ OpenAI); браузерная не нуждается ни в ключе, ни в сервере
@@ -48,6 +49,37 @@ const localNow = () => { const d = new Date(); const p = (n: number) => String(n
 export const useAiStore = create<AiStore>()((set, get) => {
 	const patchAction = (mid: string, aid: string, patch: Partial<AiAction>) =>
 		set((s) => ({ messages: s.messages.map((m) => (m.id === mid ? { ...m, actions: m.actions?.map((a) => (a.id === aid ? { ...a, ...patch } : a)) } : m)) }));
+	// Ход очереди задач: раз в пару секунд забираем готовые результаты и показываем их по одному; по окончании — итог (его озвучивает голос)
+	const pollJob = async (id: string, ctx: { locale: string; page: string; voice?: boolean; auto?: boolean }) => {
+		set({ busy: true });
+		let next = 0, fails = 0;
+		for (let i = 0; i < 900; i++) { // до ~30 минут
+			await new Promise((r) => setTimeout(r, i === 0 ? 1200 : 2000));
+			const res = await apiCall<{ status: string; total: number; next: number; summary: string; results: (JobItem)[] }>(`/api/ai/jobs/${id}?after=${next}`);
+			if (!res.ok || !res.data) { if (++fails >= 5) break; continue; }
+			fails = 0;
+			const d = res.data;
+			for (const r of d.results) {
+				const last = r.index === d.total - 1;
+				const text = `${r.index + 1}/${d.total} — ${r.reply}`;
+				set((s) => ({ messages: [...s.messages, { id: uid(), role: "assistant", text, steps: Array.from(new Set(r.steps)), actions: [...(r.executed ?? []), ...r.actions.map((a) => ({ ...a, state: "pending" as const }))] as AiAction[], error: r.error, nav: r.nav }] }));
+				refreshAfterActions((r.executed ?? []).filter((a) => a.state === "done"));
+				if (typeof window !== "undefined") {
+					if (r.nav && last) window.dispatchEvent(new CustomEvent("iris:go", { detail: r.nav })); // страницу открываем только для последней задачи, чтобы экран не прыгал
+					if (r.download) window.dispatchEvent(new CustomEvent("iris:download", { detail: r.download }));
+					if (r.scroll) window.dispatchEvent(new CustomEvent("iris:scroll", { detail: r.scroll }));
+				}
+			}
+			next = d.next;
+			if (d.status === "done") {
+				if (d.summary) set((s) => ({ messages: [...s.messages, { id: uid(), role: "assistant", text: d.summary, voice: ctx.voice }] }));
+				break;
+			}
+		}
+		set({ busy: false });
+		get().loadStatus();
+	};
+
 	return {
 		open: false,
 		messages: [],
@@ -67,16 +99,19 @@ export const useAiStore = create<AiStore>()((set, get) => {
 			if (!value || get().busy) return;
 			const history = [...get().messages.filter((m) => !m.error), { id: "", role: "user" as const, text: value }].slice(-20).map((m) => ({ role: m.role, text: m.text }));
 			set((s) => ({ busy: true, draft: "", messages: [...s.messages, { id: uid(), role: "user", text: value }] }));
-			const res = await apiCall<{ reply: string; steps: string[]; actions: Omit<AiAction, "state">[]; nav?: AiNav; download?: AiDownload; executed?: (Omit<AiAction, "state"> & { state: "done" | "failed" })[] }>("/api/ai/chat", "POST", { messages: history, locale: ctx.locale, page: ctx.page, now: localNow(), voice: ctx.voice === true, auto: ctx.auto === true });
+			const res = await apiCall<{ reply: string; steps: string[]; actions: Omit<AiAction, "state">[]; nav?: AiNav; download?: AiDownload; scroll?: { dir: string; pages: number }; job?: { id: string; total: number }; executed?: (Omit<AiAction, "state"> & { state: "done" | "failed" })[] }>("/api/ai/chat", "POST", { messages: history, locale: ctx.locale, page: ctx.page, now: localNow(), voice: ctx.voice === true, auto: ctx.auto === true });
 			if (!res.ok || !res.data) {
 				set((s) => ({ busy: false, messages: [...s.messages, { id: uid(), role: "assistant", text: res.message, error: true, voice: ctx.voice }] }));
 			} else {
 				const d = res.data;
 				set((s) => ({ busy: false, messages: [...s.messages, { id: uid(), role: "assistant", text: d.reply, steps: Array.from(new Set(d.steps)), actions: [...(d.executed ?? []), ...d.actions.map((a) => ({ ...a, state: "pending" as const }))], voice: ctx.voice, nav: d.nav }] }));
+				// Длинное сообщение с несколькими поручениями: они выполняются в фоне по очереди, результаты приходят по мере готовности
+				if (d.job) void pollJob(d.job.id, ctx);
 				// Действия, выполненные сразу (режим «без подтверждения»): обновить открытые страницы
 				refreshAfterActions((d.executed ?? []).filter((a) => a.state === "done"));
 				// Ассистент открыл страницу — её открывает AiAssistant (он знает язык и текущий адрес)
 				if (d.nav && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("iris:go", { detail: d.nav }));
+				if (d.scroll && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("iris:scroll", { detail: d.scroll }));
 				if (d.download && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("iris:download", { detail: d.download }));
 			}
 			get().loadStatus();

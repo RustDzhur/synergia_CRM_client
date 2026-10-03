@@ -46,7 +46,7 @@ export default function VoiceHud({ agent, onOpenChat }: { agent: Agent; onOpenCh
 
 	return (
 		<div className="pointer-events-none fixed inset-x-16 bottom-16 z-[85] flex justify-center">
-			<div className="fs-popover pointer-events-auto w-full max-w-[480px] p-12" role="region" aria-label={t("agentTitle")}>
+			<div data-iris-hud className="fs-popover pointer-events-auto w-full max-w-[480px] p-12" role="region" aria-label={t("agentTitle")}>
 				<div className="flex items-center gap-12">
 					<button type="button" onClick={() => stopSpeech()} aria-label={status} title={status} className="shrink-0 rounded-full">
 						<VoiceOrb size={44} state={ORB_BY_PHASE[phase]} />

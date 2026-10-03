@@ -73,7 +73,17 @@ export default function EntityEditPage<T extends Entity>({
 			}
 			setLoading(false);
 		});
-		return () => { cancelled = true; };
+		// Айрис изменила данные (напр., поменяла e-mail в этой карточке) — перечитываем запись, чтобы это было видно сразу
+		const onChanged = () => {
+			load(id).then((data) => {
+				if (cancelled || !data) return;
+				setEntity(data);
+				const initial = Object.fromEntries(fields.map((f) => [f.key, String(data[f.key] ?? "")]));
+				setForm(prepareForm ? prepareForm(data, initial) : initial);
+			});
+		};
+		window.addEventListener("iris:changed", onChanged);
+		return () => { cancelled = true; window.removeEventListener("iris:changed", onChanged); };
 		// запись грузим при смене id; load, fields и prepareForm — пропсы, приходящие новыми на каждый рендер родителя
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [id]);

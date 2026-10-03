@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { aiConfigured } from "@/lib/ai/provider";
 import { dailyLimit, runChat, takeQuota } from "@/lib/ai/run";
+import { startJob } from "@/lib/ai/jobs";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -29,10 +30,14 @@ export async function POST(req: Request) {
     const now = new Date();
     const local = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(b.now)) ? String(b.now) : now.toISOString().slice(0, 16);
     try {
-        const result = await runChat(
-            { org: user.id, userId: user.userId, role: user.role, modules: user.modules, today: local.slice(0, 10), now: local },
-            { history, locale: String(b.locale ?? "en"), page: String(b.page ?? "").slice(0, 120), orgName: user.orgName, voice: b.voice === true, auto: b.auto === true }
-        );
+        const ctx = { org: user.id, userId: user.userId, role: user.role, modules: user.modules, today: local.slice(0, 10), now: local };
+        const opts = { history, locale: String(b.locale ?? "en"), page: String(b.page ?? "").slice(0, 120), orgName: user.orgName, voice: b.voice === true, auto: b.auto === true };
+        const result = await runChat(ctx, opts);
+        // Несколько поручений в одном сообщении: ставим в очередь и выполняем в фоне, ответ возвращаем сразу
+        if (result.queue) {
+            const job = startJob(ctx, opts, result.queue);
+            return NextResponse.json({ ...result, job: { id: job.id, total: job.total } });
+        }
         return NextResponse.json(result);
     } catch (e) {
         return failure(e);

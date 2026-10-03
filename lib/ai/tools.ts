@@ -113,6 +113,8 @@ export const INVOICE_FILTERS = ["unpaid", "overdue", "draft", "sent", "paid", "a
 // Результат инструмента, который клиент превращает в переход по странице (см. runChat: поле nav)
 export interface NavTarget { link: string; label: string }
 // Файл, который клиент должен скачать или открыть (инструмент download_document): PDF качается с авторизацией браузера
+// Прокрутка страницы (инструмент scroll_page): выполняет браузер человека
+export interface ScrollTarget { dir: "down" | "up" | "top" | "bottom"; pages: number }
 export interface DownloadTarget { kind: "invoices" | "quotes" | "orders" | "contracts" | "purchases"; id: string; number: string; mode: "download" | "open" }
 const wrap = async <T,>(fn: () => Promise<T>): Promise<T> => { try { return await fn(); } catch (e) { throw e instanceof ActionError || e instanceof BrowseError || e instanceof RecordError ? new ToolError(e.message) : e; } };
 // Проверка правки карточки: нужна сама карточка (id или название) и хотя бы одно допустимое поле
@@ -817,6 +819,25 @@ export const TOOLS: AiTool[] = [
         check: (a) => ({ number: need(str(a.number, 40), "number"), ...(a.pay_type === "CASH" || a.pay_type === "CARD" ? { pay_type: a.pay_type } : {}) }),
         run: (c, a) => wrap(async () => { const r = await fiscalReceipt({ org: c.org, userId: c.userId }, String(a.number), a.pay_type as "CASH" | "CARD" | undefined); return { params: { number: r.number, code: r.code }, link: "/crm/finance?tab=invoices" }; }),
     },
+    {
+        module: null, write: false,
+        def: { name: "scroll_page", description: "Scroll the page (or the open card/window) on the user's screen: down, up, to the top or to the very bottom. Use it when the user says «прокрути вниз», «покажи ниже», «что там дальше», or when something is cut off on screen. pages = how many screens to scroll (default 0.8).", parameters: schema({ direction: { type: "string", enum: ["down", "up", "top", "bottom"] }, pages: { type: "number", description: "screens to scroll, default 0.8" } }, ["direction"]) },
+        check: (a) => {
+            if (!["down", "up", "top", "bottom"].includes(String(a.direction))) throw new ToolError("direction must be down, up, top or bottom");
+            return { direction: a.direction, pages: Math.min(10, Math.max(0.2, Number(a.pages) || 0.8)) };
+        },
+        run: async (_c, a) => { const sc: ScrollTarget = { dir: a.direction as ScrollTarget["dir"], pages: Number(a.pages) || 0.8 }; return { scrolled: sc.dir, _scroll: sc }; },
+    },
+    {
+        module: null, write: false,
+        def: { name: "queue_tasks", description: "Use when the user's message contains TWO OR MORE separate things to do (a long message listing several tasks). Call it ONCE with each task as a separate, self-contained instruction in the original order (keep names, numbers, dates; resolve «it/that» to the actual thing). Do not do the tasks yourself — they run one by one in the background and the user gets each result as it is ready. Do NOT use it for a single task or for one task with several details.", parameters: schema({ tasks: { type: "array", description: "the tasks, in order", items: { type: "string" } } }, ["tasks"]) },
+        check: (a) => {
+            const tasks = (Array.isArray(a.tasks) ? a.tasks : []).map((t) => str(t, 600)).filter(Boolean).slice(0, 12);
+            if (tasks.length < 2) throw new ToolError("queue_tasks needs at least two tasks — for a single task just do it");
+            return { tasks };
+        },
+        run: async (_c, a) => ({ queued: (a.tasks as string[]).length, _queue: a.tasks }),
+    },
     // ─────────── память Айрис и карточки CRM ───────────
     {
         // Запоминание — не изменение данных CRM, поэтому без подтверждения и в любом режиме
@@ -1108,7 +1129,7 @@ const NAVIGATION = /открой|открыть|откройте|перейд|п
 /** Подмножество инструментов под запрос; не распознали — все. navigate доступен всегда. */
 export function pickTools<T extends { def: { name: string } }>(all: T[], recentText: string): T[] {
     const text = String(recentText ?? "");
-    const wanted = new Set<string>(["navigate", "remember", "forget", "list_memory"]);
+    const wanted = new Set<string>(["navigate", "remember", "forget", "list_memory", "scroll_page", "queue_tasks"]);
     let matched = false;
     for (const g of GROUPS) if (g.re.test(text)) { matched = true; g.tools.forEach((t) => wanted.add(t)); }
     if (!matched && !NAVIGATION.test(text)) return all;

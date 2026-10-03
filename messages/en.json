@@ -1737,7 +1737,9 @@
         "step_remember": "Remembered",
         "step_forget": "Forgot",
         "step_list_memory": "Read the memory",
-        "step_open_record": "Opened a card"
+        "step_open_record": "Opened a card",
+        "step_scroll_page": "Scrolled the page",
+        "step_queue_tasks": "Queued the tasks"
     },
     "finance": {
         "title": "Accounting",

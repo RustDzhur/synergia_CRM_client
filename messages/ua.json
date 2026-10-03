@@ -1737,7 +1737,9 @@
         "step_remember": "Запам’ятала",
         "step_forget": "Забула",
         "step_list_memory": "Прочитано пам’ять",
-        "step_open_record": "Відкрито картку"
+        "step_open_record": "Відкрито картку",
+        "step_scroll_page": "Прокручено сторінку",
+        "step_queue_tasks": "Завдання поставлено в чергу"
     },
     "finance": {
         "title": "Бухгалтерія",

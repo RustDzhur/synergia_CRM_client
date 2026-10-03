@@ -1737,7 +1737,9 @@
         "step_remember": "Gemerkt",
         "step_forget": "Vergessen",
         "step_list_memory": "Gedächtnis gelesen",
-        "step_open_record": "Karte geöffnet"
+        "step_open_record": "Karte geöffnet",
+        "step_scroll_page": "Seite gescrollt",
+        "step_queue_tasks": "Aufgaben eingereiht"
     },
     "finance": {
         "title": "Buchhaltung",

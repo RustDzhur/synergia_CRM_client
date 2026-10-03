@@ -2,9 +2,9 @@ import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
 import { ProviderError } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
-import { AiCtx, DownloadTarget, NavTarget, ToolError, allowedTools, pickTools, targetLabel } from "./tools";
+import { AiCtx, DownloadTarget, NavTarget, ScrollTarget, ToolError, allowedTools, pickTools, targetLabel } from "./tools";
 import { Msg, complete, voiceModel } from "./provider";
-import { type ToolOut, doneReply, fastReply, shouldFastReply } from "./fastReply";
+import { type ToolOut, doneReply, fastReply, langOf, shouldFastReply } from "./fastReply";
 import { loadMemory, memoryBlock } from "./records";
 
 // Сколько разговоров с ИИ в сутки у фирмы — общий счётчик для чата и автономного шага автоматизации (см. app/config/plans.ts).
@@ -62,7 +62,12 @@ How to behave (this matters most):
 - Never say «I can't», «there is no tool» or «press the button yourself» before checking your tool list. You cannot click, but every button has a tool: open a page = navigate; show a card on screen = open_record; view or save a PDF = download_document; confirm/ship an order = update_order_status; write into a card field = update_deal / update_contact / update_company; move a deal = update_deal_stage; and so on.
 - Names: «CRM» (alone) = navigate crm (the CRM section with the deals board), NOT the dashboard; «клиенты / контакты» = contacts tab; «главная / панель» = dashboard. «Last / latest X» = the newest one (list with sort newest, limit 1). «This / that card» = the record just mentioned or opened.
 - When the user explains how they want something done, or corrects you, call remember(text) at once (silently, no permission needed), then do the task. Apply what you remember below. A new instruction beats an old memory — forget the old one and remember the new.
-- After acting, say what you did in one short sentence. Do not repeat the same answer twice; if the last attempt did not work, try a different tool or approach.${memory ? `\n\nWhat you remember about this user (apply it):\n${memory}` : ""}${voice ? VOICE_RULES : ""}${auto ? AUTO_RULES : ""}`;
+- If one message holds two or more separate tasks, call queue_tasks once with the tasks in order (never try to do several tasks in one go). After acting, say what you did in one short sentence. Do not repeat the same answer twice; if the last attempt did not work, try a different tool or approach.${memory ? `\n\nWhat you remember about this user (apply it):\n${memory}` : ""}${voice ? VOICE_RULES : ""}${auto ? AUTO_RULES : ""}`;
+
+function queuedPhrase(n: number, userText: string) {
+    const lang = langOf(userText);
+    return ({ ru: `Приняла задач: ${n}. Выполняю по очереди и пришлю результат по каждой.`, uk: `Прийняла завдань: ${n}. Виконую по черзі й надішлю результат по кожному.`, de: `${n} Aufgaben angenommen. Ich erledige sie nacheinander und melde jedes Ergebnis.`, en: `Got ${n} tasks. Working through them one by one and will report each result.` })[lang];
+}
 
 // Короткая фраза «Открываю …» на языке просьбы (по алфавиту: ы/э/ъ — русский, і/ї/є — украинский, ä/ö/ü — немецкий)
 function openingPhrase(label: string, userText: string) {
@@ -75,7 +80,7 @@ function openingPhrase(label: string, userText: string) {
 export interface PendingAction { id: string; tool: string; args: Record<string, unknown>; target: string }
 // Выполненное сразу действие (режим «без подтверждения»): клиент показывает его готовой карточкой
 export interface ExecutedAction { id: string; tool: string; args: Record<string, unknown>; target: string; state: "done" | "failed"; params?: Record<string, string>; link?: string; message?: string }
-export interface ChatResult { reply: string; steps: string[]; actions: PendingAction[]; executed?: ExecutedAction[]; nav?: NavTarget; download?: DownloadTarget }
+export interface ChatResult { reply: string; steps: string[]; actions: PendingAction[]; executed?: ExecutedAction[]; queue?: string[]; nav?: NavTarget; download?: DownloadTarget; scroll?: ScrollTarget }
 
 // Режим «выполнять без подтверждения» (включает сам человек, по умолчанию выключен). Исключения:
 //  • удаление всегда с подтверждением — его нельзя откатить;
@@ -88,11 +93,14 @@ const MAX_STEPS = 6;
 const clip = (v: unknown) => JSON.stringify(v).slice(0, 12000);
 
 // Один ход разговора: модель может несколько раз вызвать инструменты чтения; вызов записи превращается в карточку подтверждения
-export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "assistant"; text: string }[]; locale: string; page: string; orgName: string; voice?: boolean; auto?: boolean }): Promise<ChatResult> {
+export interface RunOpts { history: { role: "user" | "assistant"; text: string }[]; locale: string; page: string; orgName: string; voice?: boolean; auto?: boolean; noQueue?: boolean }
+export async function runChat(ctx: AiCtx, opts: RunOpts): Promise<ChatResult> {
     const me = await prisma.user.findUnique({ where: { id: ctx.userId }, select: { firstname: true, lastname: true } });
     // Права по-прежнему считает allowedTools; pickTools только сужает набор до темы разговора (быстрее круг модели)
     const recent = opts.history.slice(-4).map((m) => m.text).join(" ");
-    const tools = pickTools(allowedTools(ctx), recent);
+    // Длинное сообщение — скорее всего несколько поручений из разных разделов: модель получает все инструменты
+    const longAsk = (opts.history[opts.history.length - 1]?.text.length ?? 0) > 280;
+    const tools = (longAsk ? allowedTools(ctx) : pickTools(allowedTools(ctx), recent)).filter((t) => !(opts.noQueue && t.def.name === "queue_tasks"));
     const mem = memoryBlock(await loadMemory(ctx.org, ctx.userId).catch(() => []));
     const sys = system(ctx, { name: me ? `${me.firstname} ${me.lastname}`.trim() : "" }, opts.orgName, opts.locale, opts.page, !!opts.voice, !!opts.auto, mem);
     const msgs: Msg[] = opts.history.map((m) => (m.role === "user" ? { role: "user", text: m.text } : { role: "assistant", text: m.text }));
@@ -100,12 +108,14 @@ export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "ass
     const actions: PendingAction[] = [];
     let nav: NavTarget | undefined;
     let download: DownloadTarget | undefined;
+    let scroll: ScrollTarget | undefined;
+    let queue: string[] | undefined;
     const executed: ExecutedAction[] = [];
     let tainted = false; // ассистент читал чужой текст
 
     for (let i = 0; i < MAX_STEPS; i++) {
         const r = await complete(sys, msgs, tools.map((t) => t.def), opts.voice && voiceModel() ? { model: voiceModel() } : {});
-        if (!r.calls.length) return { reply: r.text || "…", steps, actions, ...(executed.length ? { executed } : {}), ...(nav ? { nav } : {}), ...(download ? { download } : {}) };
+        if (!r.calls.length) return { reply: r.text || "…", steps, actions, ...(executed.length ? { executed } : {}), ...(nav ? { nav } : {}), ...(download ? { download } : {}), ...(scroll ? { scroll } : {}) };
         msgs.push({ role: "assistant", text: r.text, calls: r.calls });
         const stepOuts: ToolOut[] = []; // результаты чтения этого шага — для готового ответа без второго круга
         let failed = false;
@@ -154,6 +164,14 @@ export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "ass
                         const { _nav, ...rest } = out as { _nav: NavTarget } & Record<string, unknown>;
                         nav = _nav;
                         content = clip(rest);
+                    } else if (out && typeof out === "object" && "_queue" in out) {
+                        // длинное сообщение с несколькими поручениями: выполнять будет очередь (lib/ai/jobs.ts), а не этот разговор
+                        queue = (out as { _queue: string[] })._queue;
+                        content = clip({ queued: queue.length });
+                    } else if (out && typeof out === "object" && "_scroll" in out) {
+                        const { _scroll, ...rest } = out as { _scroll: ScrollTarget } & Record<string, unknown>;
+                        scroll = _scroll;
+                        content = clip({ ...rest, status: "Scrolled on the user's screen" });
                     } else if (out && typeof out === "object" && "_download" in out) {
                         // файл скачает браузер человека (PDF отдаётся только с его авторизацией)
                         const { _download, ...rest } = out as { _download: DownloadTarget } & Record<string, unknown>;
@@ -169,6 +187,7 @@ export async function runChat(ctx: AiCtx, opts: { history: { role: "user" | "ass
             msgs.push({ role: "tool", callId: call.id, name: call.name, content });
             if (call.name !== "navigate" || !nav || content.includes('"error"')) navigateOnly = false;
         }
+        if (queue) return { reply: queuedPhrase(queue.length, opts.history[opts.history.length - 1]?.text ?? ""), steps, actions, queue };
         // Голос + изменение выполнено сразу и без ошибок: «Готово» — без ещё одного круга модели
         if (opts.voice && onlyWrites && executed.length && executed.every((e) => e.state === "done") && !actions.length && !r.text) return { reply: doneReply(opts.history[opts.history.length - 1]?.text ?? ""), steps, actions, executed };
         // Голос: итог по счетам/остаткам складываем сами — второй круг модели ради пересказа нескольких чисел стоил 3–5 секунд
