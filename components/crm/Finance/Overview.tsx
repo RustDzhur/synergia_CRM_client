@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { TbAlertTriangle } from "react-icons/tb";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { money } from "./format";
+import PairBars from "../shared/PairBars";
 
 const Kpi = ({ label, value, color }: { label: string; value: string; color?: string }) => (
 	<div className="fs-card p-16">
@@ -22,7 +23,6 @@ export default function Overview() {
 	useEffect(() => { loadDashboard(12, new Date().getFullYear()); }, [loadDashboard]);
 	if (!dashboard) return null;
 	const currency = settings?.currency ?? "EUR";
-	const maxSeries = Math.max(1, ...dashboard.series.map((s) => Math.max(s.revenue, s.expenses)));
 
 	return (
 		<div>
@@ -36,17 +36,7 @@ export default function Overview() {
 
 			<div className="mt-16 fs-card p-16 md:p-20">
 				<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("chartTitle")}</h3>
-				<div className="fs-scroll flex items-end gap-10 overflow-x-auto pb-2" style={{ minHeight: 150 }}>
-					{dashboard.series.map((s) => (
-						<div key={s.month} className="flex shrink-0 flex-col items-center gap-[4px]" style={{ width: 40 }}>
-							<div className="flex h-[120px] items-end gap-2">
-								<div className="w-[14px] rounded-t-[3px] bg-[#c6ff4d]" style={{ height: `${Math.max(2, (s.revenue / maxSeries) * 120)}px` }} title={`${t("kpiRevenue")}: ${s.revenue}`} />
-								<div className="w-[14px] rounded-t-[3px] bg-[#8C948B]" style={{ height: `${Math.max(2, (s.expenses / maxSeries) * 120)}px` }} title={`${t("kpiExpenses")}: ${s.expenses}`} />
-							</div>
-							<span className="text-11 text-[#9AA396]">{s.month.slice(5)}</span>
-						</div>
-					))}
-				</div>
+				<PairBars data={dashboard.series.map((s) => ({ label: s.month.slice(5), a: s.revenue, b: s.expenses, titleA: `${t("kpiRevenue")}: ${s.revenue}`, titleB: `${t("kpiExpenses")}: ${s.expenses}` }))} />
 				<div className="mt-10 flex gap-20 text-12 text-[#8c948b]">
 					<span className="flex items-center gap-6"><span className="h-[10px] w-[10px] rounded-[3px] bg-[#c6ff4d]" />{t("kpiRevenue")}</span>
 					<span className="flex items-center gap-6"><span className="h-[10px] w-[10px] rounded-[3px] bg-[#8C948B]" />{t("kpiExpenses")}</span>

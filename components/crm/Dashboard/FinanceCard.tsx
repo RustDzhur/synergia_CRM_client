@@ -6,6 +6,7 @@ import { type FinanceDashboard, useFinanceStore } from "@/store/useFinanceStore"
 import { useFeature, useOrgStore } from "@/store/useOrgStore";
 import { money } from "../Finance/format";
 import { Kpi } from "../Ads/AdsPanel";
+import PairBars from "../shared/PairBars";
 
 // Карточка «Finance» на Dashboard: доход, к получению, просрочено, расходы — те же цифры, что в разделе Finance → Overview.
 export default function FinanceCard() {
@@ -50,28 +51,9 @@ export default function FinanceCard() {
 // поэтому график читается и при маленьких суммах.
 function FinanceBars({ series }: { series: FinanceDashboard["series"] }) {
 	const t = useTranslations("finance");
-	const max = Math.max(1, ...series.flatMap((s) => [s.revenue, s.expenses]));
 	return (
 		<div className="mt-16 border-t border-inkLine pt-14">
-			<div className="fs-scroll flex items-end gap-10 overflow-x-auto pb-2" style={{ minHeight: 120 }}>
-				{series.map((s) => (
-					<div key={s.month} className="flex shrink-0 flex-col items-center gap-4" style={{ width: 40 }}>
-						<div className="flex h-[96px] items-end gap-2">
-							<div
-								className="w-[13px] rounded-t-3 bg-[#c6ff4d]"
-								style={{ height: `${Math.max(2, (s.revenue / max) * 96)}px` }}
-								title={`${t("kpiRevenue")}: ${s.revenue}`}
-							/>
-							<div
-								className="w-[13px] rounded-t-3 bg-[#8C948B]"
-								style={{ height: `${Math.max(2, (s.expenses / max) * 96)}px` }}
-								title={`${t("kpiExpenses")}: ${s.expenses}`}
-							/>
-						</div>
-						<span className="text-11 text-[#9AA396]">{String(Number(s.month.slice(5))).padStart(2,'0')}</span>
-					</div>
-				))}
-			</div>
+			<PairBars compact data={series.map((s) => ({ label: String(Number(s.month.slice(5))).padStart(2, "0"), a: s.revenue, b: s.expenses, titleA: `${t("kpiRevenue")}: ${s.revenue}`, titleB: `${t("kpiExpenses")}: ${s.expenses}` }))} />
 			<div className="mt-8 flex gap-20 text-11 text-[#8c948b]">
 				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#c6ff4d]" />{t("kpiRevenue")}</span>
 				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#8C948B]" />{t("kpiExpenses")}</span>

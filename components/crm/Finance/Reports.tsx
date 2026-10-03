@@ -6,6 +6,7 @@ import { money } from "./format";
 import { AiAnalysis, PeriodSwitch, ReportDisclaimer, ReportFailed, ReportLoading, useReport } from "./reportParts";
 import type { BusinessAnalysis, PeriodKind, TrialBalance } from "@/lib/finance/reports";
 import { localeTag } from "@/utils/dateHelpers";
+import PairBars from "../shared/PairBars";
 
 // Auswertungen: BWA (выручка, затраты и результат по месяцам) и SuSa (управленческая оборотно-сальдовая ведомость).
 // Цифры считает сервер (lib/finance/reports.ts → /api/finance/reports); клиент только показывает их и период.
@@ -27,7 +28,6 @@ function BwaView({ period, currency }: { period: PeriodKind; currency: string })
 	if (failed || !report) return <ReportFailed />;
 
 	// общая шкала для графика: максимальная из выручки и затрат всех месяцев
-	const max = Math.max(1, ...report.months.map((m) => Math.max(m.revenue, m.costs)));
 
 	return (
 		<div className="flex flex-col gap-16">
@@ -40,17 +40,7 @@ function BwaView({ period, currency }: { period: PeriodKind; currency: string })
 					{/* Выручка и затраты по месяцам — те же столбики, что в обзоре раздела (простые div'ы, без библиотек) */}
 					<section className="fs-card p-16 md:p-20">
 						<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("bwaChartTitle")}</h3>
-						<div className="fs-scroll flex items-end gap-10 overflow-x-auto pb-2" style={{ minHeight: 150 }}>
-							{report.months.map((m) => (
-								<div key={m.period} className="flex shrink-0 flex-col items-center gap-[4px]" style={{ width: 44 }}>
-									<div className="flex h-[120px] items-end gap-2">
-										<div className="w-[14px] rounded-t-[3px] bg-[#c6ff4d]" style={{ height: `${Math.max(2, (m.revenue / max) * 120)}px` }} title={`${t("bwaRevenue")}: ${m.revenue}`} />
-										<div className="w-[14px] rounded-t-[3px] bg-[#8C948B]" style={{ height: `${Math.max(2, (m.costs / max) * 120)}px` }} title={`${t("bwaCosts")}: ${m.costs}`} />
-									</div>
-									<span className="text-11 text-[#9AA396]">{monthLabel(m.period, locale, false)}</span>
-								</div>
-							))}
-						</div>
+						<PairBars data={report.months.map((m) => ({ label: monthLabel(m.period, locale, false), a: m.revenue, b: m.costs, titleA: `${t("bwaRevenue")}: ${m.revenue}`, titleB: `${t("bwaCosts")}: ${m.costs}` }))} />
 						<div className="mt-10 flex gap-20 text-12 text-[#8c948b]">
 							<span className="flex items-center gap-6"><span className="h-[10px] w-[10px] rounded-[3px] bg-[#c6ff4d]" />{t("bwaRevenue")}</span>
 							<span className="flex items-center gap-6"><span className="h-[10px] w-[10px] rounded-[3px] bg-[#8C948B]" />{t("bwaCosts")}</span>

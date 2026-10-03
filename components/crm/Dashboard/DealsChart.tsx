@@ -1,5 +1,5 @@
 "use client";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Deal, Stage } from "@/store/useCrmStore";
 import { localeTag } from "@/utils/dateHelpers";
@@ -12,8 +12,8 @@ interface Props {
 	stages: Stage[];
 }
 
-const W = 420;
-const H = 250;
+// Размер графика не фиксирован: ширина берётся от блока (ResizeObserver), высота — от ширины в разумных пределах.
+// Так на широком экране график растягивается на весь блок, на узком — сжимается, а шрифты остаются обычного размера.
 const M = { left: 46, right: 14, top: 14, bottom: 34 };
 
 // «Красивое» максимальное значение оси: 4 интервала с шагом 1, 2, 5, 10, 20, 25, 50 ...
@@ -50,8 +50,21 @@ export default function DealsChart({ deals, stages }: Props) {
 	const [period, setPeriod] = useState<Period>("monthly");
 	const [hover, setHover] = useState<number | null>(null);
 	const gradientId = useId().replace(/:/g, "");
+	const wrap = useRef<HTMLDivElement>(null);
+	const [width, setWidth] = useState(420);
+	useEffect(() => {
+		const el = wrap.current;
+		if (!el) return;
+		const update = () => setWidth(Math.round(el.clientWidth) || 420);
+		update();
+		const ro = new ResizeObserver(update);
+		ro.observe(el);
+		return () => ro.disconnect();
+	}, []);
+	const W = Math.max(260, width);
+	const H = Math.round(Math.min(340, Math.max(200, W * 0.4)));
 
-	const { labels, values, tickIdx } = useMemo(() => {
+	const { labels, values } = useMemo(() => {
 		const now = new Date();
 		const tag = localeTag(locale);
 		const lastStage = [...stages].sort((a, b) => a.order - b.order).at(-1);
@@ -82,12 +95,13 @@ export default function DealsChart({ deals, stages }: Props) {
 			const i = indexOf(d);
 			if (i >= 0 && i < bucketCount) counts[i] += 1;
 		});
-		// 4 подписи по оси X: начало, две трети и конец — как «1 Dec, 8 Dec, 16 Dec, 31 Dec» в макете
-		const last = bucketCount - 1;
-		const tickIdx = Array.from(new Set([0, Math.round(last / 3), Math.round((last * 2) / 3), last]));
-		return { labels: Array.from({ length: bucketCount }, (_, i) => labelOf(i)), values: counts, tickIdx };
+		return { labels: Array.from({ length: bucketCount }, (_, i) => labelOf(i)), values: counts };
 	}, [deals, stages, period, locale]);
 
+	// Подписи по оси X: от 4 на узком до 10 на широком (примерно одна на 90 пикселей), равномерно от начала до конца
+	const last = values.length - 1;
+	const ticks = Math.max(2, Math.min(values.length, Math.floor((W - M.left - M.right) / 90)));
+	const tickIdx = Array.from(new Set(Array.from({ length: ticks }, (_, k) => Math.round((last * k) / (ticks - 1)))));
 	const max = Math.max(0, ...values);
 	const { top, step } = niceAxis(max);
 	const plotW = W - M.left - M.right;
@@ -121,7 +135,8 @@ export default function DealsChart({ deals, stages }: Props) {
 				<span className="inline-block h-[10px] w-[10px] rounded-50 border-2 border-primaryColor" />
 			</p>
 
-			<svg viewBox={`0 0 ${W} ${H}`} className="mt-8 w-full" role="img" aria-label={t("closedDeals")} onMouseLeave={() => setHover(null)}>
+			<div ref={wrap} className="mt-8 w-full">
+			<svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="block max-w-full" role="img" aria-label={t("closedDeals")} onMouseLeave={() => setHover(null)}>
 				<defs>
 					<linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
 						<stop offset="0%" stopColor="#C6FF4D" stopOpacity="0.35" />
@@ -168,6 +183,7 @@ export default function DealsChart({ deals, stages }: Props) {
 					</g>
 				)}
 			</svg>
+			</div>
 			{max === 0 && <p className="text-center text-12 text-[#8c948b]">{t("noData")}</p>}
 		</section>
 	);
