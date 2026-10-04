@@ -14,10 +14,10 @@ export type ProviderId = "anthropic" | "openai";
 
 export function aiProvider(): ProviderId | null {
     const wanted = process.env.AI_PROVIDER;
-    if (wanted === "openai" && process.env.OPENAI_API_KEY) return "openai";
+    if (wanted === "openai" && (process.env.OPENAI_API_KEY || process.env.AI_API_KEY)) return "openai";
     if (wanted === "anthropic" && process.env.ANTHROPIC_API_KEY) return "anthropic";
     if (process.env.ANTHROPIC_API_KEY) return "anthropic";
-    if (process.env.OPENAI_API_KEY) return "openai";
+    if (process.env.OPENAI_API_KEY || process.env.AI_API_KEY) return "openai";
     return null;
 }
 export const aiConfigured = () => !!aiProvider();
@@ -33,7 +33,7 @@ export class GatewayError extends ProviderError {
 // Бесплатные модели за шлюзом (OmniRoute/OpenRouter) то «не поддерживают инструменты», то «только для агентных сред», то перегружены (403/404/429/503,
 // ALL_TARGETS_SKIPPED). Это не поломка сайта, а повод взять другую модель — поэтому такие отказы пробуем обойти, а не сразу показывать человеку.
 const retryable = (e: unknown) =>
-    (e instanceof GatewayError && ([0, 402, 403, 404, 408, 409, 425, 429, 500, 502, 503, 504].includes(e.status) || /ALL_TARGETS_SKIPPED|no endpoints|temporarily|overloaded/i.test(e.detail))) ||
+    (e instanceof GatewayError && ([0, 402, 403, 404, 408, 409, 425, 429, 500, 502, 503, 504].includes(e.status) || /ALL_TARGETS_SKIPPED|no endpoints|temporarily|overloaded|model.{0,40}(not|exist|found|support)/i.test(e.detail))) ||
     (e instanceof ProviderError && /timeout|timed out|aborted|fetch failed|empty answer/i.test(e.message));
 
 async function post<T>(url: string, headers: Record<string, string>, body: unknown, timeoutMs = 55000): Promise<T> {
@@ -48,7 +48,13 @@ async function post<T>(url: string, headers: Record<string, string>, body: unkno
 }
 
 // ── OpenAI ──
-async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiModel("openai"), timeoutMs = 55000): Promise<Reply> {
+// Куда ходит чат. По умолчанию — шлюз (OPENAI_API_URL + OPENAI_API_KEY, как для распознавания речи). Если заданы AI_API_URL и AI_API_KEY, чат идёт НАПРЯМУЮ
+// к провайдеру (например, DeepSeek: https://api.deepseek.com/v1), а шлюз остаётся запасным путём и для распознавания речи.
+const gatewayEndpoint = () => ({ url: trim(process.env.OPENAI_API_URL || "https://api.openai.com/v1"), key: process.env.OPENAI_API_KEY ?? "" });
+const primaryEndpoint = () => (process.env.AI_API_URL && process.env.AI_API_KEY ? { url: trim(process.env.AI_API_URL), key: process.env.AI_API_KEY } : gatewayEndpoint());
+
+async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiModel("openai"), timeoutMs = 55000, via: "primary" | "gateway" = "primary"): Promise<Reply> {
+    const ep = via === "gateway" ? gatewayEndpoint() : primaryEndpoint();
     const messages: unknown[] = [{ role: "system", content: system }];
     for (const m of msgs) {
         if (m.role === "user") messages.push({ role: "user", content: m.text });
@@ -56,8 +62,8 @@ async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiM
         else messages.push({ role: "tool", tool_call_id: m.callId, content: m.content });
     }
     const j = await post<{ choices?: { message?: { content?: string | null; tool_calls?: { id: string; function: { name: string; arguments: string } }[] } }[] }>(
-        `${trim(process.env.OPENAI_API_URL || "https://api.openai.com/v1")}/chat/completions`,
-        { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        `${ep.url}/chat/completions`,
+        { Authorization: `Bearer ${ep.key}` },
         // Ограничение сверху обязательно: шлюз (OmniRoute/OpenRouter) без него считает
         // бюджет на максимум модели (~65k токенов) и отказывает при малом балансе (402).
         // Пустой список инструментов не отправляем: шлюз (OmniRoute) в ответ на tools: [] заставлял модель «вызвать инструмент», и текст приходил пустым —
@@ -122,20 +128,24 @@ export const fallbackModels = () => (process.env.AI_FALLBACK_MODELS ?? "").split
 export async function complete(system: string, msgs: Msg[], tools: ToolDef[], opts: { model?: string } = {}): Promise<Reply> {
     const p = aiProvider();
     if (!p) throw new ProviderError("AI is not configured on this site");
-    const run = (model: string | undefined, timeoutMs: number) => (p === "anthropic" ? anthropic(system, msgs, tools, model, timeoutMs) : openai(system, msgs, tools, model, timeoutMs));
-    const chain: (string | undefined)[] = [];
-    for (const m of [opts.model, undefined, ...fallbackModels()]) if (!chain.includes(m)) chain.push(m);
+    const direct = !!(process.env.AI_API_URL && process.env.AI_API_KEY);
+    const run = (model: string | undefined, timeoutMs: number, via: "primary" | "gateway") => (p === "anthropic" ? anthropic(system, msgs, tools, model, timeoutMs) : openai(system, msgs, tools, model, timeoutMs, via));
+    // Запасные модели идут через шлюз: если прямой провайдер (DeepSeek) недоступен, это независимый путь
+    const chain: { model: string | undefined; via: "primary" | "gateway" }[] = [];
+    const add = (model: string | undefined, via: "primary" | "gateway") => { if (!chain.some((c) => c.model === model && c.via === via)) chain.push({ model, via }); };
+    add(opts.model, "primary"); add(undefined, "primary");
+    for (const m of fallbackModels()) add(m, direct ? "gateway" : "primary");
     const started = Date.now();
     let last: unknown;
     for (let i = 0; i < chain.length; i++) {
         const left = 58_000 - (Date.now() - started);
         if (left < 6000) break;
         try {
-            return await run(chain[i], Math.min(i === 0 ? 40_000 : 25_000, left));
+            return await run(chain[i].model, Math.min(i === 0 ? 40_000 : 25_000, left), chain[i].via);
         } catch (e) {
             last = e;
             if (!retryable(e)) throw e;
-            console.warn(`[ai] model ${chain[i] ?? "default"} failed (${e instanceof Error ? e.message : e}); ${i + 1 < chain.length ? "trying the next one" : "no more models"}`);
+            console.warn(`[ai] model ${chain[i].model ?? "default"} failed (${e instanceof Error ? e.message : e}); ${i + 1 < chain.length ? "trying the next one" : "no more models"}`);
             await new Promise((r) => setTimeout(r, 250));
         }
     }
