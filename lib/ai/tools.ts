@@ -122,6 +122,8 @@ export interface NavTarget { link: string; label: string }
 // Файл, который клиент должен скачать или открыть (инструмент download_document): PDF качается с авторизацией браузера
 // Прокрутка страницы (инструмент scroll_page): выполняет браузер человека
 export interface ScrollTarget { dir: "down" | "up" | "top" | "bottom"; pages: number }
+// Найти на экране строку/карточку с этим текстом, прокрутить к ней и подсветить зелёным (инструмент find_on_screen): выполняет браузер человека
+export interface FindTarget { text: string }
 export interface DownloadTarget { kind: "invoices" | "quotes" | "orders" | "contracts" | "purchases"; id: string; number: string; mode: "download" | "open" }
 const wrap = async <T,>(fn: () => Promise<T>): Promise<T> => { try { return await fn(); } catch (e) { throw e instanceof ActionError || e instanceof BrowseError || e instanceof RecordError || e instanceof LeadToolError || e instanceof ProviderError ? new ToolError(e.message) : e; } };
 // Проверка правки карточки: нужна сама карточка (id или название) и хотя бы одно допустимое поле
@@ -541,10 +543,12 @@ export const TOOLS: AiTool[] = [
         // Переход — не изменение данных, поэтому выполняется сразу, без карточки подтверждения: «открой бухгалтерию»
         // голосом должно просто открыть её. Раздел, на который у человека нет прав, не открываем.
         module: null, write: false,
-        def: { name: "navigate", description: "Open a CRM page now, no confirmation. Sections as in the sidebar: dashboard (home page, «главная»), crm (the CRM section with the deals board — «перейди в CRM / CRM / воронка»), contacts and companies (tabs of CRM; «клиенты» = contacts), tasks, my_company/employees, feed, calendar, chat, mails, documents, finance (accounting), marketing, automation, settings. Finance also takes a tab and, on invoices, a filter (unpaid = «незакрытые счета»). If the user says only «CRM» go to crm, NOT dashboard.", parameters: schema({
+        def: { name: "navigate", description: "Open a CRM page now, no confirmation. Sections as in the sidebar: dashboard (home page, «главная»), crm (the CRM section with the deals board — «перейди в CRM / CRM / воронка»), contacts and companies (tabs of CRM; «клиенты» = contacts), tasks, my_company/employees, feed, calendar, chat, mails, documents, finance (accounting), marketing, automation, settings. Finance also takes a tab and, on invoices, a filter (unpaid = «незакрытые счета»). «Склад / остатки / складской учёт» = finance tab products with view=stock (the stock view lives INSIDE the products tab; stock_section picks onhand / docs / reports) — open it directly, never stop on the catalog. If the user says only «CRM» go to crm, NOT dashboard.", parameters: schema({
             section: { type: "string", enum: Object.keys(NAV_SECTIONS), description: "target section key" },
             tab: { type: "string", enum: [...FINANCE_TABS], description: "finance only: tab to open" },
-            filter: { type: "string", enum: [...INVOICE_FILTERS], description: "finance → invoices only: which invoices to show" },
+            filter: { type: "string", enum: [...INVOICE_FILTERS], description: "finance → invoices only: which invoice filter to show" },
+            view: { type: "string", enum: ["products", "stock"], description: "finance → products only: the inner switch — «products» (catalog) or «stock» (the «Склад» / warehouse stock view)" },
+            stock_section: { type: "string", enum: ["onhand", "docs", "reports"], description: "finance → products → stock only: inner tab — onhand (остатки), docs (складские документы), reports (отчёты)" },
         }, ["section"]) },
         check: (a) => {
             const section = str(a.section, 40);
@@ -557,6 +561,9 @@ export const TOOLS: AiTool[] = [
                 if (filter && !(INVOICE_FILTERS as readonly string[]).includes(filter)) throw new ToolError("Unknown invoice filter. Choose one of: " + INVOICE_FILTERS.join(", "));
                 if (filter) { out.tab = tab && tab !== "invoices" ? tab : "invoices"; if (out.tab === "invoices") out.filter = filter; }
                 else if (tab) out.tab = tab;
+                const view = str(a.view, 12), stockSection = str(a.stock_section, 12);
+                if (view === "stock" || view === "products") { out.tab = "products"; out.view = view; }
+                if (stockSection) { if (!["onhand", "docs", "reports"].includes(stockSection)) throw new ToolError("stock_section must be onhand, docs or reports"); out.tab = "products"; out.view = "stock"; out.stock_section = stockSection; }
             }
             return out;
         },
@@ -566,10 +573,12 @@ export const TOOLS: AiTool[] = [
             const q = new URLSearchParams();
             if (a.tab) q.set("tab", String(a.tab));
             if (a.filter) q.set("status", String(a.filter));
+            if (a.view) q.set("view", String(a.view));
+            if (a.stock_section) q.set("stock", String(a.stock_section));
             const qs = q.toString();
             const link = qs ? `${sec.link}${sec.link.includes("?") ? "&" : "?"}${qs}` : sec.link;
             const nav: NavTarget = { link, label: sec.label };
-            return { opened: sec.label, tab: a.tab ?? undefined, filter: a.filter ?? undefined, _nav: nav };
+            return { opened: sec.label, tab: a.tab ?? undefined, filter: a.filter ?? undefined, view: a.view ?? undefined, _nav: nav };
         },
     },
     {
@@ -866,6 +875,12 @@ export const TOOLS: AiTool[] = [
         def: { name: "issue_fiscal_receipt", description: "Print a fiscal cash receipt (PRRO / Checkbox, Ukraine only) for an invoice. Needs user confirmation. pay_type: CASH or CARD.", parameters: schema({ number: S("invoice number"), pay_type: { type: "string", enum: ["CASH", "CARD"] } }, ["number"]) },
         check: (a) => ({ number: need(str(a.number, 40), "number"), ...(a.pay_type === "CASH" || a.pay_type === "CARD" ? { pay_type: a.pay_type } : {}) }),
         run: (c, a) => wrap(async () => { const r = await fiscalReceipt({ org: c.org, userId: c.userId }, String(a.number), a.pay_type as "CASH" | "CARD" | undefined); return { params: { number: r.number, code: r.code }, link: "/crm/finance?tab=invoices" }; }),
+    },
+    {
+        module: null, write: false,
+        def: { name: "find_on_screen", description: "FIND something on the page the user is looking at — a table row, a card, a product, an invoice, a contact — scroll to it and light it up in GREEN so the user sees it. Use it whenever the user asks to find / show / point at an item («найди товар X», «где счёт 12», «покажи Иванова»): first open the right page with navigate (for stock: finance, view=stock), then call this with a distinctive piece of the name, SKU, barcode or number exactly as it is shown on screen. Do not just answer from a list — the user wants to SEE it highlighted.", parameters: schema({ text: S("text to find on the screen: a name, SKU, barcode or document number (a distinctive fragment is enough)") }, ["text"]) },
+        check: (a) => ({ text: need(str(a.text, 120), "text") }),
+        run: async (_c, a) => { const f: FindTarget = { text: String(a.text) }; return { highlighted: f.text, _find: f }; },
     },
     {
         module: null, write: false,
@@ -1522,7 +1537,7 @@ const NAVIGATION = /открой|открыть|откройте|перейд|п
 /** Подмножество инструментов под запрос; не распознали — все. navigate доступен всегда. */
 export function pickTools<T extends { def: { name: string } }>(all: T[], recentText: string): T[] {
     const text = String(recentText ?? "");
-    const wanted = new Set<string>(["navigate", "remember", "forget", "list_memory", "scroll_page", "queue_tasks"]);
+    const wanted = new Set<string>(["navigate", "remember", "forget", "list_memory", "scroll_page", "find_on_screen", "queue_tasks"]);
     let matched = false;
     for (const g of GROUPS) if (g.re.test(text)) { matched = true; g.tools.forEach((t) => wanted.add(t)); }
     if (!matched && !NAVIGATION.test(text)) return all;

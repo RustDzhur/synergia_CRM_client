@@ -203,6 +203,8 @@ export default function Finance() {
 	const loadSettings = useFinanceStore((s) => s.loadSettings);
 	const { loaded, market } = useMarket();
 	const [tab, setTab] = useState<Tab>("overview");
+	// внутренний переключатель вкладки «Товары»: каталог / склад (+ подвкладка склада) — его выбирает помощник (?view=stock&stock=onhand)
+	const [productsView, setProductsView] = useState<{ view?: "products" | "stock"; section?: string; n: number } | null>(null);
 	const [openInvoiceId, setOpenInvoiceId] = useState<string | null>(null);
 	const [openOrderId, setOpenOrderId] = useState<string | null>(null);
 	const [quotePrefill, setQuotePrefill] = useState<QuotePrefill | null>(null);
@@ -241,6 +243,11 @@ export default function Finance() {
 		const wantedTab = q.get("tab");
 		const open = q.get("open");
 		const status = q.get("status");
+		const view = q.get("view"), stockSection = q.get("stock");
+		if (view === "products" || view === "stock" || stockSection) {
+			setTab("products");
+			setProductsView((p) => ({ view: view === "products" ? "products" : "stock", section: stockSection ?? undefined, n: (p?.n ?? 0) + 1 }));
+		}
 		if (wantedTab && (ALL_TABS as readonly string[]).includes(wantedTab)) setTab(wantedTab as Tab);
 		if (status && (INVOICE_FILTERS as readonly string[]).includes(status)) {
 			setTab("invoices");
@@ -268,7 +275,7 @@ export default function Finance() {
 			if (wantedTab === "orders") setOpenOrderId(open);
 			else setOpenInvoiceId(open);
 		}
-		return !!(wantedTab || status || newFromDeal || newInvoiceFor || open);
+		return !!(wantedTab || status || newFromDeal || newInvoiceFor || open || view || stockSection);
 	}
 	useEffect(() => {
 		if (applyParams(new URLSearchParams(window.location.search))) window.history.replaceState(null, "", window.location.pathname);
@@ -387,7 +394,7 @@ export default function Finance() {
 					{tab === "recurring" && <RecurringInvoices />}
 					{tab === "dunning" && <Dunning />}
 					{tab === "contracts" && <Contracts />}
-					{tab === "products" && <Products />}
+					{tab === "products" && <Products preset={productsView} />}
 					{tab === "expenses" && <Expenses />}
 					{tab === "assets" && <Assets />}
 					{tab === "bank" && <Bank />}

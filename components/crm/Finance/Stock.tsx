@@ -52,11 +52,12 @@ const NEEDS: Record<DocKind, { from?: boolean; to?: boolean }> = {
 	inventory: { from: true },
 };
 
-export default function Stock() {
+export default function Stock({ section: wantedSection, sectionKey }: { section?: string; sectionKey?: number } = {}) {
 	const t = useTranslations("finance");
 	const locale = useLocale();
 	const { products, loadProducts, settings } = useFinanceStore();
-	const [section, setSection] = useState<Section>("onhand");
+	const [section, setSection] = useState<Section>(wantedSection === "docs" || wantedSection === "reports" ? wantedSection : "onhand");
+	useEffect(() => { if (wantedSection === "onhand" || wantedSection === "docs" || wantedSection === "reports") setSection(wantedSection); }, [wantedSection, sectionKey]);
 	const [warehouses, setWarehouses] = useState<WarehouseRow[]>([]);
 	const [docs, setDocs] = useState<DocRow[]>([]);
 	const [onHand, setOnHand] = useState<{ warehouses: Array<{ id: string; name: string }>; rows: OnHandRow[] } | null>(null);

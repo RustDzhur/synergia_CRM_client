@@ -9,6 +9,7 @@ import { TbMicrophone, TbPlayerStop, TbVolume, TbVolumeOff } from "react-icons/t
 import { AiAction, AiDownload, AiMessage, AiNav, useAiStore } from "@/store/useAiStore";
 import { stripLocale } from "@/utils/locale";
 import Modal from "../shared/Modal";
+import { runFind } from "./findOnScreen";
 import Markdown from "./markdown";
 import VoiceOrb from "./VoiceOrb";
 import VoiceHud, { ORB_BY_PHASE, formatActionValue } from "./VoiceHud";
@@ -216,6 +217,20 @@ export default function AiAssistant() {
 		return () => window.removeEventListener("iris:scroll", onScroll);
 	}, []);
 
+	// «Найди товар X»: находим строку/карточку с этим текстом на открытой странице, прокручиваем к ней и подсвечиваем зелёным.
+	// Страница могла только что открыться — поиск повторяется несколько секунд (см. findOnScreen.ts)
+	useEffect(() => {
+		let cancel: (() => void) | null = null;
+		const onFind = (e: Event) => {
+			const d = (e as CustomEvent<{ text: string }>).detail;
+			if (!d?.text) return;
+			cancel?.();
+			cancel = runFind(document, d.text);
+		};
+		window.addEventListener("iris:find", onFind);
+		return () => { window.removeEventListener("iris:find", onFind); cancel?.(); };
+	}, []);
+
 	// Ассистент сохраняет документ (download_document): PDF качается браузером с вашей авторизацией, как по кнопке «PDF»
 	useEffect(() => {
 		const onDownload = (e: Event) => {
@@ -331,7 +346,7 @@ export default function AiAssistant() {
 			</div>
 		</Modal>
 		<Modal open={open} onClose={close} align="top" label={t("title")} zIndex={90} className="mt-[6vh] w-full max-w-[720px]">
-			<div className="fs-popover flex max-h-[84vh] flex-col overflow-hidden">
+			<div data-iris-hud className="fs-popover flex max-h-[84vh] flex-col overflow-hidden">
 				<header className="flex items-center gap-10 border-b border-inkLine px-16 py-12">
 					<MdAutoAwesome size={22} className="text-primaryColor" aria-hidden />
 					<h2 className="whitespace-nowrap text-18 font-medium text-[#334A74]">{t("title")}</h2>

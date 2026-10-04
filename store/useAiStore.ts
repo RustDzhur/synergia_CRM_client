@@ -16,7 +16,7 @@ export interface AiNav { link: string; label: string }
 // voice — сообщение родилось из голосовой команды: его озвучивает голосовое управление (а не кнопка «Слушать» в чате)
 export interface AiMessage { id: string; role: "user" | "assistant"; text: string; steps?: string[]; actions?: AiAction[]; error?: boolean; voice?: boolean; nav?: AiNav }
 export interface AiDownload { kind: "invoices" | "quotes" | "orders" | "contracts" | "purchases"; id: string; number: string; mode: "download" | "open" }
-interface JobItem { index: number; task: string; reply: string; steps: string[]; actions: Omit<AiAction, "state">[]; executed?: AiAction[]; error?: boolean; nav?: AiNav; download?: AiDownload; scroll?: { dir: string; pages: number } }
+interface JobItem { index: number; task: string; reply: string; steps: string[]; actions: Omit<AiAction, "state">[]; executed?: AiAction[]; error?: boolean; nav?: AiNav; download?: AiDownload; scroll?: { dir: string; pages: number }; find?: { text: string } }
 export interface AiStatus {
 	configured: boolean;
 	// stt — серверная диктовка (ключ OpenAI); браузерная не нуждается ни в ключе, ни в сервере
@@ -68,6 +68,7 @@ export const useAiStore = create<AiStore>()((set, get) => {
 					if (r.nav && last) window.dispatchEvent(new CustomEvent("iris:go", { detail: r.nav })); // страницу открываем только для последней задачи, чтобы экран не прыгал
 					if (r.download) window.dispatchEvent(new CustomEvent("iris:download", { detail: r.download }));
 					if (r.scroll) window.dispatchEvent(new CustomEvent("iris:scroll", { detail: r.scroll }));
+					if (r.find) window.dispatchEvent(new CustomEvent("iris:find", { detail: r.find }));
 				}
 			}
 			next = d.next;
@@ -99,7 +100,7 @@ export const useAiStore = create<AiStore>()((set, get) => {
 			if (!value || get().busy) return;
 			const history = [...get().messages.filter((m) => !m.error), { id: "", role: "user" as const, text: value }].slice(-20).map((m) => ({ role: m.role, text: m.text }));
 			set((s) => ({ busy: true, draft: "", messages: [...s.messages, { id: uid(), role: "user", text: value }] }));
-			const res = await apiCall<{ reply: string; steps: string[]; actions: Omit<AiAction, "state">[]; nav?: AiNav; download?: AiDownload; scroll?: { dir: string; pages: number }; job?: { id: string; total: number }; executed?: (Omit<AiAction, "state"> & { state: "done" | "failed" })[] }>("/api/ai/chat", "POST", { messages: history, locale: ctx.locale, page: ctx.page, now: localNow(), voice: ctx.voice === true, auto: ctx.auto === true });
+			const res = await apiCall<{ reply: string; steps: string[]; actions: Omit<AiAction, "state">[]; nav?: AiNav; download?: AiDownload; scroll?: { dir: string; pages: number }; find?: { text: string }; job?: { id: string; total: number }; executed?: (Omit<AiAction, "state"> & { state: "done" | "failed" })[] }>("/api/ai/chat", "POST", { messages: history, locale: ctx.locale, page: ctx.page, now: localNow(), voice: ctx.voice === true, auto: ctx.auto === true });
 			if (!res.ok || !res.data) {
 				set((s) => ({ busy: false, messages: [...s.messages, { id: uid(), role: "assistant", text: res.message, error: true, voice: ctx.voice }] }));
 			} else {
@@ -112,6 +113,7 @@ export const useAiStore = create<AiStore>()((set, get) => {
 				// Ассистент открыл страницу — её открывает AiAssistant (он знает язык и текущий адрес)
 				if (d.nav && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("iris:go", { detail: d.nav }));
 				if (d.scroll && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("iris:scroll", { detail: d.scroll }));
+				if (d.find && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("iris:find", { detail: d.find }));
 				if (d.download && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("iris:download", { detail: d.download }));
 			}
 			get().loadStatus();

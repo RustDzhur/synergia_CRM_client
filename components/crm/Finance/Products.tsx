@@ -18,7 +18,7 @@ const EMPTY = { name: "", sku: "", barcode: "", type: "service" as "good" | "ser
 
 // Каталог товаров и услуг: то же, что раньше было вкладкой «Products» в Inventory Management, но остаток теперь настоящий —
 // меняется только через движения склада (заказы), не правкой числа в этой форме.
-export default function Products() {
+export default function Products({ preset }: { preset?: { view?: "products" | "stock"; section?: string; n: number } | null }) {
 	const t = useTranslations("finance");
 	const locale = useLocale();
 	const { products, loadProducts, createProduct, updateProduct, deleteProduct, settings } = useFinanceStore();
@@ -93,7 +93,9 @@ export default function Products() {
 
 	// Разделы «Товары» и «Склад»: каталог и складская работа (документы, остатки, отчёты) — одна
 	// вкладка навигации «Товари/склад» (ТЗ §12)
-	const [view, setView] = useState<"products" | "stock">("products");
+	const [view, setView] = useState<"products" | "stock">(preset?.view ?? "products");
+	// помощник переключает вкладку «Склад» и на уже открытом разделе (preset приходит новый)
+	useEffect(() => { if (preset?.view) setView(preset.view); }, [preset]);
 
 	return (
 		<div>
@@ -109,7 +111,7 @@ export default function Products() {
 					</button>
 				))}
 			</div>
-			{view === "stock" ? <Stock /> : (
+			{view === "stock" ? <Stock section={preset?.section} sectionKey={preset?.n} /> : (
 			<>
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-12">
 				<div className="flex w-full items-center gap-8 md:w-auto">

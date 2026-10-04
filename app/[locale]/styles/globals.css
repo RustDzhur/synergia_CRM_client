@@ -369,3 +369,8 @@ body {
 	background: #c6ff4d;
 	border-color: #c6ff4d;
 }
+
+/* Айрис нашла строку/карточку на экране (find_on_screen): зелёная подсветка, пока человек не нажмёт на страницу */
+.iris-hit { outline: 2px solid #c6ff4d; outline-offset: -2px; border-radius: 8px; background-color: rgba(198, 255, 77, 0.16) !important; box-shadow: 0 0 0 4px rgba(198, 255, 77, 0.18), 0 0 22px rgba(198, 255, 77, 0.35); animation: iris-hit-pulse 1.4s ease-in-out 3; }
+.iris-hit > td, .iris-hit > th { background-color: rgba(198, 255, 77, 0.16) !important; }
+@keyframes iris-hit-pulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(198, 255, 77, 0.18), 0 0 22px rgba(198, 255, 77, 0.35); } 50% { box-shadow: 0 0 0 7px rgba(198, 255, 77, 0.32), 0 0 34px rgba(198, 255, 77, 0.55); } }
