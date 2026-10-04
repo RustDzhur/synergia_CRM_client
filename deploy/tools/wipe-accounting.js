@@ -2,9 +2,9 @@
 // Очистка бухгалтерии, склада и справочников ОДНОЙ фирмы — для тех, кто тестировал на «настоящих» счетах и хочет начать с чистого листа.
 // Запускается ВРУЧНУЮ владельцем на сервере внутри контейнера сайта; по умолчанию только показывает, что будет удалено (ничего не меняет).
 //
-//   docker cp ~/crm-duplicate/deploy/tools/wipe-accounting.js firmspace-crm:/tmp/wipe-accounting.js
-//   docker exec firmspace-crm node /tmp/wipe-accounting.js <начало id фирмы>            # посмотреть, сколько записей
-//   docker exec firmspace-crm node /tmp/wipe-accounting.js <начало id фирмы> --yes      # удалить
+//   docker cp ~/crm-duplicate/deploy/tools/wipe-accounting.js firmspace-crm:/app/wipe-accounting.js     # именно в /app: там лежит @prisma/client
+//   docker exec -w /app firmspace-crm node wipe-accounting.js <начало id фирмы>            # посмотреть, сколько записей
+//   docker exec -w /app firmspace-crm node wipe-accounting.js <начало id фирмы> --yes      # удалить
 //
 // Удаляются (только у указанной фирмы): счета и кредит-ноты, регулярные счета, расходы, КП, заказы, договоры, закупки, счета поставщиков,
 // складские документы и движения, производственные заказы и спецификации, импортированные банковские операции, основные средства,
