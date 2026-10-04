@@ -18,7 +18,7 @@ function tx3(v: unknown, what: string, max: number): Tx3 {
 }
 
 export const slugify = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
-const IMAGE = /^\/images\/blog\/[A-Za-z0-9._-]{1,80}$/;
+const IMAGE = /^(\/images\/blog\/[A-Za-z0-9._-]{1,80}|https?:\/\/[^\s"']{1,300})$/;
 
 export interface ParsedPost { slug: string; title: Tx3; excerpt: Tx3; body: Tx3[]; image?: string; publish: boolean; overwrite: boolean }
 
@@ -33,6 +33,6 @@ export function parsePost(b: unknown): ParsedPost {
     const slug = plain(o.slug, 80) ? slugify(plain(o.slug, 80)) : slugify(title.en);
     if (!/^[a-z0-9][a-z0-9-]{2,79}$/.test(slug)) throw new Error("slug must be 3–80 chars of a–z, 0–9 and dashes (or omit it to build one from the English title)");
     const image = o.image === undefined || o.image === "" ? undefined : String(o.image);
-    if (image !== undefined && !IMAGE.test(image)) throw new Error("image must be a path like /images/blog/name.jpg (or omit it)");
+    if (image !== undefined && !IMAGE.test(image)) throw new Error("image must be a path like /images/blog/name.jpg or an http(s) URL (or omit it)");
     return { slug, title, excerpt, body, image, publish: o.publish === true && process.env.AGENT_BLOG_AUTOPUBLISH === "1", overwrite: o.overwrite === true };
 }
