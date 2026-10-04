@@ -16,6 +16,8 @@ export default function ErrorsCard() {
 	const [errHasToken, setErrHasToken] = useState(false);
 	const [errFromEnv, setErrFromEnv] = useState(false);
 	const [errBusy, setErrBusy] = useState(false);
+	const [journal, setJournal] = useState<Array<{ at: string; source: string; kind: string; title: string; explanation: string; where: string }>>([]);
+	const [showJournal, setShowJournal] = useState(false);
 
 	const loadErrors = useCallback(async () => {
 		const res = await apiCall<{ hasToken: boolean; chatId: string; fromEnv: boolean }>("/api/admin/settings/errors");
@@ -25,6 +27,21 @@ export default function ErrorsCard() {
 		setErrFromEnv(res.data.fromEnv);
 	}, []);
 	useEffect(() => { void loadErrors(); }, [loadErrors]);
+	const loadJournal = useCallback(async () => {
+		const res = await apiCall<typeof journal>("/api/admin/errors");
+		if (res.data) setJournal(res.data);
+	}, []);
+	useEffect(() => { if (showJournal) void loadJournal(); }, [showJournal, loadJournal]);
+
+	// Проверка всей цепочки: по одной тестовой ошибке из браузера, сервера, базы и контейнера — каждая проходит объяснение и уходит в Telegram
+	async function testChain() {
+		setErrBusy(true);
+		const res = await apiCall<{ sent: number; total: number }>("/api/admin/errors", "POST", { action: "test" });
+		setErrBusy(false);
+		if (!res.ok || !res.data) return void toast.error(res.message);
+		toast.success(t("errChainSent", { sent: res.data.sent, total: res.data.total }));
+		if (showJournal) void loadJournal();
+	}
 
 	async function findErrorChat() {
 		setErrBusy(true);
@@ -63,6 +80,7 @@ export default function ErrorsCard() {
 					{errFromEnv && <span className="fs-chip h-24 px-10 text-10">{t("metaFromEnv")}</span>}
 					{/* Проверка нужна в обоих случаях: значения могли задать давно, и надо видеть, что они рабочие */}
 					<button type="button" onClick={testErrors} disabled={errBusy} className="fs-btn fs-btn-ghost h-34 disabled:opacity-60">{t("errTest")}</button>
+					<button type="button" onClick={testChain} disabled={errBusy} className="fs-btn fs-btn-ghost h-34 disabled:opacity-60">{t("errChain")}</button>
 					{!errFromEnv && (
 						<button type="button" onClick={saveErrors} disabled={errBusy || !errChat} className="fs-btn fs-btn-primary h-36 disabled:opacity-60">{errBusy ? "…" : t("errSave")}</button>
 					)}
@@ -83,6 +101,20 @@ export default function ErrorsCard() {
 				)}
 			</div>
 			{errFromEnv && <p className="mt-8 text-11 text-[#8c948b]">{t("errFromEnvHelp")}</p>}
+			{/* Журнал: что бот уже поймал и как объяснил — видно, что цепочка работает, даже если сообщение в Telegram пропустили */}
+			<button type="button" onClick={() => setShowJournal((v) => !v)} aria-expanded={showJournal} className="mt-12 text-12 text-[#c6ff4d] hover:underline">{t("errJournal")}</button>
+			{showJournal && (
+				<ul className="mt-8 flex max-h-[360px] flex-col gap-6 overflow-y-auto fs-scroll">
+					{journal.length === 0 && <li className="text-12 text-[#8c948b]">{t("errJournalEmpty")}</li>}
+					{journal.map((j, i) => (
+						<li key={`${j.at}-${i}`} className="rounded-10 border border-inkLine px-12 py-8 text-12">
+							<p className="text-[#f1f4ee]"><span className="mr-6 text-[#8c948b]">{j.at.slice(5, 16).replace("T", " ")}</span>{j.kind ? `${j.kind}: ` : ""}{j.title}</p>
+							{j.explanation && <p className="mt-2 text-[#c6ff4d]">{j.explanation}</p>}
+							{j.where && <p className="mt-2 text-[#8c948b]">{j.where}</p>}
+						</li>
+					))}
+				</ul>
+			)}
 		</div>
 	);
 }

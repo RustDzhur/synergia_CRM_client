@@ -38,7 +38,11 @@ export function failure(e: unknown) {
     if (e instanceof MarketError) return NextResponse.json({ message: e.message, code: "market", market: e.market }, { status: 409 });
     // Чек-лист реквизитов: 400 со списком отсутствующих полей (ТЗ §14 — документ не выпускается)
     if (e instanceof ComplianceError) return NextResponse.json({ message: e.message, code: "compliance", missing: e.issues.map((i) => i.code) }, { status: 400 });
-    if (e instanceof ProviderError) return NextResponse.json({ message: e.message }, { status: 502 });
+    if (e instanceof ProviderError) {
+        // Неверный токен или номер — ошибка человека, молчим; а вот «не отвечает», «таймаут», 5xx у провайдера — поломка снаружи, о ней сообщаем
+        if (/timeout|timed out|ECONN|ENOTFOUND|unavailable|недоступ|5\d\d|busy|out of quota/i.test(e.message)) void reportError(e, { where: "внешний сервис: ответ провайдера" });
+        return NextResponse.json({ message: e.message }, { status: 502 });
+    }
     console.error(e);
     void reportError(e, { where: "ошибка API" });
     return NextResponse.json({ message: "Server error" }, { status: 500 });

@@ -3251,7 +3251,11 @@
         "envReveal": "Show",
         "envHide": "Hide",
         "envPlatformTitle": "Platform variables (for agents)",
-        "envPlatformHelp": "Secret codes you give your agents (mail, blog, etc.). An agent reads only the ones you allow it by name."
+        "envPlatformHelp": "Secret codes you give your agents (mail, blog, etc.). An agent reads only the ones you allow it by name.",
+        "errChain": "Test all sources",
+        "errChainSent": "Test messages sent: {sent} of {total}",
+        "errJournal": "What the bot has caught",
+        "errJournalEmpty": "Nothing yet — that is good."
     },
     "capabilities": {
         "title": "What Firmspace AI actually does",

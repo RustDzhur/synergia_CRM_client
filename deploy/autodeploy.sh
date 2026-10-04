@@ -99,6 +99,11 @@ fi
 if [ -f deploy/agents/docker-compose.yml ] && [ -f deploy/agents/.env ]; then
     docker compose -p dsh -f deploy/agents/docker-compose.yml up -d --build >> "$LOG" 2>&1 || log "агенты: Harness не запустился (сайт работает)"
 fi
+# Сторож сервера (deploy/errorwatch.py): раз в 5 минут сообщает платформе об ошибках в журналах контейнеров, перезапусках и заполненном диске.
+# Строка в crontab ставится один раз, повторные выкладки её не дублируют.
+if [ -f deploy/errorwatch.py ] && ! crontab -l 2>/dev/null | grep -q errorwatch.py; then
+    ( crontab -l 2>/dev/null; echo "*/5 * * * * flock -n /tmp/errorwatch.lock /usr/bin/python3 $REPO_DIR/deploy/errorwatch.py >> $HOME_DIR/errorwatch.log 2>&1" ) | crontab - || log "errorwatch: не удалось добавить в crontab"
+fi
 if [ -f deploy/docker-compose.tts.yml ]; then
     docker compose -p tts -f deploy/docker-compose.tts.yml up -d >> "$LOG" 2>&1 || log "tts: контейнер озвучки не запустился (Айрис говорит голосом браузера)"
 fi

@@ -3251,7 +3251,11 @@
         "envReveal": "Anzeigen",
         "envHide": "Verbergen",
         "envPlatformTitle": "Plattform-Variablen (für Agenten)",
-        "envPlatformHelp": "Geheime Codes, die Sie Ihren Agenten geben (Mail, Blog usw.). Ein Agent liest nur die, die Sie ihm namentlich erlauben."
+        "envPlatformHelp": "Geheime Codes, die Sie Ihren Agenten geben (Mail, Blog usw.). Ein Agent liest nur die, die Sie ihm namentlich erlauben.",
+        "errChain": "Alle Quellen prüfen",
+        "errChainSent": "Testmeldungen gesendet: {sent} von {total}",
+        "errJournal": "Was der Bot erfasst hat",
+        "errJournalEmpty": "Noch nichts – das ist gut."
     },
     "capabilities": {
         "title": "Was Firmspace AI für Sie tut",
