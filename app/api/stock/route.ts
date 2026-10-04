@@ -29,14 +29,16 @@ export async function GET(req: Request) {
         unitCost: m.unitCost ?? 0,
         at: (m.createdAt ?? new Date()).toISOString(),
     }));
-    const products = await prisma.product.findMany({ where: { org: user.id }, select: { id: true, name: true, sku: true, barcode: true, unit: true, stockQty: true, reorderLevel: true, purchasePrice: true, salePrice: true, type: true, image: true } });
+    const products = await prisma.product.findMany({ where: { org: user.id }, select: { id: true, name: true, sku: true, barcode: true, unit: true, stockQty: true, reorderLevel: true, purchasePrice: true, salePrice: true, type: true, image: true , archived: true } });
     const info = new Map(products.map((p) => [p.id, p]));
+    // Архивные товары (удалённые из каталога) в остатках не показываем: движения по ним остаются для истории и оборотов
+    const live = products.filter((p) => !p.archived);
 
     if (kind === "on-hand") {
         // Остатки по складам: сумма движений по каждому складу, не кэш поля
         const warehouses = await prisma.warehouse.findMany({ where: { org: user.id }, select: { id: true, name: true } });
         const by = stockByWarehouse(list);
-        const rows = products
+        const rows = live
             .filter((p) => p.type === "good")
             .map((p) => {
                 const id = p.id;
@@ -71,7 +73,7 @@ export async function GET(req: Request) {
         const date = url.searchParams.get("date") ?? new Date().toISOString().slice(0, 10);
         return NextResponse.json({
             date,
-            rows: products
+            rows: live
                 .filter((p) => p.type === "good")
                 .map((p) => ({ id: p.id, name: p.name, sku: p.sku ?? "", qty: stockAt(list, date, p.id) }))
                 .filter((r) => r.qty !== 0),
@@ -100,7 +102,7 @@ export async function GET(req: Request) {
     if (kind === "dead") {
         const days = Math.max(30, Number(url.searchParams.get("days")) || 90);
         const today = new Date().toISOString().slice(0, 10);
-        return NextResponse.json({ days, rows: deadStock(list, today, days).map((id) => ({ id, name: info.get(id)?.name ?? "", qty: stockOnHand(list, id) })) });
+        return NextResponse.json({ days, rows: deadStock(list, today, days).filter((id) => info.get(id) && !info.get(id)!.archived).map((id) => ({ id, name: info.get(id)?.name ?? "", qty: stockOnHand(list, id) })) });
     }
 
     if (kind === "abc") {
