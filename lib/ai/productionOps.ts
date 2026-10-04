@@ -1,6 +1,6 @@
 import { ProviderError } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
-import { bomIndex } from "@/lib/finance/productionOrders";
+import { bomIndex, launchProductionOrder, produceOutput } from "@/lib/finance/productionOrders";
 import { mrpRequirements } from "@/lib/finance/production";
 import { stockOnHand, type MovementLike } from "@/lib/finance/warehouse";
 
@@ -87,4 +87,27 @@ export async function describeProduction(org: string, what: "all" | "boms" | "or
     }
     if (what === "all" || what === "needs") out.needs = await mrpNeeds(org);
     return out;
+}
+
+type OrderLike = { id: string; number: string; status: string; planQty: unknown; producedQty: unknown; materials: unknown };
+
+/** Чего не хватает на складе под материалы заказа (с учётом уже зарезервированного для него). */
+export async function missingMaterials(org: string, order: OrderLike): Promise<string[]> {
+    if (order.status !== "plan") return []; // у запущенного заказа материалы уже в резерве
+    const missing: string[] = [];
+    for (const m of (order.materials as { product: unknown; qty: number }[]) ?? []) {
+        const card = await prisma.product.findFirst({ where: { id: String(m.product), org }, select: { name: true, stockQty: true } });
+        if ((card?.stockQty ?? 0) < m.qty) missing.push(`${card?.name ?? m.product}: need ${m.qty}, have ${card?.stockQty ?? 0}`);
+    }
+    return missing;
+}
+
+/** Доводит заказ до конца: запускает (если ещё плановый) и выпускает весь остаток плана. Не хватает материалов — ничего не трогает и возвращает список. */
+export async function completeOrder(org: string, order: OrderLike, by: string): Promise<{ done: true; portion: number; unitCost: number } | { done: false; missing: string[] }> {
+    const missing = await missingMaterials(org, order);
+    if (missing.length) return { done: false, missing };
+    if (order.status === "plan") await launchProductionOrder(org, order.id);
+    const left = Math.max(0, (Number(order.planQty) || 0) - (Number(order.producedQty) || 0));
+    const r = await produceOutput(org, order.id, { qty: left, by });
+    return { done: true, portion: r.portion, unitCost: r.unitCost };
 }
