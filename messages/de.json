@@ -1485,7 +1485,8 @@
         "onedriveRoot": "OneDrive",
         "onedriveEmpty": "In diesem Ordner sind keine Dateien.",
         "kb": "KB",
-        "fileFromOneDrive": "Aus OneDrive"
+        "fileFromOneDrive": "Aus OneDrive",
+        "calGoogleOff": "Google Kalender ist auf dem Server noch nicht eingerichtet: Der Plattform-Administrator muss die Google-Schlüssel (GOOGLE_CLIENT_ID und GOOGLE_CLIENT_SECRET) hinterlegen. Danach wird die Schaltfläche aktiv."
     },
     "inventory": {
         "tab_inventory": "Inventur",

@@ -1,4 +1,5 @@
 "use client";
+import type React from "react";
 import type { DocItemDTO, FolderDTO } from "@/types/documents";
 import EntryIcon from "./EntryIcon";
 import RowMenu from "./RowMenu";
@@ -19,7 +20,12 @@ interface Props {
 // Режимы «Сетка» и «Плитки»: та же выдача карточками
 export default function EntriesGrid({ layout, subfolders, docs, onOpenFolder, onOpenDoc, folderActions, docActions, kindLabel, notice }: Props) {
 	const grid = layout === "grid";
-	const card = `fs-card animate-fade-in transition-colors duration-150 hover:border-[rgba(198,255,77,0.28)] ${grid ? "flex flex-col items-center gap-8 p-14 text-center" : "flex items-center gap-16 p-14"}`;
+	// Каждая плитка — отдельный слой (анимация появления создаёт свой контекст наложения), поэтому меню «⋯» открытой плитки пряталось под соседними
+	// и по нему нельзя было нажать. Плитка с открытым меню поднимается выше остальных (:has по aria-expanded кнопки меню).
+	const card = `fs-card relative min-w-0 animate-fade-in [&:has([aria-expanded=true])]:z-40 transition-colors duration-150 hover:border-[rgba(198,255,77,0.28)] ${grid ? "flex flex-col items-center gap-8 p-14 text-center" : "flex items-center gap-16 p-14"}`;
+	// Длинное имя без пробелов раньше шло одной строкой и залезало на соседние плитки: в сетке оно переносится (до двух строк), в плитках обрезается
+	const name = grid ? "block w-full min-w-0 [overflow-wrap:anywhere] text-13 font-medium text-[#f1f4ee]" : "block truncate text-13 font-medium text-[#f1f4ee]";
+	const clamp = grid ? ({ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } as React.CSSProperties) : undefined;
 	const open = `flex min-w-0 flex-1 gap-8 transition-colors hover:text-[#c6ff4d] ${grid ? "flex-col items-center" : "items-center text-left"}`;
 	return (
 		<>
@@ -28,7 +34,7 @@ export default function EntriesGrid({ layout, subfolders, docs, onOpenFolder, on
 					<li key={f.id} className={card}>
 						<button type="button" onClick={() => onOpenFolder(f.id)} className={open}>
 							<EntryIcon folder size={grid ? 36 : 30} />
-							<span className="w-full truncate text-13 font-medium text-[#f1f4ee]">{f.name}</span>
+							<span className={name} style={clamp} title={f.name}>{f.name}</span>
 						</button>
 						<RowMenu actions={folderActions(f)} />
 					</li>
@@ -38,7 +44,7 @@ export default function EntriesGrid({ layout, subfolders, docs, onOpenFolder, on
 						<button type="button" onClick={() => onOpenDoc(d)} className={open}>
 							<EntryIcon doc={d} size={grid ? 36 : 30} />
 							<span className="w-full min-w-0">
-								<span className="block truncate text-13 font-medium text-[#f1f4ee]">{d.name}</span>
+								<span className={name} style={clamp} title={d.name}>{d.name}</span>
 								<span className="block truncate text-11 text-[#8c948b]">{kindLabel(d)}</span>
 							</span>
 						</button>

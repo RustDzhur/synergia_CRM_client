@@ -1485,7 +1485,8 @@
         "onedriveRoot": "OneDrive",
         "onedriveEmpty": "У цій папці файлів немає.",
         "kb": "КБ",
-        "fileFromOneDrive": "З OneDrive"
+        "fileFromOneDrive": "З OneDrive",
+        "calGoogleOff": "Google Calendar поки не налаштований на сервері: адміністратору платформи потрібно додати ключі Google (GOOGLE_CLIENT_ID і GOOGLE_CLIENT_SECRET). Після цього кнопка стане активною."
     },
     "inventory": {
         "tab_inventory": "Інвентаризація",

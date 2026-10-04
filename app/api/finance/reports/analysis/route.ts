@@ -86,7 +86,9 @@ Data (JSON):
 ${JSON.stringify(report)}`;
 
         const reply = await complete(system, [{ role: "user", text: prompt }], []);
-        return NextResponse.json({ kind, from, to, text: reply.text.trim() });
+        const text = reply.text.trim();
+        if (!text) return badRequest("The AI returned an empty answer. Please try again."); // тишина вместо разбора выглядела как «ничего не происходит»
+        return NextResponse.json({ kind, from, to, text });
     } catch (e) {
         if (e instanceof ProviderError) return badRequest(e.message);
         return serverError(e);

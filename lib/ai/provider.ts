@@ -50,7 +50,9 @@ async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiM
         { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
         // Ограничение сверху обязательно: шлюз (OmniRoute/OpenRouter) без него считает
         // бюджет на максимум модели (~65k токенов) и отказывает при малом балансе (402).
-        { model, max_tokens: 2000, messages, tools: tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) }
+        // Пустой список инструментов не отправляем: шлюз (OmniRoute) в ответ на tools: [] заставлял модель «вызвать инструмент», и текст приходил пустым —
+        // именно так молчал «Проанализировать с помощью ИИ» в отчётах
+        { model, max_tokens: 2000, messages, ...(tools.length ? { tools: tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) } : {}) }
     );
     const msg = j.choices?.[0]?.message;
     if (!msg) throw new ProviderError("The AI provider returned an empty answer");
@@ -75,7 +77,7 @@ async function anthropic(system: string, msgs: Msg[], tools: ToolDef[], model = 
     const j = await post<{ content?: { type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }[] }>(
         `${trim(process.env.ANTHROPIC_API_URL || "https://api.anthropic.com/v1")}/messages`,
         { "x-api-key": process.env.ANTHROPIC_API_KEY ?? "", "anthropic-version": "2023-06-01" },
-        { model, max_tokens: 2000, system, messages, tools: tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters })) }
+        { model, max_tokens: 2000, system, messages, ...(tools.length ? { tools: tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters })) } : {}) }
     );
     const blocks = j.content ?? [];
     return {

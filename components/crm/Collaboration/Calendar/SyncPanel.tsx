@@ -125,6 +125,8 @@ export default function SyncPanel() {
                                 </button>
                             )}
                         </div>
+                        {/* Кнопка серая не просто так: на сервере нет ключей Google — скажем об этом словами */}
+                        {src("google")?.available === false && !src("google")?.connected && <p className="mt-8 text-12 leading-[1.5] text-[#F4A100]">{t("calGoogleOff")}</p>}
                         {src("google")?.error && <p className="mt-8 text-12 text-[#F4A100]">{src("google")?.error}</p>}
                         {/* Старое подключение выдано только на чтение: без повторного согласия события
                             из CRM не попадут в Google, и человек должен узнать об этом здесь, а не по факту */}
