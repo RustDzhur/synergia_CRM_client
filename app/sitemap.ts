@@ -56,6 +56,26 @@ const LAST_REVIEW = new Date("2026-10-03T00:00:00.000Z");
 
 const prefixOf = (locale: string) => (locale === DEFAULT_LOCALE ? "" : `/${locale}`);
 
+// Статьи блога, лежащие в репозитории статическими страницами (app/[locale]/blog/<slug>),
+// а не в таблице BlogPost. Карта сайта строится по БД, поэтому такие адреса перечисляем здесь.
+// Если статья переехала в БД, строку убираем — дубли отсекаются по slug в sitemap() ниже.
+const FILE_POSTS: { slug: string; publishedAt: string }[] = [
+	{ slug: "2026-10-04-ai-v-biznes-processah", publishedAt: "2026-10-04" },
+	{ slug: "2026-10-04-ai-klienty-24-7", publishedAt: "2026-10-04" },
+	{ slug: "2026-10-04-ai-action-v-avtomatizacii", publishedAt: "2026-10-04" },
+	{ slug: "2026-10-04-ai-scheta-i-napominaniya", publishedAt: "2026-10-04" },
+];
+
+const filePostEntries = (posts: { slug: string; publishedAt: string }[]): MetadataRoute.Sitemap =>
+	posts.flatMap((post) =>
+		LOCALES.map((locale) => ({
+			url: `${SITE}${prefixOf(locale)}/blog/${post.slug}`,
+			lastModified: new Date(`${post.publishedAt}T00:00:00.000Z`),
+			changeFrequency: "monthly" as const,
+			priority: 0.5,
+		}))
+	);
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const staticEntries: MetadataRoute.Sitemap = PAGES.flatMap((page) =>
 		LOCALES.map((locale) => ({
@@ -79,9 +99,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 				priority: 0.5,
 			}))
 		);
-		return [...staticEntries, ...postEntries];
+		const inDb = new Set(posts.map((post: { slug: string }) => post.slug));
+		return [...staticEntries, ...postEntries, ...filePostEntries(FILE_POSTS.filter((post) => !inDb.has(post.slug)))];
 	} catch {
 		// БД недоступна — отдаём хотя бы статические страницы, как и раньше.
-		return staticEntries;
+		return [...staticEntries, ...filePostEntries(FILE_POSTS)];
 	}
 }
