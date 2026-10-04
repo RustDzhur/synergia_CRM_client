@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { apiCall } from "@/store/crmApi";
 
-interface Key { id: string; name: string; level: "read" | "work"; modules: string[]; approval: boolean; createdAt: string; lastUsedAt: string; calls: number }
+interface Key { id: string; name: string; level: "read" | "work"; modules: string[]; envNames?: string[]; approval: boolean; createdAt: string; lastUsedAt: string; calls: number }
 interface Req { id: string; tool: string; args: Record<string, unknown>; target: string; agent: string; at: string }
 
 // «Подключить агента»: клиент сам заводит ключ для своего ИИ-агента или бота (Claude, ChatGPT, Cursor, n8n, Zapier, Harness, свой
@@ -20,6 +20,7 @@ export default function ConnectCard() {
 	const [level, setLevel] = useState<"read" | "work">("read");
 	const [picked, setPicked] = useState<string[]>(["crm", "tasks"]);
 	const [approval, setApproval] = useState(true);
+	const [envNames, setEnvNames] = useState("");
 	const [fresh, setFresh] = useState<{ name: string; token: string } | null>(null);
 	const [busy, setBusy] = useState(false);
 	const [visible, setVisible] = useState(false); // карточка видна владельцу и администратору фирмы
@@ -36,11 +37,11 @@ export default function ConnectCard() {
 
 	async function create() {
 		setBusy(true);
-		const res = await apiCall<{ token: string }>("/api/connect/keys", "POST", { action: "create", name, level, modules: picked, approval });
+		const res = await apiCall<{ token: string }>("/api/connect/keys", "POST", { action: "create", name, level, modules: picked, approval, envNames });
 		setBusy(false);
 		if (!res.ok || !res.data) return void toast.error(res.message);
 		setFresh({ name, token: res.data.token });
-		setName("");
+		setName(""); setEnvNames("");
 		void load();
 	}
 	async function act(action: "revoke" | "approve" | "reject", id: string) {
@@ -86,7 +87,7 @@ export default function ConnectCard() {
 						<li key={k.id} className="flex flex-wrap items-center justify-between gap-10 rounded-10 border border-inkLine px-12 py-10">
 							<div className="min-w-0">
 								<p className="text-13 text-[#f1f4ee]">{k.name} <span className="ml-6 text-11 text-[#c6ff4d]">{t(k.level === "work" ? "connectLevelWork" : "connectLevelRead")}{k.approval ? ` · ${t("connectNeedsApproval")}` : ""}</span></p>
-								<p className="text-11 text-[#8c948b]">{k.modules.join(", ")} · {t("agentsLastUsed")}: {k.lastUsedAt ? k.lastUsedAt.slice(0, 16).replace("T", " ") : "—"} · {k.calls}</p>
+								<p className="text-11 text-[#8c948b]">{k.modules.join(", ")}{k.envNames?.length ? ` · ${t("connectEnvShort")}: ${k.envNames.join(", ")}` : ""} · {t("agentsLastUsed")}: {k.lastUsedAt ? k.lastUsedAt.slice(0, 16).replace("T", " ") : "—"} · {k.calls}</p>
 							</div>
 							<button type="button" onClick={() => { if (window.confirm(t("agentsRevokeAsk", { name: k.name }))) void act("revoke", k.id); }} className="fs-btn fs-btn-ghost h-30 px-12 text-12 text-[#F4A100]">{t("agentsRevoke")}</button>
 						</li>
@@ -130,6 +131,11 @@ export default function ConnectCard() {
 					</label>
 				))}
 			</div>
+			{/* Секреты фирмы агенту: только перечисленные имена из «Переменные окружения» выше; пусто — ни одной */}
+			<label className="mt-10 flex flex-col gap-6">
+				<span className="text-11 text-[#8c948b]">{t("connectEnvNames")}</span>
+				<input value={envNames} onChange={(e) => setEnvNames(e.target.value)} maxLength={400} placeholder="SHIPPING_API_KEY, MAIL_PASSWORD" className="fs-field h-40 w-full px-12 text-13 outline-none" />
+			</label>
 			{level === "work" && (
 				<label className="mt-10 flex cursor-pointer items-start gap-8 text-12 text-[#cfd4cb]">
 					<input type="checkbox" checked={approval} onChange={(e) => setApproval(e.target.checked)} className="mt-[2px] h-14 w-14 shrink-0 accent-[#c6ff4d]" />

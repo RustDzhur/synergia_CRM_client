@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     if (!a.user) return a.res;
     const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     try {
-        if (b.action === "create") return NextResponse.json({ ok: true, ...(await createKey(a.user.id, a.user.userId, { name: b.name, level: b.level, modules: b.modules, approval: b.approval })) }, { status: 201 });
+        if (b.action === "create") return NextResponse.json({ ok: true, ...(await createKey(a.user.id, a.user.userId, { name: b.name, level: b.level, modules: b.modules, approval: b.approval, envNames: b.envNames })) }, { status: 201 });
         if (b.action === "revoke") return (await revokeKey(a.user.id, String(b.id ?? ""))) ? NextResponse.json({ ok: true }) : badRequest("No such key");
         if (b.action === "approve" || b.action === "reject") {
             const now = new Date();

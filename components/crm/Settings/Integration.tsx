@@ -9,7 +9,8 @@ import { TbCreditCard, TbCurrencyBitcoin, TbShoppingCart, TbReceipt, TbTruckDeli
 import { SMS_PROVIDER_TYPES } from "@/config/smsProviders";
 import { useIntegrationsStore } from "@/store/useIntegrationsStore";
 import { useMarket } from "@/store/useMarket";
-import { marketAllowsIntegration } from "@/lib/finance/market";
+import { isMarketSpecificIntegration, marketAllowsIntegration } from "@/lib/finance/market";
+import { useFinanceStore } from "@/store/useFinanceStore";
 import type { IntegrationType } from "@/types/integrations";
 import PageHeader from "@/components/crm/shared/PageHeader";
 import IntegrationDialog from "./integrations/IntegrationDialog";
@@ -17,6 +18,7 @@ import SettingsTabs from "./SettingsTabs";
 import NotifyBotCard from "./NotifyBotCard";
 import IrisBotCard from "./IrisBotCard";
 import AgentsCard from "./AgentsCard";
+import EnvCard from "./EnvCard";
 import ConnectCard from "./ConnectCard";
 
 interface Integration {
@@ -75,8 +77,18 @@ export default function IntegrationSettings() {
 	// Режим рынка фирмы: украинские плитки (НП, Укрпошта, Checkbox, эквайринги, маркетплейсы) видны
 	// только украинской фирме — немецкой они не нужны и наоборот (ТЗ §3). Общие (звонки, СМС,
 	// мессенджеры, веб-чат) видны всегда и рынком не фильтруются.
-	const { profile: marketProfile } = useMarket();
-	const visibleIntegrations = INTEGRATIONS.filter((item) => !marketProfile || !item.real || marketAllowsIntegration(marketProfile.market, item.real));
+	// Страна фирмы раньше появлялась только после захода в «Бухгалтерию» — до того этот экран показывал плитки обоих рынков (украинские
+	// у немецкой фирмы), а после захода в раздел они пропадали. Теперь экран сам загружает настройки и, пока ответа нет, прячет плитки
+	// одного рынка. Если настроек нет вовсе (финансы не входят в тариф), страна неизвестна — показываем всё, как и раньше.
+	const { profile: marketProfile, loaded: marketLoaded } = useMarket();
+	const loadFinanceSettings = useFinanceStore((s) => s.loadSettings);
+	const [marketSettled, setMarketSettled] = useState(false);
+	useEffect(() => { void Promise.resolve(loadFinanceSettings()).finally(() => setMarketSettled(true)); }, [loadFinanceSettings]);
+	const visibleIntegrations = INTEGRATIONS.filter((item) => {
+		if (!item.real) return true;
+		if (marketProfile) return marketAllowsIntegration(marketProfile.market, item.real);
+		return marketLoaded || marketSettled || !isMarketSpecificIntegration(item.real);
+	});
 	useEffect(() => { load(); }, [load]);
 
 	// Возврат из окна Facebook: колбэк приводит сюда с ?messenger=connected|choose|error
@@ -122,6 +134,7 @@ export default function IntegrationSettings() {
 			{/* Бот уведомлений — над плитками каналов: это про то, куда приходят сообщения о клиентах */}
 			<NotifyBotCard />
 			<IrisBotCard />
+			<EnvCard />
 			<ConnectCard />
 			<AgentsCard />
 			<div className="flex flex-col gap-20 lg:flex-row">

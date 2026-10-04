@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { connectGate } from "@/lib/connect/http";
 import { callExternal, externalTools } from "@/lib/connect/tools";
 import type { Connection } from "@/lib/connect/keys";
+import { logAudit } from "@/lib/audit";
+import { getFirmEnv, listFirmEnv } from "@/lib/firmEnv";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -15,6 +17,20 @@ const PROTOCOLS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 type Rpc = { jsonrpc?: string; id?: string | number | null; method?: string; params?: Record<string, unknown> };
 const ok = (id: Rpc["id"], result: unknown) => ({ jsonrpc: "2.0", id: id ?? null, result });
 const fail = (id: Rpc["id"], code: number, message: string) => ({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
+
+// Секреты фирмы агенту: инструмент появляется, только если владелец разрешил ключу хотя бы одну переменную (envNames в ключе)
+const ENV_TOOL = { name: "get_env", description: "Read a secret environment variable of the firm that the owner has allowed this key to read (for example an API key of the firm's own service). Without name returns the list of allowed variable names.", inputSchema: { type: "object", properties: { name: { type: "string", description: "variable name, e.g. SHIPPING_API_KEY" } }, required: [] }, annotations: { readOnlyHint: true } };
+
+async function readEnvTool(conn: Connection, name: string): Promise<{ ok: boolean; text: string }> {
+    const allowed = (n: string) => conn.key.envNames.includes("*") || conn.key.envNames.includes(n);
+    const n = name.trim().toUpperCase();
+    if (!n) return { ok: true, text: JSON.stringify((await listFirmEnv(conn.org)).filter((v) => allowed(v.name)).map((v) => v.name)) };
+    if (!allowed(n)) return { ok: false, text: `This key may not read ${n}` };
+    const value = await getFirmEnv(conn.org, n);
+    if (!value) return { ok: false, text: "Not found" };
+    await logAudit({ org: conn.org, action: "env.agent_read", entityType: "env", entityId: n, summary: `Agent "${conn.key.name}" read variable ${n}`, userName: `agent:${conn.key.name}`, meta: {} });
+    return { ok: true, text: JSON.stringify({ name: n, value }) };
+}
 
 async function handle(conn: Connection, m: Rpc): Promise<unknown | null> {
     const id = m.id;
@@ -31,9 +47,13 @@ async function handle(conn: Connection, m: Rpc): Promise<unknown | null> {
         }
         case "ping": return ok(id, {});
         case "tools/list":
-            return ok(id, { tools: externalTools(conn.ctx).map((t) => ({ name: t.def.name, description: t.def.description, inputSchema: t.def.parameters, annotations: { readOnlyHint: !t.write, destructiveHint: false } })) });
+            return ok(id, { tools: [...(conn.key.envNames.length ? [ENV_TOOL] : []), ...externalTools(conn.ctx).map((t) => ({ name: t.def.name, description: t.def.description, inputSchema: t.def.parameters, annotations: { readOnlyHint: !t.write, destructiveHint: false } }))] });
         case "tools/call": {
             const name = String(m.params?.name ?? "");
+            if (name === "get_env" && conn.key.envNames.length) {
+                const r = await readEnvTool(conn, String((m.params?.arguments as { name?: unknown } | undefined)?.name ?? ""));
+                return ok(id, { content: [{ type: "text", text: r.text }], isError: !r.ok });
+            }
             const r = await callExternal(conn.ctx, conn.key, name, m.params?.arguments);
             const text = r.ok ? JSON.stringify(r.status === "done" ? r.result : { status: r.status, requestId: r.requestId, note: r.note }) : r.error;
             return ok(id, { content: [{ type: "text", text }], isError: !r.ok });

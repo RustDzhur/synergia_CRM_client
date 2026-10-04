@@ -175,6 +175,9 @@ export function marketHasDocument(country: string | null | undefined, kind: Mark
     return !!p && p.documents.includes(kind);
 }
 
+/** Относится ли интеграция только к одному из рынков (Германия или Украина): общие — звонки, мессенджеры, веб-чат — к рынку не привязаны. */
+export const isMarketSpecificIntegration = (type: string): boolean => [...DE.integrations, ...UA.integrations].includes(type as MarketIntegrationType);
+
 /** Разрешена ли интеграция в режиме: общие (не перечисленные в профилях) — всегда, свои — только своему рынку. */
 export function marketAllowsIntegration(country: string | null | undefined, type: string): boolean {
     const p = marketProfileOf(country);

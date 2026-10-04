@@ -16,11 +16,11 @@ export const KEY_MODULES = ["crm", "tasks", "company", "collab", "mail", "market
 const KEYS = "connect:keys";
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 
-export interface ConnectKey { id: string; name: string; level: Level; modules: string[]; approval: boolean; createdAt: string; lastUsedAt: string; calls: number }
+export interface ConnectKey { id: string; name: string; level: Level; modules: string[]; envNames: string[]; approval: boolean; createdAt: string; lastUsedAt: string; calls: number }
 
 const toKey = (rid: string, v: Record<string, unknown>): ConnectKey => ({
     id: rid, name: String(v.name ?? ""), level: (v.level === "work" ? "work" : "read") as Level,
-    modules: (Array.isArray(v.modules) ? v.modules : []).map(String), approval: v.approval !== false,
+    modules: (Array.isArray(v.modules) ? v.modules : []).map(String), envNames: (Array.isArray(v.envNames) ? v.envNames : []).map(String), approval: v.approval !== false,
     createdAt: String(v.createdAt ?? ""), lastUsedAt: String(v.lastUsedAt ?? ""), calls: Number(v.calls) || 0,
 });
 
@@ -29,7 +29,14 @@ export async function listKeys(org: string): Promise<ConnectKey[]> {
     return rows.map((r) => toKey(r.rid, (r.values ?? {}) as Record<string, unknown>));
 }
 
-export async function createKey(org: string, createdBy: string, input: { name: unknown; level: unknown; modules: unknown; approval: unknown }): Promise<{ id: string; token: string }> {
+/** Имена переменных окружения фирмы, которые агенту можно читать: список через запятую/пробел; "*" — все. */
+export function cleanEnvNames(raw: unknown): string[] {
+    const list = (Array.isArray(raw) ? raw : String(raw ?? "").split(/[\s,;]+/)).map((x) => String(x).trim().toUpperCase()).filter(Boolean);
+    if (list.includes("*")) return ["*"];
+    return Array.from(new Set(list.filter((n) => /^[A-Z][A-Z0-9_]{1,63}$/.test(n)))).slice(0, 100);
+}
+
+export async function createKey(org: string, createdBy: string, input: { name: unknown; level: unknown; modules: unknown; approval: unknown; envNames?: unknown }): Promise<{ id: string; token: string }> {
     const name = String(input.name ?? "").trim().replace(/\s+/g, " ").slice(0, 60);
     if (name.length < 2) throw new Error("Give the agent a name (at least 2 characters)");
     const level = (LEVELS as readonly string[]).includes(String(input.level)) ? (String(input.level) as Level) : "read";
@@ -38,7 +45,7 @@ export async function createKey(org: string, createdBy: string, input: { name: u
     if ((await listKeys(org)).length >= 20) throw new Error("Too many keys (max 20) — revoke unused ones");
     const token = `fsk_${randomBytes(32).toString("hex")}`;
     const id = `k${Date.now().toString(36)}${randomBytes(3).toString("hex")}`;
-    await prisma.sectionRecord.create({ data: { org, key: KEYS, rid: id, values: { name, level, modules, approval: input.approval !== false, hash: sha(token), createdAt: new Date().toISOString(), lastUsedAt: "", calls: 0, createdBy } as never } });
+    await prisma.sectionRecord.create({ data: { org, key: KEYS, rid: id, values: { name, level, modules, envNames: cleanEnvNames(input.envNames), approval: input.approval !== false, hash: sha(token), createdAt: new Date().toISOString(), lastUsedAt: "", calls: 0, createdBy } as never } });
     return { id, token };
 }
 

@@ -8,10 +8,9 @@ interface Props {
 	onQuery: (q: string) => void;
 	onPatch: (id: string, body: Record<string, unknown>) => void;
 	onFeatures: (o: OrgRow) => void;
-	onEnv: (o: OrgRow) => void;
 }
 
-export default function OrgsTable({ orgs, query, onQuery, onPatch, onFeatures, onEnv }: Props) {
+export default function OrgsTable({ orgs, query, onQuery, onPatch, onFeatures }: Props) {
 	const t = useTranslations("admin");
 	return (
 		<>
@@ -46,7 +45,6 @@ export default function OrgsTable({ orgs, query, onQuery, onPatch, onFeatures, o
 								<td className="px-12 py-10">
 									<div className="flex flex-wrap gap-8">
 										<button type="button" onClick={() => onFeatures(o)} className="text-12 text-[#c6ff4d] hover:underline">{t("features")}</button>
-										<button type="button" onClick={() => onEnv(o)} className="text-12 text-[#c6ff4d] hover:underline">{t("envButton")}</button>
 										<button type="button" onClick={() => onPatch(o.id, { blocked: !o.blocked })} className={`text-12 hover:underline ${o.blocked ? "text-[#2DDEB6]" : "text-danger"}`}>{o.blocked ? t("unblock") : t("block")}</button>
 									</div>
 								</td>

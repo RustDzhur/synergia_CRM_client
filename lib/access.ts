@@ -36,6 +36,7 @@ export function moduleForPath(pathname: string, method: string): Module | null {
         case "automation": return "automation";
         case "billing": return "billing";
         case "notifications": return null; // свои уведомления видит любой участник
+        case "env": return "settings"; // переменные окружения фирмы: смотреть и менять — владелец и администраторы
         case "notify-settings": return method === "GET" ? null : "settings"; // бот фирмы: смотреть можно всем, менять — по правам
         case "integrations": return method === "GET" ? "collab" : "settings"; // список каналов нужен звонилке всем; менять — только с доступом к настройкам
         case "orgs": return p.startsWith("orgs/members") || p.startsWith("orgs/invitations") ? "members" : null;
