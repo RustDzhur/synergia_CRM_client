@@ -72,6 +72,8 @@ export async function POST(req: Request) {
 
         if (action === "save") {
             if (!chatId) return badRequest("Не найден чат: напишите боту сообщение и нажмите «Найти чат»");
+            // Раньше можно было сохранить один чат без токена — настройка выглядела готовой, а отправлять было нечем (отчёты молча не уходили)
+            if (!botToken && !(await errorBot()).botToken) return badRequest("Вставьте токен бота от @BotFather и нажмите «Сохранить» ещё раз");
             await setErrorBot(botToken, chatId);
             // Проверочное сообщение уходит тем же путём, что и настоящие: иначе непонятно, работает ли настройка
             await reportError(new Error("Проверка отчётов: бот на связи, отчёты об ошибках настроены."), { where: "проверка" });

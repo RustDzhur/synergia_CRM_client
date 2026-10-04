@@ -3,7 +3,7 @@ import { adminEmails } from "@/lib/admin";
 import { ProviderError } from "@/lib/http";
 import { getRequisites, readiness } from "@/lib/transferPay";
 import { checkBucket, storageProblem } from "@/lib/storage";
-import { metaApp } from "@/lib/platformSettings";
+import { errorBot, metaApp } from "@/lib/platformSettings";
 import { prisma } from "@/lib/prisma";
 
 export interface Check { id: string; ok: boolean; message: string }
@@ -48,6 +48,12 @@ export async function systemCheck(): Promise<Check[]> {
             // «администратор» или самый первый аккаунт (lib/admin.ts). Переменная нужна лишь чтобы закрепить конкретный адрес.
             const pinned = adminEmails().length;
             return pinned ? `${pinned} administrator address(es) pinned by ADMIN_EMAILS` : "Administrator is the first registered account (optional: set ADMIN_EMAILS to pin an address)";
+        }),
+        attempt("errorBot", async () => {
+            const bot = await errorBot();
+            if (!bot.botToken) throw new Error("The error-report bot has no token saved — nothing can be sent to Telegram (Admin → bot for error reports: paste the token and press Save)");
+            if (!bot.chatId) throw new Error("The error-report bot has no chat — write to the bot and press “Find chat”");
+            return "Error reports go to Telegram (browser, server, database, containers)";
         }),
         attempt("cron", async () => {
             if (!process.env.CRON_SECRET) throw new Error("CRON_SECRET is not set");

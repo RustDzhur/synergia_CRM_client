@@ -100,6 +100,7 @@ export default function ErrorsCard() {
 					</span>
 				)}
 			</div>
+			{!errHasToken && !errFromEnv && <p role="alert" className="mt-10 rounded-10 bg-[rgba(244,161,0,0.10)] px-12 py-8 text-12 text-[#F4A100]">{t("errNoToken")}</p>}
 			{errFromEnv && <p className="mt-8 text-11 text-[#8c948b]">{t("errFromEnvHelp")}</p>}
 			{/* Журнал: что бот уже поймал и как объяснил — видно, что цепочка работает, даже если сообщение в Telegram пропустили */}
 			<button type="button" onClick={() => setShowJournal((v) => !v)} aria-expanded={showJournal} className="mt-12 text-12 text-[#c6ff4d] hover:underline">{t("errJournal")}</button>

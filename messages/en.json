@@ -3262,7 +3262,9 @@
         "errChain": "Test all sources",
         "errChainSent": "Test messages sent: {sent} of {total}",
         "errJournal": "What the bot has caught",
-        "errJournalEmpty": "Nothing yet — that is good."
+        "errJournalEmpty": "Nothing yet — that is good.",
+        "errNoToken": "The bot token is not saved, so error reports have nowhere to go. Paste the token from @BotFather into the field above and press Save.",
+        "sys_errorBot": "Error bot in Telegram"
     },
     "capabilities": {
         "title": "What Firmspace AI actually does",

@@ -3262,7 +3262,9 @@
         "errChain": "Alle Quellen prüfen",
         "errChainSent": "Testmeldungen gesendet: {sent} von {total}",
         "errJournal": "Was der Bot erfasst hat",
-        "errJournalEmpty": "Noch nichts – das ist gut."
+        "errJournalEmpty": "Noch nichts – das ist gut.",
+        "errNoToken": "Das Bot-Token ist nicht gespeichert, daher gehen Fehlermeldungen ins Leere. Fügen Sie das Token von @BotFather oben ein und klicken Sie auf Speichern.",
+        "sys_errorBot": "Fehler-Bot in Telegram"
     },
     "capabilities": {
         "title": "Was Firmspace AI für Sie tut",
