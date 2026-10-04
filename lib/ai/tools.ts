@@ -23,6 +23,8 @@ import { BrowseError, ENTITY_KEYS, browse, listProducts } from "./browse";
 import { mkActivity } from "@/lib/activities";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
 import { deleteDemo, seedDemo } from "./demoData";
+import { describeProduction, findProductionOrder, resolveWarehouse, saveBom } from "./productionOps";
+import { cancelProductionOrder, createProductionOrder, launchProductionOrder, produceOutput } from "@/lib/finance/productionOrders";
 import { nextNumber } from "@/lib/finance/numbering";
 import { numberPrefix } from "@/lib/finance/documents/store";
 import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
@@ -1235,27 +1237,116 @@ export const TOOLS: AiTool[] = [
     },
     {
         module: "inventory", write: true,
-        def: { name: "create_product", description: "Add a product or service to the catalog. Needs user confirmation. type: good (stock item) or service.", parameters: schema({ name: S("product name"), type: { type: "string", enum: ["good", "service"] }, sku: S("SKU / article"), unit: S("unit, e.g. pcs, kg, h"), sale_price: { type: "number" }, purchase_price: { type: "number" }, stock_qty: { type: "number", description: "starting stock (goods only)" }, reorder_level: { type: "number", description: "alert when stock falls to this level" } }, ["name"]) },
-        check: (a) => ({ name: need(str(a.name, 200), "name"), type: a.type === "good" ? "good" : "service", sku: str(a.sku, 60), unit: str(a.unit, 20), sale_price: Math.max(0, Number(a.sale_price) || 0), purchase_price: Math.max(0, Number(a.purchase_price) || 0), stock_qty: Math.max(0, Number(a.stock_qty) || 0), reorder_level: Math.max(0, Number(a.reorder_level) || 0) }),
+        def: { name: "create_product", description: "Add a product or service to the catalog. Needs user confirmation. type: good (stock item) or service.", parameters: schema({ name: S("product name"), type: { type: "string", enum: ["good", "service"] }, sku: S("SKU / article"), unit: S("unit, e.g. pcs, kg, h"), sale_price: { type: "number" }, purchase_price: { type: "number" }, stock_qty: { type: "number", description: "starting stock — put on the warehouse balance right away (goods only)" }, warehouse: S("warehouse for the starting stock, optional (default warehouse)"), reorder_level: { type: "number", description: "alert when stock falls to this level" } }, ["name"]) },
+        check: (a) => ({ name: need(str(a.name, 200), "name"), type: a.type === "good" ? "good" : "service", sku: str(a.sku, 60), unit: str(a.unit, 20), sale_price: Math.max(0, Number(a.sale_price) || 0), purchase_price: Math.max(0, Number(a.purchase_price) || 0), stock_qty: Math.max(0, Number(a.stock_qty) || 0), warehouse: str(a.warehouse, 120), reorder_level: Math.max(0, Number(a.reorder_level) || 0) }),
         run: async (c, a) => {
             const good = a.type === "good";
-            const p = await prisma.product.create({ data: { org: c.org, name: String(a.name), type: good ? "good" : "service", sku: String(a.sku || ""), unit: String(a.unit || "") || "pcs", salePrice: Number(a.sale_price) || 0, purchasePrice: Number(a.purchase_price) || 0, stockQty: good ? Number(a.stock_qty) || 0 : 0, reorderLevel: Number(a.reorder_level) || 0 } });
+            // Начальный остаток кладём на склад ДВИЖЕНИЕМ (приход), а не просто числом в карточке: так он виден в складских отчётах и в расчёте потребности
+            const wh = good && Number(a.stock_qty) > 0 ? await wrap(() => resolveWarehouse(c.org, String(a.warehouse || ""))) : null;
+            const p = await prisma.product.create({ data: { org: c.org, name: String(a.name), type: good ? "good" : "service", sku: String(a.sku || ""), unit: String(a.unit || "") || "pcs", salePrice: Number(a.sale_price) || 0, purchasePrice: Number(a.purchase_price) || 0, stockQty: 0, reorderLevel: Number(a.reorder_level) || 0 } });
+            if (good && Number(a.stock_qty) > 0) await moveStock(c.org, p.id, Number(a.stock_qty), "purchase", { warehouse: wh?.id ?? null, unitCost: Number(a.purchase_price) || 0, note: "Початковий залишок", by: await authorName(c.userId) });
             return { params: { name: p.name }, link: "/crm/finance?tab=products" };
         },
     },
     {
         module: "inventory", write: true,
-        def: { name: "adjust_stock", description: "Change the stock of a product: positive qty = receipt/surplus, negative = write-off. Needs user confirmation. reason: purchase (goods received), writeoff, adjustment (inventory count), return.", parameters: schema({ product: S("product name, SKU or id"), qty: { type: "number", description: "change in stock, + or −" }, reason: { type: "string", enum: ["purchase", "writeoff", "adjustment", "return"] }, note: S("note, optional") }, ["product", "qty"]) },
+        def: { name: "adjust_stock", description: "Change the stock of a product: positive qty = receipt/surplus, negative = write-off. Needs user confirmation. reason: purchase (goods received), writeoff, adjustment (inventory count), return.", parameters: schema({ product: S("product name, SKU or id"), qty: { type: "number", description: "change in stock, + or −" }, reason: { type: "string", enum: ["purchase", "writeoff", "adjustment", "return"] }, warehouse: S("warehouse to put the goods on / take them from, optional (default warehouse)"), note: S("note, optional") }, ["product", "qty"]) },
         check: (a) => {
             const qty = Number(a.qty);
             if (!Number.isFinite(qty) || qty === 0) throw new ToolError("qty must be a non-zero number");
-            return { product: need(str(a.product, 200), "product"), qty, reason: ["purchase", "writeoff", "adjustment", "return"].includes(String(a.reason)) ? a.reason : qty < 0 ? "writeoff" : "adjustment", note: str(a.note, 200) };
+            return { product: need(str(a.product, 200), "product"), qty, reason: ["purchase", "writeoff", "adjustment", "return"].includes(String(a.reason)) ? a.reason : qty < 0 ? "writeoff" : "adjustment", warehouse: str(a.warehouse, 120), note: str(a.note, 200) };
         },
         run: (c, a) => wrap(async () => {
             const p = await findProduct(c.org, String(a.product));
             if (p.type !== "good") throw new ToolError(`"${p.name}" is a service — it has no stock`);
-            await moveStock(c.org, p.id, Number(a.qty), a.reason as "purchase" | "writeoff" | "adjustment" | "return", { note: String(a.note || ""), by: await authorName(c.userId) });
+            const wh = await resolveWarehouse(c.org, String(a.warehouse || "")); // «на баланс склада»: движение привязывается к складу
+            await moveStock(c.org, p.id, Number(a.qty), a.reason as "purchase" | "writeoff" | "adjustment" | "return", { warehouse: wh?.id ?? null, unitCost: Number(a.qty) > 0 ? p.purchasePrice ?? 0 : 0, note: String(a.note || ""), by: await authorName(c.userId) });
             return { params: { name: p.name, qty: String(a.qty), stock: String((p.stockQty ?? 0) + Number(a.qty)) }, link: "/crm/finance?tab=products" };
+        }),
+    },
+    // ─────────── производство ───────────
+    // Спецификации (BOM), производственные заказы, списание материалов и выпуск готовой продукции на склад. Сами операции выполняет
+    // lib/finance/productionOrders.ts (тот же код, что у экрана «Производство»), поэтому себестоимость, резервы и остатки сходятся.
+    {
+        module: "inventory", write: false,
+        def: { name: "list_production", description: "Production overview: specifications (BOM — which materials a product is made of), production orders with their status, and the material needs (what is required for open orders, what is in stock, what to buy). what: all (default), boms, orders, needs.", parameters: schema({ what: { type: "string", enum: ["all", "boms", "orders", "needs"] } }, []) },
+        check: (a) => ({ what: ["boms", "orders", "needs"].includes(String(a.what)) ? a.what : "all" }),
+        run: (c, a) => wrap(() => describeProduction(c.org, a.what as "all" | "boms" | "orders" | "needs")),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "create_bom", description: "Create (or replace with a new version) the specification of a product: the materials it is made of (components with quantity per ONE unit and optional waste percent), optional operations (name, minutes, cost per hour) and overhead percent. Needs user confirmation. Both the product and the components must exist as stock items (type good) — create missing ones first with create_product. Pick them by name or SKU (use list_products / list_production to find the right nomenclature).", parameters: schema({ product: S("finished product name, SKU or id"), name: S("specification name, optional"), components: { type: "array", description: "materials per ONE unit of the product", items: { type: "object", properties: { product: S("material name, SKU or id"), qty: { type: "number", description: "quantity per one unit" }, waste_percent: { type: "number", description: "waste %, optional" } }, required: ["product", "qty"] } }, operations: { type: "array", items: { type: "object", properties: { name: S("operation"), minutes: { type: "number" }, cost_per_hour: { type: "number" } }, required: ["name"] } }, overhead_percent: { type: "number", description: "overhead as % of labor, optional" }, note: S("note, optional") }, ["product", "components"]) },
+        check: (a) => {
+            const components = (Array.isArray(a.components) ? a.components : []).slice(0, 60).map((x) => { const o = (x ?? {}) as Record<string, unknown>; return { product: str(o.product ?? o.name, 200), qty: Math.abs(Number(o.qty)) || 0, waste_percent: Math.max(0, Math.min(100, Number(o.waste_percent) || 0)) }; }).filter((x) => x.product && x.qty > 0);
+            if (!components.length) throw new ToolError("components must contain at least one material with a quantity");
+            const operations = (Array.isArray(a.operations) ? a.operations : []).slice(0, 20).map((x) => { const o = (x ?? {}) as Record<string, unknown>; return { name: str(o.name, 120), minutes: Math.max(0, Number(o.minutes) || 0), cost_per_hour: Math.max(0, Number(o.cost_per_hour ?? o.costPerHour) || 0) }; }).filter((x) => x.name);
+            return { product: need(str(a.product, 200), "product"), name: str(a.name, 120), components, operations, overhead_percent: Math.max(0, Number(a.overhead_percent) || 0), note: str(a.note, 400) };
+        },
+        run: (c, a) => wrap(async () => {
+            const target = await findProduct(c.org, String(a.product));
+            if (target.type !== "good") throw new ToolError(`"${target.name}" is a service — a service has no warehouse, so it cannot be produced`);
+            const comps = [];
+            for (const x of a.components as { product: string; qty: number; waste_percent: number }[]) {
+                const p = await findProduct(c.org, x.product);
+                if (p.type !== "good") throw new ToolError(`"${p.name}" is a service, not a material`);
+                comps.push({ product: p.id, qty: x.qty, wastePercent: x.waste_percent });
+            }
+            const bom = await saveBom(c.org, { product: target.id, name: String(a.name || ""), components: comps, operations: (a.operations as { name: string; minutes: number; cost_per_hour: number }[]).map((o) => ({ name: o.name, minutes: o.minutes, costPerHour: o.cost_per_hour })), overheadPercent: Number(a.overhead_percent) || 0, note: String(a.note || "") });
+            return { params: { product: target.name, version: String(bom.version), count: String(comps.length) }, link: "/crm/finance?tab=production" };
+        }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "create_production_order", description: "Create a production order (plan) for a product with a specification: how many units to make and by when. Calculates the materials and the planned cost. Needs user confirmation. Next steps: launch_production_order (reserves materials), produce_output (writes materials off the warehouse and puts the finished product on the warehouse balance). To do all of it at once use run_production.", parameters: schema({ product: S("product name, SKU or id"), qty: { type: "number", description: "units to produce" }, due: S("due date YYYY-MM-DD, optional"), note: S("note, optional"), warehouse_materials: S("warehouse the materials are taken from, optional (default warehouse)"), warehouse_output: S("warehouse the finished product goes to, optional") }, ["product", "qty"]) },
+        check: (a) => { const qty = Number(a.qty); if (!Number.isFinite(qty) || qty <= 0) throw new ToolError("qty must be a positive number"); return { product: need(str(a.product, 200), "product"), qty, due: day(a.due, "due"), note: str(a.note, 400), warehouse_materials: str(a.warehouse_materials, 120), warehouse_output: str(a.warehouse_output, 120) }; },
+        run: (c, a) => wrap(async () => {
+            const p = await findProduct(c.org, String(a.product));
+            const wm = a.warehouse_materials ? await resolveWarehouse(c.org, String(a.warehouse_materials)) : null;
+            const wo = a.warehouse_output ? await resolveWarehouse(c.org, String(a.warehouse_output)) : null;
+            const order = await createProductionOrder(c.org, { product: p.id, qty: Number(a.qty), due: String(a.due || ""), note: String(a.note || ""), warehouseMaterials: wm?.id, warehouseOutput: wo?.id, by: await authorName(c.userId) });
+            return { params: { number: order.number, product: p.name, qty: String(a.qty), cost: String(order.planCost) }, link: "/crm/finance?tab=production" };
+        }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "launch_production_order", description: "Launch a planned production order: its materials are reserved on the warehouse so they cannot be used for anything else. Needs user confirmation. Identify the order by its number (e.g. ВЗ-2026-3).", parameters: schema({ number: S("production order number") }, ["number"]) },
+        check: (a) => ({ number: need(str(a.number, 40), "number") }),
+        run: (c, a) => wrap(async () => { const o = await findProductionOrder(c.org, String(a.number)); await launchProductionOrder(c.org, o.id); return { params: { number: o.number }, link: "/crm/finance?tab=production" }; }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "produce_output", description: "Record production output of a launched order: the materials are written off the warehouse (from the reserve) and the finished product is put on the warehouse balance at its real production cost. qty defaults to everything still planned; scrap_qty and actual_minutes are optional. Needs user confirmation.", parameters: schema({ number: S("production order number"), qty: { type: "number", description: "units produced now; omit for the whole remainder" }, scrap_qty: { type: "number", description: "of them scrap, optional" }, actual_minutes: { type: "number", description: "actual labor minutes, optional" } }, ["number"]) },
+        check: (a) => ({ number: need(str(a.number, 40), "number"), qty: Number(a.qty) > 0 ? Number(a.qty) : 0, scrap_qty: Math.max(0, Number(a.scrap_qty) || 0), actual_minutes: Math.max(0, Number(a.actual_minutes) || 0) }),
+        run: (c, a) => wrap(async () => {
+            const o = await findProductionOrder(c.org, String(a.number));
+            const qty = Number(a.qty) || Math.max(0, Number(o.planQty) - Number(o.producedQty));
+            const r = await produceOutput(c.org, o.id, { qty, scrapQty: Number(a.scrap_qty) || 0, actualMinutes: Number(a.actual_minutes) || 0, by: await authorName(c.userId) });
+            return { params: { number: o.number, qty: String(r.portion), unitCost: String(r.unitCost), status: r.order.status === "done" ? "done" : "in progress" }, link: "/crm/finance?tab=production" };
+        }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "cancel_production_order", description: "Cancel a production order (reserved materials return to the warehouse). A finished order cannot be cancelled. Needs user confirmation.", parameters: schema({ number: S("production order number") }, ["number"]) },
+        check: (a) => ({ number: need(str(a.number, 40), "number") }),
+        run: (c, a) => wrap(async () => { const o = await findProductionOrder(c.org, String(a.number)); await cancelProductionOrder(c.org, o.id); return { params: { number: o.number }, link: "/crm/finance?tab=production" }; }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "run_production", description: "ONE-STEP production: create the production order for a product, launch it (reserve the materials), write the materials off the warehouse and put the finished product on the warehouse balance. Use it for «сделай/изготовь N штук и положи на склад». The product must have a specification (create_bom first if not). Needs user confirmation. If the materials are not enough the order stays planned and the missing materials are named.", parameters: schema({ product: S("product name, SKU or id"), qty: { type: "number", description: "units to produce" }, due: S("date YYYY-MM-DD, optional"), note: S("note, optional") }, ["product", "qty"]) },
+        check: (a) => { const qty = Number(a.qty); if (!Number.isFinite(qty) || qty <= 0) throw new ToolError("qty must be a positive number"); return { product: need(str(a.product, 200), "product"), qty, due: day(a.due, "due"), note: str(a.note, 400) }; },
+        run: (c, a) => wrap(async () => {
+            const p = await findProduct(c.org, String(a.product));
+            const by = await authorName(c.userId);
+            const order = await createProductionOrder(c.org, { product: p.id, qty: Number(a.qty), due: String(a.due || ""), note: String(a.note || ""), by });
+            const missing = [];
+            for (const m of (order.materials as { product: unknown; qty: number }[]) ?? []) {
+                const card = await prisma.product.findFirst({ where: { id: String(m.product), org: c.org }, select: { name: true, stockQty: true } });
+                if ((card?.stockQty ?? 0) < m.qty) missing.push(`${card?.name ?? m.product}: need ${m.qty}, have ${card?.stockQty ?? 0}`);
+            }
+            if (missing.length) return { params: { number: order.number, product: p.name, qty: String(a.qty), status: "created, NOT launched — not enough materials", cost: missing.join("; ") }, link: "/crm/finance?tab=production" };
+            await launchProductionOrder(c.org, order.id);
+            const r = await produceOutput(c.org, order.id, { qty: Number(a.qty), by });
+            return { params: { number: order.number, product: p.name, qty: String(r.portion), status: "done", cost: String(r.unitCost) }, link: "/crm/finance?tab=production" };
         }),
     },
     // ─────────── отчёт в PDF на почту ───────────
@@ -1359,6 +1450,8 @@ const GROUPS: { re: RegExp; tools: string[] }[] = [
       tools: ["create_quote", "create_order", "create_contract", "update_order_status", "invoice_order", "decide_quote", "quote_to_order", "contract_action", "download_document", "browse_data", "search_contacts"] },
     { re: /расход|витрат|ausgabe|expense|налог|податк|steuer|банк|bank|выруч|доход|прибыл|money|деньг|кассов/i,
       tools: ["list_expenses", "create_expense", "finance_summary", "browse_data"] },
+    { re: /производ|виробн|спецификац|специфікац|\bbom\b|номенклатур|потребност|потреба|\bmrp\b|изготов|виготов|сдела(й|ть) .*(штук|шт)|собер|собра|выпуск|випуск|production|stückliste|fertigung|herstell|материал|матеріал|списа/i,
+      tools: ["list_production", "create_bom", "create_production_order", "launch_production_order", "produce_output", "cancel_production_order", "run_production", "list_products", "create_product", "adjust_stock", "create_purchase_order", "restock_goods", "browse_data"] },
     { re: /тест|демо|фейк|фейков|вымышл|для проверки|для перевірки|пробн|test|demo|fake|dummy|beispiel|testdaten|график|графік/i,
       tools: ["create_demo_data", "delete_demo_data", "finance_summary", "list_invoices", "list_expenses", "create_invoice", "create_expense"] },
     { re: /склад|остат|залишк|товар|продукт|product|stock|bestand|lager|закуп|закаж|замов|зп-|поставщ|постачальн|supplier|lieferant|bestell|purchase|приход|списан|списа|инвентар|артикул|sku|nomenclat|номенклат|заканч|закінч|нехват|не хватает|reorder/i,
