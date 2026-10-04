@@ -638,7 +638,10 @@
         "options": "Параметри",
         "openTasks": "Відкрити «Завдання та проекти»",
         "pickDate": "Оберіть дату",
-        "noData": "Даних ще немає"
+        "noData": "Даних ще немає",
+        "allTime": "Усі",
+        "doneOf": "виконано {done} з {total}",
+        "noTasksYet": "завдань ще немає"
     },
     "tasks": {
         "projectNew": "Новий проєкт",
@@ -723,7 +726,9 @@
         "delete": "Видалити",
         "options": "Параметри",
         "selectAll": "Обрати все",
-        "selectRow": "Обрати рядок"
+        "selectRow": "Обрати рядок",
+        "unmute": "Увімкнути сповіщення",
+        "markDone": "Завдання виконано"
     },
     "settings": {
         "allDepartments": "Усі підрозділи",

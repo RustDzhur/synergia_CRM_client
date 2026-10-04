@@ -638,7 +638,10 @@
         "options": "Options",
         "openTasks": "Open Tasks and Projects",
         "pickDate": "Choose date",
-        "noData": "No data yet"
+        "noData": "No data yet",
+        "allTime": "All",
+        "doneOf": "{done} of {total} done",
+        "noTasksYet": "no tasks yet"
     },
     "tasks": {
         "projectNew": "New project",
@@ -723,7 +726,9 @@
         "delete": "Delete",
         "options": "Options",
         "selectAll": "Select all",
-        "selectRow": "Select row"
+        "selectRow": "Select row",
+        "unmute": "Turn notifications on",
+        "markDone": "Task completed"
     },
     "settings": {
         "allDepartments": "All departments",

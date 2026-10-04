@@ -638,7 +638,10 @@
         "options": "Optionen",
         "openTasks": "Aufgaben und Projekte öffnen",
         "pickDate": "Datum wählen",
-        "noData": "Noch keine Daten"
+        "noData": "Noch keine Daten",
+        "allTime": "Alle",
+        "doneOf": "{done} von {total} erledigt",
+        "noTasksYet": "noch keine Aufgaben"
     },
     "tasks": {
         "projectNew": "Neues Projekt",
@@ -723,7 +726,9 @@
         "delete": "Löschen",
         "options": "Optionen",
         "selectAll": "Alle auswählen",
-        "selectRow": "Zeile auswählen"
+        "selectRow": "Zeile auswählen",
+        "unmute": "Benachrichtigungen einschalten",
+        "markDone": "Aufgabe erledigt"
     },
     "settings": {
         "allDepartments": "Alle Abteilungen",

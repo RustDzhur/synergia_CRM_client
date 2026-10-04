@@ -1,6 +1,6 @@
 "use client";
 import { useLocale, useTranslations } from "next-intl";
-import { TbBellOff, TbChevronDown, TbDots, TbPin, TbSettings } from "react-icons/tb";
+import { TbBell, TbBellOff, TbCheck, TbChevronDown, TbDots, TbPin, TbSettings } from "react-icons/tb";
 import { Task, TaskStatus } from "@/store/useTaskStore";
 import { localeTag } from "@/utils/dateHelpers";
 import Checkbox from "../../shared/Checkbox";
@@ -21,7 +21,7 @@ interface Props {
 	onApply: () => void;
 	onOpen: (task: Task) => void;
 	onDelete: (ids: string[]) => void;
-	onUpdate: (id: string, patch: { pinned?: boolean; muted?: boolean }) => void;
+	onUpdate: (id: string, patch: { pinned?: boolean; muted?: boolean; completed?: boolean }) => void;
 }
 
 const th = "px-10 text-center";
@@ -77,9 +77,14 @@ export default function TaskListView({ rows, isLoading, selected, onSelect, stat
 								</td>
 								<td className="px-10 text-center">
 									<span className="inline-flex max-w-full items-center gap-8">
+										{/* Отметка «выполнено» прямо в строке: не нужно искать пакетное действие внизу таблицы */}
+										<button type="button" role="checkbox" aria-checked={task.completed} aria-label={task.completed ? t("actionActive") : t("actionDone")} title={task.completed ? t("actionActive") : t("actionDone")} onClick={() => onUpdate(task._id, { completed: !task.completed })}
+											className={`flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-50 border transition-colors ${task.completed ? "border-[#c6ff4d] bg-[#c6ff4d] text-[#0a0c0b]" : "border-[rgba(255,255,255,0.28)] text-transparent hover:border-[#c6ff4d] hover:text-[#c6ff4d]"}`}>
+											<TbCheck size={13} aria-hidden />
+										</button>
 										<button type="button" onClick={() => onOpen(task)} className={`truncate text-13 text-[#f1f4ee] transition-colors hover:text-[#c6ff4d] ${task.completed ? "line-through" : ""}`}>{task.title}</button>
 										<button type="button" aria-label={t("pinned")} aria-pressed={task.pinned} onClick={() => onUpdate(task._id, { pinned: !task.pinned })} className={`shrink-0 transition-colors ${task.pinned ? "text-[#c6ff4d]" : "text-[#8C948B] hover:text-[#8c948b]"}`}><TbPin size={16} /></button>
-										<button type="button" aria-label={t("muted")} aria-pressed={task.muted} onClick={() => onUpdate(task._id, { muted: !task.muted })} className={`shrink-0 transition-colors ${task.muted ? "text-[#c6ff4d]" : "text-[#8C948B] hover:text-[#8c948b]"}`}><TbBellOff size={16} /></button>
+										<button type="button" aria-label={task.muted ? t("unmute") : t("muted")} title={task.muted ? t("unmute") : t("muted")} aria-pressed={task.muted} onClick={() => onUpdate(task._id, { muted: !task.muted })} className={`shrink-0 transition-colors ${task.muted ? "text-[#8C948B] hover:text-[#cfd4cb]" : "text-[#c6ff4d] hover:text-[#f1f4ee]"}`}>{task.muted ? <TbBellOff size={16} /> : <TbBell size={16} />}</button>
 									</span>
 								</td>
 								<td className={td}>{dateText(tag, task.updatedAt ?? task.createdAt, "short")}</td>

@@ -13,8 +13,8 @@ interface Props {
 	onClose: () => void;
 }
 
-interface Form { title: string; description: string; deadline: string; responsible: string }
-const EMPTY: Form = { title: "", description: "", deadline: "", responsible: "" };
+interface Form { title: string; description: string; deadline: string; responsible: string; completed: boolean }
+const EMPTY: Form = { title: "", description: "", deadline: "", responsible: "", completed: false };
 
 // Окно создания и редактирования задачи.
 export default function TaskModal({ open, task, onClose }: Props) {
@@ -27,7 +27,7 @@ export default function TaskModal({ open, task, onClose }: Props) {
 		if (!open) return;
 		setForm(
 			task
-				? { title: task.title, description: task.description ?? "", deadline: task.deadline ?? "", responsible: task.responsible ?? "" }
+				? { title: task.title, description: task.description ?? "", deadline: task.deadline ?? "", responsible: task.responsible ?? "", completed: !!task.completed }
 				: EMPTY
 		);
 	}, [open, task]);
@@ -64,6 +64,13 @@ export default function TaskModal({ open, task, onClose }: Props) {
 					</label>
 					<FormField label={t("deadline")} type="datetime-local" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
 					<FormField label={t("responsible")} value={form.responsible} onChange={(e) => setForm({ ...form, responsible: e.target.value })} maxLength={100} />
+					{/* Новая задача сразу активна; отметить выполненной можно здесь или кружком в списке */}
+					{task && (
+						<label className="flex cursor-pointer items-center gap-10 text-13 text-[#cfd4cb]">
+							<input type="checkbox" checked={form.completed} onChange={(e) => setForm({ ...form, completed: e.target.checked })} className="h-[16px] w-[16px] accent-[#c6ff4d]" />
+							{t("markDone")}
+						</label>
+					)}
 				</div>
 				<div className="mt-24 flex justify-end gap-10">
 					<button type="button" onClick={onClose} className="fs-btn fs-btn-ghost h-40">

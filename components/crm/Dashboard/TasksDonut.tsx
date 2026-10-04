@@ -4,13 +4,16 @@ import { useTranslations } from "next-intl";
 import { Task, taskStatus } from "@/store/useTaskStore";
 import PeriodSelect from "./PeriodSelect";
 
-type Period = "month" | "week" | "year";
+type Period = "all" | "month" | "week" | "year";
 
 const COLORS = { active: "#FFB02E", completed: "#C6FF4D", ended: "#F04333" } as const;
 
-function inPeriod(deadline: string | undefined, period: Period, now: Date): boolean {
-	if (!deadline) return false;
-	const d = new Date(deadline);
+// Задача относится к периоду по сроку, а без срока — по дате создания (раньше задачи без срока в кольцо не попадали вовсе). «Все» берёт любые задачи.
+function inPeriod(deadline: string | undefined, period: Period, now: Date, createdAt?: string): boolean {
+	if (period === "all") return true;
+	const at = deadline || createdAt;
+	if (!at) return false;
+	const d = new Date(at);
 	if (Number.isNaN(d.getTime())) return false;
 	if (period === "year") return d.getFullYear() === now.getFullYear();
 	if (period === "month") return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
@@ -22,12 +25,12 @@ function inPeriod(deadline: string | undefined, period: Period, now: Date): bool
 // Кольцо «Tasks»: доли активных, выполненных и просроченных задач за период. В центре — процент выполненных.
 export default function TasksDonut({ tasks }: { tasks: Task[] }) {
 	const t = useTranslations("dashboard");
-	const [period, setPeriod] = useState<Period>("month");
+	const [period, setPeriod] = useState<Period>("all");
 
 	const counts = useMemo(() => {
 		const now = new Date();
 		const acc = { active: 0, completed: 0, ended: 0 };
-		tasks.filter((task) => inPeriod(task.deadline, period, now)).forEach((task) => {
+		tasks.filter((task) => inPeriod(task.deadline, period, now, task.createdAt)).forEach((task) => {
 			acc[taskStatus(task, now.getTime())] += 1;
 		});
 		return acc;
@@ -53,6 +56,7 @@ export default function TasksDonut({ tasks }: { tasks: Task[] }) {
 					value={period}
 					onChange={setPeriod}
 					options={[
+						{ value: "all", label: t("allTime") },
 						{ value: "month", label: t("thisMonth") },
 						{ value: "week", label: t("thisWeek") },
 						{ value: "year", label: t("thisYear") },
@@ -64,6 +68,7 @@ export default function TasksDonut({ tasks }: { tasks: Task[] }) {
 				{(["active", "completed", "ended"] as const).map((k) => (
 					<li key={k} className="flex items-center gap-6">
 						{t(k)}
+						<span className="font-semibold text-[#f1f4ee]">{counts[k]}</span>
 						<span className="inline-block h-[10px] w-[10px] rounded-50" style={{ backgroundColor: COLORS[k] }} />
 					</li>
 				))}
@@ -93,11 +98,11 @@ export default function TasksDonut({ tasks }: { tasks: Task[] }) {
 						})}
 					</g>
 				</svg>
-				<p
-					className="absolute inset-0 flex items-center justify-center text-[56px] font-bold leading-none md:text-[64px]"
-					style={{ color: total ? COLORS.completed : "#8C948B" }}>
-					{percent} %
-				</p>
+				<div className="absolute inset-0 flex flex-col items-center justify-center">
+					<p className="text-[56px] font-bold leading-none md:text-[64px]" style={{ color: total ? COLORS.completed : "#8C948B" }}>{percent} %</p>
+					{/* Подпись объясняет круг: сколько из скольких выполнено; цвет дуги показывает долю активных и просроченных */}
+					<p className="mt-8 text-12 text-[#8c948b]">{total ? t("doneOf", { done: counts.completed, total }) : t("noTasksYet")}</p>
+				</div>
 			</div>
 		</section>
 	);
