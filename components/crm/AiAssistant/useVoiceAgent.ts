@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { type AiAction, type AiMessage, useAiStore } from "@/store/useAiStore";
-import { BCP47, type VoiceGender, type VoiceLang, chime, isAudioBlocked, isSpeaking, readGender, saveGender, speakText, stopSpeech, subscribeSpeech, unlockAudio } from "./speech";
+import { BCP47, type VoiceGender, type VoiceLang, chime, isAudioBlocked, isSpeaking, playFiller, prefetchFillers, readGender, saveGender, speakText, stopFiller, stopSpeech, subscribeSpeech, unlockAudio } from "./speech";
 import { dictationSupported, isOffCommand, isStopCommand, stripWake, useBargeIn, useContinuousListening, voiceDecision, type MicError } from "./voice";
 
 // Голосовое управление всем приложением («Привет, Айрис, открой бухгалтерию и покажи неоплаченные счета»).
@@ -66,6 +66,8 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 	const spokenRef = useRef<string | null>(null);
 	const onErrorRef = useRef(onError);
 	onErrorRef.current = onError;
+	const fillerTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+	const clearFillers = useCallback(() => { fillerTimers.current.forEach(clearTimeout); fillerTimers.current = []; stopFiller(); }, []);
 
 	// Настройки и поддержка браузера — только на клиенте: в разметке сервера этих данных нет
 	useEffect(() => {
@@ -89,6 +91,9 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 		window.addEventListener("keydown", unlock, { once: true });
 		return () => { window.removeEventListener("pointerdown", unlock); window.removeEventListener("keydown", unlock); };
 	}, [enabled]);
+
+	// Вставки заранее озвучиваются выбранным голосом — тогда «Секунду» звучит без задержки
+	useEffect(() => { if (enabled) void prefetchFillers(lang, gender); }, [enabled, lang, gender]);
 
 	const armAwake = useCallback((ms: number) => {
 		awakeUntil.current = Date.now() + ms;
@@ -168,8 +173,15 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 		}
 		if (decision.kind === "many") { say(PHRASES[lang].many, () => armAwake(AWAKE_MS)); return; }
 		chime("wake");
+		// Не молчим, пока думаю: через 0,7 с — «Секунду», дальше раз в ~10 секунд — «Ещё работаю» (отменяется, как только пришёл ответ)
+		clearFillers();
+		fillerTimers.current = [700, 9_000, 20_000, 35_000, 55_000].map((ms, i) => setTimeout(() => { if (useAiStore.getState().busy) playFiller(i === 0 ? "ack" : "wait", lang, gender); }, ms));
 		void send(utterance, { locale, page, voice: true, auto: autoApprove });
 	}
+
+	// Ответ пришёл (или запрос закончился) — вставки больше не нужны
+	useEffect(() => { if (!busy) clearFillers(); }, [busy, clearFillers]);
+	useEffect(() => () => clearFillers(), [clearFillers]);
 
 	const listening = enabled && supported && !blocked && !busy && !speaking;
 	const { interim } = useContinuousListening({
@@ -178,6 +190,13 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 		onPhrase: handlePhrase,
 		onError: (code) => { onErrorRef.current(code); setEnabled(false, false); },
 	});
+
+	// Пока человек говорит (идёт распознавание), Айрис не засыпает: окно бодрствования продлевается с каждым новым словом, а не истекает
+	// посреди длинной просьбы
+	useEffect(() => {
+		if (!interim) return;
+		if (Date.now() < awakeUntil.current || stripWake(interim).hit) armAwake(AWAKE_MS);
+	}, [interim, armAwake]);
 
 	// Перебивание голосом: пока Айрис говорит, микрофон измеряет громкость и обрывает речь, когда заговорил человек
 	useBargeIn({ active: enabled && speaking, onDetect: () => { stopSpeech(); armAwake(AWAKE_MS); } });

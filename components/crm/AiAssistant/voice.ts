@@ -347,12 +347,13 @@ export function useBargeIn({ active, onDetect }: { active: boolean; onDetect: ()
 
 /**
  * Непрерывное слушание для режима разговора: распознаёт фразу и сам зовёт onPhrase, когда человек
- * замолчал (тишина ~3 с — успевает договорить и подумать посреди фразы). Пока ассистент думает или
+ * замолчал: тишина 2 секунды — успевает договорить и подумать посреди фразы. Пока человек говорит, текст копится: даже если браузер сам
+ * закончил сессию распознавания посреди длинной речи, уже сказанное не теряется (carryRef), а после паузы уходит одной фразой. Пока ассистент думает или
  * говорит, слушание выключено — микрофон не должен слышать собственный голос (перебивание голосом
  * делает useBargeIn). Живёт только на браузерном распознавании: серверный путь требует ручной
  * остановки записи, а «Джарвис» — это именно разговор без рук.
  */
-export const SILENCE_MS = 1300; // пауза, после которой фраза считается законченной
+export const SILENCE_MS = 2000; // пауза, после которой фраза считается законченной (владелец просил две секунды: длинные просьбы не обрываются)
 export function useContinuousListening({ lang, active, onPhrase, onError }: {
 	lang: string; // BCP47: ru-RU, uk-UA, de-DE, en-US — язык, на котором говорит человек (не обязательно язык интерфейса)
 	active: boolean;
@@ -363,6 +364,7 @@ export function useContinuousListening({ lang, active, onPhrase, onError }: {
 	const recogRef = useRef<RecognitionLike | null>(null);
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const phraseRef = useRef("");
+	const carryRef = useRef(""); // уже сказанное до перезапуска движка браузером
 	const sentRef = useRef(false);
 	const onPhraseRef = useRef(onPhrase);
 	const onErrorRef = useRef(onError);
@@ -373,6 +375,7 @@ export function useContinuousListening({ lang, active, onPhrase, onError }: {
 		const clearTimer = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; } };
 		sentRef.current = false;
 		phraseRef.current = "";
+		carryRef.current = "";
 		setInterim("");
 		if (!active) {
 			clearTimer();
@@ -393,6 +396,7 @@ export function useContinuousListening({ lang, active, onPhrase, onError }: {
 				if (!phrase || sentRef.current || disposed) return;
 				sentRef.current = true;
 				phraseRef.current = "";
+				carryRef.current = "";
 				setInterim("");
 				try { recogRef.current?.stop(); } catch { /* уже остановлен */ }
 				onPhraseRef.current(phrase);
@@ -413,7 +417,9 @@ export function useContinuousListening({ lang, active, onPhrase, onError }: {
 					if (r.isFinal) finalText += r[0].transcript;
 					else interimText += r[0].transcript;
 				}
-				const shown = (finalText + interimText).trim();
+				const heard = (finalText + interimText).trim();
+				// после перезапуска движка браузером результаты начинаются с нуля — приклеиваем то, что было сказано раньше
+				const shown = [carryRef.current, heard].filter(Boolean).join(" ").trim();
 				// Итог приходит с задержкой — если за паузу он не успел, берём то, что уже распознано (промежуточный текст обычно точен)
 				phraseRef.current = shown;
 				setInterim(shown);
@@ -432,8 +438,10 @@ export function useContinuousListening({ lang, active, onPhrase, onError }: {
 			// остановит распознавание и сюда мы уже не вернёмся.
 			recog.onend = () => {
 				if (disposed) return;
+				// сессию закончил браузер, а не пауза человека: накопленное не теряем, таймер паузы продолжает идти
+				carryRef.current = sentRef.current ? "" : phraseRef.current;
 				sentRef.current = false;
-				phraseRef.current = "";
+				if (!carryRef.current) phraseRef.current = "";
 				const delay = restartDelay;
 				restartDelay = 150;
 				setTimeout(() => { if (!disposed) { try { recog.start(); } catch { /* перезапустим после следующего onend */ } } }, delay);

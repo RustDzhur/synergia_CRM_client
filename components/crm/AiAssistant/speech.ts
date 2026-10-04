@@ -203,8 +203,56 @@ function browserSpeak(text: string, lang: VoiceLang, gender: VoiceGender): Promi
 
 export interface SpeakOpts { lang?: VoiceLang; gender?: VoiceGender; speed?: number; onDone?: () => void }
 
+// ── «живые» вставки ─────────────────────────────────────────────────────────────────────────────
+// Пока Айрис думает или выполняет операцию, она не молчит: сразу бросает короткое «Секунду», а если дело затянулось — «Ещё работаю».
+// Фразы заранее озвучиваются сервером и хранятся в памяти (prefetchFillers), поэтому звучат мгновенно, без обращения к сети.
+const FILLERS: Record<VoiceLang, { ack: string[]; wait: string[] }> = {
+	ru: { ack: ["Секунду.", "Так, смотрю.", "Сейчас сделаю.", "Хорошо, одну минуту."], wait: ["Ещё работаю, чуть-чуть.", "Почти готово.", "Минутку, это займёт немного времени."] },
+	uk: { ack: ["Секунду.", "Так, дивлюсь.", "Зараз зроблю.", "Добре, одну хвилину."], wait: ["Ще працюю, трішки.", "Майже готово.", "Хвилинку, це займе трохи часу."] },
+	de: { ack: ["Einen Moment.", "Ich schaue nach.", "Mache ich gleich.", "Okay, eine Minute."], wait: ["Ich arbeite noch daran.", "Gleich fertig.", "Einen Augenblick, das dauert etwas."] },
+	en: { ack: ["One second.", "Let me look.", "On it.", "Okay, one moment."], wait: ["Still working on it.", "Almost done.", "Bear with me, this takes a moment."] },
+};
+const fillerCache = new Map<string, Blob>();
+let fillerEl: HTMLAudioElement | null = null;
+let lastFiller = "";
+
+/** Заранее озвучить вставки выбранным голосом (при включении Айрис и смене языка/голоса): дальше они играют без задержки. */
+export async function prefetchFillers(lang: VoiceLang, gender: VoiceGender) {
+	for (const text of [...FILLERS[lang].ack, ...FILLERS[lang].wait]) {
+		const key = `${lang}|${gender}|${text}`;
+		if (fillerCache.has(key)) continue;
+		const blob = await fetchClip(text, lang, gender);
+		if (!blob) return; // сервер озвучки недоступен — вставок не будет, остальное работает
+		fillerCache.set(key, blob);
+	}
+}
+
+export function stopFiller() {
+	try { fillerEl?.pause(); } catch { /* уже остановлен */ }
+}
+
+/** Проиграть случайную вставку (не повторяя прошлую). false — вставок в памяти нет или звук ещё заблокирован браузером. */
+export function playFiller(kind: "ack" | "wait", lang: VoiceLang, gender: VoiceGender): boolean {
+	if (blocked) return false;
+	const options = FILLERS[lang][kind].filter((t) => fillerCache.has(`${lang}|${gender}|${t}`) && t !== lastFiller);
+	if (!options.length) return false;
+	const text = options[Math.floor(Math.random() * options.length)];
+	lastFiller = text;
+	try {
+		fillerEl ??= new Audio();
+		const url = URL.createObjectURL(fillerCache.get(`${lang}|${gender}|${text}`) as Blob);
+		fillerEl.onended = () => URL.revokeObjectURL(url);
+		fillerEl.src = url;
+		void fillerEl.play().catch(() => undefined);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 /** Остановить речь немедленно (перебивание, «стоп», закрытие окна). */
 export function stopSpeech() {
+	stopFiller();
 	token++;
 	const abort = abortCurrent;
 	abortCurrent = null;

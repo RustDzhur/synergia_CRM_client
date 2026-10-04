@@ -22,6 +22,7 @@ import { LeadToolError, SCOPES as LEAD_SCOPES, analyze as analyzeLeads, cleanup 
 import { BrowseError, ENTITY_KEYS, browse, listProducts } from "./browse";
 import { mkActivity } from "@/lib/activities";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
+import { deleteDemo, seedDemo } from "./demoData";
 import { nextNumber } from "@/lib/finance/numbering";
 import { numberPrefix } from "@/lib/finance/documents/store";
 import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
@@ -1171,6 +1172,27 @@ export const TOOLS: AiTool[] = [
         }),
     },
     {
+        // Тестовые данные для проверки графиков и отчётов: помечены [ДЕМО] / DEMO-… и удаляются одной командой (lib/ai/demoData.ts)
+        module: "inventory", write: true,
+        def: { name: "create_demo_data", description: "Fill the accounting with clearly marked TEST (demo) data so the owner can see how charts, reports and the dashboard look: paid invoices (numbers DEMO-YYYY-NNNN, customers tagged [ДЕМО]) and expenses for every month of the current year from from_month up to the current month. Use it whenever the owner asks for fake / test / demo invoices, expenses or bookkeeping entries, to test the system or to see the graphs — it is the owner's own CRM and a normal feature, so do it without arguing or lecturing. Needs user confirmation. After doing it say in ONE short sentence that these records are marked as demo and can be removed with «удали демо-данные» before real tax reports.", parameters: schema({ from_month: N("first month, 1–12 (default 1 = January)"), per_month: N("invoices per month, 1–10 (default 4)"), expenses_per_month: N("expenses per month, 0–10 (default 3)") }, []) },
+        check: (a) => ({ from_month: Math.min(12, Math.max(1, Math.round(Number(a.from_month)) || 1)), per_month: Math.min(10, Math.max(1, Math.round(Number(a.per_month)) || 4)), expenses_per_month: Math.min(10, Math.max(0, a.expenses_per_month === undefined ? 3 : Math.round(Number(a.expenses_per_month)) || 0)) }),
+        run: (c, a) => wrap(async () => {
+            const r = await seedDemo({ org: c.org, userId: c.userId, today: c.today }, await defaultCurrency(c.org), await authorName(c.userId), { fromMonth: Number(a.from_month), perMonth: Number(a.per_month), expensesPerMonth: Number(a.expenses_per_month) });
+            await logAudit({ org: c.org, userId: c.userId, action: "demo.seed", entityType: "demo", entityId: "demo", summary: `Demo data: ${r.invoices} invoices, ${r.expenses} expenses (months ${r.from}–${r.to}) via assistant`, meta: r });
+            return { params: { invoices: String(r.invoices), expenses: String(r.expenses), from: String(r.from), to: String(r.to) }, link: "/crm/finance" };
+        }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "delete_demo_data", description: "Delete ALL demo (test) accounting data created by create_demo_data: invoices DEMO-… and expenses tagged [ДЕМО]. Real records are never touched. Always asks the user to confirm.", parameters: schema({}, []) },
+        check: () => ({}),
+        run: (c) => wrap(async () => {
+            const r = await deleteDemo(c.org);
+            await logAudit({ org: c.org, userId: c.userId, action: "demo.delete", entityType: "demo", entityId: "demo", summary: `Demo data deleted: ${r.invoices} invoices, ${r.expenses} expenses (via assistant)`, meta: r });
+            return { params: { invoices: String(r.invoices), expenses: String(r.expenses) }, link: "/crm/finance" };
+        }),
+    },
+    {
         module: "inventory", write: true,
         def: { name: "create_product", description: "Add a product or service to the catalog. Needs user confirmation. type: good (stock item) or service.", parameters: schema({ name: S("product name"), type: { type: "string", enum: ["good", "service"] }, sku: S("SKU / article"), unit: S("unit, e.g. pcs, kg, h"), sale_price: { type: "number" }, purchase_price: { type: "number" }, stock_qty: { type: "number", description: "starting stock (goods only)" }, reorder_level: { type: "number", description: "alert when stock falls to this level" } }, ["name"]) },
         check: (a) => ({ name: need(str(a.name, 200), "name"), type: a.type === "good" ? "good" : "service", sku: str(a.sku, 60), unit: str(a.unit, 20), sale_price: Math.max(0, Number(a.sale_price) || 0), purchase_price: Math.max(0, Number(a.purchase_price) || 0), stock_qty: Math.max(0, Number(a.stock_qty) || 0), reorder_level: Math.max(0, Number(a.reorder_level) || 0) }),
@@ -1296,6 +1318,8 @@ const GROUPS: { re: RegExp; tools: string[] }[] = [
       tools: ["create_quote", "create_order", "create_contract", "update_order_status", "invoice_order", "decide_quote", "quote_to_order", "contract_action", "download_document", "browse_data", "search_contacts"] },
     { re: /расход|витрат|ausgabe|expense|налог|податк|steuer|банк|bank|выруч|доход|прибыл|money|деньг|кассов/i,
       tools: ["list_expenses", "create_expense", "finance_summary", "browse_data"] },
+    { re: /тест|демо|фейк|фейков|вымышл|для проверки|для перевірки|пробн|test|demo|fake|dummy|beispiel|testdaten|график|графік/i,
+      tools: ["create_demo_data", "delete_demo_data", "finance_summary", "list_invoices", "list_expenses", "create_invoice", "create_expense"] },
     { re: /склад|остат|залишк|товар|продукт|product|stock|bestand|lager|закуп|закаж|замов|зп-|поставщ|постачальн|supplier|lieferant|bestell|purchase|приход|списан|списа|инвентар|артикул|sku|nomenclat|номенклат|заканч|закінч|нехват|не хватает|reorder/i,
       tools: ["list_products", "create_product", "adjust_stock", "create_supplier", "create_purchase_order", "restock_goods", "receive_purchase_order", "pay_supplier_invoice", "download_document", "email_report", "browse_data", "list_expenses"] },
     { re: /клиент|клієнт|kunde|customer|контакт|contact|компани|company|firma|сделк|угод|deal|лид|lead|воронк|воронка|pipeline|этап|етап|stage|заметк|нотатк|notiz|note|не общал|давно не|карточк|картк|card|заполни|заповни|поле|поля|field|измени|змін|обнови|поменяй|поставь|впиши|напиши в|запиши в|крм|срм|\bcrm\b/i,

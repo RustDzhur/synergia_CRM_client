@@ -1860,7 +1860,14 @@
         "f_pay": "Bezahlen",
         "f_warehouse": "Lager",
         "f_order": "Bestellung",
-        "f_all_open": "Alle offenen"
+        "f_all_open": "Alle offenen",
+        "act_create_demo_data": "Testdaten der Buchhaltung erstellen",
+        "done_create_demo_data": "{invoices} Test-Rechnungen und {expenses} Ausgaben erstellt (Monate {from}–{to}). Mit [ДЕМО] markiert; löschbar mit „Demo-Daten löschen“.",
+        "act_delete_demo_data": "Alle Testdaten löschen",
+        "done_delete_demo_data": "{invoices} Test-Rechnungen und {expenses} Ausgaben gelöscht",
+        "f_from_month": "Ab Monat",
+        "f_per_month": "Rechnungen pro Monat",
+        "f_expenses_per_month": "Ausgaben pro Monat"
     },
     "finance": {
         "title": "Buchhaltung",

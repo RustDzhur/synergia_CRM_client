@@ -1860,7 +1860,14 @@
         "f_pay": "Pay",
         "f_warehouse": "Warehouse",
         "f_order": "Order",
-        "f_all_open": "All open"
+        "f_all_open": "All open",
+        "act_create_demo_data": "Create test accounting data",
+        "done_create_demo_data": "Created {invoices} test invoices and {expenses} expenses (months {from}–{to}). Marked [ДЕМО]; remove with “delete the demo data”.",
+        "act_delete_demo_data": "Delete all test data",
+        "done_delete_demo_data": "Deleted {invoices} test invoices and {expenses} expenses",
+        "f_from_month": "From month",
+        "f_per_month": "Invoices per month",
+        "f_expenses_per_month": "Expenses per month"
     },
     "finance": {
         "title": "Accounting",

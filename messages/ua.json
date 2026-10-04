@@ -1860,7 +1860,14 @@
         "f_pay": "Оплатити",
         "f_warehouse": "Склад",
         "f_order": "Замовлення",
-        "f_all_open": "Усі відкриті"
+        "f_all_open": "Усі відкриті",
+        "act_create_demo_data": "Створити тестові дані бухгалтерії",
+        "done_create_demo_data": "Створено тестових рахунків: {invoices}, витрат: {expenses} (місяці {from}–{to}). Позначені [ДЕМО], видаляються командою «видали демо-дані».",
+        "act_delete_demo_data": "Видалити всі тестові дані",
+        "done_delete_demo_data": "Видалено тестових рахунків: {invoices}, витрат: {expenses}",
+        "f_from_month": "З місяця",
+        "f_per_month": "Рахунків на місяць",
+        "f_expenses_per_month": "Витрат на місяць"
     },
     "finance": {
         "title": "Бухгалтерія",
