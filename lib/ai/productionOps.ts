@@ -111,3 +111,29 @@ export async function completeOrder(org: string, order: OrderLike, by: string): 
     const r = await produceOutput(org, order.id, { qty: left, by });
     return { done: true, portion: r.portion, unitCost: r.unitCost };
 }
+
+/** Стирает товары из базы насовсем вместе с их историей: движения по складу, производственные заказы и спецификации, где товар — изделие или материал.
+ *  ids = null — вся номенклатура фирмы (включая архивную). Счета, КП, заказы клиентов и закупки не трогает: в них название и цена записаны строкой. */
+export async function eraseProducts(org: string, ids: string[] | null) {
+    return prisma.$transaction(async (tx) => {
+        const scope = ids ? { in: ids } : undefined;
+        const boms = await tx.bom.findMany({ where: { org } });
+        const hit = new Set(ids ?? []);
+        const bomIds = boms.filter((b) => !ids || hit.has(String(b.product)) || ((b.components as { product: unknown }[]) ?? []).some((c) => hit.has(String(c.product)))).map((b) => b.id);
+        const orders = (await tx.productionOrder.deleteMany({ where: { org, ...(scope ? { product: scope } : {}) } })).count;
+        if (bomIds.length) await tx.bom.deleteMany({ where: { org, id: { in: bomIds } } });
+        const movements = (await tx.stockMovement.deleteMany({ where: { org, ...(scope ? { product: scope } : {}) } })).count;
+        if (!ids) await tx.stockDoc.deleteMany({ where: { org } });
+        const products = (await tx.product.deleteMany({ where: { org, ...(scope ? { id: scope } : {}) } })).count;
+        if (!ids) {
+            // вся номенклатура стёрта — нумерация производственных заказов начинается заново
+            const fs = await tx.financeSettings.findUnique({ where: { org } });
+            if (fs) {
+                const counters = { ...((fs.counters as Record<string, number> | null) ?? {}) };
+                for (const k of Object.keys(counters)) if (k.startsWith("ВЗ-")) delete counters[k];
+                await tx.financeSettings.update({ where: { org }, data: { counters } });
+            }
+        }
+        return { products, movements, orders, specs: bomIds.length };
+    }, { timeout: 60000 });
+}

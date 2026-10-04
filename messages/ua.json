@@ -1900,7 +1900,11 @@
         "f_waste_percent": "Відходи, %",
         "f_minutes": "Хвилин",
         "f_cost_per_hour": "Вартість години",
-        "f_what": "Що показати"
+        "f_what": "Що показати",
+        "act_archive_product": "Архівувати товар",
+        "done_archive_product": "Товар «{name}»: {mode}",
+        "act_clear_catalog": "Видалити всю номенклатуру назавжди",
+        "done_clear_catalog": "Номенклатуру видалено: товарів {products}, рухів по складу {movements}, виробничих замовлень {orders}"
     },
     "finance": {
         "title": "Бухгалтерія",

@@ -110,7 +110,7 @@ export async function listProducts(ctx: Ctx, a: Record<string, unknown>) {
     if (!canAccess(ctx.role, ctx.modules, "inventory", "GET")) throw new BrowseError("The user has no access to this section");
     const filter = ["low_stock", "out_of_stock", "all"].includes(String(a.filter)) ? String(a.filter) : "low_stock";
     const q = typeof a.query === "string" ? a.query.trim().slice(0, 100) : "";
-    const where: Row = { org: ctx.org, archived: false };
+    const where: Row = { org: ctx.org, archived: a.archived === true || a.archived === "true" }; // archived=true — показать архивные (скрытые) товары
     if (q) where.OR = ["name", "sku", "barcode"].map((k) => ({ [k]: { contains: q, mode: "insensitive" } }));
     const rows = await prisma.product.findMany({ where: where as never, orderBy: { name: "asc" }, take: 3000 });
     const goods = rows.filter((p) => p.type === "good");

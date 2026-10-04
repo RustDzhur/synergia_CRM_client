@@ -23,7 +23,7 @@ import { BrowseError, ENTITY_KEYS, browse, listProducts } from "./browse";
 import { mkActivity } from "@/lib/activities";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
 import { deleteDemo, seedDemo } from "./demoData";
-import { completeOrder, describeProduction, findProductionOrder, missingMaterials, resolveWarehouse, saveBom } from "./productionOps";
+import { completeOrder, eraseProducts, describeProduction, findProductionOrder, missingMaterials, resolveWarehouse, saveBom } from "./productionOps";
 import { cancelProductionOrder, createProductionOrder, launchProductionOrder, produceOutput } from "@/lib/finance/productionOrders";
 import { nextNumber } from "@/lib/finance/numbering";
 import { numberPrefix } from "@/lib/finance/documents/store";
@@ -724,7 +724,7 @@ export const TOOLS: AiTool[] = [
     // ─────────── чтение остальных разделов: склад, заказы, поставщики, банк, календарь, чаты… ───────────
     {
         module: "inventory", write: false,
-        def: { name: "list_products", description: "Products and stock levels (warehouse). filter: low_stock (running out: at or below the reorder level, or out of stock — default), out_of_stock, all. Returns the counts and the products with current stock, unit and reorder level. Use it for «что заканчивается на складе / какие остатки / есть ли товар X».", parameters: schema({ filter: { type: "string", enum: ["low_stock", "out_of_stock", "all"] }, query: S("part of the product name, SKU or barcode"), limit: N("max products, default 15, max 40") }) },
+        def: { name: "list_products", description: "Products and stock levels (warehouse). filter: low_stock (running out: at or below the reorder level, or out of stock — default), out_of_stock, all. Returns the counts and the products with current stock, unit and reorder level. Use it for «что заканчивается на складе / какие остатки / есть ли товар X».", parameters: schema({ filter: { type: "string", enum: ["low_stock", "out_of_stock", "all"] }, query: S("part of the product name, SKU or barcode"), archived: { type: "boolean", description: "true = list ARCHIVED (hidden) products instead of the active ones" }, limit: N("max products, default 15, max 40") }) },
         run: async (c, a) => { try { return await listProducts(c, a); } catch (e) { throw e instanceof BrowseError ? new ToolError(e.message) : e; } },
     },
     {
@@ -1237,6 +1237,26 @@ export const TOOLS: AiTool[] = [
     },
     {
         module: "inventory", write: true,
+        def: { name: "archive_product", description: "ARCHIVE a product (hide it from the catalog and the stock screens, keep it and its history; reversible with restore=true). This is NOT deleting — when the user says «удали / удалить / стереть», use delete_record (one product) or clear_catalog (everything). Needs user confirmation.", parameters: schema({ id: S("product id"), name: S("product name, for the confirmation card"), restore: { type: "boolean", description: "true = bring an archived product back" } }, ["id"]) },
+        check: (a) => { if (!isId(a.id)) throw new ToolError("id must be a product id"); return { id: a.id, name: str(a.name, 120), restore: a.restore === true || a.restore === "true" }; },
+        run: (c, a) => wrap(async () => {
+            const n = (await prisma.product.updateMany({ where: { id: String(a.id), org: c.org }, data: { archived: !a.restore } })).count;
+            if (!n) throw new ToolError("Product not found");
+            return { params: { name: String(a.name || a.id), mode: a.restore ? "restored" : "archived" }, link: "/crm/finance?tab=products" };
+        }),
+    },
+    {
+        module: "inventory", write: true,
+        def: { name: "clear_catalog", description: "ERASE THE WHOLE PRODUCT CATALOG of this firm for good (the owner changes the line of business, starts from scratch, wipes test data: «удали всю номенклатуру / все товары / очисти склад»). Deletes ALL products (also archived ones) together with their warehouse movements and stock documents, production orders and specifications, and restarts the production-order numbering. Invoices, quotes, customer orders, purchase orders, supplier invoices, expenses, contacts and the warehouses themselves are NOT touched. Always asks the user to confirm. Never refuse because products have stock or movements — the owner decides.", parameters: schema({}, []) },
+        check: () => ({}),
+        run: (c) => wrap(async () => {
+            const r = await eraseProducts(c.org, null);
+            await logAudit({ org: c.org, userId: c.userId, action: "catalog.wiped", entityType: "product", entityId: "all", summary: `Catalog erased: ${r.products} products, ${r.movements} movements, ${r.orders} production orders, ${r.specs} specifications (via assistant)`, meta: r }).catch(() => undefined);
+            return { params: { products: String(r.products), movements: String(r.movements), orders: String(r.orders) }, link: "/crm/finance?tab=products" };
+        }),
+    },
+    {
+        module: "inventory", write: true,
         def: { name: "create_product", description: "Add a product or service to the catalog. Needs user confirmation. type: good (stock item) or service.", parameters: schema({ name: S("product name"), type: { type: "string", enum: ["good", "service"] }, sku: S("SKU / article"), unit: S("unit, e.g. pcs, kg, h"), sale_price: { type: "number" }, purchase_price: { type: "number" }, stock_qty: { type: "number", description: "starting stock — put on the warehouse balance right away (goods only)" }, warehouse: S("warehouse for the starting stock, optional (default warehouse)"), reorder_level: { type: "number", description: "alert when stock falls to this level" } }, ["name"]) },
         check: (a) => ({ name: need(str(a.name, 200), "name"), type: a.type === "good" ? "good" : "service", sku: str(a.sku, 60), unit: str(a.unit, 20), sale_price: Math.max(0, Number(a.sale_price) || 0), purchase_price: Math.max(0, Number(a.purchase_price) || 0), stock_qty: Math.max(0, Number(a.stock_qty) || 0), warehouse: str(a.warehouse, 120), reorder_level: Math.max(0, Number(a.reorder_level) || 0) }),
         run: async (c, a) => {
@@ -1426,7 +1446,7 @@ export const TOOLS: AiTool[] = [
     // ─────────── удаление ───────────
     {
         module: null, write: true,
-        def: { name: "delete_record", description: "Delete a record of the CRM by id (ids come from the read tools: search_*, list_*, browse_data). entity: contact, company, deal, task, expense, quote, order, draft_invoice (only drafts can be deleted), supplier and product (archived, not erased). Needs user confirmation — say what is being deleted.", parameters: schema({ entity: { type: "string", enum: ["contact", "company", "deal", "task", "expense", "quote", "order", "draft_invoice", "supplier", "product"] }, id: S("record id"), name: S("human-readable name of the record, for the confirmation card") }, ["entity", "id"]) },
+        def: { name: "delete_record", description: "Delete a record of the CRM by id (ids come from the read tools: search_*, list_*, browse_data). entity: contact, company, deal, task, expense, quote, order, draft_invoice (only drafts can be deleted), supplier (archived, not erased) and product (ERASED from the database for good together with its warehouse movements, production orders and specifications — «delete» means delete; to merely hide a product use archive_product). Needs user confirmation — say what is being deleted.", parameters: schema({ entity: { type: "string", enum: ["contact", "company", "deal", "task", "expense", "quote", "order", "draft_invoice", "supplier", "product"] }, id: S("record id"), name: S("human-readable name of the record, for the confirmation card") }, ["entity", "id"]) },
         check: (a) => {
             if (!["contact", "company", "deal", "task", "expense", "quote", "order", "draft_invoice", "supplier", "product"].includes(String(a.entity))) throw new ToolError("Unsupported entity");
             if (!isId(a.id)) throw new ToolError("id must be a record id");
@@ -1446,7 +1466,7 @@ export const TOOLS: AiTool[] = [
                 // выставленный счёт удалять нельзя (нумерация и учёт): только черновик
                 draft_invoice: async () => (await prisma.invoice.deleteMany({ where: { ...org, status: "draft" } })).count,
                 supplier: async () => (await prisma.supplier.updateMany({ where: org, data: { archived: true } })).count,
-                product: async () => (await prisma.product.updateMany({ where: org, data: { archived: true } })).count,
+                product: async () => (await eraseProducts(c.org, [id])).products,
             };
             const n = await del[String(a.entity)]();
             if (!n) throw new ToolError(a.entity === "draft_invoice" ? "Draft invoice not found (only unsent drafts can be deleted)" : "Record not found");
@@ -1469,11 +1489,11 @@ const GROUPS: { re: RegExp; tools: string[] }[] = [
     { re: /расход|витрат|ausgabe|expense|налог|податк|steuer|банк|bank|выруч|доход|прибыл|money|деньг|кассов/i,
       tools: ["list_expenses", "create_expense", "finance_summary", "browse_data"] },
     { re: /производ|виробн|спецификац|специфікац|\bbom\b|номенклатур|потребност|потреба|\bmrp\b|изготов|виготов|сдела(й|ть) .*(штук|шт)|собер|собра|выпуск|випуск|production|stückliste|fertigung|herstell|материал|матеріал|списа/i,
-      tools: ["list_production", "create_bom", "create_production_order", "launch_production_order", "produce_output", "cancel_production_order", "run_production", "list_products", "create_product", "adjust_stock", "create_purchase_order", "restock_goods", "browse_data"] },
+      tools: ["list_production", "create_bom", "create_production_order", "launch_production_order", "produce_output", "cancel_production_order", "run_production", "list_products", "archive_product", "clear_catalog", "create_product", "adjust_stock", "create_purchase_order", "restock_goods", "browse_data"] },
     { re: /тест|демо|фейк|фейков|вымышл|для проверки|для перевірки|пробн|test|demo|fake|dummy|beispiel|testdaten|график|графік/i,
       tools: ["create_demo_data", "delete_demo_data", "finance_summary", "list_invoices", "list_expenses", "create_invoice", "create_expense"] },
     { re: /склад|остат|залишк|товар|продукт|product|stock|bestand|lager|закуп|закаж|замов|зп-|поставщ|постачальн|supplier|lieferant|bestell|purchase|приход|списан|списа|инвентар|артикул|sku|nomenclat|номенклат|заканч|закінч|нехват|не хватает|reorder/i,
-      tools: ["list_products", "create_product", "adjust_stock", "create_supplier", "create_purchase_order", "restock_goods", "receive_purchase_order", "pay_supplier_invoice", "download_document", "email_report", "browse_data", "list_expenses"] },
+      tools: ["list_products", "archive_product", "clear_catalog", "create_product", "adjust_stock", "create_supplier", "create_purchase_order", "restock_goods", "receive_purchase_order", "pay_supplier_invoice", "download_document", "email_report", "browse_data", "list_expenses"] },
     { re: /клиент|клієнт|kunde|customer|контакт|contact|компани|company|firma|сделк|угод|deal|лид|lead|воронк|воронка|pipeline|этап|етап|stage|заметк|нотатк|notiz|note|не общал|давно не|карточк|картк|card|заполни|заповни|поле|поля|field|измени|змін|обнови|поменяй|поставь|впиши|напиши в|запиши в|крм|срм|\bcrm\b/i,
       tools: ["search_contacts", "search_companies", "get_contact", "get_company", "get_deal", "list_deals", "list_stages", "find_stale_contacts", "create_contact", "create_company", "create_deal", "update_deal_stage", "update_deal", "update_contact", "update_company", "open_record", "add_note", "delete_record"] },
     { re: /сегодня|сьогодні|today|heute|завтра|morgen|задач|task|aufgabe|напомн|нагад|remind|календар|calendar|kalender|встреч|зустріч|termin|meeting|событ|подія|проект|project|чат|chat|whatsapp|telegram/i,
@@ -1493,7 +1513,7 @@ const GROUPS: { re: RegExp; tools: string[] }[] = [
     { re: /сотрудник|співробітник|працівник|employee|mitarbeiter|команд|team|персонал/i,
       tools: ["list_employees", "save_employee_contract"] },
     { re: /удал|видал|стер|delete|remove|lösch|entfern/i,
-      tools: ["delete_record", "browse_data", "search_contacts", "search_companies", "list_deals", "list_tasks", "list_expenses", "list_products", "list_invoices"] },
+      tools: ["delete_record", "browse_data", "search_contacts", "search_companies", "list_deals", "list_tasks", "list_expenses", "list_products", "archive_product", "clear_catalog", "list_invoices"] },
     { re: /банк|транзакц|движен|заказ|замовлен|order|auftrag|производ|виробн|production|основн.* средств|asset|регуляр|recurring|автоматиз|automation|маркетинг|marketing|склады|warehouse/i,
       tools: ["browse_data", "list_products"] },
 ];

@@ -1900,7 +1900,11 @@
         "f_waste_percent": "Waste, %",
         "f_minutes": "Minutes",
         "f_cost_per_hour": "Cost per hour",
-        "f_what": "What to show"
+        "f_what": "What to show",
+        "act_archive_product": "Archive product",
+        "done_archive_product": "Product “{name}”: {mode}",
+        "act_clear_catalog": "Erase the whole product catalog for good",
+        "done_clear_catalog": "Catalog erased: {products} products, {movements} stock movements, {orders} production orders"
     },
     "finance": {
         "title": "Accounting",
