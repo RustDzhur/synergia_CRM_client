@@ -1,4 +1,5 @@
 import { ProviderError, fetchProvider } from "@/lib/http";
+import { aiOverrides } from "./config";
 
 // Тонкий слой над API языковых моделей. Внутри CRM разговор — это список Msg; адаптеры переводят его в формат
 // OpenAI (Chat Completions + tools) или Anthropic (Messages + tools). Ключ — только в переменных окружения сервера.
@@ -52,9 +53,9 @@ async function post<T>(url: string, headers: Record<string, string>, body: unkno
 // к провайдеру (например, DeepSeek: https://api.deepseek.com/v1), а шлюз остаётся запасным путём и для распознавания речи.
 const gatewayEndpoint = () => ({ url: trim(process.env.OPENAI_API_URL || "https://api.openai.com/v1"), key: process.env.OPENAI_API_KEY ?? "" });
 const primaryEndpoint = () => (process.env.AI_API_URL && process.env.AI_API_KEY ? { url: trim(process.env.AI_API_URL), key: process.env.AI_API_KEY } : gatewayEndpoint());
+type Endpoint = { url: string; key: string };
 
-async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiModel("openai"), timeoutMs = 55000, via: "primary" | "gateway" = "primary"): Promise<Reply> {
-    const ep = via === "gateway" ? gatewayEndpoint() : primaryEndpoint();
+async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiModel("openai"), timeoutMs = 55000, ep: Endpoint = primaryEndpoint()): Promise<Reply> {
     const messages: unknown[] = [{ role: "system", content: system }];
     for (const m of msgs) {
         if (m.role === "user") messages.push({ role: "user", content: m.text });
@@ -128,20 +129,25 @@ export const fallbackModels = () => (process.env.AI_FALLBACK_MODELS ?? "").split
 export async function complete(system: string, msgs: Msg[], tools: ToolDef[], opts: { model?: string } = {}): Promise<Reply> {
     const p = aiProvider();
     if (!p) throw new ProviderError("AI is not configured on this site");
-    const direct = !!(process.env.AI_API_URL && process.env.AI_API_KEY);
-    const run = (model: string | undefined, timeoutMs: number, via: "primary" | "gateway") => (p === "anthropic" ? anthropic(system, msgs, tools, model, timeoutMs) : openai(system, msgs, tools, model, timeoutMs, via));
-    // Запасные модели идут через шлюз: если прямой провайдер (DeepSeek) недоступен, это независимый путь
-    const chain: { model: string | undefined; via: "primary" | "gateway" }[] = [];
-    const add = (model: string | undefined, via: "primary" | "gateway") => { if (!chain.some((c) => c.model === model && c.via === via)) chain.push({ model, via }); };
-    add(opts.model, "primary"); add(undefined, "primary");
-    for (const m of fallbackModels()) add(m, direct ? "gateway" : "primary");
+    // Ключ и модель могут быть внесены в кабинете администратора платформы (lib/ai/config.ts) — они важнее переменных сервера
+    const ov = await aiOverrides();
+    const primary: Endpoint = ov?.apiUrl && ov.apiKey ? { url: trim(ov.apiUrl), key: ov.apiKey } : primaryEndpoint();
+    const gateway = gatewayEndpoint();
+    const direct = primary.url !== gateway.url || primary.key !== gateway.key; // чат идёт мимо шлюза — шлюз становится запасным путём
+    const run = (model: string | undefined, timeoutMs: number, ep: Endpoint) => (p === "anthropic" ? anthropic(system, msgs, tools, model, timeoutMs) : openai(system, msgs, tools, model, timeoutMs, ep));
+    const chain: { model: string | undefined; ep: Endpoint }[] = [];
+    const add = (model: string | undefined, ep: Endpoint) => { if (!chain.some((c) => c.model === model && c.ep.url === ep.url)) chain.push({ model, ep }); };
+    // быстрая модель голоса — модель шлюза; прямому провайдеру (DeepSeek) её имя неизвестно
+    if (!direct) add(opts.model, primary);
+    add(ov?.model || undefined, primary);
+    for (const m of ov?.fallbacks.length ? ov.fallbacks : fallbackModels()) add(m, direct ? gateway : primary);
     const started = Date.now();
     let last: unknown;
     for (let i = 0; i < chain.length; i++) {
         const left = 58_000 - (Date.now() - started);
         if (left < 6000) break;
         try {
-            return await run(chain[i].model, Math.min(i === 0 ? 40_000 : 25_000, left), chain[i].via);
+            return await run(chain[i].model, Math.min(i === 0 ? 40_000 : 25_000, left), chain[i].ep);
         } catch (e) {
             last = e;
             if (!retryable(e)) throw e;
