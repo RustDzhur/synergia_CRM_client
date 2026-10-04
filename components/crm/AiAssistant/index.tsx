@@ -123,6 +123,17 @@ function Bubble({ m, ttsOn, speakingId, onSpeak, onStopSpeak }: { m: AiMessage; 
 }
 
 // Firmspace AI (Ctrl/⌘ + K): помощник, который ищет в данных CRM и готовит действия. Ничего не меняет без нажатия «Подтвердить».
+// Возвращает наверх страницу и все прокрученные области (окно, основной контейнер раздела, открытая карточка); панель Айрис не трогаем
+function scrollToTop() {
+	try {
+		window.scrollTo({ top: 0 });
+		document.scrollingElement?.scrollTo({ top: 0 });
+		document.querySelectorAll<HTMLElement>("*").forEach((el) => {
+			if (el.scrollTop > 0 && !el.closest("[data-iris-hud]")) el.scrollTop = 0;
+		});
+	} catch { /* прокрутка — удобство */ }
+}
+
 export default function AiAssistant() {
 	const t = useTranslations("ai");
 	const locale = useLocale();
@@ -160,6 +171,8 @@ export default function AiAssistant() {
 		});
 	}
 	const spokenRef = useRef<string | null>(null);
+	// когда Айрис последний раз переключила страницу/вкладку: поиск «найди на экране» ждёт, пока новый экран отрисуется
+	const lastGoAt = useRef(0);
 
 	// ── Голосовое управление (Айрис): слушает на любой странице, пока включено шаром в шапке ─────────────
 	// Всё устроено в useVoiceAgent: имя «Айрис» → команда → ответ вслух → переход по страницам; изменения данных
@@ -183,6 +196,12 @@ export default function AiAssistant() {
 			if (!nav?.link) return;
 			const [path, search = ""] = nav.link.split("?");
 			useAiStore.getState().hide();
+			lastGoAt.current = Date.now();
+			// Перешли на другую страницу или вкладку — показываем её сверху: иначе при прокрутке вниз человек не заметил бы, что вкладка сменилась.
+			// Повторяем после отрисовки нового экрана (при смене вкладки прокрутка у контейнера могла сброситься не сразу)
+			scrollToTop();
+			setTimeout(scrollToTop, 150);
+			setTimeout(scrollToTop, 600);
 			const same = stripLocale(window.location.pathname) === path;
 			// Бухгалтерия на этой же странице переключает вкладку/фильтр сама (событие); остальное — обычный переход
 			// по адресу (вкладки CRM, карточка сделки ?deal=… читают адрес). Уже здесь и без параметров — оставляем как есть.
@@ -225,7 +244,12 @@ export default function AiAssistant() {
 			const d = (e as CustomEvent<{ text: string }>).detail;
 			if (!d?.text) return;
 			cancel?.();
-			cancel = runFind(document, d.text);
+			// сразу после перехода на другую вкладку ждём, пока она отрисуется и прокрутится наверх, иначе подсветится строка старой вкладки
+			const wait = Date.now() - lastGoAt.current < 3000 ? Math.max(0, 700 - (Date.now() - lastGoAt.current)) : 0;
+			let cancelled = false;
+			let inner: (() => void) | null = null;
+			const timer = setTimeout(() => { if (!cancelled) inner = runFind(document, d.text); }, wait);
+			cancel = () => { cancelled = true; clearTimeout(timer); inner?.(); };
 		};
 		window.addEventListener("iris:find", onFind);
 		return () => { window.removeEventListener("iris:find", onFind); cancel?.(); };
