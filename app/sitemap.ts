@@ -64,6 +64,8 @@ const FILE_POSTS: { slug: string; publishedAt: string }[] = [
 	{ slug: "2026-10-04-ai-klienty-24-7", publishedAt: "2026-10-04" },
 	{ slug: "2026-10-04-ai-action-v-avtomatizacii", publishedAt: "2026-10-04" },
 	{ slug: "2026-10-04-ai-scheta-i-napominaniya", publishedAt: "2026-10-04" },
+	{ slug: "2026-10-04-ai-agent-v-sdelke-ot-lida-do-dogovora", publishedAt: "2026-10-04" },
+	{ slug: "2026-10-04-ai-kommunikaciya-24-7", publishedAt: "2026-10-04" },
 ];
 
 const filePostEntries = (posts: { slug: string; publishedAt: string }[]): MetadataRoute.Sitemap =>
