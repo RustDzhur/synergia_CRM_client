@@ -42,7 +42,10 @@ export async function GET(req: Request) {
     const totalExpenses = expenses.reduce((s, e) => s + (e.amount ?? 0), 0) + purchaseInvoices.reduce((s, p) => s + (p.amount ?? 0), 0);
 
     // помесячный ряд за period: доход по дате оплаты, расход по дате
-    const key = (d: string | Date) => { const dt = typeof d === "string" ? new Date(d) : d; return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`; };
+    const key = (d: string | Date) => {
+        // «2026-03-01» читается как UTC-полночь, и в поясе западнее UTC месяц уезжал назад — для строк берём год и месяц как написано
+        if (typeof d === "string" && /^\d{4}-\d{2}/.test(d)) return d.slice(0, 7);
+        const dt = typeof d === "string" ? new Date(d) : d; return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`; };
     const series: Record<string, { revenue: number; expenses: number }> = {};
     for (let i = 0; i < months; i++) { const d = new Date(since); d.setMonth(d.getMonth() + i); series[key(d)] = { revenue: 0, expenses: 0 }; }
     for (const inv of paid) if (inv.paidAt && series[key(inv.paidAt)]) series[key(inv.paidAt)].revenue += computeTotals(inv.items as any).gross;

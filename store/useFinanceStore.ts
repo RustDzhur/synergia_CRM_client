@@ -172,6 +172,8 @@ interface FinanceStore {
 }
 
 // Finance (счета, заказы, товары, расходы, склад) — раздел, который заменил собой старое «Inventory Management».
+let dashboardRequest = 0;
+
 export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 	products: [], orders: [], invoices: [], expenses: [], quotes: [], contracts: [], recurringInvoices: [], settings: null, countries: [], dashboard: null, loading: false,
 
@@ -186,9 +188,15 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 		const r = await apiCall<{ settings: FinanceSettings; countries: CountryOption[] }>("/api/finance/settings");
 		if (r.ok && r.data) set({ settings: r.data.settings, countries: r.data.countries });
 	},
-	loadDashboard: async (months = 6, year) => {
+	loadDashboard: async (months, year) => {
+		// Без параметров (так зовут обновление после действий Айрис) — календарный год, 12 столбцов, как на экранах Finance и Dashboard.
+		// Раньше по умолчанию были «последние 6 месяцев», и обновление урезало график, показанный до этого.
+		const query = months && !year ? `months=${months}` : `year=${year || new Date().getFullYear()}`;
+		const mine = ++dashboardRequest;
 		set({ loading: true });
-		const r = await apiCall<FinanceDashboard>(`/api/finance/dashboard?${year ? `year=${year}` : `months=${months}`}`);
+		const r = await apiCall<FinanceDashboard>(`/api/finance/dashboard?${query}`);
+		// ответ устаревшего запроса не должен затирать более свежий
+		if (mine !== dashboardRequest) return;
 		set({ loading: false, ...(r.ok && r.data ? { dashboard: r.data } : {}) });
 	},
 	saveSettings: async (patch) => {
