@@ -1867,7 +1867,15 @@
         "done_delete_demo_data": "{invoices} Test-Rechnungen und {expenses} Ausgaben gelöscht",
         "f_from_month": "Ab Monat",
         "f_per_month": "Rechnungen pro Monat",
-        "f_expenses_per_month": "Ausgaben pro Monat"
+        "f_expenses_per_month": "Ausgaben pro Monat",
+        "act_update_invoice": "Rechnung ändern",
+        "done_update_invoice": "Rechnung {number} geändert: {fields}",
+        "act_delete_invoice": "Rechnung löschen",
+        "done_delete_invoice": "Rechnung {number} ({status}) gelöscht; Kopie im Aktionsprotokoll",
+        "f_issue_date": "Rechnungsdatum",
+        "f_due_date": "Fällig am",
+        "f_supply_date": "Leistungsdatum",
+        "f_paid_date": "Zahlungsdatum"
     },
     "finance": {
         "title": "Buchhaltung",

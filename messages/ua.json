@@ -1867,7 +1867,15 @@
         "done_delete_demo_data": "Видалено тестових рахунків: {invoices}, витрат: {expenses}",
         "f_from_month": "З місяця",
         "f_per_month": "Рахунків на місяць",
-        "f_expenses_per_month": "Витрат на місяць"
+        "f_expenses_per_month": "Витрат на місяць",
+        "act_update_invoice": "Змінити рахунок",
+        "done_update_invoice": "Рахунок {number} змінено: {fields}",
+        "act_delete_invoice": "Видалити рахунок",
+        "done_delete_invoice": "Рахунок {number} ({status}) видалено, копія — в журналі дій",
+        "f_issue_date": "Дата рахунку",
+        "f_due_date": "Оплатити до",
+        "f_supply_date": "Дата послуги",
+        "f_paid_date": "Дата оплати"
     },
     "finance": {
         "title": "Бухгалтерія",

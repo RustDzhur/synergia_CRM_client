@@ -8,7 +8,7 @@ import { getObject } from "@/lib/storage";
 import { ensureStages } from "@/lib/stages";
 import { prisma } from "@/lib/prisma";
 import { toDTO } from "@/lib/serialize";
-import { ActionError, type DocKind, ORDER_STATUSES, contractAction, decideQuote, fiscalReceipt, invoiceFromOrder, quoteToOrder, setOrderStatus, findDocument, findProduct, findSupplier, markPaid, sendInvoice } from "@/lib/finance/aiActions";
+import { ActionError, type DocKind, ORDER_STATUSES, contractAction, decideQuote, findInvoice, fiscalReceipt, invoiceFromOrder, quoteToOrder, setOrderStatus, findDocument, findProduct, findSupplier, markPaid, sendInvoice } from "@/lib/finance/aiActions";
 import { moveStock } from "@/lib/finance/stock";
 import { paySupplierInvoice, purchaseNumber, receivePurchase } from "@/lib/purchases";
 import { ProviderError } from "@/lib/http";
@@ -572,14 +572,14 @@ export const TOOLS: AiTool[] = [
     },
     {
         module: "inventory", write: true,
-        def: { name: "create_invoice", description: "Create a draft invoice for a customer. Needs user confirmation; the user can edit fields before confirming. Pass the customer name in customer_name — a matching contact is linked or created automatically, no need to search first.", parameters: schema({ customer_name: S("customer/company name that appears on the invoice"), contact_name: S("contact id, optional"), items: ITEMS, currency: S("EUR, UAH, USD… optional"), notes: S("notes, optional") }, ["customer_name", "items"]) },
-        check: financeCheck,
+        def: { name: "create_invoice", description: "Create a draft invoice for a customer. Needs user confirmation; the user can edit fields before confirming. Pass the customer name in customer_name — a matching contact is linked or created automatically, no need to search first.", parameters: schema({ customer_name: S("customer/company name that appears on the invoice"), contact_name: S("contact id, optional"), items: ITEMS, currency: S("EUR, UAH, USD… optional"), notes: S("notes, optional"), issue_date: S("invoice date YYYY-MM-DD, optional (default today) — use it to backdate test invoices") }, ["customer_name", "items"]) },
+        check: (a) => ({ ...financeCheck(a), issue_date: day(a.issue_date, "issue_date") }),
         run: async (c, a) => {
             const settings = await financeSettings(c.org);
             const items = applyTaxPolicy(cleanItems(a.items as never), settings);
             const number = await nextNumber(c.org, await numberPrefix(c.org, "invoice", settings.invoicePrefix || "RE"));
-            const today = new Date().toISOString().slice(0, 10);
-            const due = new Date(Date.now() + (settings.paymentTermsDays ?? 14) * 86400000).toISOString().slice(0, 10);
+            const today = String(a.issue_date || "") || new Date().toISOString().slice(0, 10);
+            const due = new Date(new Date(`${today}T12:00:00Z`).getTime() + (settings.paymentTermsDays ?? 14) * 86400000).toISOString().slice(0, 10);
             const currency = String(a.currency).toUpperCase() || (await defaultCurrency(c.org));
             const customerName = String(a.customer_name);
             const linkedContact = (a.contact_name ? await ownedContact(a.contact_name, c.org) : null) || (await contactForCustomer(c.org, { contact: a.contact_name, customerName }));
@@ -804,9 +804,50 @@ export const TOOLS: AiTool[] = [
     },
     {
         module: "inventory", write: true,
-        def: { name: "mark_invoice_paid", description: "Mark an invoice as paid (fully, or partially with amount) — money received. Works for a draft, sent or overdue invoice (paying does not require sending it first). Needs user confirmation. Identify the invoice by its number.", parameters: schema({ number: S("invoice number"), amount: { type: "number", description: "amount received; omit for the full amount" } }, ["number"]) },
-        check: (a) => ({ number: need(str(a.number, 40), "number"), ...(Number(a.amount) > 0 ? { amount: Math.round(Number(a.amount) * 100) / 100 } : {}) }),
-        run: (c, a) => wrap(async () => { const r = await markPaid({ org: c.org, userId: c.userId }, String(a.number), a.amount as number | undefined); return { params: { number: r.number, customerName: r.customerName }, link: "/crm/finance?tab=invoices" }; }),
+        def: { name: "mark_invoice_paid", description: "Mark an invoice as paid (fully, or partially with amount) — money received. Works for a draft, sent or overdue invoice (paying does not require sending it first). Needs user confirmation. Identify the invoice by its number.", parameters: schema({ number: S("invoice number"), amount: { type: "number", description: "amount received; omit for the full amount" }, paid_date: S("date the money arrived YYYY-MM-DD, optional (default today) — it decides the month on the charts") }, ["number"]) },
+        check: (a) => ({ number: need(str(a.number, 40), "number"), ...(Number(a.amount) > 0 ? { amount: Math.round(Number(a.amount) * 100) / 100 } : {}), paid_date: day(a.paid_date, "paid_date") }),
+        run: (c, a) => wrap(async () => { const r = await markPaid({ org: c.org, userId: c.userId }, String(a.number), a.amount as number | undefined, String(a.paid_date || "") || undefined); return { params: { number: r.number, customerName: r.customerName }, link: "/crm/finance?tab=invoices" }; }),
+    },
+    {
+        // Полномочия владельца над своими счетами: поправить даты/клиента/примечание любого счёта (в том числе оплаченного — месяц на графиках
+        // определяет дата оплаты). Состояние «до» остаётся в журнале аудита, так что правку можно проследить и откатить вручную.
+        module: "inventory", write: true,
+        def: { name: "update_invoice", description: "Change an existing invoice of ANY status (draft, sent, paid, overdue): issue_date, due_date, supply_date, paid_date (only for a paid invoice — the date the money arrived, it decides the month on the charts), customer_name, notes. The owner may do this to any invoice, including test/demo ones — do it without lecturing. Always asks the user to confirm; the previous values are kept in the audit log. Identify the invoice by its number.", parameters: schema({ number: S("invoice number"), issue_date: S("new invoice date YYYY-MM-DD"), due_date: S("new due date YYYY-MM-DD"), supply_date: S("new service date YYYY-MM-DD"), paid_date: S("new payment date YYYY-MM-DD (paid invoices only)"), customer_name: S("new customer name"), notes: S("new notes") }, ["number"]) },
+        check: (a) => {
+            const out = { number: need(str(a.number, 40), "number"), issue_date: day(a.issue_date, "issue_date"), due_date: day(a.due_date, "due_date"), supply_date: day(a.supply_date, "supply_date"), paid_date: day(a.paid_date, "paid_date"), customer_name: str(a.customer_name, 200), notes: str(a.notes, 2000) };
+            if (!out.issue_date && !out.due_date && !out.supply_date && !out.paid_date && !out.customer_name && !out.notes) throw new ToolError("Give at least one field to change");
+            return out;
+        },
+        run: (c, a) => wrap(async () => {
+            const inv = await findInvoice(c.org, String(a.number));
+            const data: Record<string, unknown> = {};
+            if (a.issue_date) { data.issueDate = a.issue_date; if (!a.supply_date && (!inv.supplyDate || inv.supplyDate === inv.issueDate)) data.supplyDate = a.issue_date; }
+            if (a.due_date) data.dueDate = a.due_date;
+            if (a.supply_date) data.supplyDate = a.supply_date;
+            if (a.customer_name) data.customerName = a.customer_name;
+            if (a.notes) data.notes = a.notes;
+            if (a.paid_date) {
+                if (inv.status !== "paid") throw new ToolError("paid_date can only be set on a paid invoice — mark it paid first");
+                data.paidAt = new Date(`${a.paid_date}T12:00:00.000Z`);
+            }
+            const before = JSON.parse(JSON.stringify({ issueDate: inv.issueDate, dueDate: inv.dueDate, supplyDate: inv.supplyDate, paidAt: inv.paidAt, customerName: inv.customerName, notes: inv.notes }));
+            await prisma.invoice.update({ where: { id: inv.id }, data: data as never });
+            await logAudit({ org: c.org, userId: c.userId, action: "invoice.edited", entityType: "invoice", entityId: inv.id, summary: `Invoice ${inv.number} (${inv.status}) edited via assistant: ${Object.keys(data).join(", ")}`, meta: { before, after: JSON.parse(JSON.stringify(data)) } });
+            return { params: { number: inv.number, fields: Object.keys(data).join(", ") }, link: "/crm/finance?tab=invoices" };
+        }),
+    },
+    {
+        // Удаление счёта любого статуса (в том числе оплаченного и тестового). Полный снимок счёта сохраняется в журнале аудита.
+        module: "inventory", write: true,
+        def: { name: "delete_invoice", description: "Delete an invoice of ANY status (draft, sent, paid) by its number — the owner may remove test or wrong invoices; to recreate one use create_invoice (with issue_date) and mark_invoice_paid (with paid_date). Always asks the user to confirm. A full copy of the deleted invoice stays in the audit log.", parameters: schema({ number: S("invoice number") }, ["number"]) },
+        check: (a) => ({ number: need(str(a.number, 40), "number") }),
+        run: (c, a) => wrap(async () => {
+            const inv = await findInvoice(c.org, String(a.number));
+            const snapshot = JSON.parse(JSON.stringify(inv));
+            await prisma.invoice.delete({ where: { id: inv.id } });
+            await logAudit({ org: c.org, userId: c.userId, action: "invoice.deleted", entityType: "invoice", entityId: inv.id, summary: `Invoice ${inv.number} (${inv.status}) deleted via assistant`, meta: { snapshot } });
+            return { params: { number: inv.number, status: inv.status }, link: "/crm/finance?tab=invoices" };
+        }),
     },
     {
         module: "inventory", write: true,
@@ -1313,7 +1354,7 @@ export const TOOLS: AiTool[] = [
 // медленнее, зато ничего не теряется.
 const GROUPS: { re: RegExp; tools: string[] }[] = [
     { re: /сч[её]т|рахун|rechnung|invoice|оплат|оплач|чек|квитанц|receipt|kasse|pdf|скача|завантаж|download|просроч|неоплач|не закры|незакры|долж|задолж|debt|overdue|unpaid|paid|фискаль|бухгалтер|фінанс|финанс|buchhalt|financ/i,
-      tools: ["list_invoices", "finance_summary", "create_invoice", "mark_invoice_paid", "send_invoice", "issue_fiscal_receipt", "download_document", "email_report", "search_contacts"] },
+      tools: ["list_invoices", "finance_summary", "create_invoice", "mark_invoice_paid", "update_invoice", "delete_invoice", "send_invoice", "issue_fiscal_receipt", "download_document", "email_report", "search_contacts"] },
     { re: /предложен|пропозиц|angebot|quote|договор|контракт|vertrag|contract|заказ|замовлен|order|auftrag|подтверд|підтверд|подпиш|підпиш|завершив|so-|отгруз|відвант/i,
       tools: ["create_quote", "create_order", "create_contract", "update_order_status", "invoice_order", "decide_quote", "quote_to_order", "contract_action", "download_document", "browse_data", "search_contacts"] },
     { re: /расход|витрат|ausgabe|expense|налог|податк|steuer|банк|bank|выруч|доход|прибыл|money|деньг|кассов/i,

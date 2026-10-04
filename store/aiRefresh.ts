@@ -13,6 +13,7 @@ const CRM = new Set(["restore_lead", "cleanup_leads", "create_deal", "update_dea
 const TASKS = new Set(["create_task", "update_task"]);
 const FINANCE = new Set([
     "create_invoice", "create_quote", "create_order", "create_contract", "create_expense", "mark_invoice_paid", "send_invoice", "issue_fiscal_receipt",
+    "update_invoice", "delete_invoice", "create_demo_data", "delete_demo_data", "restock_goods", "receive_purchase_order", "pay_supplier_invoice",
     "update_order_status", "invoice_order", "decide_quote", "quote_to_order", "contract_action", "create_product", "adjust_stock", "create_supplier", "create_purchase_order",
 ]);
 

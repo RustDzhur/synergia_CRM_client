@@ -42,14 +42,14 @@ export async function findInvoice(org: string, ref: string) {
     throw new ActionError(`Several invoices match "${r}": ${hit.slice(0, 5).map((i) => i.number).join(", ")}`);
 }
 
-export async function markPaid(who: Who, ref: string, amountArg?: number) {
+export async function markPaid(who: Who, ref: string, amountArg?: number, paidDate?: string) {
     let inv = await findInvoice(who.org, ref);
     if (!["draft", "sent", "overdue"].includes(inv.status)) throw new ActionError("Only an open invoice (draft, sent or overdue) can be marked paid");
     if (inv.status === "draft") inv = await ensureSupplyDate(inv);
     const { gross } = computeTotals(inv.items as never);
     const amount = Number.isFinite(Number(amountArg)) && Number(amountArg) > 0 ? Number(amountArg) : gross;
     const { paid, full } = applyPayment(inv, amount);
-    inv = await prisma.invoice.update({ where: { id: inv.id }, data: { paidAmount: paid, status: statusAfterPayment(inv.status, full), ...(full ? { paidAt: new Date() } : {}) } });
+    inv = await prisma.invoice.update({ where: { id: inv.id }, data: { paidAmount: paid, status: statusAfterPayment(inv.status, full), ...(full ? { paidAt: paidDate && /^\d{4}-\d{2}-\d{2}$/.test(paidDate) ? new Date(`${paidDate}T12:00:00.000Z`) : new Date() } : {}) } });
     if (full) await emit(who.org, { type: "invoice_paid", data: { id: inv.id, number: inv.number, customerName: inv.customerName, amount: String(amount), dealId: inv.deal ?? "" } });
     // ПРРО (Украина): чек при полной оплате пробивается сам, если подключён Checkbox и включена автофискализация
     if (full && !inv.fiscalCode) {

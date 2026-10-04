@@ -1867,7 +1867,15 @@
         "done_delete_demo_data": "Deleted {invoices} test invoices and {expenses} expenses",
         "f_from_month": "From month",
         "f_per_month": "Invoices per month",
-        "f_expenses_per_month": "Expenses per month"
+        "f_expenses_per_month": "Expenses per month",
+        "act_update_invoice": "Edit the invoice",
+        "done_update_invoice": "Invoice {number} changed: {fields}",
+        "act_delete_invoice": "Delete the invoice",
+        "done_delete_invoice": "Invoice {number} ({status}) deleted; a copy is in the audit log",
+        "f_issue_date": "Invoice date",
+        "f_due_date": "Due date",
+        "f_supply_date": "Service date",
+        "f_paid_date": "Payment date"
     },
     "finance": {
         "title": "Accounting",
