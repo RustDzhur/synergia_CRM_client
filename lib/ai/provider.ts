@@ -26,19 +26,29 @@ export const aiModel = (p: ProviderId) => process.env.AI_MODEL || (p === "anthro
 
 const trim = (s: string) => s.replace(/\/+$/, "");
 
-async function post<T>(url: string, headers: Record<string, string>, body: unknown): Promise<T> {
-    const res = await fetchProvider(url, { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) }, 55000);
+/** Отказ шлюза/провайдера с HTTP-кодом: по нему complete() решает, пробовать ли следующую модель. */
+export class GatewayError extends ProviderError {
+    constructor(message: string, public status: number, public detail = "") { super(message); }
+}
+// Бесплатные модели за шлюзом (OmniRoute/OpenRouter) то «не поддерживают инструменты», то «только для агентных сред», то перегружены (403/404/429/503,
+// ALL_TARGETS_SKIPPED). Это не поломка сайта, а повод взять другую модель — поэтому такие отказы пробуем обойти, а не сразу показывать человеку.
+const retryable = (e: unknown) =>
+    (e instanceof GatewayError && ([0, 402, 403, 404, 408, 409, 425, 429, 500, 502, 503, 504].includes(e.status) || /ALL_TARGETS_SKIPPED|no endpoints|temporarily|overloaded/i.test(e.detail))) ||
+    (e instanceof ProviderError && /timeout|timed out|aborted|fetch failed|empty answer/i.test(e.message));
+
+async function post<T>(url: string, headers: Record<string, string>, body: unknown, timeoutMs = 55000): Promise<T> {
+    const res = await fetchProvider(url, { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) }, timeoutMs);
     const json = (await res.json().catch(() => null)) as ({ error?: { message?: string } | string } & T) | null;
     if (!res.ok || !json) {
         const detail = typeof json?.error === "string" ? json.error : json?.error?.message;
-        console.error("AI provider error", res.status, detail);
-        throw new ProviderError(res.status === 401 ? "The AI provider rejected the API key" : res.status === 429 ? "The AI provider is busy or out of quota. Try again later." : `The AI provider returned an error (${res.status})`);
+        console.warn("[ai] provider error", res.status, String(detail ?? "").slice(0, 200)); // не console.error: о цепочке запасных моделей сообщает complete(), а не каждая попытка
+        throw new GatewayError(res.status === 401 ? "The AI provider rejected the API key" : res.status === 429 ? "The AI provider is busy or out of quota. Try again later." : `The AI provider returned an error (${res.status})`, res.status, String(detail ?? ""));
     }
     return json;
 }
 
 // ── OpenAI ──
-async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiModel("openai")): Promise<Reply> {
+async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiModel("openai"), timeoutMs = 55000): Promise<Reply> {
     const messages: unknown[] = [{ role: "system", content: system }];
     for (const m of msgs) {
         if (m.role === "user") messages.push({ role: "user", content: m.text });
@@ -52,7 +62,8 @@ async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiM
         // бюджет на максимум модели (~65k токенов) и отказывает при малом балансе (402).
         // Пустой список инструментов не отправляем: шлюз (OmniRoute) в ответ на tools: [] заставлял модель «вызвать инструмент», и текст приходил пустым —
         // именно так молчал «Проанализировать с помощью ИИ» в отчётах
-        { model, max_tokens: 2000, messages, ...(tools.length ? { tools: tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) } : {}) }
+        { model, max_tokens: 2000, messages, ...(tools.length ? { tools: tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) } : {}) },
+        timeoutMs
     );
     const msg = j.choices?.[0]?.message;
     if (!msg) throw new ProviderError("The AI provider returned an empty answer");
@@ -60,7 +71,7 @@ async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiM
 }
 
 // ── Anthropic ──
-async function anthropic(system: string, msgs: Msg[], tools: ToolDef[], model = aiModel("anthropic")): Promise<Reply> {
+async function anthropic(system: string, msgs: Msg[], tools: ToolDef[], model = aiModel("anthropic"), timeoutMs = 55000): Promise<Reply> {
     const messages: { role: "user" | "assistant"; content: unknown[] }[] = [];
     const push = (role: "user" | "assistant", block: unknown) => {
         const last = messages[messages.length - 1];
@@ -77,7 +88,8 @@ async function anthropic(system: string, msgs: Msg[], tools: ToolDef[], model = 
     const j = await post<{ content?: { type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }[] }>(
         `${trim(process.env.ANTHROPIC_API_URL || "https://api.anthropic.com/v1")}/messages`,
         { "x-api-key": process.env.ANTHROPIC_API_KEY ?? "", "anthropic-version": "2023-06-01" },
-        { model, max_tokens: 2000, system, messages, ...(tools.length ? { tools: tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters })) } : {}) }
+        { model, max_tokens: 2000, system, messages, ...(tools.length ? { tools: tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters })) } : {}) },
+        timeoutMs
     );
     const blocks = j.content ?? [];
     return {
@@ -99,17 +111,35 @@ function parseArgs(raw: string): Record<string, unknown> {
 // Не ответила — тот же запрос уходит на основную модель, так что голос не ломается из-за капризов быстрой.
 export const voiceModel = () => process.env.AI_VOICE_MODEL || "";
 
+// Запасные модели на случай, когда основная отказала (AI_FALLBACK_MODELS через запятую, например auto/best-chat,auto/pro-fast).
+export const fallbackModels = () => (process.env.AI_FALLBACK_MODELS ?? "").split(",").map((m) => m.trim()).filter(Boolean);
+
+/**
+ * Ответ модели. Цепочка попыток: быстрая модель (если задана) → основная → запасные из AI_FALLBACK_MODELS. Отказ, который лечится другой
+ * моделью (перегрузка, «нет инструментов», 403/404/429/5xx шлюза), не доходит до человека: берётся следующая. Ошибка бросается, только если
+ * не вышло ни у одной; время всей цепочки ограничено, чтобы не держать запрос минутами.
+ */
 export async function complete(system: string, msgs: Msg[], tools: ToolDef[], opts: { model?: string } = {}): Promise<Reply> {
     const p = aiProvider();
     if (!p) throw new ProviderError("AI is not configured on this site");
-    const run = (model?: string) => (p === "anthropic" ? anthropic(system, msgs, tools, model) : openai(system, msgs, tools, model));
-    if (!opts.model) return run();
-    try {
-        return await run(opts.model);
-    } catch (e) {
-        console.error("fast model failed, falling back", e instanceof Error ? e.message : e);
-        return run();
+    const run = (model: string | undefined, timeoutMs: number) => (p === "anthropic" ? anthropic(system, msgs, tools, model, timeoutMs) : openai(system, msgs, tools, model, timeoutMs));
+    const chain: (string | undefined)[] = [];
+    for (const m of [opts.model, undefined, ...fallbackModels()]) if (!chain.includes(m)) chain.push(m);
+    const started = Date.now();
+    let last: unknown;
+    for (let i = 0; i < chain.length; i++) {
+        const left = 58_000 - (Date.now() - started);
+        if (left < 6000) break;
+        try {
+            return await run(chain[i], Math.min(i === 0 ? 40_000 : 25_000, left));
+        } catch (e) {
+            last = e;
+            if (!retryable(e)) throw e;
+            console.warn(`[ai] model ${chain[i] ?? "default"} failed (${e instanceof Error ? e.message : e}); ${i + 1 < chain.length ? "trying the next one" : "no more models"}`);
+            await new Promise((r) => setTimeout(r, 250));
+        }
     }
+    throw last instanceof Error ? last : new ProviderError("The AI provider is not available");
 }
 
 // ── одноразовое распознавание изображения (чек/квитанция) — без истории, без инструментов, просто system+картинка+текст → text ──
