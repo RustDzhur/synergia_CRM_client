@@ -151,6 +151,20 @@ export default function Invoices({ openId, prefill, preset, onPrefillDone }: { o
 		void loadInvoices();
 	}
 
+	// Черновик можно поправить: дата оказания услуги (обязательна для немецкого счёта) и удаление ненужного черновика
+	async function saveSupplyDate(id: string, value: string) {
+		const err = await updateInvoice(id, { supplyDate: value });
+		if (err) toast.error(err); else toast.success(t("saved"));
+	}
+	async function deleteDraft(id: string) {
+		if (!window.confirm(t("deleteDraftAsk"))) return;
+		setBusy(id);
+		const res = await apiCall(`/api/invoices/${id}`, "DELETE");
+		setBusy(null);
+		if (!res.ok) return void toast.error(res.message);
+		toast.success(t("deleted"));
+		void loadInvoices();
+	}
 	async function pay(id: string) { setBusy(id); const err = await payInvoice(id); setBusy(null); if (err) toast.error(err); else toast.success(t("markedPaid")); }
 	// Фискальный чек ПРРО: при включённой автофискализации он пробивается сам при оплате, кнопка —
 	// для ручного случая и для повтора после неудачи (ошибка хранится в самом счёте)
@@ -236,18 +250,27 @@ export default function Invoices({ openId, prefill, preset, onPrefillDone }: { o
 							</div>
 							<div className="mt-12 flex flex-wrap items-center gap-8">
 								{inv.status === "draft" && <button type="button" onClick={() => setSendFor({ id: inv.id })} className="fs-btn fs-btn-primary h-34">{t("send")}</button>}
-								{inv.kind === "invoice" && (inv.status === "sent" || inv.status === "overdue") && <button type="button" disabled={busy === inv.id} onClick={() => pay(inv.id)} className="fs-btn fs-btn-ghost h-34 border-[rgba(198,255,77,0.4)] text-[#c6ff4d] disabled:opacity-[0.5]">{t("markPaid")}</button>}
+								{inv.status === "draft" && inv.kind === "invoice" && (
+									<label className="flex items-center gap-6 text-12 text-[#8c948b]">
+										{t("supplyDateShort")}
+										<input type="date" defaultValue={inv.supplyDate || inv.issueDate} onBlur={(e) => e.target.value && e.target.value !== (inv.supplyDate || inv.issueDate) && void saveSupplyDate(inv.id, e.target.value)} className="fs-field h-34 px-8 text-12" />
+									</label>
+								)}
+								{inv.kind === "invoice" && (inv.status === "draft" || inv.status === "sent" || inv.status === "overdue") && <button type="button" disabled={busy === inv.id} onClick={() => pay(inv.id)} className="fs-btn fs-btn-ghost h-34 border-[rgba(198,255,77,0.4)] text-[#c6ff4d] disabled:opacity-[0.5]">{t("markPaid")}</button>}
 								{inv.status === "paid" && <span className="text-12 text-[#c6ff4d]">{t("paidOn", { date: inv.paidAt ? new Date(inv.paidAt).toLocaleDateString(locale) : "" })}</span>}
 								{inv.kind === "invoice" && ["sent", "paid", "overdue"].includes(inv.status) && (
 									<button type="button" disabled={busy === inv.id} onClick={() => setCreditTarget(inv.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]">
 										<TbReceipt size={15} /> {t("issueCreditNote")}
 									</button>
 								)}
+								{inv.status === "draft" && <button type="button" disabled={busy === inv.id} onClick={() => void deleteDraft(inv.id)} className="fs-btn fs-btn-ghost h-34 text-[#EB5757] disabled:opacity-[0.5]">{t("deleteDraft")}</button>}
 								{inv.kind === "invoice" && (
 									<button type="button" disabled={busy === inv.id} onClick={() => duplicate(inv.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]">
 										<TbCopy size={15} /> {t("duplicate")}
 									</button>
 								)}
+								{marketLoaded && market === "UA" && (
+								<>
 								{/* ПРРО: чек видно в строке счёта — номер кликабелен (открыть/скачать/распечатать),
 								    ошибка показана рядом; без сохранённой ссылки её можно дотянуть у Checkbox */}
 								{inv.fiscal?.code ? (
@@ -262,6 +285,8 @@ export default function Invoices({ openId, prefill, preset, onPrefillDone }: { o
 									<button type="button" disabled={busy === inv.id} onClick={() => void fiscal(inv.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]" title={inv.fiscal?.error || undefined}>
 										<TbReceipt size={15} /> {t("fiscalIssue")}
 									</button>
+								)}
+								</>
 								)}
 								{/* Ссылка на оплату: клиент платит сам, счёт закрывается вебхуком кассы */}
 								{inv.kind === "invoice" && inv.status !== "paid" && inv.status !== "cancelled" && (

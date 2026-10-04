@@ -10,6 +10,7 @@ import { marketDocumentLocale } from "@/lib/finance/market";
 import { assertCompliant } from "@/lib/finance/compliance";
 import { computeTotals } from "@/lib/finance/totals";
 import { toInvoiceDTO } from "@/lib/finance/dto";
+import { ensureSupplyDate } from "@/lib/finance/issue";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export const runtime = "nodejs";
 // понимает, что делать (спросить адрес или предложить подключить ящик), а не показывает общую ошибку.
 const needsSetup = (message: string, code: string) => NextResponse.json({ message, code }, { status: 400 });
 
-// POST /api/invoices/:id/send — { to?, accountId?, locale? }
+// POST /api/invoices/:id/send — { to?, accountId?, locale? }. Только ОТПРАВКА клиенту: оплата счёта — отдельное действие (/pay: «Гроші надійшли»)
 // Отправляет клиенту письмо с PDF счёта вложением и только после успешной отправки переводит счёт в «отправлен»
 // (счёт после этого не редактируется). Кому уходить — введённый адрес, иначе e-mail контакта, иначе фирмы клиента;
 // ящик — выбранный или первый подключённый в Web Mails. Адрес сохраняем в sentTo, как и в аудите.
@@ -27,10 +28,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    const b = (await req.json().catch(() => null)) as { to?: unknown; accountId?: unknown; locale?: unknown } | null;
-    const inv = await prisma.invoice.findFirst({ where: { id: params.id, org: user.id } });
+    const b = (await req.json().catch(() => null)) as { to?: unknown; accountId?: unknown; locale?: unknown; skipEmail?: unknown } | null;
+    let inv = await prisma.invoice.findFirst({ where: { id: params.id, org: user.id } });
     if (!inv) return notFound();
     if (inv.status !== "draft") return badRequest("Only a draft invoice can be sent");
+    inv = await ensureSupplyDate(inv); // счёт без даты оказания услуги получает её автоматически (= дата счёта)
+
 
     const recipient = await resolveRecipient(user.id, b?.to, { contact: inv.contact, company: inv.company });
     if (!recipient) return needsSetup("The customer has no email address — enter one to send the invoice", "no_recipient");

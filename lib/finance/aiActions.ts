@@ -12,6 +12,7 @@ import { requireMarket } from "@/lib/finance/marketGuard";
 import { nextNumber } from "@/lib/finance/numbering";
 import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
 import { consumeForOrder, releaseForOrder } from "@/lib/finance/stock";
+import { ensureSupplyDate } from "@/lib/finance/issue";
 import { prisma } from "@/lib/prisma";
 
 // Действия бухгалтерии для ассистента Айрис: оплата счёта, отправка клиенту, фискальный чек. Это те же шаги, что
@@ -43,7 +44,8 @@ export async function findInvoice(org: string, ref: string) {
 
 export async function markPaid(who: Who, ref: string, amountArg?: number) {
     let inv = await findInvoice(who.org, ref);
-    if (!["sent", "overdue"].includes(inv.status)) throw new ActionError("Only a sent (or overdue) invoice can be marked paid");
+    if (!["draft", "sent", "overdue"].includes(inv.status)) throw new ActionError("Only an open invoice (draft, sent or overdue) can be marked paid");
+    if (inv.status === "draft") inv = await ensureSupplyDate(inv);
     const { gross } = computeTotals(inv.items as never);
     const amount = Number.isFinite(Number(amountArg)) && Number(amountArg) > 0 ? Number(amountArg) : gross;
     const { paid, full } = applyPayment(inv, amount);

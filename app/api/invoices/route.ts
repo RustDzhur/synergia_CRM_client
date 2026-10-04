@@ -64,7 +64,7 @@ export async function POST(req: Request) {
             issueDate: typeof b.issueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.issueDate) ? b.issueDate : today,
             dueDate: typeof b.dueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.dueDate) ? b.dueDate : due,
             // Дата/период оказания услуг (§14 Abs. 4 Nr. 6 UStG) — необязательные, но если пришли, то только как дата
-            supplyDate: typeof b.supplyDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.supplyDate) ? b.supplyDate : "",
+            supplyDate: typeof b.supplyDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.supplyDate) ? b.supplyDate : (typeof b.supplyPeriodFrom === "string" && b.supplyPeriodFrom ? "" : (typeof b.issueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.issueDate) ? b.issueDate : today)), // не задана — день оказания услуги = день счёта
             supplyPeriodFrom: typeof b.supplyPeriodFrom === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.supplyPeriodFrom) ? b.supplyPeriodFrom : "",
             supplyPeriodTo: typeof b.supplyPeriodTo === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.supplyPeriodTo) ? b.supplyPeriodTo : "",
             notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",

@@ -1974,7 +1974,7 @@
         "supplyDate": "Leistungsdatum",
         "supplyDateHint": "Pflichtangabe auf deutschen Rechnungen (§14 Abs. 4 Nr. 6 UStG). Ohne Datum wird kein Leistungsdatum gedruckt.",
         "send": "Senden",
-        "markPaid": "Als bezahlt markieren",
+        "markPaid": "Zahlung eingegangen",
         "markedPaid": "Als bezahlt markiert.",
         "partiallyPaid": "teilweise bezahlt: {amount}",
         "paidOn": "Bezahlt am {date}",
@@ -2847,7 +2847,11 @@
         "filterLabel": "Rechnungen filtern",
         "filterAll": "Alle",
         "filterUnpaid": "Unbezahlt",
-        "filterEmpty": "Keine Rechnungen für diesen Filter."
+        "filterEmpty": "Keine Rechnungen für diesen Filter.",
+        "supplyDateShort": "Leistungsdatum",
+        "deleteDraft": "Entwurf löschen",
+        "deleteDraftAsk": "Diesen Rechnungsentwurf löschen? Das kann nicht rückgängig gemacht werden.",
+        "deleted": "Gelöscht"
     },
     "ads": {
         "needsUpgrade": "Werbeleistung erfordert den Tarif Professional.",

@@ -5,11 +5,12 @@ import { emit } from "@/lib/automation/emit";
 import { logAudit } from "@/lib/audit";
 import { applyPayment, statusAfterPayment } from "@/lib/finance/payments";
 import { computeTotals } from "@/lib/finance/totals";
+import { ensureSupplyDate } from "@/lib/finance/issue";
 import { prisma } from "@/lib/prisma";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import { fiscalAdvice, fiscalConfig, fiscalizeInvoice, findFiscal } from "@/lib/finance/fiscal";
 
-// POST /api/invoices/:id/pay — { amount? }: отметить оплату (без amount — вся сумма, с amount — частично).
+// POST /api/invoices/:id/pay — { amount? }: «деньги поступили» (без amount — вся сумма, с amount — частично). Работает для черновика, отправленного и просроченного счёта.
 // Оплата фиксируется вручную: деньги приходят переводом или наличными, а в CRM их вносят человек
 // или сверка с банком (app/api/bank/transactions). Тарифы платформы оплачиваются отдельно, переводом (lib/transferPay.ts).
 export async function POST(req: Request, { params }: { params: { id: string } }) {
@@ -18,7 +19,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!validId(params.id)) return notFound();
     let inv = await prisma.invoice.findFirst({ where: { id: params.id, org: user.id } });
     if (!inv) return notFound();
-    if (!["sent", "overdue"].includes(inv.status)) return badRequest("Only a sent (or overdue) invoice can be marked paid");
+    // Оплата не зависит от отправки: деньги могли прийти и по счёту, отданному клиенту другим путём, — закрыть можно и черновик
+    if (!["draft", "sent", "overdue"].includes(inv.status)) return badRequest("Only an open invoice (draft, sent or overdue) can be marked paid");
+    if (inv.status === "draft") inv = await ensureSupplyDate(inv);
     const b = await req.json().catch(() => ({}));
     const { gross } = computeTotals(inv.items as never);
     const amount = Number.isFinite(Number(b.amount)) ? Math.max(0, Number(b.amount)) : gross;

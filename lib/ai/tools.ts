@@ -589,7 +589,7 @@ export const TOOLS: AiTool[] = [
                     deal: (await dealForCustomer(c.org, linkedContact, undefined, customerName)) ?? undefined,
                     currency, rate: (await snapshotRate(c.org, currency)) as any,
                     smallBusinessNote: taxExempt(settings),
-                    issueDate: today, dueDate: due, notes: String(a.notes || ""),
+                    issueDate: today, supplyDate: today, dueDate: due, notes: String(a.notes || ""),
                     createdByName: await authorName(c.userId),
                 },
             });
@@ -803,7 +803,7 @@ export const TOOLS: AiTool[] = [
     },
     {
         module: "inventory", write: true,
-        def: { name: "mark_invoice_paid", description: "Mark an invoice as paid (fully, or partially with amount) — money received. Needs user confirmation. Identify the invoice by its number.", parameters: schema({ number: S("invoice number"), amount: { type: "number", description: "amount received; omit for the full amount" } }, ["number"]) },
+        def: { name: "mark_invoice_paid", description: "Mark an invoice as paid (fully, or partially with amount) — money received. Works for a draft, sent or overdue invoice (paying does not require sending it first). Needs user confirmation. Identify the invoice by its number.", parameters: schema({ number: S("invoice number"), amount: { type: "number", description: "amount received; omit for the full amount" } }, ["number"]) },
         check: (a) => ({ number: need(str(a.number, 40), "number"), ...(Number(a.amount) > 0 ? { amount: Math.round(Number(a.amount) * 100) / 100 } : {}) }),
         run: (c, a) => wrap(async () => { const r = await markPaid({ org: c.org, userId: c.userId }, String(a.number), a.amount as number | undefined); return { params: { number: r.number, customerName: r.customerName }, link: "/crm/finance?tab=invoices" }; }),
     },

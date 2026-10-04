@@ -1974,7 +1974,7 @@
         "supplyDate": "Service date",
         "supplyDateHint": "Required on German invoices (§14 Abs. 4 Nr. 6 UStG). If left empty, no service date is printed.",
         "send": "Send",
-        "markPaid": "Mark paid",
+        "markPaid": "Money received",
         "markedPaid": "Marked as paid.",
         "partiallyPaid": "partly paid: {amount}",
         "paidOn": "Paid on {date}",
@@ -2847,7 +2847,11 @@
         "filterLabel": "Filter invoices",
         "filterAll": "All",
         "filterUnpaid": "Unpaid",
-        "filterEmpty": "No invoices match this filter."
+        "filterEmpty": "No invoices match this filter.",
+        "supplyDateShort": "Service date",
+        "deleteDraft": "Delete draft",
+        "deleteDraftAsk": "Delete this draft invoice? This cannot be undone.",
+        "deleted": "Deleted"
     },
     "ads": {
         "needsUpgrade": "Ad performance needs the Professional plan.",
