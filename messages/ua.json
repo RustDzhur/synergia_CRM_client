@@ -596,7 +596,10 @@
         "dealWonMark": "Позначити як виграну",
         "dealWonUndo": "Зняти позначку «виграно»",
         "chanFromMailbox": "Лист буде надіслано з {email} (Web Mails → Accounts).",
-        "dealSource": "{source}"
+        "dealSource": "{source}",
+        "companyPriceType": "Тип ціни",
+        "companyCreditLimit": "Кредитний ліміт",
+        "companyPaymentDays": "Відстрочка платежу, днів"
     },
     "dashboard": {
         "date": "Дата",
@@ -1101,7 +1104,12 @@
         "envDeleteAsk": "Видалити змінну {name}?",
         "envUse": "Де працює: у правилах автоматизації — '{{'env.НАЗВА'}}' в адресі вебхука; агент або бот читає її, якщо ви дозволили це в ключі «Підключити агента або бота» (REST /api/connect/env).",
         "connectEnvNames": "Які змінні оточення може читати агент (через кому, * — усі; порожньо — жодної)",
-        "connectEnvShort": "змінні"
+        "connectEnvShort": "змінні",
+        "importFailed": "Не вдалося завантажити файл",
+        "marketSynced": "Синхронізовано: нових {created}, пропущено {skipped}",
+        "marketChecked": "Підключення перевірено: {message}",
+        "marketSync": "Синхронізувати замовлення",
+        "marketCheck": "Перевірити підключення"
     },
     "upgrade": {
         "free": "Безкоштовний",
@@ -1579,7 +1587,8 @@
         "nothingFound": "Нічого не знайдено",
         "confirmDelete": "Видалити вибрані записи ({count})?",
         "confirmDeleteOne": "Видалити цей запис?",
-        "scrollTabs": "Показати інші вкладки"
+        "scrollTabs": "Показати інші вкладки",
+        "filterAll": "Усі"
     },
     "ai": {
         "analyzeMail": "Проаналізувати",
@@ -2216,7 +2225,7 @@
         "contractBody": "Текст договору",
         "contractBodyHint": "Поля підставляються на місці подстановок: {vars}",
         "contractSection": "Текст договору за замовчуванням",
-        "contractSectionHint": "З цього тексту починається кожен новий договір — правте його під свою фірму. Поля договору підставляються у {{…}} автоматично.",
+        "contractSectionHint": "З цього тексту починається кожен новий договір — правте його під свою фірму. Поля договору підставляються у '{{'…'}}' автоматично.",
         "contractSectionPlaceholder": "Порожньо — використовується вбудований типовий текст",
         "contractVarsHint": "Доступні подстановки: {vars}",
         "contractInsertDefault": "Вставити типовий текст",
@@ -2915,7 +2924,9 @@
         "supplyDateShort": "Дата послуги",
         "deleteDraft": "Видалити чернетку",
         "deleteDraftAsk": "Видалити цю чернетку рахунку? Це не можна скасувати.",
-        "deleted": "Видалено"
+        "deleted": "Видалено",
+        "edit": "Редагувати",
+        "openInGoogle": "Відкрити в Google"
     },
     "ads": {
         "needsUpgrade": "Ефективність реклами доступна від тарифу Professional.",

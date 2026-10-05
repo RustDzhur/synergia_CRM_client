@@ -596,7 +596,10 @@
         "dealWonMark": "Mark as won",
         "dealWonUndo": "Remove won mark",
         "chanFromMailbox": "The e-mail will be sent from {email} (Web Mails → Accounts).",
-        "dealSource": "{source}"
+        "dealSource": "{source}",
+        "companyPriceType": "Price type",
+        "companyCreditLimit": "Credit limit",
+        "companyPaymentDays": "Payment term, days"
     },
     "dashboard": {
         "date": "Date",
@@ -1101,7 +1104,12 @@
         "envDeleteAsk": "Delete the variable {name}?",
         "envUse": "Where it works: in automation rules as '{{'env.NAME'}}' in a webhook address; an agent or bot reads it if you allow that in the “Connect an agent or bot” key (REST /api/connect/env).",
         "connectEnvNames": "Environment variables the agent may read (comma-separated, * for all; empty — none)",
-        "connectEnvShort": "variables"
+        "connectEnvShort": "variables",
+        "importFailed": "The file could not be downloaded",
+        "marketSynced": "Synced: {created} new, {skipped} skipped",
+        "marketChecked": "Connection checked: {message}",
+        "marketSync": "Sync orders",
+        "marketCheck": "Check connection"
     },
     "upgrade": {
         "free": "Free",
@@ -1579,7 +1587,8 @@
         "nothingFound": "Nothing found",
         "confirmDelete": "Delete the selected records ({count})?",
         "confirmDeleteOne": "Delete this record?",
-        "scrollTabs": "Show more tabs"
+        "scrollTabs": "Show more tabs",
+        "filterAll": "All"
     },
     "ai": {
         "analyzeMail": "Analyze",
@@ -2216,7 +2225,7 @@
         "contractBody": "Contract text",
         "contractBodyHint": "Fields are substituted at the placeholders: {vars}",
         "contractSection": "Default contract text",
-        "contractSectionHint": "Every new contract starts from this text — adapt it to your firm. Contract fields are substituted into {{…}} automatically.",
+        "contractSectionHint": "Every new contract starts from this text — adapt it to your firm. Contract fields are substituted into '{{'…'}}' automatically.",
         "contractSectionPlaceholder": "Empty — the built-in default text is used",
         "contractVarsHint": "Available placeholders: {vars}",
         "contractInsertDefault": "Insert default text",
@@ -2915,7 +2924,9 @@
         "supplyDateShort": "Service date",
         "deleteDraft": "Delete draft",
         "deleteDraftAsk": "Delete this draft invoice? This cannot be undone.",
-        "deleted": "Deleted"
+        "deleted": "Deleted",
+        "edit": "Edit",
+        "openInGoogle": "Open in Google"
     },
     "ads": {
         "needsUpgrade": "Ad performance needs the Professional plan.",

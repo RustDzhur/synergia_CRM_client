@@ -596,7 +596,10 @@
         "dealWonMark": "Als gewonnen markieren",
         "dealWonUndo": "Gewonnen-Markierung entfernen",
         "chanFromMailbox": "Die E-Mail wird von {email} gesendet (Web Mails → Konten).",
-        "dealSource": "{source}"
+        "dealSource": "{source}",
+        "companyPriceType": "Preistyp",
+        "companyCreditLimit": "Kreditlimit",
+        "companyPaymentDays": "Zahlungsziel (Tage)"
     },
     "dashboard": {
         "date": "Datum",
@@ -1101,7 +1104,12 @@
         "envDeleteAsk": "Variable {name} löschen?",
         "envUse": "Wo sie wirkt: in Automatisierungsregeln als '{{'env.NAME'}}' in einer Webhook-Adresse; ein Agent oder Bot liest sie, wenn Sie das im Schlüssel „Agent oder Bot verbinden“ erlauben (REST /api/connect/env).",
         "connectEnvNames": "Umgebungsvariablen, die der Agent lesen darf (kommagetrennt, * für alle; leer – keine)",
-        "connectEnvShort": "Variablen"
+        "connectEnvShort": "Variablen",
+        "importFailed": "Die Datei konnte nicht heruntergeladen werden",
+        "marketSynced": "Synchronisiert: {created} neu, {skipped} übersprungen",
+        "marketChecked": "Verbindung geprüft: {message}",
+        "marketSync": "Bestellungen synchronisieren",
+        "marketCheck": "Verbindung prüfen"
     },
     "upgrade": {
         "free": "Kostenlos",
@@ -1579,7 +1587,8 @@
         "nothingFound": "Nichts gefunden",
         "confirmDelete": "Die ausgewählten Einträge löschen ({count})?",
         "confirmDeleteOne": "Diesen Eintrag löschen?",
-        "scrollTabs": "Weitere Tabs anzeigen"
+        "scrollTabs": "Weitere Tabs anzeigen",
+        "filterAll": "Alle"
     },
     "ai": {
         "analyzeMail": "Analysieren",
@@ -2216,7 +2225,7 @@
         "contractBody": "Vertragstext",
         "contractBodyHint": "Felder werden an den Platzhaltern eingesetzt: {vars}",
         "contractSection": "Standard-Vertragstext",
-        "contractSectionHint": "Jeder neue Vertrag startet mit diesem Text — passen Sie ihn an Ihre Firma an. Vertragsfelder werden automatisch in {{…}} eingesetzt.",
+        "contractSectionHint": "Jeder neue Vertrag startet mit diesem Text — passen Sie ihn an Ihre Firma an. Vertragsfelder werden automatisch in '{{'…'}}' eingesetzt.",
         "contractSectionPlaceholder": "Leer — der eingebaute Standardtext wird verwendet",
         "contractVarsHint": "Verfügbare Platzhalter: {vars}",
         "contractInsertDefault": "Standardtext einfügen",
@@ -2915,7 +2924,9 @@
         "supplyDateShort": "Leistungsdatum",
         "deleteDraft": "Entwurf löschen",
         "deleteDraftAsk": "Diesen Rechnungsentwurf löschen? Das kann nicht rückgängig gemacht werden.",
-        "deleted": "Gelöscht"
+        "deleted": "Gelöscht",
+        "edit": "Bearbeiten",
+        "openInGoogle": "In Google öffnen"
     },
     "ads": {
         "needsUpgrade": "Werbeleistung erfordert den Tarif Professional.",
