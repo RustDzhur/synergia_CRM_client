@@ -128,7 +128,15 @@
         "personalphone": "Personal Phone",
         "personalemail": "Personal Email",
         "personaladdress": "Personal Address",
-        "personalpassword": "Personal Password"
+        "personalpassword": "Personal Password",
+        "signupSuccess": "Registration successful. Now sign in.",
+        "signupError_name_required": "Enter a name (and a last name or a company name).",
+        "signupError_email_invalid": "Check the e-mail address — it looks invalid.",
+        "signupError_password_short": "The password must be at least 8 characters long.",
+        "signupError_email_taken": "This e-mail is already registered — sign in or use another one.",
+        "signupError_generic": "Registration failed. Please try again in a moment.",
+        "signupError_fill": "Fill in every field; the password needs at least 8 characters.",
+        "passwordHint": "At least 8 characters"
     },
     "hero": {
         "eyebrow": "AI automation for companies",

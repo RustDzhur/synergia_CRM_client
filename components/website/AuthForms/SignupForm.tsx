@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useForm, Controller, SubmitHandler, FieldValues } from "react-hook-form";
 import useAuthFormStore from "@/store/useAuthFormStore";
 import { useTranslations } from "next-intl";
+import toast from "react-hot-toast";
 import useAuthStore from "@/store/useAuthStore";
 import SignupField from "./signupParts/SignupField";
 import SignupTabs from "./signupParts/SignupTabs";
@@ -20,8 +21,13 @@ function SignupForm() {
 	const { isSignInFormOpen, isSignUpFormOpen, toggleSignInForm, toggleSignUpForm } = useAuthFormStore();
 
 	const onSubmit: SubmitHandler<FieldValues> = async (data) => {
-		const success = await signUp(signupPayload(activeTab, data));
-		if (success) {
+		const res = await signUp(signupPayload(activeTab, data));
+		if (!res.ok) {
+			toast.error(t(`signupError_${["name_required", "email_invalid", "password_short", "email_taken"].includes(res.code) ? res.code : "generic"}`));
+			return;
+		}
+		toast.success(t("signupSuccess"));
+		{
 			toggleSignUpForm();
 			toggleSignInForm(); // открыть форму входа
 		}
@@ -40,7 +46,7 @@ function SignupForm() {
 		<div>
 			<p className="text-34 font-bold text-center leading-[61.2px] sm:mb-20">{t("signup")}</p>
 			<SignupTabs active={activeTab} onChange={setActiveTab} label={(key) => t(key)} />
-			<form onSubmit={handleSubmit(onSubmit)} className="text-center">
+			<form onSubmit={handleSubmit(onSubmit, () => toast.error(t("signupError_fill")))} className="text-center">
 				<div key={activeTab} className="mb-15 lg:grid lg:grid-cols-2 lg:gap-6">
 					{fields.map((f) => (
 						<SignupField
@@ -49,6 +55,7 @@ function SignupForm() {
 							placeholder={t(f.label)}
 							control={control}
 							passwordVisible={passwordVisible}
+							hint={f.type === "password" ? t("passwordHint") : undefined}
 							onTogglePassword={() => setPasswordVisible(!passwordVisible)}
 						/>
 					))}

@@ -14,7 +14,6 @@ import {
 import { useTranslations, useLocale } from "next-intl";
 import useAuthStore from "@/store/useAuthStore";
 import { useSiteMenuState } from "@/store/useSiteMenuState";
-import { useRouter } from "next/navigation";
 import Loader from "@/utils/Loader";
 import { readPendingPlan, clearPendingPlan } from "@/config/pendingPlan";
 
@@ -24,7 +23,6 @@ interface SignInFormData {
 }
 
 export default function SignInForm() {
-	const router = useRouter();
 	const { isLoading, signIn } = useAuthStore();
 	const locale = useLocale();
 	const [passwordVisible, setPasswordVisible] = useState(false);
@@ -51,10 +49,12 @@ export default function SignInForm() {
 		const pending = readPendingPlan();
 		if (pending) {
 			clearPendingPlan();
-			router.push(`/${locale}/crm/upgrade?startPlan=${pending.plan}&interval=${pending.interval}`);
+			window.location.assign(`/${locale}/crm/upgrade?startPlan=${pending.plan}&interval=${pending.interval}`);
 			return;
 		}
-		router.push(`/${locale}/crm`);
+		// Полная загрузка, а не переход внутри страницы: данные разделов (задачи, сделки, счета…) лежат в памяти вкладки,
+		// и при смене аккаунта новый пользователь на миг видел бы чужие, пока не придёт ответ сервера
+		window.location.assign(`/${locale}/crm`);
 	};
 
 	const handleChangeForm = () => {
