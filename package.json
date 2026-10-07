@@ -55,5 +55,11 @@
     "@types/uuid": "^9.0.2",
     "prisma": "^5.22.0",
     "vitest": "^2.1.9"
+  },
+  "overrides": {
+    "@hello-pangea/dnd": {
+      "@types/react": "$@types/react",
+      "@types/react-dom": "$@types/react-dom"
+    }
   }
 }
