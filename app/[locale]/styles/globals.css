@@ -443,3 +443,9 @@ body {
 @keyframes bt-bob { from { transform: translateY(0); } to { transform: translateY(-3px); } }
 @keyframes bt-type { from { transform: rotate(-4deg) translateY(0); } to { transform: rotate(7deg) translateY(-3px); } }
 @media (prefers-reduced-motion: reduce) { .bt-body, .bt-leg, .bt-arm, .bt-steam { animation: none !important; } }
+
+.sc-dash-rev { animation: sc-dash-rev 6s linear infinite; }
+@keyframes sc-dash-rev { to { stroke-dashoffset: 48; } }
+.sc-blink-soft { animation: sc-neon 3.2s ease-in-out infinite; }
+@keyframes sc-neon { 0%, 100% { opacity: 1; } 46% { opacity: 1; } 50% { opacity: 0.55; } 54% { opacity: 1; } 70% { opacity: 0.85; } }
+@media (prefers-reduced-motion: reduce) { .sc-dash-rev, .sc-blink-soft { animation: none !important; } }

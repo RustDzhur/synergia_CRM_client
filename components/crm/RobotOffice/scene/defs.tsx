@@ -19,7 +19,11 @@ export default function SceneDefs() {
 			{/* стеклянная стена: светлеет к верху, по краю — неоновая линия */}
 			<linearGradient id="g-glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7fffd4" stopOpacity="0.20" /><stop offset="0.6" stopColor="#2DDEB6" stopOpacity="0.07" /><stop offset="1" stopColor="#c6ff4d" stopOpacity="0.14" /></linearGradient>
 			<linearGradient id="g-sheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff" stopOpacity="0.12" /><stop offset="0.45" stopColor="#fff" stopOpacity="0.02" /><stop offset="1" stopColor="#000" stopOpacity="0.22" /></linearGradient>
-			<linearGradient id="g-floor" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#4a5850" /><stop offset="1" stopColor="#2c3631" /></linearGradient>
+			<linearGradient id="g-floor" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#36443c" /><stop offset="1" stopColor="#1b2420" /></linearGradient>
+			<linearGradient id="g-glass2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#bffff0" stopOpacity="0.30" /><stop offset="0.55" stopColor="#7fffd4" stopOpacity="0.10" /><stop offset="1" stopColor="#c6ff4d" stopOpacity="0.20" /></linearGradient>
+			<linearGradient id="g-streak" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff" stopOpacity="0.16" /><stop offset="0.35" stopColor="#fff" stopOpacity="0" /><stop offset="0.6" stopColor="#fff" stopOpacity="0.08" /><stop offset="0.7" stopColor="#fff" stopOpacity="0" /></linearGradient>
+			<linearGradient id="g-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0c1411" /><stop offset="1" stopColor="#1d3a2c" /></linearGradient>
+			<linearGradient id="g-cyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#fff" stopOpacity="0.22" /><stop offset="0.35" stopColor="#fff" stopOpacity="0.02" /><stop offset="1" stopColor="#000" stopOpacity="0.45" /></linearGradient>
 			<radialGradient id="g-beam" cx="0.5" cy="1" r="0.9"><stop offset="0" stopColor="#c6ff4d" stopOpacity="0.34" /><stop offset="1" stopColor="#c6ff4d" stopOpacity="0" /></radialGradient>
 			<radialGradient id="g-holo" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stopColor="#c6ff4d" stopOpacity="0.40" /><stop offset="0.7" stopColor="#c6ff4d" stopOpacity="0.10" /><stop offset="1" stopColor="#c6ff4d" stopOpacity="0" /></radialGradient>
 			{ROOMS.map((r) => (

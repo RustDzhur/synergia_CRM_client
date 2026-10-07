@@ -35,6 +35,8 @@ export function staticBlocked(): Set<string> {
     const blocked = new Set<string>();
     const rect = (x: number, y: number, w: number, d: number) => { for (let i = Math.floor(x); i < Math.ceil(x + w); i++) for (let j = Math.floor(y); j < Math.ceil(y + d); j++) blocked.add(`${i},${j}`); };
     for (let i = 0; i < GRID_W; i++) for (let j = 0; j < GRID_D; j++) if (Math.hypot(i + 0.5 - HUB.x, j + 0.5 - HUB.y) < 2.5) blocked.add(`${i},${j}`);
+    // стеклянные дуги по задним углам зон (см. furniture.tsx): сквозь них не ходят
+    for (const r of ROOMS) { rect(r.x, r.y, 3.4, 1); rect(r.x, r.y, 1, 3.4); rect(r.x + r.w - 3.4, r.y, 3.4, 1); rect(r.x + r.w - 1, r.y, 1, 1.8); }
     rect(COFFEE.x, COFFEE.y, COFFEE.w, COFFEE.d); rect(LOUNGE.sofa.x, LOUNGE.sofa.y, LOUNGE.sofa.w, LOUNGE.sofa.d); rect(LOUNGE.table.x, LOUNGE.table.y, LOUNGE.table.w, LOUNGE.table.d); rect(SERVER.x, SERVER.y, SERVER.w, SERVER.d);
     return blocked;
 }

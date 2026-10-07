@@ -6,13 +6,15 @@ import { TbMinus, TbPlus } from "react-icons/tb";
 import { useOfficeStore, type Robot, type Zone } from "@/store/useOfficeStore";
 import { useDragKit } from "../dragKit";
 import { ACCENT_HEX, type RobotView, titleOf, viewOf } from "../theme";
-import { HUB, ROOMS, SCENE_H, SCENE_W, TH, TW, pt, slotFor } from "./iso";
+import { HUB, ROOMS, SCENE_H, SCENE_W, pt, slotFor } from "./iso";
 import { COFFEE, LOUNGE, SERVER } from "./layout";
 import { OfficeSim, type Mode, type RobotInput } from "./sim";
 import Bot from "./Bot";
 import SceneDefs, { ZONE_LIGHT } from "./defs";
-import { BackWalls, CoffeeBar, FloorSlab, Lounge, ServerRoom, ZonePad, ZoneSign } from "./furniture";
-import { Chair, Plane, Plant } from "./prims";
+import { BackWalls, CoffeeBar, FloorSlab, Lounge, ServerRoom, ServiceGlass, ZoneGlass, ZonePad, ZoneSign } from "./furniture";
+import Flows, { type Flow } from "./flows";
+import Hub from "./hub";
+import { Chair, Plant } from "./prims";
 import { Station, kindOf } from "./stations";
 
 // Живой открытый офис в изометрии. Роботы — «агенты» (sim.ts): у кого есть поручение — сидит за своим столом и печатает, у кого нет — ходит:
@@ -20,41 +22,12 @@ import { Station, kindOf } from "./stations";
 // Нажатие выбирает робота; перетаскивание — на зону (он идёт к новому столу); на робота можно бросить карточку поручения или текстовый файл.
 const MAX_FILE = 40 * 1024;
 const TEXT_FILE = /\.(txt|csv|tsv|md|json|xml|log)$/i;
-const R2 = Math.SQRT2;
-const S = 1.0; // масштаб спрайта робота в сцене
+const S = 1.12; // масштаб спрайта робота в сцене
 
 interface Item { depth: number; key: string; node: React.ReactNode }
 interface Handle { pos: SVGGElement; pose: SVGGElement }
 
-function Hub({ boss, onFocus }: { boss: boolean; onFocus: () => void }) {
-	const [cx, cy] = pt(HUB.x, HUB.y, 0);
-	const ell = (r: number, z = 0) => ({ cx, cy: cy - z, rx: r * TW * 0.5 * R2, ry: r * TH * 0.5 * R2 });
-	return (
-		<g data-drop-robot="iris" onClick={onFocus} style={{ cursor: "pointer" }}>
-			<ellipse {...ell(3.3)} fill="url(#g-holo)" opacity="0.55" />
-			<ellipse {...ell(3.1)} fill="none" stroke="#c6ff4d" strokeOpacity="0.45" strokeWidth="1.4" strokeDasharray="4 7" className="sc-dash" />
-			<ellipse {...ell(2.45)} fill="#0b0f0d" stroke="#c6ff4d" strokeOpacity="0.8" strokeWidth="1.8" filter="url(#f-glow)" />
-			<ellipse {...ell(2.0)} fill="#121815" stroke="rgba(198,255,77,0.35)" strokeWidth="1" />
-			<ellipse {...ell(1.55, 0)} fill="#0f1411" />
-			<rect x={cx - ell(1.55).rx} y={cy - 16} width={ell(1.55).rx * 2} height="16" fill="url(#bt-metal)" />
-			<line x1={cx - ell(1.55).rx} y1={cy - 8} x2={cx + ell(1.55).rx} y2={cy - 8 + 0.01} stroke="rgba(198,255,77,0.35)" strokeWidth="1" />
-			<ellipse {...ell(1.55, 16)} fill="#27322b" stroke="#c6ff4d" strokeOpacity="0.9" strokeWidth="1.6" filter="url(#f-glow)" />
-			<ellipse {...ell(1.0, 16)} fill="rgba(198,255,77,0.18)" className={boss ? "sc-pulse" : undefined} />
-			<rect x={cx - ell(1.0).rx} y={cy - 16 - 120} width={ell(1.0).rx * 2} height="120" fill="url(#g-beam)" opacity="0.55" style={{ pointerEvents: "none" }} />
-			<g className="sc-float" style={{ pointerEvents: "none" }}>
-				<Plane x={HUB.x - 2.6} y={HUB.y + 0.5} z={84}><rect width="50" height="30" rx="2" fill="rgba(198,255,77,0.10)" stroke="rgba(198,255,77,0.7)" filter="url(#f-glow)" />{[0, 1, 2, 3].map((i) => <rect key={i} x="5" y={5 + i * 5.8} width={[30, 22, 34, 16][i]} height="2.2" fill="#c6ff4d" opacity="0.75" />)}</Plane>
-				<Plane x={HUB.x + 1.3} y={HUB.y + 0.8} z={74}><rect width="44" height="28" rx="2" fill="rgba(45,222,182,0.10)" stroke="rgba(45,222,182,0.7)" filter="url(#f-glow)" />{[9, 15, 11, 19, 14].map((h, i) => <rect key={i} x={5 + i * 7.5} y={24 - h} width="5" height={h} fill="#2DDEB6" opacity="0.85" />)}</Plane>
-			</g>
-			<g transform={`translate(${cx - 54} ${cy - 16 - 124}) scale(1.35)`}><Bot accent="lime" boss state={boss ? "working" : "idle"} /></g>
-			<g transform={`translate(${cx} ${cy + 17})`} style={{ pointerEvents: "none" }}>
-				<rect x="-30" y="-10" width="60" height="20" rx="10" fill="#0d110f" stroke="#c6ff4d" strokeOpacity="0.85" filter="url(#f-glow)" />
-				<text x="0" y="4.5" textAnchor="middle" fontSize="12" fontWeight="700" fill="#c6ff4d" letterSpacing="1.6">IRIS</text>
-			</g>
-		</g>
-	);
-}
-
-function Actor({ robot, view, selected, register, onSelect, onFile }: { robot: Robot; view: RobotView; selected: boolean; register: (id: string, h: Handle | null) => void; onSelect: () => void; onFile: (f: File) => void }) {
+function Actor({ robot, view, fresh, selected, register, onSelect, onFile }: { robot: Robot; view: RobotView; fresh: boolean; selected: boolean; register: (id: string, h: Handle | null) => void; onSelect: () => void; onFile: (f: File) => void }) {
 	const t = useTranslations("office");
 	const drag = useDragKit();
 	const { canEdit, ai } = useOfficeStore();
@@ -66,7 +39,8 @@ function Actor({ robot, view, selected, register, onSelect, onFile }: { robot: R
 	}, [robot.id, register]);
 	const over = drag.over?.type === "robot" && drag.over.id === robot.id;
 	const color = view.state === "working" ? "#c6ff4d" : view.state === "waiting" ? "#F4A100" : view.state === "failed" ? "#EB5757" : "#8c948b";
-	const badge = view.state === "waiting" ? "!" : view.state === "failed" ? "×" : "";
+	const icon = view.state === "working" ? "gear" : view.state === "waiting" ? "!" : view.state === "failed" ? "×" : fresh ? "ok" : "";
+	const iconColor = icon === "ok" ? "#2DDEB6" : color;
 	const name = robot.name.length > 9 ? `${robot.name.slice(0, 8)}…` : robot.name;
 	const pillW = Math.max(40, name.length * 5.8 + 20);
 	const task = view.running?.text?.replace(/\s+/g, " ").trim() ?? "";
@@ -88,16 +62,18 @@ function Actor({ robot, view, selected, register, onSelect, onFile }: { robot: R
 				<g transform={`translate(${-40 * S} ${-97 * S}) scale(${S})`}><Bot accent={robot.accent} state={view.state} /></g>
 			</g>
 			{bubble && (
-				<g transform={`translate(0 ${-98 * S - 8})`} style={{ pointerEvents: "none" }} className="sc-float">
+				<g transform={`translate(0 ${-98 * S - 12})`} style={{ pointerEvents: "none" }} className="sc-float">
 					<rect x={-bw / 2} y="-9" width={bw} height="17" rx="8.5" fill="rgba(10,14,12,0.92)" stroke="#c6ff4d" strokeOpacity="0.8" filter="url(#f-glow)" />
 					<path d="M-3 8 L0 12 L3 8 Z" fill="rgba(10,14,12,0.92)" stroke="#c6ff4d" strokeOpacity="0.8" />
 					<text x="0" y="3.2" textAnchor="middle" fontSize="9" fontWeight="600" fill="#e6f5c8">{bubble}</text>
 				</g>
 			)}
-			{badge && (
-				<g transform={`translate(18 ${-98 * S})`} style={{ pointerEvents: "none" }}>
-					<circle r="8" fill="#0d110f" stroke={color} strokeWidth="1.4" />
-					<text x="0" y="3.6" textAnchor="middle" fontSize="11" fontWeight="700" fill={color}>{badge}</text>
+			{icon && (
+				<g transform={`translate(17 ${-96 * S})`} style={{ pointerEvents: "none" }}>
+					<circle r="9" fill="#0b0f0d" stroke={iconColor} strokeWidth="1.5" filter="url(#f-glow)" />
+					{icon === "gear" ? <g className="sc-spin" stroke={iconColor} strokeWidth="1.6" strokeLinecap="round"><circle r="2.6" fill="none" /><path d="M0-6V-4M0 4V6M-6 0H-4M4 0H6M-4.2-4.2l1.4 1.4M2.8 2.8l1.4 1.4M4.2-4.2l-1.4 1.4M-2.8 2.8l-1.4 1.4" /></g>
+						: icon === "ok" ? <path d="M-4 0.5l2.8 3L4.5-3.5" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+						: <text x="0" y="4" textAnchor="middle" fontSize="12" fontWeight="700" fill={iconColor}>{icon}</text>}
 				</g>
 			)}
 			<g transform="translate(0 15)" style={{ pointerEvents: "none" }}>
@@ -190,8 +166,11 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 		if (task) toast.success(t("taskAssigned", { name: r.name }));
 	}
 
+	const freshOf = (id: string) => { const last = tasks.find((x) => x.robot === id); return !!last && last.status === "done" && now - Date.parse(last.finishedAt ?? last.createdAt) < 3 * 60 * 1000; };
 	const hotZone = drag.payload?.kind === "robot" && drag.over?.type === "zone" ? drag.over.id : null;
 	const zoneLive = (z: Zone) => robots.some((r) => r.zone === z && views[r.id]?.state === "working");
+	const flows: Flow[] = ROOMS.map((room) => ({ id: `z-${room.zone}`, to: [room.x + room.w / 2, room.y + room.d / 2 + 0.5] as [number, number], color: ZONE_LIGHT[room.zone], live: zoneLive(room.zone) }));
+	robots.forEach((r, ri) => { if (views[r.id]?.state !== "working") return; const room = ROOMS.find((x) => x.zone === r.zone)!; const seat = slotFor(room, inputs.current[ri]?.index ?? 0).robot; flows.push({ id: `r-${r.id}`, to: [seat.x, seat.y], color: ACCENT_HEX[r.accent], live: true, strong: true }); });
 	const items: Item[] = [];
 	const counts: Record<string, number> = {};
 	for (const room of ROOMS) {
@@ -210,7 +189,7 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 	items.push({ depth: COFFEE.x + COFFEE.w / 2 + COFFEE.y + COFFEE.d / 2, key: "coffee", node: <CoffeeBar /> });
 	items.push({ depth: LOUNGE.sofa.x + LOUNGE.sofa.w / 2 + LOUNGE.sofa.y + LOUNGE.sofa.d / 2 + 0.2, key: "sofa", node: <Lounge /> });
 	items.push({ depth: SERVER.x + SERVER.w / 2 + SERVER.y + SERVER.d / 2, key: "server", node: <ServerRoom /> });
-	items.push({ depth: HUB.x + HUB.y - 0.5, key: "hub", node: <Hub boss={bossBusy} onFocus={onBoss} /> });
+	items.push({ depth: HUB.x + HUB.y + 0.4, key: "hub", node: <Hub boss={bossBusy} onFocus={onBoss} /> });
 	([[0.7, 0.9], [23.3, 0.9], [0.7, 8.6], [23.3, 8.6], [0.7, 17.3], [23.3, 17.3], [7.6, 6.4], [15.6, 6.4], [8.2, 12.4], [15.3, 12.4], [11.5, 17.3], [8.0, 17.3]] as [number, number][]).forEach(([x, y], i) => items.push({ depth: x + y, key: `pl${i}`, node: <Plant x={x} y={y} big={i < 6} /> }));
 	staticDepths.current = items.map((i) => i.depth).sort((a, b) => a - b);
 	// роботы: глубина — по последнему снимку; новому роботу — по месту стола
@@ -220,7 +199,7 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 		const seat = slotFor(room, input?.index ?? 0).robot;
 		items.push({
 			depth: depths[r.id] ?? seat.x + seat.y + 0.15, key: `rb-${r.id}`,
-			node: <Actor robot={r} view={views[r.id]} selected={selected === r.id} register={register} onSelect={() => onSelect(r.id)} onFile={(f) => void onFile(r, f)} />,
+			node: <Actor robot={r} view={views[r.id]} fresh={freshOf(r.id)} selected={selected === r.id} register={register} onSelect={() => onSelect(r.id)} onFile={(f) => void onFile(r, f)} />,
 		});
 	});
 	items.sort((a, b) => a.depth - b.depth);
@@ -232,23 +211,11 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 					<SceneDefs />
 					<FloorSlab />
 					{ROOMS.map((room) => <ZonePad key={room.zone} room={room} hot={hotZone === room.zone} live={zoneLive(room.zone)} count={counts[room.zone] ?? 0} />)}
-					{/* Айрис раздаёт работу: пунктир к зонам с работающими роботами и бегущие кубы данных */}
-					{ROOMS.map((room) => {
-						const live = zoneLive(room.zone);
-						const a = pt(room.x + room.w / 2, room.y + room.d / 2, 0), b = pt(HUB.x, HUB.y, 0);
-						return (
-							<g key={`ln-${room.zone}`} style={{ pointerEvents: "none" }}>
-								<line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={ZONE_LIGHT[room.zone]} strokeOpacity={live ? 0.5 : 0.1} strokeWidth="1.4" strokeDasharray="5 6" className={live ? "sc-dash" : undefined} />
-								{live && (
-									<g filter="url(#f-glow)">
-										<g transform="translate(0 -6)"><polygon points="0,-5 7,-1.5 0,2 -7,-1.5" fill="#d8ff7e" /><polygon points="-7,-1.5 0,2 0,9 -7,5.5" fill="#8fc92b" /><polygon points="7,-1.5 0,2 0,9 7,5.5" fill="#5f8f1a" /></g>
-										<animateMotion dur="2.6s" repeatCount="indefinite" path={`M${b[0]},${b[1]} L${a[0]},${a[1]}`} />
-									</g>
-								)}
-							</g>
-						);
-					})}
+					{/* Айрис раздаёт работу: неоновые линии к зонам и к рабочим местам занятых роботов, по ним бегут кубы данных */}
+					<Flows flows={flows} />
 					<BackWalls />
+					{ROOMS.map((room) => <ZoneGlass key={room.zone} room={room} />)}
+					<ServiceGlass />
 					{ROOMS.map((room) => <ZoneSign key={room.zone} room={room} label={t(`zone_${room.zone as Zone}`)} count={counts[room.zone] ?? 0} hot={hotZone === room.zone} />)}
 					<g>{items.map((it) => <g key={it.key} style={it.key.startsWith("rb-") || it.key === "hub" ? undefined : { pointerEvents: "none" }}>{it.node}</g>)}</g>
 				</svg>
