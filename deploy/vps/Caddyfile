@@ -6,8 +6,11 @@
 	reverse_proxy 127.0.0.1:3210
 }
 
-# Панель OmniRoute (A-запись omiroute.firmspace.eu должна указывать на этот сервер)
+# Панель OmniRoute (A-запись omiroute.firmspace.eu → этот сервер). Закрыта логином и паролем (те же, что у Harness) поверх собственного входа панели.
 omiroute.firmspace.eu {
+	basic_auth {
+		{$HARNESS_USER} {$HARNESS_PASS_HASH}
+	}
 	handle /live-ws* {
 		reverse_proxy 127.0.0.1:20132
 	}
@@ -25,9 +28,4 @@ harness.firmspace.de, www.harness.firmspace.de {
 		{$HARNESS_USER} {$HARNESS_PASS_HASH}
 	}
 	reverse_proxy 127.0.0.1:3080
-}
-
-# Служебный домен (как на прежнем сервере)
-firmspace.eu, www.firmspace.eu {
-	respond "Firmspace server is online" 200
 }

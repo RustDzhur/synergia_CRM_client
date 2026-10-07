@@ -31,6 +31,7 @@ services:
     container_name: firmspace-crm
     restart: unless-stopped
     env_file: .env
+    networks: [db, ai]
     ports:
       # Только на самом сервере (Caddy и агенты Harness ходят на 127.0.0.1:3210), наружу не открыт
       - "127.0.0.1:3210:3000"
@@ -53,6 +54,7 @@ services:
       options: { max-size: "10m", max-file: "3" }
 
   postgres:
+    networks: [db]
     image: postgres:${PG_VERSION:-16}
     container_name: firmspace-postgres
     restart: unless-stopped
@@ -75,6 +77,7 @@ services:
   # --- Сервисы ИИ: те же имена и порты, что на старом сервере (CRM ходит к ним по сети compose) ---
   # Whisper (диктовка): TRANSCRIBE_API_URL=http://speaches:8000/v1
   speaches:
+    networks: [ai]
     image: ghcr.io/speaches-ai/speaches:latest-cpu
     container_name: speaches
     restart: unless-stopped
@@ -94,6 +97,7 @@ services:
 
   # Голос Айрис (TTS): http://tts:5050/v1 — значение по умолчанию в коде
   tts:
+    networks: [ai]
     image: travisvn/openai-edge-tts:latest
     container_name: tts
     restart: unless-stopped
@@ -111,6 +115,7 @@ services:
 
   # OmniRoute: OPENAI_API_URL=http://omniroute:20128/v1. Каталог ./omniroute (data, .env) переносится со старого сервера
   omniroute-redis:
+    networks: [ai]
     image: redis:8.6.5-alpine
     container_name: omniroute-redis
     restart: unless-stopped
@@ -124,6 +129,7 @@ services:
       retries: 3
 
   omniroute:
+    networks: [ai]
     image: diegosouzapw/omniroute:latest
     container_name: omniroute
     restart: unless-stopped
@@ -153,6 +159,13 @@ services:
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
+
+# Сети разделены по назначению: базу видит только сайт; ИИ-сервисы (OmniRoute, Whisper, TTS, Redis) изолированы друг от друга
+# и от базы. db — без выхода в интернет (internal), ai — с выходом (OmniRoute и TTS ходят к внешним сервисам).
+networks:
+  db:
+    internal: true
+  ai:
 
 volumes:
   caddy_data:
