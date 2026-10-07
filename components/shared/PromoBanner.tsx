@@ -23,7 +23,7 @@ export default function PromoBanner({ compact = false }: { compact?: boolean }) 
 			<div className="flex flex-wrap items-start justify-between gap-12">
 				<div className="max-w-[760px]">
 					<p className="text-20 font-semibold text-[#c6ff4d] lg:text-24">🎁 {t("title", { seats })}</p>
-					<p className="mt-8 text-15 leading-[22px] text-[#d8ddd5] lg:text-16">{t("body", { months: info?.months ?? 12 })}</p>
+					<p className="mt-8 text-15 leading-[22px] text-[#d8ddd5] lg:text-16">{t("body", { seats, months: info?.months ?? 12 })}</p>
 				</div>
 				<div className="min-w-[200px] text-right">
 					<p className="text-28 font-bold leading-none text-white">{left}<span className="ml-4 text-14 font-normal text-[#9AA396]">/ {seats}</span></p>
