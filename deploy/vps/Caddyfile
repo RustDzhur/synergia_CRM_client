@@ -16,15 +16,14 @@ omiroute.firmspace.eu {
 	}
 }
 
-# DeepSeek Harness (dsh web). Без сессии Caddy подставляет постоянный токен входа (HARNESS_LAUNCH_TOKEN из .env).
+# DeepSeek Harness (dsh web): у Harness есть доступ к серверу и сайту, поэтому две ступени защиты:
+# 1) логин и пароль на уровне Caddy (HARNESS_USER / HARNESS_PASS_HASH из .env; хеш: caddy hash-password);
+# 2) собственный токен dsh (DSH_WEB_TOKEN) — ссылка с ним лежит в ~/harness-login.txt на сервере.
+# Токен больше НЕ подставляется автоматически: без логина и токена вход невозможен.
 harness.firmspace.de, www.harness.firmspace.de {
-	@noauth {
-		path /
-		not query token=*
-		not header Cookie *dsh-auth*
+	basic_auth {
+		{$HARNESS_USER} {$HARNESS_PASS_HASH}
 	}
-	redir @noauth /?token={$HARNESS_LAUNCH_TOKEN} 302
-
 	reverse_proxy 127.0.0.1:3080
 }
 

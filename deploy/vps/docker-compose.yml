@@ -13,8 +13,9 @@ services:
     environment:
       # Домены через запятую, как в Caddyfile: например "firmspace.de, www.firmspace.de"
       SITE_DOMAINS: ${SITE_DOMAINS:?задайте SITE_DOMAINS в .env}
-      # Постоянный токен входа в Harness (подставляется Caddy при заходе на harness.firmspace.de)
-      HARNESS_LAUNCH_TOKEN: ${HARNESS_LAUNCH_TOKEN:-}
+      # Вход в Harness: логин и хеш пароля (caddy hash-password); без них Caddy не запустится — это защита
+      HARNESS_USER: ${HARNESS_USER:?задайте HARNESS_USER в .env}
+      HARNESS_PASS_HASH: ${HARNESS_PASS_HASH:?задайте HARNESS_PASS_HASH в .env}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
