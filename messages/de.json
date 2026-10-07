@@ -3449,7 +3449,10 @@
         "termsTitle": "Bedingungen",
         "term1": "Senden Sie uns Berichte über die Arbeit des Systems (Fehler, langsame Stellen, Unklarheiten).",
         "term2": "Sagen Sie uns, welche Funktionen Sie brauchen — Ihre Wünsche bestimmen, was wir als Nächstes bauen.",
-        "mailSubject": "Firmspace — 1 Jahr kostenlos für die ersten 500"
+        "mailSubject": "Firmspace — 1 Jahr kostenlos für die ersten 500",
+        "modalLabel": "Programm „Die ersten 500 — ein Jahr gratis“",
+        "goRegister": "Zur Registrierung",
+        "close": "Schließen"
     },
     "office": {
         "title": "Roboter-Büro",

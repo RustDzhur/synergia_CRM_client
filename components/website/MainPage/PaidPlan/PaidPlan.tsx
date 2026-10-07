@@ -10,8 +10,8 @@ import useAuthFormStore from "@/store/useAuthFormStore";
 import { useSiteMenuState } from "@/store/useSiteMenuState";
 import { useLocale, useTranslations } from "next-intl";
 import { FEATURE_KEYS, PLANS, PlanId, YEAR_MONTHS, limitsLine } from "@/config/plans";
-import { PENDING_PLAN_KEY } from "@/config/pendingPlan";
 import PromoBanner from "@/components/shared/PromoBanner";
+import PromoModal from "./PromoModal";
 
 const ICONS: Record<PlanId, string> = { free, standard: standart, professional };
 
@@ -25,10 +25,10 @@ export default function PaidPlan() {
 	const { toggleSignUpForm } = useAuthFormStore();
 	const { menu, toggleMenu } = useSiteMenuState();
 	const yearly = active === t("year");
+	const [promoOpen, setPromoOpen] = useState(false);
 
-	// Free — как раньше (открыть регистрацию/сразу в CRM для уже вошедших). Платный тариф: у вошедшего пользователя —
-	// сразу на оплату (счёт переводом со страницы Upgrade); у нового — открываем регистрацию, запомнив выбор в
-	// localStorage, чтобы сразу после входа отправить его на оплату этого тарифа (см. SigninForm + Upgrade).
+	// Кнопки тарифов: у вошедшего пользователя — прямо в кабинет (платный тариф — на страницу оплаты). У гостя пока действует
+	// программа «первые 500 — год бесплатно»: кнопка открывает окно с её условиями, а регистрация — по кнопке в этом окне.
 	const choosePlan = (planId: PlanId) => {
 		let hasToken = false;
 		try {
@@ -36,25 +36,14 @@ export default function PaidPlan() {
 		} catch {
 			/* приватный режим */
 		}
-		if (planId === "free") {
-			if (hasToken) {
-				router.push(`/${locale}/crm`);
-				return;
-			}
-			toggleSignUpForm();
-			if (!menu) toggleMenu();
-			return;
-		}
-		const interval = yearly ? "year" : "month";
 		if (hasToken) {
-			router.push(`/${locale}/crm/upgrade?startPlan=${planId}&interval=${interval}`);
+			router.push(planId === "free" ? `/${locale}/crm` : `/${locale}/crm/upgrade?startPlan=${planId}&interval=${yearly ? "year" : "month"}`);
 			return;
 		}
-		try {
-			localStorage.setItem(PENDING_PLAN_KEY, JSON.stringify({ plan: planId, interval }));
-		} catch {
-			/* приватный режим — просто откроется обычная форма без автоперехода к оплате */
-		}
+		setPromoOpen(true);
+	};
+	const goRegister = () => {
+		setPromoOpen(false);
 		toggleSignUpForm();
 		if (!menu) toggleMenu();
 	};
@@ -145,6 +134,7 @@ export default function PaidPlan() {
 					);
 				})}
 			</div>
+			<PromoModal open={promoOpen} onClose={() => setPromoOpen(false)} onRegister={goRegister} />
 		</div>
 	);
 }

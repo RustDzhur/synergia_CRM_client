@@ -50,42 +50,42 @@ export default function SwitchLanguage() {
 				type="button"
 				aria-expanded={isOpenDropDown}
 				onClick={handleOpenDropDown}
-				className="flex items-center cursor-pointer">
+				className="flex items-center gap-4 cursor-pointer">
 				<Image
 					src={selectedLanguageProperties.flagUrl}
 					alt="selected-flag"
 					width={selectedLanguageProperties.width}
 					height={selectedLanguageProperties.height}
-					className="w-40 rounded-4"
+					className="h-[16px] w-[22px] rounded-4 object-cover"
 				/>
 				{/* подпись языка есть только на десктопе (Figma: флаг · English · шеврон) */}
-				<span className="hidden lg:block ml-10 text-18 font-medium tracking-[0.4px] text-[#E6E6E6]">
+				<span className="hidden lg:block ml-6 text-14 font-medium text-[#E6E6E6]">
 					{t(`lang.${selectedLanguage.code}`)}
 				</span>
 				<RiArrowDownSLine
-					size={24}
-					color="#E6E6E6"
-					className={`transition-transform duration-200 lg:ml-6 ${isOpenDropDown ? "rotate-180" : ""}`}
+					size={16}
+					color="#8c948b"
+					className={`transition-transform duration-200 ${isOpenDropDown ? "rotate-180" : ""}`}
 				/>
 			</button>
 
-			<Dropdown open={isOpenDropDown} className="left-0 top-full mt-[12px]">
-				<ul className="rounded-8 border border-[rgba(255,255,255,0.11)] bg-[#1D2320] p-12 shadow-custom">
+			<Dropdown open={isOpenDropDown} className="left-[-8px] top-full mt-[8px]">
+				<ul className="rounded-8 border border-[rgba(255,255,255,0.11)] bg-[#1D2320] p-10 shadow-custom">
 					{languages.map((lang, index) => (
 						<li
 							onClick={() => handleLanguageChange(lang)}
 							key={lang.code}
 							className={`cursor-pointer flex items-center justify-between ${
-								index !== languages.length - 1 ? "mb-20" : ""
+								index !== languages.length - 1 ? "mb-12" : ""
 							}`}>
 							<Image
 								src={languageCodeToProperties(lang.code).flagUrl}
 								alt={lang.code}
 								width={languageCodeToProperties(lang.code).width}
 								height={languageCodeToProperties(lang.code).height}
-								className="w-40 mr-20 rounded-4"
+								className="h-[16px] w-[22px] mr-12 rounded-4 object-cover"
 							/>
-							<p className="font-medium lg:text-18 text-[#f1f4ee] whitespace-nowrap transition-colors duration-150 hover:text-[#c6ff4d]">
+							<p className="text-14 font-medium text-[#f1f4ee] whitespace-nowrap transition-colors duration-150 hover:text-[#c6ff4d]">
 								{t(`lang.${lang.code}`)}
 							</p>
 						</li>

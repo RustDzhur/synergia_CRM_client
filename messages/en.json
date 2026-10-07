@@ -3449,7 +3449,10 @@
         "termsTitle": "Terms",
         "term1": "Send us reports about how the system works (bugs, slow places, what is unclear).",
         "term2": "Tell us which features you need — your wishes decide what we build next.",
-        "mailSubject": "Firmspace — free year for the first 500"
+        "mailSubject": "Firmspace — free year for the first 500",
+        "modalLabel": "Program “first 500 — a free year”",
+        "goRegister": "Go to the registration page",
+        "close": "Close"
     },
     "office": {
         "title": "Robot Office",
