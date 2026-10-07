@@ -20,7 +20,7 @@ export const CELL_W = 8, CELL_D = 6;
 const LAYOUT: [CellKind, Zone | null][][] = [
     [["zone", "marketing"], ["coffee", null], ["zone", "service"]],
     [["zone", "sales"], ["hub", null], ["zone", "finance"]],
-    [["zone", "office"], ["zone", "warehouse"], ["server", null]],
+    [["zone", "office"], ["zone", "warehouse"], ["zone", "platform"]], // справа внизу — «платформа»: серверная и роботы платформы
 ];
 export const CELLS: CellDef[] = LAYOUT.flatMap((rowDef, row) => rowDef.map(([kind, zone], col) => ({ id: zone ?? kind, kind, zone, x: col * CELL_W, y: row * CELL_D, w: CELL_W, d: CELL_D, col: col as 0 | 1 | 2, row: row as 0 | 1 | 2 })));
 export const ROOMS: RoomDef[] = CELLS.filter((c) => c.zone).map((c) => ({ zone: c.zone as Zone, x: c.x, y: c.y, w: c.w, d: c.d, col: c.col, row: c.row }));
@@ -45,11 +45,14 @@ export const roomOf = (zone: Zone) => ROOMS.find((r) => r.zone === zone)!;
 
 /** Шесть столов зоны (левый верхний угол стола относительно острова): сначала центральный у задней стены, потом по бокам, потом второй ряд. */
 const DESKS: [number, number][] = [[3, 1.1], [0.5, 1.1], [5.5, 1.1], [3, 3.7], [0.5, 3.7], [5.5, 3.7]];
+// в серверной у задней стены стоят стойки, поэтому три стола — на ряд ближе к зрителю
+const DESKS_PLATFORM: [number, number][] = [[0.5, 3.4], [3, 3.4], [5.5, 3.4]];
 export const DESK_W = 2;
 /** Рабочее место: стол и кресло, на котором сидит робот. Робот без стола (больше шести в зоне) ходит по офису и работает стоя. */
 export function slotFor(room: RoomDef, index: number) {
-    if (index >= DESKS.length) return { desk: null, chair: null, robot: { x: room.x + 4, y: room.y + room.d - 0.8 }, standing: true };
-    const [dx, dy] = DESKS[index];
+    const desks = room.zone === "platform" ? DESKS_PLATFORM : DESKS;
+    if (index >= desks.length) return { desk: null, chair: null, robot: { x: room.x + 4, y: room.y + room.d - 0.8 }, standing: true };
+    const [dx, dy] = desks[index];
     const desk = { x: room.x + dx, y: room.y + dy };
     // кресло перед столом, чуть правее монитора: монитор остаётся виден
     const chair = { x: desk.x + 1.05, y: desk.y + 1.2 };

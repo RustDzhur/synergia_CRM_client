@@ -2,9 +2,11 @@
 // Робот — это сотрудник с ролью: он видит и делает только то, что входит в его навыки, и только в рамках прав самого владельца
 // (инструменты по-прежнему проходят через allowedTools). Удалять данные робот не может никогда: delete_* в навыки не входят.
 
-export type SkillId = "crm" | "quotes" | "invoices" | "finance" | "stock" | "purchasing" | "production" | "tasks" | "mail" | "documents" | "blog" | "hr" | "data";
+export type SkillId = "crm" | "quotes" | "invoices" | "finance" | "stock" | "purchasing" | "production" | "tasks" | "mail" | "documents" | "blog" | "hr" | "data" | "blogwrite" | "monitor";
 
-export const SKILL_IDS: SkillId[] = ["crm", "quotes", "invoices", "finance", "stock", "purchasing", "production", "tasks", "mail", "documents", "blog", "hr", "data"];
+export const SKILL_IDS: SkillId[] = ["crm", "quotes", "invoices", "finance", "stock", "purchasing", "production", "tasks", "mail", "documents", "blog", "hr", "data", "blogwrite", "monitor"];
+/** Навыки, которые можно выдать своему роботу. «blogwrite» и «monitor» — служебные, только у роботов платформы. */
+export const PICK_SKILLS: SkillId[] = SKILL_IDS.filter((x) => x !== "blogwrite" && x !== "monitor");
 
 /** Навык → инструменты Айрис. write — навык меняет данные (в режиме «спрашивать» каждое такое действие ждёт подтверждения). */
 export const SKILLS: Record<SkillId, { tools: string[]; write: boolean }> = {
@@ -21,6 +23,9 @@ export const SKILLS: Record<SkillId, { tools: string[]; write: boolean }> = {
     blog: { write: true, tools: ["list_blog_posts", "publish_blog_post"] },
     hr: { write: true, tools: ["list_employees", "save_employee_contract"] },
     data: { write: false, tools: ["browse_data"] },
+    // служебные навыки роботов платформы (видны только администратору платформы)
+    blogwrite: { write: true, tools: ["list_blog_posts", "save_blog_draft"] }, // писать статьи в блог лендинга ЧЕРНОВИКАМИ; публикует человек
+    monitor: { write: false, tools: [] }, // следит за данными платформы (ошибки, SEO-агент), сам ничего не делает
 };
 
 export const isSkill = (v: unknown): v is SkillId => typeof v === "string" && (SKILL_IDS as string[]).includes(v);
@@ -32,8 +37,10 @@ export function toolsFor(skills: readonly string[]): string[] {
     return Array.from(out);
 }
 
-export type ZoneId = "sales" | "finance" | "warehouse" | "office" | "marketing" | "service";
-export const ZONES: ZoneId[] = ["sales", "finance", "warehouse", "office", "marketing", "service"];
+export type ZoneId = "sales" | "finance" | "warehouse" | "office" | "marketing" | "service" | "platform";
+export const ZONES: ZoneId[] = ["sales", "finance", "warehouse", "office", "marketing", "service", "platform"];
+/** Зоны, которые можно выбрать своему роботу: «платформа» — серверная, только для роботов платформы. */
+export const PICK_ZONES: ZoneId[] = ZONES.filter((z) => z !== "platform");
 export const isZone = (v: unknown): v is ZoneId => typeof v === "string" && (ZONES as string[]).includes(v);
 
 export type Accent = "lime" | "teal" | "sky" | "amber" | "coral" | "violet";
@@ -48,6 +55,10 @@ export interface RobotTemplate {
     skills: SkillId[];
     /** Должностная инструкция для модели (по-английски: так она надёжнее выполняется на любом языке задач). */
     duties: string;
+    /** Робот платформы: нанимается автоматически и только администратору платформы, в каталоге найма не показывается. */
+    platform?: boolean;
+    /** Регулярные задачи при найме. */
+    routines?: { text: string; kind: "daily" | "weekdays" | "weekly" | "monthly"; time: string; day?: number }[];
 }
 
 // Типичная немецкая малая фирма: продажи, учёт, склад и закупки, производство, почта, маркетинг, поддержка, персонал, контроллинг.
@@ -104,6 +115,23 @@ export const TEMPLATES: RobotTemplate[] = [
         id: "support", name: "Ida", zone: "service", accent: "sky", skills: ["crm", "mail", "tasks", "data"],
         duties: "Customer service (Kundenservice). Follow customer chats and e-mails: summarize a customer's history (who, current state, open points, next action), answer questions from the data, create tasks for open issues and notes on the customer card, draft replies. Send replies only when the task says so.",
     },
+    // ── роботы платформы: сидят в серверной и видны только администратору платформы ──
+    {
+        id: "p_errors", name: "Rex", zone: "platform", accent: "coral", skills: ["monitor"], platform: true,
+        duties: "Platform error watcher. Sits at the computer and catches errors of the Firmspace platform itself (browser, server, database, containers, cron). Every error is explained in plain words and sent to the owner's Telegram by the error hub; this robot only shows it. It has no tools and takes no tasks.",
+    },
+    {
+        id: "p_seo", name: "Sven", zone: "platform", accent: "sky", skills: ["monitor"], platform: true,
+        duties: "Site optimization. Represents the SEO agent that works on the Harness side: speed, meta tags, structure, sitemap and search visibility of the landing site. This robot only shows the agent's activity. It has no tools and takes no tasks.",
+    },
+    {
+        id: "p_blog", name: "Ada", zone: "platform", accent: "lime", skills: ["blogwrite"], platform: true,
+        routines: [
+            { text: "Write one new article for the landing-page blog and save it as a draft.", kind: "weekly", day: 1, time: "09:00" },
+            { text: "Write one new article for the landing-page blog and save it as a draft.", kind: "weekly", day: 4, time: "09:00" },
+        ],
+        duties: "Blog author of Firmspace AI (a platform for small businesses: CRM, finance, stock, the AI assistant Ayris). Write practical, no-fluff articles for the landing page: 5–8 paragraphs on sales, CRM, bookkeeping, stock, automation and working with AI. First call list_blog_posts and do NOT repeat an existing topic. Every article is in three languages (en, de, ua), plain text without HTML, no invented figures, prices or promises about the product. Save it with save_blog_draft (title, excerpt and every paragraph in en, de and ua). Never publish: a human publishes the draft.",
+    },
 ];
 
 export const templateById = (id: string) => TEMPLATES.find((t) => t.id === id) ?? null;
@@ -135,3 +163,8 @@ export function bossPersona(robots: { id: string; name: string; title: string; s
         "If no robot fits, say so and offer to hire one (hire_robot with a template id). When done, answer in 1–3 short sentences: who got which part. Do not wait for the robots to finish — they report on their own.",
     ].join("\n");
 }
+
+/** Роботы платформы: один раз создаются администратору платформы (см. ensurePlatformRobots). */
+export const PLATFORM_IDS = TEMPLATES.filter((t) => t.platform).map((t) => t.id);
+/** Каталог для найма: без роботов платформы. */
+export const HIRE_TEMPLATES = TEMPLATES.filter((t) => !t.platform);

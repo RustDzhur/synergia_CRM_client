@@ -78,6 +78,23 @@ const growth: Screen = ({ sw, on }) => (
 const chat: Screen = ({ sw, on }) => (
 	<g>{[0, 1, 2].map((i) => <rect key={i} className={on ? "sc-pop" : undefined} style={{ animationDelay: `${i * 0.5}s` }} x={i % 2 ? sw - 4 - sw * 0.5 : 4} y={3.5 + i * 4.6} width={sw * 0.5} height="3.4" rx="1.4" fill={i % 2 ? LIME : DIM} opacity={i % 2 ? 0.8 : 1} />)}</g>
 );
+const errlog: Screen = ({ sw, on }) => (
+	<g><Rows sw={sw} on={on} rows={[0, 1, 2, 3, 4].map((i) => <g key={i}><circle cx="5.5" cy={5.2 + i * 3.5} r="1.3" fill={i % 3 === 0 ? RED : AMBER} /><rect x="9.5" y={4.5 + i * 3.5} width={sw * (0.46 + (i % 3) * 0.1)} height="1.5" fill={GRAY} /><rect x={sw - 12} y={4.5 + i * 3.5} width="8" height="1.5" fill={i % 3 === 0 ? RED : AMBER} opacity="0.7" /></g>)} /></g>
+);
+const gauge: Screen = ({ sw, on }) => (
+	<g>
+		<circle cx="11" cy="10.5" r="6" fill="none" stroke={DIM} strokeWidth="2" />
+		<path d="M11 4.5 A6 6 0 1 1 5.2 12" fill="none" stroke={LIME} strokeWidth="2" strokeLinecap="round" className={on ? "sc-pulse" : undefined} />
+		{[5, 8, 11, 7].map((h, i) => <rect key={i} className={on ? "sc-bar" : undefined} style={{ animationDelay: `${i * 0.2}s` }} x={sw * 0.5 + i * 6} y={16 - h} width="4" height={h} fill={i % 2 ? TEAL : LIME} opacity="0.9" />)}
+	</g>
+);
+const article: Screen = ({ sw, on }) => (
+	<g>
+		<rect x="4" y="3.5" width={sw * 0.45} height="2.2" fill={LIME} opacity="0.8" />
+		{[0, 1, 2].map((i) => <rect key={i} x="4" y={8 + i * 3.2} width={sw * (0.86 - i * 0.14)} height="1.5" fill={GRAY} />)}
+		{on && <rect className="sc-blink" x={sw * 0.5 + 2} y="14.2" width="1.6" height="2.4" fill={LIME} />}
+	</g>
+);
 const dashboard: Screen = ({ sw }) => (
 	<g>{[0, 1, 2].map((i) => <rect key={i} x={3 + i * (sw / 3)} y="3" width={sw / 3 - 3} height="5" rx="0.8" fill={[LIME, TEAL, AMBER][i]} opacity="0.55" />)}<rect x="3" y="10" width={sw - 4} height="5.5" rx="0.8" fill={DIM} /><polyline points={`5,14.5 ${sw * 0.3},12 ${sw * 0.5},13 ${sw * 0.8},11`} fill="none" stroke={LIME} strokeWidth="0.9" /></g>
 );
@@ -101,10 +118,13 @@ const Box = ({ x, y, z = 0, w = 0.6, d = 0.6, h = 7, tape = true }: { x: number;
 	<g><IsoBox x={x} y={y} z={z} w={w} d={d} h={h} c={C.box} />{tape && <IsoBox x={x + w * 0.4} y={y - 0.002} z={z + h} w={w * 0.2} d={d + 0.004} h={0.4} c={tone("#c6ff4d")} />}</g>
 );
 
-export type StationKind = "accounting" | "sales" | "dunning" | "controlling" | "warehouse" | "purchasing" | "production" | "tasks" | "mail" | "hr" | "marketing" | "support" | "orders" | "generic";
+export type StationKind = "errors" | "seo" | "blogwriter" | "accounting" | "sales" | "dunning" | "controlling" | "warehouse" | "purchasing" | "production" | "tasks" | "mail" | "hr" | "marketing" | "support" | "orders" | "generic";
 
 /** Какое рабочее место у робота — по шаблону (у своих роботов — по главному навыку). */
 export function kindOf(template: string, skills: string[]): StationKind {
+	if (template === "p_errors") return "errors";
+	if (template === "p_seo") return "seo";
+	if (template === "p_blog") return "blogwriter";
 	const known: StationKind[] = ["accounting", "sales", "dunning", "controlling", "warehouse", "purchasing", "production", "tasks", "mail", "hr", "marketing", "support", "orders"];
 	if ((known as string[]).includes(template)) return template as StationKind;
 	const by: [string, StationKind][] = [["production", "production"], ["stock", "warehouse"], ["purchasing", "purchasing"], ["invoices", "accounting"], ["finance", "controlling"], ["mail", "mail"], ["blog", "marketing"], ["hr", "hr"], ["crm", "sales"], ["tasks", "tasks"], ["quotes", "orders"]];
@@ -121,6 +141,30 @@ export function Station({ kind, x, y, on }: { kind: StationKind; x: number; y: n
 					<Monitor x={x + 0.5} y={y + 0.12} on={on} screen={sheet} />
 					<IsoBox x={x + 1.1} y={y + 0.62} z={z} w={0.3} d={0.36} h={2} c={C.dark} edge="rgba(198,255,77,0.5)" />
 					{on && <g className="sc-shuffle"><IsoBox x={x + 0.78} y={y + 0.6} z={z + 4} w={0.5} d={0.66} h={0.9} c={C.paper} /></g>}
+				</g>
+			);
+		case "errors":
+			return (
+				<g>
+					<Desk x={x} y={y} /><Monitor x={x + 0.1} y={y + 0.16} w={1.05} on={on} screen={errlog} /><Monitor x={x + 1.1} y={y + 0.1} w={0.88} on={on} screen={errlog} />
+					{/* телефон с Telegram: бирюзовая бумажная птичка на экране */}
+					<IsoBox x={x + 0.3} y={y + 0.6} z={z} w={0.3} d={0.46} h={1.3} c={C.dark} edge="rgba(45,222,182,0.85)" />
+					<Plane x={x + 0.3} y={y + 1.06} z={z + 1.3}><polygon className={on ? "sc-pulse" : undefined} points="3,7 15,2 12,13 8,9 6,12 6,8" fill={TEAL} /></Plane>
+				</g>
+			);
+		case "seo":
+			return (
+				<g>
+					<Desk x={x} y={y} /><Monitor x={x + 0.1} y={y + 0.16} w={1.05} on={on} screen={gauge} /><Monitor x={x + 1.1} y={y + 0.1} w={0.88} on={on} screen={line} />
+					<Papers x={x + 0.35} y={y + 0.6} z={z} n={2} w={0.4} d={0.5} />
+				</g>
+			);
+		case "blogwriter":
+			return (
+				<g>
+					<Desk x={x} y={y} /><Monitor x={x + 0.35} y={y + 0.12} on={on} screen={article} />
+					<Papers x={x + 0.08} y={y + 0.55} z={z} n={3} /><Mug x={x + 1.65} y={y + 0.6} />
+					{on && <g className="sc-shuffle"><IsoBox x={x + 1.1} y={y + 0.62} z={z + 4} w={0.42} d={0.56} h={0.9} c={C.paper} /></g>}
 				</g>
 			);
 		case "sales":

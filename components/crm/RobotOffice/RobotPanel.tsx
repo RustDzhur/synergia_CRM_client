@@ -9,7 +9,7 @@ import Modal from "../shared/Modal";
 import RobotAvatar from "./RobotAvatar";
 import RobotForm from "./RobotForm";
 import TaskItem from "./TaskItem";
-import { titleOf, viewOf } from "./theme";
+import { isMonitor, titleOf, viewOf } from "./theme";
 
 const KINDS: Routine["kind"][] = ["daily", "weekdays", "weekly", "monthly"];
 
@@ -17,14 +17,16 @@ const KINDS: Routine["kind"][] = ["daily", "weekdays", "weekly", "monthly"];
 export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: () => void }) {
 	const t = useTranslations("office");
 	const locale = useLocale();
-	const { tasks, canEdit, ai, assign, update, dismiss } = useOfficeStore();
+	const { tasks, canEdit, ai, assign, update, dismiss, platform } = useOfficeStore();
 	const [text, setText] = useState("");
 	const [busy, setBusy] = useState(false);
 	const [editing, setEditing] = useState(false);
 	const [confirmDismiss, setConfirmDismiss] = useState(false);
 	const [adding, setAdding] = useState(false);
 	const [rt, setRt] = useState({ text: "", kind: "daily" as Routine["kind"], time: "09:00", day: 1 });
-	const view = viewOf(robot, tasks);
+	const view = viewOf(robot, tasks, Date.now(), platform);
+	const monitor = isMonitor(robot);
+	const clock = (iso: string) => { const d = new Date(iso); return Number.isFinite(d.getTime()) && d.getTime() > 0 ? d.toLocaleString(locale === "ua" ? "uk" : locale, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : ""; };
 	const mine = tasks.filter((x) => x.robot === robot.id).slice(0, 6);
 	const title = titleOf(t, robot);
 	const quick = robot.template !== "custom" ? [1, 2, 3].map((n) => t(`tpl_${robot.template}_s${n}`)) : [];
@@ -66,13 +68,32 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 
 			{canEdit && (
 				<div className="mt-12 flex flex-wrap gap-8">
-					<button type="button" onClick={() => setEditing(true)} className="fs-btn fs-btn-ghost h-32 px-12 text-12"><TbSettings size={14} aria-hidden />{t("edit")}</button>
+					{!monitor && <button type="button" onClick={() => setEditing(true)} className="fs-btn fs-btn-ghost h-32 px-12 text-12"><TbSettings size={14} aria-hidden />{t("edit")}</button>}
 					<button type="button" onClick={() => void update(robot.id, { enabled: !robot.enabled })} className="fs-btn fs-btn-ghost h-32 px-12 text-12">{robot.enabled ? t("switchOff") : t("switchOn")}</button>
 					<button type="button" onClick={() => setConfirmDismiss(true)} className="fs-btn fs-btn-ghost h-32 px-12 text-12 text-[#EB5757]"><TbTrash size={14} aria-hidden />{t("dismiss")}</button>
 				</div>
 			)}
 
-			{canEdit && robot.enabled && (
+			{monitor && robot.template === "p_errors" && (
+				<div className="mt-18">
+					<span className="fs-chip" style={{ color: platform?.errors.telegram ? "#2DDEB6" : "#F4A100" }}>{platform?.errors.telegram ? t("monTgOn") : t("monTgOff")}</span>
+					<p className={`${head} mt-14`}>{t("monErrTitle")}</p>
+					 {(platform?.errors.items ?? []).length === 0 ? <p className="text-12 text-[#8c948b]">{t("monErrNone")}</p> : (
+						<ul className="flex flex-col gap-6">{platform!.errors.items.slice(0, 6).map((e, i) => <li key={i} className="rounded-8 border border-inkLine px-10 py-8"><p className="text-12 text-[#f1f4ee]">{e.title}{e.count > 1 ? ` ×${e.count}` : ""}</p><p className="mt-2 text-11 text-[#8c948b]">{clock(e.at)}</p></li>)}</ul>
+					)}
+					<p className="mt-12 text-11 text-[#8c948b]">{t("monErrHint")}</p>
+				</div>
+			)}
+			{monitor && robot.template === "p_seo" && (
+				<div className="mt-18">
+					<p className={head}>{t("monSeoTitle")}</p>
+					<p className="text-13 font-medium" style={{ color: view.state === "working" ? "#c6ff4d" : "#8c948b" }}>{view.state === "working" ? t("monSeoActive") : platform?.agents["seo-agent"] ? t("monSeoLast", { time: clock(platform.agents["seo-agent"]!.lastActivity) || "—" }) : t("monSeoNone")}</p>
+					{view.monitor?.text && <p className="mt-6 rounded-8 border border-inkLine px-10 py-8 text-12 text-[#cfd4cb]">{view.monitor.text}</p>}
+					<p className="mt-12 text-11 text-[#8c948b]">{t("monSeoHint")}</p>
+				</div>
+			)}
+
+			{!monitor && canEdit && robot.enabled && (
 				<div className="mt-18">
 					<p className={head}>{t("assignTitle")}</p>
 					<textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void send(); }} rows={3} maxLength={4000} placeholder={t("assignPlaceholder")} className="fs-field fs-scroll w-full p-10 text-13 outline-none" disabled={!ai} />
@@ -88,6 +109,7 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 				</div>
 			)}
 
+			{!monitor && <>
 			<div className="mt-18">
 				<p className={head}>{t("autonomy")}</p>
 				<div className="flex gap-8" role="radiogroup" aria-label={t("autonomy")}>
@@ -138,6 +160,8 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 				<p className={head}>{t("history")}</p>
 				{mine.length === 0 ? <p className="text-12 text-[#8c948b]">{t("noHistory")}</p> : <ul className="flex flex-col gap-8">{mine.map((x) => <TaskItem key={x.id} task={x} compact />)}</ul>}
 			</div>
+
+			</>}
 
 			<Modal open={editing} onClose={() => setEditing(false)} label={t("edit")} align="top" className="w-full max-w-[640px]" flushOnMobile>
 				<div className="fs-popover fs-scroll max-h-[92vh] overflow-y-auto p-18 md:p-24">

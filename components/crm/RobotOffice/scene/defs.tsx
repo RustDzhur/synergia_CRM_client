@@ -2,7 +2,7 @@ import React from "react";
 import { ROOMS } from "./iso";
 
 // Общие «источники света» сцены: свечение неона, мягкие тени, стекло, блики на полу. Подключаются один раз в <defs>.
-export const ZONE_LIGHT: Record<string, string> = { sales: "#c6ff4d", finance: "#2DDEB6", warehouse: "#F4A100", office: "#B8A2FF", marketing: "#FF8A7A", service: "#7CC4FF" };
+export const ZONE_LIGHT: Record<string, string> = { sales: "#c6ff4d", finance: "#2DDEB6", warehouse: "#F4A100", office: "#B8A2FF", marketing: "#FF8A7A", service: "#7CC4FF", platform: "#FF6FB5" };
 
 export default function SceneDefs() {
 	return (

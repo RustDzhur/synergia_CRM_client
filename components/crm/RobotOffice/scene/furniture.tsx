@@ -1,5 +1,5 @@
 import React from "react";
-import { TbBox, TbBuildingSkyscraper, TbCalculator, TbChartBar, TbHeadset, TbSpeakerphone } from "react-icons/tb";
+import { TbBox, TbBuildingSkyscraper, TbCalculator, TbChartBar, TbHeadset, TbServer, TbSpeakerphone } from "react-icons/tb";
 import { C, GRID_D, GRID_W, P, pt, tone, type RoomDef } from "./iso";
 import { CELLS } from "./iso";
 import { COFFEE, LOUNGE, SERVER } from "./layout";
@@ -83,7 +83,7 @@ export function BackWalls() {
 	);
 }
 
-const ICONS: Record<string, React.ComponentType<{ size?: number; color?: string; x?: number; y?: number }>> = { sales: TbChartBar, marketing: TbSpeakerphone, service: TbHeadset, finance: TbCalculator, warehouse: TbBox, office: TbBuildingSkyscraper };
+const ICONS: Record<string, React.ComponentType<{ size?: number; color?: string; x?: number; y?: number }>> = { platform: TbServer, sales: TbChartBar, marketing: TbSpeakerphone, service: TbHeadset, finance: TbCalculator, warehouse: TbBox, office: TbBuildingSkyscraper };
 
 /** Зона-капсула: скруглённый светящийся коврик и стеклянные дуги по задним углам. Принимает перетаскиваемого робота (data-drop-zone). */
 export function ZonePad({ room, hot, live, count }: { room: RoomDef; hot: boolean; live: boolean; count: number }) {
@@ -219,8 +219,8 @@ export function ServerRoom() {
 export function ServiceGlass() {
 	return (
 		<g>
-			{CELLS.filter((c) => c.kind === "server" || c.kind === "coffee").map((c) => {
-				const col = c.kind === "server" ? TEAL : LIME;
+			{CELLS.filter((c) => c.kind === "coffee").map((c) => {
+				const col = LIME;
 				return (
 					<g key={c.id}>
 						<CornerGlass x={c.x + 0.35} y={c.y + 0.4} r={1.5} armX={2.6} armY={2.6} h={44} edge={col} />

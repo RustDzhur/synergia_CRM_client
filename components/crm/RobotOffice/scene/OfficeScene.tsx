@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { TbMinus, TbPlus } from "react-icons/tb";
 import { useOfficeStore, type Robot, type Zone } from "@/store/useOfficeStore";
 import { useDragKit } from "../dragKit";
-import { ACCENT_HEX, type RobotView, titleOf, viewOf } from "../theme";
+import { ACCENT_HEX, type RobotView, isMonitor, isPlatformRobot, titleOf, viewOf } from "../theme";
 import { HUB, ROOMS, SCENE_H, SCENE_W, pt, slotFor } from "./iso";
 import { COFFEE, LOUNGE, SERVER } from "./layout";
 import { OfficeSim, type Mode, type RobotInput } from "./sim";
@@ -27,10 +27,10 @@ const S = 1.12; // масштаб спрайта робота в сцене
 interface Item { depth: number; key: string; node: React.ReactNode }
 interface Handle { pos: SVGGElement; pose: SVGGElement }
 
-function Actor({ robot, view, fresh, selected, register, onSelect, onFile }: { robot: Robot; view: RobotView; fresh: boolean; selected: boolean; register: (id: string, h: Handle | null) => void; onSelect: () => void; onFile: (f: File) => void }) {
+function Actor({ robot, view, fresh, lane, selected, register, onSelect, onFile }: { robot: Robot; view: RobotView; fresh: boolean; lane: number; selected: boolean; register: (id: string, h: Handle | null) => void; onSelect: () => void; onFile: (f: File) => void }) {
 	const t = useTranslations("office");
 	const drag = useDragKit();
-	const { canEdit, ai } = useOfficeStore();
+	const { canEdit, ai, platform } = useOfficeStore();
 	const posRef = useRef<SVGGElement>(null);
 	const poseRef = useRef<SVGGElement>(null);
 	useEffect(() => {
@@ -39,12 +39,14 @@ function Actor({ robot, view, fresh, selected, register, onSelect, onFile }: { r
 	}, [robot.id, register]);
 	const over = drag.over?.type === "robot" && drag.over.id === robot.id;
 	const color = view.state === "working" ? "#c6ff4d" : view.state === "waiting" ? "#F4A100" : view.state === "failed" ? "#EB5757" : "#8c948b";
-	const icon = view.state === "working" ? "gear" : view.state === "waiting" ? "!" : view.state === "failed" ? "×" : fresh ? "ok" : "";
-	const iconColor = icon === "ok" ? "#2DDEB6" : color;
+	const icon = view.monitor?.kind === "errors" ? (view.state === "working" ? "!" : "") : view.state === "working" ? "gear" : view.state === "waiting" ? "!" : view.state === "failed" ? "×" : fresh ? "ok" : "";
+	const iconColor = icon === "ok" ? "#2DDEB6" : view.monitor?.kind === "errors" ? "#EB5757" : color;
 	const name = robot.name.length > 9 ? `${robot.name.slice(0, 8)}…` : robot.name;
 	const pillW = Math.max(40, name.length * 5.8 + 20);
 	const task = view.running?.text?.replace(/\s+/g, " ").trim() ?? "";
-	const bubble = view.state === "working" ? (task ? (task.length > 24 ? `${task.slice(0, 23)}…` : task) : "…") : "";
+	const watch = view.monitor ? (view.monitor.text.replace(/\s+/g, " ").trim() || t(view.monitor.kind === "errors" ? "monWatching" : "monSeoIdle")) : "";
+	const bubble = view.monitor ? (watch.length > 26 ? `${watch.slice(0, 25)}…` : watch) : view.state === "working" ? (task ? (task.length > 24 ? `${task.slice(0, 23)}…` : task) : "…") : "";
+	const telegram = robot.template === "p_errors" && !!platform?.errors.telegram;
 	const bw = bubble ? Math.max(30, bubble.length * 5.4 + 16) : 0;
 	return (
 		<g
@@ -62,7 +64,7 @@ function Actor({ robot, view, fresh, selected, register, onSelect, onFile }: { r
 				<g transform={`translate(${-40 * S} ${-97 * S}) scale(${S})`}><Bot accent={robot.accent} state={view.state} /></g>
 			</g>
 			{bubble && (
-				<g transform={`translate(0 ${-98 * S - 12})`} style={{ pointerEvents: "none" }} className="sc-float">
+				<g transform={`translate(0 ${-98 * S - 12 - lane * 21})`} style={{ pointerEvents: "none" }} className="sc-float">
 					<rect x={-bw / 2} y="-9" width={bw} height="17" rx="8.5" fill="rgba(10,14,12,0.92)" stroke="#c6ff4d" strokeOpacity="0.8" filter="url(#f-glow)" />
 					<path d="M-3 8 L0 12 L3 8 Z" fill="rgba(10,14,12,0.92)" stroke="#c6ff4d" strokeOpacity="0.8" />
 					<text x="0" y="3.2" textAnchor="middle" fontSize="9" fontWeight="600" fill="#e6f5c8">{bubble}</text>
@@ -79,6 +81,7 @@ function Actor({ robot, view, fresh, selected, register, onSelect, onFile }: { r
 			<g transform="translate(0 15)" style={{ pointerEvents: "none" }}>
 				<rect x={-pillW / 2} y="-7" width={pillW} height="14" rx="7" fill="rgba(10,14,12,0.82)" stroke={selected ? "#c6ff4d" : "rgba(255,255,255,0.14)"} />
 				<circle cx={-pillW / 2 + 8} cy="0" r="2.3" fill={robot.enabled ? color : "#6b736a"} />
+				{telegram && <g transform={`translate(${pillW / 2 + 9} 0)`}><circle r="7.5" fill="#0b0f0d" stroke="#2DDEB6" strokeWidth="1.2" filter="url(#f-glow)" /><polygon points="-4.2,0.2 4,-3.6 2.2,4 -0.2,1.6 -1.6,3.4 -1.8,0.9" fill="#2DDEB6" /></g>}
 				<text x={-pillW / 2 + 14} y="3.3" fontSize="9" fontWeight="600" fill="#e6ecdf">{name}</text>
 			</g>
 			<title>{`${robot.name} — ${titleOf(t, robot)}`}</title>
@@ -90,7 +93,7 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 	const t = useTranslations("office");
 	const locale = useLocale();
 	const drag = useDragKit();
-	const { robots, tasks, selected, assign } = useOfficeStore();
+	const { robots, tasks, selected, assign, platform } = useOfficeStore();
 	const [zoom, setZoom] = useState(1);
 	const [depths, setDepths] = useState<Record<string, number>>({});
 	const handles = useRef(new Map<string, Handle>());
@@ -100,7 +103,7 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 	const staticDepths = useRef<number[]>([]);
 	const now = Date.now();
 
-	const views = useMemo(() => Object.fromEntries(robots.map((r) => [r.id, viewOf(r, tasks, now)])), [robots, tasks, now]);
+	const views = useMemo(() => Object.fromEntries(robots.map((r) => [r.id, viewOf(r, tasks, now, platform)])), [robots, tasks, now, platform]);
 	const bossBusy = tasks.some((x) => x.robot === "iris" && (x.status === "running" || x.status === "queued"));
 
 	// что делает каждый робот: работает/ждёт — сидит за столом, выключен — спит, свободен — гуляет по офису
@@ -110,7 +113,7 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 			const index = seen[r.zone] ?? 0;
 			seen[r.zone] = index + 1;
 			const st = views[r.id]?.state;
-			const mode: Mode = !r.enabled ? "sleep" : st === "idle" ? "roam" : "desk";
+			const mode: Mode = !r.enabled ? "sleep" : isPlatformRobot(r) || st !== "idle" ? "desk" : "roam"; // роботы платформы сидят за компьютером всегда
 			return { id: r.id, zone: r.zone, index, mode, working: st === "working" };
 		});
 	}, [robots, views]);
@@ -168,9 +171,9 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 
 	const freshOf = (id: string) => { const last = tasks.find((x) => x.robot === id); return !!last && last.status === "done" && now - Date.parse(last.finishedAt ?? last.createdAt) < 3 * 60 * 1000; };
 	const hotZone = drag.payload?.kind === "robot" && drag.over?.type === "zone" ? drag.over.id : null;
-	const zoneLive = (z: Zone) => robots.some((r) => r.zone === z && views[r.id]?.state === "working");
+	const zoneLive = (z: Zone) => robots.some((r) => r.zone === z && !isMonitor(r) && views[r.id]?.state === "working");
 	const flows: Flow[] = ROOMS.map((room) => ({ id: `z-${room.zone}`, to: [room.x + room.w / 2, room.y + room.d / 2 + 0.5] as [number, number], color: ZONE_LIGHT[room.zone], live: zoneLive(room.zone) }));
-	robots.forEach((r, ri) => { if (views[r.id]?.state !== "working") return; const room = ROOMS.find((x) => x.zone === r.zone)!; const seat = slotFor(room, inputs.current[ri]?.index ?? 0).robot; flows.push({ id: `r-${r.id}`, to: [seat.x, seat.y], color: ACCENT_HEX[r.accent], live: true, strong: true }); });
+	robots.forEach((r, ri) => { if (views[r.id]?.state !== "working" || isMonitor(r)) return; const room = ROOMS.find((x) => x.zone === r.zone)!; const seat = slotFor(room, inputs.current[ri]?.index ?? 0).robot; flows.push({ id: `r-${r.id}`, to: [seat.x, seat.y], color: ACCENT_HEX[r.accent], live: true, strong: true }); });
 	const items: Item[] = [];
 	const counts: Record<string, number> = {};
 	for (const room of ROOMS) {
@@ -178,7 +181,7 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 		counts[room.zone] = here.length;
 		here.forEach((r, i) => {
 			const slot = slotFor(room, i);
-			const on = views[r.id]?.state === "working";
+			const on = views[r.id]?.state === "working" || (isMonitor(r) && r.enabled); // экраны наблюдателей всегда включены
 			if (slot.desk && slot.chair) {
 				items.push({ depth: slot.desk.x + slot.desk.y + 1.5, key: `st-${r.id}`, node: <Station kind={kindOf(r.template, r.skills)} x={slot.desk.x} y={slot.desk.y} on={on} /> });
 				items.push({ depth: slot.chair.x + slot.chair.y + 0.62, key: `ch-${r.id}`, node: <Chair x={slot.chair.x} y={slot.chair.y} accent={ACCENT_HEX[r.accent]} /> });
@@ -199,7 +202,7 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 		const seat = slotFor(room, input?.index ?? 0).robot;
 		items.push({
 			depth: depths[r.id] ?? seat.x + seat.y + 0.15, key: `rb-${r.id}`,
-			node: <Actor robot={r} view={views[r.id]} fresh={freshOf(r.id)} selected={selected === r.id} register={register} onSelect={() => onSelect(r.id)} onFile={(f) => void onFile(r, f)} />,
+			node: <Actor robot={r} view={views[r.id]} fresh={freshOf(r.id)} lane={(inputs.current[ri]?.index ?? 0) % 2} selected={selected === r.id} register={register} onSelect={() => onSelect(r.id)} onFile={(f) => void onFile(r, f)} />,
 		});
 	});
 	items.sort((a, b) => a.depth - b.depth);

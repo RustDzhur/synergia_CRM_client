@@ -2,7 +2,7 @@
 import React from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { TbBriefcase, TbBuildingWarehouse, TbBuildingSkyscraper, TbHeadset, TbReceipt2, TbSpeakerphone } from "react-icons/tb";
+import { TbBriefcase, TbBuildingWarehouse, TbBuildingSkyscraper, TbHeadset, TbReceipt2, TbServer, TbSpeakerphone } from "react-icons/tb";
 import type { IconType } from "react-icons";
 import { ZONES } from "@/lib/office/templates";
 import { useOfficeStore, type Robot, type Zone } from "@/store/useOfficeStore";
@@ -10,7 +10,7 @@ import { useDragKit } from "./dragKit";
 import RobotAvatar from "./RobotAvatar";
 import { type RobotView, titleOf, viewOf } from "./theme";
 
-const ZONE_ICON: Record<Zone, IconType> = { sales: TbBriefcase, finance: TbReceipt2, warehouse: TbBuildingWarehouse, office: TbBuildingSkyscraper, marketing: TbSpeakerphone, service: TbHeadset };
+const ZONE_ICON: Record<Zone, IconType> = { sales: TbBriefcase, finance: TbReceipt2, warehouse: TbBuildingWarehouse, office: TbBuildingSkyscraper, marketing: TbSpeakerphone, service: TbHeadset, platform: TbServer };
 const MAX_FILE = 40 * 1024;
 const TEXT_FILE = /\.(txt|csv|tsv|md|json|xml|log)$/i;
 

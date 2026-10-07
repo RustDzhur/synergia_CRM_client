@@ -3,14 +3,14 @@ import React, { useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbPlus } from "react-icons/tb";
-import { TEMPLATES } from "@/lib/office/templates";
+import { HIRE_TEMPLATES } from "@/lib/office/templates";
 import { useOfficeStore } from "@/store/useOfficeStore";
 import Modal from "../shared/Modal";
 import RobotAvatar from "./RobotAvatar";
 import RobotForm from "./RobotForm";
 
 // Каталог готовых роботов — тот же файл, что использует сервер (lib/office/templates.ts): список не может разойтись.
-const CATALOG = TEMPLATES;
+const CATALOG = HIRE_TEMPLATES;
 
 export default function HireDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
 	const t = useTranslations("office");

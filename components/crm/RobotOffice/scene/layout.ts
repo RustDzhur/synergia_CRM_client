@@ -7,7 +7,7 @@ export type Pose = "sit" | "stand" | "walk" | "coffee" | "sleep";
 export interface Poi { id: string; x: number; y: number; pose: Pose; face: "front" | "back"; flip: boolean; dwell: [number, number]; kind: "coffee" | "lounge" | "server" | "hub" | "walk" | "plant" }
 
 const cell = (id: string) => CELLS.find((c) => c.id === id)!;
-const coffee = cell("coffee"), server = cell("server");
+const coffee = cell("coffee"), server = cell("platform");
 
 // Кофе-пойнт: стойка у задней стены, перед ней стоят с чашкой
 export const COFFEE = { x: coffee.x + 1.2, y: coffee.y + 0.5, w: 3.4, d: 1 };

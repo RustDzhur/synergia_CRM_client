@@ -14,6 +14,8 @@ export interface OfficeCtx extends AiCtx { orgName?: string }
 
 // Подмена для тестов: настоящий разговор с моделью дорог и недетерминирован
 export const deps = { runChat };
+/** Роботы-наблюдатели (ловля ошибок, оптимизация сайта) инструментов не имеют и поручений не берут. */
+export const watchOnly = (r: Pick<Robot, "skills">) => r.skills.length > 0 && r.skills.every((s) => s === "monitor");
 
 const g = globalThis as { __officeChains?: Map<string, Promise<void>>; __officeActive?: Set<string> };
 const chains = (g.__officeChains ??= new Map<string, Promise<void>>());
@@ -28,6 +30,7 @@ export async function startOfficeTask(ctx: OfficeCtx, input: { robot: string; te
     const robot = boss ? null : await getRobot(ctx.org, input.robot);
     if (!boss && !robot) throw new OfficeError("Robot not found");
     if (robot && !robot.enabled) throw new OfficeError("This robot is switched off");
+    if (robot && watchOnly(robot)) throw new OfficeError("This robot only watches the platform and takes no tasks");
     const task = await createTask(ctx.org, { robot: input.robot, robotName: boss ? "Ayris" : robot!.name, text: input.text, source: input.source, locale: input.locale ?? ctx.locale });
     const prev = chains.get(input.robot) ?? Promise.resolve();
     const run = prev.then(() => execute(ctx, task.id)).catch(() => undefined);
@@ -44,6 +47,7 @@ async function execute(ctx: OfficeCtx, taskId: string): Promise<void> {
     const robot = boss ? null : await getRobot(org, task.robot);
     if (!boss && !robot) return void (await fail(org, taskId, "The robot was dismissed"));
     if (robot && !robot.enabled) return void (await fail(org, taskId, "This robot is switched off"));
+    if (robot && watchOnly(robot)) return void (await fail(org, taskId, "This robot only watches the platform and takes no tasks"));
 
     active.add(taskId);
     await updateTask(org, taskId, { status: "running", startedAt: new Date().toISOString() });
@@ -52,7 +56,7 @@ async function execute(ctx: OfficeCtx, taskId: string): Promise<void> {
         const orgName = ctx.orgName ?? (await prisma.organization.findUnique({ where: { id: org }, select: { name: true } }))?.name ?? "";
         const base: RunOpts = { history: [{ role: "user", text: task.text }], locale: task.locale ?? ctx.locale ?? "en", page: "/crm/automation", orgName, noQueue: true };
         const opts: RunOpts = boss
-            ? { ...base, allTools: true, persona: bossPersona((await listRobots(org)).map((r) => ({ id: r.id, name: r.name, title: robotTitle(r), skills: r.skills, enabled: r.enabled }))) }
+            ? { ...base, allTools: true, persona: bossPersona((await listRobots(org)).filter((r) => !watchOnly(r)).map((r) => ({ id: r.id, name: r.name, title: robotTitle(r), skills: r.skills, enabled: r.enabled }))) }
             : { ...base, auto: robot!.autonomy === "auto", onlyTools: toolsFor(robot!.skills), persona: robotPersona({ name: robot!.name, title: robotTitle(robot!), duties: robotDuties(robot!) }, orgName) };
 
         // Большое поручение может не уложиться в шаги одного круга: продолжаем с описанием сделанного (до двух раз), а не сдаёмся
