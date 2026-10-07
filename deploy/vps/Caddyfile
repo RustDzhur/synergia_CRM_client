@@ -27,3 +27,8 @@ harness.firmspace.de, www.harness.firmspace.de {
 
 	reverse_proxy 127.0.0.1:3080
 }
+
+# Служебный домен (как на прежнем сервере)
+firmspace.eu, www.firmspace.eu {
+	respond "Firmspace server is online" 200
+}
