@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { registerRefresher } from "./invalidate";
 import type { Activity } from "@/types/crm";
 import { deleteWithGuards } from "./deleteGuards";
 import { api, addActivityRequest, removeActivityRequest, NewActivity } from "./crmApi";
@@ -88,3 +89,5 @@ export const useCompaniesStore = create<CompaniesStore>((set, get) => {
         },
     };
 });
+
+registerRefresher("companies", () => useCompaniesStore.getState().fetchCompanies());

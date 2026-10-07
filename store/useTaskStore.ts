@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { registerRefresher } from "./invalidate";
 import type { Activity } from "@/types/crm";
 import { api, addActivityRequest, removeActivityRequest } from "./crmApi";
 
@@ -93,3 +94,5 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         },
     };
 });
+
+registerRefresher("tasks", () => useTaskStore.getState().fetchTasks());

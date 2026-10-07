@@ -4,6 +4,7 @@ import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { sweepEventReminders } from "@/lib/calendar/reminders";
 import { unreadFor, visibleTo } from "@/lib/notify";
 import { notifyDeadline, sweepDeadlines } from "@/lib/sync/deadlines";
+import { orgRevision } from "@/lib/sync/revision";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -19,12 +20,14 @@ export async function GET(req: Request) {
     // сроки задач и сделок — тоже на сервере, адресно ответственному (lib/sync/deadlines.ts)
     await sweepDeadlines(user.id, tzOffset(req));
     const mine = visibleTo(user.id, user.userId);
-    const [items, unread] = await Promise.all([
+    const [items, unread, rev] = await Promise.all([
         prisma.notification.findMany({ where: mine as any, orderBy: { createdAt: "desc" }, take: 50 }),
         prisma.notification.count({ where: unreadFor(user.id, user.userId) as any }),
+        orgRevision(user.id).catch(() => ""),
     ]);
     return NextResponse.json({
         unread,
+        rev, // меняется, когда кто-то из фирмы изменил данные: клиент перечитывает открытые разделы (store/useNotificationStore.ts)
         items: items.map((n) => ({ id: n.id, type: n.type, params: n.params ?? {}, link: n.link, at: n.createdAt.toISOString(), read: (n.readBy ?? []).some((id) => String(id) === user.userId) })),
     });
 }

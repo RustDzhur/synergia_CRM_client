@@ -13,6 +13,7 @@ import ActivityComposer, { ComposerTab } from "../../shared/ActivityComposer";
 import ActivityTimeline from "../../shared/ActivityTimeline";
 import DealDocuments from "./dealModalParts/DealDocuments";
 import DealTasks from "./dealModalParts/DealTasks";
+import CustomerOverview from "../../shared/CustomerOverview";
 import DealHeader from "./dealModalParts/DealHeader";
 import StageArrows from "./dealModalParts/StageArrows";
 import MoreCard from "./dealModalParts/MoreCard";
@@ -269,6 +270,8 @@ export default function DealModal({ dealId, onClose }: Props) {
 						/>
 
 						<DealDocuments dealId={deal._id} customerName={deal.contactName || deal.companyName || deal.clientName} contact={deal.contact ?? undefined} company={deal.company ?? undefined} isMarket={!!deal.source} />
+
+						<CustomerOverview url={`/api/deals/${deal._id}/overview`} withDeals={false} />
 
 						<DealTasks dealId={deal._id} />
 

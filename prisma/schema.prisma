@@ -176,6 +176,7 @@ model Company {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  @@index([owner, updatedAt])
   @@map("companies")
 }
 
@@ -200,6 +201,7 @@ model Contact {
   updatedAt  DateTime @updatedAt
 
   @@index([owner, companyId])
+  @@index([owner, updatedAt])
   @@map("contacts")
 }
 
@@ -309,6 +311,7 @@ model Deal {
   @@index([owner, contact])
   @@index([owner, company])
   @@index([owner, wonAt])
+  @@index([owner, updatedAt])
   @@map("deals")
 }
 
@@ -437,6 +440,7 @@ model Expense {
 
   @@index([org, deal])
   @@index([org, date])
+  @@index([org, updatedAt])
   @@map("expenses")
 }
 
@@ -670,6 +674,7 @@ model Invoice {
   @@index([org, contact])
   @@index([org, company])
   @@index([org, order])
+  @@index([org, updatedAt])
   @@map("invoices")
 }
 
@@ -791,6 +796,7 @@ model Order {
   @@index([org, deal])
   @@index([org, contact])
   @@index([org, status])
+  @@index([org, updatedAt])
   @@map("orders")
 }
 
@@ -939,6 +945,7 @@ model Quote {
   @@unique([org, number])
   @@index([org, deal])
   @@index([org, contact])
+  @@index([org, updatedAt])
   @@map("quotes")
 }
 
@@ -1109,6 +1116,7 @@ model Task {
   @@index([owner, deal])
   @@index([owner, completed, deadline])
   @@index([owner, contact])
+  @@index([owner, updatedAt])
   @@map("tasks")
 }
 

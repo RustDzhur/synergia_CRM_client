@@ -23,7 +23,7 @@ interface DocRow {
 const ROUTE_OF: Record<string, DocumentKind> = { quote: "quotes", invoice: "invoices", credit_note: "invoices", order: "orders", contract: "contracts" };
 const LABEL_OF: Record<string, string> = { quote: "tab_quotes", invoice: "tab_invoices", credit_note: "creditNote", order: "tab_orders", contract: "tab_contracts" };
 
-export default function ContactDocuments({ contactId }: { contactId: string }) {
+export default function ContactDocuments({ contactId, url }: { contactId: string; url?: string }) {
 	const t = useTranslations("finance");
 	const locale = useLocale();
 	const [rows, setRows] = useState<DocRow[] | null>(null);
@@ -31,11 +31,11 @@ export default function ContactDocuments({ contactId }: { contactId: string }) {
 
 	useEffect(() => {
 		let cancelled = false;
-		void apiCall<DocRow[]>(`/api/contacts/${contactId}/documents`).then((r) => {
+		void apiCall<DocRow[]>(url ?? `/api/contacts/${contactId}/documents`).then((r) => {
 			if (!cancelled) setRows(r.ok && r.data ? r.data : []);
 		});
 		return () => { cancelled = true; };
-	}, [contactId]);
+	}, [contactId, url]);
 
 	function open(row: DocRow, mode: "view" | "download") {
 		const kind = ROUTE_OF[row.kind];

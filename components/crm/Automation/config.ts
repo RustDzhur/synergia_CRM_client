@@ -5,6 +5,7 @@ export const EVENTS = [
 	"deal_created", "deal_stage", "contact_created", "lead_created", "message_received", "call_missed", "task_created", "deadline",
 	"order_created", "order_status", "invoice_sent", "invoice_paid", "invoice_overdue", "contract_signed", "quote_sent",
 	"invoice_credit_note_created", "invoice_recurring_created", "invoice_reminder",
+	"deal_won", "task_completed", "contact_updated", "company_updated", "invoice_partial_paid", "bank_matched", "expense_created", "quote_accepted",
 ];
 export const ACTIONS = ["notify", "create_task", "add_note", "move_stage", "send_email", "webhook", "ai_action"];
 

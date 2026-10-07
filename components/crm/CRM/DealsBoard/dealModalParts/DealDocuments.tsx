@@ -33,8 +33,12 @@ export default function DealDocuments({ dealId, customerName, contact, company, 
 	const [docs, setDocs] = useState<DocRow[] | null>(null);
 	const [busy, setBusy] = useState(false);
 
+	// список обновляется и тогда, когда документ сделки изменили в другом разделе (событие crm:changed, store/invalidate.ts)
 	useEffect(() => {
-		apiCall<DocRow[]>(`/api/deals/${dealId}/documents`).then((r) => r.ok && r.data && setDocs(r.data));
+		const load = () => { void apiCall<DocRow[]>(`/api/deals/${dealId}/documents`, "GET", undefined, { cache: "no-store" }).then((r) => r.ok && r.data && setDocs(r.data)); };
+		load();
+		window.addEventListener("crm:changed", load);
+		return () => window.removeEventListener("crm:changed", load);
 	}, [dealId]);
 
 	// Заявка с площадки превращается в настоящий заказ: состав, резерв склада и комиссия площадки —

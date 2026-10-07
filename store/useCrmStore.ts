@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { registerRefresher } from "./invalidate";
 import type { Activity } from "@/types/crm";
 import { failedMessage, lastStageMessage, showError } from "./syncMessages";
 import { api, apiCall, addActivityRequest, removeActivityRequest, NewActivity } from "./crmApi";
@@ -233,3 +234,5 @@ export const useCrmStore = create<CrmStore>((set, get) => {
         },
     };
 });
+
+registerRefresher("deals", () => useCrmStore.getState().refresh());

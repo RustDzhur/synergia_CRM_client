@@ -4,6 +4,8 @@ import { assertPublicHost } from "@/lib/mail/hosts";
 import { sendFromAccount } from "@/lib/mail";
 import { randomToken } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/sync/feed";
+import { mkActivity } from "@/lib/activities";
 
 // Автоматизация (как триггеры в Bitrix24/HubSpot): событие CRM → подходящие правила → действие сразу или через заданное время.
 // Правила лежат в записях раздела Automation (key "automation:rules"), переменные и константы — там же, журнал — "automation:logs".
@@ -120,17 +122,12 @@ function eventLink(ev: AutoEvent) {
     return LINKS.find(([, b]) => b === bucket)?.[0] ?? "/crm/collaboration/chat-and-calls";
 }
 
-// $push в activities (Json-массив): читаем, добавляем, пишем — запись одна, гонок здесь нет
+// Запись в ленту сделки или контакта (общий атомарный append из lib/sync/feed.ts: у записи есть _id и createdAt,
+// две записи одновременно не затирают друг друга)
 async function pushActivity(kind: "deal" | "contact", id: string, owner: string, entry: Record<string, unknown>): Promise<boolean> {
-    if (kind === "deal") {
-        const doc = await prisma.deal.findFirst({ where: { id, owner }, select: { id: true, activities: true } });
-        if (!doc) return false;
-        await prisma.deal.update({ where: { id: doc.id }, data: { activities: [...((doc.activities as any[]) ?? []), entry] as any } });
-        return true;
-    }
-    const doc = await prisma.contact.findFirst({ where: { id, owner }, select: { id: true, activities: true } });
-    if (!doc) return false;
-    await prisma.contact.update({ where: { id: doc.id }, data: { activities: [...((doc.activities as any[]) ?? []), entry] as any } });
+    const exists = kind === "deal" ? await prisma.deal.findFirst({ where: { id, owner }, select: { id: true } }) : await prisma.contact.findFirst({ where: { id, owner }, select: { id: true } });
+    if (!exists) return false;
+    await logActivity(owner, { [kind]: id }, { type: "note", text: String(entry.text ?? ""), meta: String(entry.meta ?? "") });
     return true;
 }
 
@@ -166,7 +163,7 @@ async function perform(org: string, rule: Rule, ev: AutoEvent): Promise<string> 
             const deal = await prisma.deal.findFirst({ where: { id: dealId, owner: org } });
             if (!deal) throw new ProviderError("The deal no longer exists");
             if (String(deal.stage) !== String(stage.id)) {
-                await prisma.deal.update({ where: { id: deal.id }, data: { stage: stage.id, activities: [...((deal.activities as any[]) ?? []), { type: "stage", text: stage.name, meta: "" }] as any } });
+                await prisma.deal.update({ where: { id: deal.id }, data: { stage: stage.id, activities: [...((deal.activities as any[]) ?? []), mkActivity("stage", stage.name)] as any } });
             }
             return `Deal moved to “${stage.name}”`;
         }
@@ -246,6 +243,10 @@ export async function fireEvent(org: string, ev: AutoEvent) {
 }
 
 // Выполняет наступившие отложенные действия.
+// Задание «забирается» условным UPDATE (done: false -> true): если два опроса из разных вкладок, сотрудников или
+// экземпляров сервера берут одно задание, выигрывает ровно один (count === 1). Раньше задание читалось и только потом
+// помечалось, и действие могло выполниться дважды. Троттлинг по памяти процесса остаётся только как экономия запросов —
+// на корректность он больше не влияет.
 const lastRun = new Map<string, number>();
 export async function runDueJobs(org?: string, throttleMs = 20_000) {
     if (org) {
@@ -254,10 +255,10 @@ export async function runDueJobs(org?: string, throttleMs = 20_000) {
     }
     let done = 0;
     for (let i = 0; i < 25; i++) {
-        // Атомарный «claim»: находим ближайшую готовую задачу и сразу помечаем её выполненной
         const job = await prisma.automationJob.findFirst({ where: { ...(org ? { org } : {}), done: false, runAt: { lte: new Date() } }, orderBy: { runAt: "asc" } });
         if (!job) break;
-        await prisma.automationJob.update({ where: { id: job.id }, data: { done: true } });
+        const claimed = await prisma.automationJob.updateMany({ where: { id: job.id, done: false }, data: { done: true } });
+        if (claimed.count !== 1) continue; // это задание уже взял другой опрос
         const orgId = String(job.org);
         const row = await prisma.sectionRecord.findFirst({ where: { org: orgId, key: RULES, rid: job.rule } });
         if (!row || (row.values as any)?.enabled === "0") continue; // правило удалили или выключили, пока ждало

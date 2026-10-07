@@ -1,4 +1,5 @@
 import type { Activity, ActivityType } from "@/types/crm";
+import { notifyMutation } from "./invalidate";
 
 // Фирма, в рамках которой работает пользователь: сервер по этому заголовку выбирает данные (если фирма не подходит — личная)
 export const ORG_KEY = "crm.org";
@@ -40,6 +41,7 @@ export async function api<T>(url: string, method = "GET", body?: unknown): Promi
         });
         if (res.status === 401) { sessionExpired(); return null; }
         if (!res.ok) return null;
+        notifyMutation(url, method); // запись могла затронуть данные других разделов — они перечитаются (store/invalidate.ts)
         return (await res.json()) as T;
     } catch {
         return null;
@@ -61,6 +63,7 @@ export async function apiCall<T>(url: string, method = "GET", body?: unknown, op
         const json = res.status === 204 ? null : await res.json().catch(() => null);
         if (res.status === 401) sessionExpired();
         if (!res.ok) return { ok: false, data: null, message: json?.message ?? `Error ${res.status}`, code: json?.code ?? "", missing: Array.isArray(json?.missing) ? json.missing : [], status: res.status };
+        notifyMutation(url, method);
         return { ok: true, data: json as T, message: "", code: "", missing: [], status: res.status };
     } catch {
         return { ok: false, data: null, message: "Network error", code: "", missing: [], status: 0 };

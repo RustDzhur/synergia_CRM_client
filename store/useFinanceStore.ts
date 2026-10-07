@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { registerRefresher } from "./invalidate";
 import { apiCall } from "./crmApi";
 
 export interface LineItem { description: string; qty: number; unitPrice: number; taxRate: number; product?: string }
@@ -374,3 +375,8 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 		return null;
 	},
 }));
+
+registerRefresher("finance", () => {
+	const f = useFinanceStore.getState();
+	return Promise.all([f.loadOrders(), f.loadInvoices(), f.loadExpenses(), f.loadQuotes(), f.loadContracts(), f.loadDashboard()]);
+});
