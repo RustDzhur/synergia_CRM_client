@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
+import { canImportKind } from "@/lib/access";
 import { badRequest, unauthorized } from "@/lib/api";
 import { IMPORT_KINDS, type ImportKind } from "@/lib/import/kinds";
 import { previewImport } from "@/lib/import/engine";
@@ -20,6 +21,7 @@ export async function POST(req: Request) {
     const b = await req.json().catch(() => ({}));
     const kind = String(b?.kind ?? "") as ImportKind;
     if (!IMPORT_KINDS[kind]) return badRequest("unknown import kind");
+    if (!canImportKind(user, kind)) return unauthorized(req); // раздел зависит от вида данных: контакты — CRM, товары и склад — финансы
     const text = typeof b?.text === "string" ? b.text : "";
     if (!text.trim()) return badRequest("file is empty");
     if (text.length > MAX_CHARS) return badRequest("file is too large for one run — split it");

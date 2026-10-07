@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
+import { IMPORT_MODULE, canAccess, canImportKind } from "@/lib/access";
 import { badRequest, unauthorized } from "@/lib/api";
 import { IMPORT_KINDS, type ImportKind } from "@/lib/import/kinds";
 import { prisma } from "@/lib/prisma";
@@ -16,9 +17,11 @@ export const dynamic = "force-dynamic";
         prisma.importBatch.findMany({ where: { org: user.id }, orderBy: { createdAt: "desc" }, take: 20 }),
         prisma.importMapping.findMany({ where: { org: user.id }, orderBy: { updatedAt: "desc" }, take: 50 }),
     ]);
+    // видны только виды данных, к разделам которых у пользователя есть доступ
+    const allowed = (kind: string) => !!IMPORT_MODULE[kind] && canAccess(user.role, user.modules, IMPORT_MODULE[kind], "GET");
     return NextResponse.json({
-        kinds: Object.values(IMPORT_KINDS).map((d) => ({ kind: d.kind, label: d.label, fields: d.fields.map((f) => ({ key: f.key, label: f.label, required: !!f.required, code: f.code ?? "" })) })),
-        batches: batches.map((b) => ({
+        kinds: Object.values(IMPORT_KINDS).filter((d) => allowed(d.kind)).map((d) => ({ kind: d.kind, label: d.label, fields: d.fields.map((f) => ({ key: f.key, label: f.label, required: !!f.required, code: f.code ?? "" })) })),
+        batches: batches.filter((b) => allowed(String(b.kind))).map((b) => ({
             id: b.id,
             kind: b.kind,
             fileName: b.fileName,
@@ -29,7 +32,7 @@ export const dynamic = "force-dynamic";
             // Полный журнал пакета отдаём отдельно — в списке он не нужен
             failedRows: ((b.log ?? []) as any[]).filter((l: { status: string }) => l.status === "failed").slice(0, 20).map((l: { row: number; message: string }) => ({ row: l.row, message: l.message })),
         })),
-        mappings: mappings.map((m) => ({ id: m.id, kind: m.kind, name: m.name, mapping: m.mapping })),
+        mappings: mappings.filter((m) => allowed(String(m.kind))).map((m) => ({ id: m.id, kind: m.kind, name: m.name, mapping: m.mapping })),
     });
 }
 
@@ -41,6 +44,7 @@ export async function POST(req: Request) {
     if (b?.action !== "save-mapping") return badRequest('action must be "save-mapping"');
     const kind = String(b.kind ?? "") as ImportKind;
     if (!IMPORT_KINDS[kind]) return badRequest("unknown import kind");
+    if (!canImportKind(user, kind)) return unauthorized(req); // раздел зависит от вида данных: контакты — CRM, товары и склад — финансы
     const name = String(b.name ?? "").trim().slice(0, 80);
     if (!name) return badRequest("name is required");
     const mapping = typeof b.mapping === "object" && b.mapping ? b.mapping : {};

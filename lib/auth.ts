@@ -71,13 +71,13 @@ export async function requireUser(req: Request): Promise<AuthContext | null> {
         // разговор с ИИ отправляется POST-запросом, но ничего не меняет (изменения ИИ выполняются отдельным запросом после подтверждения),
         // поэтому наблюдатель (viewer) им пользоваться может
         const method = url.pathname === "/api/ai/chat" ? "GET" : req.method;
-        if (!canAccess(membership.role, membership.modules ?? [], moduleForPath(url.pathname, req.method), method)) {
+        if (!canAccess(membership.role, membership.modules ?? [], moduleForPath(url.pathname, req.method, url.searchParams), method)) {
             denied.add(req);
             return null;
         }
         // раздел, который открывает адрес, должен быть в тарифе фирмы (или выдан администратором платформы вручную)
         const features = orgFeatures(org);
-        const needed = featureForApi(url.pathname);
+        const needed = featureForApi(url.pathname, url.searchParams);
         if (needed && !features[needed]) {
             planDenied.add(req);
             return null;
