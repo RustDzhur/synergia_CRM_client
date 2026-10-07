@@ -5,9 +5,9 @@ import { emailDocument, mailAccount, resolveRecipient } from "@/lib/finance/send
 import { financeSettings } from "@/lib/finance/settings";
 import { marketDocumentLocale } from "@/lib/finance/market";
 import { assertCompliant } from "@/lib/finance/compliance";
-import { applyPayment, statusAfterPayment } from "@/lib/finance/payments";
+import { registerPayment } from "@/lib/sync/payments";
 import { computeTotals } from "@/lib/finance/totals";
-import { fiscalAdvice, fiscalConfig, fiscalizeInvoice, findFiscal } from "@/lib/finance/fiscal";
+import { fiscalAdvice, fiscalizeInvoice } from "@/lib/finance/fiscal";
 import { requireMarket } from "@/lib/finance/marketGuard";
 import { nextNumber } from "@/lib/finance/numbering";
 import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
@@ -46,28 +46,15 @@ export async function markPaid(who: Who, ref: string, amountArg?: number, paidDa
     let inv = await findInvoice(who.org, ref);
     if (!["draft", "sent", "overdue"].includes(inv.status)) throw new ActionError("Only an open invoice (draft, sent or overdue) can be marked paid");
     if (inv.status === "draft") inv = await ensureSupplyDate(inv);
-    const { gross } = computeTotals(inv.items as never);
-    const amount = Number.isFinite(Number(amountArg)) && Number(amountArg) > 0 ? Number(amountArg) : gross;
-    const { paid, full } = applyPayment(inv, amount);
-    inv = await prisma.invoice.update({ where: { id: inv.id }, data: { paidAmount: paid, status: statusAfterPayment(inv.status, full), ...(full ? { paidAt: paidDate && /^\d{4}-\d{2}-\d{2}$/.test(paidDate) ? new Date(`${paidDate}T12:00:00.000Z`) : new Date() } : {}) } });
-    if (full) await emit(who.org, { type: "invoice_paid", data: { id: inv.id, number: inv.number, customerName: inv.customerName, amount: String(amount), dealId: inv.deal ?? "" } });
-    // ПРРО (Украина): чек при полной оплате пробивается сам, если подключён Checkbox и включена автофискализация
-    if (full && !inv.fiscalCode) {
-        let fiscalData: Record<string, unknown> = {};
-        try {
-            const advice = fiscalAdvice(inv);
-            const fiscalDoc = advice.needed ? await findFiscal(who.org) : null;
-            if (fiscalDoc && fiscalConfig(fiscalDoc).auto) {
-                const receipt = await fiscalizeInvoice(who.org, inv, gross, advice.payType);
-                fiscalData = { fiscalId: receipt.receiptId, fiscalCode: receipt.fiscalCode, fiscalUrl: receipt.url, fiscalAt: new Date(), fiscalPayType: advice.payType, fiscalError: "" };
-            }
-        } catch (e) {
-            fiscalData = { fiscalError: e instanceof Error ? e.message.slice(0, 300) : "Чек не вдалося пробити" };
-        }
-        if (Object.keys(fiscalData).length) inv = await prisma.invoice.update({ where: { id: inv.id }, data: fiscalData as never });
-    }
-    await logAudit({ org: who.org, userId: who.userId, action: full ? "invoice.paid" : "invoice.partially_paid", entityType: "invoice", entityId: inv.id, summary: `Invoice ${inv.number}: ${amount} ${inv.currency} booked — ${paid} of ${gross} paid (via assistant)`, meta: { amount, paid, gross, currency: inv.currency } });
-    return { number: inv.number, customerName: inv.customerName, status: inv.status, paid };
+    const amount = Number.isFinite(Number(amountArg)) && Number(amountArg) > 0 ? Number(amountArg) : undefined;
+    // Та же точка учёта оплаты, что у кнопки «оплачен», webhook эквайринга и банка (lib/sync/payments.ts):
+    // раньше здесь жила своя копия, и правила расходились
+    const res = await registerPayment(who.org, inv.id, {
+        amount, source: "assistant", externalId: `${inv.id}:${inv.paidAmount}:${amount ?? "full"}`, actor: { userId: who.userId },
+        paidAt: paidDate && /^\d{4}-\d{2}-\d{2}$/.test(paidDate) ? new Date(`${paidDate}T12:00:00.000Z`) : undefined, via: "assistant",
+    });
+    if (!res.ok) throw new ActionError("Only an open invoice (draft, sent or overdue) can be marked paid");
+    return { number: res.invoice.number, customerName: res.invoice.customerName, status: res.invoice.status, paid: res.paid };
 }
 
 export async function sendInvoice(who: Who, ref: string, to?: string) {
@@ -168,7 +155,7 @@ async function releaseReserve(org: string, orderId: string) {
     for (const row of reserved.filter((r) => (r._sum.qty ?? 0) < 0)) await releaseForOrder(org, orderId, [{ product: row.product, qty: Math.abs(row._sum.qty ?? 0) }]);
 }
 
-export const ORDER_STATUSES = ["draft", "confirmed", "fulfilled", "invoiced", "closed", "cancelled"] as const;
+export const ORDER_STATUSES = ["draft", "confirmed", "fulfilled", "invoiced", "paid", "closed", "cancelled"] as const;
 
 export async function setOrderStatus(who: Who, ref: string, status: string) {
     if (!(ORDER_STATUSES as readonly string[]).includes(status)) throw new ActionError("Unknown order status");

@@ -11,6 +11,7 @@ export const EVENTS = [
     "deal_created", "deal_stage", "contact_created", "lead_created", "message_received", "call_missed", "task_created", "deadline",
     "order_created", "order_status", "invoice_sent", "invoice_paid", "invoice_overdue", "contract_signed", "quote_sent",
     "invoice_credit_note_created", "invoice_recurring_created", "invoice_reminder",
+    "deal_won", "task_completed", "contact_updated", "company_updated", "invoice_partial_paid", "bank_matched", "expense_created", "quote_accepted",
 ] as const;
 export type EventType = (typeof EVENTS)[number];
 export const ACTIONS = ["notify", "create_task", "add_note", "move_stage", "send_email", "webhook", "ai_action"] as const;
@@ -34,7 +35,8 @@ async function keyValues(org: string, key: string) {
 function eventBucket(type: string) {
     return type.startsWith("deal") ? "deal" : type.startsWith("contact") || type === "lead_created" ? "contact" : type.startsWith("task") ? "task"
         : type.startsWith("message") || type === "call_missed" ? "message"
-        : type.startsWith("order") ? "order" : type.startsWith("invoice") ? "invoice" : type.startsWith("contract") ? "contract" : type.startsWith("quote") ? "quote"
+        : type.startsWith("order") ? "order" : type.startsWith("invoice") || type === "bank_matched" ? "invoice" : type.startsWith("contract") ? "contract" : type.startsWith("quote") ? "quote"
+        : type.startsWith("company") ? "company" : type.startsWith("expense") ? "expense"
         : "deadline";
 }
 

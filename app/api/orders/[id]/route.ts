@@ -10,9 +10,9 @@ import { toOrderDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
 import { prisma } from "@/lib/prisma";
 
-const STATUSES = ["draft", "confirmed", "fulfilled", "invoiced", "closed", "cancelled"];
+const STATUSES = ["draft", "confirmed", "fulfilled", "invoiced", "paid", "closed", "cancelled"];
 // закрытый заказ уже отражён в дашборде и счетах — редактировать его задним числом нельзя, только статус
-const LOCKED = ["invoiced", "closed", "cancelled"];
+const LOCKED = ["invoiced", "paid", "closed", "cancelled"];
 // Снять резерв заказа ровно на то количество, что было зарезервировано (по журналу движений):
 // повторный вызов или заказ без резерва ничего не делают — склад не «пополняется» из воздуха.
 async function releaseReserve(org: string, orderId: string) {

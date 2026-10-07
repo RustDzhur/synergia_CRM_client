@@ -31,9 +31,9 @@ import { emptyItem, useDefaultTaxRate } from "./lineItems";
 
 const STATUS_COLOR: Record<string, string> = {
 	draft: STATUS_COLORS.neutral, confirmed: STATUS_COLORS.info, fulfilled: STATUS_COLORS.warning,
-	invoiced: STATUS_COLORS.special, closed: STATUS_COLORS.success, cancelled: STATUS_COLORS.danger,
+	invoiced: STATUS_COLORS.special, paid: STATUS_COLORS.success, closed: STATUS_COLORS.success, cancelled: STATUS_COLORS.danger,
 };
-const NEXT: Record<string, string | null> = { draft: "confirmed", confirmed: "fulfilled", fulfilled: null, invoiced: null, closed: null, cancelled: null };
+const NEXT: Record<string, string | null> = { draft: "confirmed", confirmed: "fulfilled", fulfilled: null, invoiced: null, paid: "closed", closed: null, cancelled: null };
 // Заказы — сердце раздела: «оформили контракт → создали заказ → выполнили (списывается склад) → выставили счёт».
 // Каждая смена статуса — событие автоматизации (order_created/order_status), от него можно завести уведомление, задачу
 // или сдвинуть сделку по воронке — это настраивается в Automation, не зашито здесь намертво.

@@ -27,7 +27,7 @@ export interface OrderWaybill {
 	seats?: number; street?: string; house?: string; flat?: string; returnNumber?: string; returnAt?: string;
 }
 export interface Order {
-	id: string; number: string; status: "draft" | "confirmed" | "fulfilled" | "invoiced" | "closed" | "cancelled";
+	id: string; number: string; status: "draft" | "confirmed" | "fulfilled" | "invoiced" | "paid" | "closed" | "cancelled";
 	contact: string; company: string; customerName: string; deal: string; contract: string;
 	items: LineItem[]; currency: string; notes: string; responsible: string; invoice: string; totals: Totals;
 	// Накладная (Lieferschein): номер присваивается при первой выписке, дата — фактической поставки

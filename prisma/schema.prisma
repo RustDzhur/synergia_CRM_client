@@ -235,6 +235,7 @@ model Contract {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  @@unique([org, number])
   @@map("contracts")
 }
 
@@ -511,6 +512,7 @@ model FinanceSettings {
   expenseCategories    String[] @default([])
   contractTemplate     String   @default("")
   counters             Json?
+  autoWinDealOnPaid    Boolean  @default(true)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -649,6 +651,7 @@ model Invoice {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
+  @@unique([org, number])
   @@map("invoices")
 }
 
@@ -765,6 +768,7 @@ model Order {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
+  @@unique([org, number])
   @@map("orders")
 }
 
@@ -910,6 +914,7 @@ model Quote {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  @@unique([org, number])
   @@map("quotes")
 }
 
@@ -1126,4 +1131,23 @@ model EmailCode {
   createdAt DateTime @default(now())
 
   @@map("emailcodes")
+}
+
+// Каждый учтённый платёж по счёту. Уникальный (org, source, externalId) делает учёт идемпотентным: повторная доставка
+// webhook, второй клик «оплачен» или повторная привязка банковской строки не прибавят сумму второй раз.
+// amount со знаком: возврат платежа (отвязка банковского движения) записывается отрицательной суммой.
+model PaymentEvent {
+  id         String   @id @default(cuid())
+  org        String
+  invoice    String
+  source     String   // manual | assistant | webhook | bank
+  externalId String
+  amount     Float
+  currency   String   @default("EUR")
+  via        String   @default("")
+  createdAt  DateTime @default(now())
+
+  @@unique([org, source, externalId])
+  @@index([org, invoice])
+  @@map("paymentevents")
 }
