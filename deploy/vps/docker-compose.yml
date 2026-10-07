@@ -8,12 +8,13 @@ services:
     image: caddy:2
     container_name: firmspace-caddy
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
+    # Сеть хоста, как на прежнем сервере: Caddy ходит к сайту (127.0.0.1:3210), Harness (127.0.0.1:3080) и OmniRoute
+    network_mode: host
     environment:
       # Домены через запятую, как в Caddyfile: например "firmspace.de, www.firmspace.de"
       SITE_DOMAINS: ${SITE_DOMAINS:?задайте SITE_DOMAINS в .env}
+      # Постоянный токен входа в Harness (подставляется Caddy при заходе на harness.firmspace.de)
+      HARNESS_LAUNCH_TOKEN: ${HARNESS_LAUNCH_TOKEN:-}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -29,6 +30,9 @@ services:
     container_name: firmspace-crm
     restart: unless-stopped
     env_file: .env
+    ports:
+      # Только на самом сервере (Caddy и агенты Harness ходят на 127.0.0.1:3210), наружу не открыт
+      - "127.0.0.1:3210:3000"
     environment:
       DEPLOYED_COMMIT: ${DEPLOYED_COMMIT:-}
       AGENT_BLOG_AUTOPUBLISH: "1"

@@ -21,9 +21,12 @@ NOISE = re.compile(r"duplicate key value violates unique constraint|canceling st
 
 def secret():
     try:
-        for line in open(os.path.join(HERE, ".env"), encoding="utf8"):
-            if line.startswith("CRON_SECRET="):
-                return line.split("=", 1)[1].strip().strip('"').strip("'")
+        for env in (os.path.join(HERE, ".env"), os.path.join(HERE, "vps", ".env")):
+            if not os.path.exists(env):
+                continue
+            for line in open(env, encoding="utf8"):
+                if line.startswith("CRON_SECRET="):
+                    return line.split("=", 1)[1].strip().strip('"').strip("'")
     except OSError:
         pass
     return os.environ.get("CRON_SECRET", "")

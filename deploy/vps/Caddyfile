@@ -1,16 +1,29 @@
 # Домены берутся из SITE_DOMAINS (см. .env). Сертификаты Let's Encrypt Caddy получает и продлевает сам —
 # нужно лишь, чтобы A-запись домена уже указывала на этот сервер и были открыты порты 80 и 443.
+# Caddy работает в сети хоста (network_mode: host), поэтому все адреса — 127.0.0.1.
 {$SITE_DOMAINS} {
 	encode zstd gzip
-	reverse_proxy crm:3000
+	reverse_proxy 127.0.0.1:3210
 }
 
-# Панель OmniRoute (раньше omiroute.firmspace.eu на старом сервере); A-запись должна указывать на этот сервер
+# Панель OmniRoute (A-запись omiroute.firmspace.eu должна указывать на этот сервер)
 omiroute.firmspace.eu {
 	handle /live-ws* {
-		reverse_proxy omniroute:20132
+		reverse_proxy 127.0.0.1:20132
 	}
 	handle {
-		reverse_proxy omniroute:20128
+		reverse_proxy 127.0.0.1:3111
 	}
+}
+
+# DeepSeek Harness (dsh web). Без сессии Caddy подставляет постоянный токен входа (HARNESS_LAUNCH_TOKEN из .env).
+harness.firmspace.de, www.harness.firmspace.de {
+	@noauth {
+		path /
+		not query token=*
+		not header Cookie *dsh-auth*
+	}
+	redir @noauth /?token={$HARNESS_LAUNCH_TOKEN} 302
+
+	reverse_proxy 127.0.0.1:3080
 }
