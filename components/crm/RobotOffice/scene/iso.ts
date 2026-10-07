@@ -12,13 +12,13 @@ export const project = (x: number, y: number, z = 0): [number, number] => [((x -
 
 export interface RoomDef { zone: Zone; x: number; y: number; w: number; d: number; col: 0 | 1 | 2; row: 0 | 1 }
 
-const RW = 6, RD = 5, GAP_X = 2, CORRIDOR = 3;
+export const RW = 6, RD = 5, GAP_X = 2, CORRIDOR = 4;
 // Два ряда по три комнаты, между ними коридор — в нём стоит Айрис.
 const ORDER: Zone[][] = [["marketing", "sales", "service"], ["finance", "warehouse", "office"]];
 export const ROOMS: RoomDef[] = ORDER.flatMap((zones, row) => zones.map((zone, col) => ({ zone, x: col * (RW + GAP_X), y: row === 0 ? 0 : RD + CORRIDOR, w: RW, d: RD, col: col as 0 | 1 | 2, row: row as 0 | 1 })));
 export const GRID_W = 3 * RW + 2 * GAP_X; // 22
 export const GRID_D = 2 * RD + CORRIDOR; // 13
-export const HUB = { x: GRID_W / 2, y: RD + CORRIDOR / 2 }; // центр коридора
+export const HUB = { x: GRID_W / 2, y: RD + CORRIDOR / 2 - 0.35 }; // центр коридора (чуть ближе к задним комнатам, чтобы стена передних не закрывала Айрис)
 
 const PAD = 24;
 // сдвиг, чтобы вся сцена попала в положительные координаты

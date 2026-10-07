@@ -3,17 +3,38 @@ import { C, P, SKEW, type Tone, pt } from "./iso";
 
 // Простые «кирпичики» сцены: коробка в изометрии, плоскость экрана на лицевой грани, растения.
 
-export function IsoBox({ x, y, z = 0, w, d, h, c, edge }: { x: number; y: number; z?: number; w: number; d: number; h: number; c: Tone; edge?: string }) {
+export function IsoBox({ x, y, z = 0, w, d, h, c, edge, flat = false }: { x: number; y: number; z?: number; w: number; d: number; h: number; c: Tone; edge?: string; flat?: boolean }) {
 	const zt = z + h;
 	const top = [P(x, y, zt), P(x + w, y, zt), P(x + w, y + d, zt), P(x, y + d, zt)].join(" ");
 	const left = [P(x, y + d, z), P(x + w, y + d, z), P(x + w, y + d, zt), P(x, y + d, zt)].join(" "); // грань y-max (смотрит влево-вниз)
 	const right = [P(x + w, y, z), P(x + w, y + d, z), P(x + w, y + d, zt), P(x + w, y, zt)].join(" "); // грань x-max (смотрит вправо-вниз)
+	const rim = [P(x, y + d, zt), P(x + w, y + d, zt), P(x + w, y, zt)].join(" ");
 	return (
 		<g>
 			<polygon points={left} fill={c.left} />
 			<polygon points={right} fill={c.right} />
 			<polygon points={top} fill={c.top} />
-			{edge && <polyline points={[P(x, y + d, zt), P(x + w, y + d, zt), P(x + w, y, zt)].join(" ")} fill="none" stroke={edge} strokeWidth="1" strokeLinejoin="round" />}
+			{!flat && h > 2 && <><polygon points={left} fill="url(#g-left)" /><polygon points={right} fill="url(#g-right)" /></>}
+			<polygon points={top} fill="url(#g-top)" />
+			<polyline points={rim} fill="none" stroke={edge ?? "rgba(255,255,255,0.26)"} strokeWidth={edge ? 1.1 : 0.8} strokeLinejoin="round" filter={edge ? "url(#f-glow)" : undefined} />
+		</g>
+	);
+}
+
+/** Мягкая тень предмета на полу (свет сверху-слева, тень падает вправо-вниз). */
+export function Shadow({ x, y, w, d, o = 0.5 }: { x: number; y: number; w: number; d: number; o?: number }) {
+	const pts = [P(x + 0.08, y + 0.1, 0), P(x + w + 0.45, y + 0.1, 0), P(x + w + 0.55, y + d + 0.5, 0), P(x + 0.08, y + d + 0.4, 0)].join(" ");
+	return <polygon points={pts} fill={`rgba(0,0,0,${o})`} filter="url(#f-soft)" />;
+}
+
+/** Кресло у стола: сиденье, спинка, стойка; акцентная кромка цвета робота. */
+export function Chair({ x, y, accent = "#c6ff4d" }: { x: number; y: number; accent?: string }) {
+	return (
+		<g>
+			<Shadow x={x - 0.1} y={y - 0.1} w={0.7} d={0.7} o={0.4} />
+			<IsoBox x={x + 0.2} y={y + 0.2} w={0.14} d={0.14} h={8} c={C.dark} flat />
+			<IsoBox x={x} y={y} z={8} w={0.62} d={0.62} h={2.6} c={C.dark} edge={accent} />
+			<IsoBox x={x - 0.06} y={y} z={10.6} w={0.08} d={0.62} h={11} c={C.dark} edge={accent} />
 		</g>
 	);
 }

@@ -1,6 +1,6 @@
 import React from "react";
 import { C, tone } from "./iso";
-import { IsoBox, Papers, Plane } from "./prims";
+import { IsoBox, Papers, Plane, Shadow } from "./prims";
 
 // Рабочие места по ролям. Стол занимает 2×1 клетки с левым верхним углом (x, y); работающий (on) — экран ярче, бумаги и детали движутся.
 // Экраны рисуются плоскостью на лицевой грани монитора: внутри — обычные SVG-прямоугольники в пикселях (ширина w·32 − 4, высота 17).
@@ -11,6 +11,7 @@ const GREEN_TOP = 16.5; // высота столешницы
 function Desk({ x, y, w = 2, h = 14 }: { x: number; y: number; w?: number; h?: number }) {
 	return (
 		<g>
+			<Shadow x={x} y={y} w={w} d={1} />
 			<IsoBox x={x} y={y} w={w} d={1} h={h} c={C.desk} />
 			<Plane x={x} y={y + 1} z={h}>
 				<rect x="3" y="2.5" width={w * 32 / 2 - 4} height={h - 5} rx="1.5" fill="none" stroke="rgba(255,255,255,0.07)" />
@@ -29,7 +30,9 @@ function Monitor({ x, y, z = GREEN_TOP, w = 1.3, on, screen }: { x: number; y: n
 	const sw = w * 32 - 4;
 	return (
 		<g>
+			{on && <Plane x={x} y={y + 0.1} z={z + 24}><rect x="-2" y="-2" width={sw + 8} height="22" rx="6" fill="#c6ff4d" opacity="0.38" filter="url(#f-bloom)" /></Plane>}
 			<IsoBox x={x + w / 2 - 0.14} y={y + 0.04} z={z} w={0.28} d={0.22} h={3} c={C.dark} />
+			<IsoBox x={x + w / 2 - 0.3} y={y + 0.5} z={z} w={0.6} d={0.24} h={0.7} c={C.dark} edge={on ? "rgba(198,255,77,0.7)" : undefined} flat />
 			<IsoBox x={x} y={y} z={z + 3} w={w} d={0.1} h={21} c={C.dark} />
 			<Plane x={x} y={y + 0.1} z={z + 24}>
 				<rect x="2" y="2" width={sw} height="17" rx="1" fill={C.screen} />
