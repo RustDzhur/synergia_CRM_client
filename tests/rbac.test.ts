@@ -46,3 +46,20 @@ describe.skipIf(!hasDb)("права на реальных запросах (requ
         expect((await POST(body("contacts"))).status).not.toBe(401);
     });
 });
+
+describe.skipIf(!hasDb)("календарь: сроки из других разделов", () => {
+    it("счета и договоры видят только те, у кого есть финансы", async () => {
+        const { org, userId } = await makeOrg();
+        await prisma.invoice.create({ data: { org, number: "RE-1", customerName: "К", issueDate: "2026-01-01", dueDate: "2026-02-10", status: "sent" } });
+        await prisma.contract.create({ data: { org, number: "D-1", customerName: "К", status: "active", endDate: "2026-02-12" } });
+        const { GET } = await import("@/app/api/calendar/derived/route");
+        const owner = asUser(userId);
+        const employee = await member(org, "employee");
+        const range = "?from=2026-02-01&to=2026-02-28";
+        const ownerRows = await (await GET(owner(`/api/calendar/derived${range}`))).json();
+        expect(ownerRows.map((r: any) => r.kind).sort()).toEqual(["contract", "invoice"]);
+        const employeeRows = await (await GET(employee(`/api/calendar/derived${range}`))).json();
+        expect(employeeRows).toEqual([]);
+        expect((await GET(owner("/api/calendar/derived?from=x&to=y"))).status).toBe(400);
+    });
+});

@@ -45,11 +45,46 @@ jobs:
       - name: Сборка приложения
         run: npm run build
 
+  # Интеграционные тесты на настоящей PostgreSQL: права по разделам, нумерация документов, учёт оплаты (идемпотентность,
+  # параллельные платежи), склад, каскад имён клиента, охрана удаления, сроки и уведомления. Красный тест останавливает
+  # выкладку так же, как красная сборка.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
+      JWT_SECRET: ci-only-not-a-secret
+      APP_URL: https://example.com
+      LOCAL_STORAGE_ROOT: /tmp/ci-storage
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Установка зависимостей
+        run: npm install --no-audit --no-fund
+      - name: Схема базы и клиент Prisma
+        run: npx prisma db push --accept-data-loss && npx prisma generate
+      - name: Проверка согласованности связей на пустой базе (скрипт не должен падать)
+        run: node scripts/reconcile-links.mjs
+      - name: Тесты
+        run: npm test
+
   # Зелёный коммит из main публикуется в ветку deploy: сервер выкладывает ТОЛЬКО её. Так автовыкладке не нужен публичный API
   # GitHub для проверки статуса CI, и репозиторий можно держать приватным (сервер читает код по read-only deploy-ключу).
   # Ветка движется только вперёд: более старый коммит, закончивший проверку позже нового, её не откатит.
   publish-deploy:
-    needs: check
+    needs: [check, test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5

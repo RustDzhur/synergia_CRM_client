@@ -81,6 +81,6 @@ export const canAccess = (role: Role, custom: string[], module: Module | null | 
 
 // Можно ли пользователю загружать файл этого вида данных (раздел зависит от вида, а не от адреса)
 export const canImportKind = (user: { role: Role; modules: string[] }, kind: string) => {
-    const module = IMPORT_MODULE[kind];
-    return !!module && canAccess(user.role, user.modules, module, "POST");
+    const section = IMPORT_MODULE[kind];
+    return !!section && canAccess(user.role, user.modules, section, "POST");
 };
