@@ -1486,7 +1486,7 @@ export const TOOLS: AiTool[] = [
                 if (sums) sections.push({ heading: L.sumTotal + ": " + sums, columns: [L.invCount], rows: [[String(r.count)]] });
             } else sections = a.sections as ReportSection[];
             const today = c.today || new Date().toISOString().slice(0, 10);
-            const pdf = await reportPdf({ title: title || L.report, subtitle: `${L.generated}: ${today}`, sections, footer: "Firmspace CRM · Iris" });
+            const pdf = await reportPdf({ title: title || L.report, subtitle: `${L.generated}: ${today}`, sections, footer: "Firmspace CRM · Ayris" });
             const user = await prisma.user.findUnique({ where: { id: c.userId }, select: { email: true } });
             const to = String(a.to || user?.email || "");
             if (!to) throw new ToolError("No recipient: the user has no e-mail address — give one in the command");

@@ -114,7 +114,7 @@ export const STARTER_IDS = ["sales", "accounting", "warehouse", "tasks", "mail",
 /** Подсказка роботу: роль, правила и немецкий деловой контекст. Добавляется к системной подсказке Айрис. */
 export function robotPersona(r: { name: string; title: string; duties: string }, orgName: string): string {
     return [
-        `ROBOT MODE. You are now ${r.name}${r.title ? `, «${r.title}»` : ""} — a robot employee in the Robot Office of ${orgName || "the company"}. Your boss is Iris; the company owner gives you the task. Do not introduce yourself and do not chat: do the task.`,
+        `ROBOT MODE. You are now ${r.name}${r.title ? `, «${r.title}»` : ""} — a robot employee in the Robot Office of ${orgName || "the company"}. Your boss is Ayris; the company owner gives you the task. Do not introduce yourself and do not chat: do the task.`,
         `Your duties: ${r.duties}`,
         "Rules:",
         "- Work only within your duties and your tools. If the task belongs to another role, do not improvise: say in one sentence which kind of robot should do it.",
@@ -129,7 +129,7 @@ export function robotPersona(r: { name: string; title: string; duties: string },
 export function bossPersona(robots: { id: string; name: string; title: string; skills: string[]; enabled: boolean }[]): string {
     const team = robots.filter((r) => r.enabled).map((r) => `- ${r.name} (id ${r.id}): ${r.title || "robot"}; skills: ${r.skills.join(", ")}`).join("\n") || "- (no robots yet — offer to hire some with hire_robot)";
     return [
-        "BOSS MODE. You are Iris, the head of the Robot Office. The owner gives you a task from the Robot Office screen. Split it into parts and DELEGATE every part that fits a robot with delegate_task (one call per part, a self-contained instruction each, in the owner's language). Do small or cross-cutting things yourself with your own tools.",
+        "BOSS MODE. You are Ayris, the head of the Robot Office. The owner gives you a task from the Robot Office screen. Split it into parts and DELEGATE every part that fits a robot with delegate_task (one call per part, a self-contained instruction each, in the owner's language). Do small or cross-cutting things yourself with your own tools.",
         "Your team:",
         team,
         "If no robot fits, say so and offer to hire one (hire_robot with a template id). When done, answer in 1–3 short sentences: who got which part. Do not wait for the robots to finish — they report on their own.",

@@ -22,7 +22,7 @@ export default function BossCard() {
 		setBusy(true);
 		const task = await assign("iris", v, locale);
 		setBusy(false);
-		if (task) { setText(""); toast.success(t("taskAssigned", { name: "Iris" })); }
+		if (task) { setText(""); toast.success(t("taskAssigned", { name: "Ayris" })); }
 	}
 
 	return (
@@ -31,7 +31,7 @@ export default function BossCard() {
 				<div className="flex items-center gap-14">
 					<RobotAvatar accent="lime" size={72} boss state={working ? "working" : "idle"} />
 					<div className="min-w-0">
-						<p className="text-16 font-semibold text-[#f1f4ee]">{locale === "ua" ? "Айріс" : "Iris"}</p>
+						<p className="text-16 font-semibold text-[#f1f4ee]">{locale === "ua" ? "Айрис" : "Ayris"}</p>
 						<p className="text-12 text-[#8c948b]">{t("bossRole")}</p>
 						<p className="mt-4 text-11 font-medium" style={{ color: working ? "#c6ff4d" : "#8c948b" }}>{working ? t("st_running") : t("st_idle")}</p>
 					</div>

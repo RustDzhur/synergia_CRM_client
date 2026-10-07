@@ -28,7 +28,7 @@ export async function startOfficeTask(ctx: OfficeCtx, input: { robot: string; te
     const robot = boss ? null : await getRobot(ctx.org, input.robot);
     if (!boss && !robot) throw new OfficeError("Robot not found");
     if (robot && !robot.enabled) throw new OfficeError("This robot is switched off");
-    const task = await createTask(ctx.org, { robot: input.robot, robotName: boss ? "Iris" : robot!.name, text: input.text, source: input.source, locale: input.locale ?? ctx.locale });
+    const task = await createTask(ctx.org, { robot: input.robot, robotName: boss ? "Ayris" : robot!.name, text: input.text, source: input.source, locale: input.locale ?? ctx.locale });
     const prev = chains.get(input.robot) ?? Promise.resolve();
     const run = prev.then(() => execute(ctx, task.id)).catch(() => undefined);
     chains.set(input.robot, run);

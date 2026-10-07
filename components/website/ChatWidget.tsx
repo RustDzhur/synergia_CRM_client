@@ -16,7 +16,7 @@ const WIDGET_BASE = "/widget.js";
 // Лицо чата — Айрис: имя, приветствие и аватарка задаются здесь (виджет их принимает атрибутами скрипта), а отвечает ИИ по базе знаний о платформе
 const GREETING: Record<string, string> = {
 	de: "Hallo! Ich bin Ayris, die KI-Assistentin von Firmspace. Frag mich alles zur Plattform – ich antworte sofort.",
-	ua: "Привіт! Я Айріс, ШІ-асистентка Firmspace. Питайте мене про платформу будь-що — відповім одразу.",
+	ua: "Привіт! Я Айрис, ШІ-асистентка Firmspace. Питайте мене про платформу будь-що — відповім одразу.",
 	en: "Hi! I'm Ayris, Firmspace's AI assistant. Ask me anything about the platform – I'll answer right away.",
 };
 const VERSION = process.env.NEXT_PUBLIC_COMMIT_SHA ?? "dev";

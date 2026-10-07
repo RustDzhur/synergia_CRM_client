@@ -47,7 +47,7 @@ export default function Hub({ boss, onFocus }: { boss: boolean; onFocus: () => v
 			</g>
 			<g transform={`translate(${cx} ${cy + 34})`} style={{ pointerEvents: "none" }}>
 				<rect x="-34" y="-11" width="68" height="22" rx="11" fill="rgba(8,12,10,0.92)" stroke={LIME} strokeOpacity="0.9" filter="url(#f-glow)" />
-				<text x="0" y="4.8" textAnchor="middle" fontSize="12.5" fontWeight="700" fill={LIME} letterSpacing="2">IRIS</text>
+				<text x="0" y="4.8" textAnchor="middle" fontSize="12.5" fontWeight="700" fill={LIME} letterSpacing="2">AYRIS</text>
 			</g>
 		</g>
 	);

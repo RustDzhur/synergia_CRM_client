@@ -50,7 +50,7 @@ export default function RobotOffice() {
 
 	const onDrop = useCallback((p: DragPayload, target: DropTarget) => {
 		if (p.kind === "robot" && target.type === "zone") void update(p.id, { zone: target.id as never });
-		if (p.kind === "task" && target.type === "robot") void reassign(p.id, target.id).then((ok) => ok && toast.success(t("taskAssigned", { name: target.id === "iris" ? "Iris" : useOfficeStore.getState().robots.find((r) => r.id === target.id)?.name ?? "" })));
+		if (p.kind === "task" && target.type === "robot") void reassign(p.id, target.id).then((ok) => ok && toast.success(t("taskAssigned", { name: target.id === "iris" ? "Ayris" : useOfficeStore.getState().robots.find((r) => r.id === target.id)?.name ?? "" })));
 	}, [update, reassign, t]);
 
 	const pick = (id: string) => {
