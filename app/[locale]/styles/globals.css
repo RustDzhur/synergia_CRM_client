@@ -374,3 +374,20 @@ body {
 .iris-hit { outline: 2px solid #c6ff4d; outline-offset: -2px; border-radius: 8px; background-color: rgba(198, 255, 77, 0.16) !important; box-shadow: 0 0 0 4px rgba(198, 255, 77, 0.18), 0 0 22px rgba(198, 255, 77, 0.35); animation: iris-hit-pulse 1.4s ease-in-out 3; }
 .iris-hit > td, .iris-hit > th { background-color: rgba(198, 255, 77, 0.16) !important; }
 @keyframes iris-hit-pulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(198, 255, 77, 0.18), 0 0 22px rgba(198, 255, 77, 0.35); } 50% { box-shadow: 0 0 0 7px rgba(198, 255, 77, 0.32), 0 0 34px rgba(198, 255, 77, 0.55); } }
+
+/* Робот-офис: спокойная анимация фигурок (RobotAvatar). Покачивание, моргание, «печатающие» руки у работающего, пульс индикатора. */
+.rb { overflow: visible; }
+.rb-body { transform-origin: 32px 58px; animation: rb-bob 5s ease-in-out infinite; }
+.rb-eyes { transform-origin: 32px 27px; animation: rb-blink 6s infinite; }
+.rb-arm { transform-origin: 32px 45px; }
+.rb-working .rb-body { animation-duration: 1.6s; }
+.rb-working .rb-arm-l { animation: rb-type 0.55s ease-in-out infinite alternate; transform-origin: 14px 45px; }
+.rb-working .rb-arm-r { animation: rb-type 0.55s ease-in-out 0.27s infinite alternate-reverse; transform-origin: 50px 45px; }
+.rb-working .rb-light, .rb-waiting .rb-light, .rb-working .rb-ant { animation: rb-pulse 1.3s ease-in-out infinite; }
+.rb-off { opacity: 0.38; filter: grayscale(1); }
+.rb-off .rb-body, .rb-off .rb-eyes { animation: none; }
+@keyframes rb-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.6px); } }
+@keyframes rb-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.12); } }
+@keyframes rb-type { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+@keyframes rb-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .rb *, .rb { animation: none !important; } }

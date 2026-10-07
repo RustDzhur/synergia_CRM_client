@@ -33,11 +33,13 @@ interface Props {
 	openTabOnParam?: { param: string; tab: string };
 	// список для select-полей без options в конфиге (например, этапы сделок из CRM)
 	fieldOptions?: (tab: string, key: string) => FieldOption[] | undefined;
+	// страница лежит внутри другой (Робот-офис → «Правила»): свой заголовок раздела не рисуем, остаётся только строка вкладок и поиска
+	embedded?: boolean;
 }
 
 // Страница раздела со вкладками: поиск, таблица с выбором строк, сортировкой по заголовку и настройкой колонок (шестерёнка),
 // окно создания/правки записи. Вкладки из config.customTabs рисует renderCustom (например, Start в Marketing).
-export default function RecordsPage({ config, renderCustom, fieldOptions, openTabOnParam }: Props) {
+export default function RecordsPage({ config, renderCustom, fieldOptions, openTabOnParam, embedded = false }: Props) {
 	const t = useTranslations(config.namespace);
 	const tr = useTranslations("records");
 	const locale = useLocale();
@@ -148,7 +150,23 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 	const name = isCustom ? "" : t(`s_${tab}`);
 
 	return (
-		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
+		<div className={embedded ? "" : "px-16 py-20 md:px-24 md:py-24 lg:px-32"}>
+			{embedded ? (
+				<div className="mb-20">
+					<div className="flex flex-col gap-16 md:flex-row md:items-center md:justify-between">
+						<TabBar tabs={config.tabs} active={tab} onChange={changeTab} label={(key) => t(`tab_${key}`)} />
+						<SearchBox
+							value={query}
+							onChange={setQuery}
+							placeholder={tr("search")}
+							filters={filterDefs}
+							active={activeFilters}
+							onFilter={setFilter}
+							className="w-full shrink-0 md:w-[340px]"
+						/>
+					</div>
+				</div>
+			) : (
 			<PageHeader right={<span className="fs-chip">{rows.length}</span>}>
 				<div className="flex flex-col gap-16 md:flex-row md:items-center md:justify-between">
 					<TabBar tabs={config.tabs} active={tab} onChange={changeTab} label={(key) => t(`tab_${key}`)} />
@@ -163,6 +181,7 @@ export default function RecordsPage({ config, renderCustom, fieldOptions, openTa
 					/>
 				</div>
 			</PageHeader>
+			)}
 
 			{isCustom ? (
 				renderCustom?.(tab, { query, create: (tb, preset) => openModal(tb, null, preset), edit: (tb, record) => openModal(tb, record) })

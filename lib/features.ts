@@ -48,7 +48,7 @@ export function featureForApi(pathname: string): FeatureKey | null {
         case "marketing": return "marketing";
         case "ads": return "ads";
         case "products": case "orders": case "invoices": case "expenses": case "finance": case "quotes": case "contracts": return "inventory";
-        case "automation": return "automation";
+        case "automation": case "office": return "automation";
         case "ai": return "aiAssistant";
         case "orgs": return p.startsWith("orgs/members") || p.startsWith("orgs/invitations") ? "multiFirm" : null;
         // integrations намеренно без раздела: список подключений нужен звонилке и настройкам независимо от тарифа

@@ -23,6 +23,7 @@ import { BrowseError, ENTITY_KEYS, browse, listProducts } from "./browse";
 import { mkActivity } from "@/lib/activities";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
 import { deleteDemo, seedDemo } from "./demoData";
+import { TEMPLATES, templateById } from "@/lib/office/templates";
 import { completeOrder, eraseProducts, describeProduction, findProductionOrder, missingMaterials, resolveWarehouse, saveBom } from "./productionOps";
 import { cancelProductionOrder, createProductionOrder, launchProductionOrder, produceOutput } from "@/lib/finance/productionOrders";
 import { nextNumber } from "@/lib/finance/numbering";
@@ -38,7 +39,7 @@ import type { ToolDef } from "./provider";
 //  • «чтение» выполняется сразу, «запись» (write) не выполняется никогда — ИИ лишь предлагает действие, а выполняет его
 //    сервер после нажатия «Подтвердить» пользователем (см. app/api/ai/actions);
 //  • проверяет и ограничивает аргументы: то, что прислала модель, — недоверенные данные.
-export interface AiCtx { org: string; userId: string; role: Role; modules: string[]; today: string; now: string }
+export interface AiCtx { org: string; userId: string; role: Role; modules: string[]; today: string; now: string; locale?: string }
 type Args = Record<string, unknown>;
 export class ToolError extends Error {}
 
@@ -107,7 +108,7 @@ const NAV_SECTIONS: Record<string, { label: string; link: string; module: Module
     documents: { label: "Документи", link: "/crm/collaboration/online-documents", module: "collab" },
     finance: { label: "Бухгалтерія", link: "/crm/finance", module: "inventory" },
     marketing: { label: "Маркетинг", link: "/crm/marketing", module: "marketing" },
-    automation: { label: "Автоматизація", link: "/crm/automation", module: "automation" },
+    automation: { label: "Робот-офіс", link: "/crm/automation", module: "automation" },
     settings: { label: "Налаштування", link: "/crm/settings", module: "settings" },
     upgrade: { label: "Тариф", link: "/crm/upgrade", module: "billing" },
 };
@@ -125,7 +126,7 @@ export interface ScrollTarget { dir: "down" | "up" | "top" | "bottom"; pages: nu
 // Найти на экране строку/карточку с этим текстом, прокрутить к ней и подсветить зелёным (инструмент find_on_screen): выполняет браузер человека
 export interface FindTarget { text: string }
 export interface DownloadTarget { kind: "invoices" | "quotes" | "orders" | "contracts" | "purchases"; id: string; number: string; mode: "download" | "open" }
-const wrap = async <T,>(fn: () => Promise<T>): Promise<T> => { try { return await fn(); } catch (e) { throw e instanceof ActionError || e instanceof BrowseError || e instanceof RecordError || e instanceof LeadToolError || e instanceof ProviderError ? new ToolError(e.message) : e; } };
+const wrap = async <T,>(fn: () => Promise<T>): Promise<T> => { try { return await fn(); } catch (e) { throw e instanceof ActionError || e instanceof BrowseError || e instanceof RecordError || e instanceof LeadToolError || e instanceof ProviderError || (e instanceof Error && e.constructor.name === "OfficeError") ? new ToolError(e.message) : e; } };
 // Проверка правки карточки: нужна сама карточка (id или название) и хотя бы одно допустимое поле
 const recordEditCheck = (a: Args, allowed: readonly string[]): Args => {
     const out: Args = {};
@@ -543,7 +544,7 @@ export const TOOLS: AiTool[] = [
         // Переход — не изменение данных, поэтому выполняется сразу, без карточки подтверждения: «открой бухгалтерию»
         // голосом должно просто открыть её. Раздел, на который у человека нет прав, не открываем.
         module: null, write: false,
-        def: { name: "navigate", description: "Open a CRM page now, no confirmation. Sections as in the sidebar: dashboard (home page, «главная»), crm (the CRM section with the deals board — «перейди в CRM / CRM / воронка»), contacts and companies (tabs of CRM; «клиенты» = contacts), tasks, my_company/employees, feed, calendar, chat, mails, documents, finance (accounting), marketing, automation, settings. Finance also takes a tab and, on invoices, a filter (unpaid = «незакрытые счета»). «Склад / остатки / складской учёт» = finance tab products with view=stock (the stock view lives INSIDE the products tab; stock_section picks onhand / docs / reports) — open it directly, never stop on the catalog. If the user says only «CRM» go to crm, NOT dashboard.", parameters: schema({
+        def: { name: "navigate", description: "Open a CRM page now, no confirmation. Sections as in the sidebar: dashboard (home page, «главная»), crm (the CRM section with the deals board — «перейди в CRM / CRM / воронка»), contacts and companies (tabs of CRM; «клиенты» = contacts), tasks, my_company/employees, feed, calendar, chat, mails, documents, finance (accounting), marketing, automation (the Robot Office — «робот-офис», the robots and the automation rules), settings. Finance also takes a tab and, on invoices, a filter (unpaid = «незакрытые счета»). «Склад / остатки / складской учёт» = finance tab products with view=stock (the stock view lives INSIDE the products tab; stock_section picks onhand / docs / reports) — open it directly, never stop on the catalog. If the user says only «CRM» go to crm, NOT dashboard.", parameters: schema({
             section: { type: "string", enum: Object.keys(NAV_SECTIONS), description: "target section key" },
             tab: { type: "string", enum: [...FINANCE_TABS], description: "finance only: tab to open" },
             filter: { type: "string", enum: [...INVOICE_FILTERS], description: "finance → invoices only: which invoice filter to show" },
@@ -1402,6 +1403,44 @@ export const TOOLS: AiTool[] = [
             return { params: { number: order.number, product: name, qty: String(r.portion), status: "done", cost: String(r.unitCost) }, link: "/crm/finance?tab=production" };
         }),
     },
+    // ─────────── Робот-офис: Айрис — начальник, роботы — сотрудники (lib/office) ───────────
+    {
+        module: "automation", write: false,
+        def: { name: "list_robots", description: "List the robots of the Robot Office — the company's robot employees: id, name, role, skills, autonomy and whether each is busy right now. Use it before delegating, or when the user asks who works in the office / which robots exist.", parameters: schema({}, []) },
+        check: () => ({}),
+        run: (c) => wrap(async () => {
+            const { listRobots, listTasks } = await import("@/lib/office/store");
+            const [robots, tasks] = await Promise.all([listRobots(c.org), listTasks(c.org, 60)]);
+            return { robots: robots.map((r) => ({ id: r.id, name: r.name, role: r.title || r.template, skills: r.skills, autonomy: r.autonomy, enabled: r.enabled, busy: tasks.some((t) => t.robot === r.id && (t.status === "running" || t.status === "queued")), waitingForUser: tasks.filter((t) => t.robot === r.id && t.status === "waiting").length })) };
+        }),
+    },
+    {
+        module: "automation", write: false,
+        def: { name: "delegate_task", description: "Give a task to a robot of the Robot Office; it works in the background and reports on the Robot Office screen (changes to data wait for the owner's confirmation unless the robot is set to act on its own). Pick the robot whose role and skills fit (list_robots). The task must be self-contained: what exactly to do, for whom, with which dates/numbers, in the owner's language. Do not wait for the result.", parameters: schema({ robot: S("robot id or name"), task: S("self-contained instruction for the robot") }, ["robot", "task"]) },
+        check: (a) => ({ robot: need(str(a.robot, 60), "robot"), task: need(str(a.task, 2000), "task") }),
+        run: (c, a) => wrap(async () => {
+            const { listRobots } = await import("@/lib/office/store");
+            const { startOfficeTask } = await import("@/lib/office/runner");
+            const robots = (await listRobots(c.org)).filter((r) => r.enabled);
+            const key = String(a.robot).toLowerCase();
+            const hits = robots.filter((r) => r.id === a.robot || r.name.toLowerCase() === key);
+            const found = hits.length ? hits : robots.filter((r) => r.name.toLowerCase().includes(key) || (r.title || r.template).toLowerCase().includes(key));
+            if (!found.length) throw new ToolError(`No such robot. Robots: ${robots.map((r) => r.name).join(", ") || "none — hire one with hire_robot"}`);
+            if (found.length > 1) throw new ToolError(`Several robots match: ${found.map((r) => r.name).join(", ")}. Use the id.`);
+            const task = await startOfficeTask(c, { robot: found[0].id, text: String(a.task), source: "iris", locale: c.locale });
+            return { delegated_to: found[0].name, task_id: task.id, status: "started — the robot reports on the Robot Office screen" };
+        }),
+    },
+    {
+        module: "automation", write: true,
+        def: { name: "hire_robot", description: "Hire (add) a robot to the Robot Office from the catalog: sales, orders, accounting, dunning (payment reminders), controlling, warehouse, purchasing, production, tasks, mail, hr, marketing, support. Needs user confirmation. Custom robots are created by the user on the Robot Office screen.", parameters: schema({ template: { type: "string", enum: TEMPLATES.map((t) => t.id) }, name: S("robot name, optional (default from the catalog)") }, ["template"]) },
+        check: (a) => { if (!templateById(String(a.template))) throw new ToolError("Unknown robot template"); return { template: String(a.template), name: str(a.name, 40) }; },
+        run: (c, a) => wrap(async () => {
+            const { createRobot } = await import("@/lib/office/store");
+            const r = await createRobot(c.org, { template: String(a.template), name: String(a.name || "") || undefined });
+            return { params: { name: r.name, role: r.template }, link: "/crm/automation" };
+        }),
+    },
     // ─────────── отчёт в PDF на почту ───────────
     {
         module: "inventory", write: true,
@@ -1497,6 +1536,8 @@ export const TOOLS: AiTool[] = [
 // «открой страницу» обходится одним navigate. Если ни одна группа не узнана и это не переход — отдаём всё, как раньше:
 // медленнее, зато ничего не теряется.
 const GROUPS: { re: RegExp; tools: string[] }[] = [
+    { re: /робот|robot|делегир|delegate|поруч|порученн|поручи|офис|офіс|office|нанять|наймі|hire|начальник|boss/i,
+      tools: ["list_robots", "delegate_task", "hire_robot"] },
     { re: /сч[её]т|рахун|rechnung|invoice|оплат|оплач|чек|квитанц|receipt|kasse|pdf|скача|завантаж|download|просроч|неоплач|не закры|незакры|долж|задолж|debt|overdue|unpaid|paid|фискаль|бухгалтер|фінанс|финанс|buchhalt|financ/i,
       tools: ["list_invoices", "finance_summary", "create_invoice", "mark_invoice_paid", "update_invoice", "delete_invoice", "send_invoice", "issue_fiscal_receipt", "download_document", "email_report", "search_contacts"] },
     { re: /предложен|пропозиц|angebot|quote|договор|контракт|vertrag|contract|заказ|замовлен|order|auftrag|подтверд|підтверд|подпиш|підпиш|завершив|so-|отгруз|відвант/i,

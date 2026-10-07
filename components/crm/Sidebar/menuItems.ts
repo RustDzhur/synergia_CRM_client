@@ -8,7 +8,7 @@ import {
 	TbCheckbox,
 	TbCoin,
 	TbSpeakerphone,
-	TbSettingsAutomation,
+	TbRobot,
 	TbArrowUpCircle,
 	TbSettings,
 } from "react-icons/tb";
@@ -62,7 +62,7 @@ export const menuItems: MenuItem[] = [
 	{ key: "tasks_projects", icon: TbCheckbox, href: "/crm/tasks", feature: "tasks", module: "tasks", group: "operations" },
 	{ key: "inventory_management", icon: TbCoin, href: "/crm/finance", feature: "inventory", module: "inventory", group: "operations" },
 	{ key: "marketing", icon: TbSpeakerphone, href: "/crm/marketing", feature: "marketing", module: "marketing", group: "operations" },
-	{ key: "automation", icon: TbSettingsAutomation, href: "/crm/automation", feature: "automation", module: "automation", group: "operations" },
+	{ key: "automation", icon: TbRobot, href: "/crm/automation", feature: "automation", module: "automation", group: "operations" },
 	{ key: "upgrade_plan", icon: TbArrowUpCircle, href: "/crm/upgrade", module: "billing", group: "administration" },
 	{ key: "settings", icon: TbSettings, href: "/crm/settings", module: "settings", group: "administration" },
 ];

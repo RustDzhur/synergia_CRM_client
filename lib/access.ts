@@ -33,7 +33,7 @@ export function moduleForPath(pathname: string, method: string): Module | null {
         case "marketing": case "ads": return "marketing";
         // раздел переименован из «Inventory Management» в «Finance» (склад остался его частью) — модуль в правах тот же
         case "products": case "orders": case "invoices": case "expenses": case "finance": case "quotes": case "contracts": return "inventory";
-        case "automation": return "automation";
+        case "automation": case "office": return "automation"; // Робот-офис живёт в разделе «Автоматизация»
         case "billing": return "billing";
         case "notifications": return null; // свои уведомления видит любой участник
         case "env": return "settings"; // переменные окружения фирмы: смотреть и менять — владелец и администраторы

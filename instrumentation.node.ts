@@ -1,11 +1,19 @@
 import { startTelegramControl } from "./lib/ai/telegramBot";
 import { ingest } from "./lib/errorHub";
+import { startRoutineScheduler } from "./lib/office/routines";
 
 // Только Node-среда (см. instrumentation.ts). Сбой не должен ронять сайт — поэтому try/catch.
 try {
     if (process.env.NEXT_PHASE !== "phase-production-build") startTelegramControl();
 } catch (e) {
     console.error("telegram control did not start:", e instanceof Error ? e.message : e);
+}
+
+// Регулярные задачи роботов Робот-офиса (lib/office/routines.ts): раз в минуту проверяется, чья пора
+try {
+    if (process.env.NEXT_PHASE !== "phase-production-build") startRoutineScheduler();
+} catch (e) {
+    console.error("office scheduler did not start:", e instanceof Error ? e.message : e);
 }
 
 // Сторож ошибок сервера (отчёты — lib/errorHub.ts). Ловит то, что иначе остаётся только в журнале контейнера:
