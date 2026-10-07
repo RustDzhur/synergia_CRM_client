@@ -6,6 +6,7 @@ import { sendToConversation } from "@/lib/channels";
 import { mailAccount, resolveRecipient } from "@/lib/finance/send";
 import { invoicePdfBuffer, orderPdfBuffer, quotePdfBuffer } from "@/lib/finance/document";
 import { prisma } from "@/lib/prisma";
+import { dealScope } from "@/lib/sync/people";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +31,8 @@ const SMS_TYPES = ["twilio", "vonage", "plivo", "telnyx"];
 // Провайдеры, которые шлют SMS: у Twilio это ещё и звонки, поэтому отдельного типа «sms» нет
 const digits = (v: string) => v.replace(/\D/g, "");
 
-async function loadDeal(org: string, id: string) {
-    const deal = await prisma.deal.findFirst({ where: { id, owner: org } });
+async function loadDeal(org: string, id: string, scope: Record<string, unknown> = {}) {
+    const deal = await prisma.deal.findFirst({ where: { id, owner: org, ...scope } });
     if (!deal) return null;
     const contact = deal.contact
         ? await prisma.contact.findFirst({ where: { id: String(deal.contact), owner: org }, select: { id: true, name: true, phone: true, email: true } })
@@ -124,7 +125,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    const found = await loadDeal(user.id, params.id);
+    const found = await loadDeal(user.id, params.id, dealScope(user));
     if (!found) return notFound();
     const contact: ContactRef = found.contact ? { id: found.contact.id, name: found.contact.name, phone: found.contact.phone } : null;
     // Ящик, из которого уйдёт письмо: у фирмы их может быть несколько, и знать это нужно до отправки —
@@ -148,7 +149,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const text = typeof body?.text === "string" ? body.text.trim().slice(0, 2000) : "";
     if (!CHANNELS.includes(channel)) return badRequest("Unknown channel");
     if (!text) return badRequest("Text is required");
-    const found = await loadDeal(user.id, params.id);
+    const found = await loadDeal(user.id, params.id, dealScope(user));
     if (!found) return notFound();
     const { deal, contact } = found;
     const who: ContactRef = contact ? { id: contact.id, name: contact.name, phone: contact.phone } : null;

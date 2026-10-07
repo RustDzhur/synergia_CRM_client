@@ -108,3 +108,24 @@ describe.skipIf(!hasDb)("клиенты: каскад, охрана удален
         expect((await list(asColleague)).length).toBe(1);
     });
 });
+
+describe.skipIf(!hasDb)("закрытая сделка: все маршруты сделки", () => {
+    it("лента, документы, сводка и удаление недоступны тем, кто не видит сделку", async () => {
+        const { org, userId } = await makeOrg();
+        const stage = await prisma.stage.create({ data: { owner: org, name: "S", order: 0 } });
+        const deal = await prisma.deal.create({ data: { owner: org, stage: stage.id, clientName: "Секрет", order: 0, availableToAll: false, activities: [] } });
+        const colleague = await prisma.user.create({ data: { email: `x${Date.now()}@t.local`, firstname: "Игорь", lastname: "Л", passwordHash: "x" } });
+        await prisma.membership.create({ data: { org, user: colleague.id, role: "manager" } });
+        const other = asUser(colleague.id, org);
+        const mine = asUser(userId);
+        const { POST: addNote } = await import("@/app/api/deals/[id]/activities/route");
+        const { GET: docs } = await import("@/app/api/deals/[id]/documents/route");
+        const { GET: overview } = await import("@/app/api/deals/[id]/overview/route");
+        expect((await addNote(other(`/api/deals/${deal.id}/activities`, "POST", { type: "note", text: "x" }), ctx(deal.id))).status).toBe(404);
+        expect((await docs(other(`/api/deals/${deal.id}/documents`), ctx(deal.id))).status).toBe(404);
+        expect((await overview(other(`/api/deals/${deal.id}/overview`), ctx(deal.id))).status).toBe(404);
+        expect((await deleteDeal(other(`/api/deals/${deal.id}`, "DELETE"), ctx(deal.id))).status).toBe(404);
+        expect((await addNote(mine(`/api/deals/${deal.id}/activities`, "POST", { type: "note", text: "x" }), ctx(deal.id))).status).toBe(201);
+        expect(await prisma.deal.count({ where: { id: deal.id } })).toBe(1);
+    });
+});
