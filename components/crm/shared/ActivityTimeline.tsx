@@ -16,7 +16,11 @@ const TITLE_KEY: Record<string, string> = {
 	activity: "activityPlanned", stage: "stageChanged", created: "dealCreated",
 	comment: "typeComment", task: "typeTask", sms: "typeSms", whatsapp: "typeWhatsapp", telegram: "typeTelegram",
 	email: "typeEmail", note: "typeNote", call: "typeCall", schedule: "typeSchedule",
+	payment: "typePayment", invoice: "typeInvoice", quote: "typeQuote", contract: "typeContract", order: "typeOrder", expense: "typeExpense", won: "typeWon",
 };
+
+// записи, которые создаёт сервер из событий бухгалтерии: удалять их из ленты вручную нельзя
+const SYSTEM = new Set(["payment", "invoice", "quote", "contract", "order", "expense", "won"]);
 
 const isToday = (iso: string) => new Date(iso).toDateString() === new Date().toDateString();
 
@@ -55,7 +59,7 @@ export default function ActivityTimeline({ activities, onDelete, withFilter = fa
 									<h3 className="text-13 font-semibold text-[#f1f4ee]">{t(TITLE_KEY[a.type] ?? "typeNote")}</h3>
 									<span className="text-11 text-[#9AA396]">{formatTime(a.createdAt, locale)}</span>
 								</div>
-								{onDelete && a.type !== "stage" && a.type !== "created" && (
+								{onDelete && a.type !== "stage" && a.type !== "created" && !SYSTEM.has(a.type) && (
 									<button
 										type="button"
 										onClick={() => onDelete(a._id)}

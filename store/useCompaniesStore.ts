@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Activity } from "@/types/crm";
+import { deleteWithGuards } from "./deleteGuards";
 import { api, addActivityRequest, removeActivityRequest, NewActivity } from "./crmApi";
 
 // Компании-клиенты (вкладка Companies в CRM) — фирмы, с которыми работает пользователь.
@@ -69,7 +70,7 @@ export const useCompaniesStore = create<CompaniesStore>((set, get) => {
         },
 
         deleteCompanies: async (ids) => {
-            const results = await Promise.all(ids.map((id) => api<{ ok: boolean }>(`/api/companies/${id}`, "DELETE")));
+            const results = await Promise.all(ids.map((id) => deleteWithGuards(`/api/companies/${id}`)));
             const deleted = ids.filter((_, i) => results[i]);
             set({ companies: get().companies.filter((c) => !deleted.includes(c._id)) });
         },

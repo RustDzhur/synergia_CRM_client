@@ -118,6 +118,8 @@ model BankTransaction {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  @@index([org, account, date])
+  @@index([org, matchType])
   @@map("banktransactions")
 }
 
@@ -197,6 +199,7 @@ model Contact {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  @@index([owner, companyId])
   @@map("contacts")
 }
 
@@ -236,6 +239,8 @@ model Contract {
   updatedAt     DateTime  @updatedAt
 
   @@unique([org, number])
+  @@index([org, deal])
+  @@index([org, contact])
   @@map("contracts")
 }
 
@@ -253,6 +258,7 @@ model Conversation {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([owner, contact])
   @@map("conversations")
 }
 
@@ -295,9 +301,14 @@ model Deal {
   externalId     String    @default("")
   market         Json?
   activities     Json?
+  responsibleUser String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  @@index([owner, stage])
+  @@index([owner, contact])
+  @@index([owner, company])
+  @@index([owner, wonAt])
   @@map("deals")
 }
 
@@ -424,6 +435,8 @@ model Expense {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  @@index([org, deal])
+  @@index([org, date])
   @@map("expenses")
 }
 
@@ -652,6 +665,11 @@ model Invoice {
   updatedAt          DateTime  @updatedAt
 
   @@unique([org, number])
+  @@index([org, status, dueDate])
+  @@index([org, deal])
+  @@index([org, contact])
+  @@index([org, company])
+  @@index([org, order])
   @@map("invoices")
 }
 
@@ -736,6 +754,7 @@ model Notification {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([org, createdAt])
   @@map("notifications")
 }
 
@@ -769,6 +788,9 @@ model Order {
   updatedAt          DateTime @updatedAt
 
   @@unique([org, number])
+  @@index([org, deal])
+  @@index([org, contact])
+  @@index([org, status])
   @@map("orders")
 }
 
@@ -915,6 +937,8 @@ model Quote {
   updatedAt     DateTime  @updatedAt
 
   @@unique([org, number])
+  @@index([org, deal])
+  @@index([org, contact])
   @@map("quotes")
 }
 
@@ -1016,6 +1040,8 @@ model StockMovement {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([org, orderId])
+  @@index([org, product])
   @@map("stockmovements")
 }
 
@@ -1072,9 +1098,16 @@ model Task {
   project     String?
   deal        String?
   activities  Json?
+  contact     String?
+  company     String?
+  responsibleUser String?
+  completedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([owner, deal])
+  @@index([owner, completed, deadline])
+  @@index([owner, contact])
   @@map("tasks")
 }
 

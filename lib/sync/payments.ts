@@ -7,6 +7,7 @@ import { applyPayment, statusAfterPayment } from "@/lib/finance/payments";
 import { computeTotals } from "@/lib/finance/totals";
 import { fiscalAdvice, fiscalConfig, fiscalizeInvoice, findFiscal } from "@/lib/finance/fiscal";
 import { logActivity } from "@/lib/sync/feed";
+import { setOrderStatus } from "@/lib/finance/orderStatus";
 import { recordSyncError } from "@/lib/sync/errors";
 
 // Единственная точка, где деньги зачитываются в счёт. Раньше оплата считалась в четырёх местах (кнопка «оплачен»,
@@ -133,15 +134,13 @@ async function afterPayment(org: string, inv: any, ctx: { gross: number; paid: n
     await step("payment.fiscal", () => autoFiscalize(org, inv, gross));
 }
 
-// Заказ, по которому выставлен этот счёт, становится «оплачен» (только из «выставлен счёт»: закрытый и отменённый не трогаем)
+// Заказ, по которому выставлен этот счёт, становится «оплачен» (через общую таблицу переходов, статус пишется в ленту и автоматизацию)
 async function markOrderPaid(org: string, inv: any) {
     if (!inv.order) return;
-    const moved = await prisma.order.updateMany({ where: { id: inv.order, org, status: "invoiced" }, data: { status: "paid" } });
-    if (!moved.count) return;
     const order = await prisma.order.findFirst({ where: { id: inv.order, org } });
-    if (!order) return;
-    await emit(org, { type: "order_status", data: { id: order.id, number: order.number, status: "paid", customerName: order.customerName } });
-    await logActivity(org, { deal: order.deal, contact: order.contact, company: order.company }, { type: "order", text: `Заказ ${order.number} оплачен`, meta: `order:${order.id}`, key: `order-paid:${order.id}` });
+    // закрытый, отменённый и уже оплаченный заказ не трогаем
+    if (!order || !["draft", "confirmed", "fulfilled", "invoiced"].includes(order.status)) return;
+    await setOrderStatus(org, order.id, "paid");
 }
 
 // Сделка выиграна, когда по ней оплачены все счета (черновики и отменённые не считаются). Настройка фирмы

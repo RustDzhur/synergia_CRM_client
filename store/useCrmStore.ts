@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Activity } from "@/types/crm";
+import { failedMessage, lastStageMessage, showError } from "./syncMessages";
 import { api, apiCall, addActivityRequest, removeActivityRequest, NewActivity } from "./crmApi";
 
 export interface Stage {
@@ -109,13 +110,18 @@ export const useCrmStore = create<CrmStore>((set, get) => {
         },
 
         deleteStage: async (id) => {
-            const res = await api<{ ok: boolean }>(`/api/stages/${id}`, "DELETE");
-            if (res) {
-                set({
-                    stages: get().stages.filter((s) => s._id !== id),
-                    deals: get().deals.filter((d) => d.stage !== id), // сервер тоже удалил их сделки — синхронизируем локально
-                });
-            }
+            // Карточки колонки не удаляются, а переносятся в соседнюю (предыдущую, а у первой — следующую)
+            const sorted = [...get().stages].sort((a, b) => a.order - b.order);
+            const index = sorted.findIndex((s) => s._id === id);
+            const inStage = get().deals.filter((d) => d.stage === id);
+            const neighbour = sorted[index - 1] ?? sorted[index + 1];
+            if (inStage.length && !neighbour) { showError(lastStageMessage()); return; }
+            const url = inStage.length ? `/api/stages/${id}?moveTo=${neighbour._id}` : `/api/stages/${id}`;
+            const res = await apiCall<{ ok: boolean }>(url, "DELETE");
+            if (!res.ok) { showError(res.message || failedMessage()); return; }
+            // перечитываем: порядок карточек в целевой колонке и снятые отметки «выиграно» считает сервер
+            set({ stages: get().stages.filter((s) => s._id !== id) });
+            await get().refresh();
         },
 
         // перенос целого столбца влево/вправо: сразу меняем порядок локально (анимацию рисует dnd),

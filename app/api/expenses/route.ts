@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
-import { badRequest, unauthorized } from "@/lib/api";
+import { badRequest, unauthorized, validId } from "@/lib/api";
+import { ownedDeal } from "@/lib/deals";
+import { emit } from "@/lib/automation/emit";
+import { logActivity } from "@/lib/sync/feed";
 import { logAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { defaultCurrency } from "@/lib/finance/settings";
@@ -35,6 +38,13 @@ export async function POST(req: Request) {
     if (!vendor) return badRequest("vendor is required");
     if (!Number.isFinite(amount) || amount < 0) return badRequest("amount must be a non-negative number");
     const date = typeof b.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.date) ? b.date : new Date().toISOString().slice(0, 10);
+    // Ссылки на сделку, заказ и файл чека принимаются, только если они принадлежат этой фирме: чужой id привязать нельзя
+    const [deal, order, receipt] = await Promise.all([
+        b.deal ? ownedDeal(b.deal, user.id) : null,
+        b.order && validId(String(b.order)) ? prisma.order.findFirst({ where: { id: String(b.order), org: user.id }, select: { id: true } }) : null,
+        b.receipt && validId(String(b.receipt)) ? prisma.docItem.findFirst({ where: { id: String(b.receipt), owner: user.id }, select: { id: true } }) : null,
+    ]);
+    if ((b.deal && !deal) || (b.order && !order) || (b.receipt && !receipt)) return badRequest("deal, order or receipt not found");
     const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
     const expense = await prisma.expense.create({
         data: {
@@ -42,12 +52,18 @@ export async function POST(req: Request) {
             category: typeof b.category === "string" ? b.category.trim().slice(0, 100) : "",
             taxRate: Number.isFinite(Number(b.taxRate)) ? Math.min(100, Math.max(0, Number(b.taxRate))) : 0,
             currency: typeof b.currency === "string" && b.currency.trim() ? b.currency.trim().slice(0, 6).toUpperCase() : await defaultCurrency(user.id),
-            deal: b.deal || undefined, order: b.order || undefined, receipt: b.receipt || undefined,
+            deal: deal ?? undefined, order: order ? order.id : undefined, receipt: receipt ? receipt.id : undefined,
             recurring: ["monthly", "yearly"].includes(b.recurring) ? b.recurring : "",
             notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
             createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
         },
     });
     await logAudit({ org: user.id, userId: user.userId, action: "expense.created", entityType: "expense", entityId: expense.id, summary: `Expense ${expense.vendor} — ${expense.amount} ${expense.currency}`, meta: { amount: expense.amount, currency: expense.currency } });
+    // расход по сделке виден в её ленте (и в ленте клиента сделки): иначе маржа сделки менялась бы незаметно
+    if (expense.deal) {
+        const d = await prisma.deal.findFirst({ where: { id: expense.deal, owner: user.id }, select: { id: true, contact: true, company: true } });
+        if (d) await logActivity(user.id, { deal: d.id, contact: d.contact, company: d.company }, { type: "expense", text: `Расход: ${expense.vendor} — ${expense.amount} ${expense.currency}`, meta: `expense:${expense.id}`, key: `expense:${expense.id}` });
+    }
+    await emit(user.id, { type: "expense_created", data: { id: expense.id, vendor: expense.vendor, amount: String(expense.amount), currency: expense.currency, dealId: expense.deal ?? "" } });
     return NextResponse.json(toDTO(expense), { status: 201 });
 }

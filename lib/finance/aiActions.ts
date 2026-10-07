@@ -11,7 +11,7 @@ import { fiscalAdvice, fiscalizeInvoice } from "@/lib/finance/fiscal";
 import { requireMarket } from "@/lib/finance/marketGuard";
 import { nextNumber } from "@/lib/finance/numbering";
 import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
-import { consumeForOrder, releaseForOrder } from "@/lib/finance/stock";
+import { ORDER_STATUSES, OrderStatusError, setOrderStatus as changeOrderStatus } from "@/lib/finance/orderStatus";
 import { ensureSupplyDate } from "@/lib/finance/issue";
 import { prisma } from "@/lib/prisma";
 
@@ -149,25 +149,18 @@ export async function findSupplier(org: string, ref: string) {
 // ── Заказы, предложения, договоры: смена состояния (те же шаги, что кнопки «Підтвердити», «Виставити рахунок» и др.) ──
 const authorOf = async (userId: string) => { const u = await prisma.user.findUnique({ where: { id: userId }, select: { firstname: true, lastname: true } }); return u ? `${u.firstname} ${u.lastname}`.trim() : ""; };
 
-// Снять резерв заказа ровно на то количество, что было зарезервировано (копия releaseReserve из app/api/orders/[id]/route.ts)
-async function releaseReserve(org: string, orderId: string) {
-    const reserved = await prisma.stockMovement.groupBy({ by: ["product"], where: { org, orderId, reason: { in: ["reserve", "reserve_release"] } }, _sum: { qty: true } });
-    for (const row of reserved.filter((r) => (r._sum.qty ?? 0) < 0)) await releaseForOrder(org, orderId, [{ product: row.product, qty: Math.abs(row._sum.qty ?? 0) }]);
-}
-
-export const ORDER_STATUSES = ["draft", "confirmed", "fulfilled", "invoiced", "paid", "closed", "cancelled"] as const;
+export { ORDER_STATUSES };
 
 export async function setOrderStatus(who: Who, ref: string, status: string) {
-    if (!(ORDER_STATUSES as readonly string[]).includes(status)) throw new ActionError("Unknown order status");
     const doc = await findDocument(who.org, "order", ref);
-    const order = await prisma.order.findFirst({ where: { id: doc.id, org: who.org } });
-    if (!order) throw new ActionError("Order not found");
-    if (order.status === status) return { number: order.number, status };
-    if (status === "fulfilled") { await releaseReserve(who.org, order.id); await consumeForOrder(who.org, order.id, (order.items as any) ?? []); } // выдача списывает склад
-    if (status === "cancelled") await releaseReserve(who.org, order.id);
-    const updated = await prisma.order.update({ where: { id: order.id }, data: { status } });
-    await emit(who.org, { type: "order_status", data: { id: updated.id, number: updated.number, status: updated.status, customerName: updated.customerName } });
-    return { number: updated.number, status };
+    try {
+        // Та же функция, что у PATCH /api/orders/:id: таблица переходов и склад в одной транзакции
+        const { order } = await changeOrderStatus(who.org, doc.id, status, { userId: who.userId });
+        return { number: order.number, status: order.status };
+    } catch (e) {
+        if (e instanceof OrderStatusError) throw new ActionError(e.message);
+        throw e;
+    }
 }
 
 export async function invoiceFromOrder(who: Who, ref: string) {
