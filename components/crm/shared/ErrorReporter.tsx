@@ -58,7 +58,8 @@ export default function ErrorReporter() {
                 const res = await nativeFetch(input, init);
                 if (own && path.startsWith("/api/")) {
                     crumb(`${method} ${path} → ${res.status}`);
-                    if (res.status >= 500) send("fetch", `Запрос ${method} ${path} ответил ${res.status}`, "", undefined, { status: res.status, method });
+                    // 502 с пометкой X-Provider-Error — отказ внешнего сервиса (неверный пароль почты, провайдер не отвечает): человек видит текст на экране, поломки у нас нет
+                    if (res.status >= 500 && !res.headers.get("x-provider-error")) send("fetch", `Запрос ${method} ${path} ответил ${res.status}`, "", undefined, { status: res.status, method });
                 }
                 return res;
             } catch (e) {

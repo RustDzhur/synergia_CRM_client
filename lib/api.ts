@@ -41,7 +41,8 @@ export function failure(e: unknown) {
     if (e instanceof ProviderError) {
         // Неверный токен или номер — ошибка человека, молчим; а вот «не отвечает», «таймаут», 5xx у провайдера — поломка снаружи, о ней сообщаем
         if (/timeout|timed out|ECONN|ENOTFOUND|unavailable|недоступ|5\d\d|busy|out of quota/i.test(e.message)) void reportError(e, { where: "внешний сервис: ответ провайдера" });
-        return NextResponse.json({ message: e.message }, { status: 502 });
+        // заголовок говорит браузерному репортёру (ErrorReporter): это ответ внешнего сервиса с понятным текстом для человека, а не поломка приложения
+        return NextResponse.json({ message: e.message }, { status: 502, headers: { "X-Provider-Error": "1" } });
     }
     console.error(e);
     void reportError(e, { where: "ошибка API" });
