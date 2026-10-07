@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { emit } from "@/lib/automation/emit";
 import { logActivity } from "@/lib/sync/feed";
 import { recordSyncError } from "@/lib/sync/errors";
+import { fx } from "@/lib/sync/texts";
 
 // Согласованность клиента с тем, что на него ссылается. Связи в базе — строки без внешних ключей, а в документах
 // и сделках лежат копии имени клиента. Здесь одно место, которое их обновляет при правке клиента и
@@ -86,7 +87,7 @@ export async function propagateContactChange(org: string, before: { id: string; 
         if (changed.includes("name")) {
             await renameCopies(org, "contact", { id: before.id, before: before.name, after: after.name });
             await prisma.conversation.updateMany({ where: { owner: org, contact: before.id, name: before.name }, data: { name: after.name } });
-            await logActivity(org, { contact: before.id }, { type: "note", text: `Имя изменено: «${before.name}» → «${after.name}»`, meta: "rename" });
+            await logActivity(org, { contact: before.id }, { type: "note", text: fx("contact_renamed", { before: before.name, after: after.name }), meta: "rename" });
         }
         await emit(org, { type: "contact_updated", data: { id: before.id, name: after.name, email: after.email ?? "", phone: after.phone ?? "", changed: changed.join(",") } });
     } catch (e) {
@@ -100,7 +101,7 @@ export async function propagateCompanyChange(org: string, before: { id: string; 
         await renameCopies(org, "company", { id: before.id, before: before.name, after: after.name });
         // строка «Компания» в карточках контактов этой фирмы
         await prisma.contact.updateMany({ where: { owner: org, companyId: before.id }, data: { company: after.name } });
-        await logActivity(org, { company: before.id }, { type: "note", text: `Название изменено: «${before.name}» → «${after.name}»`, meta: "rename" });
+        await logActivity(org, { company: before.id }, { type: "note", text: fx("company_renamed", { before: before.name, after: after.name }), meta: "rename" });
         await emit(org, { type: "company_updated", data: { id: before.id, name: after.name, changed: "name" } });
     } catch (e) {
         await recordSyncError(org, "customer.company", e, { id: before.id });

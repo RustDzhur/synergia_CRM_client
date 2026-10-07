@@ -3,6 +3,7 @@ import { notify } from "@/lib/notify";
 import { logDocEvent } from "@/lib/sync/documents";
 import { recordSyncError } from "@/lib/sync/errors";
 import { prisma } from "@/lib/prisma";
+import { fx } from "@/lib/sync/texts";
 
 // Просроченные счета: "sent", срок оплаты в прошлом — переводит в "overdue", сообщает автоматизации, пишет в ленту клиента и
 // уведомляет фирму (по одному разу на счёт, дальше статус уже не "sent" и повторно не попадёт в выборку).
@@ -17,8 +18,8 @@ export async function sweepOverdueInvoices() {
         const org = String(inv.org);
         await emit(org, { type: "invoice_overdue", data: { id: inv.id, number: inv.number, customerName: inv.customerName, dealId: inv.deal ?? "" } });
         try {
-            await logDocEvent(org, inv, "invoice", `Счёт ${inv.number} просрочен`, "overdue");
-            await notify(org, { type: "message", params: { name: inv.customerName || inv.number, channel: "invoice", text: `Счёт ${inv.number} просрочен` }, link: "/crm/finance?tab=invoices", key: `overdue:${inv.id}` });
+            await logDocEvent(org, inv, "invoice", fx("invoice_overdue", { number: inv.number }), "overdue");
+            await notify(org, { type: "message", params: { name: inv.customerName || inv.number, channel: "invoice", text: fx("notif_overdue", { number: inv.number }) }, link: "/crm/finance?tab=invoices", key: `overdue:${inv.id}` });
         } catch (e) {
             await recordSyncError(org, "overdue.notify", e, { id: inv.id });
         }

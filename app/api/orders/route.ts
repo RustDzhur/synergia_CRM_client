@@ -12,6 +12,7 @@ import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal, ownedContract, contactForCustomer, dealForCustomer } from "@/lib/deals";
 import { prisma } from "@/lib/prisma";
 import { logDocEvent } from "@/lib/sync/documents";
+import { fx } from "@/lib/sync/texts";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
         },
     });
     const totals = computeTotals(order.items as any);
-    await logDocEvent(user.id, order, "order", `Заказ ${order.number} создан на ${totals.gross} ${order.currency}`, "created");
+    await logDocEvent(user.id, order, "order", fx("order_created", { number: order.number, amount: totals.gross, currency: order.currency }), "created");
     await emit(user.id, { type: "order_created", data: { id: order.id, number: order.number, customerName: order.customerName, total: String(totals.gross), currency: order.currency } });
     return NextResponse.json(toOrderDTO(order), { status: 201 });
 }

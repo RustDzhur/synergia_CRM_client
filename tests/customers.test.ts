@@ -31,7 +31,7 @@ describe.skipIf(!hasDb)("клиенты: каскад, охрана удален
         expect((await prisma.invoice.findUniqueOrThrow({ where: { id: s.draft.id } })).customerName).toBe("Пётр Иванов");
         expect((await prisma.invoice.findUniqueOrThrow({ where: { id: s.sent.id } })).customerName).toBe("Иван Петров");
         const feed = (await prisma.contact.findUniqueOrThrow({ where: { id: s.contact.id } })).activities as any[];
-        expect(feed.some((a) => a.text.includes("Имя изменено"))).toBe(true);
+        expect(feed.some((a) => a.text.startsWith("@@contact_renamed"))).toBe(true);
     });
 
     it("переименование фирмы обновляет контакты и сделки", async () => {

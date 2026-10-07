@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { MdAccessTimeFilled, MdClose, MdTune } from "react-icons/md";
 import type { Activity } from "@/types/crm";
+import { localizeFx } from "@/utils/fxText";
 import { formatDateTime, formatTime } from "@/utils/crmFormat";
 
 interface Props {
@@ -27,6 +28,7 @@ const isToday = (iso: string) => new Date(iso).toDateString() === new Date().toD
 // Лента записей (новые сверху): «Activity Planned», «Stage Changed», «Deal Created», заметки, комментарии...
 export default function ActivityTimeline({ activities, onDelete, withFilter = false }: Props) {
 	const t = useTranslations("crm");
+	const tx = useTranslations("feedText");
 	const locale = useLocale();
 	const [todayOnly, setTodayOnly] = useState(false);
 
@@ -78,13 +80,13 @@ export default function ActivityTimeline({ activities, onDelete, withFilter = fa
 							)}
 
 							{a.type === "stage" ? (
-								<span className="mt-10 inline-block rounded-50 border border-inkLine px-14 py-5 text-12 text-[#cfd4cb]">{a.text}</span>
+								<span className="mt-10 inline-block rounded-50 border border-inkLine px-14 py-5 text-12 text-[#cfd4cb]">{localizeFx(tx, a.text)}</span>
 							) : a.type === "created" ? (
-								<p className="mt-10 px-16 text-13 text-[#cfd4cb]">{a.text}</p>
+								<p className="mt-10 px-16 text-13 text-[#cfd4cb]">{localizeFx(tx, a.text)}</p>
 							) : a.type === "activity" || a.type === "task" ? (
-								<p className="mt-10 rounded-10 border border-inkLine px-14 py-10 text-13 text-[#cfd4cb]">{a.text}</p>
+								<p className="mt-10 rounded-10 border border-inkLine px-14 py-10 text-13 text-[#cfd4cb]">{localizeFx(tx, a.text)}</p>
 							) : (
-								<p className="mt-10 whitespace-pre-wrap break-words text-13 text-[#cfd4cb]">{a.text}</p>
+								<p className="mt-10 whitespace-pre-wrap break-words text-13 text-[#cfd4cb]">{localizeFx(tx, a.text)}</p>
 							)}
 						</li>
 					))}

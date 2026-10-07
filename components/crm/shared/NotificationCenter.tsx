@@ -24,6 +24,7 @@ const readSent = (): string[] => { try { return JSON.parse(localStorage.getItem(
 // когда подходит или прошёл дедлайн, а также когда наступает напоминание о событии календаря.
 export default function NotificationCenter() {
 	const t = useTranslations("notif");
+	const tx = useTranslations("feedText");
 	const locale = useLocale();
 	const { load, takeFresh, fresh, markRead } = useNotificationStore();
 	const browserOn = useCurrentUserStore((s) => s.user?.notifications?.browser);
@@ -58,7 +59,7 @@ export default function NotificationCenter() {
 	useEffect(() => {
 		if (!fresh.length) return;
 		for (const n of takeFresh()) {
-			const text = notifText(t, n);
+			const text = notifText(t, n, tx);
 			if (n.type === "deadline" || n.type === "event") {
 				setBanner(n);
 				// у события календаря свой перезвон: напоминание о встрече отличается от гудка дедлайна
@@ -84,9 +85,9 @@ export default function NotificationCenter() {
 			{/* Длинный текст (адрес события, длинное имя, ссылка) переносится и внутри слова и не занимает
 			    весь экран: плашка показывает две строки, полный текст — в подсказке при наведении */}
 			<p
-				title={notifText(t, banner)}
+				title={notifText(t, banner, tx)}
 				className={`min-w-0 line-clamp-2 [overflow-wrap:anywhere] text-16 font-medium ${isEvent ? "text-[#f1f4ee]" : "text-[#F4A100]"}`}>
-				{notifText(t, banner)}
+				{notifText(t, banner, tx)}
 			</p>
 			<Link href={`/${locale}${banner.link}`} onClick={() => { markRead([banner.id]); setBanner(null); }} className={`shrink-0 rounded-8 px-16 py-6 text-14 font-medium transition-opacity hover:opacity-80 ${isEvent ? "bg-[#c6ff4d] text-[#0a0c0b]" : "bg-[#F4A100] text-[#1A1509]"}`}>{t("open")}</Link>
 			<button type="button" aria-label={t("dismiss")} onClick={() => { markRead([banner.id]); setBanner(null); }} className={`shrink-0 transition-opacity hover:opacity-[0.7] ${isEvent ? "text-[#c6ff4d]" : "text-[#F4A100]"}`}><MdClose size={22} /></button>

@@ -8,6 +8,7 @@ import { ownedContact, ownedCompany, ownedDeal, contactForCustomer, dealForCusto
 import { prisma } from "@/lib/prisma";
 import { logDocEvent } from "@/lib/sync/documents";
 import { defaultCurrency } from "@/lib/finance/settings";
+import { fx } from "@/lib/sync/texts";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,6 @@ export async function POST(req: Request) {
             createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
         },
     });
-    await logDocEvent(user.id, contract, "contract", `Договор ${contract.number} создан`, "created");
+    await logDocEvent(user.id, contract, "contract", fx("contract_created", { number: contract.number }), "created");
     return NextResponse.json(toContractDTO(contract), { status: 201 });
 }

@@ -10,6 +10,7 @@ import { notify } from "@/lib/notify";
 import { ownedCompany, ownedContact, ownedDeal } from "@/lib/deals";
 import { logActivity } from "@/lib/sync/feed";
 import { resolveResponsible } from "@/lib/sync/people";
+import { fx } from "@/lib/sync/texts";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
@@ -64,18 +65,18 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         const who = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
         const name = who ? `${who.firstname} ${who.lastname}`.trim() : "";
         await logActivity(user.id, { deal: task.deal, contact: task.contact, company: task.company }, {
-            type: "task", text: justCompleted ? `Задача выполнена: ${task.title}${name ? ` (${name})` : ""}` : `Задача снова в работе: ${task.title}`, meta: `task:${task.id}`, key: `task-${justCompleted ? "done" : "reopen"}:${task.id}:${Date.now()}`,
+            type: "task", text: justCompleted ? (name ? fx("task_done_by", { title: task.title, actor: name }) : fx("task_done", { title: task.title })) : fx("task_reopened", { title: task.title }), meta: `task:${task.id}`, key: `task-${justCompleted ? "done" : "reopen"}:${task.id}:${Date.now()}`,
         });
         if (justCompleted) {
             await emit(user.id, { type: "task_completed", data: { id: task.id, title: task.title, responsible: task.responsible ?? "", dealId: task.deal ?? "" } });
             if (task.createdByUser && task.createdByUser !== user.userId) {
-                await notify(user.id, { type: "team", params: { name, text: `Задача выполнена: ${task.title}`.slice(0, 120) }, link: "/crm/tasks", key: `task-done:${task.id}`, user: task.createdByUser });
+                await notify(user.id, { type: "team", params: { name, text: fx("notif_task_done", { title: task.title.slice(0, 100) }) }, link: "/crm/tasks", key: `task-done:${task.id}`, user: task.createdByUser });
             }
         }
     }
     // задачу передали другому человеку
     if (data.responsibleUser && data.responsibleUser !== existing.responsibleUser && data.responsibleUser !== user.userId) {
-        await notify(user.id, { type: "team", params: { name: task.createdBy || "—", text: `Вам поручена задача: ${task.title}`.slice(0, 120) }, link: "/crm/tasks", key: `task-assigned:${task.id}:${data.responsibleUser}`, user: data.responsibleUser });
+        await notify(user.id, { type: "team", params: { name: task.createdBy || "—", text: fx("notif_task_assigned", { title: task.title.slice(0, 100) }) }, link: "/crm/tasks", key: `task-assigned:${task.id}:${data.responsibleUser}`, user: data.responsibleUser });
     }
     return NextResponse.json(toDTO(task));
 }

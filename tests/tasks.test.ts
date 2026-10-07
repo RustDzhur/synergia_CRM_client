@@ -49,7 +49,7 @@ describe.skipIf(!hasDb)("задачи", () => {
         const row = await prisma.task.findUniqueOrThrow({ where: { id: task._id } });
         expect(row.completedAt).not.toBeNull();
         const feed = (await prisma.deal.findUniqueOrThrow({ where: { id: s.deal.id } })).activities as any[];
-        expect(feed.some((a) => a.text.includes("Задача выполнена"))).toBe(true);
+        expect(feed.some((a) => a.text.startsWith("@@task_done"))).toBe(true);
         expect(await prisma.notification.count({ where: { org: s.org, user: s.userId } })).toBe(1);
     });
 

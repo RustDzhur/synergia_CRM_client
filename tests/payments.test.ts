@@ -49,7 +49,7 @@ describe.skipIf(!hasDb)("единый учёт оплаты", () => {
         // лента сделки и контакта
         for (const doc of [await prisma.deal.findUniqueOrThrow({ where: { id: s.deal.id } }), await prisma.contact.findUniqueOrThrow({ where: { id: s.contact.id } })]) {
             const feed = doc.activities as any[];
-            expect(feed.some((a) => a.type === "payment" && a.text.includes("оплачен"))).toBe(true);
+            expect(feed.some((a) => a.type === "payment" && a.text.startsWith("@@payment_full"))).toBe(true);
             expect(feed.every((a) => a._id && a.createdAt)).toBe(true);
         }
         // сделка выиграна, заказ оплачен
@@ -58,6 +58,14 @@ describe.skipIf(!hasDb)("единый учёт оплаты", () => {
         // журнал и уведомление
         expect(await prisma.auditLog.count({ where: { org: s.org, action: "invoice.paid", entityId: s.invoice.id } })).toBe(1);
         expect(await prisma.notification.count({ where: { org: s.org } })).toBe(1);
+    });
+
+    it("«оплачен» без суммы после аванса закрывает остаток, а не прибавляет полную сумму ещё раз", async () => {
+        const s = await scene();
+        await registerPayment(s.org, s.invoice.id, { amount: 40, source: "manual", externalId: "adv" });
+        const r = await registerPayment(s.org, s.invoice.id, { source: "manual", externalId: "rest" });
+        expect(r.ok && r.full).toBe(true);
+        expect((await prisma.invoice.findUniqueOrThrow({ where: { id: s.invoice.id } })).paidAmount).toBe(100);
     });
 
     it("сделка не выигрывается, пока есть неоплаченный счёт", async () => {

@@ -11,6 +11,7 @@ import { notify } from "@/lib/notify";
 import { ownedCompany, ownedContact } from "@/lib/deals";
 import { logActivity } from "@/lib/sync/feed";
 import { resolveResponsible } from "@/lib/sync/people";
+import { fx } from "@/lib/sync/texts";
 
 // Проект задачи: возвращаем только свой — чужой id из запроса игнорируем
 async function ownedProject(id: unknown, org: string) {
@@ -70,9 +71,9 @@ export async function POST(req: Request) {
     await postTask(user.id, user.userId, toDTO(task), responsibleUser); // карточка в ленте фирмы + уведомление коллегам
     // ответственному, если это другой человек, — личное уведомление
     if (responsibleUser && responsibleUser !== user.userId) {
-        await notify(user.id, { type: "team", params: { name: task.createdBy || "—", text: `Вам поручена задача: ${task.title}`.slice(0, 120) }, link: "/crm/tasks", key: `task-assigned:${task.id}:${responsibleUser}`, user: responsibleUser });
+        await notify(user.id, { type: "team", params: { name: task.createdBy || "—", text: fx("notif_task_assigned", { title: task.title.slice(0, 100) }) }, link: "/crm/tasks", key: `task-assigned:${task.id}:${responsibleUser}`, user: responsibleUser });
     }
-    await logActivity(user.id, { deal: task.deal, contact: task.contact, company: task.company }, { type: "task", text: `Задача: ${task.title}${task.deadline ? ` (до ${task.deadline.replace("T", " ")})` : ""}`, meta: `task:${task.id}`, key: `task-created:${task.id}` });
+    await logActivity(user.id, { deal: task.deal, contact: task.contact, company: task.company }, { type: "task", text: task.deadline ? fx("task_created_due", { title: task.title, due: task.deadline.replace("T", " ") }) : fx("task_created", { title: task.title }), meta: `task:${task.id}`, key: `task-created:${task.id}` });
     await emit(user.id, { type: "task_created", data: { id: task.id, title: task.title, responsible: task.responsible ?? "", dealId: task.deal ?? "" } });
     return NextResponse.json(toDTO(task), { status: 201 });
 }

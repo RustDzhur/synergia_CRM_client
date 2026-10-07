@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { emit } from "@/lib/automation/emit";
 import { logDocEvent } from "@/lib/sync/documents";
 import { toQuoteDTO } from "@/lib/finance/dto";
+import { fx } from "@/lib/sync/texts";
 
 // POST /api/quotes/:id/decide — { accepted: boolean }: фиксирует ответ клиента на отправленное предложение.
 // Отдельного события автоматизации на решение клиента нет — тариф на предложении не создаёт ни счёт, ни заказ сам по
@@ -18,7 +19,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!found) return notFound();
     if (found.status !== "sent") return badRequest("Only a sent quote can be accepted or declined");
     const q = await prisma.quote.update({ where: { id: found.id }, data: { status: b.accepted ? "accepted" : "declined" } });
-    await logDocEvent(user.id, q, "quote", b.accepted ? `Предложение ${q.number} принято клиентом` : `Предложение ${q.number} отклонено клиентом`, q.status);
+    await logDocEvent(user.id, q, "quote", fx(b.accepted ? "quote_accepted" : "quote_declined", { number: q.number }), q.status);
     if (b.accepted) await emit(user.id, { type: "quote_accepted", data: { id: q.id, number: q.number, customerName: q.customerName, dealId: q.deal ?? "" } });
     return NextResponse.json(toQuoteDTO(q));
 }

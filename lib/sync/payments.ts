@@ -9,6 +9,7 @@ import { fiscalAdvice, fiscalConfig, fiscalizeInvoice, findFiscal } from "@/lib/
 import { logActivity } from "@/lib/sync/feed";
 import { setOrderStatus } from "@/lib/finance/orderStatus";
 import { recordSyncError } from "@/lib/sync/errors";
+import { fx } from "@/lib/sync/texts";
 
 // Единственная точка, где деньги зачитываются в счёт. Раньше оплата считалась в четырёх местах (кнопка «оплачен»,
 // webhook эквайринга, ассистент Айрис, сверка с банком), и результат у них был разным: банковская оплата не
@@ -56,7 +57,8 @@ export async function registerPayment(org: string, invoiceId: string, input: Pay
         if (existing) return { duplicate: true as const, inv, gross };
         if (!OPEN[input.source].includes(inv.status)) return { closed: true as const, inv };
 
-        const amount = input.amount === undefined ? gross : Math.max(0, Number(input.amount) || 0);
+        // без суммы — весь остаток: «оплачен» после аванса закрывает недостающее, а не прибавляет полную сумму ещё раз
+        const amount = input.amount === undefined ? Math.max(0, Math.round((gross - (Number(inv.paidAmount) || 0)) * 100) / 100) : Math.max(0, Number(input.amount) || 0);
         const { paid, full } = applyPayment(inv, amount);
         // applied — сколько фактически прибавилось к paidAmount (переплата тоже видна: paidAmount может превысить сумму счёта)
         const applied = Math.round((paid - (Number(inv.paidAmount) || 0)) * 100) / 100;
@@ -95,7 +97,7 @@ async function afterPayment(org: string, inv: any, ctx: { gross: number; paid: n
         try { await fn(); } catch (e) { await recordSyncError(org, name, e, { id: inv.id }); }
     };
     const money = `${applied} ${inv.currency}`;
-    const who = input.actor?.name ? ` (${input.actor.name})` : "";
+    const actorName = input.actor?.name ?? "";
 
     await step("payment.audit", () =>
         logAudit({
@@ -109,7 +111,9 @@ async function afterPayment(org: string, inv: any, ctx: { gross: number; paid: n
     await step("payment.feed", () =>
         logActivity(org, { deal: inv.deal, contact: inv.contact, company: inv.company }, {
             type: "payment",
-            text: full ? `Счёт ${inv.number} оплачен полностью: ${paid} ${inv.currency}${who}` : `Счёт ${inv.number}: получено ${money}, оплачено ${paid} из ${gross}${who}`,
+            text: full
+                ? fx(actorName ? "payment_full_by" : "payment_full", { number: inv.number, paid, currency: inv.currency, actor: actorName })
+                : fx(actorName ? "payment_part_by" : "payment_part", { number: inv.number, amount: applied, currency: inv.currency, paid, gross, actor: actorName }),
             meta: `invoice:${inv.id}`,
             key: `pay:${inv.id}:${input.source}:${input.externalId}`,
         }));
@@ -123,7 +127,7 @@ async function afterPayment(org: string, inv: any, ctx: { gross: number; paid: n
     await step("payment.notify", () =>
         notify(org, {
             type: "message",
-            params: { name: inv.customerName || inv.number, channel: input.via || input.source, text: full ? `Счёт ${inv.number} оплачен ${paid} ${inv.currency}` : `Счёт ${inv.number}: получено ${money}` },
+            params: { name: inv.customerName || inv.number, channel: input.via || input.source, text: full ? fx("notif_paid", { number: inv.number, paid, currency: inv.currency }) : fx("notif_part", { number: inv.number, amount: applied, currency: inv.currency }) },
             link: "/crm/finance?tab=invoices",
             key: `pay:${inv.id}:${input.source}:${input.externalId}`,
         }));
@@ -155,7 +159,7 @@ async function winDealIfSettled(org: string, inv: any) {
     if (!won.count) return;
     const deal = await prisma.deal.findFirst({ where: { id: inv.deal, owner: org } });
     if (!deal) return;
-    await logActivity(org, { deal: deal.id, contact: deal.contact, company: deal.company }, { type: "won", text: `Сделка выиграна: все счета оплачены (последний ${inv.number})`, meta: `deal:${deal.id}`, key: `won:${deal.id}` });
+    await logActivity(org, { deal: deal.id, contact: deal.contact, company: deal.company }, { type: "won", text: fx("deal_won_paid", { number: inv.number }), meta: `deal:${deal.id}`, key: `won:${deal.id}` });
     await emit(org, { type: "deal_won", data: { id: deal.id, name: deal.clientName, contactName: deal.contactName, stageId: String(deal.stage), responsible: deal.responsible } });
 }
 
@@ -209,6 +213,6 @@ export async function revertPayment(org: string, invoiceId: string, input: { sou
         org, userId: input.actor?.userId, userName: input.actor?.name, action: "invoice.payment_reverted", entityType: "invoice", entityId: inv.id,
         summary: `Invoice ${inv.number}: payment removed ${amount} ${inv.currency} — ${paid} of ${gross}`, meta: { amount, paid, gross, currency: inv.currency, source: input.source },
     }).catch((e) => recordSyncError(org, "payment.audit", e, { id: inv.id }));
-    await logActivity(org, { deal: inv.deal, contact: inv.contact, company: inv.company }, { type: "payment", text: `Счёт ${inv.number}: платёж ${amount} ${inv.currency} отменён, оплачено ${paid} из ${gross}`, meta: `invoice:${inv.id}`, key: `revert:${inv.id}:${input.externalId}` });
+    await logActivity(org, { deal: inv.deal, contact: inv.contact, company: inv.company }, { type: "payment", text: fx("payment_revert", { number: inv.number, amount, currency: inv.currency, paid, gross }), meta: `invoice:${inv.id}`, key: `revert:${inv.id}:${input.externalId}` });
     return { ok: true as const, invoice: inv, paid, gross };
 }

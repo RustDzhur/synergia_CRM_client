@@ -13,6 +13,7 @@ import { logDocEvent } from "@/lib/sync/documents";
 import { isTemplate } from "@/lib/finance/pdf";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import { numberPrefix } from "@/lib/finance/documents/store";
+import { fx } from "@/lib/sync/texts";
 
 // POST /api/invoices/:id/credit-note — { items?, notes? }: выпускает кредит-ноту (Gutschrift/storno) к отправленному
 // счёту. Номер счёта, однажды выданный, не меняется и не удаляется (§14 UStG) — корректировка оформляется отдельным
@@ -64,7 +65,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         }
         if (Object.keys(fiscalData).length) credit = await prisma.invoice.update({ where: { id: credit.id }, data: fiscalData });
     }
-    await logDocEvent(user.id, credit, "invoice", `Кредит-нота ${credit.number} к счёту ${source.number}`, "created");
+    await logDocEvent(user.id, credit, "invoice", fx("credit_note", { number: credit.number, source: source.number }), "created");
     await emit(user.id, { type: "invoice_credit_note_created", data: { id: credit.id, number: credit.number, customerName: credit.customerName, sourceInvoice: source.number } });
     await logAudit({ org: user.id, userId: user.userId, action: "invoice.credit_note", entityType: "invoice", entityId: credit.id, summary: `Credit note ${credit.number} issued for invoice ${source.number}`, meta: { sourceInvoice: source.number, currency: credit.currency } });
     return NextResponse.json(toInvoiceDTO(credit), { status: 201 });

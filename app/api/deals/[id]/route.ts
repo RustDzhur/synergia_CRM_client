@@ -10,6 +10,7 @@ import { dealScope, resolveResponsible } from "@/lib/sync/people";
 import { logActivity } from "@/lib/sync/feed";
 import { unlinkDeal } from "@/lib/sync/customer";
 import { DEAL_TEXT_FIELDS } from "@/lib/crmFields";
+import { fx } from "@/lib/sync/texts";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
@@ -64,7 +65,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     // этап и выигрыш видны и в ленте клиента: карточка контакта показывает, что происходит с его сделками
     if (stageChanged) await logActivity(user.id, { contact: deal.contact, company: deal.company }, { type: "stage", text: `${deal.clientName}: ${stageName}`, meta: `deal:${deal.id}` });
     if (deal.wonAt && !existing.wonAt) {
-        await logActivity(user.id, { deal: deal.id, contact: deal.contact, company: deal.company }, { type: "won", text: `Сделка выиграна: ${deal.clientName}`, meta: `deal:${deal.id}`, key: `won:${deal.id}:${deal.wonAt.getTime()}` });
+        await logActivity(user.id, { deal: deal.id, contact: deal.contact, company: deal.company }, { type: "won", text: fx("deal_won", { name: deal.clientName }), meta: `deal:${deal.id}`, key: `won:${deal.id}:${deal.wonAt.getTime()}` });
         await emit(user.id, { type: "deal_won", data: { id: deal.id, name: deal.clientName, contactName: deal.contactName, stageId: String(deal.stage), responsible: deal.responsible } });
     }
     if (stageChanged && existing.stage !== deal.stage) await emitDeal(user.id, toDTO(deal), "deal_stage"); // перенос на другой этап запускает правила этого этапа
@@ -80,7 +81,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     // задачи, документы и расходы остаются у клиента, но не ссылаются на удалённую сделку
     await unlinkDeal(user.id, found.id);
     await prisma.deal.deleteMany({ where: { id: found.id, owner: user.id } });
-    await logActivity(user.id, { contact: found.contact, company: found.company }, { type: "note", text: `Сделка удалена: ${found.clientName}`, meta: "deal-deleted" });
+    await logActivity(user.id, { contact: found.contact, company: found.company }, { type: "note", text: fx("deal_deleted", { name: found.clientName }), meta: "deal-deleted" });
 
     return NextResponse.json({ ok: true });
 }

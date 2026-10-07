@@ -15,6 +15,7 @@ import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
 import { ORDER_STATUSES, OrderStatusError, setOrderStatus as changeOrderStatus } from "@/lib/finance/orderStatus";
 import { ensureSupplyDate } from "@/lib/finance/issue";
 import { prisma } from "@/lib/prisma";
+import { fx } from "@/lib/sync/texts";
 
 // Действия бухгалтерии для ассистента Айрис: оплата счёта, отправка клиенту, фискальный чек. Это те же шаги, что
 // делают маршруты app/api/invoices/[id]/{pay,send,fiscal}; здесь они — функции от имени пользователя, без HTTP.
@@ -84,7 +85,7 @@ export async function sendInvoice(who: Who, ref: string, to?: string) {
         throw new ActionError(e instanceof Error ? e.message.slice(0, 300) : "The invoice could not be sent");
     }
     await prisma.invoice.update({ where: { id: inv.id }, data: { status: "sent", sentAt: new Date(), sentTo: recipient.email } });
-    await logDocEvent(who.org, inv, "invoice", `Счёт ${inv.number} отправлен клиенту (${recipient.email})`, "sent");
+    await logDocEvent(who.org, inv, "invoice", fx("invoice_sent", { number: inv.number, email: recipient.email }), "sent");
     await emit(who.org, { type: "invoice_sent", data: { id: inv.id, number: inv.number, customerName: inv.customerName, dealId: inv.deal ?? "" } });
     await logAudit({ org: who.org, userId: who.userId, action: "invoice.sent", entityType: "invoice", entityId: inv.id, summary: `Invoice ${inv.number} emailed to ${recipient.email} (via assistant)`, meta: { currency: inv.currency, to: recipient.email, source: recipient.source } });
     return { number: inv.number, to: recipient.email };
@@ -182,7 +183,7 @@ export async function invoiceFromOrder(who: Who, ref: string) {
         },
     });
     await prisma.order.update({ where: { id: order.id }, data: { invoice: invoice.id, status: "invoiced" } });
-    await logDocEvent(who.org, invoice, "invoice", `Счёт ${invoice.number} выставлен по заказу ${order.number}`, "created");
+    await logDocEvent(who.org, invoice, "invoice", fx("invoice_from_order", { number: invoice.number, order: order.number }), "created");
     await emit(who.org, { type: "order_status", data: { id: order.id, number: order.number, status: "invoiced", customerName: order.customerName } });
     return { number: invoice.number, order: order.number, customerName: invoice.customerName };
 }
@@ -193,7 +194,7 @@ export async function decideQuote(who: Who, ref: string, accepted: boolean) {
     if (!q) throw new ActionError("Quote not found");
     if (q.status !== "sent") throw new ActionError("Only a sent quote can be accepted or declined");
     await prisma.quote.update({ where: { id: q.id }, data: { status: accepted ? "accepted" : "declined" } });
-    await logDocEvent(who.org, q, "quote", accepted ? `Предложение ${q.number} принято клиентом` : `Предложение ${q.number} отклонено клиентом`, accepted ? "accepted" : "declined");
+    await logDocEvent(who.org, q, "quote", fx(accepted ? "quote_accepted" : "quote_declined", { number: q.number }), accepted ? "accepted" : "declined");
     if (accepted) await emit(who.org, { type: "quote_accepted", data: { id: q.id, number: q.number, customerName: q.customerName, dealId: q.deal ?? "" } });
     return { number: q.number, result: accepted ? "accepted" : "declined" };
 }
@@ -208,7 +209,7 @@ export async function quoteToOrder(who: Who, ref: string) {
     const order = await prisma.order.create({ data: { org: who.org, number, contact: quote.contact, company: quote.company, customerName: quote.customerName, deal: quote.deal, items: (quote.items ?? undefined) as any, currency: quote.currency, template: quote.template, createdByName: await authorOf(who.userId) } });
     await prisma.quote.update({ where: { id: quote.id }, data: { order: order.id } });
     const total = ((order.items as any[]) ?? []).reduce((s, it) => s + it.qty * it.unitPrice, 0);
-    await logDocEvent(who.org, order, "order", `Заказ ${order.number} создан из предложения ${quote.number}`, "created");
+    await logDocEvent(who.org, order, "order", fx("order_from_quote", { number: order.number, quote: quote.number }), "created");
     await emit(who.org, { type: "order_created", data: { id: order.id, number: order.number, customerName: order.customerName, total: String(total), currency: order.currency } });
     return { number: order.number, quote: quote.number };
 }
@@ -220,7 +221,7 @@ export async function contractAction(who: Who, ref: string, action: "sign" | "co
     if (action === "sign") {
         if (c.status !== "draft") throw new ActionError("Only a draft contract can be signed");
         const u = await prisma.contract.update({ where: { id: c.id }, data: { status: "active", signedAt: new Date() } });
-        await logDocEvent(who.org, u, "contract", `Договор ${u.number} подписан: ${u.value} ${u.currency}`, "signed");
+        await logDocEvent(who.org, u, "contract", fx("contract_signed", { number: u.number, value: u.value, currency: u.currency }), "signed");
         await emit(who.org, { type: "contract_signed", data: { id: u.id, number: u.number, customerName: u.customerName, value: String(u.value), currency: u.currency, dealId: u.deal ?? "" } });
         await logAudit({ org: who.org, userId: who.userId, action: "contract.signed", entityType: "contract", entityId: u.id, summary: `Contract ${u.number} signed by ${u.customerName} — ${u.value} ${u.currency} (via assistant)`, meta: {} });
     } else if (action === "complete") {

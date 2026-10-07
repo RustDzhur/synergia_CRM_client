@@ -7,6 +7,7 @@ import { logActivity } from "@/lib/sync/feed";
 import { logAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { defaultCurrency } from "@/lib/finance/settings";
+import { fx } from "@/lib/sync/texts";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
     // расход по сделке виден в её ленте (и в ленте клиента сделки): иначе маржа сделки менялась бы незаметно
     if (expense.deal) {
         const d = await prisma.deal.findFirst({ where: { id: expense.deal, owner: user.id }, select: { id: true, contact: true, company: true } });
-        if (d) await logActivity(user.id, { deal: d.id, contact: d.contact, company: d.company }, { type: "expense", text: `Расход: ${expense.vendor} — ${expense.amount} ${expense.currency}`, meta: `expense:${expense.id}`, key: `expense:${expense.id}` });
+        if (d) await logActivity(user.id, { deal: d.id, contact: d.contact, company: d.company }, { type: "expense", text: fx("expense", { vendor: expense.vendor, amount: expense.amount, currency: expense.currency }), meta: `expense:${expense.id}`, key: `expense:${expense.id}` });
     }
     await emit(user.id, { type: "expense_created", data: { id: expense.id, vendor: expense.vendor, amount: String(expense.amount), currency: expense.currency, dealId: expense.deal ?? "" } });
     return NextResponse.json(toDTO(expense), { status: 201 });

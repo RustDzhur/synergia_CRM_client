@@ -28,6 +28,7 @@ const ago = (iso: string) => {
 // а не вниз за пределы экрана.
 export default function Notification({ align = "down" }: { align?: "down" | "up" } = {}) {
 	const t = useTranslations("notif");
+	const tx = useTranslations("feedText");
 	const locale = useLocale();
 	const { items, unread, markRead, markAll } = useNotificationStore();
 	// Панель — своя у каждого колокольчика (шапка и мобильное меню рендерят его одновременно): общий флаг
@@ -49,7 +50,7 @@ export default function Notification({ align = "down" }: { align?: "down" | "up"
 			<>
 				<Icon size={18} className={`mt-2 shrink-0 ${n.type === "deadline" ? "text-[#F4A100]" : "text-[#c6ff4d]"}`} />
 				<span className="min-w-0 flex-1">
-					<span className={`block text-13 [overflow-wrap:anywhere] ${n.read ? "text-[#8c948b]" : "font-medium text-[#f1f4ee]"}`}>{notifText(t, n)}</span>
+					<span className={`block text-13 [overflow-wrap:anywhere] ${n.read ? "text-[#8c948b]" : "font-medium text-[#f1f4ee]"}`}>{notifText(t, n, tx)}</span>
 					<span className="block text-11 text-[#9AA396]">{ago(n.at)}</span>
 				</span>
 				{!n.read && <span className="mt-6 h-6 w-6 shrink-0 rounded-50 bg-[#c6ff4d]" aria-hidden />}

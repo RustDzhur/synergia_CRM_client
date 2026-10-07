@@ -3,6 +3,7 @@ import { emit } from "@/lib/automation/emit";
 import { consumeForOrder, moveStock, releaseForOrder, type Db } from "@/lib/finance/stock";
 import { logActivity } from "@/lib/sync/feed";
 import { recordSyncError } from "@/lib/sync/errors";
+import { fx } from "@/lib/sync/texts";
 
 // Статусы заказа и допустимые переходы между ними. Раньше любой статус можно было поставить поверх любого:
 // заказ «выдан» возвращался в «черновик», склад не пополнялся, а отмена после выдачи не возвращала товар.
@@ -71,7 +72,7 @@ export async function setOrderStatus(org: string, orderId: string, to: string, a
 
     await emit(org, { type: "order_status", data: { id: order.id, number: order.number, status: order.status, customerName: order.customerName } });
     try {
-        await logActivity(org, { deal: order.deal, contact: order.contact, company: order.company }, { type: "order", text: `Заказ ${order.number}: статус «${order.status}»`, meta: `order:${order.id}`, key: `order-status:${order.id}:${order.status}:${Date.now()}` });
+        await logActivity(org, { deal: order.deal, contact: order.contact, company: order.company }, { type: "order", text: fx(`order_status_${order.status}`, { number: order.number }), meta: `order:${order.id}`, key: `order-status:${order.id}:${order.status}:${Date.now()}` });
     } catch (e) {
         await recordSyncError(org, "order.feed", e, { id: order.id });
     }
