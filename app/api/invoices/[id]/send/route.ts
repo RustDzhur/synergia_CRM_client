@@ -12,6 +12,7 @@ import { computeTotals } from "@/lib/finance/totals";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import { ensureSupplyDate } from "@/lib/finance/issue";
 import { prisma } from "@/lib/prisma";
+import { logDocEvent } from "@/lib/sync/documents";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -89,6 +90,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     const saved = await prisma.invoice.update({ where: { id: inv.id }, data: { status: "sent", sentAt: new Date(), sentTo: recipient.email } });
     await emit(user.id, { type: "invoice_sent", data: { id: inv.id, number: inv.number, customerName: inv.customerName, dealId: inv.deal ?? "" } });
+    await logDocEvent(user.id, inv, "invoice", `Счёт ${inv.number} отправлен клиенту (${recipient.email})`, "sent");
     await logAudit({ org: user.id, userId: user.userId, action: "invoice.sent", entityType: "invoice", entityId: inv.id, summary: `Invoice ${inv.number} emailed to ${recipient.email}`, meta: { currency: inv.currency, to: recipient.email, source: recipient.source } });
     return NextResponse.json(toInvoiceDTO(saved));
 }

@@ -6,6 +6,7 @@ import { toContractDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal, contactForCustomer, dealForCustomer } from "@/lib/deals";
 import { prisma } from "@/lib/prisma";
+import { logDocEvent } from "@/lib/sync/documents";
 import { defaultCurrency } from "@/lib/finance/settings";
 
 export const dynamic = "force-dynamic";
@@ -50,5 +51,6 @@ export async function POST(req: Request) {
             createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
         },
     });
+    await logDocEvent(user.id, contract, "contract", `Договор ${contract.number} создан`, "created");
     return NextResponse.json(toContractDTO(contract), { status: 201 });
 }
