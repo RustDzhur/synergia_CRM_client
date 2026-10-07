@@ -4,28 +4,35 @@ import type { Zone } from "@/store/useOfficeStore";
 // Одна клетка пола = 64×32 пикселя на экране. Всё рисуется в одном SVG; масштаб подгоняет браузер (viewBox).
 export const TW = 64;
 export const TH = 32;
-export const WALL_H = 46;
+export const WALL_H = 58;
 export const SKEW = 26.565; // atan(1/2): наклон «экрана» на лицевой стороне предмета
 
 /** Точка пола (x, y) на высоте z → координаты картинки до сдвига сцены. */
 export const project = (x: number, y: number, z = 0): [number, number] => [((x - y) * TW) / 2, ((x + y) * TH) / 2 - z];
 
-export interface RoomDef { zone: Zone; x: number; y: number; w: number; d: number; col: 0 | 1 | 2; row: 0 | 1 }
+export interface RoomDef { zone: Zone; x: number; y: number; w: number; d: number; col: 0 | 1 | 2; row: 0 | 1 | 2 }
+export type CellKind = "zone" | "coffee" | "hub" | "server";
+export interface CellDef { id: string; kind: CellKind; zone: Zone | null; x: number; y: number; w: number; d: number; col: 0 | 1 | 2; row: 0 | 1 | 2 }
 
-export const RW = 6, RD = 5, GAP_X = 2, CORRIDOR = 4;
-// Два ряда по три комнаты, между ними коридор — в нём стоит Айрис.
-const ORDER: Zone[][] = [["marketing", "sales", "service"], ["finance", "warehouse", "office"]];
-export const ROOMS: RoomDef[] = ORDER.flatMap((zones, row) => zones.map((zone, col) => ({ zone, x: col * (RW + GAP_X), y: row === 0 ? 0 : RD + CORRIDOR, w: RW, d: RD, col: col as 0 | 1 | 2, row: row as 0 | 1 })));
-export const GRID_W = 3 * RW + 2 * GAP_X; // 22
-export const GRID_D = 2 * RD + CORRIDOR; // 13
-export const HUB = { x: GRID_W / 2, y: RD + CORRIDOR / 2 - 0.35 }; // центр коридора (чуть ближе к задним комнатам, чтобы стена передних не закрывала Айрис)
-
+// Один большой открытый офис 24×18 клеток: сетка 3×3 «островов» по 8×6. По углам и бокам — рабочие зоны, сверху в центре — кофе-пойнт
+// и лаунж, справа снизу — серверная, в самом центре — Айрис. Между островами свободный пол: по нему ходят роботы.
+export const CELL_W = 8, CELL_D = 6;
+const LAYOUT: [CellKind, Zone | null][][] = [
+    [["zone", "marketing"], ["coffee", null], ["zone", "service"]],
+    [["zone", "sales"], ["hub", null], ["zone", "finance"]],
+    [["zone", "office"], ["zone", "warehouse"], ["server", null]],
+];
+export const CELLS: CellDef[] = LAYOUT.flatMap((rowDef, row) => rowDef.map(([kind, zone], col) => ({ id: zone ?? kind, kind, zone, x: col * CELL_W, y: row * CELL_D, w: CELL_W, d: CELL_D, col: col as 0 | 1 | 2, row: row as 0 | 1 | 2 })));
+export const ROOMS: RoomDef[] = CELLS.filter((c) => c.zone).map((c) => ({ zone: c.zone as Zone, x: c.x, y: c.y, w: c.w, d: c.d, col: c.col, row: c.row }));
+export const GRID_W = 3 * CELL_W; // 24
+export const GRID_D = 3 * CELL_D; // 18
+export const HUB = { x: GRID_W / 2, y: GRID_D / 2 }; // центр офиса
 const PAD = 24;
 // сдвиг, чтобы вся сцена попала в положительные координаты
 export const OFF_X = (GRID_D * TW) / 2 + PAD;
-export const OFF_Y = WALL_H + 56 + PAD;
+export const OFF_Y = WALL_H + 70 + PAD;
 export const SCENE_W = Math.round(((GRID_W + GRID_D) * TW) / 2 + PAD * 2);
-export const SCENE_H = Math.round(((GRID_W + GRID_D) * TH) / 2 + WALL_H + 56 + PAD * 2);
+export const SCENE_H = Math.round(((GRID_W + GRID_D) * TH) / 2 + WALL_H + 70 + PAD * 2 + 28);
 
 /** Точка сцены в итоговых координатах SVG. */
 export const pt = (x: number, y: number, z = 0): [number, number] => {
@@ -36,15 +43,17 @@ export const P = (x: number, y: number, z = 0) => pt(x, y, z).map((n) => n.toFix
 
 export const roomOf = (zone: Zone) => ROOMS.find((r) => r.zone === zone)!;
 
-/** Рабочие места в комнате: стол (левый верхний угол в клетках) и место, где стоит робот. Больше четырёх роботов стоят у входа. */
+/** Шесть столов зоны (левый верхний угол стола относительно острова): сначала центральный у задней стены, потом по бокам, потом второй ряд. */
+const DESKS: [number, number][] = [[3, 1.1], [0.5, 1.1], [5.5, 1.1], [3, 3.7], [0.5, 3.7], [5.5, 3.7]];
+export const DESK_W = 2;
+/** Рабочее место: стол и кресло, на котором сидит робот. Робот без стола (больше шести в зоне) ходит по офису и работает стоя. */
 export function slotFor(room: RoomDef, index: number) {
-    if (index < 4) {
-        const col = index % 2, row = Math.floor(index / 2);
-        const dx = 0.5 + col * 2.9, dy = 1.1 + row * 2.0;
-        return { desk: { x: room.x + dx, y: room.y + dy }, robot: { x: room.x + dx + 2.45, y: room.y + dy + 0.95 }, standing: false };
-    }
-    const k = index - 4;
-    return { desk: null, robot: { x: room.x + 1.2 + (k % 4) * 1.3, y: room.y + room.d - 0.5 - Math.floor(k / 4) * 0.8 }, standing: true };
+    if (index >= DESKS.length) return { desk: null, chair: null, robot: { x: room.x + 4, y: room.y + room.d - 0.8 }, standing: true };
+    const [dx, dy] = DESKS[index];
+    const desk = { x: room.x + dx, y: room.y + dy };
+    // кресло перед столом, чуть правее монитора: монитор остаётся виден
+    const chair = { x: desk.x + 1.05, y: desk.y + 1.2 };
+    return { desk, chair, robot: { x: chair.x + 0.31, y: chair.y + 0.31 }, standing: false };
 }
 
 // ── цвета ──

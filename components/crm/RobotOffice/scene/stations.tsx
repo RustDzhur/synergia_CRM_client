@@ -1,5 +1,5 @@
 import React from "react";
-import { C, tone } from "./iso";
+import { C, P, tone } from "./iso";
 import { IsoBox, Papers, Plane, Shadow } from "./prims";
 
 // Рабочие места по ролям. Стол занимает 2×1 клетки с левым верхним углом (x, y); работающий (on) — экран ярче, бумаги и детали движутся.
@@ -9,17 +9,15 @@ const LIME = "#c6ff4d", TEAL = "#2DDEB6", AMBER = "#F4A100", RED = "#EB5757", GR
 const GREEN_TOP = 16.5; // высота столешницы
 
 function Desk({ x, y, w = 2, h = 14 }: { x: number; y: number; w?: number; h?: number }) {
+	// современный стол: тонкие ножки, плита графитового цвета с салатовой кромкой, подсветка пола под столом
+	const legs: [number, number][] = [[0.05, 0.05], [w - 0.14, 0.05], [0.05, 0.86], [w - 0.14, 0.86]];
 	return (
 		<g>
-			<Shadow x={x} y={y} w={w} d={1} />
-			<IsoBox x={x} y={y} w={w} d={1} h={h} c={C.desk} />
-			<Plane x={x} y={y + 1} z={h}>
-				<rect x="3" y="2.5" width={w * 32 / 2 - 4} height={h - 5} rx="1.5" fill="none" stroke="rgba(255,255,255,0.07)" />
-				<rect x={w * 32 / 2 + 1} y="2.5" width={w * 32 / 2 - 4} height={h - 5} rx="1.5" fill="none" stroke="rgba(255,255,255,0.07)" />
-				<rect x={w * 32 / 4 - 5} y="6" width="10" height="1.8" rx="0.9" fill="rgba(198,255,77,0.35)" />
-				<rect x={w * 32 * 0.75 - 5} y="6" width="10" height="1.8" rx="0.9" fill="rgba(198,255,77,0.35)" />
-			</Plane>
-			<IsoBox x={x - 0.04} y={y - 0.04} z={h} w={w + 0.08} d={1.08} h={2.5} c={C.deskTop} edge="rgba(198,255,77,0.55)" />
+			<Shadow x={x} y={y} w={w} d={1} o={0.42} />
+			<polygon points={[P(x + 0.1, y + 0.1, 0), P(x + w - 0.1, y + 0.1, 0), P(x + w - 0.1, y + 0.9, 0), P(x + 0.1, y + 0.9, 0)].join(" ")} fill="rgba(198,255,77,0.10)" filter="url(#f-soft)" />
+			{legs.map(([dx, dy], i) => <IsoBox key={i} x={x + dx} y={y + dy} w={0.09} d={0.09} h={h} c={C.metal} flat />)}
+			<IsoBox x={x} y={y} z={h - 1} w={w} d={0.1} h={1} c={C.dark} flat />
+			<IsoBox x={x - 0.03} y={y - 0.03} z={h} w={w + 0.06} d={1.06} h={2.5} c={C.deskTop} edge="rgba(198,255,77,0.6)" />
 		</g>
 	);
 }
@@ -162,7 +160,6 @@ export function Station({ kind, x, y, on }: { kind: StationKind; x: number; y: n
 					<Box x={x + 0.15} y={y + 0.12} z={3.3} w={0.55} d={0.6} h={8} /><Box x={x + 0.85} y={y + 0.15} z={3.3} w={0.5} d={0.55} h={6} /><Box x={x + 1.45} y={y + 0.1} z={3.3} w={0.5} d={0.62} h={8.5} />
 					<Box x={x + 0.2} y={y + 0.14} z={15.3} w={0.5} d={0.58} h={7} /><Box x={x + 1.0} y={y + 0.12} z={15.3} w={0.8} d={0.6} h={6} tape={false} />
 					<Box x={x + 0.5} y={y + 0.15} z={27.3} w={0.45} d={0.5} h={6} /><Box x={x + 1.2} y={y + 0.12} z={27.3} w={0.55} d={0.6} h={5} />
-					<IsoBox x={x + 2.35} y={y + 0.15} w={0.95} d={0.9} h={2.4} c={C.shelf} /><Box x={x + 2.45} y={y + 0.2} z={2.4} w={0.45} d={0.5} h={7} /><Box x={x + 2.95 - 0.05} y={y + 0.35} z={2.4} w={0.3} d={0.4} h={5} />
 					{on && <g className="sc-pulse"><IsoBox x={x + 0.9} y={y + 0.9} z={2.4} w={0.2} d={0.1} h={0.6} c={tone("#c6ff4d")} /></g>}
 				</g>
 			);
@@ -171,7 +168,7 @@ export function Station({ kind, x, y, on }: { kind: StationKind; x: number; y: n
 				<g>
 					<Desk x={x} y={y} /><Monitor x={x + 0.4} y={y + 0.12} on={on} screen={table} />
 					<IsoBox x={x + 1.55} y={y + 0.5} z={z} w={0.32} d={0.42} h={2.6} c={C.dark} />
-					<Box x={x + 2.2} y={y + 0.15} w={0.7} d={0.7} h={9} /><Box x={x + 2.3} y={y + 0.25} z={9} w={0.5} d={0.5} h={6} /><Box x={x + 2.3} y={y + 0.85} w={0.5} d={0.55} h={6} />
+					<Box x={x + 1.25} y={y + 0.5} z={z} w={0.4} d={0.4} h={4} />
 				</g>
 			);
 		case "production":
@@ -181,7 +178,6 @@ export function Station({ kind, x, y, on }: { kind: StationKind; x: number; y: n
 					<IsoBox x={x + 0.2} y={y + 0.12} z={17.5} w={1.0} d={0.75} h={12} c={C.dark} edge="rgba(198,255,77,0.6)" />
 					<Plane x={x + 0.2} y={y + 0.87} z={29.5}><rect x="2" y="2" width="28" height="9" rx="1" fill={C.screen} /><g transform="translate(9 6.5) scale(0.62)"><Gear on={on} /></g><rect x="17" y="4" width="11" height="1.6" fill={GRAY} /><rect x="17" y="7" width="7" height="1.6" fill={on ? LIME : DIM} /></Plane>
 					<IsoBox x={x + 1.35} y={y + 0.3} z={17.5} w={0.35} d={0.35} h={5} c={C.metal} /><IsoBox x={x + 1.52} y={y + 0.58} z={17.5} w={0.3} d={0.3} h={2.5} c={C.metal} />
-					<IsoBox x={x + 2.15} y={y + 0.2} w={0.7} d={0.6} h={7} c={C.metal} edge="rgba(198,255,77,0.4)" />
 				</g>
 			);
 		case "tasks":
@@ -197,7 +193,6 @@ export function Station({ kind, x, y, on }: { kind: StationKind; x: number; y: n
 				<g>
 					<Desk x={x} y={y} /><Monitor x={x + 0.4} y={y + 0.12} on={on} screen={envelopes} />
 					<IsoBox x={x + 1.5} y={y + 0.4} z={z} w={0.45} d={0.55} h={1.4} c={C.dark} /><Papers x={x + 1.54} y={y + 0.46} z={z + 1.4} n={3} w={0.36} d={0.42} />
-					<IsoBox x={x + 2.2} y={y + 0.15} w={0.42} d={0.42} h={20} c={C.metal} /><IsoBox x={x + 2.3} y={y + 0.5} z={14} w={0.22} d={0.12} h={1.2} c={tone("#c6ff4d")} />
 					{on && <g className="sc-shuffle"><IsoBox x={x + 0.95} y={y + 0.62} z={z + 4} w={0.4} d={0.5} h={0.8} c={C.paper} /></g>}
 				</g>
 			);
@@ -206,17 +201,13 @@ export function Station({ kind, x, y, on }: { kind: StationKind; x: number; y: n
 				<g>
 					<Desk x={x} y={y} /><Monitor x={x + 0.45} y={y + 0.12} on={on} screen={profile} />
 					<IsoBox x={x + 1.5} y={y + 0.5} z={z} w={0.42} d={0.5} h={0.9} c={tone("#F4A100")} /><Papers x={x + 0.1} y={y + 0.55} z={z} n={2} />
-					<IsoBox x={x + 2.2} y={y + 0.1} w={0.6} d={0.7} h={30} c={C.metal} />
-					<Plane x={x + 2.2} y={y + 0.8} z={30}>{[0, 1, 2].map((i) => <g key={i}><rect x="2" y={2.5 + i * 9} width="17" height="7" rx="0.8" fill="none" stroke="rgba(255,255,255,0.18)" /><rect x="7.5" y={5 + i * 9} width="6" height="1.6" rx="0.8" fill="rgba(198,255,77,0.6)" /></g>)}</Plane>
 				</g>
 			);
 		case "marketing":
 			return (
 				<g>
 					<Desk x={x} y={y} /><Monitor x={x + 0.4} y={y + 0.12} on={on} screen={growth} />
-					<IsoBox x={x + 2.05} y={y + 0.12} w={0.06} d={0.06} h={26} c={C.metal} /><IsoBox x={x + 2.95} y={y + 0.12} w={0.06} d={0.06} h={26} c={C.metal} />
-					<IsoBox x={x + 2.0} y={y + 0.14} z={8} w={1.06} d={0.06} h={22} c={C.paper} />
-					<Plane x={x + 2.0} y={y + 0.2} z={30}>{[0, 1, 2, 3].map((i) => <rect key={i} className={on ? "sc-bar" : undefined} style={{ animationDelay: `${i * 0.2}s` }} x={4 + i * 7} y={20 - [6, 11, 8, 15][i]} width="5" height={[6, 11, 8, 15][i]} fill={[TEAL, LIME, AMBER, LIME][i]} opacity="0.85" />)}<rect x="4" y="3" width="14" height="2" fill="rgba(0,0,0,0.22)" /></Plane>
+					<IsoBox x={x + 1.62} y={y + 0.5} z={z} w={0.3} d={0.4} h={2.2} c={C.paper} edge="rgba(198,255,77,0.5)" />
 				</g>
 			);
 		case "support":

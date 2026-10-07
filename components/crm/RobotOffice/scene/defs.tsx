@@ -19,12 +19,12 @@ export default function SceneDefs() {
 			{/* стеклянная стена: светлеет к верху, по краю — неоновая линия */}
 			<linearGradient id="g-glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7fffd4" stopOpacity="0.20" /><stop offset="0.6" stopColor="#2DDEB6" stopOpacity="0.07" /><stop offset="1" stopColor="#c6ff4d" stopOpacity="0.14" /></linearGradient>
 			<linearGradient id="g-sheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff" stopOpacity="0.12" /><stop offset="0.45" stopColor="#fff" stopOpacity="0.02" /><stop offset="1" stopColor="#000" stopOpacity="0.22" /></linearGradient>
-			<linearGradient id="g-floor" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#38453d" /><stop offset="1" stopColor="#222b25" /></linearGradient>
+			<linearGradient id="g-floor" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#4a5850" /><stop offset="1" stopColor="#2c3631" /></linearGradient>
 			<radialGradient id="g-beam" cx="0.5" cy="1" r="0.9"><stop offset="0" stopColor="#c6ff4d" stopOpacity="0.34" /><stop offset="1" stopColor="#c6ff4d" stopOpacity="0" /></radialGradient>
 			<radialGradient id="g-holo" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stopColor="#c6ff4d" stopOpacity="0.40" /><stop offset="0.7" stopColor="#c6ff4d" stopOpacity="0.10" /><stop offset="1" stopColor="#c6ff4d" stopOpacity="0" /></radialGradient>
 			{ROOMS.map((r) => (
 				<React.Fragment key={r.zone}>
-					<radialGradient id={`pool-${r.zone}`} cx="0.5" cy="0.5" r="0.62"><stop offset="0" stopColor={ZONE_LIGHT[r.zone]} stopOpacity="0.34" /><stop offset="1" stopColor={ZONE_LIGHT[r.zone]} stopOpacity="0" /></radialGradient>
+					<radialGradient id={`pool-${r.zone}`} cx="0.5" cy="0.5" r="0.62"><stop offset="0" stopColor={ZONE_LIGHT[r.zone]} stopOpacity="0.26" /><stop offset="1" stopColor={ZONE_LIGHT[r.zone]} stopOpacity="0" /></radialGradient>
 				</React.Fragment>
 			))}
 			{/* робот: корпус, визор, суставы */}

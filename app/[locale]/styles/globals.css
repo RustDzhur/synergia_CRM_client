@@ -415,3 +415,31 @@ body {
 @keyframes sc-dash { to { stroke-dashoffset: -24; } }
 @keyframes sc-walk { from { transform: translateY(0) rotate(-2.5deg); } to { transform: translateY(-3px) rotate(2.5deg); } }
 @media (prefers-reduced-motion: reduce) { .sc-scroll, .sc-bar, .sc-line, .sc-tick, .sc-pop, .sc-spin, .sc-shuffle, .sc-float, .sc-dash, .sc-pulse, .sc-blink, .sc-walk { animation: none !important; } }
+
+/* Робот плана офиса (scene/Bot.tsx): позы и сторона задаются атрибутами предка — data-pose, data-face, data-flip, data-work. */
+.bt-back, .bt-cup { display: none; }
+[data-face="back"] .bt-back { display: inline; }
+[data-face="back"] .bt-front { display: none; }
+[data-pose="coffee"] .bt-cup { display: inline; }
+[data-flip="1"] .bt-flip { transform: scaleX(-1); transform-origin: 40px 50px; }
+.bt-body { animation: rb-bob 5s ease-in-out infinite; }
+[data-pose="walk"] .bt-body { animation: bt-bob 0.42s ease-in-out infinite alternate; }
+[data-pose="walk"] .bt-leg-l { animation: bt-leg 0.42s ease-in-out infinite alternate; }
+[data-pose="walk"] .bt-leg-r { animation: bt-leg 0.42s ease-in-out infinite alternate-reverse; }
+[data-pose="walk"] .bt-arm-l { animation: bt-leg 0.42s ease-in-out infinite alternate-reverse; }
+[data-pose="walk"] .bt-arm-r { animation: bt-leg 0.42s ease-in-out infinite alternate; }
+[data-pose="sit"] .bt-legs, [data-pose="sleep"] .bt-legs { display: none; }
+[data-pose="sit"] .bt-body, [data-pose="sleep"] .bt-body { animation: none; transform: translateY(15px); }
+[data-pose="sit"][data-work="1"] .bt-arm-l { animation: bt-type 0.4s ease-in-out infinite alternate; }
+[data-pose="sit"][data-work="1"] .bt-arm-r { animation: bt-type 0.4s ease-in-out 0.2s infinite alternate-reverse; }
+[data-pose="stand"][data-work="1"] .bt-arm-l { animation: bt-type 0.45s ease-in-out infinite alternate; }
+[data-pose="stand"][data-work="1"] .bt-arm-r { animation: bt-type 0.45s ease-in-out 0.2s infinite alternate-reverse; }
+[data-pose="coffee"] .bt-arm-r { transform: rotate(-128deg); }
+[data-pose="coffee"] .bt-body { animation: none; }
+[data-pose="sleep"] .bt-head { transform: rotate(9deg) translateY(2px); }
+[data-pose="sleep"] .rb-eyes { transform: scaleY(0.12); }
+.bt-steam { animation: rb-pulse 1.6s ease-in-out infinite; }
+@keyframes bt-leg { from { transform: rotate(-24deg); } to { transform: rotate(24deg); } }
+@keyframes bt-bob { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+@keyframes bt-type { from { transform: rotate(-4deg) translateY(0); } to { transform: rotate(7deg) translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .bt-body, .bt-leg, .bt-arm, .bt-steam { animation: none !important; } }

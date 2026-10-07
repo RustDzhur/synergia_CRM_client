@@ -65,21 +65,22 @@ export default function RobotOffice() {
 		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
 			<PageHeader subtitle={t("subtitle")} right={canEdit ? <button type="button" onClick={() => setHireOpen(true)} className="fs-btn fs-btn-primary h-40"><TbPlus size={16} aria-hidden />{t("hire")}</button> : undefined} />
 			<DragProvider onDrop={onDrop}>
-				<div className="flex min-w-0 flex-col gap-12">
-					<BossCard />
-					<div className="flex items-center justify-between gap-12">
-						<p className="min-w-0 truncate px-4 text-11 text-[#6b736a]">{canEdit && robots.length > 0 ? t("dragHint") : ""}</p>
-						<div className="flex shrink-0 rounded-50 border border-inkLine bg-[rgba(255,255,255,0.03)] p-2" role="tablist" aria-label={t("title")}>
-							<button type="button" role="tab" aria-selected={view === "scene"} onClick={() => changeView("scene")} className={seg(view === "scene")}><TbBuildingSkyscraper size={15} aria-hidden />{t("viewScene")}</button>
-							<button type="button" role="tab" aria-selected={view === "list"} onClick={() => changeView("list")} className={seg(view === "list")}><TbLayoutGrid size={15} aria-hidden />{t("viewList")}</button>
+				<div className="grid min-w-0 items-start gap-12 min-[1240px]:grid-cols-[minmax(0,1fr)_340px]">
+					<div className="flex min-w-0 flex-col gap-12">
+						<div className="flex items-center justify-between gap-12">
+							<p className="min-w-0 truncate px-4 text-12 text-[#8c948b]">{canEdit && robots.length > 0 ? t("dragHint") : ""}</p>
+							<div className="flex shrink-0 rounded-50 border border-inkLine bg-[rgba(255,255,255,0.03)] p-2" role="tablist" aria-label={t("title")}>
+								<button type="button" role="tab" aria-selected={view === "scene"} onClick={() => changeView("scene")} className={seg(view === "scene")}><TbBuildingSkyscraper size={15} aria-hidden />{t("viewScene")}</button>
+								<button type="button" role="tab" aria-selected={view === "list"} onClick={() => changeView("list")} className={seg(view === "list")}><TbLayoutGrid size={15} aria-hidden />{t("viewList")}</button>
+							</div>
 						</div>
+						{!loaded ? <div className="fs-card h-[320px] animate-pulse" aria-hidden /> : robots.length === 0 ? <p className="fs-card p-24 text-center text-13 text-[#8c948b]">{t("emptyOffice")}</p> : view === "scene" ? <OfficeScene onSelect={pick} onBoss={focusBoss} /> : <OfficeFloor onSelect={pick} />}
 					</div>
-					{!loaded ? <div className="fs-card h-[320px] animate-pulse" aria-hidden /> : robots.length === 0 ? <p className="fs-card p-24 text-center text-13 text-[#8c948b]">{t("emptyOffice")}</p> : view === "scene" ? (
-						// панель выбранного робота всплывает поверх плана справа (на узком экране — под ним)
-						<OfficeScene onSelect={pick} onBoss={focusBoss} overlay={robot ? <div className="fs-scroll absolute right-12 top-12 z-10 hidden max-h-[calc(100%-24px)] w-[360px] overflow-y-auto rounded-14 border border-[rgba(255,255,255,0.11)] bg-[#161c18] shadow-[0_18px_44px_rgba(0,0,0,0.6)] mp:block"><RobotPanel key={robot.id} robot={robot} onClose={() => select(null)} /></div> : null} />
-					) : <OfficeFloor onSelect={pick} />}
-					{robot && <div ref={panelRef} className={`scroll-mt-16 ${view === "scene" ? "mp:hidden" : ""}`}><RobotPanel key={`b-${robot.id}`} robot={robot} onClose={() => select(null)} /></div>}
-					<TaskBoard wide />
+					{/* справа: поручение Айрис и доска поручений — карточку с доски можно перетащить на робота в офисе; выбранный робот открывается вместо доски */}
+					<div ref={panelRef} className="flex min-w-0 scroll-mt-16 flex-col gap-12">
+						<BossCard />
+						{robot ? <RobotPanel key={robot.id} robot={robot} onClose={() => select(null)} /> : <TaskBoard />}
+					</div>
 				</div>
 				<HireDialog open={hireOpen} onClose={() => setHireOpen(false)} />
 			</DragProvider>
