@@ -1101,6 +1101,7 @@ model Task {
   contact     String?
   company     String?
   responsibleUser String?
+  createdByUser String?
   completedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

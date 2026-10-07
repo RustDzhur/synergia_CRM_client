@@ -9,7 +9,7 @@ let seq = 0;
 export async function makeOrg(role: "owner" | "manager" | "employee" | "viewer" = "owner") {
     const id = `t${Date.now().toString(36)}${(seq++).toString(36)}${Math.random().toString(36).slice(2, 8)}`;
     const user = await prisma.user.create({ data: { id, email: `${id}@test.local`, firstname: "Test", lastname: id, passwordHash: "x" } });
-    await prisma.organization.create({ data: { id, name: `Org ${id}`, ownerUser: id } });
+    await prisma.organization.create({ data: { id, name: `Org ${id}`, ownerUser: id, plan: "professional" } });
     await prisma.membership.create({ data: { org: id, user: id, role } });
     return { org: id, userId: user.id };
 }

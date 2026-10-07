@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
-import { emit } from "@/lib/automation/emit";
 import { sweepEventReminders } from "@/lib/calendar/reminders";
-import { notify, unreadFor, visibleTo } from "@/lib/notify";
+import { unreadFor, visibleTo } from "@/lib/notify";
+import { notifyDeadline, sweepDeadlines } from "@/lib/sync/deadlines";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +16,8 @@ export async function GET(req: Request) {
     await (await import("@/lib/automation")).runDueJobs(user.id).catch(() => undefined);
     // то же и для напоминаний календаря: суточный крон Vercel для минутных напоминаний слишком редок
     await sweepEventReminders(user.id, tzOffset(req)).catch(() => undefined);
+    // сроки задач и сделок — тоже на сервере, адресно ответственному (lib/sync/deadlines.ts)
+    await sweepDeadlines(user.id, tzOffset(req));
     const mine = visibleTo(user.id, user.userId);
     const [items, unread] = await Promise.all([
         prisma.notification.findMany({ where: mine as any, orderBy: { createdAt: "desc" }, take: 50 }),
@@ -46,13 +48,6 @@ export async function POST(req: Request) {
     if (!b || !["task", "deal"].includes(b.kind) || !validId(String(b.id)) || !STAGES.includes(b.stage)) return badRequest("Invalid notification");
     const doc = b.kind === "task" ? await prisma.task.findFirst({ where: { id: b.id, owner: user.id } }) : await prisma.deal.findFirst({ where: { id: b.id, owner: user.id } });
     if (!doc) return notFound();
-    const title = String(b.kind === "task" ? (doc as any).title : (doc as any).clientName).slice(0, 120);
-    const created = await notify(user.id, {
-        type: "deadline",
-        params: { kind: b.kind, title, stage: b.stage },
-        link: b.kind === "task" ? "/crm/tasks" : "/crm/crm",
-        key: `deadline:${b.kind}:${b.id}:${b.stage}:${b.kind === "task" ? (doc as any).deadline : (doc as any).endDate}`, // новый срок — новое уведомление
-    });
-    if (created) await emit(user.id, { type: "deadline", data: { kind: b.kind, title, stage: b.stage, id: String(b.id) } });
+    const created = await notifyDeadline(user.id, b.kind, doc as never, b.stage);
     return NextResponse.json({ created });
 }
