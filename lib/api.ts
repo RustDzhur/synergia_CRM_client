@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { MarketError, ProviderError } from "@/lib/http";
 import { ComplianceError } from "@/lib/finance/compliance";
 import { reportError } from "@/lib/reportError";
-import { wasDenied, wasPlanDenied } from "@/lib/auth";
+import { wasDemoDenied, wasDenied, wasPlanDenied } from "@/lib/auth";
 
 // 403, если пользователь вошёл, но у его роли нет доступа к разделу (или фирма заблокирована); иначе 401.
 // Отдельный код plan — раздел есть, но его нет в тарифе фирмы: интерфейс покажет предложение сменить тариф, а не «нет прав».
 export const unauthorized = (req?: Request) => {
+    if (wasDemoDenied(req)) return NextResponse.json({ message: "Not available in the demo", code: "demo" }, { status: 403 });
     if (wasPlanDenied(req)) return NextResponse.json({ message: "This section is not included in your plan", code: "plan" }, { status: 403 });
     if (wasDenied(req)) return NextResponse.json({ message: "You have no access to this section", code: "forbidden" }, { status: 403 });
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });

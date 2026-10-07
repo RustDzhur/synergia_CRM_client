@@ -40,7 +40,7 @@ export default function BossCard() {
 					<p className="mb-6 text-12 text-[#8c948b]">{t("bossHint")}</p>
 					{canEdit ? (
 						<div className="flex flex-col gap-8 md:flex-row">
-							<textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); } }} rows={2} maxLength={4000} disabled={!ai || robots.length === 0} placeholder={t("bossPlaceholder")} aria-label={tn("automation")} className="fs-field fs-scroll min-h-[56px] flex-1 resize-none p-10 text-13 outline-none disabled:opacity-60" />
+							<textarea id="boss-input" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); } }} rows={2} maxLength={4000} disabled={!ai || robots.length === 0} placeholder={t("bossPlaceholder")} aria-label={tn("automation")} className="fs-field fs-scroll min-h-[56px] flex-1 resize-none p-10 text-13 outline-none disabled:opacity-60" />
 							<button type="button" onClick={() => void send()} disabled={busy || !text.trim() || !ai || robots.length === 0} className="fs-btn fs-btn-primary h-40 w-full shrink-0 px-18 disabled:opacity-50 md:w-auto md:self-stretch">{busy ? "…" : t("send")}</button>
 						</div>
 					) : <p className="text-12 text-[#8c948b]">{t("readOnly")}</p>}

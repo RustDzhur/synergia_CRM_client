@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { ORG_KEY } from "./crmApi";
 
+export const DEMO_KEY = "crm.demo";
+
 // Данные фирмы при регистрации по вкладке «Company»: имя человека там не спрашивают,
 // поэтому аккаунт называется именем фирмы, а реквизиты уходят в настройки бухгалтерии
 export interface SignUpCompany {
@@ -44,7 +46,7 @@ function isExpired(token: string): boolean {
 // Сохранить токен входа; выбранная фирма принадлежит прежнему аккаунту, поэтому сбрасывается
 function saveToken(token: string) {
 	localStorage.setItem("token", token);
-	try { localStorage.removeItem(ORG_KEY); } catch { /* приватный режим */ }
+	try { localStorage.removeItem(ORG_KEY); localStorage.removeItem(DEMO_KEY); } catch { /* приватный режим */ }
 }
 
 interface AuthStore {
@@ -59,6 +61,8 @@ interface AuthStore {
 	/** Подтверждение почты кодом из письма; при успехе человек сразу входит */
 	verifyEmail: (email: string, code: string) => Promise<{ ok: true } | AuthFail>;
 	resendCode: (email: string, locale: string) => Promise<{ ok: true } | AuthFail>;
+	/** Демо без регистрации: сервер отдаёт токен своей заполненной копии фирмы. */
+	startDemo: (locale: string) => Promise<{ ok: true } | { ok: false; code: string }>;
 	logout: () => void;
 }
 
@@ -153,7 +157,32 @@ const useAuthStore = create<AuthStore>((set) => ({
 		}
 	},
 
+	startDemo: async (locale) => {
+		set({ isLoading: true });
+		try {
+			const res = await fetch("/api/auth/demo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ locale }) });
+			const body = (await res.json().catch(() => ({}))) as { token?: string; code?: string };
+			if (!res.ok || !body.token) return { ok: false, code: body.code ?? "generic" };
+			localStorage.setItem("token", body.token);
+			localStorage.setItem(DEMO_KEY, "1");
+			try { localStorage.removeItem(ORG_KEY); } catch { /* приватный режим */ }
+			set({ isAuthenticated: true, authChecked: true });
+			return { ok: true };
+		} catch {
+			return { ok: false, code: "generic" };
+		} finally {
+			set({ isLoading: false });
+		}
+	},
+
 	logout: () => {
+		// выход из демо стирает его копию фирмы на сервере (следующий посетитель получит исходную)
+		try {
+			if (localStorage.getItem(DEMO_KEY)) {
+				void fetch("/api/demo", { method: "DELETE", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, keepalive: true });
+				localStorage.removeItem(DEMO_KEY);
+			}
+		} catch { /* приватный режим */ }
 		localStorage.removeItem("token");
 		// выбранная фирма принадлежит прежнему аккаунту: следующий вход в этом браузере не должен её унаследовать
 		try { localStorage.removeItem(ORG_KEY); } catch { /* приватный режим */ }

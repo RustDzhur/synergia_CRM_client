@@ -3482,7 +3482,7 @@
         "colDone": "Finished",
         "boardEmpty": "No tasks yet. Pick a robot and give it a task, or tell Iris.",
         "clearDone": "Clear finished",
-        "dragHint": "Drag a robot to another room, and a task or a file onto a robot.",
+        "dragHint": "Drag a robot into another room, and a task or a text file onto a robot. Click Iris to give her a task.",
         "emptyZone": "Empty",
         "emptyOffice": "Nobody works here yet. Hire robots from the catalog or create your own.",
         "notConfigured": "AI is not set up on this site yet — the robots cannot work.",
@@ -3652,6 +3652,19 @@
         "tpl_support_s2": "Find customers with unresolved issues",
         "tpl_support_s3": "Prepare a reply to the latest complaint",
         "st_waiting_short": "Needs OK",
-        "fInstructionsDefault": "Leave empty — the robot works by the standard catalog instructions."
+        "fInstructionsDefault": "Leave empty — the robot works by the standard catalog instructions.",
+        "viewScene": "Office",
+        "viewList": "List"
+    },
+    "demo": {
+        "try": "Try the demo",
+        "starting": "Preparing the demo…",
+        "failed": "The demo could not be opened. Please try again in a moment.",
+        "tooMany": "Too many demo requests from your address. Try again in an hour.",
+        "busy": "The demo is busy right now. Try again in a few minutes.",
+        "bannerTitle": "Demo mode.",
+        "bannerText": "This is your own copy with sample data: try, change, delete. After you leave everything returns to its original state.",
+        "bannerRegister": "Create your own account",
+        "bannerExit": "Leave the demo"
     }
 }

@@ -3482,7 +3482,7 @@
         "colDone": "Abgeschlossen",
         "boardEmpty": "Noch keine Aufgaben. Wählen Sie einen Roboter und geben Sie ihm eine Aufgabe oder sagen Sie es Iris.",
         "clearDone": "Erledigte entfernen",
-        "dragHint": "Ziehen Sie einen Roboter in einen anderen Raum, eine Aufgabe oder Datei auf einen Roboter.",
+        "dragHint": "Ziehen Sie einen Roboter in einen anderen Raum, eine Aufgabe oder Textdatei auf einen Roboter. Klicken Sie auf Iris, um ihr eine Aufgabe zu geben.",
         "emptyZone": "Leer",
         "emptyOffice": "Noch niemand im Büro. Stellen Sie Roboter aus dem Katalog ein oder erstellen Sie einen eigenen.",
         "notConfigured": "KI ist auf dieser Seite noch nicht eingerichtet — die Roboter können nicht arbeiten.",
@@ -3652,6 +3652,19 @@
         "tpl_support_s2": "Finde Kunden mit ungelösten Anliegen",
         "tpl_support_s3": "Bereite eine Antwort auf die letzte Beschwerde vor",
         "st_waiting_short": "Wartet auf OK",
-        "fInstructionsDefault": "Leer lassen — der Roboter arbeitet nach der Standardanweisung aus dem Katalog."
+        "fInstructionsDefault": "Leer lassen — der Roboter arbeitet nach der Standardanweisung aus dem Katalog.",
+        "viewScene": "Büro",
+        "viewList": "Liste"
+    },
+    "demo": {
+        "try": "Demo ausprobieren",
+        "starting": "Demo wird vorbereitet…",
+        "failed": "Die Demo konnte nicht geöffnet werden. Bitte versuchen Sie es gleich noch einmal.",
+        "tooMany": "Zu viele Demo-Anfragen von Ihrer Adresse. Versuchen Sie es in einer Stunde erneut.",
+        "busy": "Die Demo ist gerade ausgelastet. Versuchen Sie es in einigen Minuten erneut.",
+        "bannerTitle": "Demo-Modus.",
+        "bannerText": "Das ist Ihre eigene Kopie mit Beispieldaten: ausprobieren, ändern, löschen. Nach dem Verlassen ist alles wieder im Ausgangszustand.",
+        "bannerRegister": "Eigenes Konto erstellen",
+        "bannerExit": "Demo verlassen"
     }
 }

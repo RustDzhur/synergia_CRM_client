@@ -1,4 +1,5 @@
 "use client";
+import DemoButton from "@/components/website/DemoButton";
 import "react";
 import { useTranslations } from "next-intl";
 import { TbArrowRight, TbPlayerPlayFilled } from "react-icons/tb";
@@ -31,6 +32,7 @@ export default function Hero() {
 						{t("ctaPrimary")}
 						<TbArrowRight size={18} />
 					</button>
+					<DemoButton className="fs-btn fs-btn-ghost h-50 flex-1 px-24 text-14 text-[#c6ff4d] sm:flex-none lg:px-26" />
 					<button
 						type="button"
 						onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}

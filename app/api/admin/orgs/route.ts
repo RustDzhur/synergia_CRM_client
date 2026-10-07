@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/admin";
 import { effectivePlan } from "@/lib/billing";
 import { orgFeatures } from "@/lib/features";
+import { DEMO_DOMAIN } from "@/lib/demo/rules";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,9 @@ export async function GET(req: Request) {
         const owners = await prisma.user.findMany({ where: { OR: [{ email: like(q) }, { firstname: like(q) }, { lastname: like(q) }] }, select: { id: true } });
         filter = { OR: [{ name: like(q) }, { ownerUser: { in: owners.map((o) => o.id) } }] };
     }
+    // временные демо-кабинеты посетителей (lib/demo) в списке фирм не нужны
+    const demoIds = (await prisma.user.findMany({ where: { email: { endsWith: `@${DEMO_DOMAIN}` } }, select: { id: true } })).map((u) => u.id);
+    if (demoIds.length) filter = { AND: [filter, { NOT: { ownerUser: { in: demoIds } } }] };
     const orgs = await prisma.organization.findMany({ where: filter as any, orderBy: { createdAt: "desc" }, take: 200 });
     const owners = await prisma.user.findMany({ where: { id: { in: orgs.map((o) => o.ownerUser) } }, select: { id: true, email: true, firstname: true, lastname: true } });
     const counts = await prisma.membership.groupBy({ by: ["org"], where: { org: { in: orgs.map((o) => o.id) } }, _count: { _all: true } });

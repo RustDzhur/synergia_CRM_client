@@ -1,5 +1,6 @@
 import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
+import { demoAiLimit, isDemoEmail } from "@/lib/demo/rules";
 import { prisma } from "@/lib/prisma";
 import { AiCtx, DownloadTarget, FindTarget, NavTarget, ScrollTarget, ToolError, allowedTools, pickTools, targetLabel } from "./tools";
 import { Msg, complete, voiceModel } from "./provider";
@@ -9,6 +10,9 @@ import { loadMemory, memoryBlock } from "./records";
 // Сколько разговоров с ИИ в сутки у фирмы — общий счётчик для чата и автономного шага автоматизации (см. app/config/plans.ts).
 // Можно переопределить переменной AI_DAILY_LIMIT (одно число для всех тарифов) — например, для теста.
 export async function dailyLimit(org: string) {
+    // демо-кабинет: ИИ работает за счёт платформы, поэтому у каждого посетителя только несколько запросов
+    const owner = await prisma.user.findUnique({ where: { id: org }, select: { email: true } }).catch(() => null);
+    if (owner && isDemoEmail(owner.email)) return demoAiLimit();
     if (Number(process.env.AI_DAILY_LIMIT) > 0) return Number(process.env.AI_DAILY_LIMIT);
     const o = await prisma.organization.findUnique({ where: { id: org }, select: { plan: true, planOverride: true, planOverrideUntil: true } });
     return planFor(effectivePlan(o ?? {})).aiDailyRequests;

@@ -1,5 +1,6 @@
 import { startTelegramControl } from "./lib/ai/telegramBot";
 import { ingest } from "./lib/errorHub";
+import { startDemoSweeper } from "./lib/demo";
 import { startRoutineScheduler } from "./lib/office/routines";
 
 // Только Node-среда (см. instrumentation.ts). Сбой не должен ронять сайт — поэтому try/catch.
@@ -14,6 +15,13 @@ try {
     if (process.env.NEXT_PHASE !== "phase-production-build") startRoutineScheduler();
 } catch (e) {
     console.error("office scheduler did not start:", e instanceof Error ? e.message : e);
+}
+
+// Демо-кабинеты (lib/demo): копии, которые посетитель не закрыл выходом, стираются через несколько часов
+try {
+    if (process.env.NEXT_PHASE !== "phase-production-build") startDemoSweeper();
+} catch (e) {
+    console.error("demo sweeper did not start:", e instanceof Error ? e.message : e);
 }
 
 // Сторож ошибок сервера (отчёты — lib/errorHub.ts). Ловит то, что иначе остаётся только в журнале контейнера:

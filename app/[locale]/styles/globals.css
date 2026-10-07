@@ -391,3 +391,27 @@ body {
 @keyframes rb-type { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
 @keyframes rb-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) { .rb *, .rb { animation: none !important; } }
+
+/* Изометрический офис (components/crm/RobotOffice/scene): экраны, бумаги, шестерёнки, провода данных. Всё мягкое; при «уменьшить анимацию» замирает. */
+.sc-scroll { animation: sc-scroll 2.4s steps(7, end) infinite; }
+.sc-bar { transform-box: fill-box; transform-origin: bottom; animation: sc-bar 1.8s ease-in-out infinite; }
+.sc-line { stroke-dasharray: 60; animation: sc-line 3s ease-in-out infinite; }
+.sc-tick { stroke-dasharray: 6; animation: sc-line 2.4s ease-in-out infinite; }
+.sc-pop { transform-box: fill-box; transform-origin: center; animation: sc-pop 2.4s ease-in-out infinite; }
+.sc-spin { animation: sc-spin 3.2s linear infinite; }
+.sc-shuffle { animation: sc-shuffle 1.7s ease-in-out infinite; }
+.sc-float { animation: sc-float 3.4s ease-in-out infinite; }
+.sc-dash { stroke-dashoffset: 0; animation: sc-dash 2.2s linear infinite; }
+.sc-pulse { animation: rb-pulse 1.4s ease-in-out infinite; }
+.sc-blink { animation: rb-pulse 1.9s ease-in-out infinite; }
+.sc-walk { animation: sc-walk 0.34s ease-in-out infinite alternate; }
+@keyframes sc-scroll { from { transform: translateY(0); } to { transform: translateY(-14px); } }
+@keyframes sc-bar { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.55); } }
+@keyframes sc-line { 0% { stroke-dashoffset: 60; } 60%, 100% { stroke-dashoffset: 0; } }
+@keyframes sc-pop { 0%, 100% { transform: scale(1); opacity: 0.55; } 40% { transform: scale(1.06); opacity: 1; } }
+@keyframes sc-spin { to { transform: rotate(360deg); } }
+@keyframes sc-shuffle { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-22px, 11px); } }
+@keyframes sc-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes sc-dash { to { stroke-dashoffset: -24; } }
+@keyframes sc-walk { from { transform: translateY(0) rotate(-2.5deg); } to { transform: translateY(-3px) rotate(2.5deg); } }
+@media (prefers-reduced-motion: reduce) { .sc-scroll, .sc-bar, .sc-line, .sc-tick, .sc-pop, .sc-spin, .sc-shuffle, .sc-float, .sc-dash, .sc-pulse, .sc-blink, .sc-walk { animation: none !important; } }
