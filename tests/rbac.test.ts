@@ -63,3 +63,16 @@ describe.skipIf(!hasDb)("календарь: сроки из других раз
         expect((await GET(owner("/api/calendar/derived?from=x&to=y"))).status).toBe(400);
     });
 });
+
+describe.skipIf(!hasDb)("список сотрудников для выбора ответственного", () => {
+    it("доступен любому участнику, содержит только имена и только своей фирмы", async () => {
+        const mine = await makeOrg();
+        const other = await makeOrg();
+        const employee = await member(mine.org, "employee");
+        const { GET } = await import("@/app/api/people/route");
+        const rows = await (await GET(employee("/api/people"))).json();
+        expect(rows.length).toBe(2);
+        expect(Object.keys(rows[0]).sort()).toEqual(["id", "name"]);
+        expect(rows.some((r: { id: string }) => r.id === other.userId)).toBe(false);
+    });
+});

@@ -37,3 +37,12 @@ describe("тексты ленты на языке интерфейса", () => {
         for (const s of ["draft", "confirmed", "fulfilled", "invoiced", "paid", "closed", "cancelled"]) expect(en[`order_status_${s}`]).toBeTruthy();
     });
 });
+
+describe("тексты для ассистента", () => {
+    it("plainFx раскрывает ключ по английскому словарю", async () => {
+        const { plainFx } = await import("@/lib/sync/texts");
+        expect(plainFx(fx("task_done", { title: "Отчёт" }))).toBe("Task completed: Отчёт");
+        expect(plainFx("обычный текст")).toBe("обычный текст");
+        expect(plainFx(undefined)).toBe("");
+    });
+});

@@ -2,6 +2,7 @@
 import { useTranslations } from "next-intl";
 import type { Deal } from "@/store/useCrmStore";
 import { formatDate } from "@/utils/crmFormat";
+import ResponsibleField from "../../../shared/ResponsibleField";
 import FormField, { fieldClass } from "../../../shared/FormField";
 import { Card, CardHeader, Row, SaveRow, SectionFooter } from "./layout";
 import type { MoreDraft } from "./model";
@@ -36,7 +37,7 @@ export default function MoreCard({ deal, editing, draft, onChange, onToggle, onS
 								<option value="no">{t("no")}</option>
 							</select>
 						</label>
-						<FormField label={t("responsible")} value={draft.responsible} onChange={(e) => onChange({ ...draft, responsible: e.target.value })} wrapperClassName="mb-12" />
+						<ResponsibleField label={t("responsible")} value={draft.responsible} onChange={(responsible) => onChange({ ...draft, responsible })} wrapperClassName="mb-12" />
 						<FormField label={t("utm")} value={draft.utm} onChange={(e) => onChange({ ...draft, utm: e.target.value })} />
 						<SaveRow onSave={onSave} onCancel={onToggle} />
 					</>

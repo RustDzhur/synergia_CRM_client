@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { TbX } from "react-icons/tb";
 import { Task, useTaskStore } from "@/store/useTaskStore";
 import Modal from "../shared/Modal";
+import ResponsibleField from "../shared/ResponsibleField";
 import FormField, { fieldClass } from "../shared/FormField";
 
 interface Props {
@@ -63,7 +64,7 @@ export default function TaskModal({ open, task, onClose }: Props) {
 						/>
 					</label>
 					<FormField label={t("deadline")} type="datetime-local" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
-					<FormField label={t("responsible")} value={form.responsible} onChange={(e) => setForm({ ...form, responsible: e.target.value })} maxLength={100} />
+					<ResponsibleField label={t("responsible")} value={form.responsible} onChange={(responsible) => setForm({ ...form, responsible })} />
 					{/* Новая задача сразу активна; отметить выполненной можно здесь или кружком в списке */}
 					{task && (
 						<label className="flex cursor-pointer items-center gap-10 text-13 text-[#cfd4cb]">
