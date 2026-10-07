@@ -159,6 +159,13 @@ export async function sendFromAccount(d: Doc, msg: { to: string; subject: string
     return prisma.mailMessage.create({ data: { owner, account: d.id, externalId, folder: "sent", from: email, to: msg.to, subject: msg.subject, body: msg.text, at: new Date(), read: true } });
 }
 
+// Отправка без сохранения копии в «Отправленных»: для системных писем платформы (коды подтверждения почты) — код не должен оседать в ящике
+export async function sendRaw(d: Doc, msg: { to: string; subject: string; text: string }): Promise<void> {
+    if (!isOAuth(d)) await sendSmtp(imapConfig(d), msg);
+    else if ((d.config as any).vendor === "google") await sendGmail(await accessToken(d), { from: (d.config as any).email, ...msg });
+    else await sendOutlook(await accessToken(d), msg);
+}
+
 // Тело письма у провайдера: нужно для писем, загруженных до того, как мы начали хранить HTML,
 // и для писем, у которых текст пришёл обрезанным. Результат кладём в запись — второй раз не тянем.
 export async function fetchMailBody(d: Doc, externalId: string): Promise<{ html: string; text: string }> {

@@ -1080,6 +1080,7 @@ model User {
   email         String   @unique
   platformAdmin Boolean  @default(false)
   passwordHash  String
+  emailVerified DateTime?
   avatarUrl     String   @default("")
   phone         String   @default("")
   position      String   @default("")
@@ -1111,4 +1112,18 @@ model Warehouse {
   updatedAt DateTime @updatedAt
 
   @@map("warehouses")
+}
+
+// Код подтверждения почты при регистрации: хранится только хеш, живёт 15 минут, не больше 5 попыток ввода
+model EmailCode {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  sends     Int      @default(1)
+  sentAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@map("emailcodes")
 }

@@ -44,6 +44,7 @@ export default function OrgsTable({ orgs, query, onQuery, onPatch, onFeatures }:
 								<td className="px-12 py-10 text-13 text-[#9AA396]">{day(o.createdAt)}</td>
 								<td className="px-12 py-10">
 									<div className="flex flex-wrap gap-8">
+										<button type="button" onClick={() => onPatch(o.id, { promo: !o.promoUntil })} className={`text-12 hover:underline ${o.promoUntil ? "text-[#ffc857]" : "text-[#2DDEB6]"}`}>{o.promoUntil ? t("promoRevoke", { date: day(o.promoUntil) }) : t("promoGrant")}</button>
 										<button type="button" onClick={() => onFeatures(o)} className="text-12 text-[#c6ff4d] hover:underline">{t("features")}</button>
 										<button type="button" onClick={() => onPatch(o.id, { blocked: !o.blocked })} className={`text-12 hover:underline ${o.blocked ? "text-[#2DDEB6]" : "text-danger"}`}>{o.blocked ? t("unblock") : t("block")}</button>
 									</div>

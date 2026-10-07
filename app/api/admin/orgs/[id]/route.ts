@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/admin";
 import { badRequest, notFound, validId } from "@/lib/api";
 import { FEATURE_KEYS } from "@/config/plans";
+import { PROMO } from "@/config/promo";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// PATCH /api/admin/orgs/:id — { planOverride?, planOverrideUntil?, blocked?, featureOverrides? }
+// PATCH /api/admin/orgs/:id — { planOverride?, planOverrideUntil?, blocked?, featureOverrides?, promo? }
 // Ручное назначение тарифа (например, после оплаты по счёту) главнее базового тарифа, пока не истекло; blocked закрывает фирме доступ.
 // featureOverrides — { раздел: true | false | null }: отдельные разделы сверх тарифа (true), отключённые вопреки тарифу (false)
 // и возврат к тарифу (null). Разделы из app/config/plans.ts.
@@ -31,6 +32,25 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
             if (Number.isNaN(d.getTime())) return badRequest("Invalid date");
             data.planOverrideUntil = d;
         }
+    }
+    // Программа «первые 500 — год бесплатно»: promo=true открывает полный тариф на PROMO.months месяцев (повторно срок не продлевается),
+    // promo=false снимает отметку и ручной тариф
+    if (typeof b.promo === "boolean") {
+        const billing = (org.billing && typeof org.billing === "object" && !Array.isArray(org.billing) ? org.billing : {}) as Record<string, unknown>;
+        if (b.promo) {
+            if (!billing.promo) {
+                const until = new Date();
+                until.setMonth(until.getMonth() + PROMO.months);
+                billing.promo = { grantedAt: new Date().toISOString(), until: until.toISOString() };
+                data.planOverride = PROMO.plan;
+                data.planOverrideUntil = until;
+            }
+        } else {
+            delete billing.promo;
+            data.planOverride = "";
+            data.planOverrideUntil = null;
+        }
+        data.billing = billing;
     }
     if (typeof b.blocked === "boolean") data.blocked = b.blocked;
     if (b.featureOverrides !== undefined) {

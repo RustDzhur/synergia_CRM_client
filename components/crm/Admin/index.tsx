@@ -14,6 +14,7 @@ import OrgsTable from "./adminParts/OrgsTable";
 import OrdersList from "./adminParts/OrdersList";
 import PayRequisitesCard from "./adminParts/PayRequisitesCard";
 import StatsGrid from "./adminParts/StatsGrid";
+import ServerCard from "./adminParts/ServerCard";
 import SystemCheckCard from "./adminParts/SystemCheckCard";
 import { OrderRow, OrgRow, Summary } from "./adminParts/model";
 
@@ -71,6 +72,7 @@ export default function AdminPanel() {
 		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
 			<PageHeader />
 			<h1 className="mb-16 text-20 font-semibold text-[#f1f4ee]">{t("title")}</h1>
+			<ServerCard />
 			<SystemCheckCard />
 			<PayRequisitesCard />
 			<MetaCard />

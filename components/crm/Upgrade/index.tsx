@@ -6,6 +6,7 @@ import { TbChartBar, TbCircle, TbCircleCheck, TbFileText, TbInfoCircle, TbLock }
 import { FEATURE_KEYS, FeatureKey, PLANS, PlanId, YEAR_MONTHS, limitsLine } from "@/config/plans";
 import { apiCall } from "@/store/crmApi";
 import PageHeader from "@/components/crm/shared/PageHeader";
+import PromoBanner from "@/components/shared/PromoBanner";
 import { localeTag } from "@/utils/dateHelpers";
 import PayModal from "./PayModal";
 
@@ -72,6 +73,7 @@ export default function Upgrade() {
 	return (
 		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
 			<PageHeader />
+			<div className="mx-auto max-w-[1140px]"><PromoBanner compact /></div>
 			<div className="mx-auto mb-20 flex max-w-[1140px] flex-col items-center gap-12">
 				<div className="flex rounded-50 border border-inkLine bg-[rgba(255,255,255,0.03)] p-2" role="tablist" aria-label={t("billingPeriod")}>
 					<button type="button" role="tab" aria-selected={interval === "month"} onClick={() => setInterval("month")} className={seg(interval === "month")}>{t("monthly")}</button>

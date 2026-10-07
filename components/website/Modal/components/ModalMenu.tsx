@@ -10,6 +10,7 @@ import useAuthFormStore from "@/store/useAuthFormStore";
 import { RiArrowGoBackFill } from "react-icons/ri";
 import { IconContext } from "react-icons";
 import { SigninForm, SignupForm } from "../../AuthForms";
+import VerifyForm from "../../AuthForms/VerifyForm";
 import { usePresence } from "@/utils/usePresence";
 
 export default function ModalMenu() {
@@ -62,10 +63,11 @@ export default function ModalMenu() {
 	const { rendered, visible } = usePresence(open, 300);
 	// запоминаем, что показывали, пока модалка открыта — иначе при закрытии
 	// содержимое на секунду «переключается» на меню, пока панель гаснет
-	const viewRef = useRef<"nav" | "signin" | "signup">("nav");
+	const viewRef = useRef<"nav" | "signin" | "signup" | "verify">("nav");
+	const verifyEmail = useAuthFormStore((s) => s.verifyEmail);
 	if (open) {
 		viewRef.current =
-			isSignInFormOpen && !isSignUpFormOpen ? "signin" : isSignUpFormOpen && !isSignInFormOpen ? "signup" : "nav";
+			verifyEmail ? "verify" : isSignInFormOpen && !isSignUpFormOpen ? "signin" : isSignUpFormOpen && !isSignInFormOpen ? "signup" : "nav";
 	}
 	const view = viewRef.current;
 
@@ -104,6 +106,11 @@ export default function ModalMenu() {
 						{view === "signin" && (
 							<div key="signin" className="mb-30 animate-fade-in">
 								<SigninForm />
+							</div>
+						)}
+						{view === "verify" && verifyEmail && (
+							<div key="verify" className="mb-30 animate-fade-in">
+								<VerifyForm email={verifyEmail} />
 							</div>
 						)}
 						{view === "signup" && (

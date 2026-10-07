@@ -5,6 +5,7 @@ import { runRecurringInvoices } from "@/lib/finance/recurring";
 import { sweepPaymentReminders } from "@/lib/finance/reminders";
 import { reportError } from "@/lib/reportError";
 import { syncAllAccounts } from "@/lib/mail";
+import { purgeUnverified } from "@/lib/emailVerification";
 import { startTelegramControl } from "@/lib/ai/telegramBot";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +37,7 @@ export async function GET(req: Request) {
     const reminders = await step("напоминания об оплате", () => sweepPaymentReminders());
     // входящая почта: обновляется и когда страница почты закрыта (раньше — только пока она открыта)
     const mail = await step("почта", () => syncAllAccounts());
+    const purged = await step("неподтверждённые аккаунты", () => purgeUnverified());
     startTelegramControl(); // запасной запуск опроса Telegram, если instrumentation не сработал (ничего не делает, если уже идёт)
-    return NextResponse.json({ ran, overdue, recurring, reminders, mail });
+    return NextResponse.json({ ran, overdue, recurring, reminders, mail, purged });
 }

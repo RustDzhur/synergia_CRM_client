@@ -32,6 +32,7 @@ export async function GET(req: Request) {
                 plan: effectivePlan(o),
                 override: o.planOverride || "",
                 overrideUntil: o.planOverrideUntil ? o.planOverrideUntil.toISOString() : "",
+                promoUntil: ((o.billing as { promo?: { until?: string } } | null)?.promo?.until) ?? "",
                 members: counts.find((c) => c.org === o.id)?._count._all ?? 0,
                 blocked: !!o.blocked,
                 // что реально доступно фирме: набор тарифа плюс ручные переключатели разделов

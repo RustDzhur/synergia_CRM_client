@@ -11,6 +11,7 @@ import { useSiteMenuState } from "@/store/useSiteMenuState";
 import { useLocale, useTranslations } from "next-intl";
 import { FEATURE_KEYS, PLANS, PlanId, YEAR_MONTHS, limitsLine } from "@/config/plans";
 import { PENDING_PLAN_KEY } from "@/config/pendingPlan";
+import PromoBanner from "@/components/shared/PromoBanner";
 
 const ICONS: Record<PlanId, string> = { free, standard: standart, professional };
 
@@ -76,6 +77,7 @@ export default function PaidPlan() {
 			<h2 className="text-24 lg:text-36 font-medium text-center sm:mb-[29px] md:mb-30 lg:mb-[59px] text-white leading-[1.4] tracking-[0.48px] lg:tracking-[1px]">
 				{t("choosePlan")}
 			</h2>
+			<PromoBanner />
 			<div className="flex justify-center md:mb-[32px] lg:mb-[39px] sm:mb-[32px]">
 				<div className="shadow-choosePlan rounded-50 flex w-full md:w-auto items-center justify-center">
 					{tab(t("month"))}

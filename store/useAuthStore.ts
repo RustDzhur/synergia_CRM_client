@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import toast from "react-hot-toast";
 import { ORG_KEY } from "./crmApi";
 
 // Данные фирмы при регистрации по вкладке «Company»: имя человека там не спрашивают,
@@ -17,7 +16,14 @@ export interface SignUpFormData {
 	email: string;
 	password: string;
 	company?: SignUpCompany;
+	/** язык письма с кодом подтверждения */
+	locale?: string;
+	/** «ловушка для ботов»: человек это поле не видит, у него оно всегда пустое */
+	website?: string;
 }
+
+/** Причина отказа от сервера: code — правило или ошибка, field — какое поле неверно, params — числа для текста (минимум символов и т.п.) */
+export interface AuthFail { ok: false; code: string; field?: string; params?: Record<string, string | number>; email?: string }
 
 interface SignInFormData {
 	email: string;
@@ -35,14 +41,24 @@ function isExpired(token: string): boolean {
 	}
 }
 
+// Сохранить токен входа; выбранная фирма принадлежит прежнему аккаунту, поэтому сбрасывается
+function saveToken(token: string) {
+	localStorage.setItem("token", token);
+	try { localStorage.removeItem(ORG_KEY); } catch { /* приватный режим */ }
+}
+
 interface AuthStore {
 	isAuthenticated: boolean;
 	authChecked: boolean;
 	isLoading: boolean;
 	checkAuth: () => void;
-	signIn: (data: SignInFormData) => Promise<boolean>;
-	/** Регистрация: при отказе возвращает код причины (name_required, email_invalid, password_short, email_taken, generic) — текст показывает форма на языке человека */
-	signUp: (data: SignUpFormData) => Promise<{ ok: true } | { ok: false; code: string }>;
+	/** Вход: при отказе возвращает причину (email_required, email_format, password_required, invalid_credentials, too_many, email_unverified, server) — текст показывает форма на языке человека */
+	signIn: (data: SignInFormData) => Promise<{ ok: true } | AuthFail>;
+	/** Регистрация: при отказе возвращает причину и поле; verify=true — на почту ушёл код, нужно его ввести */
+	signUp: (data: SignUpFormData) => Promise<{ ok: true; verify?: boolean; email?: string } | AuthFail>;
+	/** Подтверждение почты кодом из письма; при успехе человек сразу входит */
+	verifyEmail: (email: string, code: string) => Promise<{ ok: true } | AuthFail>;
+	resendCode: (email: string, locale: string) => Promise<{ ok: true } | AuthFail>;
 	logout: () => void;
 }
 
@@ -72,24 +88,17 @@ const useAuthStore = create<AuthStore>((set) => ({
 				body: JSON.stringify(data),
 			});
 			if (!response.ok) {
-				// 401 — неверные данные; 5xx — проблема сервера (не заданы переменные окружения, база недоступна): пароль тут ни при чём
-				const serverProblem = response.status >= 500;
-				toast.error(
-					serverProblem
-						? "Сервер недоступен или не настроен. Откройте /api/health, чтобы увидеть причину."
-						: "Не удалось войти. Проверьте email и пароль."
-				);
-				return false;
+				// 5xx — проблема сервера (не заданы переменные окружения, база недоступна): пароль тут ни при чём
+				if (response.status >= 500) return { ok: false, code: "server" };
+				const body = (await response.json().catch(() => ({}))) as { code?: string; field?: string; email?: string };
+				return { ok: false, code: body.code ?? "invalid_credentials", field: body.field, email: body.email };
 			}
-			const responseData = await response.json();
-			localStorage.setItem("token", responseData.token);
-			try { localStorage.removeItem(ORG_KEY); } catch { /* приватный режим */ }
+			saveToken((await response.json()).token);
 			set({ isAuthenticated: true, authChecked: true });
-			return true;
+			return { ok: true };
 		} catch (error) {
 			console.error("Signin error:", error);
-			toast.error("Не удалось войти. Проверьте email и пароль.");
-			return false;
+			return { ok: false, code: "server" };
 		} finally {
 			set({ isLoading: false });
 		}
@@ -103,17 +112,44 @@ const useAuthStore = create<AuthStore>((set) => ({
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(data),
 			});
+			const body = (await response.json().catch(() => ({}))) as { code?: string; field?: string; params?: Record<string, string | number>; verify?: boolean; email?: string };
 			if (!response.ok) {
-				const body = (await response.json().catch(() => ({}))) as { code?: string };
 				console.error("Signup rejected:", response.status, body.code ?? "");
-				return { ok: false, code: body.code ?? "generic" };
+				return { ok: false, code: body.code ?? "generic", field: body.field, params: body.params };
 			}
-			return { ok: true };
+			return { ok: true, verify: !!body.verify, email: body.email };
 		} catch (error) {
 			console.error("Signup error:", error);
 			return { ok: false, code: "generic" };
 		} finally {
 			set({ isLoading: false });
+		}
+	},
+
+	verifyEmail: async (email, code) => {
+		set({ isLoading: true });
+		try {
+			const response = await fetch("/api/auth/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, code }) });
+			const body = (await response.json().catch(() => ({}))) as { token?: string; code?: string };
+			if (!response.ok || !body.token) return { ok: false, code: body.code ?? "server" };
+			saveToken(body.token);
+			set({ isAuthenticated: true, authChecked: true });
+			return { ok: true };
+		} catch {
+			return { ok: false, code: "server" };
+		} finally {
+			set({ isLoading: false });
+		}
+	},
+
+	resendCode: async (email, locale) => {
+		try {
+			const response = await fetch("/api/auth/resend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, locale }) });
+			if (response.ok) return { ok: true };
+			const body = (await response.json().catch(() => ({}))) as { code?: string };
+			return { ok: false, code: body.code ?? "server" };
+		} catch {
+			return { ok: false, code: "server" };
 		}
 	},
 
