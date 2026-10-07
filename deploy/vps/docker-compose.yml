@@ -56,7 +56,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD в .env}
       POSTGRES_DB: crm
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql
     # наружу порт не публикуем: к базе ходит только приложение внутри сети compose
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U crm_app -d crm"]
