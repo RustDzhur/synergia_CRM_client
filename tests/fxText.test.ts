@@ -27,7 +27,7 @@ describe("тексты ленты на языке интерфейса", () => {
                 const full = path.join(dir, f);
                 if (f === "node_modules" || f === ".next" || f === ".git" || f === "tests") continue;
                 if (statSync(full).isDirectory()) walk(full);
-                else if (/\.(ts|tsx)$/.test(f)) for (const m of readFileSync(full, "utf8").matchAll(/\bfx\(\s*"([a-z_]+)"/g)) used.add(m[1]);
+                else if (/\.(ts|tsx)$/.test(f)) for (const m of Array.from(readFileSync(full, "utf8").matchAll(/\bfx\(\s*"([a-z_]+)"/g))) used.add(m[1]);
             }
         };
         for (const d of ["app", "lib"]) walk(path.join(__dirname, "..", d));
