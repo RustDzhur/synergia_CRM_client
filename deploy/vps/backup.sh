@@ -16,10 +16,12 @@ docker run --rm -v firmspace_crm_storage:/data:ro alpine:3 tar czf - -C /data . 
 # Настройки OmniRoute (ключи провайдеров, без журналов вызовов) и Harness (том настроек, .env агентов, папки агентов без node_modules/кешей)
 tar czf "$DIR/omniroute-$STAMP.tgz" -C "$PWD/omniroute" --exclude='data/call_logs' --exclude='data/logs' . 2>/dev/null || true
 docker run --rm -v dsh_dsh-home:/data:ro alpine:3 tar czf - -C /data . > "$DIR/dsh-home-$STAMP.tgz" || true
-sudo -n tar czf "$DIR/agents-$STAMP.tgz" -C "$HOME" --exclude='node_modules' --exclude='.next' --exclude='.git' agents 2>/dev/null || tar czf "$DIR/agents-$STAMP.tgz" -C "$HOME" --exclude='node_modules' --exclude='.next' --exclude='.git' agents 2>/dev/null || true
-chmod 600 "$DIR"/*-"$STAMP".*
+docker run --rm -v "$HOME/agents":/data:ro alpine:3 tar czf - -C /data --exclude=node_modules --exclude=.next --exclude=.git . > "$DIR/agents-$STAMP.tgz" || true
+chmod 600 "$DIR"/*-"$STAMP".* || true
 
-find "$DIR" -type f \( -name 'crm-*.dump' -o -name 'storage-*.tgz' -o -name 'omniroute-*.tgz' -o -name 'dsh-home-*.tgz' -o -name 'agents-*.tgz' \) -mtime +14 -delete
+find "$DIR" -type f \( -name 'crm-*.dump' -o -name 'storage-*.tgz' -o -name 'omniroute-*.tgz' -o -name 'agents-*.tgz' \) -mtime +14 -delete
+# архив настроек Harness тяжёлый (~1 ГБ) — храним только 3 дня
+find "$DIR" -type f -name 'dsh-home-*.tgz' -mtime +3 -delete
 
 if [ -n "${BACKUP_REMOTE:-}" ]; then
   rclone copy "$DIR" "$BACKUP_REMOTE" --include "*-$STAMP.*"
