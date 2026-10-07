@@ -4,3 +4,13 @@
 	encode zstd gzip
 	reverse_proxy crm:3000
 }
+
+# Панель OmniRoute (раньше omiroute.firmspace.eu на старом сервере); A-запись должна указывать на этот сервер
+omiroute.firmspace.eu {
+	handle /live-ws* {
+		reverse_proxy omniroute:20132
+	}
+	handle {
+		reverse_proxy omniroute:20128
+	}
+}
