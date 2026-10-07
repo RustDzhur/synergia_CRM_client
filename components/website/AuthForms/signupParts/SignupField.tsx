@@ -11,26 +11,29 @@ interface Props {
 	control: Control<FieldValues>;
 	passwordVisible: boolean;
 	onTogglePassword: () => void;
+	/** подсказка под полем (у пароля — «минимум 8 символов») */
+	hint?: string;
 }
 
 const ICON = { size: "22px", color: "#8c948b" };
 
 // Поле формы регистрации: значок слева, у пароля ещё замок и глазок для показа
-export default function SignupField({ field: def, placeholder, control, passwordVisible, onTogglePassword }: Props) {
+export default function SignupField({ field: def, placeholder, control, passwordVisible, onTogglePassword, hint }: Props) {
 	const isPassword = def.type === "password";
 	return (
 		<Controller
 			name={def.name}
 			control={control}
-			rules={{ required: true }}
-			render={({ field }) => (
+			rules={{ required: true, ...(isPassword ? { minLength: 8 } : {}), ...(def.type === "email" ? { pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ } : {}) }}
+			render={({ field, fieldState }) => (
 				<div className="relative">
 					<input
 						{...field}
 						type={isPassword && passwordVisible ? "text" : def.type}
 						placeholder={placeholder}
-						className="pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18"
+						className={`pl-50 pr-20 py-14 w-[100%] rounded-8 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18 ${fieldState.error ? "!border-[#eb5757]" : ""}`}
 					/>
+					{hint && <p className="-mt-12 mb-14 pl-4 text-left text-12 text-[#8c948b]">{hint}</p>}
 					<div className="absolute top-17 left-20">
 						<IconContext.Provider value={ICON}>
 							{isPassword ? passwordVisible ? <IoIosUnlock /> : <IoIosLock /> : def.Icon && <def.Icon />}

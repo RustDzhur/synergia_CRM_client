@@ -16,12 +16,14 @@ export async function POST(req: Request) {
         const { firstname, lastname, email, password } = body as Record<string, unknown>;
         const firm = (body.company ?? null) as CompanyInput | null;
         const companyName = text(firm?.name, 80);
-        if (!text(firstname) || !text(email) || !password || String(password).length < 8 || (!text(lastname) && !companyName)) {
-            return NextResponse.json({ message: "Invalid data" }, { status: 400 });
-        }
+        // причина отказа уходит в code: форма показывает человеку понятный текст на его языке, а не общее «не удалось»
+        const bad = (code: string) => NextResponse.json({ message: "Invalid data", code }, { status: 400 });
+        if (!text(firstname) || (!text(lastname) && !companyName)) return bad("name_required");
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text(email, 200))) return bad("email_invalid");
+        if (!password || String(password).length < 8) return bad("password_short");
         const normalized = String(email).toLowerCase();
         if (await prisma.user.findUnique({ where: { email: normalized } })) {
-            return NextResponse.json({ message: "Email already in use" }, { status: 409 });
+            return NextResponse.json({ message: "Email already in use", code: "email_taken" }, { status: 409 });
         }
         const passwordHash = await bcrypt.hash(String(password), 12);
         const created = await prisma.user.create({

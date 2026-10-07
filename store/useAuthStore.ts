@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import toast from "react-hot-toast";
+import { ORG_KEY } from "./crmApi";
 
 // Данные фирмы при регистрации по вкладке «Company»: имя человека там не спрашивают,
 // поэтому аккаунт называется именем фирмы, а реквизиты уходят в настройки бухгалтерии
@@ -40,7 +41,8 @@ interface AuthStore {
 	isLoading: boolean;
 	checkAuth: () => void;
 	signIn: (data: SignInFormData) => Promise<boolean>;
-	signUp: (data: SignUpFormData) => Promise<boolean>;
+	/** Регистрация: при отказе возвращает код причины (name_required, email_invalid, password_short, email_taken, generic) — текст показывает форма на языке человека */
+	signUp: (data: SignUpFormData) => Promise<{ ok: true } | { ok: false; code: string }>;
 	logout: () => void;
 }
 
@@ -81,6 +83,7 @@ const useAuthStore = create<AuthStore>((set) => ({
 			}
 			const responseData = await response.json();
 			localStorage.setItem("token", responseData.token);
+			try { localStorage.removeItem(ORG_KEY); } catch { /* приватный режим */ }
 			set({ isAuthenticated: true, authChecked: true });
 			return true;
 		} catch (error) {
@@ -100,13 +103,15 @@ const useAuthStore = create<AuthStore>((set) => ({
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(data),
 			});
-			if (!response.ok) throw new Error("Signup failed");
-			toast.success("Регистрация прошла успешно. Теперь войдите.");
-			return true;
+			if (!response.ok) {
+				const body = (await response.json().catch(() => ({}))) as { code?: string };
+				console.error("Signup rejected:", response.status, body.code ?? "");
+				return { ok: false, code: body.code ?? "generic" };
+			}
+			return { ok: true };
 		} catch (error) {
 			console.error("Signup error:", error);
-			toast.error("Не удалось зарегистрироваться.");
-			return false;
+			return { ok: false, code: "generic" };
 		} finally {
 			set({ isLoading: false });
 		}
@@ -114,6 +119,8 @@ const useAuthStore = create<AuthStore>((set) => ({
 
 	logout: () => {
 		localStorage.removeItem("token");
+		// выбранная фирма принадлежит прежнему аккаунту: следующий вход в этом браузере не должен её унаследовать
+		try { localStorage.removeItem(ORG_KEY); } catch { /* приватный режим */ }
 		set({ isAuthenticated: false });
 	},
 }));
