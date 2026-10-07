@@ -1,6 +1,6 @@
 # Проверки на каждый пуш и пул-реквест — то, что раньше делал Vercel перед выкладкой:
 # типы, генерация Prisma-клиента и production-сборка Next.js. Красный CI останавливает
-# автовыкладку на сервер (deploy/autodeploy.sh смотрит статус проверок этого коммита).
+# автовыкладку на сервер: зелёный коммит попадает в ветку deploy (см. задачу publish-deploy ниже), а сервер берёт только её.
 name: CI
 
 on:
@@ -44,3 +44,29 @@ jobs:
 
       - name: Сборка приложения
         run: npm run build
+
+  # Зелёный коммит из main публикуется в ветку deploy: сервер выкладывает ТОЛЬКО её. Так автовыкладке не нужен публичный API
+  # GitHub для проверки статуса CI, и репозиторий можно держать приватным (сервер читает код по read-only deploy-ключу).
+  # Ветка движется только вперёд: более старый коммит, закончивший проверку позже нового, её не откатит.
+  publish-deploy:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: publish-deploy
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Опубликовать проверенный коммит в ветку deploy
+        run: |
+          git fetch origin deploy || true
+          if git rev-parse -q --verify refs/remotes/origin/deploy >/dev/null && ! git merge-base --is-ancestor refs/remotes/origin/deploy HEAD; then
+            echo "deploy уже впереди этого коммита — пропускаю"
+          else
+            git push origin HEAD:refs/heads/deploy
+          fi
