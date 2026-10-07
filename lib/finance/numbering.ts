@@ -7,6 +7,28 @@ import { prisma } from "@/lib/prisma";
 export async function nextNumber(org: string, prefix: string): Promise<string> {
     const year = new Date().getFullYear();
     const key = `${prefix}-${year}`;
+    // Счётчик мог отстать от уже существующих документов (импорт, ручная правка, данные до введения уникального индекса):
+    // занятый номер пропускаем, счётчик при этом сам уходит вперёд. Без этого уникальный индекс превратил бы
+    // такой номер в ошибку 500 при создании документа.
+    for (let attempt = 0; attempt < 200; attempt++) {
+        const number = await bumpCounter(org, key);
+        if (!(await numberTaken(org, number))) return number;
+    }
+    throw new Error("Could not allocate a free document number");
+}
+
+async function numberTaken(org: string, number: string): Promise<boolean> {
+    const where = { org, number };
+    const [a, b, c, d] = await Promise.all([
+        prisma.invoice.findFirst({ where, select: { id: true } }),
+        prisma.quote.findFirst({ where, select: { id: true } }),
+        prisma.order.findFirst({ where, select: { id: true } }),
+        prisma.contract.findFirst({ where, select: { id: true } }),
+    ]);
+    return !!(a || b || c || d);
+}
+
+async function bumpCounter(org: string, key: string): Promise<string> {
     // строка настроек фирмы нужна до увеличения; параллельное создание второго экземпляра безвредно (org уникален)
     await prisma.financeSettings.upsert({ where: { org }, create: { org }, update: {} }).catch(() => undefined);
     const rows = await prisma.$queryRaw<{ seq: number }[]>`
