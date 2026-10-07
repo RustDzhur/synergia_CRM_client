@@ -5,6 +5,7 @@ import { sweepEventReminders } from "@/lib/calendar/reminders";
 import { unreadFor, visibleTo } from "@/lib/notify";
 import { notifyDeadline, sweepDeadlines } from "@/lib/sync/deadlines";
 import { orgRevision } from "@/lib/sync/revision";
+import { recordSyncError } from "@/lib/sync/errors";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -14,9 +15,9 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     // отложенные действия автоматизации выполняются, пока кто-то из фирмы работает в CRM (этот запрос приходит каждые 30 секунд)
-    await (await import("@/lib/automation")).runDueJobs(user.id).catch(() => undefined);
+    await (await import("@/lib/automation")).runDueJobs(user.id).catch((e) => recordSyncError(user.id, "automation.due_jobs", e));
     // то же и для напоминаний календаря: суточный крон Vercel для минутных напоминаний слишком редок
-    await sweepEventReminders(user.id, tzOffset(req)).catch(() => undefined);
+    await sweepEventReminders(user.id, tzOffset(req)).catch((e) => recordSyncError(user.id, "calendar.reminders", e));
     // сроки задач и сделок — тоже на сервере, адресно ответственному (lib/sync/deadlines.ts)
     await sweepDeadlines(user.id, tzOffset(req));
     const mine = visibleTo(user.id, user.userId);

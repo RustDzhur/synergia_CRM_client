@@ -11,6 +11,7 @@ import { toOrderDTO } from "@/lib/finance/dto";
 import { MARKETPLACES, type MarketplaceId } from "@/lib/marketplace";
 import { prisma } from "@/lib/prisma";
 import { dealScope } from "@/lib/sync/people";
+import { recordSyncError } from "@/lib/sync/errors";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -80,7 +81,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
                     order: order.id,
                     notes: `Комісія ${label} ${commission} % за замовлення ${deal.externalId || ""}`.trim(),
                 },
-            }).catch(() => undefined);
+            }).catch((e) => recordSyncError(user.id, "marketplace.commission", e, { id: deal.id }));
         }
 
         await prisma.deal.update({ where: { id: deal.id }, data: { market: { ...market, order: order.id } as any } });
