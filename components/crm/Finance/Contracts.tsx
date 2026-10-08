@@ -16,12 +16,13 @@ import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
 import { marketOf } from "@/lib/finance/market";
 import { defaultContractText } from "@/lib/finance/contractText";
+import ContractTemplatesManager from "./ContractTemplatesManager";
 
 const STATUS_COLOR: Record<string, string> = {
 	draft: STATUS_COLORS.neutral, active: STATUS_COLORS.success,
 	completed: STATUS_COLORS.info, cancelled: STATUS_COLORS.danger,
 };
-const EMPTY = { customerName: "", value: "0", currency: "EUR", startDate: "", endDate: "", notes: "", body: "" };
+const EMPTY = { customerName: "", value: "0", currency: "EUR", startDate: "", endDate: "", notes: "", body: "", templateId: "", fields: {} as Record<string, string> };
 
 // Договоры: карточка, текст договора и статус (draft → active когда клиент подписал — событие
 // contract_signed, на него можно завести правило автоматизации). Клиент выбирается из CRM (Contact
@@ -30,7 +31,7 @@ const EMPTY = { customerName: "", value: "0", currency: "EUR", startDate: "", en
 export default function Contracts() {
 	const t = useTranslations("finance");
 	const locale = useLocale();
-	const { contracts, loadContracts, createContract, updateContract, signContract, completeContract, cancelContract, deleteContract, settings } = useFinanceStore();
+	const { contracts, loadContracts, contractTemplates, loadContractTemplates, createContract, updateContract, signContract, completeContract, cancelContract, deleteContract, settings } = useFinanceStore();
 	const { contacts, fetchContacts } = useContactStore();
 	const { companies, fetchCompanies } = useCompaniesStore();
 	const [open, setOpen] = useState(false);
@@ -38,6 +39,7 @@ export default function Contracts() {
 	const [link, setLink] = useState<{ contact?: string; company?: string }>({});
 	const [busy, setBusy] = useState<string | null>(null);
 	const [toDelete, setToDelete] = useState<string | null>(null);
+	const [templatesOpen, setTemplatesOpen] = useState(false);
 
 	useEffect(() => { loadContracts(); }, [loadContracts]);
 	// Подсказки клиента — из CRM: грузим при открытии формы, списки общие с CRM-разделом
@@ -61,8 +63,21 @@ export default function Contracts() {
 		return [...fromContacts, ...fromCompanies];
 	}, [contacts, companies, form.customerName]);
 
+	const activeTemplate = useMemo(() => contractTemplates.find((t) => t.id === form.templateId), [contractTemplates, form.templateId]);
+
+	function selectTemplate(id: string) {
+		const tpl = contractTemplates.find((t) => t.id === id);
+		if (!tpl) { setForm((f) => ({ ...f, templateId: "", body: settings?.contractTemplate?.trim() || defaultContractText(marketOf(settings?.country) ?? null), fields: {} })); return; }
+		const contact = link.contact ? contacts.find((c) => c._id === link.contact) : undefined;
+		const extra = (contact && (contact as any).extra && typeof (contact as any).extra === "object") ? (contact as any).extra : {};
+		const fields: Record<string, string> = {};
+		for (const f of tpl.fields) if (f.source === "contact") fields[f.key] = String(extra?.[f.key] ?? "");
+		setForm((f) => ({ ...f, templateId: id, body: tpl.body, fields }));
+	}
+
 	// Текст договора: типовой фирмы из настроек, иначе встроенный — вписывается при открытии формы
 	function openNew() {
+		void loadContractTemplates();
 		setForm({ ...EMPTY, currency: settings?.currency || "EUR", body: settings?.contractTemplate?.trim() || defaultContractText(marketOf(settings?.country) ?? null) });
 		setLink({});
 		setOpen(true);
@@ -86,7 +101,8 @@ export default function Contracts() {
 
 	return (
 		<div>
-			<div className="mb-16 flex justify-end">
+			<div className="mb-16 flex justify-end gap-8">
+				<button type="button" onClick={() => setTemplatesOpen(true)} className="fs-btn fs-btn-ghost h-40">Шаблоны</button>
 				<button type="button" onClick={openNew} className="fs-btn fs-btn-primary h-40">
 					<TbPlus size={16} /> {t("newContract")}
 				</button>
@@ -158,12 +174,29 @@ export default function Contracts() {
 							/>
 							{link.contact || link.company ? <span className="mt-6 block text-11 text-[#9AA396]">{t("contractClientLinked")}</span> : null}
 						</div>
+						<div>
+							<span className="mb-6 block text-12 text-[#8c948b]">Шаблон</span>
+							<select value={form.templateId} onChange={(e) => selectTemplate(e.target.value)} className="fs-field w-full px-8 py-8 text-13 outline-none">
+								<option value="">— типовой (из настроек) —</option>
+							{contractTemplates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.name}</option>)}
+							</select>
+						</div>
 						<FormField label={t("contractValue")} type="number" step="0.01" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} />
 						<div className="grid grid-cols-2 gap-12">
 							<FormField label={t("startDate")} type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
 							<FormField label={t("endDate")} type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
 						</div>
 						{/* Текст договора: правится под фирму; поля подставляются на месте {{…}} при печати PDF */}
+{activeTemplate && activeTemplate.fields.length > 0 && (
+						<div className="rounded-12 border border-inkLine p-12">
+							<span className="mb-8 block text-12 font-medium text-[#f1f4ee]">Поля договора</span>
+							<div className="flex flex-col gap-8">
+							{activeTemplate.fields.map((f) => (
+								<FormField key={f.key} label={f.label} type={f.type === "date" ? "date" : (f.type === "number" || f.type === "money") ? "number" : "text"} value={form.fields[f.key] ?? ""} onChange={(e) => setForm({ ...form, fields: { ...form.fields, [f.key]: e.target.value } })} />
+							))}
+							</div>
+						</div>
+						)}
 						<div>
 							<span className="mb-6 block text-12 text-[#8c948b]">{t("contractBody")}</span>
 							<textarea
@@ -182,6 +215,8 @@ export default function Contracts() {
 					</div>
 				</form>
 			</Modal>
+
+			<ContractTemplatesManager open={templatesOpen} onClose={() => setTemplatesOpen(false)} />
 
 			<ConfirmDialog open={!!toDelete} title={t("delete")} text={t("confirmDeleteContract")} onCancel={() => setToDelete(null)} onConfirm={() => { if (toDelete) deleteContract(toDelete); setToDelete(null); }} />
 		</div>

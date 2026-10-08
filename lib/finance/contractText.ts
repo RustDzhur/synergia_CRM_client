@@ -31,15 +31,31 @@ export function contractDate(iso?: string | null): string {
 	return m ? `${m[3]}.${m[2]}.${m[1]}` : "";
 }
 
-/** Подстановка значений в текст: {{number}}, {{ customerTaxId }} — регистр и пробелы не важны. */
-export function fillContractText(text: string, vars: ContractVars): string {
+/** Подстановка значений в текст: {{number}}, {{ customerTaxId }}, {{passport}} — регистр и пробелы не важны. */
+export function fillContractText(text: string, vars: Record<string, string>): string {
 	// Ключи сравниваем без регистра: в тексте пишут {{customerTaxId}} и {{customertaxid}} — оба должны найтись
 	const map: Record<string, string> = {};
 	for (const [key, value] of Object.entries(vars)) map[key.toLowerCase()] = String(value ?? "");
-	return String(text ?? "").replace(/\{\{\s*([a-zA-Z]+)\s*\}\}/g, (whole, key: string) => {
+	return String(text ?? "").replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (whole, key: string) => {
 		const value = map[key.toLowerCase()];
 		return value === undefined ? whole : value;
 	});
+}
+
+// Произвольное поле шаблона договора: key — имя подстановки {{key}}, label — подпись в форме,
+// type — тип ввода, source: manual (вручную) или contact (значение тянется из карточки клиента).
+export interface ContractField {
+	key: string; // латиница/цифры/подчёркивание — имя подстановки {{key}}
+	label: string; // подпись поля в форме
+	type: "text" | "date" | "number" | "money";
+	source: "manual" | "contact";
+}
+
+export interface ContractTemplateDef {
+	id: string;
+	name: string;
+	body: string;
+	fields: ContractField[];
 }
 
 /** Сумма договора строкой — так же, как её печатает PDF. */

@@ -100,7 +100,7 @@ export const toContractDTO = (c: any) => ({
     id: c.id, number: c.number, status: c.status,
     contact: c.contact ? String(c.contact) : "", company: c.company ? String(c.company) : "", customerName: c.customerName,
     deal: c.deal ? String(c.deal) : "", value: c.value, currency: c.currency,
-    startDate: c.startDate, endDate: c.endDate, notes: c.notes, body: c.body || "", template: c.template || "",
+    startDate: c.startDate, endDate: c.endDate, notes: c.notes, body: c.body || "", template: c.template || "", templateId: c.templateId ? String(c.templateId) : "", fields: c.fields && typeof c.fields === "object" ? c.fields : {},
     signedAt: c.signedAt ? c.signedAt.toISOString() : "", file: c.file ? String(c.file) : "",
     createdAt: c.createdAt.toISOString(), updatedAt: c.updatedAt.toISOString(),
 });

@@ -221,6 +221,7 @@ export async function contractPdfBuffer(org: string, c: any, locale: string, tem
     const market = marketOf(settings.country);
     const rawBody = String(c.body ?? "").trim() || String(settings.contractTemplate ?? "").trim() || defaultContractText(market);
     const body = fillContractText(rawBody, {
+        ...((c.fields && typeof c.fields === "object" ? c.fields : {}) as Record<string, string>),
         number: c.number,
         date: contractDate(new Date().toISOString().slice(0, 10)),
         firm: settings.legalName ?? "",

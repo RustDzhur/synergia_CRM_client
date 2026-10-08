@@ -40,6 +40,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     // пустая строка — «печатать оформление из настроек бухгалтерии», поэтому её тоже принимаем
     if (b.template === "") data.template = "";
     else if (isTemplate(b.template)) data.template = b.template;
+    if (typeof b.templateId === "string") data.templateId = b.templateId.trim() ? b.templateId.trim().slice(0, 40) : null;
+    if (b.fields && typeof b.fields === "object" && !Array.isArray(b.fields)) data.fields = b.fields;
     if (typeof b.file === "string" && b.file) data.file = b.file;
     const updated = await prisma.contract.update({ where: { id: params.id }, data });
     return NextResponse.json(toContractDTO(updated));

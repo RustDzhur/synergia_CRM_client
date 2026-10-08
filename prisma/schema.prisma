@@ -199,6 +199,7 @@ model Contact {
   notes      String?
   source     String   @default("")
   activities Json?
+  extra      Json?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -238,6 +239,8 @@ model Contract {
   notes         String    @default("")
   body          String    @default("")
   template      String    @default("")
+  templateId    String?
+  fields        Json?
   createdByName String    @default("")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -246,6 +249,23 @@ model Contract {
   @@index([org, deal])
   @@index([org, contact])
   @@map("contracts")
+}
+
+// Шаблоны договоров: фирма создаёт неограниченное число шаблонов (аренда, найм, подряд…).
+// Каждый шаблон — текст с подстановками {{key}} и список произвольных полей fields: [{key,label,type,source}].
+// source: manual (вручную) | contact (из карточки клиента: поля Contact и Contact.extra[key]).
+model ContractTemplate {
+  id        String   @id @default(cuid())
+  org       String
+  name      String
+  body      String   @default("")
+  fields    Json?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([org])
+  @@map("contracttemplates")
 }
 
 model Conversation {

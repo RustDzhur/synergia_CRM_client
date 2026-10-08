@@ -88,8 +88,9 @@ export interface Contract {
 	id: string; number: string; status: "draft" | "active" | "completed" | "cancelled";
 	contact: string; company: string; customerName: string; deal: string; value: number; currency: string;
 	startDate: string; endDate: string; notes: string; body: string; signedAt: string; file: string;
-	template: string; createdAt: string; updatedAt: string;
+	template: string; templateId: string; fields: Record<string, string>; createdAt: string; updatedAt: string;
 }
+export interface ContractTemplate { id: string; name: string; body: string; fields: { key: string; label: string; type: string; source: string }[]; active: boolean }
 export interface FinanceSettings {
 	country: string; currency: string; smallBusiness: boolean; legalName: string; address: string; taxId: string;
 	// Реквизиты и контакты для шапки документов, свой текст внизу и логотип (data-URL) — печатает lib/finance/layouts.ts
@@ -129,6 +130,7 @@ export interface FinanceDashboard {
 
 interface FinanceStore {
 	products: Product[]; orders: Order[]; invoices: Invoice[]; expenses: Expense[]; quotes: Quote[]; contracts: Contract[];
+	contractTemplates: ContractTemplate[];
 	recurringInvoices: RecurringInvoice[];
 	settings: FinanceSettings | null; countries: CountryOption[]; dashboard: FinanceDashboard | null;
 	loading: boolean;
@@ -138,6 +140,10 @@ interface FinanceStore {
 	loadExpenses: () => Promise<void>;
 	loadQuotes: () => Promise<void>;
 	loadContracts: () => Promise<void>;
+	loadContractTemplates: () => Promise<void>;
+	createContractTemplate: (data: { name: string; body: string; fields: unknown[] }) => Promise<string | null>;
+	updateContractTemplate: (id: string, data: Partial<{ name: string; body: string; fields: unknown[]; active: boolean }>) => Promise<string | null>;
+	deleteContractTemplate: (id: string) => Promise<string | null>;
 	loadRecurringInvoices: () => Promise<void>;
 	loadSettings: () => Promise<void>;
 	/** months — последние N месяцев; year — календарный год (12 столбцов, январь–декабрь) */
@@ -179,7 +185,7 @@ interface FinanceStore {
 let dashboardRequest = 0;
 
 export const useFinanceStore = create<FinanceStore>()((set, get) => ({
-	products: [], orders: [], invoices: [], expenses: [], quotes: [], contracts: [], recurringInvoices: [], settings: null, countries: [], dashboard: null, loading: false,
+	products: [], orders: [], invoices: [], expenses: [], quotes: [], contracts: [], contractTemplates: [], recurringInvoices: [], settings: null, countries: [], dashboard: null, loading: false,
 
 	loadProducts: async () => { const r = await apiCall<Product[]>("/api/products"); if (r.ok && r.data) set({ products: r.data }); },
 	loadOrders: async () => { const r = await apiCall<Order[]>("/api/orders"); if (r.ok && r.data) set({ orders: r.data }); },
@@ -377,6 +383,21 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 		set((s) => ({ contracts: s.contracts.map((c) => (c.id === id ? (r.data as Contract) : c)) }));
 		return null;
 	},
+
+	loadContractTemplates: async () => { const r = await apiCall<ContractTemplate[]>("/api/contract-templates"); if (r.ok && r.data) set({ contractTemplates: r.data }); },
+	createContractTemplate: async (data) => {
+		const r = await apiCall<ContractTemplate>("/api/contract-templates", "POST", data);
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ contractTemplates: [...s.contractTemplates, r.data as ContractTemplate] }));
+		return null;
+	},
+	updateContractTemplate: async (id, data) => {
+		const r = await apiCall<ContractTemplate>(`/api/contract-templates/${id}`, "PATCH", data);
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ contractTemplates: s.contractTemplates.map((t) => (t.id === id ? (r.data as ContractTemplate) : t)) }));
+		return null;
+	},
+	deleteContractTemplate: async (id) => { const r = await apiCall(`/api/contract-templates/${id}`, "DELETE"); if (!r.ok) return r.message; set((s) => ({ contractTemplates: s.contractTemplates.filter((t) => t.id !== id) })); return null; },
 }));
 
 registerRefresher("finance", () => {

@@ -49,6 +49,8 @@ export async function POST(req: Request) {
             // Текст договора: пункты с подстановками {{…}} — печатаются PDF-ом (lib/finance/contractText.ts)
             body: typeof b.body === "string" ? b.body.trim().slice(0, 20000) : "",
             template: isTemplate(b.template) ? b.template : "",
+            templateId: typeof b.templateId === "string" && b.templateId.trim() ? b.templateId.trim().slice(0, 40) : undefined,
+            fields: (b.fields && typeof b.fields === "object" && !Array.isArray(b.fields) ? b.fields : undefined),
             createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
         },
     });
