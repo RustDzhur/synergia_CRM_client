@@ -3241,9 +3241,9 @@
     "agentLang_uz": "Oʻzbekcha",
     "micNoSpeech": "Ovoz eshitildi, lekin so‘zlarni ajrata olmadim — mikrofonga yaqinroq gapiring",
     "agentStt": "Nutqni aniqlash",
-    "agentSttAuto": "Avtomatik (o‘zbekcha uchun server, o‘xshamasa brauzer)",
+    "agentSttAuto": "Avtomatik (o‘zbekcha — server, boshqa tillar — brauzer)",
     "agentSttBrowser": "Brauzer (bepul)",
-    "agentSttServer": "Server (aniqroq, pullik)",
+    "agentSttServer": "Server (o‘zbekcha uchun; ingliz, nemis, rus va ukrain tillari uchun brauzer yaxshiroq)",
     "micFallback": "Server nutq aniqlashi mavjud emas — brauzer aniqlashiga o‘tildi"
   },
   "automation": {
