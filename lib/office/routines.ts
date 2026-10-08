@@ -55,7 +55,7 @@ export async function runDueRoutines(now = new Date()): Promise<number> {
                 // сначала отметка «сегодня запускали», потом поручение: при сбое лучше пропустить день, чем запустить дважды
                 const routines = ((v.routines ?? []) as Routine[]).map((x) => (x.id === routine.id ? { ...x, lastRun: l.date } : x));
                 await prisma.sectionRecord.updateMany({ where: { id: row.id }, data: { values: { ...(row.values as object), routines } as never } });
-                const ctx = { org: row.org, userId: o.owner, role: "owner" as const, modules: [] as string[], today: l.date, now: `${l.date}T${l.time}`, orgName: o.name };
+                const ctx = { org: row.org, platformAdmin: true, userId: o.owner, role: "owner" as const, modules: [] as string[], today: l.date, now: `${l.date}T${l.time}`, orgName: o.name };
                 await startOfficeTask(ctx, { robot: row.rid, text: routine.text, source: "routine" });
                 started++;
             } catch { /* поручение не создано (робота выключили, нет ИИ) — завтра попробуем снова */ }

@@ -81,14 +81,30 @@ const toRobot = (r: { rid: string; values: unknown; createdAt: Date }): Robot =>
 
 const robotValues = (r: Robot) => ({ name: r.name, title: r.title, template: r.template, zone: r.zone, accent: r.accent, skills: r.skills, instructions: r.instructions, autonomy: r.autonomy, enabled: r.enabled, routines: r.routines });
 
-export async function listRobots(org: string): Promise<Robot[]> {
+/** Робот платформы (Rex, Sven, Ada): виден и доступен только администратору платформы. */
+export const isPlatformRobot = (r: { template: string }) => !!templateById(r.template)?.platform;
+
+/** Доступ к роботам платформы. По умолчанию закрыт: роботы платформы видны только там, где вызывающий явно передал platform: true
+ *  (администратор платформы или внутренний запуск по расписанию). Для всех остальных такого робота «нет» — как будто id не существует. */
+export interface Scope { platform?: boolean }
+
+export async function listRobots(org: string, scope: Scope = {}): Promise<Robot[]> {
     const rows = await prisma.sectionRecord.findMany({ where: { org, key: K_ROBOT }, orderBy: { createdAt: "asc" } });
-    return rows.map(toRobot);
+    const all = rows.map(toRobot);
+    return scope.platform ? all : all.filter((r) => !isPlatformRobot(r));
 }
 
-export async function getRobot(org: string, id: string): Promise<Robot | null> {
+export async function getRobot(org: string, id: string, scope: Scope = {}): Promise<Robot | null> {
     const row = await prisma.sectionRecord.findFirst({ where: { org, key: K_ROBOT, rid: id } });
-    return row ? toRobot(row) : null;
+    const robot = row ? toRobot(row) : null;
+    return robot && (scope.platform || !isPlatformRobot(robot)) ? robot : null;
+}
+
+/** Поручения без поручений роботам платформы, если доступа к ним нет. */
+export async function visibleTasks(org: string, tasks: OfficeTask[], scope: Scope = {}): Promise<OfficeTask[]> {
+    if (scope.platform) return tasks;
+    const hidden = new Set((await listRobots(org, { platform: true })).filter(isPlatformRobot).map((r) => r.id));
+    return tasks.filter((t) => !hidden.has(t.robot));
 }
 
 export interface RobotInput { template?: string; name?: string; title?: string; zone?: string; accent?: string; skills?: unknown; instructions?: string; autonomy?: string; enabled?: boolean }
@@ -132,8 +148,8 @@ const cleanRoutine = (x: unknown): Routine | null => {
     return { id: typeof r?.id === "string" && /^[\w-]{3,24}$/.test(r.id) ? r.id : rid("n"), text, kind, time, ...(day !== undefined ? { day } : {}), ...(typeof r?.lastRun === "string" ? { lastRun: r.lastRun.slice(0, 10) } : {}) };
 };
 
-export async function updateRobot(org: string, id: string, patch: RobotInput & { routines?: unknown }): Promise<Robot> {
-    const cur = await getRobot(org, id);
+export async function updateRobot(org: string, id: string, patch: RobotInput & { routines?: unknown }, scope: Scope = {}): Promise<Robot> {
+    const cur = await getRobot(org, id, scope);
     if (!cur) throw new OfficeError("Robot not found");
     const next: Robot = { ...cur };
     if (patch.name !== undefined) { next.name = clean(patch.name, 40); if (!next.name) throw new OfficeError("Robot name is required"); }
@@ -159,7 +175,8 @@ export async function updateRobot(org: string, id: string, patch: RobotInput & {
 }
 
 /** Увольнение: робот удаляется, его очередь отменяется; готовые поручения остаются в истории. */
-export async function deleteRobot(org: string, id: string): Promise<void> {
+export async function deleteRobot(org: string, id: string, scope: Scope = {}): Promise<void> {
+    if (!(await getRobot(org, id, scope))) throw new OfficeError("Robot not found");
     const n = (await prisma.sectionRecord.deleteMany({ where: { org, key: K_ROBOT, rid: id } })).count;
     if (!n) throw new OfficeError("Robot not found");
     const open = await listTasks(org, 300);
@@ -185,7 +202,7 @@ export async function ensurePlatformRobots(org: string): Promise<boolean> {
     const mark = await prisma.sectionRecord.findFirst({ where: { org, key: K_META, rid: "platform" } });
     if (mark) return false;
     try { await prisma.sectionRecord.create({ data: { org, key: K_META, rid: "platform", values: { at: new Date().toISOString() } as never } }); } catch { return false; }
-    const have = new Set((await listRobots(org)).map((r) => r.template));
+    const have = new Set((await listRobots(org, { platform: true })).map((r) => r.template));
     for (const id of PLATFORM_IDS) {
         if (have.has(id)) continue;
         await createRobot(org, { template: id }, { platform: true }).catch(() => undefined);
@@ -224,6 +241,12 @@ export async function listTasks(org: string, limit = 80): Promise<OfficeTask[]> 
 export async function getTask(org: string, id: string): Promise<OfficeTask | null> {
     const row = await prisma.sectionRecord.findFirst({ where: { org, key: K_TASK, rid: id } });
     return row ? toTask(row) : null;
+}
+
+/** Поручение для внешнего вызова: чужое поручение роботу платформы «не существует». */
+export async function getTaskScoped(org: string, id: string, scope: Scope = {}): Promise<OfficeTask | null> {
+    const t = await getTask(org, id);
+    return t && (await visibleTasks(org, [t], scope)).length ? t : null;
 }
 
 export async function createTask(org: string, input: { robot: string; robotName: string; text: string; source: OfficeTask["source"]; locale?: string }): Promise<OfficeTask> {

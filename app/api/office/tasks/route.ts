@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { aiConfigured } from "@/lib/ai/provider";
-import { officeCtx, officeFailure } from "@/lib/office/api";
+import { officeCtx, officeFailure, platformScope } from "@/lib/office/api";
 import { startOfficeTask } from "@/lib/office/runner";
 import { deleteFinishedTasks } from "@/lib/office/store";
 
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const text = typeof b?.text === "string" ? b.text.trim() : "";
     if (!text || typeof b?.robot !== "string") return badRequest("Choose a robot and describe the task");
     try {
-        const task = await startOfficeTask(officeCtx(user, b.locale), { robot: b.robot, text, source: b.source === "drop" ? "drop" : "user", locale: typeof b.locale === "string" ? b.locale : undefined });
+        const task = await startOfficeTask(officeCtx(user, b.locale, (await platformScope(user)).platform), { robot: b.robot, text, source: b.source === "drop" ? "drop" : "user", locale: typeof b.locale === "string" ? b.locale : undefined });
         return NextResponse.json(task, { status: 201 });
     } catch (e) {
         return officeFailure(e);
