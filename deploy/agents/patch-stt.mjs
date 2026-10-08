@@ -31,7 +31,7 @@ if (!s.includes(MARK)) {
     const fn = `${MARK}
 const WHISPER_TARGETS = () => {
 	const targets = [];
-	if (process.env.OMNIROUTE_API_KEY) targets.push({ url: (process.env.STT_CLOUD_URL || "http://127.0.0.1:3111/v1").replace(/\\/+$/, ""), key: process.env.OMNIROUTE_API_KEY, model: process.env.STT_CLOUD_MODEL || "openrouter/openai/whisper-large-v3-turbo" });
+	if (process.env.OPENAI_API_KEY) targets.push({ url: (process.env.STT_CLOUD_URL || "https://api.openai.com/v1").replace(/\\/+$/, ""), key: process.env.OPENAI_API_KEY, model: process.env.STT_CLOUD_MODEL || "whisper-1" });
 	targets.push({ url: (process.env.STT_LOCAL_URL || "http://127.0.0.1:8000/v1").replace(/\\/+$/, ""), model: process.env.STT_LOCAL_MODEL || "Systran/faster-whisper-small" });
 	return targets;
 };

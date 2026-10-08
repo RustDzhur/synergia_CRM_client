@@ -39,9 +39,14 @@ export async function GET(req: Request) {
         const r = await complete("Reply with one short word.", [{ role: "user", text: "Say: ok" }], [], { model: process.env.AI_VOICE_MODEL || ov?.voiceModel || undefined });
         return `ответ: «${r.text.slice(0, 40)}»`;
     });
-    // тишина (0,3 с, 16 кГц) — проверяет только, что запрос доходит до распознавателя и тот отвечает; текста в ответе не ждём
+    // тишина (0,3 с, 16 кГц) — проверяет, что запрос доходит до распознавателя И что тишина не превращается в текст (фантом).
+    // Это НЕ проверка качества реальной речи: «ok» здесь значит «распознаватель отвечает и не галлюцинирует на тишине».
     const wav = (() => { const n = 4800, b = Buffer.alloc(44 + n * 2); b.write("RIFF", 0); b.writeUInt32LE(36 + n * 2, 4); b.write("WAVEfmt ", 8); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(16000, 24); b.writeUInt32LE(32000, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write("data", 36); b.writeUInt32LE(n * 2, 40); return b; })();
-    const stt = await run(async () => { await transcribeAudio(wav, "audio/wav", "uz"); return "запрос принят"; });
+    const stt = await run(async () => {
+        const text = await transcribeAudio(wav, "audio/wav", "uz");
+        if (text.trim()) throw new Error(`тишина распознана как «${text.trim().slice(0, 40)}» — фантом не отфильтрован`);
+        return "тишина не дала текста (ок)";
+    });
     const tts = await run(async () => { const r = await synthesize("Salom", { lang: "uz" }); return `${r.provider}, ${r.audio.length} байт`; });
     return NextResponse.json({ info, chat, voiceChat, stt, tts });
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
-import { aiConfigured, isPhantomTranscript, sttConfigured, transcribeAudio } from "@/lib/ai/provider";
+import { sttConfigured, transcribeAudio } from "@/lib/ai/provider";
 import { rateLimited } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +25,8 @@ const STT_LANG: Record<string, string> = { de: "de", en: "en", ua: "uk", uk: "uk
 export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    if (!aiConfigured()) return NextResponse.json({ message: "AI is not set up on this site yet", code: "not_configured" }, { status: 503 });
+    // Распознаванию нужен только STT-провайдер (OpenAI/локальный Whisper), а не провайдер чата:
+    // чат может быть переведён на DeepSeek/Anthropic, при этом серверная диктовка обязана продолжать работать.
     if (!sttConfigured()) return NextResponse.json({ message: "Server speech recognition is not configured on this site", code: "stt_not_configured" }, { status: 503 });
 
     const form = await req.formData().catch(() => null);
@@ -41,8 +42,9 @@ export async function POST(req: Request) {
 
     try {
         const text = await transcribeAudio(Buffer.from(await file.arrayBuffer()), mime, language);
-        // «Субтитры сделал…», «Спасибо за просмотр» и подобное Whisper выдаёт на тишине и шуме — это не речь
-        return NextResponse.json({ text: isPhantomTranscript(text) ? "" : text });
+        // «Субтитры сделал…», «Спасибо за просмотр» и подобное Whisper выдаёт на тишине и шуме — это не речь;
+        // отсев фантомов уже выполнен в transcribeAudio (единая точка для route и doctor).
+        return NextResponse.json({ text });
     } catch (e) {
         return failure(e);
     }

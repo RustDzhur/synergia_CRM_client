@@ -11,6 +11,7 @@ const line = (ok, text) => console.log(`${ok ? "✓" : "✗"} ${text}`);
 console.log("— Настройки в контейнере —");
 line(!!key, key ? `OPENAI_API_KEY есть (длина ${key.length}, начало «${key.slice(0, 5)}…»)` : "OPENAI_API_KEY пуст — контейнер не получил ключ (файл .env не тот или контейнер не пересоздан командой up -d)");
 if (key && !key.startsWith("sk-")) line(false, "ключ OpenAI начинается с «sk-»; у вас другое начало — возможно, это ключ шлюза или в начале лишние символы/кавычки");
+if (key && key.startsWith("sk-svcacct-")) line(false, "ключ имеет префикс sk-svcacct- (service account OpenAI): у таких ключей scope может не включать /v1/audio/transcriptions — проверьте ниже строки «модель распознавания речи … доступна»");
 if (/["'\s]/.test(process.env.OPENAI_API_KEY || "")) line(false, "в значении ключа есть кавычки или пробелы — уберите их в .env");
 if (rawUrl) line(!GATEWAY.test(rawUrl), `OPENAI_API_URL=${rawUrl}${GATEWAY.test(rawUrl) ? " — шлюз, игнорируется, используется api.openai.com" : ""}`);
 console.log(`Используемый адрес: ${base}`);

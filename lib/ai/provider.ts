@@ -251,9 +251,14 @@ const PHANTOM = [
     /субтитри\s+(зробив|створив)/i, /thanks?\s+for\s+watching/i, /thank\s+you\s+for\s+watching/i, /subtitles?\s+by/i,
     /untertitel(ung)?\s+(von|der|im\s+auftrag)/i, /vielen\s+dank\s+f(ü|u)r\s+(ihre|eure|die)\s+aufmerksamkeit/i, /amara\.org/i,
 ];
+// Одиночные короткие английские галлюцинации Whisper на тишине/шуме. Только точное совпадение всего транскрипта с одним словом.
+// ВАЖНО: «ok/okay/yes/no/go/hello/hi» сюда НЕ включаем — это живые команды/приветствия голосового управления.
+const PHANTOM_WORDS = new Set(["you", "uh", "um", "hmm", "huh", "the", "a", "an", "and", "of", "to", "it", "is", "in", "on", "at", "we", "i", "me", "so", "well", "thanks", "thank you", "thank"]);
 export function isPhantomTranscript(text: string): boolean {
     const t = String(text ?? "").trim();
     if (!t || t.replace(/[\s.,!?…\-–—]/g, "").length < 2) return true;
+    // одиночное короткое английское слово-шум («you» на тишине) — не фраза пользователя
+    if (PHANTOM_WORDS.has(t.toLowerCase().replace(/[.!?…]+$/g, "").trim())) return true;
     // подсказка узбекского распознавания (UZ_STT_PROMPT) на тишине может вернуться как «речь»: любой её кусок — не фраза пользователя
     // (короткий кусок — настоящая команда вроде «Salom, Ayris» или «hisob-fakturalarni ko‘rsat», поэтому порог длинный)
     if (t.length >= 60 && UZ_STT_PROMPT.toLowerCase().includes(t.toLowerCase().replace(/[.!?]+$/, ""))) return true;
@@ -324,7 +329,9 @@ export async function transcribeAudio(bytes: Buffer, mime: string, language?: st
     let lastError: unknown;
     for (const t of targets) {
         try {
-            return await transcribeOnce(t, bytes, type, language);
+            const text = await transcribeOnce(t, bytes, type, language);
+            // Единая точка отсева фантомов для всех вызывающих (route и doctor): тишина/шум не должны возвращаться как «речь»
+            return isPhantomTranscript(text) ? "" : text;
         } catch (e) {
             lastError = e; // пробуем следующий путь: облако упало — выручает локальный Whisper
         }

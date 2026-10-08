@@ -12,6 +12,10 @@ describe("фантомные ответы распознавания", () => {
         expect(isPhantomTranscript("Ayris, mijoz Karimov uchun yangi hisob-faktura yarat")).toBe(false);
         expect(isPhantomTranscript("Спасибо за просмотр")).toBe(true);
         expect(isPhantomTranscript("")).toBe(true);
+        // одиночные английские галлюцинации Whisper на тишине — фантом; «ok» — живая команда подтверждения, её не трогаем
+        expect(isPhantomTranscript("you")).toBe(true);
+        expect(isPhantomTranscript("um")).toBe(true);
+        expect(isPhantomTranscript("ok")).toBe(false);
     });
 });
 

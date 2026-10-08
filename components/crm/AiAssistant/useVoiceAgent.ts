@@ -41,11 +41,11 @@ const isGreetingOnly = (rest: string) => {
 };
 
 const defaultLang = (locale: string): VoiceLang => {
-	const nav = (typeof navigator !== "undefined" ? navigator.language : "").toLowerCase();
-	if (locale === "ua") return nav.startsWith("uk") ? "uk" : "ru"; // владелец говорит по-русски; украинский — одним нажатием в панели
+	// По умолчанию голос следует локали интерфейса; любой другой язык человек меняет вручную в панели.
+	if (locale === "ua") return "uk";
 	if (locale === "de") return "de";
 	if (locale === "uz") return "uz";
-	return nav.startsWith("ru") ? "ru" : "en";
+	return "en";
 };
 
 export type AgentPhase = "off" | "sleeping" | "listening" | "thinking" | "speaking";
@@ -58,7 +58,7 @@ export function useVoiceAgent({ locale, page, blocked, serverStt = false, onErro
 	const [gender, setGenderState] = useState<VoiceGender>("f");
 	const [requireWake, setRequireWakeState] = useState(true);
 	const [awake, setAwake] = useState(false);
-	const [sttMode, setSttModeState] = useState<SttMode>("auto");
+	const [sttMode, setSttModeState] = useState<SttMode>("server");
 	const [brokenTick, setBrokenTick] = useState(0); // сбой сервера распознавания → перерисовка → слушает браузер
 	// Режим «без подтверждения»: сервер выполняет изменения сразу (кроме удаления и случаев, когда ассистент читал чужой текст)
 	const [autoApprove, setAutoApproveState] = useState(true); // по умолчанию включён (выбор владельца): выключается в настройках панели
@@ -157,7 +157,19 @@ export function useVoiceAgent({ locale, page, blocked, serverStt = false, onErro
 		// «Выключись» и «стоп» — только короткой фразой: в длинной просьбе слово «стоп» может быть частью названия
 		if (wordCount <= 6 && isOffCommand(utterance)) { setEnabled(false, false); say(PHRASES[lang].off); return; }
 		if (wordCount <= 3 && isStopCommand(utterance)) { stopSpeech(); sleep(); return; }
-		if (hit && isGreetingOnly(rest)) { stopSpeech(); armAwake(AWAKE_MS); chime("wake"); return; } // «Привет, Айрис» — слушаю дальше
+		if (hit && isGreetingOnly(rest)) {
+			stopSpeech();
+			armAwake(AWAKE_MS);
+			const greeting = rest.trim();
+			// Просто «Айрис» (без приветствия) — разбудили и слушаем дальше, ничего не отправляем.
+			if (!greeting) { chime("wake"); return; }
+			// Приветствие с именем («Привет, Айрис» / «Hello, Ayris» / «Salom, Ayris»): отвечаем ВСЛУХ, а не только чмоком.
+			// Раньше здесь был только chime, и на языках, где распознаватель сохраняет имя «Ayris» (en/de/uz), Айрис «молчала»
+			// после приветствия — владелец думал, что она не слышит. Отправляем приветствие модели, она отвечает «чем могу помочь».
+			chime("wake");
+			void send(greeting, { locale, page, voice: true, auto: autoApprove });
+			return;
+		}
 		armAwake(AWAKE_MS);
 		const { msg, pending: acts } = pendingRef.current;
 		const decision = voiceDecision(utterance, acts.length);
@@ -199,7 +211,11 @@ export function useVoiceAgent({ locale, page, blocked, serverStt = false, onErro
 	const serverOk = serverStt && recorderSupported();
 	const viaServer = serverOk && (sttMode === "server" || (!dictationSupported()) || (sttMode === "auto" && lang === "uz" && !serverSttBroken()));
 	const onListenError = (code: MicError) => {
-		if (code === "micFallback") { setBrokenTick((n) => n + 1); onErrorRef.current(code); return; } // не выключаем режим: просто переходим на браузер
+		if (code === "micFallback") {
+			// Браузерного распознавания нет (Firefox/Safari) — фолбэк невозможен, бесконечный retry бессмыслен: выключаем с ошибкой.
+			if (!dictationSupported()) { onErrorRef.current(code); setEnabled(false, false); return; }
+			setBrokenTick((n) => n + 1); onErrorRef.current(code); return; // не выключаем режим: просто переходим на браузер
+		}
 		onErrorRef.current(code);
 		if (code !== "micNoSpeech") setEnabled(false, false);
 	};

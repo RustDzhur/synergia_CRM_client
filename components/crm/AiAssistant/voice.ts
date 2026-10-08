@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { authHeaders } from "@/store/crmApi";
-import { type VoiceLang, guessLang, isSpeaking, speakText, stopSpeech, subscribeSpeech } from "./speech";
+import { BCP47, type VoiceLang, guessLang, isSpeaking, speakText, stopSpeech, subscribeSpeech } from "./speech";
 
 // Голос окна ассистента: диктовка вопроса (микрофон) и озвучка ответа.
 //
@@ -44,7 +44,17 @@ export type MicState = "idle" | "listening" | "transcribing";
 export type MicError = "micDenied" | "micUnavailable" | "micFailed" | "micNoSpeech" | "micFallback";
 export type SttMode = "auto" | "browser" | "server";
 export const STT_KEY = "crm.voice.stt";
-export const readSttMode = (): SttMode => { try { const v = localStorage.getItem(STT_KEY); return v === "browser" || v === "server" ? v : "auto"; } catch { return "auto"; } };
+export const readSttMode = (): SttMode => { try { const v = localStorage.getItem(STT_KEY); return v === "browser" || v === "auto" ? v : "server"; } catch { return "server"; } };
+// Язык диктовки: тот же выбор, что и у голосового управления (панель Айрис), чтобы диктовка слышала на выбранном языке,
+// а не была привязана к локали интерфейса (иначе русскоязычный владелец на локали «ua» диктовал бы украинскому распознавателю).
+const VOICE_LANG_KEY = "ai.agent.lang";
+export const readVoiceLang = (locale: string): VoiceLang => {
+	try {
+		const v = localStorage.getItem(VOICE_LANG_KEY);
+		if (["ru", "uk", "de", "en", "uz"].includes(v as string)) return v as VoiceLang;
+	} catch { /* приватный режим */ }
+	return locale === "ua" ? "uk" : locale === "de" ? "de" : locale === "uz" ? "uz" : "en";
+};
 
 const voiceExt = (type: string) => (type.includes("mp4") ? "mp4" : type.includes("ogg") ? "ogg" : "webm");
 // Склейка уже набранного текста и распознанного: диктовка дописывает, а не затирает
@@ -90,11 +100,12 @@ export function useVoiceInput({ locale, serverStt, onText, onError }: {
 		// Узбекский: браузерная модель слабая, поэтому при настроенном сервере диктует он (модель лучше, словарь CRM — docs/UZ_VOICE.md)
 		const Ctor = recognitionCtor();
 		const mode = readSttMode();
+		const lang = readVoiceLang(locale); // язык речи — выбранный в панели (или по локали), а не локаль интерфейса
 		// режим «браузер» — всегда он; «сервер» — всегда сервер; «авто» — сервер для узбекского, а после сбоя сервера до перезагрузки страницы — браузер
-		const preferServer = serverStt && recorderSupported() && (mode === "server" || (mode === "auto" && locale === "uz" && !g.serverBroken));
+		const preferServer = serverStt && recorderSupported() && (mode === "server" || (mode === "auto" && lang === "uz" && !g.serverBroken));
 		if (Ctor && !preferServer) {
 			const recog = new Ctor();
-			recog.lang = speechLang(locale);
+			recog.lang = BCP47[lang];
 			recog.continuous = true;
 			recog.interimResults = true;
 			recog.onresult = (e) => {
@@ -142,7 +153,7 @@ export function useVoiceInput({ locale, serverStt, onText, onError }: {
 			try {
 				const body = new FormData();
 				body.append("file", blob, `voice.${voiceExt(type)}`);
-				body.append("language", locale);
+				body.append("language", lang);
 				const res = await fetch("/api/ai/transcribe", { method: "POST", headers: authHeaders(false), body });
 				const json = (await res.json().catch(() => null)) as { text?: string } | null;
 				if (!res.ok || !json) { g.serverBroken = true; onErrorRef.current(Ctor ? "micFallback" : "micFailed"); }
@@ -282,6 +293,8 @@ export function useBargeIn({ active, onDetect }: { active: boolean; onDetect: ()
 				stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
 				if (disposed) return stop();
 				ctx = new AudioContext();
+				// Без resume() спящий контекст вернёт нули громкости — перебивание голосом молча не сработает
+				void ctx.resume().catch(() => undefined);
 				const src = ctx.createMediaStreamSource(stream);
 				const analyser = ctx.createAnalyser();
 				analyser.fftSize = 512;
@@ -446,6 +459,64 @@ const SRV_MAX_MS = 30_000;
 export const serverSttBroken = () => !!g.serverBroken;
 export const resetServerStt = () => { g.serverBroken = false; };
 
+// Диагностика серверного слушания — на языке речи (VoiceLang), а не захардкоженная по-русски:
+// не-русскоязычный клиент должен видеть, что именно не так с микрофоном.
+type DiagStrings = {
+	micAsk: string;
+	micDenied: string;
+	listening: (mic: string, threshold: string) => string;
+	ctxSleep: (state: string) => string;
+	sending: (kb: string, sec: string) => string;
+	recognized: (text: string) => string;
+	noWords: string;
+	tooShort: (ms: string) => string;
+	hearing: string;
+	level: (lv: string, threshold: string, peak: string) => string;
+	serverErr: (status: string) => string;
+};
+const DIAG: Record<VoiceLang, DiagStrings> = {
+	ru: {
+		micAsk: "Микрофон: запрашиваю доступ…", micDenied: "Микрофон: доступ запрещён браузером",
+		listening: (m, t) => `Слушаю · микрофон «${m}» · порог ${t}`, ctxSleep: (s) => ` · звук браузера «${s}» — кликните по странице`,
+		sending: (k, s) => `Отправляю на сервер ${k} КБ, речь ${s} с…`, recognized: (x) => `Распознано: «${x}»`,
+		noWords: "Сервер ответил, но слов не разобрал", tooShort: (ms) => `Слишком коротко (${ms} мс) — отброшено`,
+		hearing: "Слышу речь…", level: (l, t, p) => `Слушаю · громкость ${l} · порог ${t} · пик ${p}`,
+		serverErr: (s) => `Сервер ответил ${s} — переключаюсь на браузер`,
+	},
+	uk: {
+		micAsk: "Мікрофон: запитую доступ…", micDenied: "Мікрофон: доступ заборонено браузером",
+		listening: (m, t) => `Слухаю · мікрофон «${m}» · поріг ${t}`, ctxSleep: (s) => ` · звук браузера «${s}» — клацніть по сторінці`,
+		sending: (k, s) => `Надсилаю на сервер ${k} КБ, мова ${s} с…`, recognized: (x) => `Розпізнано: «${x}»`,
+		noWords: "Сервер відповів, але слів не розібрав", tooShort: (ms) => `Занадто коротко (${ms} мс) — відкинуто`,
+		hearing: "Чую мову…", level: (l, t, p) => `Слухаю · гучність ${l} · поріг ${t} · пік ${p}`,
+		serverErr: (s) => `Сервер відповів ${s} — перемикаюся на браузер`,
+	},
+	de: {
+		micAsk: "Mikrofon: fordere Zugriff an…", micDenied: "Mikrofon: Zugriff vom Browser verweigert",
+		listening: (m, t) => `Höre zu · Mikrofon „${m}“ · Schwelle ${t}`, ctxSleep: (s) => ` · Browser-Audio „${s}“ — bitte auf die Seite klicken`,
+		sending: (k, s) => `Sende an Server ${k} KB, Sprache ${s} s…`, recognized: (x) => `Erkannt: „${x}“`,
+		noWords: "Server antwortete, aber keine Wörter verstanden", tooShort: (ms) => `Zu kurz (${ms} ms) — verworfen`,
+		hearing: "Höre Sprache…", level: (l, t, p) => `Höre zu · Lautstärke ${l} · Schwelle ${t} · Spitze ${p}`,
+		serverErr: (s) => `Server antwortete ${s} — wechsle zum Browser`,
+	},
+	en: {
+		micAsk: "Microphone: requesting access…", micDenied: "Microphone: access denied by browser",
+		listening: (m, t) => `Listening · microphone „${m}“ · threshold ${t}`, ctxSleep: (s) => ` · browser audio „${s}“ — click the page`,
+		sending: (k, s) => `Sending to server ${k} KB, speech ${s} s…`, recognized: (x) => `Recognized: „${x}“`,
+		noWords: "Server answered but understood no words", tooShort: (ms) => `Too short (${ms} ms) — dropped`,
+		hearing: "Hearing speech…", level: (l, t, p) => `Listening · level ${l} · threshold ${t} · peak ${p}`,
+		serverErr: (s) => `Server answered ${s} — switching to browser`,
+	},
+	uz: {
+		micAsk: "Mikrofon: ruxsat so‘rayapman…", micDenied: "Mikrofon: brauzer ruxsat bermadi",
+		listening: (m, t) => `Tinglayapman · mikrofon „${m}“ · chegara ${t}`, ctxSleep: (s) => ` · brauzer ovozi „${s}“ — sahifani bosing`,
+		sending: (k, s) => `Serverga ${k} KB yuboryapman, nutq ${s} s…`, recognized: (x) => `Tanildi: „${x}“`,
+		noWords: "Server javob berdi, lekin so‘z tushunmadi", tooShort: (ms) => `Juda qisqa (${ms} ms) — tashlandi`,
+		hearing: "Nutqni eshityapman…", level: (l, t, p) => `Tinglayapman · daraja ${l} · chegara ${t} · cho‘qqi ${p}`,
+		serverErr: (s) => `Server ${s} javob berdi — brauzerga o‘tmoqda`,
+	},
+};
+
 export function useServerListening({ lang, active, onPhrase, onError }: {
 	lang: string; // язык речи: ru, uk, de, en, uz
 	active: boolean;
@@ -455,6 +526,7 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 	const [interim, setInterim] = useState("");
 	// Строка состояния для панели: что делает микрофон прямо сейчас (слышно ли голос, ушла ли запись, что вернул сервер) — чтобы «не слышит» не гадать
 	const [diag, setDiag] = useState("");
+	const D = DIAG[lang as VoiceLang] ?? DIAG.ru;
 	const onPhraseRef = useRef(onPhrase);
 	const onErrorRef = useRef(onError);
 	onPhraseRef.current = onPhrase;
@@ -478,25 +550,35 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 			ctx = null;
 		};
 		void (async () => {
-			setDiag("Микрофон: запрашиваю доступ…");
+			setDiag(D.micAsk);
 			try {
 				stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
 			} catch {
-				if (!disposed) { setDiag("Микрофон: доступ запрещён браузером"); onErrorRef.current("micDenied"); }
+				if (!disposed) { setDiag(D.micDenied); onErrorRef.current("micDenied"); }
 				return;
 			}
 			if (disposed) return cleanup();
-			// Браузер создаёт AudioContext «спящим», пока на странице не было клика, — тогда громкость всегда ноль, и фраза никогда не начиналась бы
+			// Браузер создаёт AudioContext «спящим», пока на странице не было клика, — тогда громкость всегда ноль, и фраза никогда не начиналась бы.
+			// «Будильники» вешаем ДО resume(): при запрете автовоспроизведения промис resume() висит до жеста пользователя, и если ждать его первым,
+			// до слушателей код не дойдёт — слушание молча не начнётся (deadlock). Ждём running-состояния с таймаутом, а не зависаем на resume().
 			const Audio = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
 			ctx = new Audio();
-			try { await ctx.resume(); } catch { /* без жеста пользователя остаётся спящим */ }
-			if (disposed) return cleanup();
+			const wake = () => { void ctx?.resume().catch(() => undefined); };
+			window.addEventListener("pointerdown", wake, { once: true });
+			window.addEventListener("keydown", wake, { once: true });
 			if (ctx.state === "suspended") {
-				// клик по странице разбудит звук; пока этого не было, ждём его и поднимаем контекст сами
-				const wake = () => { void ctx?.resume(); };
-				window.addEventListener("pointerdown", wake, { once: true });
-				window.addEventListener("keydown", wake, { once: true });
+				await new Promise<void>((resolve) => {
+					const finish = () => { clearInterval(poll); clearTimeout(timer); resolve(); };
+					const poll = setInterval(() => { if (disposed || ctx?.state === "running") finish(); }, 150);
+					const timer = setTimeout(finish, 8000);
+					void ctx?.resume().catch(() => undefined);
+					window.addEventListener("pointerdown", finish, { once: true });
+					window.addEventListener("keydown", finish, { once: true });
+				});
+			} else {
+				void ctx.resume().catch(() => undefined);
 			}
+			if (disposed) { window.removeEventListener("pointerdown", wake); window.removeEventListener("keydown", wake); return cleanup(); }
 			const analyser = ctx.createAnalyser();
 			analyser.fftSize = 1024;
 			ctx.createMediaStreamSource(stream).connect(analyser);
@@ -516,20 +598,22 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 			let holdUntil = 0; // важное сообщение (результат, ошибка) не затирается строкой с уровнем несколько секунд
 			let lastLevelAt = 0;
 			const note = (msg: string) => { holdUntil = Date.now() + 6000; setDiag(msg); };
-			const ctxState = () => (ctx?.state === "running" ? "" : ` · звук браузера «${ctx?.state}» — кликните по странице`);
-			setDiag(`Слушаю · микрофон «${track?.label || "?"}» · порог ${threshold.toFixed(3)}${ctxState()}`);
+			const ctxState = () => (ctx?.state === "running" ? "" : D.ctxSleep(String(ctx?.state ?? "")));
+			setDiag(D.listening(track?.label || "?", threshold.toFixed(3)) + ctxState());
 
 			let chunks: Blob[] = [];
 			let startedAt = 0;
 			let lastLoud = 0;
 			let loudFrames = 0;
 			let sending = false;
+			let stopping = false; // между recorder.stop() и onstop: не даём begin() перезаписать chunks/recorder и потерять хвост фразы
 			let lastNoSpeech = 0;
 
 			const send = async (blob: Blob, spokenMs: number) => {
-				if (spokenMs < SRV_MIN_SPEECH_MS || !blob.size) { note(`Слишком коротко (${Math.max(0, Math.round(spokenMs))} мс) — отброшено`); return; }
+				stopping = false; // onstop наступил — запись завершена, можно начинать следующую фразу
+				if (spokenMs < SRV_MIN_SPEECH_MS || !blob.size) { note(D.tooShort(String(Math.max(0, Math.round(spokenMs))))); return; }
 				sending = true;
-				note(`Отправляю на сервер ${Math.round(blob.size / 1024)} КБ, речь ${(spokenMs / 1000).toFixed(1)} с…`);
+				note(D.sending(String(Math.round(blob.size / 1024)), (spokenMs / 1000).toFixed(1)));
 				try {
 					const body = new FormData();
 					body.append("file", blob, `voice.${voiceExt(blob.type || "audio/webm")}`);
@@ -537,9 +621,9 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 					const res = await fetch("/api/ai/transcribe", { method: "POST", headers: authHeaders(false), body });
 					const json = (await res.json().catch(() => null)) as { text?: string } | null;
 					if (disposed) return;
-					if (!res.ok || !json) { g.serverBroken = true; note(`Сервер ответил ${res.status} — переключаюсь на браузер`); onErrorRef.current("micFallback"); }
-					else if (json.text?.trim()) { note(`Распознано: «${json.text.trim().slice(0, 80)}»`); onPhraseRef.current(json.text.trim()); }
-					else if (note("Сервер ответил, но слов не разобрал") === undefined && Date.now() - lastNoSpeech > 30_000) { lastNoSpeech = Date.now(); onErrorRef.current("micNoSpeech"); } // сервер речи не разобрал: молчать нельзя, но и сыпать подсказками на каждый шум не нужно
+					if (!res.ok || !json) { g.serverBroken = true; note(D.serverErr(String(res.status))); onErrorRef.current("micFallback"); }
+					else if (json.text?.trim()) { note(D.recognized(json.text.trim().slice(0, 80))); onPhraseRef.current(json.text.trim()); }
+					else { note(D.noWords); if (Date.now() - lastNoSpeech > 30_000) { lastNoSpeech = Date.now(); onErrorRef.current("micNoSpeech"); } } // сервер речи не разобрал: молчать нельзя, но и сыпать подсказками на каждый шум не нужно
 				} catch {
 					g.serverBroken = true;
 					if (!disposed) onErrorRef.current("micFallback");
@@ -550,6 +634,7 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 			};
 
 			const begin = () => {
+				if (sending || stopping) return; // идёт отправка/остановка — не перезаписываем запись
 				chunks = [];
 				recorder = new MediaRecorder(stream as MediaStream);
 				recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
@@ -558,7 +643,7 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 				rec.onstop = () => { void send(new Blob(chunks, { type: rec.mimeType || "audio/webm" }), lastLoud - spokenFrom); };
 				startedAt = spokenFrom;
 				rec.start();
-				note("Слышу речь…");
+				note(D.hearing);
 				setInterim("…"); // «слышу речь»: держит Айрис бодрствующей, пока человек говорит
 			};
 
@@ -570,15 +655,15 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 				const loud = lv > threshold;
 				if (now - lastLevelAt > 500 && now > holdUntil && recorder?.state !== "recording") {
 					lastLevelAt = now;
-					setDiag(`Слушаю · громкость ${lv.toFixed(3)} · порог ${threshold.toFixed(3)} · пик ${peak.toFixed(3)}${ctxState()}`);
+					setDiag(D.level(lv.toFixed(3), threshold.toFixed(3), peak.toFixed(3)) + ctxState());
 				}
 				if (recorder?.state === "recording") {
 					if (loud) lastLoud = now;
-					if (now - lastLoud > SRV_SILENCE_MS || now - startedAt > SRV_MAX_MS) { try { recorder.stop(); } catch { /* уже остановлен */ } }
+					if (now - lastLoud > SRV_SILENCE_MS || now - startedAt > SRV_MAX_MS) { stopping = true; try { recorder.stop(); } catch { stopping = false; /* уже остановлен */ } }
 					return;
 				}
 				loudFrames = loud ? loudFrames + 1 : 0;
-				if (loudFrames >= 2) { loudFrames = 0; lastLoud = now; begin(); }
+				if (loudFrames >= 3) { loudFrames = 0; lastLoud = now; begin(); } // 3 кадра (150 мс) устойчивой речи: щелчок/стук не запускает запись
 			}, 50);
 		})();
 		return () => { disposed = true; cleanup(); setInterim(""); };
