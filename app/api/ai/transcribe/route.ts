@@ -20,7 +20,7 @@ export const maxDuration = 60;
 const MAX_BYTES = 4 * 1024 * 1024;
 const OK_MIME = new Set(["audio/webm", "video/webm", "audio/ogg", "audio/mp4", "video/mp4", "audio/mpeg", "audio/wav", "audio/x-wav", "audio/x-m4a", "audio/m4a"]);
 // Интерфейс говорит на de/en/ua, распознаватель ждёт ISO-639-1 — украинская локаль это uk
-const STT_LANG: Record<string, string> = { de: "de", en: "en", ua: "uk", uk: "uk", ru: "ru" };
+const STT_LANG: Record<string, string> = { de: "de", en: "en", ua: "uk", uk: "uk", ru: "ru", uz: "uz" };
 
 export async function POST(req: Request) {
     const user = await requireUser(req);

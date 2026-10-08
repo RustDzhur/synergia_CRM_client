@@ -2063,7 +2063,8 @@
         "act_save_legal_draft": "Save a contract draft",
         "done_propose_rules_batch": "Batch prepared: {count} changes wait for your approval",
         "done_save_legal_draft": "Draft “{title}” saved (AI draft — specialist must review)",
-        "f_counterparty": "Other party"
+        "f_counterparty": "Other party",
+        "agentLang_uz": "Oʻzbekcha"
     },
     "finance": {
         "title": "Accounting",

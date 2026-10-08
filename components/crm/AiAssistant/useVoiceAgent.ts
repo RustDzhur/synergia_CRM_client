@@ -28,11 +28,12 @@ const PHRASES: Record<VoiceLang, { on: string; off: string; done: string; cancel
 	ru: { on: "Голосовое управление включено. Скажите: Привет, Айрис.", off: "Хорошо, выключаюсь.", done: "Готово.", cancelled: "Отменено.", ask: "Подтверждаете?", many: "Здесь несколько действий — подтвердите нужное кнопкой на экране.", error: "Не получилось, попробуйте ещё раз." },
 	uk: { on: "Голосове керування увімкнено. Скажіть: Привіт, Айрис.", off: "Добре, вимикаюсь.", done: "Готово.", cancelled: "Скасовано.", ask: "Підтверджуєте?", many: "Тут кілька дій — підтвердіть потрібну кнопкою на екрані.", error: "Не вийшло, спробуйте ще раз." },
 	de: { on: "Die Sprachsteuerung ist an. Sagen Sie: Hallo, Ayris.", off: "Okay, ich schalte mich aus.", done: "Erledigt.", cancelled: "Abgebrochen.", ask: "Soll ich das ausführen?", many: "Hier sind mehrere Aktionen – bitte bestätigen Sie die passende per Knopf.", error: "Das hat nicht geklappt. Bitte versuchen Sie es noch einmal." },
+	uz: { on: "Ovozli boshqaruv yoqildi. Ayting: Salom, Ayris.", off: "Xo‘p, o‘chyapman.", done: "Tayyor.", cancelled: "Bekor qilindi.", ask: "Tasdiqlaysizmi?", many: "Bu yerda bir nechta amal bor — keraklisini ekrandagi tugma bilan tasdiqlang.", error: "Bo‘lmadi, yana urinib ko‘ring." },
 	en: { on: "Voice control is on. Say: Hi, Ayris.", off: "Okay, switching off.", done: "Done.", cancelled: "Cancelled.", ask: "Shall I go ahead?", many: "There are several actions — please confirm the right one with its button.", error: "That didn't work. Please try again." },
 };
 
 // «Привет», «эй», «слушай» перед именем — не просьба
-const GREETING = /^(привет|приветик|эй|слушай|слышишь|ну|окей|ок|хай|привіт|слухай|гей|hey|hi|hello|ok|okay|hallo|hör|na)[\s,!.…]*$/iu;
+const GREETING = /^(salom|assalomu|alaykum|привет|приветик|эй|слушай|слышишь|ну|окей|ок|хай|привіт|слухай|гей|hey|hi|hello|ok|okay|hallo|hör|na)[\s,!.…]*$/iu;
 const isGreetingOnly = (rest: string) => {
 	const t = rest.trim();
 	if (!t) return true;
@@ -43,6 +44,7 @@ const defaultLang = (locale: string): VoiceLang => {
 	const nav = (typeof navigator !== "undefined" ? navigator.language : "").toLowerCase();
 	if (locale === "ua") return nav.startsWith("uk") ? "uk" : "ru"; // владелец говорит по-русски; украинский — одним нажатием в панели
 	if (locale === "de") return "de";
+	if (locale === "uz") return "uz";
 	return nav.startsWith("ru") ? "ru" : "en";
 };
 
@@ -75,7 +77,7 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 		setSupported(ok);
 		let on = false, savedLang: string | null = null, wake: string | null = null;
 		try { on = localStorage.getItem(ON_KEY) === "1"; savedLang = localStorage.getItem(LANG_KEY); wake = localStorage.getItem(WAKE_KEY); } catch { /* приватный режим */ }
-		setLangState((["ru", "uk", "de", "en"] as VoiceLang[]).includes(savedLang as VoiceLang) ? (savedLang as VoiceLang) : defaultLang(locale));
+		setLangState((["ru", "uk", "de", "en", "uz"] as VoiceLang[]).includes(savedLang as VoiceLang) ? (savedLang as VoiceLang) : defaultLang(locale));
 		setGenderState(readGender());
 		setRequireWakeState(wake !== "0");
 		try { setAutoApproveState(localStorage.getItem(AUTO_KEY) !== "0"); } catch { /* приватный режим */ }

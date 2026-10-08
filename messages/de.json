@@ -2063,7 +2063,8 @@
         "act_save_legal_draft": "Vertragsentwurf speichern",
         "done_propose_rules_batch": "Paket vorbereitet: {count} Änderungen warten auf Ihre Freigabe",
         "done_save_legal_draft": "Entwurf „{title}“ gespeichert (KI-Entwurf — vom Fachmann zu prüfen)",
-        "f_counterparty": "Vertragspartner"
+        "f_counterparty": "Vertragspartner",
+        "agentLang_uz": "Oʻzbekcha"
     },
     "finance": {
         "title": "Buchhaltung",

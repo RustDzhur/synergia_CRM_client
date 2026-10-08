@@ -1639,6 +1639,10 @@ export const TOOLS: AiTool[] = [
 // «открой страницу» обходится одним navigate. Если ни одна группа не узнана и это не переход — отдаём всё, как раньше:
 // медленнее, зато ничего не теряется.
 const GROUPS: { re: RegExp; tools: string[] }[] = [
+    { re: /hisob-faktura|hisob faktura|to‘lov|tolov|xarajat|qarz|kvitansiya|moliya|buxgalter/i,
+      tools: ["list_invoices", "create_invoice", "mark_invoice_paid", "send_invoice", "finance_summary", "list_expenses", "create_expense", "download_document"] },
+    { re: /mijoz|kontakt|bitim|lid\b|vazifa|topshiriq|eslatma/i,
+      tools: ["search_contacts", "search_companies", "list_deals", "get_deal", "create_deal", "create_contact", "add_note", "list_tasks", "create_task", "update_task"] },
     { re: /правил.* сверк|сверк.*правил|reconcil|abgleich|договор|контракт|contract|vertrag|юрист|lawyer|legal|чернетк|draft.*(contract|agreement)/i,
       tools: ["propose_rules_batch", "save_legal_draft", "search_documents", "read_document"] },
     { re: /интеграц|интегрир|подключ|підключ|интеграці|integrat|connect|anbind|verbind|эквайринг|приним.* оплат|приймат.* оплат|accept.* payment|zahlung.*annehm|telegram|viber|whatsapp|payme|click|didox|monobank|liqpay|wayforpay|checkbox|nova ?poshta|нова пошта|новая почта/i,
@@ -1680,7 +1684,7 @@ const GROUPS: { re: RegExp; tools: string[] }[] = [
     { re: /банк|транзакц|движен|заказ|замовлен|order|auftrag|производ|виробн|production|основн.* средств|asset|регуляр|recurring|автоматиз|automation|маркетинг|marketing|склады|warehouse/i,
       tools: ["browse_data", "list_products"] },
 ];
-const NAVIGATION = /открой|открыть|откройте|перейд|покажи страниц|зайди|відкрий|відкрити|перейди|покажи сторінк|open|go to|navigate|öffne|gehe zu|zeig/i;
+const NAVIGATION = /ochib|ochish|o‘tib|o‘t\b|ko‘rsat|oching|открой|открыть|откройте|перейд|покажи страниц|зайди|відкрий|відкрити|перейди|покажи сторінк|open|go to|navigate|öffne|gehe zu|zeig/i;
 
 /** Подмножество инструментов под запрос; не распознали — все. navigate доступен всегда. */
 export function pickTools<T extends { def: { name: string } }>(all: T[], recentText: string): T[] {
