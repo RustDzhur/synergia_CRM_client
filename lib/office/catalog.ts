@@ -23,7 +23,7 @@ export interface CatalogTemplate {
 
 const fromCode = (t: CodeTemplate, i: number): CatalogTemplate => ({
     id: t.id, name: t.name, zone: t.zone, accent: t.accent, skills: t.skills, duties: t.duties, platform: !!t.platform,
-    routines: t.routines ?? [], markets: [], texts: {}, starter: STARTER_IDS.includes(t.id), sort: i, active: true,
+    routines: t.routines ?? [], markets: t.markets ?? [], texts: t.texts ?? {}, starter: STARTER_IDS.includes(t.id), sort: i, active: true,
 });
 
 const CODE: CatalogTemplate[] = TEMPLATES.map(fromCode);
@@ -47,7 +47,7 @@ async function seedMissing(): Promise<void> {
     const missing = CODE.filter((t) => !have.has(t.id));
     if (missing.length) {
         await prisma.robotTemplate.createMany({
-            data: missing.map((t) => ({ id: t.id, name: t.name, zone: t.zone, accent: t.accent, skills: t.skills, duties: t.duties, platform: t.platform, routines: t.routines as never, markets: t.markets, starter: t.starter, sort: t.sort })),
+            data: missing.map((t) => ({ id: t.id, name: t.name, zone: t.zone, accent: t.accent, skills: t.skills, duties: t.duties, platform: t.platform, routines: t.routines as never, markets: t.markets, texts: t.texts as never, starter: t.starter, sort: t.sort })),
             skipDuplicates: true,
         });
     }

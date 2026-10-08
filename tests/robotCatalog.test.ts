@@ -73,3 +73,20 @@ describe.skipIf(!hasDb)("каталог ролей роботов в базе", 
         expect((await loadCatalog()).find((t) => t.id === "support")?.active).toBe(true);
     });
 });
+
+describe.skipIf(!hasDb)("роли рынка UZ", () => {
+    it("узбекские роли предлагаются только фирмам UZ, наймом подписываются из записи каталога", async () => {
+        resetCatalogCache();
+        const uz = await makeOrg();
+        const ua = await makeOrg();
+        await prisma.financeSettings.create({ data: { org: uz.org, country: "UZ" } });
+        await prisma.financeSettings.create({ data: { org: ua.org, country: "UA" } });
+        const ids = async (o: { userId: string }) => (await (await office(asUser(o.userId)("/api/office"))).json()).catalog.map((c: { id: string }) => c.id);
+        expect(await ids(uz)).toEqual(expect.arrayContaining(["uz_esf", "uz_warehouse", "uz_payments", "uz_support", "sales"]));
+        expect(await ids(ua)).not.toContain("uz_esf");
+        expect((await hire(asUser(ua.userId)("/api/office/robots", "POST", { template: "uz_esf" }))).status).toBe(400);
+        const r = await hire(asUser(uz.userId)("/api/office/robots", "POST", { template: "uz_esf" }));
+        expect(r.status).toBe(201);
+        expect((await r.json()).title).toBe("ESF accountant");
+    });
+});

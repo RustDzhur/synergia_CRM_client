@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import type { ExecutedAction, PendingAction } from "@/lib/ai/run";
-import { ACCENTS, TEMPLATES as CODE_TEMPLATES, type Accent, type SkillId, type ZoneId, isAccent, isSkill, isZone } from "./templates";
+import { ACCENTS, hasUiTexts, type Accent, type SkillId, type ZoneId, isAccent, isSkill, isZone } from "./templates";
 import { catalogById, hireCatalog, isPlatformTemplate, loadCatalog, starterIds } from "./catalog";
 import { orgMarket } from "@/lib/finance/marketGuard";
 
@@ -133,7 +133,7 @@ export async function createRobot(org: string, input: RobotInput, opts: { platfo
         id: rid("r"),
         name,
         // у ролей из кода должность — перевод интерфейса; у ролей, добавленных администратором, переводов в интерфейсе нет — подпись берётся из записи
-        title: clean(input.title, 60) || (tpl && !CODE_TEMPLATES.some((c) => c.id === tpl.id) ? clean(tpl.texts.en?.title || tpl.name, 60) : ""),
+        title: clean(input.title, 60) || (tpl && !hasUiTexts(tpl.id) ? clean(tpl.texts.en?.title || tpl.name, 60) : ""),
         template: tpl?.id ?? "custom",
         zone: tpl?.platform ? "platform" : isZone(input.zone) && input.zone !== "platform" ? input.zone : tpl?.zone ?? "office",
         accent: isAccent(input.accent) ? input.accent : tpl?.accent ?? ACCENTS[Math.floor(Math.random() * ACCENTS.length)],
