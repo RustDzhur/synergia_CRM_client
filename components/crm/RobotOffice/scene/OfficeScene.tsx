@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbMinus, TbPlus } from "react-icons/tb";
@@ -22,7 +22,9 @@ import { Station, kindOf } from "./stations";
 // Нажатие выбирает робота; перетаскивание — на зону (он идёт к новому столу); на робота можно бросить карточку поручения или текстовый файл.
 const MAX_FILE = 40 * 1024;
 const TEXT_FILE = /\.(txt|csv|tsv|md|json|xml|log)$/i;
-const S = 1.12; // масштаб спрайта робота в сцене
+const S = 0.84; // масштаб спрайта робота в сцене: роботы соразмерны комнатам (при 1.12 им было тесно)
+const ZOOM_MIN = 1, ZOOM_MAX = 3;
+const clampZoom = (z: number) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
 
 interface Item { depth: number; key: string; node: React.ReactNode }
 interface Handle { pos: SVGGElement; pose: SVGGElement }
@@ -97,6 +99,65 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 	const drag = useDragKit();
 	const { robots, tasks, selected, assign, platform } = useOfficeStore();
 	const [zoom, setZoom] = useState(1);
+	const scrollRef = useRef<HTMLDivElement>(null);
+	// точка, которую при смене масштаба нужно удержать под пальцами/курсором: доля содержимого и позиция внутри окна
+	const anchor = useRef<{ fx: number; fy: number; ox: number; oy: number } | null>(null);
+	const zoomRef = useRef(1);
+	zoomRef.current = zoom;
+	const zoomAt = useCallback((next: number, clientX?: number, clientY?: number) => {
+		const el = scrollRef.current;
+		const z = clampZoom(next);
+		if (el && clientX !== undefined && clientY !== undefined) {
+			const r = el.getBoundingClientRect();
+			anchor.current = { fx: (clientX - r.left + el.scrollLeft) / Math.max(1, el.scrollWidth), fy: (clientY - r.top + el.scrollTop) / Math.max(1, el.scrollHeight), ox: clientX - r.left, oy: clientY - r.top };
+		}
+		setZoom(z);
+	}, []);
+	useLayoutEffect(() => {
+		const el = scrollRef.current, a = anchor.current;
+		anchor.current = null;
+		if (!el || !a) return;
+		el.scrollLeft = a.fx * el.scrollWidth - a.ox;
+		el.scrollTop = a.fy * el.scrollHeight - a.oy;
+	}, [zoom]);
+	// Масштаб жестами, как на сенсорном экране: щипок на тачпаде (браузер шлёт wheel с ctrlKey), Ctrl/⌘ + колесо мыши,
+	// жест Safari на Mac и щипок двумя пальцами на сенсорном экране. Обычная прокрутка страницы не перехватывается.
+	useEffect(() => {
+		const el = scrollRef.current;
+		if (!el) return;
+		const onWheel = (e: WheelEvent) => {
+			if (!(e.ctrlKey || e.metaKey)) return;
+			e.preventDefault();
+			const dy = Math.max(-30, Math.min(30, e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY));
+			zoomAt(zoomRef.current * Math.exp(-dy * 0.006), e.clientX, e.clientY);
+		};
+		let gStart = 1;
+		const onGestureStart = (e: Event) => { e.preventDefault(); gStart = zoomRef.current; };
+		const onGestureChange = (e: Event) => { e.preventDefault(); const g = e as unknown as { scale: number; clientX: number; clientY: number }; zoomAt(gStart * g.scale, g.clientX, g.clientY); };
+		let d0 = 0, z0 = 1;
+		const dist = (t: TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+		const onTouchStart = (e: TouchEvent) => { if (e.touches.length === 2) { d0 = dist(e.touches); z0 = zoomRef.current; } };
+		const onTouchMove = (e: TouchEvent) => {
+			if (e.touches.length !== 2 || !d0) return;
+			e.preventDefault();
+			zoomAt(z0 * (dist(e.touches) / d0), (e.touches[0].clientX + e.touches[1].clientX) / 2, (e.touches[0].clientY + e.touches[1].clientY) / 2);
+		};
+		const onTouchEnd = () => { d0 = 0; };
+		el.addEventListener("wheel", onWheel, { passive: false });
+		el.addEventListener("gesturestart", onGestureStart);
+		el.addEventListener("gesturechange", onGestureChange);
+		el.addEventListener("touchstart", onTouchStart, { passive: true });
+		el.addEventListener("touchmove", onTouchMove, { passive: false });
+		el.addEventListener("touchend", onTouchEnd);
+		return () => {
+			el.removeEventListener("wheel", onWheel);
+			el.removeEventListener("gesturestart", onGestureStart);
+			el.removeEventListener("gesturechange", onGestureChange);
+			el.removeEventListener("touchstart", onTouchStart);
+			el.removeEventListener("touchmove", onTouchMove);
+			el.removeEventListener("touchend", onTouchEnd);
+		};
+	}, [zoomAt]);
 	const [depths, setDepths] = useState<Record<string, number>>({});
 	const handles = useRef(new Map<string, Handle>());
 	const sim = useRef<OfficeSim | null>(null);
@@ -127,7 +188,9 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 		let raf = 0;
 		let last = performance.now();
 		const frame = (ts: number) => {
-			const dt = Math.min(0.1, (ts - last) / 1000);
+			// dt не бывает отрицательным: метка первого кадра requestAnimationFrame может оказаться раньше performance.now() — тогда робот,
+			// уже стоящий на своём месте (роботы платформы за столами), делил 0 на 0 и уезжал в «NaN» — в левый верхний угол сцены
+			const dt = Math.max(0, Math.min(0.1, (ts - last) / 1000));
 			last = ts;
 			const out = sim.current!.update(dt, Date.now(), inputs.current);
 			out.forEach((v, id) => {
@@ -211,7 +274,7 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 
 	return (
 		<div className="relative overflow-hidden rounded-14 border border-[rgba(255,255,255,0.09)]" style={{ background: "radial-gradient(ellipse at 50% 40%, #1f2822 0%, #131815 55%, #0b0e0c 100%)" }}>
-			<div className="fs-scroll overflow-auto" style={{ maxHeight: zoom > 1 ? "min(80vh, 820px)" : undefined }}>
+			<div ref={scrollRef} className="fs-scroll overflow-auto" style={{ maxHeight: zoom > 1.01 ? "min(80vh, 820px)" : undefined, touchAction: "pan-x pan-y" }}>
 				<svg viewBox={`0 0 ${SCENE_W} ${SCENE_H}`} style={{ width: `${zoom * 100}%`, minWidth: 720, display: "block", margin: "0 auto" }} role="img" aria-label={t("title")}>
 					<SceneDefs />
 					<FloorSlab />
@@ -226,9 +289,9 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 				</svg>
 			</div>
 			<div className="absolute bottom-12 left-12 flex items-center gap-4 rounded-10 border border-inkLine bg-[rgba(13,17,15,0.85)] p-4 backdrop-blur">
-				<button type="button" aria-label="−" onClick={() => setZoom((z) => Math.max(1, +(z - 0.3).toFixed(1)))} className="flex h-30 w-30 items-center justify-center rounded-8 text-[#cfd4cb] hover:bg-[rgba(255,255,255,0.06)]"><TbMinus size={16} /></button>
+				<button type="button" aria-label="−" onClick={() => zoomAt(zoomRef.current / 1.25)} className="flex h-30 w-30 items-center justify-center rounded-8 text-[#cfd4cb] hover:bg-[rgba(255,255,255,0.06)]"><TbMinus size={16} /></button>
 				<span className="w-36 text-center text-11 text-[#8c948b]">{Math.round(zoom * 100)}%</span>
-				<button type="button" aria-label="+" onClick={() => setZoom((z) => Math.min(2.8, +(z + 0.3).toFixed(1)))} className="flex h-30 w-30 items-center justify-center rounded-8 text-[#cfd4cb] hover:bg-[rgba(255,255,255,0.06)]"><TbPlus size={16} /></button>
+				<button type="button" aria-label="+" onClick={() => zoomAt(zoomRef.current * 1.25)} className="flex h-30 w-30 items-center justify-center rounded-8 text-[#cfd4cb] hover:bg-[rgba(255,255,255,0.06)]"><TbPlus size={16} /></button>
 			</div>
 		</div>
 	);
