@@ -1,3 +1,5 @@
+> **Какой compose боевой.** На облачном сервере работает стек `deploy/vps/` (проект `firmspace`, сети `firmspace_db` и `firmspace_ai`, автовыкладка `deploy/vps/autodeploy.sh`). Файлы `deploy/docker-compose.yml`, `deploy/autodeploy.sh` и `deploy/migrate.sh` относятся к прежнему одиночному серверу. Схему базы в боевом стеке накатывает сам контейнер при старте (`deploy/entrypoint.sh`), отдельного шага миграции в автовыкладке нет и не нужен.
+
 # Дубликат CRM на сервере
 
 Отдельный контур того же кода: **PostgreSQL** вместо MongoDB, **локальный диск** вместо Firebase Storage.
