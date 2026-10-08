@@ -35,9 +35,20 @@ else if (models.status === 200) line(true, "ключ принят");
 else line(false, `ответ ${models.status}: ${models.msg}`);
 
 if (models.status === 200) {
-  const model = process.env.AI_MODEL || "gpt-4.1-mini";
-  const chat = await call("/chat/completions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model, max_tokens: 5, messages: [{ role: "user", content: "ping" }] }) });
-  line(chat.status === 200, chat.status === 200 ? `чат отвечает (модель ${model})` : `чат: ответ ${chat.status} ${chat.msg}${chat.status === 429 ? " — на балансе нет денег или превышен лимит" : ""}`);
+  // Чат, как в приложении: если заданы AI_API_URL и AI_API_KEY, он идёт напрямую к тому провайдеру (например, DeepSeek), иначе — к OpenAI
+  const direct = process.env.AI_API_URL && process.env.AI_API_KEY;
+  const chatBase = direct ? process.env.AI_API_URL.trim().replace(/\/+$/, "") : base;
+  const chatKey = direct ? process.env.AI_API_KEY.trim() : key;
+  const raw = process.env.AI_MODEL || "gpt-4.1-mini";
+  const model = direct || /^(gpt-|o\d|chatgpt-)/.test(raw) ? raw : "gpt-4.1-mini";
+  console.log(`Чат: ${direct ? chatBase + " (прямой провайдер AI_API_URL)" : "OpenAI"}, модель ${model}${model !== raw ? ` (AI_MODEL=${raw} — не модель OpenAI, приложение подставит ${model})` : ""}`);
+  let chat;
+  try {
+    const r = await fetch(`${chatBase}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${chatKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ model, max_tokens: 5, messages: [{ role: "user", content: "ping" }] }), signal: AbortSignal.timeout(20000) });
+    const j = await r.json().catch(() => ({}));
+    chat = { status: r.status, msg: String(j?.error?.message || "").replace(chatKey, "•••").slice(0, 200) };
+  } catch (e) { chat = { status: 0, msg: String(e?.cause?.code || e?.message) }; }
+  line(chat.status === 200, chat.status === 200 ? "чат отвечает" : `чат: ответ ${chat.status} ${chat.msg}${chat.status === 429 ? " — на балансе нет денег или превышен лимит" : ""}`);
   const ids = (await (await fetch(`${base}/models`, { headers: { Authorization: `Bearer ${key}` } })).json().catch(() => ({}))).data?.map((m) => m.id) ?? [];
   for (const m of ["whisper-1", "gpt-4o-transcribe"]) line(ids.includes(m), `модель распознавания речи ${m} ${ids.includes(m) ? "доступна" : "недоступна для этого ключа"}`);
 }

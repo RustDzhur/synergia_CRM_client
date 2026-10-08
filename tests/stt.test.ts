@@ -39,6 +39,13 @@ describe("шлюзы отключены", () => {
         expect(cloudSttModel()).toBe("whisper-1"); // такой модели у OpenAI нет — берём по умолчанию
         process.env.AI_MODEL = "openrouter/anthropic/claude-sonnet-5.5";
         expect(aiModel("openai")).toBe("gpt-4.1-mini");
+        process.env.AI_MODEL = "cc/claude-sonnet-4";
+        expect(aiModel("openai")).toBe("gpt-4.1-mini"); // чужое имя из старого .env — OpenAI ответил бы 400
+        process.env.AI_MODEL = "gpt-4.1";
+        expect(aiModel("openai")).toBe("gpt-4.1");
+        process.env.AI_API_URL = "https://api.deepseek.com/v1";
+        process.env.AI_MODEL = "deepseek-chat";
+        expect(aiModel("openai")).toBe("deepseek-chat"); // прямой провайдер чата — имя не трогаем
         delete process.env.AI_VOICE_STT_MODEL;
         expect(cloudSttModel()).toBe("whisper-1");
     });

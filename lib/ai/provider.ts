@@ -38,7 +38,10 @@ const plainModel = (m: string | undefined, fallback: string, ok: RegExp = /./) =
 };
 
 // Модели меняются — имя всегда можно задать переменной AI_MODEL
-export const aiModel = (p: ProviderId) => plainModel(process.env.AI_MODEL, p === "anthropic" ? "claude-sonnet-5" : "gpt-4.1-mini");
+// Если чат идёт к самому OpenAI (прямого AI_API_URL нет), имя модели обязано быть openai-шным: чужое имя из старого .env (cc/…, deepseek-…, claude-…)
+// OpenAI отвергает ответом 400 «invalid model ID», и ассистент молчал бы. Тогда берётся модель по умолчанию.
+export const aiModel = (p: ProviderId) =>
+    plainModel(process.env.AI_MODEL, p === "anthropic" ? "claude-sonnet-5" : "gpt-4.1-mini", p === "openai" && !process.env.AI_API_URL ? /^(gpt-|o\d|chatgpt-)/ : /./);
 
 const trim = (s: string) => s.replace(/\/+$/, "");
 
