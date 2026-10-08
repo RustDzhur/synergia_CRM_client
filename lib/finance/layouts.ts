@@ -427,7 +427,7 @@ function itemsTable(doc: Doc, d: PdfDocumentData, L: L, y: number, o: TableOpts)
             numberCell(doc, it.originCountry || "—", cols.origin, ty, widths.origin, size);
         } else {
             text(doc, it.description, cols.desc, ty, { size, color: "#333333", width: descWidth });
-            numberCell(doc, String(it.qty), cols.qty, ty, widths.qty, size);
+            numberCell(doc, `${it.qty}${it.unit ? ` ${it.unit}` : ""}`, cols.qty, ty, widths.qty, size);
             if (!o.noPrices) {
                 numberCell(doc, formatMoney(it.unitPrice, d.currency), cols.price, ty, widths.price, size);
                 // у документа без налога в колонке ставки стоит прочерк: печатать там 19 % при нулевом налоге — противоречие
@@ -485,10 +485,12 @@ function totalsRows(d: PdfDocumentData, L: L, totals: ReturnType<typeof computeT
     if (dunningFee > 0) rows.push([L.dunningFee, formatMoney(dunningFee, d.currency), false]);
     rows.push([L.gross, formatMoney(totals.gross + dunningFee, d.currency), true]);
     // Сумма в гривне по курсу: печатаем только когда документ в валюте и фирма украинская
+    // (у узбекской фирмы — в сумах по курсу ЦБ: rate.home = "UZS")
     const rate = d.uahRate;
-    if (rate && d.currency && d.currency.toUpperCase() !== "UAH" && rate.rate > 0) {
+    const home = (rate?.home || "UAH").toUpperCase();
+    if (rate && d.currency && d.currency.toUpperCase() !== home && rate.rate > 0) {
         const uah = (totals.gross + dunningFee) * rate.rate;
-        rows.push([`${L.uahTotal} (${L.uahRate} ${rate.rate.toFixed(4)})`, formatMoney(uah, "UAH"), false]);
+        rows.push([`${L.uahTotal} (${L.uahRate} ${rate.rate.toFixed(home === "UZS" ? 2 : 4)})`, formatMoney(uah, home), false]);
     }
     return rows;
 }

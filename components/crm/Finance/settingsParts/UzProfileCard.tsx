@@ -64,6 +64,7 @@ export default function UzProfileCard({ value, onChange }: { value: UzProfile; o
 				<input type="checkbox" checked={value.vatPayer} onChange={(e) => set({ vatPayer: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
 				{t("uzVatPayer")}
 			</label>
+			<p className="mt-[4px] pl-[26px] text-11 text-[#9AA396]">{t("uzVatPayerHint")}</p>
 
 			{rules.length > 0 && (
 				<div className="mt-18 border-t border-inkLine pt-14">

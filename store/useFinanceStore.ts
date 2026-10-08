@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { registerRefresher } from "./invalidate";
 import { apiCall } from "./crmApi";
 
-export interface LineItem { description: string; qty: number; unitPrice: number; taxRate: number; product?: string }
+export interface LineItem { description: string; qty: number; unitPrice: number; taxRate: number; product?: string; unit?: string }
 
 // Итог отправки документа клиенту: либо адрес, на который ушло письмо, либо текст ошибки и её код
 // ("no_recipient" — нет адреса у клиента, "no_mailbox" — не подключён ящик), по которому окно решает, что делать.

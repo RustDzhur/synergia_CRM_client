@@ -17,11 +17,13 @@ export const pdfLocale = (v: unknown) => (typeof v === "string" && (LOCALES as r
 
 // Курс к гривне для документов в валюте: у украинской фирмы в счёте печатается и сумма в ₴.
 async function uahRateFor(org: string, currency: string, stored?: { base?: number; margin?: number; value?: number; at?: string } | null) {
-    if (!currency || currency.toUpperCase() === "UAH") return null;
+    // Национальная валюта рынка: у украинской фирмы — гривна (курс НБУ), у узбекской — сум (курс ЦБ Узбекистана)
+    const home = marketOf((await financeSettings(org)).country) === "UZ" ? "UZS" : "UAH";
+    if (!currency || currency.toUpperCase() === home) return null;
     // Снимок курса на дате документа важнее живого
-    if (stored?.value) return { rate: stored.value, base: stored.base ?? 0, margin: stored.margin ?? 0, at: stored.at ?? "" };
+    if (stored?.value) return { rate: stored.value, base: stored.base ?? 0, margin: stored.margin ?? 0, at: stored.at ?? "", home };
     try {
-        return await firmRate(org, currency);
+        return await firmRate(org, currency, stored?.at || undefined);
     } catch {
         return null;
     }
@@ -69,6 +71,7 @@ export const toPdfItems = (items: any): PdfLineItem[] =>
         qty: Number(it?.qty) || 0,
         unitPrice: Number(it?.unitPrice) || 0,
         taxRate: Number(it?.taxRate) || 0,
+        ...(typeof it?.unit === "string" && it.unit ? { unit: it.unit } : {}),
     }));
 
 // Плательщик для бумаг, у которых нет собственного снимка клиента (предложение, заказ, договор): адрес и

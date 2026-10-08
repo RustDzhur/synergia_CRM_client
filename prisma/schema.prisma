@@ -434,6 +434,8 @@ model Expense {
   receipt       String?
   recurring     String   @default("")
   notes         String   @default("")
+  // Узбекистан: полученный ЭСФ поставщика { number, date, supplierInn } — основание для вычета входного QQS
+  esf           Json?
   createdByName String   @default("")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -666,6 +668,8 @@ model Invoice {
   fiscalReturnError  String    @default("")
   payLink            Json?
   paidVia            String    @default("")
+  // Узбекистан: отметка электронного счёта-фактуры (ЭСФ) { status, number, at, operator }: ведётся вручную, пока нет интеграции с оператором
+  esf                Json?
   createdByName      String    @default("")
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt

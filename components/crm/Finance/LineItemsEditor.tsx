@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { TbPlus, TbTrash } from "react-icons/tb";
 import { LineItem, Product, useFinanceStore } from "@/store/useFinanceStore";
 import { defaultRateFor } from "@/lib/finance/tax";
+import { useMarket } from "@/store/useMarket";
 import { computeTotals } from "./format";
 import { emptyItem as emptyLine } from "./lineItems";
 
@@ -16,6 +17,9 @@ const cell = "fs-field h-40 w-full px-10 text-13 outline-none";
 export default function LineItemsEditor({ items, onChange, products, currency }: { items: LineItem[]; onChange: (items: LineItem[]) => void; products: Product[]; currency: string }) {
 	const t = useTranslations("finance");
 	const settings = useFinanceStore((s) => s.settings);
+	// Узбекистан: единица измерения — обязательный реквизит электронного счёта-фактуры, поэтому у строки появляется своё поле
+	const uz = useMarket().market === "UZ";
+	const cols = uz ? "md:grid-cols-[1fr_120px_70px_80px_100px_90px_32px]" : "md:grid-cols-[1fr_120px_70px_100px_90px_32px]";
 	const defaultTaxRate = defaultRateFor(settings ?? {});
 	const set = (i: number, patch: Partial<LineItem>) => onChange(items.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
 	const remove = (i: number) => onChange(items.filter((_, idx) => idx !== i));
@@ -24,24 +28,25 @@ export default function LineItemsEditor({ items, onChange, products, currency }:
 		const p = products.find((x) => x.id === productId);
 		if (!p) return set(i, { product: undefined });
 		// у товара своя ставка? берём её; нет — ставку фирмы по умолчанию, а не текущую ставку строки
-		set(i, { product: p.id, description: p.name, unitPrice: p.salePrice, taxRate: p.taxRate ?? defaultTaxRate });
+		set(i, { product: p.id, description: p.name, unitPrice: p.salePrice, taxRate: p.taxRate ?? defaultTaxRate, ...(p.unit ? { unit: p.unit } : {}) });
 	};
 	const totals = computeTotals(items);
 
 	return (
 		<div>
-			<div className="hidden gap-8 px-2 pb-6 text-11 text-[#9AA396] md:grid md:grid-cols-[1fr_120px_70px_100px_90px_32px]">
-				<span>{t("itemDescription")}</span><span>{t("itemProduct")}</span><span>{t("itemQty")}</span><span>{t("itemPrice")}</span><span>{t("itemTax")}</span><span />
+			<div className={`hidden gap-8 px-2 pb-6 text-11 text-[#9AA396] md:grid ${cols}`}>
+				<span>{t("itemDescription")}</span><span>{t("itemProduct")}</span><span>{t("itemQty")}</span>{uz && <span>{t("itemUnit")}</span>}<span>{t("itemPrice")}</span><span>{t("itemTax")}</span><span />
 			</div>
 			<div className="flex flex-col gap-8">
 				{items.map((it, i) => (
-					<div key={i} className="grid grid-cols-2 gap-6 rounded-10 border border-inkLineSoft p-8 md:grid-cols-[1fr_120px_70px_100px_90px_32px] md:border-0 md:p-0">
+					<div key={i} className={`grid grid-cols-2 gap-6 rounded-10 border border-inkLineSoft p-8 md:border-0 md:p-0 ${cols}`}>
 						<input className={`${cell} col-span-2 md:col-span-1`} value={it.description} onChange={(e) => set(i, { description: e.target.value })} placeholder={t("itemDescription")} maxLength={300} />
 						<select className={cell} value={it.product ?? ""} onChange={(e) => pickProduct(i, e.target.value)}>
 							<option value="">{t("itemCustom")}</option>
 							{products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
 						</select>
 						<input className={cell} type="number" min={0} step="0.01" value={it.qty} onChange={(e) => set(i, { qty: Number(e.target.value) })} />
+						{uz && <input className={cell} value={it.unit ?? ""} onChange={(e) => set(i, { unit: e.target.value })} placeholder={t("itemUnit")} maxLength={16} />}
 						<input className={cell} type="number" min={0} step="0.01" value={it.unitPrice} onChange={(e) => set(i, { unitPrice: Number(e.target.value) })} />
 						<input className={cell} type="number" min={0} max={100} step="0.1" value={it.taxRate} onChange={(e) => set(i, { taxRate: Number(e.target.value) })} />
 						<button type="button" onClick={() => remove(i)} aria-label={t("itemRemove")} className="flex h-40 w-[32px] shrink-0 items-center justify-center text-[#9AA396] transition-colors hover:text-danger">

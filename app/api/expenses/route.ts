@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 const toDTO = (e: any) => ({
     id: e.id, vendor: e.vendor, category: e.category, amount: e.amount, taxRate: e.taxRate, currency: e.currency,
     date: e.date, deal: e.deal ?? "", order: e.order ?? "", receipt: e.receipt ?? "",
-    recurring: e.recurring, notes: e.notes, createdByName: e.createdByName,
+    recurring: e.recurring, notes: e.notes, createdByName: e.createdByName, esf: e.esf ?? null,
 });
 
 // GET /api/expenses?from=&to= — расходы фирмы за период (по умолчанию — все), самые новые первыми
