@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import type { ExecutedAction, PendingAction } from "@/lib/ai/run";
-import { ACCENTS, type Accent, STARTER_IDS, TEMPLATES, type SkillId, type ZoneId, isAccent, isSkill, isZone, templateById } from "./templates";
+import { ACCENTS, type Accent, PLATFORM_IDS, STARTER_IDS, TEMPLATES, type SkillId, type ZoneId, isAccent, isSkill, isZone, templateById } from "./templates";
 
 // Роботы, их регулярные задачи и поручения лежат в записях разделов (SectionRecord), как правила автоматизации: отдельной
 // миграции базы не нужно. Ключи: office:robot (rid = id робота), office:task (rid = id поручения), office:meta (флаг «стартовый состав нанят»).
@@ -54,6 +54,8 @@ export const MAX_ROUTINES = 5;
 const MAX_TASKS_KEPT = 250;
 
 const rid = (p: string) => `${p}${Date.now().toString(36)}${randomBytes(3).toString("hex")}`;
+/** Служебные навыки и зона «платформа» есть только у роботов платформы: своему роботу их выдать нельзя. */
+const ownSkill = (v: unknown): v is SkillId => isSkill(v) && v !== "monitor" && v !== "blogwrite";
 const clean = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/[\p{Cc}<>]/gu, " ").replace(/\s+/g, " ").trim().slice(0, max) : "");
 const cleanLong = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F<>]/g, " ").trim().slice(0, max) : "");
 
@@ -92,26 +94,27 @@ export async function getRobot(org: string, id: string): Promise<Robot | null> {
 export interface RobotInput { template?: string; name?: string; title?: string; zone?: string; accent?: string; skills?: unknown; instructions?: string; autonomy?: string; enabled?: boolean }
 
 /** Нанимает робота: из шаблона каталога или своего («custom»). Для шаблона пустые поля берутся из него. */
-export async function createRobot(org: string, input: RobotInput): Promise<Robot> {
+export async function createRobot(org: string, input: RobotInput, opts: { platform?: boolean } = {}): Promise<Robot> {
     if ((await prisma.sectionRecord.count({ where: { org, key: K_ROBOT } })) >= MAX_ROBOTS) throw new OfficeError(`At most ${MAX_ROBOTS} robots`);
     const tpl = input.template && input.template !== "custom" ? templateById(input.template) : null;
     if (input.template && input.template !== "custom" && !tpl) throw new OfficeError("Unknown robot template");
+    if (tpl?.platform && !opts.platform) throw new OfficeError("Unknown robot template"); // роботов платформы нанимает только сама платформа
     const name = clean(input.name, 40) || tpl?.name || "";
     if (!name) throw new OfficeError("Robot name is required");
-    const skills = tpl && !Array.isArray(input.skills) ? tpl.skills : (Array.isArray(input.skills) ? input.skills : []).filter(isSkill);
+    const skills = tpl && !Array.isArray(input.skills) ? tpl.skills : (Array.isArray(input.skills) ? input.skills : []).filter(tpl?.platform ? isSkill : ownSkill);
     if (!skills.length) throw new OfficeError("Choose at least one skill");
     const robot: Robot = {
         id: rid("r"),
         name,
         title: clean(input.title, 60),
         template: tpl?.id ?? "custom",
-        zone: isZone(input.zone) ? input.zone : tpl?.zone ?? "office",
+        zone: tpl?.platform ? "platform" : isZone(input.zone) && input.zone !== "platform" ? input.zone : tpl?.zone ?? "office",
         accent: isAccent(input.accent) ? input.accent : tpl?.accent ?? ACCENTS[Math.floor(Math.random() * ACCENTS.length)],
         skills: Array.from(new Set(skills)),
         instructions: cleanLong(input.instructions, 1500),
-        autonomy: input.autonomy === "auto" ? "auto" : "ask",
+        autonomy: input.autonomy === "auto" || tpl?.platform ? "auto" : "ask",
         enabled: input.enabled !== false,
-        routines: [],
+        routines: (tpl?.routines ?? []).map((r) => cleanRoutine(r)).filter((r): r is Routine => !!r),
         createdAt: new Date().toISOString(),
     };
     if (!tpl && !robot.title && !robot.instructions) throw new OfficeError("Describe the job: give a title or instructions");
@@ -135,10 +138,11 @@ export async function updateRobot(org: string, id: string, patch: RobotInput & {
     const next: Robot = { ...cur };
     if (patch.name !== undefined) { next.name = clean(patch.name, 40); if (!next.name) throw new OfficeError("Robot name is required"); }
     if (patch.title !== undefined) next.title = clean(patch.title, 60);
-    if (patch.zone !== undefined) { if (!isZone(patch.zone)) throw new OfficeError("Unknown zone"); next.zone = patch.zone; }
+    const fixed = !!templateById(cur.template)?.platform; // роботу платформы зону и навыки не меняют
+    if (patch.zone !== undefined && !fixed) { if (!isZone(patch.zone) || patch.zone === "platform") throw new OfficeError("Unknown zone"); next.zone = patch.zone; }
     if (patch.accent !== undefined) { if (!isAccent(patch.accent)) throw new OfficeError("Unknown color"); next.accent = patch.accent; }
-    if (patch.skills !== undefined) {
-        next.skills = Array.from(new Set((Array.isArray(patch.skills) ? patch.skills : []).filter(isSkill)));
+    if (patch.skills !== undefined && !fixed) {
+        next.skills = Array.from(new Set((Array.isArray(patch.skills) ? patch.skills : []).filter(ownSkill)));
         if (!next.skills.length) throw new OfficeError("Choose at least one skill");
     }
     if (patch.instructions !== undefined) next.instructions = cleanLong(patch.instructions, 1500);
@@ -172,6 +176,19 @@ export async function ensureStarters(org: string): Promise<boolean> {
     for (const id of STARTER_IDS) {
         const tpl = TEMPLATES.find((t) => t.id === id);
         if (tpl) await createRobot(org, { template: tpl.id });
+    }
+    return true;
+}
+
+/** Роботы платформы (ловля ошибок, оптимизация сайта, блог) — один раз на фирму администратора платформы. Уволить можно, повторно не нанимаются. */
+export async function ensurePlatformRobots(org: string): Promise<boolean> {
+    const mark = await prisma.sectionRecord.findFirst({ where: { org, key: K_META, rid: "platform" } });
+    if (mark) return false;
+    try { await prisma.sectionRecord.create({ data: { org, key: K_META, rid: "platform", values: { at: new Date().toISOString() } as never } }); } catch { return false; }
+    const have = new Set((await listRobots(org)).map((r) => r.template));
+    for (const id of PLATFORM_IDS) {
+        if (have.has(id)) continue;
+        await createRobot(org, { template: id }, { platform: true }).catch(() => undefined);
     }
     return true;
 }

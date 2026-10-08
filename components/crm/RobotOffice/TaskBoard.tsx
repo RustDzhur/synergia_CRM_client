@@ -5,7 +5,7 @@ import { useOfficeStore } from "@/store/useOfficeStore";
 import TaskItem from "./TaskItem";
 
 // Доска поручений: сверху то, что ждёт решения и что в работе, ниже — завершённое. Для спокойного вида — один столбец, а не канбан.
-export default function TaskBoard() {
+export default function TaskBoard({ wide = false }: { wide?: boolean }) {
 	const t = useTranslations("office");
 	const { tasks, canEdit, clearDone } = useOfficeStore();
 	const waiting = tasks.filter((x) => x.status === "waiting");
@@ -26,7 +26,7 @@ export default function TaskBoard() {
 				{canEdit && finished.length > 0 && <button type="button" onClick={() => void clearDone()} className="text-12 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">{t("clearDone")}</button>}
 			</div>
 			{tasks.length === 0 ? <p className="text-13 text-[#8c948b]">{t("boardEmpty")}</p> : (
-				<div className="flex flex-col gap-18">
+				<div className={wide ? "grid grid-cols-1 gap-18 md:grid-cols-3" : "flex flex-col gap-18"}>
 					<Section title={t("colWaiting")} items={waiting} />
 					<Section title={t("colWorking")} items={working} />
 					<Section title={t("colDone")} items={finished} />

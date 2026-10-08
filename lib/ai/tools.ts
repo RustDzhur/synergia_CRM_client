@@ -17,6 +17,7 @@ import { mailAccount } from "@/lib/finance/send";
 import { reportPdf, type ReportSection } from "./reportPdf";
 import { type Entity, COMPANY_EDITABLE, CONTACT_EDITABLE, DEAL_EDITABLE, RecordError, forget, loadMemory, recordLink, remember, resolveRecord, titleOf, updateRecord } from "./records";
 import { isPlatformAdminUser } from "@/lib/admin";
+import { parsePost } from "@/lib/agentBlog";
 import { decideRequest, listRequests } from "@/lib/connect/tools";
 import { LeadToolError, SCOPES as LEAD_SCOPES, analyze as analyzeLeads, cleanup as cleanupLeads, leadLog, restoreLead, saveRules } from "./leadTools";
 import { BrowseError, ENTITY_KEYS, browse, listProducts } from "./browse";
@@ -947,6 +948,33 @@ export const TOOLS: AiTool[] = [
             return { params: { title: (post.title as { en?: string } | null)?.en ?? post.slug, state: a.publish === true ? "published" : "draft" }, link: `/blog/${post.slug}` };
         }),
     },
+    {
+        module: null, write: true,
+        def: {
+            name: "save_blog_draft",
+            description: "Save an article of the landing-page blog as a DRAFT (never published by this tool; a human publishes it). The article must be in all three languages en, de, ua: title, excerpt and every body paragraph. Plain text, no HTML. Platform administrators only. Call list_blog_posts first to avoid repeating a topic.",
+            parameters: schema({
+                slug: S("optional latin slug (a-z, 0-9, dashes); built from the English title when omitted"),
+                title: { type: "object", description: "title in en, de and ua (up to 160 characters each)", properties: { en: { type: "string" }, de: { type: "string" }, ua: { type: "string" } }, required: ["en", "de", "ua"] },
+                excerpt: { type: "object", description: "one or two sentences for the blog list in en, de and ua (up to 400 characters each)", properties: { en: { type: "string" }, de: { type: "string" }, ua: { type: "string" } }, required: ["en", "de", "ua"] },
+                body: { type: "array", description: "5–8 paragraphs, each in en, de and ua", items: { type: "object", properties: { en: { type: "string" }, de: { type: "string" }, ua: { type: "string" } }, required: ["en", "de", "ua"] } },
+            }, ["title", "excerpt", "body"]),
+        },
+        check: (a) => {
+            try { const p = parsePost({ ...a, publish: false }); return { slug: p.slug, title: p.title, excerpt: p.excerpt, body: p.body }; } catch (e) { throw new ToolError(e instanceof Error ? e.message : "Invalid article"); }
+        },
+        run: (c, a) => wrap(async () => {
+            const me = await prisma.user.findUnique({ where: { id: c.userId } });
+            if (!(await isPlatformAdminUser(me as never))) throw new ToolError("Only a platform administrator can manage the blog");
+            const post = parsePost({ ...a, publish: false });
+            const existing = await prisma.blogPost.findUnique({ where: { slug: post.slug } });
+            if (existing?.published) throw new ToolError(`Article "${post.slug}" is already published; pick another slug`);
+            const data = { title: post.title as never, excerpt: post.excerpt as never, body: post.body as never, ...(post.image ? { image: post.image } : {}) };
+            if (existing) await prisma.blogPost.update({ where: { slug: post.slug }, data });
+            else await prisma.blogPost.create({ data: { slug: post.slug, ...data, published: false } });
+            return { params: { title: post.title.en, state: "draft" }, link: `/blog/${post.slug}` };
+        }),
+    },
     // ─────────── отбор потенциальных клиентов ───────────
     {
         module: "crm", write: false,
@@ -1422,7 +1450,7 @@ export const TOOLS: AiTool[] = [
         run: (c, a) => wrap(async () => {
             const { listRobots } = await import("@/lib/office/store");
             const { startOfficeTask } = await import("@/lib/office/runner");
-            const robots = (await listRobots(c.org)).filter((r) => r.enabled);
+            const robots = (await listRobots(c.org)).filter((r) => r.enabled && !(r.skills.length > 0 && r.skills.every((x) => x === "monitor")));
             const key = String(a.robot).toLowerCase();
             const hits = robots.filter((r) => r.id === a.robot || r.name.toLowerCase() === key);
             const found = hits.length ? hits : robots.filter((r) => r.name.toLowerCase().includes(key) || (r.title || r.template).toLowerCase().includes(key));
@@ -1487,7 +1515,7 @@ export const TOOLS: AiTool[] = [
                 if (sums) sections.push({ heading: L.sumTotal + ": " + sums, columns: [L.invCount], rows: [[String(r.count)]] });
             } else sections = a.sections as ReportSection[];
             const today = c.today || new Date().toISOString().slice(0, 10);
-            const pdf = await reportPdf({ title: title || L.report, subtitle: `${L.generated}: ${today}`, sections, footer: "Firmspace CRM · Iris" });
+            const pdf = await reportPdf({ title: title || L.report, subtitle: `${L.generated}: ${today}`, sections, footer: "Firmspace CRM · Ayris" });
             const user = await prisma.user.findUnique({ where: { id: c.userId }, select: { email: true } });
             const to = String(a.to || user?.email || "");
             if (!to) throw new ToolError("No recipient: the user has no e-mail address — give one in the command");
@@ -1564,7 +1592,7 @@ const GROUPS: { re: RegExp; tools: string[] }[] = [
     { re: /агент|бот|запрос.* от|agent|bot\b|одобр|approve|разреш/i,
       tools: ["list_agent_requests", "decide_agent_request"] },
     { re: /блог|статьи|статей|статья|article|blog|черновик|draft|опублику|publish/i,
-      tools: ["list_blog_posts", "publish_blog_post"] },
+      tools: ["list_blog_posts", "publish_blog_post", "save_blog_draft"] },
     { re: /документ|файл|document|dokument|прочитай документ|read the doc/i,
       tools: ["search_documents", "read_document", "list_employees", "save_employee_contract", "download_document"] },
     { re: /сотрудник|співробітник|працівник|employee|mitarbeiter|команд|team|персонал/i,

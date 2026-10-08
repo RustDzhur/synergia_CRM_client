@@ -1,4 +1,5 @@
 "use client";
+import DemoBanner from "@/components/crm/shared/DemoBanner";
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
@@ -71,6 +72,7 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
             <div className="flex min-h-screen bg-ink">
                 <Sidebar />
                 <div className="flex min-w-0 flex-1 flex-col">
+                    <DemoBanner />
                     {/* Шапка: 56px на телефоне, 64px от планшета */}
                     <header className="sticky top-0 z-40 border-b border-inkLine bg-[rgba(10,12,11,0.86)] backdrop-blur-md">
                         <div className="flex h-56 items-center px-16 md:h-64 md:px-24 lg:px-32">

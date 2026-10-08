@@ -26,9 +26,9 @@ const AWAKE_CONFIRM_MS = 45_000;
 // Короткие фразы самой Айрис — на языке, на котором с ней говорят (а не на языке интерфейса)
 const PHRASES: Record<VoiceLang, { on: string; off: string; done: string; cancelled: string; ask: string; many: string; error: string }> = {
 	ru: { on: "Голосовое управление включено. Скажите: Привет, Айрис.", off: "Хорошо, выключаюсь.", done: "Готово.", cancelled: "Отменено.", ask: "Подтверждаете?", many: "Здесь несколько действий — подтвердите нужное кнопкой на экране.", error: "Не получилось, попробуйте ещё раз." },
-	uk: { on: "Голосове керування увімкнено. Скажіть: Привіт, Айріс.", off: "Добре, вимикаюсь.", done: "Готово.", cancelled: "Скасовано.", ask: "Підтверджуєте?", many: "Тут кілька дій — підтвердіть потрібну кнопкою на екрані.", error: "Не вийшло, спробуйте ще раз." },
-	de: { on: "Die Sprachsteuerung ist an. Sagen Sie: Hallo, Iris.", off: "Okay, ich schalte mich aus.", done: "Erledigt.", cancelled: "Abgebrochen.", ask: "Soll ich das ausführen?", many: "Hier sind mehrere Aktionen – bitte bestätigen Sie die passende per Knopf.", error: "Das hat nicht geklappt. Bitte versuchen Sie es noch einmal." },
-	en: { on: "Voice control is on. Say: Hi, Iris.", off: "Okay, switching off.", done: "Done.", cancelled: "Cancelled.", ask: "Shall I go ahead?", many: "There are several actions — please confirm the right one with its button.", error: "That didn't work. Please try again." },
+	uk: { on: "Голосове керування увімкнено. Скажіть: Привіт, Айрис.", off: "Добре, вимикаюсь.", done: "Готово.", cancelled: "Скасовано.", ask: "Підтверджуєте?", many: "Тут кілька дій — підтвердіть потрібну кнопкою на екрані.", error: "Не вийшло, спробуйте ще раз." },
+	de: { on: "Die Sprachsteuerung ist an. Sagen Sie: Hallo, Ayris.", off: "Okay, ich schalte mich aus.", done: "Erledigt.", cancelled: "Abgebrochen.", ask: "Soll ich das ausführen?", many: "Hier sind mehrere Aktionen – bitte bestätigen Sie die passende per Knopf.", error: "Das hat nicht geklappt. Bitte versuchen Sie es noch einmal." },
+	en: { on: "Voice control is on. Say: Hi, Ayris.", off: "Okay, switching off.", done: "Done.", cancelled: "Cancelled.", ask: "Shall I go ahead?", many: "There are several actions — please confirm the right one with its button.", error: "That didn't work. Please try again." },
 };
 
 // «Привет», «эй», «слушай» перед именем — не просьба

@@ -1,5 +1,6 @@
 import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
+import { demoAiLimit, isDemoEmail } from "@/lib/demo/rules";
 import { prisma } from "@/lib/prisma";
 import { AiCtx, DownloadTarget, FindTarget, NavTarget, ScrollTarget, ToolError, allowedTools, pickTools, targetLabel } from "./tools";
 import { Msg, complete, voiceModel } from "./provider";
@@ -9,6 +10,9 @@ import { loadMemory, memoryBlock } from "./records";
 // Сколько разговоров с ИИ в сутки у фирмы — общий счётчик для чата и автономного шага автоматизации (см. app/config/plans.ts).
 // Можно переопределить переменной AI_DAILY_LIMIT (одно число для всех тарифов) — например, для теста.
 export async function dailyLimit(org: string) {
+    // демо-кабинет: ИИ работает за счёт платформы, поэтому у каждого посетителя только несколько запросов
+    const owner = await prisma.user.findUnique({ where: { id: org }, select: { email: true } }).catch(() => null);
+    if (owner && isDemoEmail(owner.email)) return demoAiLimit();
     if (Number(process.env.AI_DAILY_LIMIT) > 0) return Number(process.env.AI_DAILY_LIMIT);
     const o = await prisma.organization.findUnique({ where: { id: org }, select: { plan: true, planOverride: true, planOverrideUntil: true } });
     return planFor(effectivePlan(o ?? {})).aiDailyRequests;
@@ -41,7 +45,7 @@ const LANG: Record<string, string> = { en: "English", de: "German", ua: "Ukraini
 // Режим голоса: ответ прозвучит вслух, поэтому без разметки и списков, коротко, на языке, на котором говорил человек
 const VOICE_RULES = `\n- VOICE MODE: the user is speaking and your answer is read aloud by a speech synthesizer. Answer in the language the user just spoke (Russian, Ukrainian, German or English) — not the interface language. Use 1–3 short, natural spoken sentences like a friendly human assistant: no markdown, no bullet lists, no tables, no ids, no URLs, no emoji. Say numbers and sums the way a person says them («три счёта на сумму двести сорок евро»). For many results mention only the count, the total and the two or three most important items, then offer to go on. After calling a write tool, say in one short sentence what you prepared and stop — the app itself asks the user to confirm out loud, so do not ask «подтвердить?» yourself. When you open a page, say so in a few words («Открываю бухгалтерию, вот неоплаченные счета») and add the key fact from the data.`;
 
-const system = (ctx: AiCtx, user: { name: string }, orgName: string, locale: string, page: string, voice: boolean, auto: boolean, memory: string) => `You are Айрис (Iris), the AI assistant built into Firmspace CRM — the user calls you «Айрис». You help the user of the firm "${orgName}" work with the CRM.
+const system = (ctx: AiCtx, user: { name: string }, orgName: string, locale: string, page: string, voice: boolean, auto: boolean, memory: string) => `You are Айрис (Latin spelling: Ayris), the AI assistant built into Firmspace CRM — the user calls you «Айрис». You help the user of the firm "${orgName}" work with the CRM.
 User: ${user.name} (role: ${ctx.role}). Today is ${ctx.today}, the local time is ${ctx.now}. The user is looking at the page: ${page || "unknown"}.
 Reply in ${LANG[locale] ?? "English"} unless the user writes in another language. Be concise: short sentences, short lists, no filler. Dates for people: dd.mm.yyyy.
 

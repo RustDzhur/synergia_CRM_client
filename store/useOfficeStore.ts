@@ -3,8 +3,10 @@ import toast from "react-hot-toast";
 import { apiCall } from "./crmApi";
 
 // Робот-офис на клиенте (сервер — lib/office). Данные обновляются опросом: часто, пока кто-то работает или ждёт, и редко в покое.
-export type Skill = "crm" | "quotes" | "invoices" | "finance" | "stock" | "purchasing" | "production" | "tasks" | "mail" | "documents" | "blog" | "hr" | "data";
-export type Zone = "sales" | "finance" | "warehouse" | "office" | "marketing" | "service";
+export type Skill = "crm" | "quotes" | "invoices" | "finance" | "stock" | "purchasing" | "production" | "tasks" | "mail" | "documents" | "blog" | "hr" | "data" | "blogwrite" | "monitor";
+export type Zone = "sales" | "finance" | "warehouse" | "office" | "marketing" | "service" | "platform";
+export type AgentName = "seo-agent" | "article-writer" | "mail-sorter";
+export interface PlatformInfo { errors: { telegram: boolean; items: { at: string; title: string; count: number; source: string }[] }; agents: Partial<Record<AgentName, { lastActivity: string; seenAt: string; note: string }>> }
 export type Accent = "lime" | "teal" | "sky" | "amber" | "coral" | "violet";
 export interface Routine { id: string; text: string; kind: "daily" | "weekdays" | "weekly" | "monthly"; time: string; day?: number; lastRun?: string }
 export interface Robot { id: string; name: string; title: string; template: string; zone: Zone; accent: Accent; skills: Skill[]; instructions: string; autonomy: "ask" | "auto"; enabled: boolean; routines: Routine[]; createdAt: string }
@@ -18,6 +20,8 @@ interface OfficeStore {
     tasks: OfficeTask[];
     loaded: boolean;
     ai: boolean;
+    /** Данные для роботов платформы (ошибки, сигналы SEO-агента) — только у администратора платформы. */
+    platform: PlatformInfo | null;
     canEdit: boolean;
     maxRobots: number;
     selected: string | null;
@@ -37,12 +41,12 @@ const fail = (message: string) => { toast.error(message); return false; };
 export const useOfficeStore = create<OfficeStore>()((set, get) => {
     const replaceTask = (t: OfficeTask) => set((s) => ({ tasks: s.tasks.some((x) => x.id === t.id) ? s.tasks.map((x) => (x.id === t.id ? t : x)) : [t, ...s.tasks] }));
     return {
-        robots: [], tasks: [], loaded: false, ai: true, canEdit: true, maxRobots: 24, selected: null,
+        robots: [], tasks: [], platform: null, loaded: false, ai: true, canEdit: true, maxRobots: 24, selected: null,
         select: (id) => set({ selected: id }),
 
         load: async () => {
-            const r = await apiCall<{ robots: Robot[]; tasks: OfficeTask[]; ai: boolean; canEdit: boolean; maxRobots: number }>("/api/office", "GET", undefined, { cache: "no-store" });
-            if (r.ok && r.data) set({ robots: r.data.robots, tasks: r.data.tasks, ai: r.data.ai, canEdit: r.data.canEdit, maxRobots: r.data.maxRobots, loaded: true });
+            const r = await apiCall<{ robots: Robot[]; tasks: OfficeTask[]; ai: boolean; canEdit: boolean; maxRobots: number; platform?: PlatformInfo }>("/api/office", "GET", undefined, { cache: "no-store" });
+            if (r.ok && r.data) set({ robots: r.data.robots, tasks: r.data.tasks, ai: r.data.ai, canEdit: r.data.canEdit, maxRobots: r.data.maxRobots, platform: r.data.platform ?? null, loaded: true });
             else set({ loaded: true });
         },
 

@@ -5,6 +5,7 @@ import { TbArrowUpRight } from "react-icons/tb";
 import { useLocale, useTranslations } from "next-intl";
 import useAuthFormStore from "@/store/useAuthFormStore";
 import { useSiteMenuState } from "@/store/useSiteMenuState";
+import DemoButton from "@/components/website/DemoButton";
 
 export default function AuthLinks() {
 	const t = useTranslations("navWebsite.auth");
@@ -41,6 +42,9 @@ export default function AuthLinks() {
 
 	return (
 		<ul className="flex items-center gap-16 sm:justify-between sm:px-20 lg:gap-22 lg:px-0">
+			<li className="text-16 font-medium text-[#c6ff4d] transition-opacity hover:opacity-80 lg:text-14 lg:tracking-[0.2px]">
+				<DemoButton className="flex cursor-pointer items-center gap-6" onDone={() => { if (menu) toggleMenu(); }} />
+			</li>
 			<li
 				onClick={handleToggleSignin}
 				className="cursor-pointer text-16 font-medium text-[#8c948b] transition-colors hover:text-[#f1f4ee] lg:text-14 lg:tracking-[0.2px]">

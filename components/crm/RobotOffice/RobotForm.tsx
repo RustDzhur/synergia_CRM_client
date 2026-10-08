@@ -2,12 +2,12 @@
 import React, { useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { SKILL_IDS, ZONES } from "@/lib/office/templates";
+import { PICK_SKILLS, PICK_ZONES } from "@/lib/office/templates";
 import type { Accent, Robot, RobotInput, Skill, Zone } from "@/store/useOfficeStore";
 import RobotAvatar from "./RobotAvatar";
 import { ACCENTS, ACCENT_HEX } from "./theme";
 
-const ZONE_IDS: Zone[] = ZONES;
+const ZONE_IDS: Zone[] = PICK_ZONES;
 
 // Форма робота: и для найма своего, и для настройки готового. Для готового пустые должность и инструкция означают «как в каталоге».
 export default function RobotForm({ robot, onSubmit, onCancel, submitLabel }: { robot?: Robot; onSubmit: (input: RobotInput) => Promise<void>; onCancel: () => void; submitLabel: string }) {
@@ -63,7 +63,7 @@ export default function RobotForm({ robot, onSubmit, onCancel, submitLabel }: { 
 			<div>
 				<span className={label}>{t("fSkills")}</span>
 				<div className="flex flex-wrap gap-8">
-					{SKILL_IDS.map((s) => (
+					{PICK_SKILLS.map((s) => (
 						<button key={s} type="button" onClick={() => toggle(s)} aria-pressed={skills.includes(s)}
 							className={`h-[30px] rounded-[15px] border px-12 text-12 transition-colors ${skills.includes(s) ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.10)] text-[#f1f4ee]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>{t(`skill_${s}`)}</button>
 					))}
