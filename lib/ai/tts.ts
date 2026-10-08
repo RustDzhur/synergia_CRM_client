@@ -104,12 +104,27 @@ const cachePut = (k: string, v: Buffer) => {
     }
 };
 
-async function requestSpeech(base: string, body: Record<string, unknown>, key?: string): Promise<Buffer> {
+// Контейнер tts ходит за голосом в сервис Microsoft Edge; когда тот тормозит, запросы висят до таймаута, а клиент шлёт предложения параллельно —
+// очередь копилась и вся озвучка вставала. Три защиты: не больше MAX_PARALLEL одновременных запросов к основному голосу; повтор только после
+// быстрой ошибки (после таймаута повторять бессмысленно); после таймаута основной голос на 60 секунд считается «лежащим» — ответ 503 приходит
+// сразу, и клиент без ожидания читает голосом браузера.
+const MAX_PARALLEL = 3;
+let active = 0;
+const waiters: (() => void)[] = [];
+async function slot<T>(fn: () => Promise<T>): Promise<T> {
+    if (active >= MAX_PARALLEL) await new Promise<void>((resolve) => waiters.push(resolve));
+    active++;
+    try { return await fn(); } finally { active--; waiters.shift()?.(); }
+}
+const down = globalThis as { __ttsDownUntil?: number };
+const primaryDown = () => (down.__ttsDownUntil ?? 0) > Date.now();
+
+async function requestSpeech(base: string, body: Record<string, unknown>, key?: string, timeoutMs = 20000): Promise<Buffer> {
     const res = await fetchProvider(`${base}/audio/speech`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(key ? { Authorization: `Bearer ${key}` } : {}) },
         body: JSON.stringify(body),
-    }, 20000);
+    }, timeoutMs);
     const buf = Buffer.from(await res.arrayBuffer());
     // Ответ-ошибка тоже приходит как тело (JSON) — отличаем по статусу и по тому, что это не аудио
     if (!res.ok || buf.length < 400 || buf[0] === 0x7b /* "{" */) throw new ProviderError(`TTS provider returned ${res.status}`);
@@ -133,21 +148,27 @@ export async function synthesize(rawText: string, opts: { lang?: string; gender?
     const key = process.env.TTS_API_KEY || undefined;
     const openai = isOpenAi();
     const model = process.env.TTS_MODEL || (openai ? "gpt-4o-mini-tts" : "tts-1");
-    // 1 + 1 повторная попытка к основному голосу: Edge иногда отвечает «No audio received» на ровном месте
-    for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-            const audio = await requestSpeech(primaryUrl(), { model, input: text, voice, speed, response_format: "mp3", ...(openai && /gpt-4o/.test(model) ? { instructions: OPENAI_STYLE } : {}) }, key);
-            cachePut(cacheKey, audio);
-            return { audio, contentType: "audio/mpeg", provider: "neural" };
-        } catch (e) {
-            if (attempt === 1) console.error("tts primary failed", e instanceof Error ? e.message : e);
+    // 1 + 1 повторная попытка к основному голосу: Edge иногда отвечает «No audio received» на ровном месте. Таймаут повтором не лечится.
+    if (!primaryDown()) {
+        for (let attempt = 0; attempt < 2; attempt++) {
+            const t0 = Date.now();
+            try {
+                const audio = await slot(() => requestSpeech(primaryUrl(), { model, input: text, voice, speed, response_format: "mp3", ...(openai && /gpt-4o/.test(model) ? { instructions: OPENAI_STYLE } : {}) }, key, 14000));
+                cachePut(cacheKey, audio);
+                return { audio, contentType: "audio/mpeg", provider: "neural" };
+            } catch (e) {
+                const slow = Date.now() - t0 > 10000;
+                if (slow) { down.__ttsDownUntil = Date.now() + 60_000; console.error("tts primary timed out; paused for 60s", e instanceof Error ? e.message : e); break; }
+                if (attempt === 1) console.error("tts primary failed", e instanceof Error ? e.message : e);
+            }
         }
     }
 
     const fb = fallbackUrl();
-    if (fb && PIPER_MODELS[lang][gender]) {
+    // запасной Piper есть не для всех языков (для узбекского нет): без модели не стучимся впустую
+    if (fb && PIPER_MODELS[lang]?.[gender]) {
         try {
-            const audio = await requestSpeech(fb, { model: PIPER_MODELS[lang][gender], input: text, voice: "piper", speed, response_format: "mp3" });
+            const audio = await requestSpeech(fb, { model: PIPER_MODELS[lang][gender], input: text, voice: "piper", speed, response_format: "mp3" }, undefined, 8000);
             return { audio, contentType: "audio/mpeg", provider: "piper" };
         } catch (e) {
             console.error("tts fallback failed", e instanceof Error ? e.message : e);

@@ -15,3 +15,24 @@ describe("озвучка: язык и голос", () => {
         expect(detectLang("Hello there", undefined)).toBe("en");
     });
 });
+
+import { afterEach, vi } from "vitest";
+import { synthesize } from "@/lib/ai/tts";
+
+describe("озвучка при зависшем контейнере tts", () => {
+    afterEach(() => { vi.unstubAllGlobals(); delete (globalThis as { __ttsDownUntil?: number }).__ttsDownUntil; });
+    it("пока основной голос на паузе, запросов к нему нет — ответ сразу (клиент читает голосом браузера)", async () => {
+        (globalThis as { __ttsDownUntil?: number }).__ttsDownUntil = Date.now() + 60_000;
+        const f = vi.fn();
+        vi.stubGlobal("fetch", f);
+        await expect(synthesize("Salom, bugun ob-havo yaxshi", { lang: "uz" })).rejects.toThrow();
+        expect(f).not.toHaveBeenCalled();
+    });
+    it("быстрая ошибка основного голоса: одна повторная попытка, пауза не включается", async () => {
+        const f = vi.fn(async () => new Response("{}", { status: 500 }));
+        vi.stubGlobal("fetch", f);
+        await expect(synthesize("Salom, bugun ob-havo yaxshi", { lang: "uz" })).rejects.toThrow();
+        expect(f).toHaveBeenCalledTimes(2);
+        expect((globalThis as { __ttsDownUntil?: number }).__ttsDownUntil ?? 0).toBeLessThan(Date.now());
+    });
+});
