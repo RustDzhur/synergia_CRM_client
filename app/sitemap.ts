@@ -22,8 +22,8 @@ export const revalidate = 3600;
 
 const SITE = (process.env.APP_URL ?? "https://firmspace.de").replace(/\/+$/, "");
 const DEFAULT_LOCALE = "de";
-// de — язык по умолчанию и работает без префикса; en и ua — с префиксом.
-const LOCALES = ["de", "en", "ua"] as const;
+// de — язык по умолчанию и работает без префикса; en, ua и uz — с префиксом.
+const LOCALES = ["de", "en", "ua", "uz"] as const;
 
 type ChangeFrequency = "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
 

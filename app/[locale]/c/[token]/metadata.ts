@@ -16,12 +16,14 @@ const TITLE: Record<Locale, string> = {
 	de: "Dokument – Firmspace AI",
 	en: "Document – Firmspace AI",
 	ua: "Документ – Firmspace AI",
+	uz: "Hujjat – Firmspace AI",
 };
 
 const DESCRIPTION: Record<Locale, string> = {
 	de: "Dokument, das Ihnen über einen persönlichen Link bereitgestellt wurde.",
 	en: "A document shared with you through a personal link.",
 	ua: "Документ, наданий вам за персональним посиланням.",
+	uz: "Sizga shaxsiy havola orqali taqdim etilgan hujjat.",
 };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {

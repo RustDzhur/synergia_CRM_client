@@ -41,14 +41,21 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"Remote-first команда, гнучкий графік, бюджет на навчання та 30 днів відпустки: відкриті вакансії у Firmspace AI.",
 		keywords: ["карʼєра Firmspace AI", "вакансії CRM", "віддалена робота", "вакансії в IT", "робота frontend"],
 	},
+	uz: {
+		title: "Karyera – Firmspace AI'dagi bo'sh ish o'rinlari",
+		description:
+			"Remote-first jamoa, moslashuvchan grafik, o'qish byudjeti va 30 kunlik ta'til: Firmspace AI'da muhandislik, dizayn va qo'llab-quvvatlash bo'yicha ochiq lavozimlar.",
+		keywords: ["Firmspace AI karyera", "CRM ishlari", "masofaviy ish", "dasturiy bo'sh ish o'rinlari", "frontend muhandis ishi"],
+	},
 };
 
-const CRUMB: Record<Locale, string> = { de: "Karriere", en: "Careers", ua: "Карʼєра" };
+const CRUMB: Record<Locale, string> = { de: "Karriere", en: "Careers", ua: "Карʼєра", uz: "Karyera" };
 
 const POSITIONS: Record<Locale, string[]> = {
 	de: ["Senior Frontend Engineer", "Backend Engineer (Node.js)", "Product Designer", "Customer Support Specialist"],
 	en: ["Senior Frontend Engineer", "Backend Engineer (Node.js)", "Product Designer", "Customer Support Specialist"],
 	ua: ["Senior Frontend-інженер", "Backend-інженер (Node.js)", "Продуктовий дизайнер", "Спеціаліст підтримки клієнтів"],
+	uz: ["Katta frontend muhandis", "Backend muhandis (Node.js)", "Mahsulot dizayneri", "Mijozlarni qo'llab-quvvatlash mutaxassisi"],
 };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {

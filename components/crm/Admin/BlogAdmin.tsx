@@ -8,19 +8,19 @@ import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
 
-interface Tx { en: string; de: string; ua: string }
+interface Tx { en: string; de: string; ua: string; uz: string }
 interface Post { id: string; slug: string; image: string; title: Tx; excerpt: Tx; body: Tx[]; published: boolean; publishedAt: string }
 
-const EMPTY_TX: Tx = { en: "", de: "", ua: "" };
+const EMPTY_TX: Tx = { en: "", de: "", ua: "", uz: "" };
 const PRESET_IMAGES = ["/images/blog/code.jpg", "/images/blog/laptop.jpg", "/images/blog/sofa.jpg"];
-const LANGS: { key: keyof Tx; label: string }[] = [{ key: "en", label: "EN" }, { key: "de", label: "DE" }, { key: "ua", label: "UA" }];
+const LANGS: { key: keyof Tx; label: string }[] = [{ key: "en", label: "EN" }, { key: "de", label: "DE" }, { key: "ua", label: "UA" }, { key: "uz", label: "UZ" }];
 
 // многострочный текст с abzацами — одна пустая строка отделяет один параграф от другого
 const bodyToText = (body: Tx[], lang: keyof Tx) => body.map((p) => p[lang]).join("\n\n");
 const textToBody = (values: Record<keyof Tx, string>): Tx[] => {
 	const perLang = LANGS.map((l) => values[l.key].split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean));
 	const max = Math.max(...perLang.map((a) => a.length), 0);
-	return Array.from({ length: max }, (_, i) => ({ en: perLang[0][i] ?? "", de: perLang[1][i] ?? "", ua: perLang[2][i] ?? "" }));
+	return Array.from({ length: max }, (_, i) => ({ en: perLang[0][i] ?? "", de: perLang[1][i] ?? "", ua: perLang[2][i] ?? "", uz: perLang[3][i] ?? "" }));
 };
 
 // Управление статьями блога лендинга (/blog): доступно только владельцу платформы, в том же кабинете, что и фирмы-клиенты.
@@ -36,21 +36,21 @@ export default function BlogAdmin() {
 	const [published, setPublished] = useState(true);
 	const [title, setTitle] = useState<Tx>({ ...EMPTY_TX });
 	const [excerpt, setExcerpt] = useState<Tx>({ ...EMPTY_TX });
-	const [bodyText, setBodyText] = useState<Record<keyof Tx, string>>({ en: "", de: "", ua: "" });
+	const [bodyText, setBodyText] = useState<Record<keyof Tx, string>>({ en: "", de: "", ua: "", uz: "" });
 
 	const load = () => apiCall<Post[]>("/api/admin/blog").then((r) => r.data && setPosts(r.data));
 	useEffect(() => { load(); }, []);
 
 	function openNew() {
 		setEditId(null); setSlug(""); setImage(PRESET_IMAGES[0]); setPublished(true);
-		setTitle({ ...EMPTY_TX }); setExcerpt({ ...EMPTY_TX }); setBodyText({ en: "", de: "", ua: "" });
+		setTitle({ ...EMPTY_TX }); setExcerpt({ ...EMPTY_TX }); setBodyText({ en: "", de: "", ua: "", uz: "" });
 		setOpen(true);
 	}
 	function openEdit(p: Post) {
 		setEditId(p.id); setSlug(p.slug); setImage(p.image); setPublished(p.published);
-		setTitle({ en: p.title?.en ?? "", de: p.title?.de ?? "", ua: p.title?.ua ?? "" });
-		setExcerpt({ en: p.excerpt?.en ?? "", de: p.excerpt?.de ?? "", ua: p.excerpt?.ua ?? "" });
-		setBodyText({ en: bodyToText(p.body, "en"), de: bodyToText(p.body, "de"), ua: bodyToText(p.body, "ua") });
+		setTitle({ en: p.title?.en ?? "", de: p.title?.de ?? "", ua: p.title?.ua ?? "", uz: p.title?.uz ?? "" });
+		setExcerpt({ en: p.excerpt?.en ?? "", de: p.excerpt?.de ?? "", ua: p.excerpt?.ua ?? "", uz: p.excerpt?.uz ?? "" });
+		setBodyText({ en: bodyToText(p.body, "en"), de: bodyToText(p.body, "de"), ua: bodyToText(p.body, "ua"), uz: bodyToText(p.body, "uz") });
 		setOpen(true);
 	}
 

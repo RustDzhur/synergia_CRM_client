@@ -29,12 +29,14 @@ const TITLE: Record<Locale, string> = {
 	de: "Firmspace AI – CRM",
 	en: "Firmspace AI – CRM",
 	ua: "Firmspace AI – CRM",
+	uz: "Firmspace AI – CRM",
 };
 
 const DESCRIPTION: Record<Locale, string> = {
 	de: "Arbeitsbereich von Firmspace AI für angemeldete Nutzer.",
 	en: "The Firmspace AI workspace for signed-in users.",
 	ua: "Робочий простір Firmspace AI для авторизованих користувачів.",
+	uz: "Firmspace AI'ning tizimga kirgan foydalanuvchilari uchun ish maydoni.",
 };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {

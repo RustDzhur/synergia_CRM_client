@@ -16,12 +16,14 @@ const TITLE: Record<Locale, string> = {
 	de: "Zahlung erhalten – Firmspace AI",
 	en: "Payment received – Firmspace AI",
 	ua: "Оплату отримано – Firmspace AI",
+	uz: "To'lov qabul qilindi – Firmspace AI",
 };
 
 const DESCRIPTION: Record<Locale, string> = {
 	de: "Bestätigung, dass die Zahlung durchgegangen ist.",
 	en: "Confirmation that the payment went through.",
 	ua: "Підтвердження, що платіж пройшов.",
+	uz: "To'lov amalga oshganini tasdiqlash.",
 };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {

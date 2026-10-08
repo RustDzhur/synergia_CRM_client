@@ -374,7 +374,7 @@ export default function AiAssistant() {
 			<div data-iris-hud className="fs-popover flex max-h-[84vh] flex-col overflow-hidden">
 				<header className="flex items-center gap-10 border-b border-inkLine px-16 py-12">
 					<MdAutoAwesome size={22} className="text-primaryColor" aria-hidden />
-					<h2 className="whitespace-nowrap text-18 font-medium text-[#334A74]">{t("title")}</h2>
+					<h2 className="text-18 font-medium text-[#334A74]">{t("title")}</h2>
 					{status?.configured && <span className="ml-auto hidden text-11 text-[#8c948b] md:inline">{t("remaining", { n: status.remaining })}</span>}
 					{/* Голосовое управление: слушает на любой странице, имя «Айрис» → команда → ответ вслух */}
 					{agent.supported && !blocked && (

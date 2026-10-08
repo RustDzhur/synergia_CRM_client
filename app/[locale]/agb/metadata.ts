@@ -35,9 +35,15 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"Умови користування Firmspace AI: укладення договору, тарифи, оплата, скасування, доступність, відповідальність і застосовне право.",
 		keywords: ["умови Firmspace", "умови користування CRM", "договір на ПЗ", "скасування підписки"],
 	},
+	uz: {
+		title: "Foydalanish shartlari – Firmspace AI",
+		description:
+			"Firmspace AI'dan foydalanish shartlari: shartnoma, tariflar, to'lov, bekor qilish, mavjudlik, javobgarlik va amaldagi qonun.",
+		keywords: ["Firmspace shartlari", "CRM foydalanish shartlari", "dasturiy shartnoma", "obunani bekor qilish"],
+	},
 };
 
-const CRUMB: Record<Locale, string> = { de: "AGB", en: "Terms (AGB)", ua: "Умови (AGB)" };
+const CRUMB: Record<Locale, string> = { de: "AGB", en: "Terms (AGB)", ua: "Умови (AGB)", uz: "Shartlar (AGB)" };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {
 	const locale = asLocale(params.locale);

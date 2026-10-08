@@ -55,9 +55,21 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"форма звʼязку",
 		],
 	},
+	uz: {
+		title: "Aloqa – Firmspace AI",
+		description:
+			"Firmspace AI haqida savollaringiz bormi? Forma, e-mail yoki telefon orqali yozing — odatda bir ish kuni ichida javob beramiz.",
+		keywords: [
+			"Firmspace AI aloqa",
+			"CRM qo'llab-quvvatlashga bog'lanish",
+			"CRM maslahat",
+			"CRM so'rovi",
+			"aloqa formasi",
+		],
+	},
 };
 
-const CRUMB: Record<Locale, string> = { de: "Kontakt", en: "Contact", ua: "Контакти" };
+const CRUMB: Record<Locale, string> = { de: "Kontakt", en: "Contact", ua: "Контакти", uz: "Aloqa" };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {
 	const locale = asLocale(params.locale);

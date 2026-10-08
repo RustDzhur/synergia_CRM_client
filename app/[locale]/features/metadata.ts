@@ -60,9 +60,24 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"автоматизація",
 		],
 	},
+	uz: {
+		title: "Imkoniyatlar – Firmspace AI platformasi",
+		description:
+			"Bitimlar voronkasi, kontaktlar va kompaniyalar, vazifalar va kalendar, yagona pochta, brauzerda qo'ng'iroqlar, web-pochta, avtomatlashtirish va marketing.",
+		keywords: [
+			"CRM imkoniyatlari",
+			"bitimlar voronkasi",
+			"kontaktlarni boshqarish",
+			"vazifalarni boshqarish",
+			"umumiy kalendar",
+			"yagona pochta",
+			"web-pochta",
+			"avtomatlashtirish",
+		],
+	},
 };
 
-const CRUMB: Record<Locale, string> = { de: "Funktionen", en: "Features", ua: "Функції" };
+const CRUMB: Record<Locale, string> = { de: "Funktionen", en: "Features", ua: "Функції", uz: "Imkoniyatlar" };
 
 const FEATURE_LIST: Record<Locale, string[]> = {
 	de: [
@@ -97,6 +112,17 @@ const FEATURE_LIST: Record<Locale, string[]> = {
 		"Автоматизація",
 		"Маркетингові інструменти",
 		"Керування запасами",
+	],
+	uz: [
+		"Bitimlar voronkasi",
+		"Kontaktlar va kompaniyalar",
+		"Vazifalar va kalendar",
+		"Yagona pochta",
+		"Brauzerda qo'ng'iroqlar",
+		"Web-pochta",
+		"Avtomatlashtirish",
+		"Marketing vositalari",
+		"Ombor boshqaruvi",
 	],
 };
 

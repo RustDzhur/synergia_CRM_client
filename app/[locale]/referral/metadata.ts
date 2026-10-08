@@ -33,9 +33,15 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"Рекомендуйте Firmspace AI: безкоштовний місяць за кожну компанію з підпискою, а нова компанія — знижка 10% на перший рік.",
 		keywords: ["реферальна програма", "порекомендувати CRM", "винагорода за рекомендацію", "партнерська програма"],
 	},
+	uz: {
+		title: "Referal dasturi – Firmspace AI",
+		description:
+			"Firmspace AI'ni tavsiya qiling: obunaga ega har bir kompaniya uchun bepul oy olasiz, yangi kompaniya esa birinchi yiliga 10% chegirma oladi.",
+		keywords: ["referal dastur", "CRM'ni tavsiya qilish", "tavsiya uchun mukofot", "hamkorlik dasturi"],
+	},
 };
 
-const CRUMB: Record<Locale, string> = { de: "Empfehlungsprogramm", en: "Referral program", ua: "Реферальна програма" };
+const CRUMB: Record<Locale, string> = { de: "Empfehlungsprogramm", en: "Referral program", ua: "Реферальна програма", uz: "Referal dasturi" };
 
 const OFFER: Record<Locale, { name: string; description: string }> = {
 	de: {
@@ -49,6 +55,10 @@ const OFFER: Record<Locale, { name: string; description: string }> = {
 	ua: {
 		name: "Реферальна програма",
 		description: "Безкоштовний місяць для того, хто рекомендував, і знижка 10% на перший рік для нової компанії.",
+	},
+	uz: {
+		name: "Referal dasturi",
+		description: "Tavsiya qiluvchiga bepul oy, yangi kompaniyaga birinchi yil uchun 10% chegirma.",
 	},
 };
 

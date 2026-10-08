@@ -33,11 +33,13 @@ export default function robots(): MetadataRoute.Robots {
 					"/en/crm",
 					"/ua/crm",
 					"/de/crm",
+					"/uz/crm",
 					// Персональные ссылки на документы клиента.
 					"/c/",
 					"/en/c/",
 					"/ua/c/",
 					"/de/c/",
+					"/uz/c/",
 				],
 			},
 		],

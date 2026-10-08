@@ -57,9 +57,23 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"інтеграції",
 		],
 	},
+	uz: {
+		title: "Xizmatlar – CRM, savdo va qo'llab-quvvatlash | Firmspace AI",
+		description:
+			"Mijoz ma'lumotlarini boshqarish, savdoni avtomatlashtirish, qo'llab-quvvatlash, marketing, tahlil va integratsiya — Firmspace AI xizmatlari.",
+		keywords: [
+			"CRM xizmatlari",
+			"mijoz ma'lumotlarini boshqarish",
+			"savdoni avtomatlashtirish",
+			"qo'llab-quvvatlash dasturi",
+			"marketing dasturi",
+			"CRM tahlili",
+			"integratsiyalar",
+		],
+	},
 };
 
-const CRUMB: Record<Locale, string> = { de: "Unsere Leistungen", en: "Our services", ua: "Наші послуги" };
+const CRUMB: Record<Locale, string> = { de: "Unsere Leistungen", en: "Our services", ua: "Наші послуги", uz: "Bizning xizmatlarimiz" };
 
 const SERVICES: Record<Locale, { name: string; description: string }[]> = {
 	de: [
@@ -85,6 +99,14 @@ const SERVICES: Record<Locale, { name: string; description: string }[]> = {
 		{ name: "Керування маркетинговими кампаніями", description: "Плануйте кампанії, рекламу та сегменти й бачте, які канали приводять клієнтів." },
 		{ name: "Аналітика та звіти", description: "Дашборди для угод, завдань та активності команди — чіткі цифри замість здогадок." },
 		{ name: "Інтеграція та мобільність", description: "Підключайте телефонію, пошту й месенджери та працюйте з будь-якого пристрою." },
+	],
+	uz: [
+		{ name: "Mijoz ma'lumotlarini boshqarish", description: "Har bir kontakt va kompaniya uchun bitta karta: tarix, eslatmalar, bitimlar va fayllar bitta joyda." },
+		{ name: "Savdoni avtomatlashtirish", description: "Bosqichlar, eslatmalar va bitimlarni oldinga suradigan qoidalar bilan vizual bitimlar voronkasi." },
+		{ name: "Mijozlarni qo'llab-quvvatlash va xizmat", description: "Mijozlarga bitta pochta qutisidan javob bering: chat, SMS, qo'ng'iroqlar, Telegram, Viber, Messenger va e-mail." },
+		{ name: "Marketing kampaniyalarini boshqarish", description: "Kampaniyalar, reklama va segmentlarni rejalashtiring va qaysi kanallar mijoz keltirishini ko'ring." },
+		{ name: "Tahlil va hisobotlar", description: "Bitimlar, vazifalar va jamoa faolligi uchun dashbordlar — taxminlar o'rniga aniq raqamlar." },
+		{ name: "Integratsiya va mobillik", description: "Telefoniya, pochta va messenjerlarni ulang va moslashuvchan interfeys bilan istalgan qurilmadan ishlang." },
 	],
 };
 

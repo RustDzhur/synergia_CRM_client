@@ -27,9 +27,15 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"Статті про CRM, ШІ-автоматизацію та роботу з клієнтами — нотатки й практика з розробки Firmspace AI.",
 		keywords: ["блог CRM", "ШІ автоматизація", "практика CRM", "поради з продажів", "комунікація з клієнтами"],
 	},
+	uz: {
+		title: "Blog: CRM, AI va avtomatlashtirish",
+		description:
+			"CRM, AI-avtomatlashtirish va mijozlar bilan ishlash haqida maqolalar — Firmspace AI yaratilishidan eslatmalar va amaliyot.",
+		keywords: ["CRM blogi", "AI avtomatlashtirish", "CRM amaliyoti", "savdo maslahatlari", "mijozlar bilan muloqot"],
+	},
 };
 
-const CRUMB: Record<Locale, string> = { de: "Blog", en: "Blog", ua: "Блог" };
+const CRUMB: Record<Locale, string> = { de: "Blog", en: "Blog", ua: "Блог", uz: "Blog" };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {
 	const locale = asLocale(params.locale);

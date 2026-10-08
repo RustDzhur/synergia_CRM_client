@@ -18,12 +18,12 @@ import { createElement } from "react";
 export const SITE_URL = (process.env.APP_URL ?? "https://firmspace.de").replace(/\/+$/, "");
 export const SITE_NAME = "Firmspace AI";
 export const DEFAULT_LOCALE = "de" as const;
-export const LOCALES = ["de", "en", "ua"] as const;
+export const LOCALES = ["de", "en", "ua", "uz"] as const;
 export type Locale = (typeof LOCALES)[number];
 
 // Код языка сайта (ua) ≠ код hreflang (uk). Это же соответствие использует <html lang> в layout.
-export const HREFLANG: Record<Locale, string> = { de: "de", en: "en", ua: "uk" };
-export const OG_LOCALE: Record<Locale, string> = { de: "de_DE", en: "en_GB", ua: "uk_UA" };
+export const HREFLANG: Record<Locale, string> = { de: "de", en: "en", ua: "uk", uz: "uz" };
+export const OG_LOCALE: Record<Locale, string> = { de: "de_DE", en: "en_GB", ua: "uk_UA", uz: "uz_UZ" };
 
 // Картинка для openGraph/twitter. В /public сейчас нет отдельного баннера 1200×630,
 // поэтому используется существующий растровый файл (512×512).
@@ -46,9 +46,7 @@ export const CONTACT = {
 // ── Утилиты ──────────────────────────────────────────────────────────────────
 
 export function asLocale(value?: string): Locale {
-	// у узбекской версии пока нет своих SEO-текстов: заголовки и описания берутся английские
-	if (value === "uz") return "en";
-	return value === "en" || value === "ua" ? value : "de";
+	return value === "en" || value === "ua" || value === "uz" ? value : "de";
 }
 
 function cleanPath(path: string): string {
@@ -187,7 +185,7 @@ export function contactPointLd() {
 		contactType: "customer support",
 		email: CONTACT.email,
 		telephone: CONTACT.phone,
-		availableLanguage: ["de", "en", "uk"],
+		availableLanguage: ["de", "en", "uk", "uz"],
 		areaServed: "DE",
 	};
 }

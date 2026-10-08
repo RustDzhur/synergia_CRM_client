@@ -61,6 +61,21 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"бухгалтерія",
 		],
 	},
+	uz: {
+		title: "Firmspace AI – CRM, loyihalar va buxgalteriya",
+		description:
+			"CRM, jamoa muloqoti, loyihalar va buxgalteriya bitta platformada: mijozlar, bitimlar, hisob-fakturalar, vazifalar va AI-yordamchi bitta ma'lumot ustida ishlaydi.",
+		keywords: [
+			"CRM tizimi",
+			"AI CRM",
+			"mijozlarni boshqarish",
+			"savdo voronkasi",
+			"hisob-faktura",
+			"loyiha boshqaruvi",
+			"jamoa muloqoti",
+			"buxgalteriya",
+		],
+	},
 };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {
@@ -72,6 +87,7 @@ const ORG_DESCRIPTION: Record<Locale, string> = {
 	de: "Firmspace AI bringt Kundenbeziehungen, Teamarbeit, Projekte und Buchhaltung in ein Kabinett.",
 	en: "Firmspace AI brings customer relationships, teamwork, projects and accounting into one cabinet.",
 	ua: "Firmspace AI збирає роботу з клієнтами, командну роботу, проєкти й бухгалтерію в одному кабінеті.",
+	uz: "Firmspace AI mijozlar bilan ishlash, jamoa ishi, loyihalar va buxgalteriyani bitta kabinetga yig'adi.",
 };
 
 export function pageJsonLd(localeCode: string) {

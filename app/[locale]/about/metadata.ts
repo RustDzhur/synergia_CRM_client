@@ -55,9 +55,23 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"захист даних",
 		],
 	},
+	uz: {
+		title: "Biz haqimizda – Firmspace AI",
+		description:
+			"Firmspace AI mijozlar bilan ishlash, jamoa ishi, loyihalar va buxgalteriyani bitta kabinetga yig'adi — kichik va o'rta biznes uchun.",
+		keywords: [
+			"Firmspace AI haqida",
+			"kichik biznes uchun CRM",
+			"CRM yetkazib beruvchi",
+			"mijozlar bilan munosabatlar",
+			"jamoa ishi dasturi",
+			"buxgalteriya",
+			"ma'lumotlarni himoya qilish",
+		],
+	},
 };
 
-const CRUMB: Record<Locale, string> = { de: "Über uns", en: "About us", ua: "Про нас" };
+const CRUMB: Record<Locale, string> = { de: "Über uns", en: "About us", ua: "Про нас", uz: "Biz haqimizda" };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {
 	const locale = asLocale(params.locale);

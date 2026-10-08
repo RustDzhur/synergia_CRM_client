@@ -24,7 +24,7 @@ export default async function Page({ params }: { params: { locale: string; slug:
 	if (!post) notFound();
 
 	const date = new Date(post.publishedAt).toLocaleDateString(
-		locale === "ua" ? "uk-UA" : locale === "de" ? "de-DE" : "en-GB",
+		locale === "ua" ? "uk-UA" : locale === "de" ? "de-DE" : locale === "uz" ? "uz-UZ" : "en-GB",
 		{ day: "numeric", month: "long", year: "numeric" }
 	);
 	const body = Array.isArray(post.body) ? post.body : [];

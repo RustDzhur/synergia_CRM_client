@@ -18,12 +18,14 @@ const FALLBACK: Record<Locale, { title: string; description: string }> = {
 	de: { title: "Beitrag – Firmspace AI", description: "Beitrag im Blog von Firmspace AI." },
 	en: { title: "Article – Firmspace AI", description: "An article in the Firmspace AI blog." },
 	ua: { title: "Стаття – Firmspace AI", description: "Стаття в блозі Firmspace AI." },
+	uz: { title: "Maqola – Firmspace AI", description: "Firmspace AI blogidagi maqola." },
 };
 
 const KEYWORDS: Record<Locale, string[]> = {
 	de: ["Firmspace Blog", "CRM", "KI-Automatisierung", "Kundenarbeit"],
 	en: ["Firmspace blog", "CRM", "AI automation", "customer work"],
 	ua: ["блог Firmspace", "CRM", "ШІ-автоматизація", "робота з клієнтами"],
+	uz: ["Firmspace blogi", "CRM", "AI avtomatlashtirish", "mijozlar bilan ishlash"],
 };
 
 /** Заголовок статьи для <h1> и breadcrumb: текст из БД для нужной локали, иначе запасной. */

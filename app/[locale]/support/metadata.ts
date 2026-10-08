@@ -48,9 +48,22 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"створення акаунта CRM",
 		],
 	},
+	uz: {
+		title: "Qo'llab-quvvatlash va FAQ – Firmspace AI",
+		description:
+			"Hisob, tariflar, integratsiyalar, ma'lumotlar xavfsizligi va eksport haqidagi tez-tez so'raladigan savollarga javoblar — va Firmspace AI qo'llab-quvvatlashiga to'g'ridan-to'g'ri yo'l.",
+		keywords: [
+			"Firmspace qo'llab-quvvatlash",
+			"CRM FAQ",
+			"tariflar FAQ",
+			"integratsiya yordami",
+			"ma'lumotlar eksporti",
+			"CRM hisob yaratish",
+		],
+	},
 };
 
-const CRUMB: Record<Locale, string> = { de: "Support / FAQ", en: "Support / FAQ", ua: "Підтримка / FAQ" };
+const CRUMB: Record<Locale, string> = { de: "Support / FAQ", en: "Support / FAQ", ua: "Підтримка / FAQ", uz: "Qo'llab-quvvatlash / FAQ" };
 
 const FAQ: Record<Locale, { q: string; a: string }[]> = {
 	de: [
@@ -153,6 +166,40 @@ const FAQ: Record<Locale, { q: string; a: string }[]> = {
 		{
 			q: "Як експортувати мої дані?",
 			a: "Напишіть у підтримку — ми надішлемо експорт ваших контактів, компаній та угод.",
+		},
+	],
+	uz: [
+		{
+			q: "Hisobni qanday yarataman?",
+			a: "Yuqori o'ng burchakdagi Sign Up tugmasini bosing, Company yoki Personal'ni tanlang, formani to'ldiring va tasdiqlang. CRM'dan darhol foydalanishni boshlashingiz mumkin.",
+		},
+		{
+			q: "Bepul tarif bormi?",
+			a: "Ha, lekin cheklangan: Free bitta foydalanuvchini savdo voronkasi va vazifalar bilan qamrab oladi. Jamoa qismi — xodimlar va bilimlar bazasi, lenta va kalendar — oyiga 20 € lik Standard tarifidan boshlanadi (50 tagacha foydalanuvchi). Mijozlar bilan chat, hujjatlar, moliya, marketing, reklama, avtomatlashtirish va AI-yordamchi oyiga 53 € lik Professional tarifida mavjud, u foydalanuvchilar chegarasini ham olib tashlaydi.",
+		},
+		{
+			q: "Tarifimni o'zgartirish yoki bekor qilish mumkinmi?",
+			a: "Ha, istalgan vaqtda Upgrade Your Plan bo'limida. O'zgarish keyingi hisob-kitob davridan kuchga kiradi.",
+		},
+		{
+			q: "Telegram, Viber yoki telefon raqamini qanday ulayman?",
+			a: "Settings → Integration bo'limini oching, kanalni tanlang, provayder kalitini kiriting va Connect tugmasini bosing. Bosqichma-bosqich ko'rsatmalar Hujjatlarda.",
+		},
+		{
+			q: "Pochta qutim ulanmayapti. Nima qilishim kerak?",
+			a: "Gmail, iCloud va Yahoo hisob paroli o'rniga ilova parolini talab qiladi. Uni hisob xavfsizlik sozlamalarida yarating va Web Mails'da foydalaning.",
+		},
+		{
+			q: "Ma'lumotlarim xavfsizmi?",
+			a: "Ma'lumotlar HTTPS orqali uzatiladi, parollar heshlanadi va ulangan xizmatlarning kalitlari shifrlangan holda saqlanadi.",
+		},
+		{
+			q: "CRM'dan telefonda foydalanish mumkinmi?",
+			a: "Ha. Interfeys telefon va planshetlarga moslashadi, qo'ng'iroqlar va chatlar mobil brauzerda ishlaydi.",
+		},
+		{
+			q: "Ma'lumotlarimni qanday eksport qilaman?",
+			a: "Qo'llab-quvvatlashga yozing — biz kontaktlar, kompaniyalar va bitimlaringiz eksportini yuboramiz.",
 		},
 	],
 };

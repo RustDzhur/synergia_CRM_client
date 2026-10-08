@@ -34,7 +34,7 @@ export default function JoinUs() {
 						<div className="sm:w-50 sm:h-50 lg:w-[90px] lg:h-[90px] sm:mb-20 lg:mb-[20px] rounded-[50%] bg-[#F2F2F2] shadow-[0_4px_8px_rgba(0,0,0,0.15)] flex items-center justify-center text-[24px] lg:text-[44px] text-joinUsPink">
 							<content.icon />
 						</div>
-						<h3 className="sm:text-[26px] md:text-[20px] lg:text-25 font-medium leading-[1.5] md:leading-[30px] lg:leading-[1.5] tracking-[0.3px] sm:mb-[4px] md:h-[60px] md:mb-[8px] lg:h-auto lg:mb-[4px]">
+						<h3 className="sm:text-[26px] md:text-[20px] lg:text-25 font-medium leading-[1.5] md:leading-[30px] lg:leading-[1.5] tracking-[0.3px] sm:mb-[4px] md:min-h-[60px] md:mb-[8px] lg:h-auto lg:mb-[4px]">
 							{content.title}
 						</h3>
 						<p className="sm:text-16 md:text-14 lg:text-16 leading-[1.7] tracking-[0.4px] md:leading-[24px] lg:leading-[27px]">

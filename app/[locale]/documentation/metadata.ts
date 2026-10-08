@@ -45,9 +45,21 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"довідка ШІ-асистента",
 		],
 	},
+	uz: {
+		title: "Hujjatlar – Firmspace AI",
+		description:
+			"Firmspace AI'ning har bir bo'limi uchun bosqichma-bosqich ko'rsatmalar: ro'yxatdan o'tish, CRM, vazifalar, moliya, avtomatlashtirish, AI-yordamchi va boshqalar.",
+		keywords: [
+			"Firmspace hujjatlari",
+			"CRM qo'llanma",
+			"CRM qo'llanmasi",
+			"avtomatlashtirish qo'llanmasi",
+			"AI-yordamchi yordami",
+		],
+	},
 };
 
-const CRUMB: Record<Locale, string> = { de: "Dokumentation", en: "Documentation", ua: "Документація" };
+const CRUMB: Record<Locale, string> = { de: "Dokumentation", en: "Documentation", ua: "Документація", uz: "Hujjatlar" };
 
 const SECTIONS: Record<Locale, string[]> = {
 	de: [
@@ -109,6 +121,26 @@ const SECTIONS: Record<Locale, string[]> = {
 		"Налаштування",
 		"Інтеграції",
 		"Оплата",
+	],
+	uz: [
+		"Ishni boshlash",
+		"Boshqaruv paneli",
+		"CRM",
+		"Vazifalar",
+		"Moliya",
+		"Avtomatlashtirish",
+		"Firmspace AI",
+		"Marketing",
+		"Jadvallar",
+		"Lenta",
+		"Chat va qo'ng'iroqlar",
+		"Kalendar",
+		"Onlayn hujjatlar",
+		"Web-pochta",
+		"Kompaniya",
+		"Sozlamalar",
+		"Integratsiyalar",
+		"To'lov",
 	],
 };
 

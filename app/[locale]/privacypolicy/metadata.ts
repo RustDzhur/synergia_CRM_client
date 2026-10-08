@@ -40,12 +40,19 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"Які персональні дані обробляє Firmspace AI, навіщо, як вони захищені та які у вас права — оновлено у вересні 2026.",
 		keywords: ["конфіденційність Firmspace", "політика конфіденційності CRM", "GDPR", "персональні дані", "безпека даних"],
 	},
+	uz: {
+		title: "Maxfiylik siyosati – Firmspace AI",
+		description:
+			"Firmspace AI qanday shaxsiy ma'lumotlarni qayta ishlaydi, nima uchun, ular qanday himoyalanadi va sizning huquqlaringiz — 2026-yil sentabr holatiga.",
+		keywords: ["Firmspace maxfiylik", "CRM maxfiylik siyosati", "GDPR", "shaxsiy ma'lumotlar", "ma'lumotlar xavfsizligi"],
+	},
 };
 
 const CRUMB: Record<Locale, string> = {
 	de: "Datenschutzerklärung",
 	en: "Privacy policy",
 	ua: "Політика конфіденційності",
+	uz: "Maxfiylik siyosati",
 };
 
 const UPDATED = "2026-09-01";

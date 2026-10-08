@@ -35,9 +35,15 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"Правова інформація за § 5 TMG: дані про постачальника Firmspace AI, представника, реєстрацію та контакти.",
 		keywords: ["правова інформація Firmspace", "Impressum", "§ 5 TMG", "дані постачальника"],
 	},
+	uz: {
+		title: "Impressum – Firmspace AI",
+		description:
+			"§ 5 TMG bo'yicha huquqiy ma'lumot: Firmspace AI yetkazib beruvchisi, vakili, ro'yxatga olish va aloqa ma'lumotlari.",
+		keywords: ["Firmspace huquqiy ma'lumot", "Impressum", "§ 5 TMG", "yetkazib beruvchi ma'lumotlari"],
+	},
 };
 
-const CRUMB: Record<Locale, string> = { de: "Impressum", en: "Legal notice", ua: "Правова інформація" };
+const CRUMB: Record<Locale, string> = { de: "Impressum", en: "Legal notice", ua: "Правова інформація", uz: "Impressum" };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {
 	const locale = asLocale(params.locale);

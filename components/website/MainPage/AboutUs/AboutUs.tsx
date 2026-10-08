@@ -10,7 +10,7 @@ export default function AboutUs() {
     const t = useTranslations('aboutUs')
 	return (
 		<div className="md:relative">
-			<div className="md:absolute sm:px-12 sm:py-40 sm:text-center md:bottom-0 md:right-0 md:p-20 md:pt-[17px] md:h-[204px] lg:h-[300px] md:text-left md:bg-aboutUsBackground md:rounded-t-10 md:rounded-br-10 md:w-[392px] lg:w-[590px] lg:rounded-16 lg:px-35 lg:pt-[30px] lg:pb-0">
+			<div className="md:absolute sm:px-12 sm:py-40 sm:text-center md:bottom-0 md:right-0 md:p-20 md:pt-[17px] md:min-h-[204px] lg:min-h-[300px] md:text-left md:bg-aboutUsBackground md:rounded-t-10 md:rounded-br-10 md:w-[392px] lg:w-[590px] lg:rounded-16 lg:px-35 lg:pt-[30px] lg:pb-0">
 				<div className="md:w-full">
 					<h2 className="text-authBtn sm:text-18 sm:tracking-[0.36px] sm:mb-16 md:text-16 md:mb-[11px] font-medium lg:text-18 lg:tracking-[0.4px] lg:leading-[27px] lg:mb-10">
 						{t('title')}

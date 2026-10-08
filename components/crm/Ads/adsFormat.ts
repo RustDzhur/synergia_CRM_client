@@ -1,13 +1,14 @@
 import type { AdsDay } from "@/lib/ads/types";
+import { localeTag } from "@/utils/dateHelpers";
 
 export const money = (value: number, currency: string, locale: string) => {
 	try {
-		return new Intl.NumberFormat(locale, currency ? { style: "currency", currency, maximumFractionDigits: value >= 100 ? 0 : 2 } : { maximumFractionDigits: 2 }).format(value);
+		return new Intl.NumberFormat(localeTag(locale), currency ? { style: "currency", currency, maximumFractionDigits: value >= 100 ? 0 : 2 } : { maximumFractionDigits: 2 }).format(value);
 	} catch {
 		return `${value.toFixed(2)} ${currency}`;
 	}
 };
-export const count = (value: number, locale: string) => new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value);
+export const count = (value: number, locale: string) => new Intl.NumberFormat(localeTag(locale), { maximumFractionDigits: 1 }).format(value);
 
 export function totals(days: AdsDay[]) {
 	const t = days.reduce((s, d) => ({ spend: s.spend + d.spend, clicks: s.clicks + d.clicks, impressions: s.impressions + d.impressions, conversions: s.conversions + d.conversions }), { spend: 0, clicks: 0, impressions: 0, conversions: 0 });

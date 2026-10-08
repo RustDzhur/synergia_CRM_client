@@ -13,7 +13,7 @@ const nextConfig = {
   async redirects() {
     return [
       { source: "/crm/inventory", destination: "/crm/finance", permanent: true },
-      { source: "/:locale(ua|en|de)/crm/inventory", destination: "/:locale/crm/finance", permanent: true },
+      { source: "/:locale(ua|en|de|uz)/crm/inventory", destination: "/:locale/crm/finance", permanent: true },
     ];
   },
   // Служебные разделы не должны попадать в поиск. Заголовок надёжнее метатега: app/[locale]/crm/layout.tsx —
@@ -23,9 +23,9 @@ const nextConfig = {
     const noindex = [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }];
     const closed = [
       "/crm", "/crm/:path*",
-      "/en/crm", "/en/crm/:path*", "/ua/crm", "/ua/crm/:path*", "/de/crm", "/de/crm/:path*",
+      "/en/crm", "/en/crm/:path*", "/ua/crm", "/ua/crm/:path*", "/de/crm", "/de/crm/:path*", "/uz/crm", "/uz/crm/:path*",
       // Персональные ссылки на документы клиента (страница /c/<token>).
-      "/c/:path*", "/en/c/:path*", "/ua/c/:path*", "/de/c/:path*",
+      "/c/:path*", "/en/c/:path*", "/ua/c/:path*", "/de/c/:path*", "/uz/c/:path*",
     ];
     return closed.map((source) => ({ source, headers: noindex }));
   },

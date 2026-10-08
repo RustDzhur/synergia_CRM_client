@@ -28,6 +28,11 @@ const DEFAULTS: Record<Locale, { title: string; description: string }> = {
 		description:
 			"CRM, звʼязок із командою, проєкти та бухгалтерія в одній платформі — для малого й середнього бізнесу.",
 	},
+	uz: {
+		title: "Firmspace AI – CRM, loyihalar va buxgalteriya",
+		description:
+			"CRM, jamoa muloqoti, loyihalar va buxgalteriya bitta platformada — kichik va o'rta biznes uchun.",
+	},
 };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {

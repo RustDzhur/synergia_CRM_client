@@ -1,4 +1,5 @@
 import type { LineItem } from "@/store/useFinanceStore";
+import { localeTag } from "@/utils/dateHelpers";
 
 // Та же формула, что и на сервере (lib/finance/totals.ts) — только для мгновенного пересчёта в форме, пока не сохранили;
 // итог, который останется в базе, всё равно считает сервер.
@@ -16,7 +17,7 @@ export function computeTotals(items: LineItem[]) {
 
 export const money = (value: number, currency: string, locale: string) => {
 	try {
-		return new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 2 }).format(value);
+		return new Intl.NumberFormat(localeTag(locale), { style: "currency", currency, maximumFractionDigits: 2 }).format(value);
 	} catch {
 		return `${value.toFixed(2)} ${currency}`;
 	}

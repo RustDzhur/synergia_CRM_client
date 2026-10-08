@@ -33,9 +33,15 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"Команда Firmspace AI: розробка, дизайн, customer success і маркетинг — люди, які створюють платформу й відповідають на запитання.",
 		keywords: ["команда Firmspace", "компанія CRM", "про команду", "контакти CRM"],
 	},
+	uz: {
+		title: "Jamoa – Firmspace AI ortidagi odamlar",
+		description:
+			"Firmspace AI jamoasi: muhandislik, dizayn, mijozlar muvaffaqiyati va marketing — platformani yaratadigan va savollaringizga javob beradigan odamlar.",
+		keywords: ["Firmspace jamoasi", "CRM kompaniyasi", "jamoa haqida", "CRM aloqalari"],
+	},
 };
 
-const CRUMB: Record<Locale, string> = { de: "Team", en: "Team", ua: "Команда" };
+const CRUMB: Record<Locale, string> = { de: "Team", en: "Team", ua: "Команда", uz: "Jamoa" };
 
 const MEMBERS: Record<Locale, { name: string; role: string }[]> = {
 	de: [
@@ -61,6 +67,14 @@ const MEMBERS: Record<Locale, { name: string; role: string }[]> = {
 		{ name: "Maksym Bondar", role: "Провідний інженер" },
 		{ name: "Sophie Wagner", role: "Успіх клієнтів" },
 		{ name: "Iryna Melnyk", role: "Керівниця маркетингу" },
+	],
+	uz: [
+		{ name: "Anna Keller", role: "CEO va hammuassisa" },
+		{ name: "Oleksandr Shevchenko", role: "Texnik direktor" },
+		{ name: "Lena Fischer", role: "Dizayn rahbari" },
+		{ name: "Maksym Bondar", role: "Katta muhandis" },
+		{ name: "Sophie Wagner", role: "Mijozlar muvaffaqiyati" },
+		{ name: "Iryna Melnyk", role: "Marketing rahbari" },
 	],
 };
 

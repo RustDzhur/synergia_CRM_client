@@ -66,7 +66,7 @@ export default function Testimonials() {
 					modules={[Mousewheel, Navigation, Pagination]}>
 					{CARDS.map(({ icon: Icon, key }) => (
 						<SwiperSlide key={key}>
-							<div className="h-full rounded-[30px] border-[3px] border-authBtn px-[18px] pb-30 pt-[30px] shadow-[0_4px_10px_rgba(198,255,77,0.18)] sm:h-[380px] md:h-[360px]">
+							<div className="h-full rounded-[30px] border-[3px] border-authBtn px-[18px] pb-30 pt-[30px] shadow-[0_4px_10px_rgba(198,255,77,0.18)] sm:min-h-[380px] md:min-h-[360px]">
 								<IconContext.Provider value={{ size: "40px", color: "#C6FF4D" }}>
 									<div className="mb-[18px] flex justify-start">
 										<Icon />
