@@ -10,6 +10,7 @@ import { planFor } from "@/config/plans";
 import { effectivePlan } from "@/lib/billing";
 import { dailyLimit, takeQuota, usedToday } from "@/lib/ai/run";
 import { prisma } from "@/lib/prisma";
+import { isFullLocale } from "@/lib/locales";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,7 @@ export async function GET(req: Request) {
     const kind = url.searchParams.get("kind") as Kind | null;
     if (!kind || !KINDS.includes(kind)) return badRequest("kind must be one of: vat, eur, bwa, susa, vat-register, income-book");
     const localeParam = url.searchParams.get("locale") ?? "de";
-    const locale = ["en", "de", "ua"].includes(localeParam) ? localeParam : "de";
+    const locale = isFullLocale(localeParam) ? localeParam : "de";
 
     // Режим рынка — как в /api/finance/reports: украинской фирме разбирают украинские отчёты,
     // немецкой — немецкие. Иначе квота ИИ тратилась бы на разбор чужого отчёта

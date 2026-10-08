@@ -5,6 +5,7 @@ import { badRequest, unauthorized } from "@/lib/api";
 import { adsAvailable, adsPlanOk, makeMetaState, metaAuthorizeUrl } from "@/lib/ads";
 import { GOOGLE_ADS_SCOPE } from "@/lib/ads/google";
 import { authorizeUrl, makeState } from "@/lib/mail/oauth";
+import { isLocale } from "@/lib/locales";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
     // Имя тарифа в сообщении не называем: текст для пользователя берётся из переводов по коду plan_limit
     if (!(await adsPlanOk(user.id))) return NextResponse.json({ message: "Ad performance is not available on your plan.", code: "plan_limit" }, { status: 402 });
     const b = await req.json().catch(() => ({}));
-    const locale = ["en", "de", "ua"].includes(b?.locale) ? b.locale : "en";
+    const locale = isLocale(b?.locale) ? b.locale : "en";
     const origin = appOrigin(req);
     if (b?.platform === "google") {
         if (!adsAvailable().google) return badRequest("Google Ads is not configured on this site (needs Google sign-in keys and GOOGLE_ADS_DEVELOPER_TOKEN)");

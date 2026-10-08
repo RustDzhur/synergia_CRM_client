@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, unauthorized } from "@/lib/api";
 import { authorizeUrl, makeState, oauthAvailable } from "@/lib/mail/oauth";
+import { isLocale } from "@/lib/locales";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,6 @@ export async function POST(req: Request, { params }: { params: { provider: strin
     const vendor = params.provider === "google" || params.provider === "microsoft" ? params.provider : null;
     if (!vendor || !oauthAvailable()[vendor]) return badRequest("This sign-in method is not configured");
     const body = await req.json().catch(() => ({}));
-    const locale = ["en", "de", "ua"].includes(body?.locale) ? body.locale : "en";
+    const locale = isLocale(body?.locale) ? body.locale : "en";
     return NextResponse.json({ url: authorizeUrl(vendor, appOrigin(req), makeState(user.id, vendor, locale)) });
 }

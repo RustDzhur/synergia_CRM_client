@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { RiArrowDownSLine } from "react-icons/ri";
 import { useLanguageStore } from "@/store/useLanguageStore";
-import { languages } from "@/languages/languages";
+import { siteLanguages as languages } from "@/languages/languages";
 import { languageCodeToProperties } from "@/languages/languages";
 import { Language } from "@/types/languageType";
 import { stripLocale } from "@/utils/locale";

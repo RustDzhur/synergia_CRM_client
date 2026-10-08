@@ -1,6 +1,6 @@
 import {getRequestConfig} from 'next-intl/server';
- 
-export default getRequestConfig(async ({locale}) => ( {
-  
-  messages: (await import(`./messages/${locale}.json`)).default
+import {loadMessages} from '@/lib/messages';
+
+export default getRequestConfig(async ({locale}) => ({
+  messages: await loadMessages(locale)
 }));

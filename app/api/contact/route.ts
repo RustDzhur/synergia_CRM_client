@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { rateLimited } from "@/lib/rateLimit";
 import { serverError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
+import { isFullLocale } from "@/lib/locales";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
     const email = str(b?.email, 200).toLowerCase();
     const phone = str(b?.phone, 40);
     const message = str(b?.message, 3000);
-    const locale = ["en", "de", "ua"].includes(b?.locale) ? b.locale : "en";
+    const locale = isFullLocale(b?.locale) ? b.locale : "en";
     if (!name || !message || !/^\S+@\S+\.\S+$/.test(email)) return NextResponse.json({ message: "Invalid data" }, { status: 400 });
 
     try {

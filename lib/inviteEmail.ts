@@ -1,5 +1,6 @@
 import { sendFromAccount } from "@/lib/mail";
 import { prisma } from "@/lib/prisma";
+import { isFullLocale } from "@/lib/locales";
 
 type Lang = "de" | "en" | "ua";
 
@@ -30,7 +31,7 @@ export async function sendInviteEmail(org: string, to: string, firm: string, url
     try {
         const account = await prisma.integration.findFirst({ where: { owner: org, type: "mail", status: "connected" } });
         if (!account) return false;
-        const { subject, text } = TEXT[(["de", "en", "ua"].includes(lang) ? lang : "en") as Lang]({ firm, url, existing });
+        const { subject, text } = TEXT[(isFullLocale(lang) ? lang : "en") as Lang]({ firm, url, existing });
         await sendFromAccount(account as any, { to, subject, text });
         return true;
     } catch {

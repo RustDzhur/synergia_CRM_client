@@ -10,6 +10,7 @@ import { GCAL_SCOPE, disconnect, gcalCalendars, gcalWritable, listCalendars, set
 import { connectIcloud, disconnectIcloud, findIcloud, icloudCalendars, setIcloudCalendars } from "@/lib/ical/icloud";
 import { syncCalendars } from "@/lib/calendar/sync";
 import { gcalToken } from "@/lib/google";
+import { isFullLocale } from "@/lib/locales";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
             // В state кладём ФИРМУ, а не пользователя: интеграция хранится по фирме (findGcal(user.id)),
             // как у Диска и рекламы, и синхронизация идёт по фирме. С id пользователя согласие проходило,
             // но подключение потом никто не находил: панель снова предлагала «Подключить».
-            const locale = ["en", "de", "ua"].includes(String(b.locale)) ? String(b.locale) : "de";
+            const locale = isFullLocale(String(b.locale)) ? String(b.locale) : "de";
             const url = authorizeUrl("google", appOrigin(req), makeState(user.id, "google", locale, "gcal"), GCAL_SCOPE);
             return NextResponse.json({ url });
         }

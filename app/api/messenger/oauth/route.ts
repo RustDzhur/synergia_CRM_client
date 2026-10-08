@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { startMetaOauth } from "@/lib/channels/connect";
+import { isLocale } from "@/lib/locales";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-    const locale = ["en", "de", "ua"].includes(String(b.locale)) ? String(b.locale) : "de";
+    const locale = isLocale(String(b.locale)) ? String(b.locale) : "de";
     try {
             // в state кладём фирму и язык: по нему человек вернётся на свою языковую версию страницы
         const state = jwt.sign({ sub: user.id, l: locale, p: "meta" }, process.env.JWT_SECRET as string, { expiresIn: "15m" });

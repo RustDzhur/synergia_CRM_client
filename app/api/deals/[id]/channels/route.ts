@@ -7,6 +7,7 @@ import { mailAccount, resolveRecipient } from "@/lib/finance/send";
 import { invoicePdfBuffer, orderPdfBuffer, quotePdfBuffer } from "@/lib/finance/document";
 import { prisma } from "@/lib/prisma";
 import { dealScope } from "@/lib/sync/people";
+import { isFullLocale } from "@/lib/locales";
 
 export const dynamic = "force-dynamic";
 
@@ -154,7 +155,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const { deal, contact } = found;
     const who: ContactRef = contact ? { id: contact.id, name: contact.name, phone: contact.phone } : null;
 
-    const locale = ["en", "de", "ua"].includes(String(body?.locale)) ? String(body.locale) : "de";
+    const locale = isFullLocale(String(body?.locale)) ? String(body.locale) : "de";
     const state = await availability(user.id, channel, who, deal.company);
     if (state !== "ready") return NextResponse.json({ message: "Channel is not available", code: state }, { status: 409 });
 

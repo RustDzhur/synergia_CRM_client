@@ -4,6 +4,7 @@ import "slick-carousel/slick/slick-theme.css";
 import { Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { notFound } from "next/navigation";
+import { loadMessages } from "@/lib/messages";
 import ErrorReporter from "@/components/crm/shared/ErrorReporter";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -20,7 +21,7 @@ export default async function RootLayout({
 }) {
 	let messages;
 	try {		
-		messages = (await import(`../../messages/${locale}.json`)).default;
+		messages = await loadMessages(locale);
 	} catch (error) {
 		notFound();
 	}
