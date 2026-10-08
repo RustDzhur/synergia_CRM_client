@@ -18,7 +18,11 @@ describe("языки платформы", () => {
         const en = (await loadMessages("en")) as { hero: unknown };
         expect(uz.navigation.dashboard).toBe("Bosh sahifa");
         expect(uz.finance.tab_invoices).toBe("Hisob-fakturalar");
-        expect(uz.hero).toEqual(en.hero); // сайт на uz пока не переведён — английский
+        expect(uz.hero).not.toEqual(en.hero); // лендинг на uz переведён
+    });
+
+    it("ключ, которого нет в uz, показывается по-английски (запасной словарь)", () => {
+        expect(mergeMessages({ site: { a: "English A", b: "English B" } }, { site: { a: "Uzbek A" } })).toEqual({ site: { a: "Uzbek A", b: "English B" } });
     });
 
     it("слияние словарей: вложенные разделы объединяются, а не заменяются", () => {
