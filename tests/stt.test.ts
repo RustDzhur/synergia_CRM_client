@@ -3,9 +3,12 @@ import { UZ_STT_PROMPT, isPhantomTranscript } from "@/lib/ai/provider";
 
 describe("фантомные ответы распознавания", () => {
     it("подсказка узбекского словаря, вернувшаяся как «речь», отбрасывается; живая фраза — нет", () => {
-        expect(isPhantomTranscript("Yangi vazifa yarat.")).toBe(true);
-        expect(isPhantomTranscript("to‘lanmagan hisob-fakturalarni ko‘rsat")).toBe(true);
         expect(isPhantomTranscript(UZ_STT_PROMPT)).toBe(true);
+        expect(isPhantomTranscript(UZ_STT_PROMPT.slice(30, 110))).toBe(true);
+        // короткие настоящие команды, похожие на примеры из подсказки, — не фантом
+        expect(isPhantomTranscript("Yangi vazifa yarat.")).toBe(false);
+        expect(isPhantomTranscript("Salom, Ayris")).toBe(false);
+        expect(isPhantomTranscript("Ayris, to‘lanmagan hisob-fakturalarni ko‘rsat")).toBe(false);
         expect(isPhantomTranscript("Ayris, mijoz Karimov uchun yangi hisob-faktura yarat")).toBe(false);
         expect(isPhantomTranscript("Спасибо за просмотр")).toBe(true);
         expect(isPhantomTranscript("")).toBe(true);

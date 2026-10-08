@@ -33,7 +33,7 @@ const PHRASES: Record<VoiceLang, { on: string; off: string; done: string; cancel
 };
 
 // «Привет», «эй», «слушай» перед именем — не просьба
-const GREETING = /^(salom|assalomu|alaykum|привет|приветик|эй|слушай|слышишь|ну|окей|ок|хай|привіт|слухай|гей|hey|hi|hello|ok|okay|hallo|hör|na)[\s,!.…]*$/iu;
+const GREETING = /^(salom|assalom|assalomu|alaykum|aleykum|салом|ассалом|ассалому|алайкум|алейкум|салам|привет|приветик|эй|слушай|слышишь|ну|окей|ок|хай|привіт|слухай|гей|hey|hi|hello|ok|okay|hallo|hör|na)[\s,!.…]*$/iu;
 const isGreetingOnly = (rest: string) => {
 	const t = rest.trim();
 	if (!t) return true;

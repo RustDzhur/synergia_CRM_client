@@ -238,47 +238,8 @@ export function voiceDecision(text: string, pendingActions: number): { kind: "co
 	return { kind: "send" };
 }
 
-// ── Имя «Айрис» в фразе ──────────────────────────────────────────────────────────────────────────────
-// Разговорный режим слушает постоянно — имя больше НЕ ворота: просьбу выполняем и без него (владелец:
-// «пусть модель будет постоянно активная и слушающая»). Имя распознаём, чтобы снять его из текста
-// («Айрис, створи задачу» → «створи задачу») и отозваться «Слухаю», если позвали только по имени.
-
-const WAKE_WORDS = ["airis", "ayris", "айріс", "айрис", "эйрис", "ейрис", "арис", "ірис", "ирис", "iris", "ayres", "ayrus"];
-// Для нечёткого сравнения (одна опечатка) — только длинные формы: короткие («ірис»/«iris» в 4 буквы)
-// с допуском на опечатку ловили бы обычные слова («рис», «ира»). Точное совпадение коротких форм
-// остаётся: «Ірис» как имя по-прежнему распознаётся
-const WAKE_FUZZY = ["airis", "айріс", "айрис", "эйрис", "арис"];
-
-// Расстояние Левенштейна ≤ 1: распознавание слышит имя по-разному («Айрс», «Айріз», «Ейріс») —
-// одна опечатка допускается, две уже нет
-function nearWord(word: string, target: string): boolean {
-	if (Math.abs(word.length - target.length) > 1) return false;
-	let i = 0, j = 0, edits = 0;
-	while (i < word.length && j < target.length) {
-		if (word[i] === target[j]) { i++; j++; continue; }
-		if (++edits > 1) return false;
-		if (word.length > target.length) i++;
-		else if (word.length < target.length) j++;
-		else { i++; j++; }
-	}
-	return edits + (word.length - i) + (target.length - j) <= 1;
-}
-
-const isWakeWord = (w: string) => WAKE_WORDS.includes(w) || (w.length >= 4 && WAKE_FUZZY.some((t) => nearWord(w, t)));
-
-/** Имя во фразе: {hit — позвали, rest — сама просьба без имени}. */
-export function stripWake(text: string): { hit: boolean; rest: string } {
-	// распознавание иногда делит имя на два слова («ай рис», «ай ріс»)
-	const raw = String(text ?? "").replace(/(?<![\p{L}\p{N}])(ай|эй|ей)\s+(рис|ріс)(?![\p{L}\p{N}])/giu, "$1$2");
-	const ws = words(raw);
-	if (!ws.some(isWakeWord)) return { hit: false, rest: raw.trim() };
-	// Убираем только ПЕРВОЕ имя — в остальном тексте слово «айріс» может быть частью просьбы.
-	// Границы слова — юникодные: \b в JavaScript знает только ASCII и с кириллицей не срабатывает.
-	// Варианты с одной опечаткой снимаем тем же списком, что ловим (набор невелик)
-	const variants = [...WAKE_WORDS, ...ws.filter((w) => !WAKE_WORDS.includes(w) && isWakeWord(w))];
-	const re = new RegExp(`(?<![\\p{L}\\p{N}])(?:${variants.join("|")})(?![\\p{L}\\p{N}])[\\s,!.…—–-]*`, "giu");
-	return { hit: true, rest: raw.replace(re, "").trim() };
-}
+// Имя «Айрис» во фразе — components/crm/AiAssistant/wake.ts (чистая логика, проверяется тестами)
+export { stripWake } from "./wake";
 
 // ── Перебивание голосом (как в голосовом режиме ChatGPT) ─────────────────────────────────────────────
 // Пока ассистент говорит, микрофон приоткрыт ТОЛЬКО для измерения громкости: поток берётся с

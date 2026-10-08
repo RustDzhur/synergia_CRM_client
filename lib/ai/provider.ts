@@ -244,7 +244,8 @@ export function isPhantomTranscript(text: string): boolean {
     const t = String(text ?? "").trim();
     if (!t || t.replace(/[\s.,!?…\-–—]/g, "").length < 2) return true;
     // подсказка узбекского распознавания (UZ_STT_PROMPT) на тишине может вернуться как «речь»: любой её кусок — не фраза пользователя
-    if (t.length >= 8 && UZ_STT_PROMPT.toLowerCase().includes(t.toLowerCase().replace(/[.!?]+$/, ""))) return true;
+    // (короткий кусок — настоящая команда вроде «Salom, Ayris» или «hisob-fakturalarni ko‘rsat», поэтому порог длинный)
+    if (t.length >= 60 && UZ_STT_PROMPT.toLowerCase().includes(t.toLowerCase().replace(/[.!?]+$/, ""))) return true;
     return PHANTOM.some((re) => re.test(t));
 }
 
@@ -254,7 +255,7 @@ interface SttTarget { url: string; key?: string; model: string; kind?: "openai" 
 //  • модель получше — gpt-4o-transcribe у самого OpenAI (имя можно задать AI_VOICE_STT_MODEL_UZ);
 //  • подсказка со словарём CRM латиницей — распознаватель выбирает «hisob-faktura», а не созвучное слово;
 //  • необязательный ElevenLabs Scribe (ELEVENLABS_API_KEY) — отдельная модель с узбекским, ставится первой, если ключ задан.
-export const UZ_STT_PROMPT = "Ayris, Айрис. Firmspace CRM. mijoz, mijozlar, hisob-faktura, hisob-fakturalar, buyurtma, shartnoma, taklif, vazifa, bitim, to‘lov, ombor, mahsulot, xodim, hisobot, soliq, QQS, so‘m, bank, kassa. Ayris, to‘lanmagan hisob-fakturalarni ko‘rsat. Yangi vazifa yarat. Buyurtmalarni och.";
+export const UZ_STT_PROMPT = "Salom, Ayris. Ayris, Айрис. Salom Ayris. Firmspace CRM. mijoz, mijozlar, hisob-faktura, hisob-fakturalar, buyurtma, shartnoma, taklif, vazifa, bitim, to‘lov, ombor, mahsulot, xodim, hisobot, soliq, QQS, so‘m, bank, kassa. Ayris, to‘lanmagan hisob-fakturalarni ko‘rsat. Yangi vazifa yarat. Buyurtmalarni och.";
 const uzCloudModel = () => plainModel(process.env.AI_VOICE_STT_MODEL_UZ, "gpt-4o-transcribe", /^(whisper-1|gpt-4o)/);
 
 function sttTargets(language?: string): SttTarget[] {
