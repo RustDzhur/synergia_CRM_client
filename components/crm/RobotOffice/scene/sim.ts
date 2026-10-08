@@ -106,7 +106,7 @@ export class OfficeSim {
         if (a.arrived) return;
         const target: [number, number] = a.path.length ? a.path[0] : [a.goal!.x, a.goal!.y];
         const dx = target[0] - a.x, dy = target[1] - a.y, dist = Math.hypot(dx, dy);
-        const step = SPEED * dt;
+        const step = Math.max(0, SPEED * dt);
         if (dist > 0.04) {
             a.pose = "walk";
             const sxm = dx - dy, sym = dx + dy;
@@ -122,6 +122,6 @@ export class OfficeSim {
             if (a.goal) { a.x = a.goal.x; a.y = a.goal.y; a.pose = a.goal.pose; a.face = a.goal.face; a.flip = a.goal.flip; a.dwellUntil = now + rnd(a.goal.dwell[0], a.goal.dwell[1]) * 1000; }
             return;
         }
-        a.x += (dx / dist) * step; a.y += (dy / dist) * step;
+        if (dist > 1e-9) { a.x += (dx / dist) * step; a.y += (dy / dist) * step; }
     }
 }
