@@ -2,6 +2,8 @@ import { createHash, createHmac, createVerify } from "crypto";
 import { ProviderError, fetchProvider } from "@/lib/http";
 import { safeEqual } from "@/lib/crypto";
 import { secretsOf } from "@/lib/integrations";
+import { paymeCheckoutUrl } from "@/lib/uzpay/payme";
+import { clickPayUrl } from "@/lib/uzpay/click";
 
 // Приём платежей фирмой: monobank, LiqPay, WayForPay и крипта (NOWPayments). Фирма подключает свой
 // кабинет эквайринга, а CRM создаёт ссылку на оплату счёта и сама отмечает счёт оплаченным, когда
@@ -10,13 +12,15 @@ import { secretsOf } from "@/lib/integrations";
 // У каждого провайдера свой способ подписи запроса и проверки вебхука, поэтому они живут в одном
 // файле: так видно и различия, и то общее, что у них есть (ссылка + подписанный колбэк).
 
-export type PayProvider = "monobank" | "liqpay" | "wayforpay" | "cryptopay";
+export type PayProvider = "monobank" | "liqpay" | "wayforpay" | "cryptopay" | "payme" | "click";
 
 export const PAY_PROVIDERS: Record<PayProvider, { label: string }> = {
     monobank: { label: "monobank" },
     liqpay: { label: "LiqPay" },
     wayforpay: { label: "WayForPay" },
     cryptopay: { label: "Crypto (NOWPayments)" },
+    payme: { label: "Payme" },
+    click: { label: "Click" },
 };
 
 export interface PayLinkInput {
@@ -240,11 +244,24 @@ async function cryptoWebhook(doc: { secrets?: string }, raw: string, headers: He
 
 // ── общие вызовы ────────────────────────────────────────────────────────────────────────────────────
 
-export async function createPayLink(provider: PayProvider, doc: { secrets?: string }, input: PayLinkInput): Promise<PayLink> {
+// Узбекистан: ссылка строится без запроса к провайдеру — Payme и Click сами позовут наш адрес, когда клиент откроет страницу оплаты.
+function uzLink(provider: "payme" | "click", doc: { config?: unknown }, input: PayLinkInput): PayLink {
+    if (input.currency !== "UZS") throw new ProviderError("Payme va Click faqat so‘m (UZS) dagi hisob-fakturalarni qabul qiladi");
+    const c = (doc.config ?? {}) as Record<string, string>;
+    if (provider === "payme") {
+        if (!c.merchantId) throw new ProviderError("Payme: Merchant ID kiritilmagan");
+        return { url: paymeCheckoutUrl({ merchantId: c.merchantId, test: c.mode !== "live", reference: input.reference, amountSom: input.amount, locale: input.locale, returnUrl: input.returnUrl }), id: input.reference };
+    }
+    if (!c.merchantId || !c.serviceId) throw new ProviderError("Click: Merchant ID va Service ID kiritilmagan");
+    return { url: clickPayUrl({ merchantId: c.merchantId, serviceId: c.serviceId, merchantUserId: c.merchantUserId, reference: input.reference, amountSom: input.amount, returnUrl: input.returnUrl }), id: input.reference };
+}
+
+export async function createPayLink(provider: PayProvider, doc: { secrets?: string; config?: unknown }, input: PayLinkInput): Promise<PayLink> {
     if (provider === "monobank") return monobankLink(doc, input);
     if (provider === "liqpay") return liqpayLink(doc, input);
     if (provider === "wayforpay") return wayforpayLink(doc, input);
     if (provider === "cryptopay") return cryptoLink(doc, input);
+    if (provider === "payme" || provider === "click") return uzLink(provider, doc, input);
     throw new ProviderError("Невідомий спосіб оплати");
 }
 

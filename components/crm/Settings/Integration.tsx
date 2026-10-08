@@ -56,6 +56,8 @@ const INTEGRATIONS: Integration[] = [
 	{ id: "monobank", key: "intMonobank", icon: TbCreditCard, real: "monobank" },
 	{ id: "liqpay", key: "intLiqpay", icon: TbCreditCard, real: "liqpay" },
 	{ id: "wayforpay", key: "intWayforpay", icon: TbCreditCard, real: "wayforpay" },
+	{ id: "payme", key: "intPayme", icon: TbCreditCard, real: "payme" },
+	{ id: "click", key: "intClick", icon: TbCreditCard, real: "click" },
 	{ id: "cryptopay", key: "intCryptopay", icon: TbCurrencyBitcoin, real: "cryptopay" },
 	{ id: "prom", key: "intProm", icon: TbShoppingCart, real: "prom" },
 	{ id: "rozetka", key: "intRozetka", icon: TbShoppingCart, real: "rozetka" },

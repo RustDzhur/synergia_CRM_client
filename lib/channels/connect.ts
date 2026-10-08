@@ -519,6 +519,26 @@ export async function connectIntegration(owner: string, type: string, input: Inp
             secrets = { apiKey, ipnSecret };
             break;
         }
+        // Узбекистан: Payme и Click вызывают адрес фирмы сами, поэтому ключи проверить запросом к провайдеру нельзя —
+        // их проверяет песочница провайдера (docs/UZ_PAYMENTS.md). Деньги идут напрямую фирме.
+        case "payme": {
+            const merchantId = need(str(input.merchantId, 64), "Merchant ID");
+            const key = need(str(input.key, 200), "Key");
+            const testKey = str(input.testKey, 200);
+            name = "Payme";
+            config = { merchantId, mode: str(input.sandbox, 2) === "0" ? "live" : "test" };
+            secrets = { key, ...(testKey ? { testKey } : {}) };
+            break;
+        }
+        case "click": {
+            const merchantId = need(str(input.merchantId, 64), "Merchant ID");
+            const serviceId = need(str(input.serviceId, 64), "Service ID");
+            const secretKey = need(str(input.secretKey, 200), "Secret key");
+            name = "Click";
+            config = { merchantId, serviceId, merchantUserId: str(input.merchantUserId, 64) };
+            secrets = { secretKey };
+            break;
+        }
         case "webchat":
             name = "Online chat";
             config = webchatConfig(input);

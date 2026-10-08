@@ -58,8 +58,8 @@ export const MANIFEST_SEED: Manifest[] = [
     m({ key: "cbu", kind: "rates", title: "CBU exchange rates", markets: ["UZ"], status: "available", fields: [], connectable: false, source: "lib/finance/rates.ts" }),
     m({ key: "didox", kind: "efaktura", title: "Didox (ЭСФ)", markets: ["UZ"], status: "planned", fields: [], connectable: false, needsContract: true, source: "docs/TZ_MASTER.md §6.3" }),
     m({ key: "faktura_uz", kind: "efaktura", title: "Faktura.uz (ЭСФ)", markets: ["UZ"], status: "planned", fields: [], connectable: false, needsContract: true, source: "docs/TZ_MASTER.md §6.3" }),
-    m({ key: "payme", kind: "payment", title: "Payme", markets: ["UZ"], status: "planned", fields: [], connectable: false, needsContract: true, source: "docs/TZ_MASTER.md §6.3" }),
-    m({ key: "click", kind: "payment", title: "Click", markets: ["UZ"], status: "planned", fields: [], connectable: false, needsContract: true, source: "docs/TZ_MASTER.md §6.3" }),
+    m({ key: "payme", kind: "payment", title: "Payme", markets: ["UZ"], status: "beta", fields: [f("merchantId", false), f("key"), f("testKey", true, false), f("sandbox", false, false)], url: "https://business.payme.uz", needsContract: true, source: "lib/uzpay/payme.ts (Merchant API, docs checked 2026-10-05)" }),
+    m({ key: "click", kind: "payment", title: "Click", markets: ["UZ"], status: "beta", fields: [f("merchantId", false), f("serviceId", false), f("merchantUserId", false, false), f("secretKey")], url: "https://merchant.click.uz", needsContract: true, source: "lib/uzpay/click.ts (SHOP API, docs checked 2026-10-05)" }),
     m({ key: "uzum", kind: "payment", title: "Uzum", markets: ["UZ"], status: "planned", fields: [], connectable: false, needsContract: true, source: "docs/TZ_MASTER.md §6.3" }),
     m({ key: "atmos", kind: "payment", title: "ATMOS", markets: ["UZ"], status: "planned", fields: [], connectable: false, needsContract: true, source: "docs/TZ_MASTER.md §6.3" }),
     m({ key: "uz_kassa", kind: "fiscal", title: "Online cash register (UZ)", markets: ["UZ"], status: "planned", fields: [], connectable: false, needsContract: true, source: "docs/TZ_MASTER.md §6.3" }),
@@ -131,6 +131,22 @@ export const KIND_TEXT: Record<ManifestKind, Record<Lang, { desc: string; steps:
     },
 };
 
+// Пошаговые инструкции конкретных сервисов (заменяют общий текст вида): что открыть, что вписать у провайдера и как проверить
+export const PROVIDER_STEPS: Record<string, Record<Lang, string>> = {
+    payme: {
+        en: "1) Contract with Payme, then create a web cash register in Payme Business with an account field named order_id (one-time). 2) Open this form, enter Merchant ID and the keys — the form then shows the Endpoint URL; paste it into the register settings. 3) Run the two sandbox scenarios at test.paycom.uz with the sandbox key. 4) Untick sandbox mode. UZS only.",
+        de: "1) Vertrag mit Payme, dann in Payme Business eine Web-Kasse mit Kontofeld order_id (einmalig) anlegen. 2) Merchant-ID und Schlüssel im Formular eintragen — danach zeigt das Formular die Endpoint-URL; in die Kasseneinstellungen einfügen. 3) Die zwei Sandbox-Szenarien auf test.paycom.uz mit dem Sandbox-Schlüssel durchlaufen. 4) Sandbox-Modus abwählen. Nur UZS.",
+        ua: "1) Договір із Payme, потім у Payme Business створіть веб-касу з полем рахунку order_id (одноразове). 2) Введіть у формі Merchant ID і ключі — форма покаже Endpoint URL, вставте його в налаштування каси. 3) Пройдіть два сценарії пісочниці на test.paycom.uz з ключем пісочниці. 4) Зніміть режим пісочниці. Лише UZS.",
+        uz: "1) Payme bilan shartnoma, so‘ng Payme Business da hisob maydoni order_id (bir martalik) bo‘lgan veb-kassa yarating. 2) Shaklga Merchant ID va kalitlarni kiriting — shakl Endpoint URL ni ko‘rsatadi, uni kassa sozlamalariga qo‘ying. 3) test.paycom.uz da sandbox kaliti bilan ikki stsenariyni o‘tkazing. 4) Sandbox rejimini o‘chiring. Faqat UZS.",
+    },
+    click: {
+        en: "1) Contract with Click; in the Click Merchant cabinet take Merchant ID, Service ID and the Secret key. 2) Enter them in this form — it then shows the callback address; paste it as both Prepare URL and Complete URL of the service. 3) Check with Click's test scenarios. UZS only.",
+        de: "1) Vertrag mit Click; im Click-Merchant-Konto Merchant-ID, Service-ID und Geheimschlüssel entnehmen. 2) Im Formular eintragen — danach zeigt es die Callback-Adresse; als Prepare-URL und Complete-URL des Dienstes einfügen. 3) Mit den Testszenarien von Click prüfen. Nur UZS.",
+        ua: "1) Договір із Click; у кабінеті Click Merchant візьміть Merchant ID, Service ID і Secret key. 2) Введіть їх у формі — вона покаже адресу зворотного виклику; вставте її як Prepare URL і Complete URL сервісу. 3) Перевірте тестовими сценаріями Click. Лише UZS.",
+        uz: "1) Click bilan shartnoma; Click Merchant kabinetidan Merchant ID, Service ID va Secret key ni oling. 2) Shaklga kiriting — u callback manzilini ko‘rsatadi; uni xizmatning Prepare URL va Complete URL i sifatida qo‘ying. 3) Click test stsenariylari bilan tekshiring. Faqat UZS.",
+    },
+};
+
 export const FIELD_LABELS: Record<string, Record<Lang, string>> = {
     botToken: { en: "Bot token", de: "Bot-Token", ua: "Токен бота", uz: "Bot tokeni" },
     authToken: { en: "Auth token", de: "Auth-Token", ua: "Токен авторизації", uz: "Auth token" },
@@ -142,6 +158,12 @@ export const FIELD_LABELS: Record<string, Record<Lang, string>> = {
     privateKey: { en: "Private key", de: "Privater Schlüssel", ua: "Приватний ключ", uz: "Yopiq kalit" },
     login: { en: "Login", de: "Login", ua: "Логін", uz: "Login" },
     password: { en: "Password", de: "Passwort", ua: "Пароль", uz: "Parol" },
+    merchantId: { en: "Merchant ID", de: "Merchant-ID", ua: "Merchant ID", uz: "Merchant ID" },
+    serviceId: { en: "Service ID", de: "Service-ID", ua: "Service ID", uz: "Service ID" },
+    merchantUserId: { en: "Merchant user ID", de: "Merchant-User-ID", ua: "Merchant user ID", uz: "Merchant user ID" },
+    key: { en: "Cash register key", de: "Kassenschlüssel", ua: "Ключ каси", uz: "Kassa kaliti" },
+    testKey: { en: "Sandbox key", de: "Sandbox-Schlüssel", ua: "Ключ пісочниці", uz: "Sandbox kaliti" },
+    sandbox: { en: "Sandbox mode (0 = live)", de: "Sandbox-Modus (0 = live)", ua: "Режим пісочниці (0 = бойовий)", uz: "Sandbox rejimi (0 = ishchi)" },
     phone: { en: "Phone number", de: "Telefonnummer", ua: "Номер телефону", uz: "Telefon raqami" },
 };
 
@@ -155,7 +177,7 @@ export function describeManifest(mf: Manifest, locale = "en"): ManifestView {
     const tx = KIND_TEXT[mf.kind][lang];
     const fieldLabels: Record<string, string> = {};
     for (const fl of mf.fields) fieldLabels[fl.key] = FIELD_LABELS[fl.key]?.[lang] ?? FIELD_LABELS[fl.key]?.en ?? fl.key;
-    return { ...mf, description: tx.desc, steps: tx.steps.replace(/\{title\}/g, mf.title), fieldLabels };
+    return { ...mf, description: tx.desc, steps: (PROVIDER_STEPS[mf.key]?.[lang] ?? tx.steps).replace(/\{title\}/g, mf.title), fieldLabels };
 }
 
 // ── реестр с накладкой из базы ──────────────────────────────────────────────────────────────────────────

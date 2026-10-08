@@ -60,6 +60,11 @@ export async function connectWithSecrets(org: string, type: string, fields: Reco
 export async function verifyConnected(org: string, type: string, origin: string) {
     const doc = await prisma.integration.findFirst({ where: { owner: org, type } });
     if (!doc) throw new IntegrationFlowError("Not connected yet", 404);
+    // Payme и Click сами вызывают наш адрес: проверить ключи запросом нельзя, но видно, дошёл ли до нас хоть один запрос провайдера
+    if (type === "payme" || type === "click") {
+        const n = await prisma.uzPayTx.count({ where: { org, provider: type } });
+        return { ok: n > 0, checked: false, message: n > 0 ? "" : "No requests from the provider yet. Paste the callback address into the provider's cabinet and run its sandbox test." };
+    }
     try {
         await checkIntegration(doc, origin);
     } catch (e) {

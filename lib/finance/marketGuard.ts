@@ -24,6 +24,13 @@ export async function requireMarket(org: string, market: Market): Promise<Market
     return current;
 }
 
+/** Как requireMarket, но подходит любой из перечисленных рынков (общий маршрут для нескольких стран). */
+export async function requireOneOfMarkets(org: string, markets: Market[]): Promise<Market> {
+    const current = await orgMarket(org);
+    if (!current || !markets.includes(current)) throw new MarketError(`Функция доступна только для ${markets.map((m) => profile(m).nameGenitive).join(" и ")}`, markets[0]);
+    return current;
+}
+
 /** Проверка «документ доступен в режиме фирмы»: кнопки и маршруты выпуска документов спрашивают её до генерации. */
 export async function requireDocument(org: string, kind: MarketDocumentKind): Promise<void> {
     const s = await prisma.financeSettings.findUnique({ where: { org }, select: { country: true } });

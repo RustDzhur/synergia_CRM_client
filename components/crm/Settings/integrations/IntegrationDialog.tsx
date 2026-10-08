@@ -340,6 +340,13 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 								<button type="button" disabled={busy} onClick={checkMarket} className={`${buttonBase} fs-btn-ghost`}>{t("marketCheck")}</button>
 							</div>
 						)}
+						{/* Payme и Click сами вызывают адрес фирмы: показываем, что вписать в их кабинете, и порядок настройки */}
+						{current && (shown === "payme" || shown === "click") && (
+							<>
+								<CopyField label={t(shown === "payme" ? "intPaymeEndpoint" : "intClickPrepare")} value={current.webhookUrl} />
+								<p className="text-11 leading-[1.5] text-[#8c948b]">{t(shown === "payme" ? "intPaymeHelp" : "intClickHelp")}</p>
+							</>
+						)}
 						{current && shown === "twilio" && <p className="text-12 text-[#8c948b]">{t("intTwilioAuto")}</p>}
 						{current && shown === "sip" && <p className="text-12 text-[#8c948b]">{t("intSipConnected")}</p>}
 						{current && isWebchat && (

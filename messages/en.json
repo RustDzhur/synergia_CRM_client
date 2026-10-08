@@ -1250,7 +1250,22 @@
         "prSubTitle": "Platform subprocessors",
         "prSubHint": "Who processes client data on our behalf. Changes are logged with dates.",
         "prSubEmpty": "No subprocessors recorded yet.",
-        "prTermsPrice": "price {price} {cur}/month"
+        "prTermsPrice": "price {price} {cur}/month",
+        "intPayme": "Payme (payments, UZ)",
+        "intClick": "Click (payments, UZ)",
+        "intfPaymeMerchant": "Merchant ID (web cash register ID)",
+        "intfPaymeKey": "Cash register key (production)",
+        "intfPaymeTestKey": "Sandbox key (TEST_KEY)",
+        "intfPaymeSandbox": "Sandbox mode (links open test.paycom.uz; untick when going live)",
+        "intfClickMerchant": "Merchant ID",
+        "intfClickService": "Service ID",
+        "intfClickUser": "Merchant user ID",
+        "intfClickSecret": "Secret key",
+        "intPaymeEndpoint": "Endpoint URL (paste into the cash register in Payme Business)",
+        "intClickPrepare": "Prepare URL and Complete URL (the same address for both)",
+        "intPaymeHelp": "1) In Payme Business create a web cash register with the account field named order_id (type: one-time). 2) Paste the Endpoint URL above into the register settings. 3) Enter Merchant ID and the keys here. 4) Run the sandbox tests at test.paycom.uz (two scenarios) with the sandbox key. 5) Untick sandbox mode — payment links then use the live checkout. Amounts are in UZS only; a paid invoice is marked paid automatically.",
+        "intClickHelp": "1) Sign the contract with Click and get Merchant ID, Service ID and the Secret key in the Click Merchant cabinet. 2) Paste the URL above as both Prepare URL and Complete URL of the service. 3) Enter the values here. 4) Check the connection with Click's test scenarios. Amounts are in UZS only; a paid invoice is marked paid automatically.",
+        "intUzPayStats": "Requests received from the provider: {n}"
     },
     "upgrade": {
         "free": "Free",

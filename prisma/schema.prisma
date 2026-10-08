@@ -1651,3 +1651,26 @@ model DocComment {
   @@index([org, entityType, entityId])
   @@map("doc_comments")
 }
+
+// Платежи Payme и Click (Узбекистан): провайдер сам вызывает адрес фирмы, транзакции хранятся для идемпотентности и сверки.
+// Деньги идут напрямую фирме. Payme: id — 24-символьный идентификатор Payme; Click: id — click_trans_id, seq — merchant_prepare_id.
+model UzPayTx {
+  id          String    @id @default(cuid())
+  seq         Int       @unique @default(autoincrement())
+  org         String
+  provider    String
+  externalId  String
+  invoiceId   String
+  reference   String
+  amount      Float
+  state       Int       @default(1)
+  reason      Int?
+  extTime     BigInt?
+  createdAt   DateTime  @default(now())
+  performedAt DateTime?
+  cancelledAt DateTime?
+
+  @@unique([provider, externalId])
+  @@index([org, invoiceId])
+  @@map("uz_pay_tx")
+}

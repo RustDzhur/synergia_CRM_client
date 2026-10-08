@@ -1250,7 +1250,22 @@
         "prSubTitle": "Subunternehmer der Plattform",
         "prSubHint": "Wer Mandantendaten in unserem Auftrag verarbeitet. Änderungen werden mit Datum protokolliert.",
         "prSubEmpty": "Noch keine Subunternehmer erfasst.",
-        "prTermsPrice": "Preis {price} {cur}/Monat"
+        "prTermsPrice": "Preis {price} {cur}/Monat",
+        "intPayme": "Payme (Zahlungen, UZ)",
+        "intClick": "Click (Zahlungen, UZ)",
+        "intfPaymeMerchant": "Merchant-ID (ID der Web-Kasse)",
+        "intfPaymeKey": "Kassenschlüssel (Produktion)",
+        "intfPaymeTestKey": "Sandbox-Schlüssel (TEST_KEY)",
+        "intfPaymeSandbox": "Sandbox-Modus (Links öffnen test.paycom.uz; zum Livegang abwählen)",
+        "intfClickMerchant": "Merchant-ID",
+        "intfClickService": "Service-ID",
+        "intfClickUser": "Merchant-User-ID",
+        "intfClickSecret": "Geheimer Schlüssel",
+        "intPaymeEndpoint": "Endpoint-URL (in die Kasse in Payme Business eintragen)",
+        "intClickPrepare": "Prepare-URL und Complete-URL (dieselbe Adresse für beide)",
+        "intPaymeHelp": "1) Legen Sie in Payme Business eine Web-Kasse mit dem Kontofeld order_id (einmalig) an. 2) Tragen Sie die obige Endpoint-URL in den Kasseneinstellungen ein. 3) Geben Sie hier Merchant-ID und Schlüssel ein. 4) Führen Sie die Sandbox-Tests auf test.paycom.uz (zwei Szenarien) mit dem Sandbox-Schlüssel durch. 5) Sandbox-Modus abwählen — dann nutzen die Zahlungslinks die Live-Kasse. Beträge nur in UZS; eine bezahlte Rechnung wird automatisch als bezahlt markiert.",
+        "intClickHelp": "1) Schließen Sie den Vertrag mit Click ab und holen Sie Merchant-ID, Service-ID und Geheimschlüssel im Click-Merchant-Konto. 2) Tragen Sie die obige Adresse als Prepare-URL und als Complete-URL des Dienstes ein. 3) Geben Sie die Werte hier ein. 4) Prüfen Sie die Verbindung mit den Testszenarien von Click. Beträge nur in UZS; eine bezahlte Rechnung wird automatisch als bezahlt markiert.",
+        "intUzPayStats": "Vom Anbieter empfangene Anfragen: {n}"
     },
     "upgrade": {
         "free": "Kostenlos",

@@ -7,7 +7,7 @@ import { computeTotals } from "@/lib/finance/totals";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import { webhookPath } from "@/lib/integrations";
 import { sendToConversation } from "@/lib/channels";
-import { requireMarket } from "@/lib/finance/marketGuard";
+import { requireMarket, requireOneOfMarkets } from "@/lib/finance/marketGuard";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -19,13 +19,14 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
-    // Приём оплаты через monobank/LiqPay/WayForPay/крипту — украинский набор
+    // Приём оплаты: monobank/LiqPay/WayForPay/крипта — украинский набор, Payme/Click — узбекский
     // отказ по режиму рынка — 409 с кодом market, а не 500 от исключения
-    try { await requireMarket(user.id, "UA"); } catch (e) { return failure(e); }
+    let market;
+    try { market = await requireOneOfMarkets(user.id, ["UA", "UZ"]); } catch (e) { return failure(e); }
     const inv = await prisma.invoice.findFirst({ where: { id: params.id, org: user.id }, select: { contact: true, payLink: true } });
     if (!inv) return notFound();
     const [connected, conversations] = await Promise.all([
-        prisma.integration.findMany({ where: { owner: user.id, type: { in: ["monobank", "liqpay", "wayforpay", "cryptopay"] }, status: "connected" }, select: { type: true } }),
+        prisma.integration.findMany({ where: { owner: user.id, type: { in: market === "UZ" ? ["payme", "click"] : ["monobank", "liqpay", "wayforpay", "cryptopay"] }, status: "connected" }, select: { type: true } }),
         inv.contact ? prisma.conversation.findMany({ where: { owner: user.id, contact: String(inv.contact) }, select: { id: true, channel: true, name: true }, take: 5 }) : [],
     ]);
     return NextResponse.json({
@@ -49,7 +50,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const provider = String(body.provider ?? "");
     if (!isPayProvider(provider)) return badRequest("Обери спосіб оплати");
     try {
-        await requireMarket(user.id, "UA");
+        await requireMarket(user.id, provider === "payme" || provider === "click" ? "UZ" : "UA");
         const inv = await prisma.invoice.findFirst({ where: { id: params.id, org: user.id } });
         if (!inv) return notFound();
         if (inv.status === "paid") return badRequest("Рахунок уже оплачено");
@@ -62,7 +63,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         const origin = appOrigin(req);
         const link = await createPayLink(provider as PayProvider, doc, {
             amount: outstanding,
-            currency: inv.currency || "UAH",
+            currency: inv.currency || (provider === "payme" || provider === "click" ? "UZS" : "UAH"),
             reference: inv.number,
             description: `Оплата за рахунком ${inv.number}`,
             webhookUrl: `${origin}${webhookPath(provider as never, String(doc.token))}`,
