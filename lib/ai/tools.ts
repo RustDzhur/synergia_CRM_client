@@ -1556,6 +1556,31 @@ export const TOOLS: AiTool[] = [
             return { params: { entity: String(a.entity), name: String(a.name || id) }, link: "/crm" };
         },
     },
+    // ── практика: правила сверки и юристу (docs/TZ_MASTER.md §5.2 п. 9–10) ──
+    {
+        module: "inventory", write: true,
+        def: { name: "propose_rules_batch", description: "Prepare a batch that applies the firm's reconciliation rules (counterparty/reference → category) to unlabelled bank transactions. It only prepares the batch; a person applies it later and can roll it back. Needs user confirmation.", parameters: schema({}) },
+        run: async (c) => {
+            const { proposeRulesBatch } = await import("@/lib/review/batches");
+            const { ReviewError } = await import("@/lib/review/service");
+            try {
+                const b = await proposeRulesBatch(c.org, { userId: c.userId, name: "Ayris", role: c.role });
+                return { params: { count: (b.changes as unknown[]).length }, link: "/crm/finance" };
+            } catch (e) { if (e instanceof ReviewError) throw new ToolError(e.message); throw e; }
+        },
+    },
+    {
+        module: "crm", write: true,
+        def: { name: "save_legal_draft", description: "Save a contract text you drafted as a NEW document in the contract store. It is always marked as an AI draft for the specialist to review. Needs user confirmation. Never present it as legal advice.", parameters: schema({ title: S("document title"), counterparty: S("other party"), body: S("full text"), due_date: S("deadline YYYY-MM-DD, optional") }, ["title", "body"]) },
+        check: (a) => ({ title: need(str(a.title, 160), "title"), counterparty: str(a.counterparty, 160), body: need(str(a.body, 60000), "body"), due_date: str(a.due_date, 10) }),
+        run: async (c, a) => {
+            const { createDoc, LegalError } = await import("@/lib/legal/service");
+            try {
+                const d = await createDoc(c.org, { userId: c.userId, name: "Ayris" }, { title: a.title, counterparty: a.counterparty, body: a.body, dueDate: a.due_date, aiDraft: true });
+                return { params: { title: d.title }, link: "/crm/settings/legal" };
+            } catch (e) { if (e instanceof LegalError) throw new ToolError(e.message); throw e; }
+        },
+    },
     // ── подключение интеграций (docs/TZ_MASTER.md §6): Айрис ведёт, но ключи вводит человек в защищённой форме, а не в чате ──
     {
         module: "settings", write: false,
@@ -1614,6 +1639,8 @@ export const TOOLS: AiTool[] = [
 // «открой страницу» обходится одним navigate. Если ни одна группа не узнана и это не переход — отдаём всё, как раньше:
 // медленнее, зато ничего не теряется.
 const GROUPS: { re: RegExp; tools: string[] }[] = [
+    { re: /правил.* сверк|сверк.*правил|reconcil|abgleich|договор|контракт|contract|vertrag|юрист|lawyer|legal|чернетк|draft.*(contract|agreement)/i,
+      tools: ["propose_rules_batch", "save_legal_draft", "search_documents", "read_document"] },
     { re: /интеграц|интегрир|подключ|підключ|интеграці|integrat|connect|anbind|verbind|эквайринг|приним.* оплат|приймат.* оплат|accept.* payment|zahlung.*annehm|telegram|viber|whatsapp|payme|click|didox|monobank|liqpay|wayforpay|checkbox|nova ?poshta|нова пошта|новая почта/i,
       tools: ["find_integration", "explain_integration", "start_integration", "verify_integration", "list_my_integrations"] },
     { re: /робот|robot|делегир|delegate|поруч|порученн|поручи|офис|офіс|office|нанять|наймі|hire|начальник|boss/i,
