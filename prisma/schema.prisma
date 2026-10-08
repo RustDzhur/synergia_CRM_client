@@ -1478,3 +1478,71 @@ model PlatformAgent {
 
   @@map("platform_agents")
 }
+
+// Банк-партнёр (docs/TZ_MASTER.md §7): канал привлечения и агрегаты; данных фирм банк не получает, кроме выбранного клиентом по согласию
+model BankPartner {
+  id          String   @id @default(cuid())
+  name        String
+  // провайдер из реестра банков (monobank | privatbank …), чей счёт показывается первым шагом
+  bankProvider String  @default("")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@map("bank_partners")
+}
+
+model BankPartnerCode {
+  id        String   @id @default(cuid())
+  partner   String
+  code      String   @unique
+  label     String   @default("")
+  active    Boolean  @default(true)
+  visits    Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([partner])
+  @@map("bank_partner_codes")
+}
+
+// Сотрудник банка с доступом к кабинету банка: видит только агрегаты и лиды, выданные клиентами
+model BankPartnerMember {
+  id        String   @id @default(cuid())
+  partner   String
+  user      String
+  createdAt DateTime @default(now())
+
+  @@unique([partner, user])
+  @@index([user])
+  @@map("bank_partner_members")
+}
+
+// Атрибуция: фирма пришла по коду банка. shareVolume — отдельное согласие клиента на учёт объёма платежей в агрегатах банка
+model PartnerReferral {
+  id          String   @id @default(cuid())
+  partner     String
+  code        String
+  org         String
+  shareVolume Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@unique([partner, org])
+  @@index([org])
+  @@map("partner_referrals")
+}
+
+// Лид банку: клиент сам нажал «Получить предложение банка»; в snapshot — только выбранные им поля, на срок согласия
+model BankLead {
+  id        String    @id @default(cuid())
+  partner   String
+  org       String
+  consent   String
+  fields    String[]  @default([])
+  snapshot  Json
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([partner, createdAt])
+  @@index([org])
+  @@map("bank_leads")
+}

@@ -18,6 +18,7 @@ import AccountDialog from "./bankParts/AccountDialog";
 import ManualDialog from "./bankParts/ManualDialog";
 import MatchDialog from "./bankParts/MatchDialog";
 import BankConnectDialog from "./bankParts/BankConnectDialog";
+import PartnerOffer from "./PartnerOffer";
 import TransactionsTable from "./bankParts/TransactionsTable";
 import { EMPTY_ACCOUNT, EMPTY_MANUAL, amountColor, buildCandidates, dayGap, serverMessage } from "./bankParts/model";
 import type { BankAccountRow, BankTx, ImportResult } from "./bankParts/model";
@@ -439,6 +440,7 @@ export default function Bank() {
 				</>
 			) : (
 				<>
+					<PartnerOffer onConnect={() => setMbOpen(true)} />
 					<div className="mb-16 flex flex-wrap items-center justify-between gap-x-20 gap-y-10">
 						<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("bankTitle")}</h2>
 						<div className="flex flex-wrap items-center gap-10">
