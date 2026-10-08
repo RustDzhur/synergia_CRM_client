@@ -3212,7 +3212,19 @@
         "requestsAnswered": "Antwort gesendet",
         "requestsCancelled": "Anfrage abgebrochen",
         "closeHandoff": "Paket für den Steuerberater (ZIP)",
-        "closeHandoffError": "Paket konnte nicht erstellt werden"
+        "closeHandoffError": "Paket konnte nicht erstellt werden",
+        "rulesTitle": "Abgleichsregeln",
+        "rulesHint": "Enthält der Zahlungspartner oder der Verwendungszweck den Text, erhält die Buchung die Kategorie. Regeln sind ausdrücklich und sichtbar; es wird nichts still gelernt. Abgeschlossene Perioden werden nicht verändert.",
+        "rulesEmpty": "Noch keine Regeln.",
+        "rulesField_counterparty": "Zahlungspartner enthält",
+        "rulesField_reference": "Verwendungszweck enthält",
+        "rulesPattern": "Suchtext (mind. 3 Zeichen)",
+        "rulesCategory": "Kategorie",
+        "rulesAdd": "Regel hinzufügen",
+        "rulesAdded": "Regel hinzugefügt, {n} Buchungen kategorisiert",
+        "rulesHits": "{n}× angewendet",
+        "bankSyncAll": "Alle Banken aktualisieren",
+        "bankSyncDone": "Banken aktualisiert: {ok}, mit Fehlern: {failed}"
     },
     "ads": {
         "needsUpgrade": "Werbeleistung erfordert den Tarif Professional.",

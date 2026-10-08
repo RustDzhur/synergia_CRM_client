@@ -1,6 +1,7 @@
 import { suggestMatches } from "./bank";
 import { computeTotals } from "./totals";
 import { prisma } from "@/lib/prisma";
+import { categoryFor } from "@/lib/review/rules";
 
 // Общий путь записи строк выписки в журнал движений: им пользуются и импорт CSV, и синхронизация
 // с банком по API (monobank) — правила одни и те же: дубликат по внешнему идентификатору не
@@ -48,16 +49,21 @@ export async function importBankRows(
     const suggestions = suggestMatches(fresh.map((r, index) => ({ index, amount: r.amount, date: r.date, reference: r.reference, counterparty: r.counterparty })), candidates);
     const byIndex = new Map(suggestions.map((s) => [Number(s.transactionExternalId), s]));
 
+    // правила сверки фирмы («контрагент содержит … → статья») размечают новые строки сразу
+    const rules = await prisma.practiceRule.findMany({ where: { org }, orderBy: { createdAt: "asc" } });
+    const ruleHits = new Map<string, number>();
     const created: Array<Record<string, unknown>> = [];
     for (let i = 0; i < fresh.length; i++) {
         const row = fresh[i];
         const hint = byIndex.get(i);
+        const byRule = categoryFor(rules, row);
+        if (byRule) ruleHits.set(byRule.rule, (ruleHits.get(byRule.rule) ?? 0) + 1);
         const isInvoice = hint && invoices.some((inv) => inv.id === hint.candidateId);
         try {
             const doc = await prisma.bankTransaction.create({
                 data: {
                     org, account: account.id, date: row.date, amount: row.amount, currency: account.currency,
-                    counterparty: row.counterparty, reference: row.reference, externalId: row.externalId, source,
+                    counterparty: row.counterparty, reference: row.reference, externalId: row.externalId, source, category: byRule?.category ?? "",
                     // привязку ставим только при уверенном совпадении: по номеру документа или по сумме и дате.
                     // Слабая догадка (только по сумме) остаётся подсказкой, а не фактом.
                     matchType: hint && hint.score >= 2 ? (isInvoice ? "invoice" : "expense") : "",
@@ -67,5 +73,6 @@ export async function importBankRows(
             created.push(doc as never);
         } catch { /* дубликат внешнего идентификатора — пропускаем */ }
     }
+    for (const [id, c] of Array.from(ruleHits)) await prisma.practiceRule.update({ where: { id }, data: { hits: { increment: c } } }).catch(() => undefined);
     return { created, skipped: rows.length - fresh.length, suggestions: suggestions.length };
 }

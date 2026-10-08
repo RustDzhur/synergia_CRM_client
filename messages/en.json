@@ -3212,7 +3212,19 @@
         "requestsAnswered": "Answer sent",
         "requestsCancelled": "Request cancelled",
         "closeHandoff": "Package for the accountant (ZIP)",
-        "closeHandoffError": "Could not build the package"
+        "closeHandoffError": "Could not build the package",
+        "rulesTitle": "Reconciliation rules",
+        "rulesHint": "If the counterparty or the payment reference contains the text, the transaction gets the category. Rules are explicit and visible; nothing is learned silently. Closed periods are not changed.",
+        "rulesEmpty": "No rules yet.",
+        "rulesField_counterparty": "Counterparty contains",
+        "rulesField_reference": "Reference contains",
+        "rulesPattern": "Text to look for (3+ characters)",
+        "rulesCategory": "Category",
+        "rulesAdd": "Add rule",
+        "rulesAdded": "Rule added, {n} transactions categorised",
+        "rulesHits": "applied {n}×",
+        "bankSyncAll": "Refresh all banks",
+        "bankSyncDone": "Banks refreshed: {ok}, with errors: {failed}"
     },
     "ads": {
         "needsUpgrade": "Ad performance needs the Professional plan.",
