@@ -23,6 +23,8 @@ FROM node:24-bookworm-slim AS run
 # (падает с «Database error» вместо подключения)
 RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+# CLI Prisma нужен только для накатки схемы при старте (deploy/entrypoint.sh); версия та же, что у клиента в package.json
+RUN npm install -g prisma@5.22.0 --no-audit --no-fund
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
@@ -36,5 +38,6 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=build /app/deploy/entrypoint.sh /entrypoint.sh
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["/entrypoint.sh"]
