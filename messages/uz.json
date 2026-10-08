@@ -2554,7 +2554,22 @@
     "prSubTitle": "Platforma subpudratchilari",
     "prSubHint": "Mijoz ma’lumotlarini bizning nomimizdan kim qayta ishlaydi. O‘zgarishlar sanalar bilan qayd etiladi.",
     "prSubEmpty": "Subpudratchilar hali kiritilmagan.",
-    "prTermsPrice": "narx {price} {cur}/oy"
+    "prTermsPrice": "narx {price} {cur}/oy",
+    "intPayme": "Payme (to‘lovlar, UZ)",
+    "intClick": "Click (to‘lovlar, UZ)",
+    "intfPaymeMerchant": "Merchant ID (veb-kassa ID si)",
+    "intfPaymeKey": "Kassa kaliti (ishchi)",
+    "intfPaymeTestKey": "Sandbox kaliti (TEST_KEY)",
+    "intfPaymeSandbox": "Sandbox rejimi (havolalar test.paycom.uz ni ochadi; ishga tushirishda belgini olib tashlang)",
+    "intfClickMerchant": "Merchant ID",
+    "intfClickService": "Service ID",
+    "intfClickUser": "Merchant user ID",
+    "intfClickSecret": "Maxfiy kalit",
+    "intPaymeEndpoint": "Endpoint URL (Payme Business dagi kassaga qo‘ying)",
+    "intClickPrepare": "Prepare URL va Complete URL (ikkalasi uchun bir xil manzil)",
+    "intPaymeHelp": "1) Payme Business da hisob maydoni order_id (bir martalik) bo‘lgan veb-kassa yarating. 2) Yuqoridagi Endpoint URL ni kassa sozlamalariga qo‘ying. 3) Merchant ID va kalitlarni shu yerga kiriting. 4) test.paycom.uz da sandbox kaliti bilan sandbox testlarini (ikki stsenariy) o‘tkazing. 5) Sandbox rejimini o‘chiring — to‘lov havolalari ishchi kassaga olib boradi. Summalar faqat UZS da; to‘langan hisob-faktura o‘zi belgilanadi.",
+    "intClickHelp": "1) Click bilan shartnoma tuzing va Click Merchant kabinetidan Merchant ID, Service ID va Secret key ni oling. 2) Yuqoridagi manzilni xizmatning Prepare URL va Complete URL i sifatida qo‘ying. 3) Qiymatlarni shu yerga kiriting. 4) Ulanishni Click test stsenariylari bilan tekshiring. Summalar faqat UZS da; to‘langan hisob-faktura o‘zi belgilanadi.",
+    "intUzPayStats": "Provayderdan olingan so‘rovlar: {n}"
   },
   "collab": {
     "calButton": "Kalendarlar",

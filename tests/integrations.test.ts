@@ -10,10 +10,15 @@ import { toolByName } from "@/lib/ai/tools";
 import { LOCALES } from "@/lib/locales";
 
 describe("паспорта интеграций", () => {
-    it("статусы UZ по ТЗ §6.3: доступен только курс ЦБ; остальное planned и не подключается", () => {
+    it("статусы UZ по ТЗ §6.3: доступен только курс ЦБ; Payme и Click — beta (модули по документации); остальное planned и не подключается", () => {
         const uz = MANIFEST_SEED.filter((m) => m.markets.includes("UZ"));
         expect(uz.filter((m) => m.status === "available").map((m) => m.key)).toEqual(["cbu"]);
-        for (const k of ["didox", "faktura_uz", "payme", "click", "uzum", "atmos", "uz_kassa", "uz_banks"]) {
+        for (const k of ["payme", "click"]) {
+            const m = uz.find((x) => x.key === k)!;
+            expect(m.status).toBe("beta");
+            expect(connectableNow(m)).toBe(true);
+        }
+        for (const k of ["didox", "faktura_uz", "uzum", "atmos", "uz_kassa", "uz_banks"]) {
             const m = uz.find((x) => x.key === k)!;
             expect(m.status).toBe("planned");
             expect(connectableNow(m)).toBe(false);
@@ -42,7 +47,7 @@ describe.skipIf(!hasDb)("защищённое подключение", () => {
     it("planned не подключается; неизвестный ключ — 404; ошибка провайдера не содержит значений; обязательные поля", async () => {
         const o = await makeOrg();
         const req = asUser(o.userId);
-        expect((await secrets(req("/api/integrations/secrets", "POST", { type: "payme", fields: { x: "y" } }))).status).toBe(409);
+        expect((await secrets(req("/api/integrations/secrets", "POST", { type: "uzum", fields: { x: "y" } }))).status).toBe(409);
         expect((await secrets(req("/api/integrations/secrets", "POST", { type: "nope", fields: {} }))).status).toBe(404);
         expect((await secrets(req("/api/integrations/secrets", "POST", { type: "telegram", fields: {} }))).status).toBe(400);
         const key = "123456:SECRET-KEY-VALUE";
@@ -55,7 +60,8 @@ describe.skipIf(!hasDb)("защищённое подключение", () => {
         await prisma.financeSettings.create({ data: { org: o.org, country: "UZ" } });
         const list = (await (await catalog(asUser(o.userId)("/api/integrations/catalog?q=payment"))).json()).integrations as { key: string; status: string }[];
         expect(list.map((x) => x.key)).toContain("payme");
-        expect(list.find((x) => x.key === "payme")!.status).toBe("planned");
+        expect(list.find((x) => x.key === "payme")!.status).toBe("beta");
+        expect(list.find((x) => x.key === "uzum")!.status).toBe("planned");
         expect(list.map((x) => x.key)).not.toContain("monobank");
     });
     it("менять статус паспорта может только администратор платформы; не подключаемый сервис не станет доступным", async () => {

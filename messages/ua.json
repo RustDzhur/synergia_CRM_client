@@ -1250,7 +1250,22 @@
         "prSubTitle": "Субпідрядники платформи",
         "prSubHint": "Хто обробляє дані клієнтів від нашого імені. Зміни фіксуються з датами.",
         "prSubEmpty": "Субпідрядників поки не внесено.",
-        "prTermsPrice": "ціна {price} {cur}/міс."
+        "prTermsPrice": "ціна {price} {cur}/міс.",
+        "intPayme": "Payme (оплата, UZ)",
+        "intClick": "Click (оплата, UZ)",
+        "intfPaymeMerchant": "Merchant ID (ID веб-каси)",
+        "intfPaymeKey": "Ключ каси (робочий)",
+        "intfPaymeTestKey": "Ключ пісочниці (TEST_KEY)",
+        "intfPaymeSandbox": "Режим пісочниці (посилання відкривають test.paycom.uz; зніміть позначку перед запуском)",
+        "intfClickMerchant": "Merchant ID",
+        "intfClickService": "Service ID",
+        "intfClickUser": "Merchant user ID",
+        "intfClickSecret": "Секретний ключ",
+        "intPaymeEndpoint": "Endpoint URL (вставте в касу в Payme Business)",
+        "intClickPrepare": "Prepare URL і Complete URL (однакова адреса для обох)",
+        "intPaymeHelp": "1) У Payme Business створіть веб-касу з полем рахунку order_id (одноразове). 2) Вставте Endpoint URL вище в налаштування каси. 3) Введіть тут Merchant ID і ключі. 4) Пройдіть тести пісочниці на test.paycom.uz (два сценарії) з ключем пісочниці. 5) Зніміть режим пісочниці — посилання оплати поведуть на бойову касу. Суми лише в UZS; оплачений рахунок позначається сам.",
+        "intClickHelp": "1) Укладіть договір із Click і візьміть Merchant ID, Service ID та Secret key у кабінеті Click Merchant. 2) Вставте адресу вище як Prepare URL і як Complete URL сервісу. 3) Введіть значення тут. 4) Перевірте зв’язок тестовими сценаріями Click. Суми лише в UZS; оплачений рахунок позначається сам.",
+        "intUzPayStats": "Запитів від провайдера отримано: {n}"
     },
     "upgrade": {
         "free": "Безкоштовний",

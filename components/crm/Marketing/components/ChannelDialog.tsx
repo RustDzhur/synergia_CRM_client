@@ -48,6 +48,8 @@ const LABEL: Record<Needed, string> = {
 	liqpay: "intLiqpay",
 	wayforpay: "intWayforpay",
 	cryptopay: "intCryptopay",
+	payme: "intPayme",
+	click: "intClick",
 };
 
 interface Props {

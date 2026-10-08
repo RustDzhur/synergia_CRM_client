@@ -22,7 +22,7 @@ describe("рынок UZ: профиль", () => {
         expect(marketHasDocument("UZ", "act")).toBe(true);
         expect(marketHasDocument("UZ", "tax_invoice")).toBe(true);
         expect(marketHasDocument("UZ", "fiscal_receipt")).toBe(false);
-        expect(profile("UZ").integrations).toEqual(["cbu"]);
+        expect(profile("UZ").integrations).toEqual(["cbu", "payme", "click"]);
         expect(MARKET_DEFAULTS.UZ.currency).toBe("UZS");
         // немецкие и украинские функции в UZ не просачиваются
         expect(profile("UZ").features.dunning).toBe(false);

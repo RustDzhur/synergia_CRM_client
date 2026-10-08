@@ -85,6 +85,8 @@ export type MarketIntegrationType =
     | "horoshop"
     | "olx"
     | "nbu"
+    | "payme"
+    | "click"
     | "cbu"; // курсы Центрального банка Узбекистана
 
 /** Налоговые модули (экраны отчётов и налогов). */
@@ -195,7 +197,7 @@ const UZ: MarketProfile = {
     localeDefault: "uz",
     nav: ["overview", "quotes", "orders", "contracts", "acts", "deliveryNotes", "invoices", "recurring", "esf", "expenses", "bank", "products", "vat", "audit", "close", "settings"],
     documents: ["invoice", "quote", "order", "contract", "credit_note", "delivery_note", "act", "tax_invoice"],
-    integrations: ["cbu"],
+    integrations: ["cbu", "payme", "click"],
     taxModules: ["uz_vat", "uz_esf_register"],
     features: {
         dunning: false,
@@ -205,7 +207,7 @@ const UZ: MarketProfile = {
         act: true,
         fiscal: false,
         delivery: false,
-        paymentLinks: false,
+        paymentLinks: true,
         marketplace: false,
         nbuRate: false,
         cbuRate: true,

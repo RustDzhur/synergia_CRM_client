@@ -80,6 +80,19 @@ export const FIELDS: Record<Real, FieldDef[]> = {
 		{ key: "merchantDomainName", label: "intfWfpDomain", optional: true, placeholder: "example.com" },
 		{ key: "secretKey", label: "intfWfpSecret", secret: true },
 	],
+	// Узбекистан: Payme и Click сами вызывают адрес фирмы (lib/uzpay), ключи проверяет песочница провайдера
+	payme: [
+		{ key: "merchantId", label: "intfPaymeMerchant" },
+		{ key: "key", label: "intfPaymeKey", secret: true },
+		{ key: "testKey", label: "intfPaymeTestKey", secret: true, optional: true },
+		{ key: "sandbox", label: "intfPaymeSandbox", type: "bool" },
+	],
+	click: [
+		{ key: "merchantId", label: "intfClickMerchant" },
+		{ key: "serviceId", label: "intfClickService" },
+		{ key: "merchantUserId", label: "intfClickUser", optional: true },
+		{ key: "secretKey", label: "intfClickSecret", secret: true },
+	],
 	cryptopay: [
 		{ key: "apiKey", label: "intfCryptoKey", secret: true },
 		{ key: "ipnSecret", label: "intfCryptoIpn", secret: true },

@@ -16,7 +16,7 @@ interface Options {
 	payLink: { provider: string; url: string } | null;
 }
 
-const PROVIDER_LABEL: Record<string, string> = { monobank: "monobank", liqpay: "LiqPay", wayforpay: "WayForPay", cryptopay: "Crypto" };
+const PROVIDER_LABEL: Record<string, string> = { monobank: "monobank", liqpay: "LiqPay", wayforpay: "WayForPay", cryptopay: "Crypto", payme: "Payme", click: "Click" };
 
 export default function PaymentLinkDialog({ invoiceId, open, onClose, onCreated }: { invoiceId: string; open: boolean; onClose: () => void; onCreated: () => void }) {
 	const t = useTranslations("finance");
