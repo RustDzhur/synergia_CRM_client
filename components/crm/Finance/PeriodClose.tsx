@@ -6,6 +6,7 @@ import { TbLock, TbLockOpen } from "react-icons/tb";
 import { apiCall } from "@/store/crmApi";
 import { downloadAuthed } from "./download";
 import BankRules from "./BankRules";
+import DocComments from "./DocComments";
 import { useActiveOrg } from "@/store/useOrgStore";
 
 // «Закрытие периода»: чек-лист, закрытие и повторное открытие (с причиной), очередь проверки документов и запросы специалиста клиенту.
@@ -131,6 +132,7 @@ export default function PeriodClose() {
 											<button type="button" className="text-[#ff9f9f] hover:underline" onClick={() => { const note = window.prompt(t("reviewFixNote")) ?? ""; void act(() => apiCall(`/api/review/${kind}/${r.id}`, "PATCH", { status: "needs_fix", note }), t("reviewReturned")); }}>{t("reviewReturn")}</button>
 										</span>
 									)}
+									<DocComments kind={kind as "invoices" | "expenses"} id={r.id} />
 								</li>
 							))}
 						</ul>

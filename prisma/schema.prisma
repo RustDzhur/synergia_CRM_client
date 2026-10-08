@@ -1273,6 +1273,8 @@ model Practice {
   termsAcceptedBy  String   @default("")
   // режим ИИ для данных клиентов практики: none (без ИИ) | own (только подключённый ключ фирмы) | platform
   aiMode           String   @default("none")
+  // оплачено до (подписка практики, ТЗ §5.4); пусто — бесплатный режим
+  paidUntil        DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -1619,4 +1621,33 @@ model LegalTemplate {
 
   @@index([org])
   @@map("legal_templates")
+}
+
+// Журнал субподрядчиков платформы (ТЗ §5.2 п. 11): кто обрабатывает данные от нашего имени; видят практики, ведёт администратор платформы
+model Subprocessor {
+  id        String    @id @default(cuid())
+  name      String
+  purpose   String
+  country   String    @default("")
+  data      String    @default("")
+  addedAt   DateTime  @default(now())
+  removedAt DateTime?
+
+  @@map("subprocessors")
+}
+
+// Комментарии к документам с упоминаниями (проверка бухгалтером, юристом): entityType invoices | expenses | legal
+model DocComment {
+  id         String   @id @default(cuid())
+  org        String
+  entityType String
+  entityId   String
+  author     String
+  authorName String   @default("")
+  text       String
+  mentions   String[] @default([])
+  createdAt  DateTime @default(now())
+
+  @@index([org, entityType, entityId])
+  @@map("doc_comments")
 }

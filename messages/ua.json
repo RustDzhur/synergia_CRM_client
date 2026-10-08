@@ -1206,7 +1206,7 @@
         "prCreate": "Відкрити практику",
         "prName": "Назва практики",
         "prKind": "Тип",
-        "prTerms": "Приймаю договір обробки даних і зобов’язання зберігати таємницю щодо даних моїх клієнтів (текст готує юрист платформи; версія й час прийняття зберігаються).",
+        "prTerms": "Безкоштовно до {n} клієнтів; для більшої кількості потрібна підписка практики.",
         "prCreated": "Практику створено.",
         "prCreateBtn": "Відкрити практику",
         "prCodeIs": "Код практики:",
@@ -1243,7 +1243,13 @@
         "prDashUnverified": "дата не перевірена",
         "prDashOpen": "Відкрити",
         "prDashOpenClient": "Відкрити клієнта",
-        "tabLegal": "Договори"
+        "tabLegal": "Договори",
+        "prDashSearch": "Пошук клієнтів",
+        "prDashOnlyOpen": "Лише з відкритими питаннями",
+        "prSubTitle": "Субпідрядники платформи",
+        "prSubHint": "Хто обробляє дані клієнтів від нашого імені. Зміни фіксуються з датами.",
+        "prSubEmpty": "Субпідрядників поки не внесено.",
+        "prTermsPrice": "ціна {price} {cur}/міс."
     },
     "upgrade": {
         "free": "Безкоштовний",
@@ -3246,7 +3252,11 @@
         "batchStatus_proposed": "Запропоновано",
         "batchStatus_applied": "Застосовано",
         "batchStatus_rolled_back": "Відкочено",
-        "batchStatus_dismissed": "Відхилено"
+        "batchStatus_dismissed": "Відхилено",
+        "commentsToggle": "Коментарі",
+        "commentPlaceholder": "Напишіть коментар…",
+        "commentMention": "Згадати колег",
+        "commentSend": "Надіслати"
     },
     "ads": {
         "needsUpgrade": "Ефективність реклами доступна від тарифу Professional.",
@@ -3518,7 +3528,8 @@
         "deadline_1h": "{kind} «{title}»: менш ніж година до дедлайну!",
         "deadline_overdue": "{kind} «{title}»: дедлайн минув!",
         "clientRequest": "{name} просить: {subject}",
-        "requestAnswered": "{name} відповів на ваш запит: {subject}"
+        "requestAnswered": "{name} відповів на ваш запит: {subject}",
+        "mention": "{name} згадав(ла) вас: «{text}»"
     },
     "admin": {
         "title": "Адмін: фірми та підписки",

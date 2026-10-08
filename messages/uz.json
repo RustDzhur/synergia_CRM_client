@@ -264,7 +264,8 @@
     "deadline_1h": "{kind} “{title}”: muddatga bir soatdan kam qoldi!",
     "deadline_overdue": "{kind} “{title}”: muddat o‘tib ketdi!",
     "clientRequest": "{name} so‘raydi: {subject}",
-    "requestAnswered": "{name} so‘rovingizga javob berdi: {subject}"
+    "requestAnswered": "{name} so‘rovingizga javob berdi: {subject}",
+    "mention": "{name} sizni eslatdi: “{text}”"
   },
   "overview": {
     "title": "Umumiy ko‘rinish",
@@ -1905,7 +1906,11 @@
     "batchStatus_proposed": "Taklif qilingan",
     "batchStatus_applied": "Qo‘llangan",
     "batchStatus_rolled_back": "Qaytarilgan",
-    "batchStatus_dismissed": "Rad etilgan"
+    "batchStatus_dismissed": "Rad etilgan",
+    "commentsToggle": "Izohlar",
+    "commentPlaceholder": "Izoh yozing…",
+    "commentMention": "Hamkasblarni eslatish",
+    "commentSend": "Yuborish"
   },
   "inventory": {
     "tab_inventory": "Inventarizatsiya",
@@ -2505,7 +2510,7 @@
     "prCreate": "Amaliyot ochish",
     "prName": "Amaliyot nomi",
     "prKind": "Turi",
-    "prTerms": "Mijozlarimning ma’lumotlari bo‘yicha ma’lumotlarni qayta ishlash shartnomasi va sirni saqlash majburiyatini qabul qilaman (matnni platforma yuristi tayyorlaydi; qabul qilish versiyasi va vaqti saqlanadi).",
+    "prTerms": "{n} tagacha mijoz bepul; ko‘proq uchun amaliyot obunasi kerak.",
     "prCreated": "Amaliyot yaratildi.",
     "prCreateBtn": "Amaliyotni ochish",
     "prCodeIs": "Amaliyot kodi:",
@@ -2542,7 +2547,13 @@
     "prDashUnverified": "sana tekshirilmagan",
     "prDashOpen": "Ochish",
     "prDashOpenClient": "Mijozni ochish",
-    "tabLegal": "Shartnomalar"
+    "tabLegal": "Shartnomalar",
+    "prDashSearch": "Mijozlarni qidirish",
+    "prDashOnlyOpen": "Faqat ochiq masalalar bilan",
+    "prSubTitle": "Platforma subpudratchilari",
+    "prSubHint": "Mijoz ma’lumotlarini bizning nomimizdan kim qayta ishlaydi. O‘zgarishlar sanalar bilan qayd etiladi.",
+    "prSubEmpty": "Subpudratchilar hali kiritilmagan.",
+    "prTermsPrice": "narx {price} {cur}/oy"
   },
   "collab": {
     "calButton": "Kalendarlar",
