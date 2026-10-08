@@ -15,8 +15,12 @@ export interface OfficeAction { id: string; tool: string; args: Record<string, u
 export interface OfficeTask { id: string; robot: string; robotName: string; text: string; source: "user" | "iris" | "routine" | "drop"; status: TaskStatus; reply: string; pending: OfficeAction[]; executed: OfficeAction[]; steps: string[]; error?: string; createdAt: string; startedAt?: string; finishedAt?: string }
 export interface RobotInput { template?: string; name?: string; title?: string; zone?: Zone; accent?: Accent; skills?: Skill[]; instructions?: string; autonomy?: "ask" | "auto"; enabled?: boolean; routines?: Omit<Routine, "id" | "lastRun">[] & Partial<Pick<Routine, "id">>[] }
 
+export interface CatalogItem { id: string; name: string; zone: Zone; accent: Accent; skills: Skill[]; texts: Record<string, { title?: string; desc?: string }> }
+
 interface OfficeStore {
     robots: Robot[];
+    /** Каталог ролей для найма (приходит с сервера: администратор платформы правит его без выкладки). */
+    catalog: CatalogItem[];
     tasks: OfficeTask[];
     loaded: boolean;
     ai: boolean;
@@ -41,12 +45,12 @@ const fail = (message: string) => { toast.error(message); return false; };
 export const useOfficeStore = create<OfficeStore>()((set, get) => {
     const replaceTask = (t: OfficeTask) => set((s) => ({ tasks: s.tasks.some((x) => x.id === t.id) ? s.tasks.map((x) => (x.id === t.id ? t : x)) : [t, ...s.tasks] }));
     return {
-        robots: [], tasks: [], platform: null, loaded: false, ai: true, canEdit: true, maxRobots: 24, selected: null,
+        robots: [], catalog: [], tasks: [], platform: null, loaded: false, ai: true, canEdit: true, maxRobots: 24, selected: null,
         select: (id) => set({ selected: id }),
 
         load: async () => {
-            const r = await apiCall<{ robots: Robot[]; tasks: OfficeTask[]; ai: boolean; canEdit: boolean; maxRobots: number; platform?: PlatformInfo }>("/api/office", "GET", undefined, { cache: "no-store" });
-            if (r.ok && r.data) set({ robots: r.data.robots, tasks: r.data.tasks, ai: r.data.ai, canEdit: r.data.canEdit, maxRobots: r.data.maxRobots, platform: r.data.platform ?? null, loaded: true });
+            const r = await apiCall<{ robots: Robot[]; catalog: CatalogItem[]; tasks: OfficeTask[]; ai: boolean; canEdit: boolean; maxRobots: number; platform?: PlatformInfo }>("/api/office", "GET", undefined, { cache: "no-store" });
+            if (r.ok && r.data) set({ robots: r.data.robots, catalog: r.data.catalog ?? [], tasks: r.data.tasks, ai: r.data.ai, canEdit: r.data.canEdit, maxRobots: r.data.maxRobots, platform: r.data.platform ?? null, loaded: true });
             else set({ loaded: true });
         },
 

@@ -1,4 +1,5 @@
 "use client";
+import { TEMPLATES } from "@/lib/office/templates";
 import React, { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
@@ -29,7 +30,7 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 	const clock = (iso: string) => { const d = new Date(iso); return Number.isFinite(d.getTime()) && d.getTime() > 0 ? d.toLocaleString(locale === "ua" ? "uk" : locale, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : ""; };
 	const mine = tasks.filter((x) => x.robot === robot.id).slice(0, 6);
 	const title = titleOf(t, robot);
-	const quick = robot.template !== "custom" ? [1, 2, 3].map((n) => t(`tpl_${robot.template}_s${n}`)) : [];
+	const quick = TEMPLATES.some((x) => x.id === robot.template) ? [1, 2, 3].map((n) => t(`tpl_${robot.template}_s${n}`)) : [];
 
 	async function send(value = text) {
 		const v = value.trim();

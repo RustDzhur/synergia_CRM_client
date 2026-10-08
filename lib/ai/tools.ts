@@ -25,7 +25,6 @@ import { mkActivity } from "@/lib/activities";
 import { plainFx } from "@/lib/sync/texts";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
 import { deleteDemo, seedDemo } from "./demoData";
-import { TEMPLATES, templateById } from "@/lib/office/templates";
 import { completeOrder, eraseProducts, describeProduction, findProductionOrder, missingMaterials, resolveWarehouse, saveBom } from "./productionOps";
 import { cancelProductionOrder, createProductionOrder, launchProductionOrder, produceOutput } from "@/lib/finance/productionOrders";
 import { nextNumber } from "@/lib/finance/numbering";
@@ -1462,8 +1461,8 @@ export const TOOLS: AiTool[] = [
     },
     {
         module: "automation", write: true,
-        def: { name: "hire_robot", description: "Hire (add) a robot to the Robot Office from the catalog: sales, orders, accounting, dunning (payment reminders), controlling, warehouse, purchasing, production, tasks, mail, hr, marketing, support. Needs user confirmation. Custom robots are created by the user on the Robot Office screen.", parameters: schema({ template: { type: "string", enum: TEMPLATES.map((t) => t.id) }, name: S("robot name, optional (default from the catalog)") }, ["template"]) },
-        check: (a) => { if (!templateById(String(a.template))) throw new ToolError("Unknown robot template"); return { template: String(a.template), name: str(a.name, 40) }; },
+        def: { name: "hire_robot", description: "Hire (add) a robot to the Robot Office from the catalog: sales, orders, accounting, dunning (payment reminders), controlling, warehouse, purchasing, production, tasks, mail, hr, marketing, support. Needs user confirmation. Custom robots are created by the user on the Robot Office screen.", parameters: schema({ template: S("catalog role id, e.g. sales, orders, accounting, dunning, controlling, warehouse, purchasing, production, tasks, mail, hr, marketing, support (the catalog is editable: unknown ids are rejected)"), name: S("robot name, optional (default from the catalog)") }, ["template"]) },
+        check: (a) => ({ template: need(str(a.template, 40), "template"), name: str(a.name, 40) }),
         run: (c, a) => wrap(async () => {
             const { createRobot } = await import("@/lib/office/store");
             const r = await createRobot(c.org, { template: String(a.template), name: String(a.name || "") || undefined });

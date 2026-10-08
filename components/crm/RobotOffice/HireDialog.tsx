@@ -1,20 +1,21 @@
 "use client";
 import React, { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useMessages, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbPlus } from "react-icons/tb";
-import { HIRE_TEMPLATES } from "@/lib/office/templates";
 import { useOfficeStore } from "@/store/useOfficeStore";
 import Modal from "../shared/Modal";
 import RobotAvatar from "./RobotAvatar";
 import RobotForm from "./RobotForm";
 
-// Каталог готовых роботов — тот же файл, что использует сервер (lib/office/templates.ts): список не может разойтись.
-const CATALOG = HIRE_TEMPLATES;
+// Каталог ролей приходит с сервера (таблица robot_templates, фильтр по рынку фирмы). Название и описание — из записи на языке интерфейса, иначе из переводов.
 
 export default function HireDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
 	const t = useTranslations("office");
-	const { robots, hire, maxRobots } = useOfficeStore();
+	const { robots, catalog, hire, maxRobots } = useOfficeStore();
+	const locale = useLocale();
+	const office = (useMessages() as { office?: Record<string, unknown> }).office ?? {};
+	const label = (c: (typeof catalog)[number], kind: "title" | "desc") => c.texts?.[locale]?.[kind] || (typeof office[`tpl_${c.id}_${kind}`] === "string" ? t(`tpl_${c.id}_${kind}`) : kind === "title" ? c.name : "");
 	const [custom, setCustom] = useState(false);
 	const [busy, setBusy] = useState<string | null>(null);
 	const full = robots.length >= maxRobots;
@@ -45,14 +46,14 @@ export default function HireDialog({ open, onClose }: { open: boolean; onClose: 
 				) : (
 					<>
 						<ul className="mt-16 grid grid-cols-1 gap-10 md:grid-cols-2">
-							{CATALOG.map((c) => {
+							{catalog.map((c) => {
 								const have = robots.filter((r) => r.template === c.id).length;
 								return (
 									<li key={c.id} className="fs-card flex gap-12 p-14">
 										<RobotAvatar accent={c.accent} size={52} />
 										<div className="min-w-0 flex-1">
-											<p className="text-14 font-semibold text-[#f1f4ee]">{t(`tpl_${c.id}_title`)}</p>
-											<p className="mt-2 text-12 text-[#8c948b]">{t(`tpl_${c.id}_desc`)}</p>
+											<p className="text-14 font-semibold text-[#f1f4ee]">{label(c, "title")}</p>
+											<p className="mt-2 text-12 text-[#8c948b]">{label(c, "desc")}</p>
 											<div className="mt-8 flex flex-wrap gap-4">{c.skills.map((s) => <span key={s} className="rounded-[10px] border border-inkLine px-8 py-[2px] text-10 text-[#8c948b]">{t(`skill_${s}`)}</span>)}</div>
 											<div className="mt-10 flex items-center justify-between gap-8">
 												<span className="text-11 text-[#8c948b]">{have > 0 ? t("alreadyHired", { n: have }) : ""}</span>
