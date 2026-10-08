@@ -34,3 +34,22 @@ describe("языки платформы", () => {
         expect(stripLocale("/uz")).toBe("/");
     });
 });
+
+// Каждая строка перевода должна разбираться как сообщение ICU: неэкранированные «{{name}}» дают в браузере INVALID_MESSAGE и роняют страницу
+describe("синтаксис ICU во всех переводах", () => {
+    for (const loc of ["en", "de", "ua", "uz"] as const) {
+        it(`${loc}: все строки разбираются`, async () => {
+            const { IntlMessageFormat } = await import("intl-messageformat");
+            const data = (await import(`../messages/${loc}.json`)).default as Record<string, unknown>;
+            const bad: string[] = [];
+            const walk = (o: Record<string, unknown>, path: string) => {
+                for (const [k, v] of Object.entries(o)) {
+                    if (v && typeof v === "object") walk(v as Record<string, unknown>, `${path}${k}.`);
+                    else if (typeof v === "string") { try { new IntlMessageFormat(v, loc === "ua" ? "uk" : loc); } catch { bad.push(path + k); } }
+                }
+            };
+            walk(data, "");
+            expect(bad).toEqual([]);
+        });
+    }
+});

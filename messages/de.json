@@ -4148,7 +4148,7 @@
         "docCreated": "Dokument erstellt",
         "create": "Erstellen",
         "templates": "Vorlagen",
-        "templatesHint": "Verwenden Sie Variablen wie {{name}} im Text; Sie füllen sie beim Erstellen eines Dokuments aus.",
+        "templatesHint": "Verwenden Sie Variablen wie '{{'name'}}' im Text; Sie füllen sie beim Erstellen eines Dokuments aus.",
         "useTemplate": "Verwenden",
         "templateRemoved": "Vorlage entfernt",
         "remove": "Entfernen",
