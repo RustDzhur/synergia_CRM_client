@@ -39,16 +39,18 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - infrastructure
-      - omniroute_default
+      - db
+      - ai
 
+# Имена сетей на сервере: firmspace_db (там postgres) и firmspace_ai (omniroute, озвучка, распознавание речи).
+# Если у вас они называются иначе — задайте DB_NETWORK и AI_NETWORK в deploy/.env (docker network ls покажет имена).
 networks:
-  # Общая сеть инфраструктуры: в ней живёт контейнер postgres (см. /opt/infrastructure)
-  infrastructure:
+  db:
     external: true
-  # Сеть omniroute (ИИ-шлюз): «Айрис» ходит к нему по адресу http://omniroute:20128/v1
-  omniroute_default:
+    name: ${DB_NETWORK:-firmspace_db}
+  ai:
     external: true
+    name: ${AI_NETWORK:-firmspace_ai}
 
 volumes:
   crm_storage:

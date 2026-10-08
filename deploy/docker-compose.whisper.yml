@@ -24,7 +24,7 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     networks:
-      - infrastructure
+      - ai
     logging:
       driver: json-file
       options:
@@ -32,9 +32,9 @@ services:
         max-file: "3"
 
 networks:
-  # Общая сеть инфраструктуры — та же, где живут postgres и контейнер CRM
-  infrastructure:
+  ai:
     external: true
+    name: ${AI_NETWORK:-firmspace_ai}
 
 volumes:
   speaches_cache:

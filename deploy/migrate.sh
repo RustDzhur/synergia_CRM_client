@@ -12,7 +12,11 @@ IMG="firmspace-crm-migrate:latest"
 log() { printf '%s migrate: %s\n' "$(date -Is)" "$*" >> "$LOG"; }
 
 docker build --target build -t "$IMG" . >> "$LOG" 2>&1 || { log "не удалось собрать образ миграции"; exit 1; }
-RUN=(docker run --rm --env-file deploy/.env --network infrastructure "$IMG")
+# Сеть базы определяем по работающему контейнеру postgres (имена сетей на серверах разные); запасной вариант — DB_NETWORK или firmspace_db
+NET="$(docker inspect -f '{{range $k, $_ := .NetworkSettings.Networks}}{{println $k}}{{end}}' "${POSTGRES_CONTAINER:-firmspace-postgres}" 2>/dev/null | grep -v '^$' | head -1)"
+NET="${NET:-${DB_NETWORK:-firmspace_db}}"
+log "сеть базы: $NET"
+RUN=(docker run --rm --env-file deploy/.env --network "$NET" "$IMG")
 
 "${RUN[@]}" node scripts/reconcile-links.mjs >> "$LOG" 2>&1
 case $? in
