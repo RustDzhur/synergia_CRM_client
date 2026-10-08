@@ -34,8 +34,8 @@ export function isDue(r: Routine, now: Date, timeZone: string): boolean {
 
 /** Один обход: ставит поручения всем, чья пора. Возвращает, сколько запущено. */
 export async function runDueRoutines(now = new Date()): Promise<number> {
-    const rows = await prisma.sectionRecord.findMany({ where: { key: "office:robot" }, take: 5000 });
-    const withRoutines = rows.filter((r) => Array.isArray((r.values as { routines?: unknown[] })?.routines) && ((r.values as { routines: unknown[] }).routines.length > 0) && (r.values as { enabled?: boolean }).enabled !== false);
+    const rows = await prisma.robot.findMany({ take: 5000 });
+    const withRoutines = rows.filter((r) => Array.isArray((r.data as { routines?: unknown[] })?.routines) && ((r.data as { routines: unknown[] }).routines.length > 0) && (r.data as { enabled?: boolean }).enabled !== false);
     let started = 0;
     const orgs = new Map<string, { zone: string; ok: boolean; owner: string; name: string } | null>();
     for (const row of withRoutines) {
@@ -48,14 +48,14 @@ export async function runDueRoutines(now = new Date()): Promise<number> {
             orgs.set(row.org, o);
         }
         if (!o) continue;
-        const v = row.values as Partial<Robot>;
+        const v = row.data as Partial<Robot>;
         for (const routine of (v.routines ?? []) as Routine[]) {
             if (!isDue(routine, now, o.zone)) continue;
             const l = localParts(now, o.zone);
             try {
                 // сначала отметка «сегодня запускали», потом поручение: при сбое лучше пропустить день, чем запустить дважды
                 const routines = ((v.routines ?? []) as Routine[]).map((x) => (x.id === routine.id ? { ...x, lastRun: l.date } : x));
-                await prisma.sectionRecord.updateMany({ where: { id: row.id }, data: { values: { ...(row.values as object), routines } as never } });
+                await prisma.robot.updateMany({ where: { id: row.id }, data: { data: { ...(row.data as object), routines } as never } });
                 const ctx = { org: row.org, platformAdmin: true, userId: o.owner, role: "owner" as const, modules: [] as string[], today: l.date, now: `${l.date}T${l.time}`, orgName: o.name };
                 await startOfficeTask(ctx, { robot: row.rid, text: routine.text, source: "routine" });
                 started++;

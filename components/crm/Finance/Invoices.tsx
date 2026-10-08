@@ -40,7 +40,7 @@ export default function Invoices({ openId, prefill, preset, onPrefillDone }: { o
 	const locale = useLocale();
 	const { invoices, products, loadInvoices, loadProducts, createInvoice, updateInvoice, sendInvoice, payInvoice, duplicateInvoice, issueCreditNote, settings } = useFinanceStore();
 	const defaultTaxRate = defaultRateFor(settings ?? {});
-	const { market, loaded: marketLoaded } = useMarket();
+	const { market, profile: mp, loaded: marketLoaded } = useMarket();
 	const { contacts, fetchContacts } = useContactStore();
 	const { companies, fetchCompanies } = useCompaniesStore();
 	const [open, setOpen] = useState(false);
@@ -269,7 +269,7 @@ export default function Invoices({ openId, prefill, preset, onPrefillDone }: { o
 										<TbCopy size={15} /> {t("duplicate")}
 									</button>
 								)}
-								{marketLoaded && market === "UA" && (
+								{marketLoaded && mp?.features.fiscal && (
 								<>
 								{/* ПРРО: чек видно в строке счёта — номер кликабелен (открыть/скачать/распечатать),
 								    ошибка показана рядом; без сохранённой ссылки её можно дотянуть у Checkbox */}

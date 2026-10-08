@@ -9,7 +9,6 @@ import { errorBot } from "@/lib/platformSettings";
 // Ada (блог) — обычный робот-исполнитель на нашей стороне, тут ей данные не нужны.
 export const AGENT_NAMES = ["seo-agent", "article-writer", "mail-sorter"] as const;
 export type AgentName = (typeof AGENT_NAMES)[number];
-const K_STATUS = "agents:status";
 
 export interface AgentSignal { lastActivity: string; seenAt: string; note: string }
 export interface PlatformInfo {
@@ -24,9 +23,8 @@ export async function recordHeartbeat(agent: string, input: { lastActivity?: str
     if (!(AGENT_NAMES as readonly string[]).includes(agent)) return false;
     const last = Date.parse(String(input.lastActivity ?? ""));
     const values = { lastActivity: new Date(Number.isFinite(last) ? Math.min(last, Date.now()) : 0).toISOString(), seenAt: new Date().toISOString(), note: scrub(String(input.note ?? "")) };
-    const row = await prisma.sectionRecord.findFirst({ where: { org: "platform", key: K_STATUS, rid: agent } });
-    if (row) await prisma.sectionRecord.update({ where: { id: row.id }, data: { values: values as never } });
-    else await prisma.sectionRecord.create({ data: { org: "platform", key: K_STATUS, rid: agent, values: values as never } });
+    const data = { lastActivity: new Date(values.lastActivity), seenAt: new Date(values.seenAt), note: values.note };
+    await prisma.platformAgent.upsert({ where: { name: agent }, create: { name: agent, ...data }, update: data });
     return true;
 }
 
@@ -34,12 +32,11 @@ export async function platformInfo(): Promise<PlatformInfo> {
     const [items, bot, rows] = await Promise.all([
         recentErrors(6).catch(() => []),
         errorBot().catch(() => ({ botToken: "", chatId: "" })),
-        prisma.sectionRecord.findMany({ where: { org: "platform", key: K_STATUS } }).catch(() => []),
+        prisma.platformAgent.findMany().catch(() => []),
     ]);
     const agents: PlatformInfo["agents"] = {};
     for (const r of rows) {
-        const v = (r.values ?? {}) as Partial<AgentSignal>;
-        if ((AGENT_NAMES as readonly string[]).includes(r.rid)) agents[r.rid as AgentName] = { lastActivity: String(v.lastActivity ?? ""), seenAt: String(v.seenAt ?? ""), note: String(v.note ?? "") };
+        if ((AGENT_NAMES as readonly string[]).includes(r.name)) agents[r.name as AgentName] = { lastActivity: r.lastActivity?.toISOString() ?? "", seenAt: r.seenAt?.toISOString() ?? "", note: r.note };
     }
     return { errors: { telegram: !!(bot.botToken && bot.chatId), items: items.map((i) => ({ at: i.at, title: i.title, count: i.count, source: i.source })) }, agents };
 }

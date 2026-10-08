@@ -1437,3 +1437,44 @@ model PracticeRule {
   @@index([org])
   @@map("practice_rules")
 }
+
+// Робот-офис (docs/TZ_MASTER.md §3.2): роботы и поручения — таблицы, а не записи разделов
+model Robot {
+  id        String   @id @default(cuid())
+  org       String
+  rid       String
+  data      Json
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([org, rid])
+  @@index([org])
+  @@map("robots")
+}
+
+model RobotTask {
+  id        String   @id @default(cuid())
+  org       String
+  rid       String
+  robot     String
+  // queued | running | waiting | done | failed | cancelled
+  status    String   @default("queued")
+  data      Json
+  createdAt DateTime @default(now())
+
+  @@unique([org, rid])
+  @@index([org, status])
+  @@index([org, robot])
+  @@map("robot_tasks")
+}
+
+// Реестр платформенных агентов (Rex, Sven, Ada…): сигналы жизни от внешних наблюдателей (agentwatch.py, Docker-агент) — необязательные адаптеры
+model PlatformAgent {
+  name         String   @id
+  lastActivity DateTime?
+  seenAt       DateTime?
+  note         String   @default("")
+  updatedAt    DateTime @updatedAt
+
+  @@map("platform_agents")
+}
