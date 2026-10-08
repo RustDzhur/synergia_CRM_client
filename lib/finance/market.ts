@@ -7,23 +7,30 @@
 // проверок country === "UA" по месту. Модуль чистый (без mongoose и React) — его можно импортировать
 // и в браузере, и на сервере.
 
-export type Market = "DE" | "UA";
+// Рынок — код страны (ISO 3166-1 alpha-2), профиль которой зарегистрирован в реестре ниже (registerMarket).
+// Новый рынок добавляется регистрацией профиля, а не правкой проверок по месту.
+export type Market = string;
 
-/** Страна → режим рынка. Пусто/неизвестно → null: фирма ещё не выбрала страну (экран выбора). */
+const REGISTRY = new Map<Market, MarketProfile>();
+
+/** Регистрирует профиль рынка (данные: валюта, язык документов, вкладки, документы, интеграции, налоговые модули). */
+export function registerMarket(p: MarketProfile): void {
+    REGISTRY.set(p.market.toUpperCase(), p);
+}
+
+/** Коды зарегистрированных рынков в порядке регистрации. */
+export const registeredMarkets = (): Market[] => Array.from(REGISTRY.keys());
+
+/** Страна → режим рынка. Пусто/неизвестно/не зарегистрирован → null: фирма ещё не выбрала страну (экран выбора). */
 export function marketOf(country?: string | null): Market | null {
     const c = String(country ?? "").trim().toUpperCase();
-    if (c === "DE") return "DE";
-    if (c === "UA") return "UA";
-    return null;
+    return REGISTRY.has(c) ? c : null;
 }
 
 /** Язык документов фирмы по стране: украинская — украинский, немецкая — немецкий. Пусто — null.
  *  По нему выбирается язык PDF и письма клиенту, когда язык не задан явно: документ должен быть
  *  на языке страны, в которой он выставляется, — интерфейс кабинета может быть и на третьем. */
-export const marketDocumentLocale = (country?: string | null): "ua" | "de" | null => {
-    const m = marketOf(country);
-    return m === "UA" ? "ua" : m === "DE" ? "de" : null;
-};
+export const marketDocumentLocale = (country?: string | null): DocLocale | null => marketProfileOf(country)?.localeDefault ?? null;
 
 /** Вкладки финансового раздела (ключи совпадают с Finance/index.tsx и ?tab= в ссылках). */
 export type FinanceTabId =
@@ -87,10 +94,14 @@ export type TaxModule =
     | "ua_income_book" // UA: книга обліку доходів (ФОП) / доходи ТОВ
     | "ua_profit_tax"; // UA: податок на прибуток (ТОВ на загальній системі)
 
+export type DocLocale = "de" | "ua" | "en" | "uz";
+
 export interface MarketProfile {
     market: Market;
-    currencyDefault: "EUR" | "UAH";
-    localeDefault: "de" | "ua";
+    /** Название страны в родительном падеже для сообщений «Функция доступна только для …» */
+    nameGenitive: string;
+    currencyDefault: string;
+    localeDefault: DocLocale;
     nav: FinanceTabId[];
     documents: MarketDocumentKind[];
     integrations: MarketIntegrationType[];
@@ -112,6 +123,7 @@ export interface MarketProfile {
 
 const DE: MarketProfile = {
     market: "DE",
+    nameGenitive: "Германии",
     currencyDefault: "EUR",
     localeDefault: "de",
     // Порядок совпадает с NAV в Finance/index.tsx: огляд → документы → деньги → отчёты → настройки
@@ -136,6 +148,7 @@ const DE: MarketProfile = {
 
 const UA: MarketProfile = {
     market: "UA",
+    nameGenitive: "Украины",
     currencyDefault: "UAH",
     localeDefault: "ua",
     // Огляд · замовлення · рахунки · договори · акти · накладні · регулярні рахунки · витрати · банк ·
@@ -159,9 +172,14 @@ const UA: MarketProfile = {
     },
 };
 
-/** Профиль режима рынка. Для неизвестного/пустого режима — null (экран выбора страны). */
+registerMarket(DE);
+registerMarket(UA);
+
+/** Профиль режима рынка. Рынок обязан быть зарегистрирован (marketOf возвращает только такие). */
 export function profile(market: Market): MarketProfile {
-    return market === "UA" ? UA : DE;
+    const p = REGISTRY.get(String(market).toUpperCase());
+    if (!p) throw new Error(`Рынок не зарегистрирован: ${market}`);
+    return p;
 }
 
 export function marketProfileOf(country?: string | null): MarketProfile | null {
@@ -176,14 +194,14 @@ export function marketHasDocument(country: string | null | undefined, kind: Mark
 }
 
 /** Относится ли интеграция только к одному из рынков (Германия или Украина): общие — звонки, мессенджеры, веб-чат — к рынку не привязаны. */
-export const isMarketSpecificIntegration = (type: string): boolean => [...DE.integrations, ...UA.integrations].includes(type as MarketIntegrationType);
+const ownIntegrations = (): MarketIntegrationType[] => Array.from(REGISTRY.values()).flatMap((p) => p.integrations);
+export const isMarketSpecificIntegration = (type: string): boolean => ownIntegrations().includes(type as MarketIntegrationType);
 
 /** Разрешена ли интеграция в режиме: общие (не перечисленные в профилях) — всегда, свои — только своему рынку. */
 export function marketAllowsIntegration(country: string | null | undefined, type: string): boolean {
     const p = marketProfileOf(country);
     if (!p) return false;
-    const own = [...DE.integrations, ...UA.integrations];
-    if (!own.includes(type as MarketIntegrationType)) return true; // общая — не зависит от режима
+    if (!isMarketSpecificIntegration(type)) return true; // общая — не зависит от режима
     return p.integrations.includes(type as MarketIntegrationType);
 }
 

@@ -45,7 +45,7 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const has = (v?: string | null) => typeof v === "string" && v.trim() !== "";
 
 /** Что обязательно для документа: набор кодов, которые должны быть заполнены. */
-export function checkCompliance(doc: ComplianceDoc, seller: ComplianceSeller, marketArg?: "DE" | "UA"): ComplianceIssue[] {
+export function checkCompliance(doc: ComplianceDoc, seller: ComplianceSeller, marketArg?: string): ComplianceIssue[] {
     const market = marketArg ?? marketOf(seller.country) ?? "DE";
     const issues: ComplianceIssue[] = [];
     const need = (ok: boolean, code: string, section: ComplianceIssue["section"]) => {
@@ -121,7 +121,7 @@ export class ComplianceError extends Error {
 }
 
 /** Проверить и бросить: вызывается перед выпуском документа. */
-export function assertCompliant(doc: ComplianceDoc, seller: ComplianceSeller, market?: "DE" | "UA"): void {
+export function assertCompliant(doc: ComplianceDoc, seller: ComplianceSeller, market?: string): void {
     const issues = checkCompliance(doc, seller, market);
     if (issues.length) throw new ComplianceError(issues);
 }

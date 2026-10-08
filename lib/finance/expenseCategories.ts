@@ -7,7 +7,7 @@
 export const EXPENSE_CATEGORY_LIMIT = 40; // больше не нужно, а список в интерфейсе ещё читается
 const MAX_LENGTH = 60;
 
-export const DEFAULT_EXPENSE_CATEGORIES: Record<"DE" | "UA", string[]> = {
+export const DEFAULT_EXPENSE_CATEGORIES: Record<string, string[]> = {
 	DE: [
 		"Wareneinkauf", "Material", "Miete", "Nebenkosten", "Bürobedarf", "Software & Abos",
 		"Reisekosten", "Fahrzeugkosten", "Werbung", "Versicherungen", "Telefon & Internet",
@@ -41,8 +41,8 @@ export function parseCategories(input: unknown): string[] {
 export const hasCategory = (list: string[], name: string) => list.some((c) => c.toLowerCase() === name.trim().toLowerCase());
 
 /** Что показывать в подсказках: свой список фирмы, а пока он пуст — типовой набор страны. */
-export function categoriesFor(market: "DE" | "UA" | null, saved?: string[] | null): string[] {
+export function categoriesFor(market: string | null, saved?: string[] | null): string[] {
 	const own = parseCategories(saved ?? []);
 	if (own.length) return own;
-	return DEFAULT_EXPENSE_CATEGORIES[market ?? "DE"];
+	return DEFAULT_EXPENSE_CATEGORIES[market ?? "DE"] ?? DEFAULT_EXPENSE_CATEGORIES.DE;
 }

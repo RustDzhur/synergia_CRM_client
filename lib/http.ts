@@ -7,7 +7,7 @@ export class ProviderError extends Error {}
 export class MarketError extends Error {
     constructor(
         message: string,
-        public market: "DE" | "UA" | null = null
+        public market: string | null = null
     ) {
         super(message);
     }

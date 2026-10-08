@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { MarketError } from "@/lib/http";
-import { marketOf, marketAllowsIntegration, type Market, type MarketDocumentKind, marketHasDocument } from "./market";
+import { marketOf, marketAllowsIntegration, marketHasDocument, profile, registeredMarkets, type Market, type MarketDocumentKind } from "./market";
 
 // Серверная сторона режима рынка (см. lib/finance/market.ts — там сам режим и профиль).
 //
@@ -15,13 +15,11 @@ export async function orgMarket(org: string): Promise<Market | null> {
     return marketOf(s?.country);
 }
 
-const marketName: Record<Market, string> = { DE: "Германии", UA: "Украины" };
-
 /** Отказ 409, если фирма работает не в этом режиме. Возвращает режим фирмы при успехе. */
 export async function requireMarket(org: string, market: Market): Promise<Market> {
     const current = await orgMarket(org);
     if (current !== market) {
-        throw new MarketError(`Функция доступна только для ${marketName[market]}`, market);
+        throw new MarketError(`Функция доступна только для ${profile(market).nameGenitive}`, market);
     }
     return current;
 }
@@ -41,7 +39,7 @@ export async function requireIntegration(org: string, type: string): Promise<voi
     const s = await prisma.financeSettings.findUnique({ where: { org }, select: { country: true } });
     const m = marketOf(s?.country);
     if (m && !marketAllowsIntegration(m, type)) {
-        const own = marketAllowsIntegration("UA", type) ? "UA" : "DE";
-        throw new MarketError(`Функция доступна только для ${own === "UA" ? "Украины" : "Германии"}`, own);
+        const own = registeredMarkets().find((r) => marketAllowsIntegration(r, type) && profile(r).integrations.includes(type as never)) ?? m;
+        throw new MarketError(`Функция доступна только для ${profile(own).nameGenitive}`, own);
     }
 }
