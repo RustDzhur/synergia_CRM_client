@@ -5,7 +5,7 @@
 | Что | Где |
 |---|---|
 | Определение Harness (Dockerfile, compose) | этот каталог, `deploy/agents/` в репозитории сайта |
-| Секреты Harness | `deploy/agents/.env` на сервере (в git нет): `DSH_WEB_TOKEN`, `OMNIROUTE_API_KEY` |
+| Секреты Harness | `deploy/agents/.env` на сервере (в git нет): `DSH_WEB_TOKEN`, `OPENAI_API_KEY` |
 | Рабочие папки агентов | `~/agents/<имя-агента>/` на сервере (внутри Harness — `/workspace/<имя>`) |
 | Код сайта для агентов | `/site` внутри Harness, только чтение |
 | Токены и права агентов | CRM → Настройки → Интеграции → «Агенты» (создать, отозвать) |

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Сторож сервера: запускается cron каждые 5 минут и сообщает платформе (POST /api/errors/ingest) о том, что иначе осталось бы незамеченным:
-  • строки ERROR / FATAL / PANIC / Exception в журналах контейнеров (postgres, redis, minio, omniroute, tts, speaches, Harness…);
+  • строки ERROR / FATAL / PANIC / Exception в журналах контейнеров (postgres, redis, minio, tts, speaches, Harness…);
   • перезапуск контейнера (с кодом выхода, признаком нехватки памяти и последними строками журнала), остановленный или «unhealthy» контейнер;
   • заполненный диск (>90%).
 Дальше платформа сама объясняет ошибку человеческим языком и шлёт в Telegram (lib/errorHub.ts). Журнал самого сайта (firmspace-crm) не читаем —

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 // Единая точка приёма ошибок платформы. Сюда сходится всё: браузер (исключения, отказавшие промисы, console.error, упавшие запросы,
 // не загрузившиеся файлы, поломки отрисовки), сервер (исключения процесса, console.error, ответы 5xx), база данных (недоступна, взаимная
-// блокировка, неверные запросы), контейнеры (строки ERROR/FATAL в журналах postgres, caddy, omniroute…, перезапуски) и cron.
+// блокировка, неверные запросы), контейнеры (строки ERROR/FATAL в журналах postgres, caddy, redis, minio, tts…, перезапуски) и cron.
 // Для каждой ошибки владельцу в Telegram уходит не «сырой» текст, а объяснение человеческим языком: что это, вероятная причина, что проверить.
 //
 // Чтобы чат не заваливало: одинаковые ошибки (по «отпечатку» — текст без чисел и идентификаторов + верхняя строка стека) шлются сразу в первый
@@ -95,10 +95,10 @@ const KNOWN: Array<[RegExp, Explanation]> = [
     [/Hydration failed|Text content does not match|There was an error while hydrating/i, { what: "Страница при загрузке отрисовалась иначе, чем пришла с сервера.", cause: "Содержимое зависит от времени, языка или браузера и различается на сервере и в браузере.", check: "Найти компонент по стеку: даты, Math.random, localStorage в первой отрисовке." }],
     [/JWT|jwt (expired|malformed)|invalid signature|TokenExpired/i, { what: "Проблема с токеном входа.", cause: "Сессия истекла или токен повреждён; при смене JWT_SECRET все входы сбрасываются.", check: "Если массово — не менялся ли JWT_SECRET; одиночно — достаточно войти заново." }],
     [/429|Too Many Requests|rate limit/i, { what: "Внешний сервис отказал: слишком много запросов.", cause: "Превышен лимит запросов к стороннему API или к нашему.", check: "Посмотреть, что вызывает всплеск запросов; при необходимости снизить частоту." }],
-    [/ETIMEDOUT|timed out|timeout|ESOCKETTIMEDOUT|UND_ERR/i, { what: "Запрос не дождался ответа.", cause: "Внешний сервис или внутренний контейнер отвечает слишком медленно или недоступен.", check: "Проверить доступность сервиса (omniroute, почтовый провайдер, Telegram) и нагрузку на сервер." }],
+    [/ETIMEDOUT|timed out|timeout|ESOCKETTIMEDOUT|UND_ERR/i, { what: "Запрос не дождался ответа.", cause: "Внешний сервис или внутренний контейнер отвечает слишком медленно или недоступен.", check: "Проверить доступность сервиса (OpenAI, почтовый провайдер, Telegram) и нагрузку на сервер." }],
     [/ENOTFOUND|EAI_AGAIN|getaddrinfo/i, { what: "Не удалось найти адрес сервера (DNS).", cause: "Нет интернета у сервера или неверный адрес сервиса.", check: "ping/curl с сервера до этого адреса; проверить DNS и адрес в настройках." }],
     [/Cannot read propert(y|ies) of (undefined|null)|undefined is not an object|null is not an object|is not a function|is not defined/i, { what: "Ошибка в коде: программа обратилась к данным, которых нет.", cause: "Ответ пришёл не в ожидаемом виде или данные ещё не загрузились.", check: "Открыть файл и строку из стека; добавить проверку на пустое значение." }],
-    [/AI provider|ALL_TARGETS_SKIPPED|No endpoints found|agentic harnesses|api\/ai\/(chat|tts)[^\n]*\b50[0-4]\b|\/api\/ai\/[a-z]+ ответил 50[0-4]/i, { what: "Не ответила ИИ-модель: бесплатные модели за шлюзом часто перегружены, закрыты для обычных запросов или не умеют вызывать инструменты.", cause: "Шлюз omniroute временно пропустил все подходящие модели (403/404/429/503). Сайт сам пробует запасные из AI_FALLBACK_MODELS, поэтому человек чаще всего ничего не замечает.", check: "Если повторяется часто — проверить ключ и баланс в omniroute, список моделей (auto/best-chat, auto/pro-fast) и AI_MODEL / AI_FALLBACK_MODELS в deploy/.env." }],
+    [/AI provider|ALL_TARGETS_SKIPPED|No endpoints found|agentic harnesses|api\/ai\/(chat|tts)[^\n]*\b50[0-4]\b|\/api\/ai\/[a-z]+ ответил 50[0-4]/i, { what: "Не ответила ИИ-модель: бесплатные модели часто перегружены, закрыты для обычных запросов или не умеют вызывать инструменты.", cause: "Провайдер временно пропустил все подходящие модели (403/404/429/503). Сайт сам пробует запасные из AI_FALLBACK_MODELS, поэтому человек чаще всего ничего не замечает.", check: "Если повторяется часто — проверить ключ и баланс OpenAI, список моделей и AI_MODEL / AI_FALLBACK_MODELS в deploy/.env." }],
     [/\b50[0-4]\b|Internal Server Error/i, { what: "Сервер ответил ошибкой на запрос.", cause: "Необработанное исключение в обработчике или недоступна база/сервис.", check: "Найти соседнее сообщение «Сервер» с тем же адресом — там причина и стек." }],
 ];
 
@@ -116,7 +116,7 @@ async function aiExplain(ev: ErrorEvent): Promise<Explanation | null> {
         const { aiConfigured, complete } = await import("@/lib/ai/provider");
         if (!aiConfigured()) return null;
         hub.aiAt.push(now);
-        const system = `Ты помогаешь владельцу небольшой CRM-платформы Firmspace (Next.js 13, Prisma + PostgreSQL, Docker на домашнем сервере, Caddy, контейнеры: firmspace-crm, postgres, redis, minio, omniroute, tts, speaches, dsh/Harness). Тебе дают техническую ошибку. Ответь по-русски простыми словами, строго тремя строками, без markdown:
+        const system = `Ты помогаешь владельцу небольшой CRM-платформы Firmspace (Next.js 13, Prisma + PostgreSQL, Docker на домашнем сервере, Caddy, контейнеры: firmspace-crm, postgres, redis, minio, tts, speaches, dsh/Harness). Тебе дают техническую ошибку. Ответь по-русски простыми словами, строго тремя строками, без markdown:
 Что это: …
 Причина: …
 Что проверить: …

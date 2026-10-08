@@ -22,11 +22,11 @@ export function aiProvider(): ProviderId | null {
     return null;
 }
 export const aiConfigured = () => !!aiProvider();
-// Шлюзы (OmniRoute, OpenRouter) отключены: владелец ушёл от них из-за нестабильного соединения для голоса. Старые значения из .env
-// (адрес шлюза в OPENAI_API_URL, имена вида openrouter/openai/…) не должны ломать работу — адрес игнорируется, имя модели очищается.
+// Шлюзы отключены: владелец ушёл с них из-за нестабильного соединения для голоса. Старые значения из .env
+// (имена моделей вида openrouter/…, auto/…) не должны ломать работу — имя модели очищается.
 const OPENAI_MODEL = /^(gpt-|o\d|chatgpt-)/;
-const GATEWAY_HOST = /omniroute|omiroute|openrouter/i;
-/** Базовый адрес OpenAI: OPENAI_API_URL, если это не отключённый шлюз (прокси или совместимый сервис остаются возможными). */
+const GATEWAY_HOST = /openrouter/i;
+/** Базовый адрес OpenAI: OPENAI_API_URL, если это не чужой шлюз (прокси или совместимый сервис остаются возможными). */
 export const openaiBase = () => {
     const u = process.env.OPENAI_API_URL?.trim();
     return u && !GATEWAY_HOST.test(u) ? trim(u) : "https://api.openai.com/v1";
@@ -50,7 +50,7 @@ const trim = (s: string) => s.replace(/\/+$/, "");
 export class GatewayError extends ProviderError {
     constructor(message: string, public status: number, public detail = "") { super(message); }
 }
-// Бесплатные модели за шлюзом (OmniRoute/OpenRouter) то «не поддерживают инструменты», то «только для агентных сред», то перегружены (403/404/429/503,
+// Бесплатные/чужие модели то «не поддерживают инструменты», то «только для агентных сред», то перегружены (403/404/429/503,
 // ALL_TARGETS_SKIPPED). Это не поломка сайта, а повод взять другую модель — поэтому такие отказы пробуем обойти, а не сразу показывать человеку.
 const retryable = (e: unknown) =>
     (e instanceof GatewayError && ([0, 402, 403, 404, 408, 409, 425, 429, 500, 502, 503, 504].includes(e.status) || /ALL_TARGETS_SKIPPED|no endpoints|temporarily|overloaded|model.{0,40}(not|exist|found|support)/i.test(e.detail))) ||
@@ -68,8 +68,8 @@ async function post<T>(url: string, headers: Record<string, string>, body: unkno
 }
 
 // ── OpenAI ──
-// Куда ходит чат. По умолчанию — шлюз (OPENAI_API_URL + OPENAI_API_KEY, как для распознавания речи). Если заданы AI_API_URL и AI_API_KEY, чат идёт НАПРЯМУЮ
-// к провайдеру (например, DeepSeek: https://api.deepseek.com/v1), а шлюз остаётся запасным путём и для распознавания речи.
+// Куда ходит чат. По умолчанию — OpenAI (OPENAI_API_URL + OPENAI_API_KEY, как для распознавания речи). Если заданы AI_API_URL и AI_API_KEY, чат идёт НАПРЯМУЮ
+// к провайдеру (например, DeepSeek: https://api.deepseek.com/v1), а OpenAI остаётся запасным путём.
 const gatewayEndpoint = () => ({ url: openaiBase(), key: process.env.OPENAI_API_KEY ?? "" });
 const primaryEndpoint = () => (process.env.AI_API_URL && process.env.AI_API_KEY ? { url: trim(process.env.AI_API_URL), key: process.env.AI_API_KEY } : gatewayEndpoint());
 type Endpoint = { url: string; key: string };
@@ -84,9 +84,8 @@ async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiM
     const j = await post<{ choices?: { message?: { content?: string | null; tool_calls?: { id: string; function: { name: string; arguments: string } }[] } }[] }>(
         `${ep.url}/chat/completions`,
         { Authorization: `Bearer ${ep.key}` },
-        // Ограничение сверху обязательно: шлюз (OmniRoute/OpenRouter) без него считает
-        // бюджет на максимум модели (~65k токенов) и отказывает при малом балансе (402).
-        // Пустой список инструментов не отправляем: шлюз (OmniRoute) в ответ на tools: [] заставлял модель «вызвать инструмент», и текст приходил пустым —
+        // Ограничение сверху обязательно: без него провайдер считает бюджет на максимум модели (~65k токенов) и может отказать при малом балансе.
+        // Пустой список инструментов не отправляем: некоторые модели в ответ на tools: [] заставляли «вызвать инструмент», и текст приходил пустым —
         // именно так молчал «Проанализировать с помощью ИИ» в отчётах
         { model, max_tokens: 2000, messages, ...(tools.length ? { tools: tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) } : {}) },
         timeoutMs
@@ -155,12 +154,12 @@ export async function complete(system: string, msgs: Msg[], tools: ToolDef[], op
     const direct = primary.url !== gateway.url || primary.key !== gateway.key; // чат идёт мимо шлюза — шлюз становится запасным путём
     const run = (model: string | undefined, timeoutMs: number, ep: Endpoint) => (p === "anthropic" ? anthropic(system, msgs, tools, model, timeoutMs) : openai(system, msgs, tools, model, timeoutMs, ep));
     const chain: { model: string | undefined; ep: Endpoint }[] = [];
-    // Чат идёт к самому OpenAI: имена моделей шлюза из старого .env (openrouter/…, auto/…) он отвергает ответом 400, и голосовой разговор молчал бы.
+    // Чат идёт к самому OpenAI: чужие имена моделей из старого .env (openrouter/…, auto/…) он отвергает ответом 400, и голосовой разговор молчал бы.
     // Такие имена пропускаем; прямому стороннему провайдеру (AI_API_URL) имена не трогаем.
     const toOpenAi = p === "openai" && !direct && primary.url === "https://api.openai.com/v1";
     const usable = (model: string | undefined) => !model || !toOpenAi || OPENAI_MODEL.test(model);
     const add = (model: string | undefined, ep: Endpoint) => { if (usable(model) && !chain.some((c) => c.model === model && c.ep.url === ep.url)) chain.push({ model, ep }); };
-    // быстрая модель голоса — модель шлюза; прямому провайдеру (DeepSeek) её имя неизвестно
+    // быстрая модель голоса; прямому провайдеру (DeepSeek) её имя неизвестно
     if (!direct) add(opts.model, primary);
     add(ov?.model || undefined, primary);
     for (const m of ov?.fallbacks.length ? ov.fallbacks : fallbackModels()) add(m, direct ? gateway : primary);

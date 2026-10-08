@@ -26,9 +26,7 @@ describe("шлюзы отключены", () => {
     const saved = { ...process.env };
     afterEach(() => { process.env = { ...saved }; });
 
-    it("адрес шлюза из старого .env игнорируется, обычный адрес и пустое значение работают", () => {
-        process.env.OPENAI_API_URL = "http://omniroute:20128/v1";
-        expect(openaiBase()).toBe("https://api.openai.com/v1");
+    it("адрес чужого шлюза (openrouter) игнорируется, обычный адрес и пустое значение работают", () => {
         process.env.OPENAI_API_URL = "https://openrouter.ai/api/v1";
         expect(openaiBase()).toBe("https://api.openai.com/v1");
         process.env.OPENAI_API_URL = "https://proxy.example.com/v1/";

@@ -5,7 +5,7 @@ import { type ErrorSource, ingest } from "@/lib/errorHub";
 export const dynamic = "force-dynamic";
 
 // POST /api/errors/ingest — приём ошибок от сторожа сервера (deploy/errorwatch.sh): строки ERROR/FATAL из журналов контейнеров
-// (postgres, caddy, omniroute…), перезапуски контейнеров, недоступность сайта. Защита — общий секрет CRON_SECRET в заголовке Authorization.
+// (postgres, caddy, redis, minio…), перезапуски контейнеров, недоступность сайта. Защита — общий секрет CRON_SECRET в заголовке Authorization.
 //   { source?: "container" | "database" | "server" | "external", name: "postgres", message: "…", lines?: string[] }
 const SOURCES: ErrorSource[] = ["container", "database", "server", "external", "cron"];
 

@@ -1,6 +1,6 @@
 // Патч 3 для Harness: голосовой ввод на русском.
 // Штатный распознаватель Harness (SenseVoice) знает только китайский, английский, японский и корейский. Здесь его регистрация подменяется
-// на Whisper: сначала облачный whisper-large-v3-turbo через omniroute (быстро и точно, тот же ключ OMNIROUTE_API_KEY, что у Harness),
+// на Whisper: сначала облачный whisper-large-v3-turbo через OpenAI (быстро и точно, тот же ключ OPENAI_API_KEY, что у Harness),
 // запасной — свой Whisper на сервере (speaches, 127.0.0.1:8000). Микрофон работает сразу, скачивать модели SenseVoice не нужно.
 // Запуск: node patch-stt.mjs [каталог @deepseek-ai]; повторный запуск ничего не меняет.
 import fs from "node:fs";

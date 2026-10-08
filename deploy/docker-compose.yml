@@ -42,7 +42,7 @@ services:
       - db
       - ai
 
-# Имена сетей на сервере: firmspace_db (там postgres) и firmspace_ai (omniroute, озвучка, распознавание речи).
+# Имена сетей на сервере: firmspace_db (там postgres) и firmspace_ai (озвучка, распознавание речи).
 # Если у вас они называются иначе — задайте DB_NETWORK и AI_NETWORK в deploy/.env (docker network ls покажет имена).
 networks:
   db:

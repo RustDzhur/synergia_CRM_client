@@ -24,7 +24,7 @@ RUN set -eux; \
     sed -i 's#ctx.remote.$host.isLoopback ? new SettingsDocumentStore#true ? new SettingsDocumentStore#' "$B"; \
     grep -q 'true ? new SettingsDocumentStore' "$B"
 
-# Патч 3. Голосовой ввод на русском: штатный SenseVoice знает только zh/en/ja/ko; регистрация подменяется на Whisper (облако через omniroute,
+# Патч 3. Голосовой ввод на русском: штатный SenseVoice знает только zh/en/ja/ko; регистрация подменяется на Whisper (облако через OpenAI,
 # запасной — свой speaches). Подробности и настройка — в начале patch-stt.mjs.
 COPY patch-stt.mjs /tmp/patch-stt.mjs
 RUN node /tmp/patch-stt.mjs && rm /tmp/patch-stt.mjs

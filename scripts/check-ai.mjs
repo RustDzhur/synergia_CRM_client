@@ -2,7 +2,7 @@
 // Проверка связи с OpenAI изнутри контейнера: docker exec firmspace-crm node scripts/check-ai.mjs
 // Ключ не печатается: только его длина и первые символы. Показывает, какой адрес реально используется, доходит ли сеть, принимает ли OpenAI ключ,
 // отвечает ли чат и доступна ли модель распознавания речи.
-const GATEWAY = /omniroute|omiroute|openrouter/i;
+const GATEWAY = /openrouter/i;
 const key = (process.env.OPENAI_API_KEY || "").trim();
 const rawUrl = (process.env.OPENAI_API_URL || "").trim();
 const base = (rawUrl && !GATEWAY.test(rawUrl) ? rawUrl : "https://api.openai.com/v1").replace(/\/+$/, "");

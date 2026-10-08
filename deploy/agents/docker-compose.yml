@@ -1,5 +1,5 @@
 # Площадка агентов: DeepSeek Harness (dsh web) — веб-панель, из которой запускаются и контролируются круглосуточные агенты.
-# Живёт рядом с сайтом и выкладывается тем же autodeploy.sh. Секреты (DSH_WEB_TOKEN, OMNIROUTE_API_KEY) — в deploy/agents/.env
+# Живёт рядом с сайтом и выкладывается тем же autodeploy.sh. Секреты (DSH_WEB_TOKEN, OPENAI_API_KEY) — в deploy/agents/.env
 # (его нет в git). Проект compose называется «dsh», чтобы подхватить том dsh_dsh-home с настройками Harness.
 #
 # Что видит агент внутри контейнера:

@@ -52,5 +52,5 @@ git pull && ./up.sh
 ## Не перенесено (вне этого compose)
 Whisper, TTS и Harness-агенты: адреса в `.env` (`TRANSCRIBE_API_URL` и др.) пока указывают на старый сервер или остаются пустыми.
 
-## Шлюз OmniRoute/OpenRouter отключён
-Из compose, Caddy и резервного копирования убран (нестабильное соединение для голоса). Чат и распознавание ходят напрямую к OpenAI (`OPENAI_API_KEY` — настоящий ключ OpenAI, `OPENAI_API_URL` не нужен); код игнорирует адреса шлюзов, оставшиеся в `.env`. Каталог `omniroute/` и контейнеры можно удалить: `docker rm -f omniroute omniroute-redis`.
+## Шлюз OmniRoute удалён
+Чат и распознавание речи ходят напрямую к OpenAI (`OPENAI_API_KEY` — настоящий ключ OpenAI, `OPENAI_API_URL` не нужен). Каталог `omniroute/`, контейнеры `omniroute`/`omniroute-redis` и все упоминания шлюза из репозитория удалены.
