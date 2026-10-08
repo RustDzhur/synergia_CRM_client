@@ -3239,7 +3239,12 @@
     "done_save_legal_draft": "“{title}” qoralamasi saqlandi (SI qoralamasi — mutaxassis tekshirishi kerak)",
     "f_counterparty": "Kontragent",
     "agentLang_uz": "Oʻzbekcha",
-    "micNoSpeech": "Ovoz eshitildi, lekin so‘zlarni ajrata olmadim — mikrofonga yaqinroq gapiring"
+    "micNoSpeech": "Ovoz eshitildi, lekin so‘zlarni ajrata olmadim — mikrofonga yaqinroq gapiring",
+    "agentStt": "Nutqni aniqlash",
+    "agentSttAuto": "Avtomatik (o‘zbekcha uchun server, o‘xshamasa brauzer)",
+    "agentSttBrowser": "Brauzer (bepul)",
+    "agentSttServer": "Server (aniqroq, pullik)",
+    "micFallback": "Server nutq aniqlashi mavjud emas — brauzer aniqlashiga o‘tildi"
   },
   "automation": {
     "tab_rules": "Avtomatlashtirish qoidalari",
