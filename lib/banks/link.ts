@@ -15,6 +15,8 @@ export interface BankLinkInput {
 	currency?: string;
 	/** Секреты для расшифровки на сервере (токены): в базу уходят зашифрованными и в браузер не возвращаются */
 	secret: Record<string, string>;
+	/** Кто подключает — записывается в согласие (ConsentRecord, kind bank_connect) */
+	by?: string;
 }
 
 /** Привязать счёт CRM к счёту банка: повторная привязка обновляет запись, а не плодит двойников. */
@@ -36,6 +38,10 @@ export async function linkBankAccount(org: string, input: BankLinkInput) {
 	const doc = existing
 		? await prisma.bankAccount.update({ where: { id: existing.id }, data })
 		: await prisma.bankAccount.create({ data: { org, kind: "bank", ...data } });
+	// подключение банка оформляется согласием (docs/TZ_MASTER.md §7.2 п. 3): отзыв — отвязка счёта
+	if (!(await prisma.consentRecord.findFirst({ where: { org, kind: "bank_connect", subjectType: "bankaccount", subjectId: doc.id, revokedAt: null } }))) {
+		await prisma.consentRecord.create({ data: { org, kind: "bank_connect", subjectType: "bankaccount", subjectId: doc.id, purpose: input.provider, grantedBy: input.by ?? "" } });
+	}
 	return doc;
 }
 
@@ -44,4 +50,10 @@ export async function finishBankSync(org: string, account: { id: string; currenc
 	const result = await importBankRows(org, account as never, rows, "auto");
 	await prisma.bankAccount.update({ where: { id: account.id }, data: { providerSyncAt: new Date(toSec * 1000) } });
 	return result;
+}
+
+/** Отвязать счёт от банка: токены удаляются, синхронизация прекращается сразу, согласие помечается отозванным. */
+export async function unlinkBankAccount(org: string, accountId: string, by = "") {
+	await prisma.bankAccount.update({ where: { id: accountId }, data: { provider: "", providerAccountId: "", providerSecret: "", providerSyncAt: null } });
+	await prisma.consentRecord.updateMany({ where: { org, kind: "bank_connect", subjectType: "bankaccount", subjectId: accountId, revokedAt: null }, data: { revokedAt: new Date(), revokedBy: by } });
 }

@@ -72,6 +72,7 @@ export function moduleForPath(pathname: string, method: string, search?: URLSear
         case "env": return "settings"; // переменные окружения фирмы: смотреть и менять — владелец и администраторы
         case "notify-settings": return method === "GET" ? null : "settings"; // бот фирмы: смотреть можно всем, менять — по правам
         case "integrations": case "messenger": case "whatsapp": return method === "GET" ? "collab" : "settings"; // список каналов нужен звонилке всем; менять — только с доступом к настройкам
+        case "partner": case "bank-offers": case "bank-partner": return null; // страница банка, заявки клиента и кабинет банка: каждый маршрут проверяет права сам (lib/partner)
         case "practice": return null; // кабинет практики и согласия клиента: каждый маршрут проверяет права сам (lib/practice)
         case "orgs": return p.startsWith("orgs/members") || p.startsWith("orgs/invitations") ? "members" : null;
         default: return (OPEN_API_SEGMENTS as readonly string[]).includes(first) ? null : "deny";

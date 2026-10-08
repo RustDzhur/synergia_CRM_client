@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized, validId } from "@/lib/api";
 import { logAudit } from "@/lib/audit";
 import { privatBalance } from "@/lib/banks/privatbank";
-import { linkBankAccount } from "@/lib/banks/link";
+import { linkBankAccount, unlinkBankAccount } from "@/lib/banks/link";
 import { BankSyncError, syncAccount } from "@/lib/banks/provider";
 import { prisma } from "@/lib/prisma";
 
@@ -37,6 +37,7 @@ export async function POST(req: Request) {
                 name: str(b?.name, 100),
                 iban: balance.account,
                 currency: balance.currency || "UAH",
+                by: user.userId,
                 secret: { id, token },
             });
             const author = await prisma.user.findUnique({ where: { id: user.userId }, select: { firstname: true, lastname: true } });
@@ -56,7 +57,7 @@ export async function POST(req: Request) {
             if (!validId(accountId)) return badRequest("accountId is required");
             const doc = await prisma.bankAccount.findFirst({ where: { id: accountId, org: user.id, provider: "privatbank" } });
             if (!doc) return badRequest("Account not found");
-            await prisma.bankAccount.update({ where: { id: doc.id }, data: { provider: "", providerAccountId: "", providerSecret: "", providerSyncAt: null } });
+            await unlinkBankAccount(user.id, doc.id, user.userId);
             return NextResponse.json({ ok: true });
         }
 
