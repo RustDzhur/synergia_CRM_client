@@ -1206,7 +1206,7 @@
         "prCreate": "Praxis eröffnen",
         "prName": "Name der Praxis",
         "prKind": "Art",
-        "prTerms": "Ich akzeptiere den Auftragsverarbeitungsvertrag und die Verschwiegenheitsverpflichtung für die Daten meiner Mandanten (der Text wird vom Juristen der Plattform erstellt; Version und Zeitpunkt der Annahme werden gespeichert).",
+        "prTerms": "Kostenlos bis {n} Mandanten; für mehr ist ein Praxis-Abo nötig.",
         "prCreated": "Praxis angelegt.",
         "prCreateBtn": "Praxis eröffnen",
         "prCodeIs": "Praxis-Code:",
@@ -1243,7 +1243,13 @@
         "prDashUnverified": "Datum ungeprüft",
         "prDashOpen": "Öffnen",
         "prDashOpenClient": "Mandant öffnen",
-        "tabLegal": "Verträge"
+        "tabLegal": "Verträge",
+        "prDashSearch": "Mandanten suchen",
+        "prDashOnlyOpen": "Nur mit offenen Punkten",
+        "prSubTitle": "Subunternehmer der Plattform",
+        "prSubHint": "Wer Mandantendaten in unserem Auftrag verarbeitet. Änderungen werden mit Datum protokolliert.",
+        "prSubEmpty": "Noch keine Subunternehmer erfasst.",
+        "prTermsPrice": "Preis {price} {cur}/Monat"
     },
     "upgrade": {
         "free": "Kostenlos",
@@ -3246,7 +3252,11 @@
         "batchStatus_proposed": "Vorgeschlagen",
         "batchStatus_applied": "Angewendet",
         "batchStatus_rolled_back": "Zurückgerollt",
-        "batchStatus_dismissed": "Verworfen"
+        "batchStatus_dismissed": "Verworfen",
+        "commentsToggle": "Kommentare",
+        "commentPlaceholder": "Kommentar schreiben…",
+        "commentMention": "Kollegen erwähnen",
+        "commentSend": "Senden"
     },
     "ads": {
         "needsUpgrade": "Werbeleistung erfordert den Tarif Professional.",
@@ -3518,7 +3528,8 @@
         "deadline_1h": "{kind} „{title}“: weniger als eine Stunde bis zur Frist!",
         "deadline_overdue": "{kind} „{title}“: Die Frist ist abgelaufen!",
         "clientRequest": "{name} bittet: {subject}",
-        "requestAnswered": "{name} hat Ihre Anfrage beantwortet: {subject}"
+        "requestAnswered": "{name} hat Ihre Anfrage beantwortet: {subject}",
+        "mention": "{name} hat Sie erwähnt: „{text}“"
     },
     "admin": {
         "title": "Admin: Firmen und Abos",

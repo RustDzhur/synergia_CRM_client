@@ -1206,7 +1206,7 @@
         "prCreate": "Open a practice",
         "prName": "Practice name",
         "prKind": "Type",
-        "prTerms": "I accept the data processing agreement and the confidentiality commitment for the data of my clients (the text is prepared by the platform's lawyer; the version and time of acceptance are stored).",
+        "prTerms": "Free for up to {n} clients; more clients need a practice subscription.",
         "prCreated": "Practice created.",
         "prCreateBtn": "Open the practice",
         "prCodeIs": "Practice code:",
@@ -1243,7 +1243,13 @@
         "prDashUnverified": "unverified date",
         "prDashOpen": "Open",
         "prDashOpenClient": "Open client",
-        "tabLegal": "Contracts"
+        "tabLegal": "Contracts",
+        "prDashSearch": "Search clients",
+        "prDashOnlyOpen": "Only with open items",
+        "prSubTitle": "Platform subprocessors",
+        "prSubHint": "Who processes client data on our behalf. Changes are logged with dates.",
+        "prSubEmpty": "No subprocessors recorded yet.",
+        "prTermsPrice": "price {price} {cur}/month"
     },
     "upgrade": {
         "free": "Free",
@@ -3246,7 +3252,11 @@
         "batchStatus_proposed": "Proposed",
         "batchStatus_applied": "Applied",
         "batchStatus_rolled_back": "Rolled back",
-        "batchStatus_dismissed": "Dismissed"
+        "batchStatus_dismissed": "Dismissed",
+        "commentsToggle": "Comments",
+        "commentPlaceholder": "Write a comment…",
+        "commentMention": "Mention colleagues",
+        "commentSend": "Send"
     },
     "ads": {
         "needsUpgrade": "Ad performance needs the Professional plan.",
@@ -3518,7 +3528,8 @@
         "deadline_1h": "{kind} “{title}”: less than an hour to the deadline!",
         "deadline_overdue": "{kind} “{title}”: the deadline has passed!",
         "clientRequest": "{name} asks: {subject}",
-        "requestAnswered": "{name} answered your request: {subject}"
+        "requestAnswered": "{name} answered your request: {subject}",
+        "mention": "{name} mentioned you: “{text}”"
     },
     "admin": {
         "title": "Admin: firms and subscriptions",

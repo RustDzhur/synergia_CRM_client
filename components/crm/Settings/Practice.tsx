@@ -134,6 +134,8 @@ interface DashRow { link: string; org: string; orgName: string; access: string; 
 function Dashboard({ practiceId }: { practiceId: string }) {
 	const t = useTranslations("settings");
 	const [rows, setRows] = useState<DashRow[] | null>(null);
+	const [q, setQ] = useState("");
+	const [onlyOpen, setOnlyOpen] = useState(false);
 	useEffect(() => { void apiCall<{ clients: DashRow[] }>(`/api/practice/${practiceId}/dashboard`).then((r) => { if (r.ok && r.data) setRows(r.data.clients); }); }, [practiceId]);
 	if (!rows) return null;
 	const open = (org: string) => { try { localStorage.setItem(ORG_KEY, org); } catch { /* приватный режим */ } window.location.href = "/crm/finance"; };
@@ -141,9 +143,13 @@ function Dashboard({ practiceId }: { practiceId: string }) {
 	return (
 		<>
 			<h3 className="mb-8 mt-18 text-13 font-semibold text-[#f1f4ee]">{t("prDashTitle")}</h3>
+			<div className="mb-8 flex flex-wrap items-center gap-12">
+				<input className="fs-field h-34 min-w-[180px] px-10 text-12 outline-none" placeholder={t("prDashSearch")} value={q} onChange={(e) => setQ(e.target.value)} />
+				<label className="flex items-center gap-6 text-12 text-[#8c948b]"><input type="checkbox" checked={onlyOpen} onChange={(e) => setOnlyOpen(e.target.checked)} />{t("prDashOnlyOpen")}</label>
+			</div>
 			<ul className="flex flex-col gap-8">
 				{rows.length === 0 && <li className="text-12 text-[#8c948b]">{t("prDashEmpty")}</li>}
-				{rows.map((r) => (
+				{rows.filter((r) => (!q || r.orgName.toLowerCase().includes(q.toLowerCase())) && (!onlyOpen || r.unmatchedBank + r.overdueInvoices + r.needsReview + r.needsFix + r.openRequests > 0)).map((r) => (
 					<li key={r.link} className="fs-card flex flex-wrap items-center gap-x-10 gap-y-6 p-14">
 						<span className="min-w-[160px] flex-1 truncate text-13 text-[#f1f4ee]">{r.orgName}</span>
 						{chip(r.unmatchedBank, t("prDashUnmatched"), true)}
@@ -157,6 +163,26 @@ function Dashboard({ practiceId }: { practiceId: string }) {
 					</li>
 				))}
 			</ul>
+		</>
+	);
+}
+
+interface Sub { id: string; name: string; purpose: string; country: string; data: string; addedAt: string; removedAt: string | null }
+// Журнал субподрядчиков платформы и условия практики (профессиональная тайна: кто обрабатывает данные клиентов)
+function Subprocessors({ practiceId }: { practiceId: string }) {
+	const t = useTranslations("settings");
+	const [d, setD] = useState<{ subprocessors: Sub[]; terms: { freeClients: number; enforce: boolean; monthlyPrice: number | null; currency: string } } | null>(null);
+	useEffect(() => { void apiCall<NonNullable<typeof d>>(`/api/practice/${practiceId}/subprocessors`).then((r) => { if (r.ok && r.data) setD(r.data); }); }, [practiceId]);
+	if (!d) return null;
+	return (
+		<>
+			<h3 className="mb-8 mt-18 text-13 font-semibold text-[#f1f4ee]">{t("prSubTitle")}</h3>
+			<p className="mb-8 text-12 text-[#8c948b]">{t("prSubHint")}</p>
+			<ul className="flex flex-col gap-6">
+				{d.subprocessors.length === 0 && <li className="text-12 text-[#8c948b]">{t("prSubEmpty")}</li>}
+				{d.subprocessors.map((x) => <li key={x.id} className={`text-12 ${x.removedAt ? "text-[#8c948b] line-through" : "text-[#cfd4cb]"}`}>{x.name} — {x.purpose}{x.country ? ` (${x.country})` : ""}</li>)}
+			</ul>
+			<p className="mt-10 text-12 text-[#8c948b]">{t("prTerms", { n: d.terms.freeClients })}{d.terms.monthlyPrice != null ? ` · ${t("prTermsPrice", { price: d.terms.monthlyPrice, cur: d.terms.currency })}` : ""}</p>
 		</>
 	);
 }
@@ -253,6 +279,7 @@ function PracticeSide() {
 					)}
 
 					<Dashboard practiceId={p.id} />
+					<Subprocessors practiceId={p.id} />
 					<h3 className="mb-8 mt-18 text-13 font-semibold text-[#f1f4ee]">{t("prClients")}</h3>
 					<ul className="flex flex-col gap-8">
 						{detail!.links.length === 0 && <li className="text-12 text-[#8c948b]">{t("prNoClients")}</li>}

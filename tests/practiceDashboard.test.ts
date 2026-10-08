@@ -77,11 +77,14 @@ describe("пакет бухгалтеру", () => {
         const a = await makeOrg(), b = await makeOrg();
         await prisma.invoice.create({ data: { org: a.org, number: "H-1", customerName: "Mine", issueDate: "2026-03-10", status: "sent" } });
         await prisma.invoice.create({ data: { org: b.org, number: "H-2", customerName: "Other", issueDate: "2026-03-10", status: "sent" } });
+        await prisma.financeSettings.create({ data: { org: a.org, country: "DE" } });
         const res = await handoff(asUser(a.userId)("/api/finance/handoff?from=2026-03-01&to=2026-03-31"));
         expect(res.status).toBe(200);
         const buf = Buffer.from(await res.arrayBuffer());
         expect(buf.includes("H-1")).toBe(true);
         expect(buf.includes("H-2")).toBe(false);
+        expect(buf.includes("EXTF_Buchungsstapel_2026.csv")).toBe(true); // DATEV для DE
+        expect(buf.includes("documents/H-1.pdf")).toBe(true); // печатная форма счёта
         expect((await handoff(asUser(a.userId)("/api/finance/handoff?from=x&to=y"))).status).toBe(400);
     });
 });

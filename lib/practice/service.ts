@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { assertCanAddClient } from "./terms";
 import { PRACTICE_GRANTABLE, type Module } from "@/lib/access";
 import { registeredMarkets } from "@/lib/finance/market";
 
@@ -130,6 +131,7 @@ async function validMembers(practiceId: string, ids: unknown, fallback: string):
 /** Практика приглашает клиента: создаётся связь без фирмы и токен, который клиент вводит у себя. */
 export async function inviteFromPractice(practiceId: string, actor: string, input: { access?: unknown; modules?: unknown; expiresInDays?: unknown; members?: unknown; note?: unknown }) {
     await requirePartner(practiceId, actor);
+    await assertCanAddClient(practiceId);
     return prisma.clientLink.create({
         data: {
             practice: practiceId, status: "invited", initiatedBy: "practice", token: genToken(), access: cleanAccess(input.access), modules: cleanModules(input.modules),
@@ -167,6 +169,7 @@ export async function acceptByPractice(practiceId: string, actor: string, linkId
     await requirePartner(practiceId, actor);
     const link = await prisma.clientLink.findFirst({ where: { id: linkId, practice: practiceId } });
     if (!link || link.status !== "invited" || link.initiatedBy !== "client" || !link.org) throw new PracticeError("Invitation not found", 404);
+    await assertCanAddClient(practiceId);
     if (link.expiresAt && link.expiresAt < new Date()) throw new PracticeError("The invitation has expired", 410);
     const ids = await validMembers(practiceId, members, actor);
     return activate(await prisma.clientLink.update({ where: { id: link.id }, data: { members: ids } }), actor);
