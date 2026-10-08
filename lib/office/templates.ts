@@ -13,7 +13,7 @@ export const SKILLS: Record<SkillId, { tools: string[]; write: boolean }> = {
     crm: { write: true, tools: ["search_contacts", "search_companies", "find_stale_contacts", "list_stages", "list_deals", "get_contact", "get_company", "get_deal", "create_deal", "create_contact", "create_company", "add_note", "update_deal_stage", "update_deal", "update_contact", "update_company", "analyze_leads", "lead_log"] },
     quotes: { write: true, tools: ["create_quote", "create_order", "create_contract", "update_order_status", "invoice_order", "decide_quote", "quote_to_order", "contract_action"] },
     invoices: { write: true, tools: ["list_invoices", "create_invoice", "mark_invoice_paid", "send_invoice", "update_invoice", "download_document"] },
-    finance: { write: true, tools: ["finance_summary", "list_expenses", "create_expense", "email_report"] },
+    finance: { write: true, tools: ["finance_summary", "list_expenses", "create_expense", "email_report", "propose_rules_batch"] },
     stock: { write: true, tools: ["list_products", "create_product", "adjust_stock", "archive_product"] },
     purchasing: { write: true, tools: ["create_supplier", "create_purchase_order", "restock_goods", "receive_purchase_order", "pay_supplier_invoice"] },
     production: { write: true, tools: ["list_production", "create_bom", "create_production_order", "launch_production_order", "produce_output", "cancel_production_order", "run_production"] },

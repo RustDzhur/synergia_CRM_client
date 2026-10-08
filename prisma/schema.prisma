@@ -1546,3 +1546,77 @@ model BankLead {
   @@index([org])
   @@map("bank_leads")
 }
+
+// Пакет изменений робота/правил практики (docs/TZ_MASTER.md §5.2 п. 9): сначала предложение, потом применение человеком, потом откат при необходимости
+model PracticeBatch {
+  id            String    @id @default(cuid())
+  org           String
+  // rules — применение правил сверки к неразмеченным движениям
+  kind          String    @default("rules")
+  // proposed | applied | rolled_back | dismissed
+  status        String    @default("proposed")
+  // [{ id, field, from, to, rule }]
+  changes       Json
+  skipped       Int       @default(0)
+  createdBy     String
+  createdByName String    @default("")
+  appliedBy     String    @default("")
+  appliedAt     DateTime?
+  rolledBackAt  DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([org, createdAt])
+  @@map("practice_batches")
+}
+
+// Юристу (§5.2 п. 10): хранилище договоров клиента с версиями и статусами согласования
+model LegalDoc {
+  id             String    @id @default(cuid())
+  org            String
+  title          String
+  counterparty   String    @default("")
+  // draft | in_review | approved | rejected | signed | archived
+  status         String    @default("draft")
+  // срок (окончание/продление), YYYY-MM-DD; напоминание создаётся в календаре
+  dueDate        String    @default("")
+  reminderEvent  String?
+  checklist      Json?
+  currentVersion Int       @default(1)
+  createdBy      String
+  createdByName  String    @default("")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([org, status])
+  @@map("legal_docs")
+}
+
+model LegalDocVersion {
+  id            String   @id @default(cuid())
+  org           String
+  doc           String
+  n             Int
+  body          String
+  note          String   @default("")
+  // текст подготовлен ИИ: везде показывается как «черновик для проверки специалистом»
+  aiDraft       Boolean  @default(false)
+  createdBy     String
+  createdByName String   @default("")
+  createdAt     DateTime @default(now())
+
+  @@unique([doc, n])
+  @@index([org, doc])
+  @@map("legal_doc_versions")
+}
+
+model LegalTemplate {
+  id        String   @id @default(cuid())
+  org       String
+  name      String
+  body      String
+  createdBy String
+  createdAt DateTime @default(now())
+
+  @@index([org])
+  @@map("legal_templates")
+}
