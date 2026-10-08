@@ -4,11 +4,13 @@ import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { useMarket } from "@/store/useMarket";
-import { MARKET_DEFAULTS, marketDiff, type Market } from "@/lib/finance/market";
+import { MARKET_DEFAULTS, marketDiff, registeredMarkets, type Market } from "@/lib/finance/market";
+import { emptyUz, type UzProfile } from "@/lib/validation/uz";
 import { fileToLogo, MAX_AVATAR_FILE_BYTES, MAX_LOGO_CHARS } from "@/utils/avatar";
 import FormField from "../shared/FormField";
 import TemplatePicker from "./TemplatePicker";
 import UaProfileCard, { type UaProfileForm } from "./settingsParts/UaProfileCard";
+import UzProfileCard from "./settingsParts/UzProfileCard";
 import ExpenseCategoriesCard from "./settingsParts/ExpenseCategoriesCard";
 import ContractTextCard from "./settingsParts/ContractTextCard";
 import ActivitiesCard from "./settingsParts/ActivitiesCard";
@@ -31,6 +33,8 @@ export default function FinanceSettingsTab() {
 	const [applyDefaults, setApplyDefaults] = useState(true);
 	// пустые сборы = сборы не начисляются (как и на сервере); поля заполнятся настоящими значениями, когда придут настройки
 	const [form, setForm] = useState({ country: "", currency: "EUR", smallBusiness: false, rateMargin: "0", uaLegalForm: "fop", uaTaxSystem: "single_3", uaGroup: "3", uaSingleRate: "5", uaVatPayer: false, uaVatRegDate: "", uaVatCertificate: "", uaVatRates: [20, 7, 0] as number[], uaEdrpou: "", uaIpn: "", uaKved: "", uaBank: "", uaIban: "", uaMfo: "", uaSignerName: "", uaSignerPosition: "", uaSignature: "", uaSeal: "", uaLimitsText: {} as Record<string, string>, uaEsvMonthly: "1760", uaMilitaryRate: "1", uaMilitaryFixed: "800", uaVatLimit: "1000000", uaVatPeriod: "month", legalName: "", address: "", taxId: "", vatId: "", registerNumber: "", managingDirector: "", phone: "", email: "", website: "", logo: "", footerText: "", iban: "", bic: "", paymentTermsDays: "14", invoicePrefix: "RE", quotePrefix: "AN", creditNotePrefix: "GS", reminderIntervalDays: "7", dunningFees: ["", "", "", "", ""], dunningInterestRate: "", dunningPaymentDays: "7", template: "classic", paymentQr: true });
+	// Реквизиты рынка UZ живут отдельным объектом: на сервере это одно поле settings.uz
+	const [uz, setUz] = useState<UzProfile>(emptyUz());
 	const [saving, setSaving] = useState(false);
 	const logoInput = useRef<HTMLInputElement>(null);
 
@@ -44,6 +48,7 @@ export default function FinanceSettingsTab() {
 		// страна в ответе та же, что уже показана, — значит, ввод трогать нельзя
 		if (hydratedCountry.current === settings.country && form.country === settings.country) return;
 		hydratedCountry.current = settings.country;
+		setUz({ ...emptyUz(), ...(settings.uz ?? {}) });
 		const dn = settings as typeof settings & DunningFields;
 		// сборы по ступеням: индекс 0 в интерфейсе не используется, поэтому показываем ровно пять полей 0..4
 		const fees = Array.from({ length: 5 }, (_, i) => (dn.dunningFees?.[i] !== undefined ? String(dn.dunningFees[i]) : ""));
@@ -69,6 +74,7 @@ export default function FinanceSettingsTab() {
 			dunningInterestRate: Math.max(0, Math.min(30, Number(form.dunningInterestRate) || 0)),
 			dunningPaymentDays: Math.max(1, Math.min(60, Math.round(Number(form.dunningPaymentDays) || 7))),
 			// украинская налоговая модель: числа приходят строками из полей ввода
+			...(market === "UZ" ? { uz } : {}),
 			rateMargin: Math.max(0, Math.min(50, Number(form.rateMargin) || 0)),
 			uaGroup: Number(form.uaGroup) || 3,
 			uaSingleRate: Number(form.uaSingleRate) === 3 ? 3 : 5,
@@ -102,7 +108,7 @@ export default function FinanceSettingsTab() {
 		// и почему — раньше отказ приходил русской строкой, а форма продолжала показывать введённое
 		const fieldErrors = (useFinanceStore.getState().settings as unknown as { fieldErrors?: Array<{ field: string; code: string }> } | null)?.fieldErrors ?? [];
 		if (fieldErrors.length) {
-			toast.error(t("uaErrSaved", { fields: fieldErrors.map((e) => t(`uaErr_${e.code}` as never)).join(", ") }), { duration: 8000 });
+			toast.error(t("uaErrSaved", { fields: fieldErrors.map((e) => t((e.field.startsWith("uz.") ? `uzErr_${e.code}` : `uaErr_${e.code}`) as never)).join(", ") }), { duration: 8000 });
 			return;
 		}
 		toast.success(t("saved"));
@@ -143,7 +149,7 @@ export default function FinanceSettingsTab() {
 						<span className={label}>{t("market_current")}</span>
 						<div className="flex items-center gap-10">
 							<span className="fs-field flex h-40 flex-1 items-center px-12 text-13">{market ? t(`market_${market.toLowerCase()}`) : t("countryNone")}</span>
-							<button type="button" onClick={() => { setApplyDefaults(true); setSwitchTo(market === "UA" ? "DE" : "UA"); }} className="fs-btn fs-btn-ghost h-40">
+							<button type="button" onClick={() => { setApplyDefaults(true); setSwitchTo(registeredMarkets().find((m) => m !== market) ?? null); }} className="fs-btn fs-btn-ghost h-40">
 								{t("market_change_btn")}
 							</button>
 						</div>
@@ -158,7 +164,7 @@ export default function FinanceSettingsTab() {
 					<p className="mt-8 text-12 text-[#8c948b]">{t("taxHint", { rate: selectedCountry.standard, label: selectedCountry.label })}</p>
 				) : null)}
 				{/* Kleinunternehmerregelung §19 — немецкое поле; у украинской фирмы его место занимает «платник ПДВ» */}
-				{market !== "UA" && (
+				{market === "DE" && (
 					<>
 						<label className="mt-14 flex items-center gap-10 text-13 text-[#cfd4cb]">
 							<input type="checkbox" checked={form.smallBusiness} onChange={(e) => setForm({ ...form, smallBusiness: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
@@ -176,9 +182,14 @@ export default function FinanceSettingsTab() {
 					<div className="w-full max-w-[520px] rounded-14 border border-[rgba(255,255,255,0.10)] bg-[#131715] p-20">
 						<h3 className="text-15 font-semibold text-[#f1f4ee]">{t("market_change_title")}</h3>
 						<p className="mt-8 text-13 text-[#cfd4cb]">{t("market_hint")}</p>
+						<div className="mt-12 flex flex-wrap gap-8" role="radiogroup">
+							{registeredMarkets().filter((m) => m !== market).map((m) => (
+								<button key={m} type="button" role="radio" aria-checked={switchTo === m} onClick={() => setSwitchTo(m)} className={`fs-btn h-36 px-14 text-13 ${switchTo === m ? "fs-btn-primary" : "fs-btn-ghost"}`}>{t(`market_${m.toLowerCase()}` as never)}</button>
+							))}
+						</div>
 						{(() => {
 							const diff = marketDiff(market, switchTo);
-							const name = (id: string) => (switchTo === "UA" && id === "vat" ? t("tab_ua_vat") : switchTo === "UA" && id === "eur" ? t("tab_ua_single") : t(`tab_${id}`));
+							const name = (id: string) => (switchTo === "UA" && id === "vat" ? t("tab_ua_vat") : switchTo === "UA" && id === "eur" ? t("tab_ua_single") : switchTo === "UZ" && id === "vat" ? t("tab_uz_vat") : t(`tab_${id}`));
 							return (
 								<div className="mt-12 space-y-10">
 									<div>
@@ -225,6 +236,9 @@ export default function FinanceSettingsTab() {
 					year={new Date().getFullYear()}
 				/>
 			)}
+
+			{/* Узбекистан: реквизиты (STIR, PINFL, MFO, счёт, режим QQS) и используемые налоговые правила с источниками */}
+			{market === "UZ" && <UzProfileCard value={uz} onChange={setUz} />}
 
 			{/* Налаштування → Документи: бланки документів с текстами, блоками, подписью и печатью (ТЗ §7) */}
 			{market === "UA" && <DocumentsCard />}

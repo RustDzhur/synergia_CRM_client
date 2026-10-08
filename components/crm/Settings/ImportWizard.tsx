@@ -315,7 +315,7 @@ export default function ImportWizard({ kind: initialKind, embedded = false }: { 
 							</button>
 							{/* DATEV: проводки для бухгалтера (EXTF, SKR03 по умолчанию) — немецкий формат,
 							    поэтому украинской фирме кнопка не показывается вовсе */}
-							{market !== "UA" && (
+							{market === "DE" && (
 								<button type="button" onClick={() => void downloadAuthed(`/api/export?kind=datev&year=${new Date().getFullYear()}`, `EXTF_Buchungsstapel_${new Date().getFullYear()}.csv`, t("importFailed"))} className="fs-btn fs-btn-ghost h-32 text-12">
 									<TbDownload size={13} /> {t("exportDatev")}
 								</button>

@@ -54,6 +54,7 @@ import IssuedDocs from "./IssuedDocs";
 import Production from "./Production";
 import FinanceSettingsTab from "./Settings";
 import Taxes from "./Taxes";
+import UzBetaBanner from "./UzBetaBanner";
 import Reports from "./Reports";
 
 // Finance (/crm/finance; старый адрес /crm/inventory перенаправляется в next.config.js): счета,
@@ -141,6 +142,31 @@ const NAV_UA: NavNode[] = [
 	{ kind: "item", key: "audit", icon: TbHistory },
 ];
 
+// Узбекский режим (бета): документы, банк и товары как в украинском, налоги — QQS по правилам на дату документа;
+// ни Mahnwesen, ни ПРРО, ни доставки НП/Укрпошты, ни кассы. Журналы ЭСФ добавляются отдельной вкладкой.
+const NAV_UZ: NavNode[] = [
+	{ kind: "item", key: "overview", icon: TbLayoutDashboard },
+	{ kind: "group", key: "orders", items: [
+		{ key: "quotes", icon: TbFileText },
+		{ key: "orders", icon: TbClipboardList },
+		{ key: "contracts", icon: TbFileCertificate },
+		{ key: "acts", icon: TbFileDescription },
+		{ key: "deliveryNotes", icon: TbTruckDelivery },
+	] },
+	{ kind: "group", key: "invoices", items: [
+		{ key: "invoices", icon: TbReceipt },
+		{ key: "recurring", icon: TbRefresh },
+	] },
+	{ kind: "item", key: "expenses", icon: TbWallet },
+	{ kind: "item", key: "bank", icon: TbBuildingBank },
+	{ kind: "item", key: "products", icon: TbBox },
+	{ kind: "item", key: "purchases", icon: TbTruckLoading },
+	{ kind: "item", key: "production", icon: TbTools },
+	{ kind: "item", key: "vat", icon: TbReceiptTax },
+	{ kind: "item", key: "settings", icon: TbSettings },
+	{ kind: "item", key: "audit", icon: TbHistory },
+];
+
 // Экраны, которые режим ещё не показывает: сначала появляется функция, потом её вкладка. Список пуст,
 // когда все экраны режима готовы (в украинском режиме это огляд…налаштування из §4 ТЗ).
 const PENDING_UA: Tab[] = [];
@@ -173,7 +199,7 @@ function activityNav(nav: NavNode[], activities: string[]): NavNode[] {
 	return out;
 }
 
-const NAV_BY_MARKET: Record<Market, NavNode[]> = { DE: NAV_DE, UA: NAV_UA };
+const NAV_BY_MARKET: Record<Market, NavNode[]> = { DE: NAV_DE, UA: NAV_UA, UZ: NAV_UZ };
 
 function marketNav(market: Market): NavNode[] {
 	const hide = market === "UA" ? PENDING_UA : [];
@@ -298,6 +324,7 @@ export default function Finance() {
 			if (key === "vat") return t("tab_ua_vat");
 			if (key === "eur") return t("tab_ua_single");
 		}
+		if (market === "UZ" && key === "vat") return t("tab_uz_vat");
 		return t(`tab_${key}`);
 	}
 
@@ -349,6 +376,8 @@ export default function Finance() {
 			</div>
 
 			<ActivityWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
+
+			{market === "UZ" && <UzBetaBanner />}
 
 			<div className="flex items-start gap-24 lg:gap-32">
 				{/* Desktop: колонка подменю слева (240px), липнет под шапкой кабинета */}

@@ -35,6 +35,7 @@ export const marketDocumentLocale = (country?: string | null): DocLocale | null 
 /** Вкладки финансового раздела (ключи совпадают с Finance/index.tsx и ?tab= в ссылках). */
 export type FinanceTabId =
     | "overview"
+    | "esf"
     | "quotes"
     | "orders"
     | "contracts"
@@ -82,7 +83,8 @@ export type MarketIntegrationType =
     | "rozetka"
     | "horoshop"
     | "olx"
-    | "nbu";
+    | "nbu"
+    | "cbu"; // курсы Центрального банка Узбекистана
 
 /** Налоговые модули (экраны отчётов и налогов). */
 export type TaxModule =
@@ -92,7 +94,9 @@ export type TaxModule =
     | "susa" // DE: Summen- und Saldenliste
     | "ua_vat_register" // UA: реєстр податкових накладних
     | "ua_income_book" // UA: книга обліку доходів (ФОП) / доходи ТОВ
-    | "ua_profit_tax"; // UA: податок на прибуток (ТОВ на загальній системі)
+    | "ua_profit_tax" // UA: податок на прибуток (ТОВ на загальній системі)
+    | "uz_vat" // UZ: QQS (НДС) по правилам на дату документа
+    | "uz_esf_register"; // UZ: журналы выданных и полученных счетов-фактур (ЭСФ)
 
 export type DocLocale = "de" | "ua" | "en" | "uz";
 
@@ -117,6 +121,8 @@ export interface MarketProfile {
         paymentLinks: boolean; // ссылки на оплату через украинские эквайринги — только UA
         marketplace: boolean; // Prom/Rozetka/Horoshop/OLX — только UA
         nbuRate: boolean; // фиксация курса НБУ в документе — только UA
+        cbuRate: boolean; // фиксация курса ЦБ Узбекистана в документе — только UZ
+        esf: boolean; // электронные счета-фактуры (подготовка данных и журналы) — только UZ
         smallBusiness: boolean; // Kleinunternehmerregelung §19 — только DE
     };
 }
@@ -142,6 +148,8 @@ const DE: MarketProfile = {
         paymentLinks: false,
         marketplace: false,
         nbuRate: false,
+        cbuRate: false,
+        esf: false,
         smallBusiness: true,
     },
 };
@@ -168,12 +176,43 @@ const UA: MarketProfile = {
         paymentLinks: true,
         marketplace: true,
         nbuRate: true,
+        cbuRate: false,
+        esf: false,
+        smallBusiness: false,
+    },
+};
+
+// Узбекистан, версия 1 (бета): документы готовятся на узбекском и русском, ЭСФ/ЭТТН — данные и журналы без отправки оператору
+// (docs/TZ_MASTER.md §4.2). Налоговые правила лежат в таблице TaxRule с датами действия и источниками, а не в коде.
+const UZ: MarketProfile = {
+    market: "UZ",
+    nameGenitive: "Узбекистана",
+    currencyDefault: "UZS",
+    localeDefault: "uz",
+    nav: ["overview", "quotes", "orders", "contracts", "acts", "deliveryNotes", "invoices", "recurring", "expenses", "bank", "products", "vat", "audit", "settings"],
+    documents: ["invoice", "quote", "order", "contract", "credit_note", "delivery_note", "act", "tax_invoice"],
+    integrations: ["cbu"],
+    taxModules: ["uz_vat", "uz_esf_register"],
+    features: {
+        dunning: false,
+        assets: false,
+        sepaQr: false,
+        deliveryNote: true,
+        act: true,
+        fiscal: false,
+        delivery: false,
+        paymentLinks: false,
+        marketplace: false,
+        nbuRate: false,
+        cbuRate: true,
+        esf: true,
         smallBusiness: false,
     },
 };
 
 registerMarket(DE);
 registerMarket(UA);
+registerMarket(UZ);
 
 /** Профиль режима рынка. Рынок обязан быть зарегистрирован (marketOf возвращает только такие). */
 export function profile(market: Market): MarketProfile {
@@ -222,6 +261,7 @@ export interface MarketDefaults {
 export const MARKET_DEFAULTS: Record<Market, MarketDefaults> = {
     DE: { currency: "EUR", invoicePrefix: "RE", quotePrefix: "AN", creditNotePrefix: "GS", deliveryNotePrefix: "LS", actPrefix: "АКТ", packingPrefix: "PL", paymentTermsDays: 14, smallBusiness: false, uaVatPayer: false },
     UA: { currency: "UAH", invoicePrefix: "РАХ", quotePrefix: "КП", creditNotePrefix: "КН", deliveryNotePrefix: "ВН", actPrefix: "АКТ", packingPrefix: "ПЛ", paymentTermsDays: 5, smallBusiness: false, uaVatPayer: false },
+    UZ: { currency: "UZS", invoicePrefix: "HF", quotePrefix: "TT", creditNotePrefix: "KN", deliveryNotePrefix: "YX", actPrefix: "DL", packingPrefix: "QV", paymentTermsDays: 5, smallBusiness: false, uaVatPayer: false },
 };
 
 /** Что скроется/появится при смене страны — для окна подтверждения в интерфейсе. */

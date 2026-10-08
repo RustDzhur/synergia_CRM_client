@@ -6,12 +6,13 @@ import { contractDate, contractValueText, defaultContractText, fillContractText 
 import { firmRate } from "./rates";
 import { validId } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
+import type { UzProfile } from "@/lib/validation/uz";
 
 // Общие сборщики PDF для всех финансовых документов: и маршруты скачивания (/api/<kind>/<id>/pdf),
 // и отправка клиенту (lib/finance/send.ts) берут готовый буфер отсюда, чтобы файл в письме и файл
 // из кнопки «Скачать» были одним и тем же документом.
 
-export const LOCALES = ["en", "de", "ua"] as const;
+export const LOCALES = ["en", "de", "ua", "uz", "ru"] as const;
 export const pdfLocale = (v: unknown) => (typeof v === "string" && (LOCALES as readonly string[]).includes(v) ? v : "en");
 
 // Курс к гривне для документов в валюте: у украинской фирмы в счёте печатается и сумма в ₴.
@@ -30,22 +31,27 @@ export const pdfTemplate = (v: unknown) => (isTemplate(v) ? v : undefined);
 
 export const toPdfSettings = (s: any): PdfSettings => {
     const ua = marketOf(s?.country) === "UA";
+    const uzMarket = marketOf(s?.country) === "UZ";
+    const uz = (uzMarket && s?.uz && typeof s.uz === "object" ? s.uz : {}) as Partial<UzProfile>;
+    // Реквизиты узбекской фирмы: STIR/JShShIR, код плательщика QQS, банк + MFO, расчётный счёт, руководитель
+    const uzIds = [uz.inn ? `STIR/ИНН ${uz.inn}` : "", uz.pinfl ? `JShShIR/ПИНФЛ ${uz.pinfl}` : ""].filter(Boolean).join(" · ");
+    const uzBankParts = [uz.bank ?? "", uz.mfo ? `MFO/МФО ${uz.mfo}` : ""].filter(Boolean).join(" · ");
     const uaIds = [s?.uaEdrpou ? `ЄДРПОУ ${s.uaEdrpou}` : "", s?.uaIpn ? `ІПН ${s.uaIpn}` : ""].filter(Boolean).join(" · ");
     const uaBankParts = [s?.uaBank ? `${s.uaBank}` : "", s?.uaMfo ? `МФО ${s.uaMfo}` : ""].filter(Boolean).join(" · ");
     return {
         legalName: s?.legalName ?? "",
         address: s?.address ?? "",
-        taxId: ua ? uaIds || (s?.taxId ?? "") : (s?.taxId ?? ""),
-        vatId: s?.vatId ?? "",
-        iban: ua ? s?.uaIban || (s?.iban ?? "") : (s?.iban ?? ""),
-        bic: ua ? s?.uaMfo || (s?.bic ?? "") : (s?.bic ?? ""),
-        bank: ua ? s?.uaBank || "" : "",
+        taxId: ua ? uaIds || (s?.taxId ?? "") : uzMarket ? uzIds || (s?.taxId ?? "") : (s?.taxId ?? ""),
+        vatId: uzMarket ? (uz.vatCode ? `QQS/НДС ${uz.vatCode}` : (s?.vatId ?? "")) : (s?.vatId ?? ""),
+        iban: ua ? s?.uaIban || (s?.iban ?? "") : uzMarket ? uz.account || (s?.iban ?? "") : (s?.iban ?? ""),
+        bic: ua ? s?.uaMfo || (s?.bic ?? "") : uzMarket ? uz.mfo || (s?.bic ?? "") : (s?.bic ?? ""),
+        bank: ua ? s?.uaBank || "" : uzMarket ? uz.bank || "" : "",
         paymentTermsDays: Number(s?.paymentTermsDays) || 0,
         phone: s?.phone ?? "",
         email: s?.email ?? "",
         website: s?.website ?? "",
-        registerNumber: ua ? (s?.uaVatCertificate ? `Свідоцтво ПДВ ${s.uaVatCertificate}` : uaBankParts) : (s?.registerNumber ?? ""),
-        managingDirector: s?.managingDirector ?? "",
+        registerNumber: ua ? (s?.uaVatCertificate ? `Свідоцтво ПДВ ${s.uaVatCertificate}` : uaBankParts) : uzMarket ? uzBankParts || (s?.registerNumber ?? "") : (s?.registerNumber ?? ""),
+        managingDirector: uzMarket ? uz.director || (s?.managingDirector ?? "") : (s?.managingDirector ?? ""),
         uaSigner: ua && (s?.uaSignerName || s?.uaSignerPosition) ? { name: s?.uaSignerName ?? "", position: s?.uaSignerPosition ?? "" } : undefined,
         signature: ua ? s?.uaSignature || "" : "",
         seal: ua ? s?.uaSeal || "" : "",

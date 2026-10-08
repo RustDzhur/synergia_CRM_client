@@ -3,12 +3,13 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { type PeriodKind, businessAnalysis, incomeSurplus, periodRange, trialBalance, vatReturn } from "@/lib/finance/reports";
 import { incomeBook, profitReport, vatRegister } from "@/lib/finance/ua";
+import { uzVatReport } from "@/lib/finance/uz";
 import { requireMarket } from "@/lib/finance/marketGuard";
 
 export const dynamic = "force-dynamic";
 
 // vat/eur/bwa/susa — немецкая отчётность; income-book и vat-register — украинская (см. lib/finance/ua.ts)
-const KINDS = ["vat", "eur", "bwa", "susa", "income-book", "vat-register", "profit-report"] as const;
+const KINDS = ["vat", "eur", "bwa", "susa", "income-book", "vat-register", "profit-report", "uz-vat"] as const;
 type Kind = (typeof KINDS)[number];
 const PERIODS: PeriodKind[] = ["month", "quarter", "year"];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -21,12 +22,12 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
 
     const kind = url.searchParams.get("kind") as Kind | null;
-    if (!kind || !KINDS.includes(kind)) return badRequest("kind must be one of: vat, eur, bwa, susa, income-book, vat-register, profit-report");
+    if (!kind || !KINDS.includes(kind)) return badRequest("kind must be one of: vat, eur, bwa, susa, income-book, vat-register, profit-report, uz-vat");
 
     // Режим рынка: немецкая отчётность не показывается украинской фирме и наоборот (ТЗ §3).
     // vat-register и income-book — украинские виды, остальные четыре — немецкие.
     // отказ по режиму рынка — 409 с кодом market, а не 500 от исключения
-    try { await requireMarket(user.id, ["income-book", "vat-register", "profit-report"].includes(kind) ? "UA" : "DE"); } catch (e) { return failure(e); }
+    try { await requireMarket(user.id, ["income-book", "vat-register", "profit-report"].includes(kind) ? "UA" : kind === "uz-vat" ? "UZ" : "DE"); } catch (e) { return failure(e); }
 
     const periodParam = url.searchParams.get("period");
     const period: PeriodKind = PERIODS.includes(periodParam as PeriodKind) ? (periodParam as PeriodKind) : "quarter";
@@ -47,6 +48,7 @@ export async function GET(req: Request) {
     }
 
     const range = { from, to };
+    if (kind === "uz-vat") return NextResponse.json({ period, report: await uzVatReport(user.id, range.from, range.to) });
     if (kind === "vat") return NextResponse.json({ period, report: await vatReturn(user.id, range.from, range.to) });
     if (kind === "eur") return NextResponse.json({ period, report: await incomeSurplus(user.id, range.from, range.to) });
     if (kind === "vat-register") return NextResponse.json({ period, report: await vatRegister(user.id, range.from, range.to) });

@@ -1,5 +1,6 @@
 import { defaultTaxRate } from "./taxRates";
 import { marketOf } from "./market";
+import { UZ_SEED, pickRule } from "./taxRulesData";
 
 // Налоговая политика фирмы — одно место, где решается, какая ставка попадёт в документ.
 // Раньше этого не было: ставку присылал браузер, сервер её сохранял как есть, а настройка
@@ -10,15 +11,31 @@ export interface TaxPolicySettings {
     country?: string;
     smallBusiness?: boolean;
     uaVatPayer?: boolean;
+    uz?: unknown; // Json из базы: { vatPayer, taxRegime, … } (lib/validation/uz.ts)
 }
+
+const uzOf = (s: TaxPolicySettings) => ((s.uz && typeof s.uz === "object" ? s.uz : {}) as { vatPayer?: boolean; taxRegime?: string });
 
 // Фирма не начисляет налог: в Германии — Kleinunternehmerregelung §19 UStG, в Украине — фирма,
 // не зарегистрированная плательщиком ПДВ (в документе печатается «ПДВ не нараховується»).
-export const taxExempt = (s: TaxPolicySettings) =>
-    marketOf(s.country) === "UA" ? !s.uaVatPayer : !!s.smallBusiness;
+// В Узбекистане — фирма, не отмеченная плательщиком QQS, и ИП/самозанятый (в документе печатается «QQS hisoblanmaydi»).
+export const taxExempt = (s: TaxPolicySettings) => {
+    const m = marketOf(s.country);
+    if (m === "UA") return !s.uaVatPayer;
+    if (m === "UZ") { const u = uzOf(s); return u.vatPayer !== true || u.taxRegime === "self_employed"; }
+    return !!s.smallBusiness;
+};
 
 // Ставка по умолчанию для страны фирмы (0 для освобождённых и для неизвестной страны)
-export const defaultRateFor = (s: TaxPolicySettings) => defaultTaxRate(s.country ?? "", taxExempt(s));
+export const defaultRateFor = (s: TaxPolicySettings, today = new Date().toISOString().slice(0, 10)) => {
+    if (marketOf(s.country) === "UZ" && !taxExempt(s)) {
+        // Режим 6 % действует только с даты правила; до неё и после — общая ставка (по записям TaxRule, начальным из кода)
+        const simplified = uzOf(s).taxRegime === "simplified_vat6" ? pickRule(UZ_SEED, "vat_simplified", today) : null;
+        if (simplified?.exact && simplified.rule.rate != null) return simplified.rule.rate;
+        return pickRule(UZ_SEED, "vat_standard", today)?.rule.rate ?? 12;
+    }
+    return defaultTaxRate(s.country ?? "", taxExempt(s));
+};
 
 // Приводит строки документа к налоговой политике фирмы. Вызывается на каждом создании документа,
 // поэтому правило одно и то же для счёта, заказа, предложения, договора, повторяющегося счёта и кредит-ноты.

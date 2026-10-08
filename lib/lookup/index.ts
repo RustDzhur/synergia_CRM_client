@@ -86,7 +86,7 @@ export async function lookup(kind: LookupKind, query: string, country: string, c
     const cached = fromCache(key);
     if (cached) return cached;
 
-    if (kind === "company" && country !== "UA") {
+    if (kind === "company" && country !== "UA" && country !== "UZ") {
         try {
             const results = await viesLookup(q, country);
             return toCache(key, {

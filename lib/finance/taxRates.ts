@@ -40,6 +40,7 @@ export const COUNTRY_TAX: Record<string, CountryTax> = {
     CY: { name: "Cyprus", standard: 19, reduced: 5, label: "VAT" },
     MT: { name: "Malta", standard: 18, reduced: 5, label: "VAT" },
     UA: { name: "Ukraine", standard: 20, reduced: 7, label: "ПДВ" },
+    UZ: { name: "Uzbekistan", standard: 12, label: "QQS" }, // ставка по TaxRule на дату документа; здесь — значение по умолчанию для новых строк
     GB: { name: "United Kingdom", standard: 20, reduced: 5, label: "VAT" },
     US: { name: "United States", standard: 0, label: "Sales tax" }, // варьируется по штату — считаем вручную
     CA: { name: "Canada", standard: 5, label: "GST" }, // + провинциальный налог отдельно

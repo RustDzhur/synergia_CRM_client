@@ -127,7 +127,46 @@ Auftragnehmer: {{firm}}                              Auftraggeber: {{customer}}
 Anschrift: {{firmAddress}}                           Anschrift: {{customerAddress}}
 Steuernummer: {{firmTaxId}}                          Steuernummer: {{customerTaxId}}`;
 
-/** Типовой текст договора по рынку фирмы (DE — немецкий, UA — украинский). */
+const DEFAULT_UZ = `SHARTNOMA № {{number}} / ДОГОВОР № {{number}}
+
+____________ sh. / г. ____________                                                                        {{date}}
+
+{{firm}}, bundan keyin «Ijrochi» / в дальнейшем «Исполнитель», {{signer}} timsolida, bir tomondan, va {{customer}}, bundan keyin «Buyurtmachi» / в дальнейшем «Заказчик», ikkinchi tomondan, quyidagilar haqida ushbu Shartnomani tuzdilar. / заключили настоящий Договор о нижеследующем.
+
+1. SHARTNOMA PREDMETI / ПРЕДМЕТ ДОГОВОРА
+1.1. Ijrochi Buyurtmachiga xizmatlar ko‘rsatish (ishlarni bajarish) majburiyatini oladi, Buyurtmachi esa ularni qabul qilib, to‘lash majburiyatini oladi. / Исполнитель обязуется оказать Заказчику услуги (выполнить работы), а Заказчик — принять и оплатить их.
+1.2. Xizmatlar ro‘yxati, hajmi va muddatlari hisob-fakturalarda, dalolatnomalarda va boshqa ilovalarda kelishiladi; ular ushbu Shartnomaning ajralmas qismidir. / Перечень, объём и сроки услуг согласуются сторонами в счетах-фактурах, актах и иных приложениях, являющихся неотъемлемой частью Договора.
+
+2. NARX VA HISOB-KITOB TARTIBI / СТОИМОСТЬ И ПОРЯДОК РАСЧЁТОВ
+2.1. Shartnomaning umumiy summasi {{value}} ni tashkil etadi. / Общая сумма Договора составляет {{value}}.
+2.2. Hisob-kitoblar berilgan hisob-fakturalar asosida Ijrochining hisob raqamiga pul o‘tkazish yo‘li bilan amalga oshiriladi. / Расчёты производятся в безналичной форме на расчётный счёт Исполнителя на основании выставленных счетов-фактур.
+2.3. To‘lov sanasi — mablag‘lar Ijrochi hisobiga tushgan sana. / Датой оплаты считается дата поступления средств на счёт Исполнителя.
+
+3. MUDDATLAR / СРОКИ
+3.1. Xizmatlar ko‘rsatish boshlanishi: {{start}}. / Начало оказания услуг: {{start}}.
+3.2. Xizmatlar ko‘rsatish tugashi: {{end}}. / Окончание оказания услуг: {{end}}.
+3.3. Xizmatlar tomonlar bajarilgan ishlar dalolatnomasini imzolagandan keyin ko‘rsatilgan hisoblanadi. / Услуги считаются оказанными после подписания сторонами акта выполненных работ.
+
+4. TOMONLARNING HUQUQ VA MAJBURIYATLARI / ПРАВА И ОБЯЗАННОСТИ СТОРОН
+4.1. Ijrochi xizmatlarni sifatli va kelishilgan muddatlarda ko‘rsatadi. / Исполнитель оказывает услуги качественно и в согласованные сроки.
+4.2. Buyurtmachi xizmatlar ko‘rsatish uchun zarur ma’lumot va materiallarni o‘z vaqtida taqdim etadi va xizmatlarni ushbu Shartnoma shartlariga muvofiq to‘laydi. / Заказчик своевременно предоставляет необходимую информацию и материалы и оплачивает услуги в соответствии с условиями Договора.
+
+5. JAVOBGARLIK VA NIZOLAR / ОТВЕТСТВЕННОСТЬ И СПОРЫ
+5.1. Tomonlar ushbu Shartnoma bo‘yicha majburiyatlarni bajarmaganlik uchun O‘zbekiston Respublikasi qonunchiligiga muvofiq javob beradi. / Стороны несут ответственность за неисполнение обязательств в соответствии с законодательством Республики Узбекистан.
+5.2. Nizolar muzokaralar yo‘li bilan, kelishuvga erishilmasa — sud tartibida hal etiladi. / Споры решаются путём переговоров, а при недостижении согласия — в судебном порядке.
+
+6. YAKUNIY QOIDALAR / ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ
+6.1. Shartnoma imzolangan paytdan kuchga kiradi va majburiyatlar to‘liq bajarilgunga qadar amal qiladi. / Договор вступает в силу с момента подписания и действует до полного исполнения обязательств.
+6.2. O‘zgartirish va qo‘shimchalar yozma shaklda kiritiladi. / Изменения и дополнения вносятся в письменной форме.
+6.3. Shartnoma ikki nusxada tuziladi, har bir tomon uchun bittadan. / Договор составлен в двух экземплярах, по одному для каждой стороны.
+
+7. TOMONLARNING REKVIZITLARI / РЕКВИЗИТЫ СТОРОН
+
+Ijrochi / Исполнитель: {{firm}}                              Buyurtmachi / Заказчик: {{customer}}
+Manzil / Адрес: {{firmAddress}}                           Manzil / Адрес: {{customerAddress}}
+STIR / ИНН: {{firmTaxId}}                          STIR / ИНН: {{customerTaxId}}`;
+
+/** Типовой текст договора по рынку фирмы (DE — немецкий, UA — украинский, UZ — узбекский/русский). Каркас, а не юридически выверенный образец. */
 export function defaultContractText(market: Market | null): string {
-	return market === "UA" ? DEFAULT_UA : DEFAULT_DE;
+	return market === "UA" ? DEFAULT_UA : market === "UZ" ? DEFAULT_UZ : DEFAULT_DE;
 }

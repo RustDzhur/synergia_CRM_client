@@ -2,6 +2,7 @@ import PDFDocument from "pdfkit";
 import notoSansUrl from "@/assets/fonts/NotoSans-Regular.ttf";
 import { renderLayout } from "./layouts";
 import { marketOf } from "./market";
+import { uzDocumentLabels } from "./pdfLabelsUz";
 export { TEMPLATES, TEMPLATE_IDS, isTemplate, templateDef } from "./templates";
 export type { TemplateDef, TemplateVariant } from "./templates";
 
@@ -230,7 +231,9 @@ const UA_LABELS: Record<string, string> = {
 export function renderDocumentPdf(d: PdfDocumentData, settings: PdfSettings, locale = "en"): Promise<Buffer> {
     // Украинская фирма получает украинские названия документов независимо от языка интерфейса
     const base = LABELS[locale] ?? LABELS.en;
-    const L = marketOf(settings.country) === "UA" ? { ...base, ...UA_LABELS } : base;
+    const market = marketOf(settings.country);
+    // Узбекская фирма: двуязычные подписи uz / ru (только русские — по явному запросу locale = "ru", только узбекские — "uz-only")
+    const L = market === "UA" ? { ...base, ...UA_LABELS } : market === "UZ" ? { ...base, ...uzDocumentLabels(locale === "ru" ? "ru" : locale === "uz-only" ? "uz" : null) } : base;
     return new Promise((resolve, reject) => {
         // pdfkit принимает буфер шрифта в options.font (разбирает его fontkit), но в его типах там только имя шрифта
         const doc = new PDFDocument({ size: "A4", margin: 50, font: DOC_FONT as unknown as string });

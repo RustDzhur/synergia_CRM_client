@@ -9,7 +9,8 @@ import { startOfficeTask } from "./runner";
 
 const LATE_WINDOW_MIN = 6 * 60; // сервер был недоступен — выполняем с опозданием до 6 часов, а не пропускаем
 
-export const timeZoneFor = (country?: string | null) => (String(country ?? "").toUpperCase() === "UA" ? "Europe/Kyiv" : "Europe/Berlin");
+const ZONES: Record<string, string> = { UA: "Europe/Kyiv", UZ: "Asia/Tashkent" };
+export const timeZoneFor = (country?: string | null) => ZONES[String(country ?? "").toUpperCase()] ?? "Europe/Berlin";
 
 /** Местные дата, время и день недели (0 — воскресенье) в поясе фирмы. */
 export function localParts(now: Date, timeZone: string) {
