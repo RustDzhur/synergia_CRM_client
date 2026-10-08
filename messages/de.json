@@ -16,10 +16,10 @@
         "role_employee": "Mitarbeiter",
         "role_viewer": "Betrachter",
         "lang": {
-            "ua": "Ukrainisch",
+            "ua": "Українська",
             "de": "Deutsch",
-            "en": "Englisch",
-            "uz": "Usbekisch"
+            "en": "English",
+            "uz": "Oʻzbekcha"
         },
         "search": "Suchen",
         "language": "Sprache",

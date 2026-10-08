@@ -22,8 +22,8 @@ interface Language {
     },
   ];
 
-  // Публичный сайт (лендинг, блог, юридические страницы) пока на трёх языках; узбекский есть в кабинете.
-  export const siteLanguages: Language[] = languages.filter((l) => l.code !== "uz");
+  // Публичный сайт: все четыре языка. Для узбекского переведены лендинг и общие разделы; страницы без перевода показываются по-английски.
+  export const siteLanguages: Language[] = languages;
 
   export const languageCodeToProperties = (
     code: string
