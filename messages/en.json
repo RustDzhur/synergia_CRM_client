@@ -4148,7 +4148,7 @@
         "docCreated": "Document created",
         "create": "Create",
         "templates": "Templates",
-        "templatesHint": "Use variables like {{name}} in the text; you fill them in when you create a document.",
+        "templatesHint": "Use variables like '{{'name'}}' in the text; you fill them in when you create a document.",
         "useTemplate": "Use",
         "templateRemoved": "Template removed",
         "remove": "Remove",

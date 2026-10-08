@@ -3941,7 +3941,7 @@
     "docCreated": "Hujjat yaratildi",
     "create": "Yaratish",
     "templates": "Shablonlar",
-    "templatesHint": "Matnda {{name}} kabi o‘zgaruvchilardan foydalaning; hujjat yaratishda ularni to‘ldirasiz.",
+    "templatesHint": "Matnda '{{'name'}}' kabi o‘zgaruvchilardan foydalaning; hujjat yaratishda ularni to‘ldirasiz.",
     "useTemplate": "Qo‘llash",
     "templateRemoved": "Shablon o‘chirildi",
     "remove": "O‘chirish",
