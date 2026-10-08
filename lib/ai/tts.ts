@@ -14,7 +14,7 @@ import { fetchProvider, ProviderError } from "@/lib/http";
 // Сервис Microsoft Edge неофициальный и иногда отдаёт «No audio received» — поэтому одна быстрая
 // повторная попытка и запасной голос, а не сразу сообщение об ошибке.
 
-export type VoiceLang = "ru" | "uk" | "de" | "en";
+export type VoiceLang = "ru" | "uk" | "de" | "en" | "uz";
 export type VoiceGender = "f" | "m";
 
 // Нейронные голоса по умолчанию: родные голоса каждого языка. Меняются переменными окружения.
@@ -23,6 +23,8 @@ const DEFAULT_VOICES: Record<VoiceLang, Record<VoiceGender, string>> = {
     // Мультиязычные голоса (Ava, Andrew) звучат живее родных ru/uk-голосов и читают все четыре языка одним тембром —
     // как голос ChatGPT; выбор владельца 02.10.2026. Родные при желании: TTS_VOICE_RU_F=ru-RU-SvetlanaNeural и т.д.
     ru: MULTI, uk: MULTI, de: MULTI, en: MULTI,
+    // Узбекский: родные нейронные голоса Microsoft (мультиязычные Ava/Andrew узбекский не читают). Меняются TTS_VOICE_UZ_F / TTS_VOICE_UZ_M.
+    uz: { f: "uz-UZ-MadinaNeural", m: "uz-UZ-SardorNeural" },
 };
 
 // Piper (speaches): модель на язык и пол. Голоса у Piper по одному на модель, мужских для uk/de немного.
@@ -31,6 +33,7 @@ const PIPER_MODELS: Record<VoiceLang, Record<VoiceGender, string>> = {
     uk: { f: "speaches-ai/piper-uk_UA-ukrainian_tts-medium", m: "speaches-ai/piper-uk_UA-ukrainian_tts-medium" },
     de: { f: "speaches-ai/piper-de_DE-ramona-low", m: "speaches-ai/piper-de_DE-thorsten-medium" },
     en: { f: "speaches-ai/piper-en_US-amy-medium", m: "speaches-ai/piper-en_US-lessac-medium" },
+    uz: { f: "", m: "" }, // у Piper узбекского голоса нет: запасного пути для uz нет, клиент читает голосом браузера
 };
 
 const trim = (s: string) => s.replace(/\/+$/, "");
@@ -57,6 +60,8 @@ export function detectLang(text: string, hint?: string): VoiceLang {
         if (/[ыэъ]/i.test(s)) return "ru";
         return hint === "uk" ? "uk" : "ru";
     }
+    // узбекская латиница: oʻ/gʻ — однозначный признак; иначе решает язык, выбранный человеком
+    if (/[oOgG][ʻʼ'’`]/.test(s) || hint === "uz") return "uz";
     if (/[äöüß]/i.test(s) || /\b(und|der|die|das|nicht|ich|bitte|rechnung|rechnungen|ist|sind|haben|für|mit|ein|eine|offen|heute)\b/i.test(s)) return "de";
     return hint === "de" ? "de" : "en";
 }
@@ -140,7 +145,7 @@ export async function synthesize(rawText: string, opts: { lang?: string; gender?
     }
 
     const fb = fallbackUrl();
-    if (fb) {
+    if (fb && PIPER_MODELS[lang][gender]) {
         try {
             const audio = await requestSpeech(fb, { model: PIPER_MODELS[lang][gender], input: text, voice: "piper", speed, response_format: "mp3" });
             return { audio, contentType: "audio/mpeg", provider: "piper" };
