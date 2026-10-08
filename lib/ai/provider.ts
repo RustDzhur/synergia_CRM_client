@@ -22,8 +22,23 @@ export function aiProvider(): ProviderId | null {
     return null;
 }
 export const aiConfigured = () => !!aiProvider();
+// Шлюзы (OmniRoute, OpenRouter) отключены: владелец ушёл от них из-за нестабильного соединения для голоса. Старые значения из .env
+// (адрес шлюза в OPENAI_API_URL, имена вида openrouter/openai/…) не должны ломать работу — адрес игнорируется, имя модели очищается.
+const GATEWAY_HOST = /omniroute|omiroute|openrouter/i;
+/** Базовый адрес OpenAI: OPENAI_API_URL, если это не отключённый шлюз (прокси или совместимый сервис остаются возможными). */
+export const openaiBase = () => {
+    const u = process.env.OPENAI_API_URL?.trim();
+    return u && !GATEWAY_HOST.test(u) ? trim(u) : "https://api.openai.com/v1";
+};
+/** Имя модели из .env без шлюзового префикса; имя чужой модели шлюза (openrouter/anthropic/…) заменяется значением по умолчанию. */
+const plainModel = (m: string | undefined, fallback: string, ok: RegExp = /./) => {
+    if (!m) return fallback;
+    const name = m.replace(/^openrouter\//, "").replace(/^openai\//, "");
+    return /^openrouter\//.test(m) && !/^openrouter\/openai\//.test(m) || !ok.test(name) ? fallback : name;
+};
+
 // Модели меняются — имя всегда можно задать переменной AI_MODEL
-export const aiModel = (p: ProviderId) => process.env.AI_MODEL || (p === "anthropic" ? "claude-sonnet-5" : "gpt-4.1-mini");
+export const aiModel = (p: ProviderId) => plainModel(process.env.AI_MODEL, p === "anthropic" ? "claude-sonnet-5" : "gpt-4.1-mini");
 
 const trim = (s: string) => s.replace(/\/+$/, "");
 
@@ -51,7 +66,7 @@ async function post<T>(url: string, headers: Record<string, string>, body: unkno
 // ── OpenAI ──
 // Куда ходит чат. По умолчанию — шлюз (OPENAI_API_URL + OPENAI_API_KEY, как для распознавания речи). Если заданы AI_API_URL и AI_API_KEY, чат идёт НАПРЯМУЮ
 // к провайдеру (например, DeepSeek: https://api.deepseek.com/v1), а шлюз остаётся запасным путём и для распознавания речи.
-const gatewayEndpoint = () => ({ url: trim(process.env.OPENAI_API_URL || "https://api.openai.com/v1"), key: process.env.OPENAI_API_KEY ?? "" });
+const gatewayEndpoint = () => ({ url: openaiBase(), key: process.env.OPENAI_API_KEY ?? "" });
 const primaryEndpoint = () => (process.env.AI_API_URL && process.env.AI_API_KEY ? { url: trim(process.env.AI_API_URL), key: process.env.AI_API_KEY } : gatewayEndpoint());
 type Endpoint = { url: string; key: string };
 
@@ -163,7 +178,7 @@ export interface ImageInput { mimeType: string; base64: string }
 
 async function openaiVision(system: string, prompt: string, image: ImageInput): Promise<string> {
     const j = await post<{ choices?: { message?: { content?: string | null } }[] }>(
-        `${trim(process.env.OPENAI_API_URL || "https://api.openai.com/v1")}/chat/completions`,
+        `${openaiBase()}/chat/completions`,
         { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
         {
             model: aiModel("openai"),
@@ -201,9 +216,7 @@ export async function completeVision(system: string, prompt: string, image: Imag
 // ── Распознавание речи (диктовка и голосовое управление) ────────────────────────────────────────────
 // У Anthropic нет распознавания аудио, поэтому серверное распознавание работает на ключе OpenAI/шлюза даже когда
 // сам разговор идёт на Claude. Два пути, пробуются по очереди:
-//  1. облачный — тот же шлюз/OpenAI, что и для ответов (OPENAI_API_URL + OPENAI_API_KEY). На шлюзе omniroute это
-//     openrouter/openai/whisper-large-v3-turbo: ≈1 секунда на фразу, русский/украинский/немецкий определяются сами,
-//     цена ≈ 0,00003 $ за фразу. Модель меняется AI_VOICE_STT_MODEL.
+//  1. облачный — OpenAI (OPENAI_API_KEY): whisper-1, для узбекского gpt-4o-transcribe. Модель меняется AI_VOICE_STT_MODEL.
 //  2. локальный Whisper (TRANSCRIBE_API_URL, speaches) — запасной: бесплатный и закрытый от внешнего мира, но на
 //     процессоре без AVX разбирает 4 секунды речи 12–25 секунд, для разговора в реальном времени он слишком медленный.
 //     STT_LOCAL_FIRST=1 ставит его первым (если у сервера есть GPU или современный процессор).
@@ -211,9 +224,7 @@ export async function completeVision(system: string, prompt: string, image: Imag
 export const sttConfigured = () => !!process.env.OPENAI_API_KEY || !!process.env.TRANSCRIBE_API_URL || !!process.env.ELEVENLABS_API_KEY;
 // Модель локального Whisper — HF-имя (speaches/faster-whisper): Systran/faster-whisper-small
 export const sttModel = () => process.env.AI_TRANSCRIBE_MODEL || "whisper-1";
-// На шлюзе (не api.openai.com) нужны полные имена моделей, у самого OpenAI — короткие
-const onGateway = () => { const u = process.env.OPENAI_API_URL; return !!u && !/api\.openai\.com/.test(u); };
-export const cloudSttModel = () => process.env.AI_VOICE_STT_MODEL || (onGateway() ? "openrouter/openai/whisper-large-v3-turbo" : "whisper-1");
+export const cloudSttModel = () => plainModel(process.env.AI_VOICE_STT_MODEL, "whisper-1", /^(whisper-1|gpt-4o)/);
 
 // Расширение для имени файла: провайдеру оно помогает понять формат записи
 const AUDIO_EXT: Record<string, string> = {
@@ -240,17 +251,17 @@ export function isPhantomTranscript(text: string): boolean {
 interface SttTarget { url: string; key?: string; model: string; kind?: "openai" | "elevenlabs" }
 
 // Узбекский: общая модель Whisper ошибается в окончаниях и в словах CRM. Три приёма (docs/UZ_VOICE.md):
-//  • модель получше — gpt-4o-transcribe у самого OpenAI (на шлюзе имя задаёт AI_VOICE_STT_MODEL_UZ);
+//  • модель получше — gpt-4o-transcribe у самого OpenAI (имя можно задать AI_VOICE_STT_MODEL_UZ);
 //  • подсказка со словарём CRM латиницей — распознаватель выбирает «hisob-faktura», а не созвучное слово;
 //  • необязательный ElevenLabs Scribe (ELEVENLABS_API_KEY) — отдельная модель с узбекским, ставится первой, если ключ задан.
 export const UZ_STT_PROMPT = "Ayris, Айрис. Firmspace CRM. mijoz, mijozlar, hisob-faktura, hisob-fakturalar, buyurtma, shartnoma, taklif, vazifa, bitim, to‘lov, ombor, mahsulot, xodim, hisobot, soliq, QQS, so‘m, bank, kassa. Ayris, to‘lanmagan hisob-fakturalarni ko‘rsat. Yangi vazifa yarat. Buyurtmalarni och.";
-const uzCloudModel = () => process.env.AI_VOICE_STT_MODEL_UZ || (onGateway() ? cloudSttModel() : "gpt-4o-transcribe");
+const uzCloudModel = () => plainModel(process.env.AI_VOICE_STT_MODEL_UZ, "gpt-4o-transcribe", /^(whisper-1|gpt-4o)/);
 
 function sttTargets(language?: string): SttTarget[] {
     const targets: SttTarget[] = [];
     const cloudKey = process.env.OPENAI_API_KEY;
     if (language === "uz" && process.env.ELEVENLABS_API_KEY) targets.push({ url: "https://api.elevenlabs.io/v1", key: process.env.ELEVENLABS_API_KEY, model: process.env.ELEVENLABS_STT_MODEL || "scribe_v1", kind: "elevenlabs" });
-    if (cloudKey) targets.push({ url: trim(process.env.OPENAI_API_URL || "https://api.openai.com/v1"), key: cloudKey, model: language === "uz" ? uzCloudModel() : cloudSttModel() });
+    if (cloudKey) targets.push({ url: openaiBase(), key: cloudKey, model: language === "uz" ? uzCloudModel() : cloudSttModel() });
     if (process.env.TRANSCRIBE_API_URL) targets.push({ url: trim(process.env.TRANSCRIBE_API_URL), key: process.env.TRANSCRIBE_API_KEY || undefined, model: sttModel() });
     return process.env.STT_LOCAL_FIRST === "1" && !targets.some((t) => t.kind === "elevenlabs") ? targets.reverse() : targets;
 }

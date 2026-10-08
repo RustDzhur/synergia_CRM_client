@@ -11,3 +11,32 @@ describe("фантомные ответы распознавания", () => {
         expect(isPhantomTranscript("")).toBe(true);
     });
 });
+
+import { afterEach } from "vitest";
+import { aiModel, cloudSttModel, openaiBase } from "@/lib/ai/provider";
+
+describe("шлюзы отключены", () => {
+    const saved = { ...process.env };
+    afterEach(() => { process.env = { ...saved }; });
+
+    it("адрес шлюза из старого .env игнорируется, обычный адрес и пустое значение работают", () => {
+        process.env.OPENAI_API_URL = "http://omniroute:20128/v1";
+        expect(openaiBase()).toBe("https://api.openai.com/v1");
+        process.env.OPENAI_API_URL = "https://openrouter.ai/api/v1";
+        expect(openaiBase()).toBe("https://api.openai.com/v1");
+        process.env.OPENAI_API_URL = "https://proxy.example.com/v1/";
+        expect(openaiBase()).toBe("https://proxy.example.com/v1");
+        delete process.env.OPENAI_API_URL;
+        expect(openaiBase()).toBe("https://api.openai.com/v1");
+    });
+    it("имена моделей вида openrouter/openai/… очищаются", () => {
+        process.env.AI_MODEL = "openrouter/openai/gpt-4.1-mini";
+        expect(aiModel("openai")).toBe("gpt-4.1-mini");
+        process.env.AI_VOICE_STT_MODEL = "openrouter/openai/whisper-large-v3-turbo";
+        expect(cloudSttModel()).toBe("whisper-1"); // такой модели у OpenAI нет — берём по умолчанию
+        process.env.AI_MODEL = "openrouter/anthropic/claude-sonnet-5.5";
+        expect(aiModel("openai")).toBe("gpt-4.1-mini");
+        delete process.env.AI_VOICE_STT_MODEL;
+        expect(cloudSttModel()).toBe("whisper-1");
+    });
+});
