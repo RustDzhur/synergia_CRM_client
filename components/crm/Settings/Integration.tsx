@@ -103,6 +103,15 @@ export default function IntegrationSettings() {
 		load();
 	}, [params, t, load]);
 
+	// Ссылка от Айрис: ?connect=<тип> открывает защищённое окно подключения этого сервиса (ключи вводятся здесь, не в чате)
+	useEffect(() => {
+		const want = params?.get("connect");
+		if (!want) return;
+		window.history.replaceState(null, "", window.location.pathname);
+		const item = INTEGRATIONS.find((i) => i.real === want || i.alt === want || i.providers?.includes(want));
+		if (item) setDialog({ ...item, real: want as Exclude<IntegrationType, "mail"> });
+	}, [params]);
+
 	useEffect(() => {
 		try {
 			const raw = localStorage.getItem(STORAGE_KEY);

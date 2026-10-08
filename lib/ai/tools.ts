@@ -1556,6 +1556,56 @@ export const TOOLS: AiTool[] = [
             return { params: { entity: String(a.entity), name: String(a.name || id) }, link: "/crm" };
         },
     },
+    // ── подключение интеграций (docs/TZ_MASTER.md §6): Айрис ведёт, но ключи вводит человек в защищённой форме, а не в чате ──
+    {
+        module: "settings", write: false,
+        def: { name: "find_integration", description: "Find integrations (messengers, payments, delivery, fiscal, marketplaces…) available for the firm's market. Returns key, title, kind, status (available / beta / planned) and whether it is already connected. Never invent an integration that is not in the result; 'planned' means it cannot be connected yet.", parameters: schema({ query: S("what the user wants, e.g. 'card payments', 'telegram', 'delivery'") }) },
+        run: async (c, a) => {
+            const { catalogFor } = await import("@/lib/integrations/service");
+            const q = str(a.query, 80);
+            const list = await catalogFor(c.org, c.locale ?? "en", q);
+            return list.slice(0, 20).map((x) => ({ key: x.key, title: x.title, kind: x.kind, status: x.status, connectable: x.connectable && x.status !== "planned", connected: x.connected, needsContract: !!x.needsContract }));
+        },
+    },
+    {
+        module: "settings", write: false,
+        def: { name: "explain_integration", description: "Explain one integration: what it does, whether a contract with the provider is needed first, which data the user must bring and where to get it. Use before start_integration.", parameters: schema({ key: S("integration key from find_integration") }, ["key"]) },
+        run: async (c, a) => {
+            const { getManifest, describeManifest } = await import("@/lib/integrations/manifests");
+            const mf = await getManifest(str(a.key, 40));
+            if (!mf) throw new ToolError("Unknown integration key — call find_integration first");
+            const d = describeManifest(mf, c.locale ?? "en");
+            return { key: d.key, title: d.title, status: d.status, description: d.description, steps: d.steps, needsContract: !!d.needsContract, providerCabinet: d.url ?? "", fields: d.fields.map((x) => ({ name: d.fieldLabels[x.key], required: x.required, secret: x.secret })), note: d.status === "planned" ? "Not available yet — do not offer to connect it." : "The user gets the keys in the provider's cabinet and enters them in the secure form; never ask for keys in the chat." };
+        },
+    },
+    {
+        module: "settings", write: false,
+        def: { name: "start_integration", description: "Open the secure connection form for an integration. The user enters the keys there, not in the chat. Do not ask the user to paste keys into the chat.", parameters: schema({ key: S("integration key") }, ["key"]) },
+        run: async (_c, a) => {
+            const { getManifest, connectableNow } = await import("@/lib/integrations/manifests");
+            const mf = await getManifest(str(a.key, 40));
+            if (!mf) throw new ToolError("Unknown integration key — call find_integration first");
+            if (!connectableNow(mf)) throw new ToolError(mf.status === "planned" ? "This integration is not available yet" : "This integration needs no keys");
+            return { link: `/crm/settings/integrations?connect=${encodeURIComponent(mf.key)}`, needsContract: !!mf.needsContract, message: "Secure form opened — the user enters the keys there." };
+        },
+    },
+    {
+        module: "settings", write: false,
+        def: { name: "verify_integration", description: "Check a connected integration. Telegram and WhatsApp get a live check; other services were already verified with the provider when connected (the result says which).", parameters: schema({ key: S("integration key") }, ["key"]) },
+        run: async (c, a) => {
+            const { verifyConnected, IntegrationFlowError } = await import("@/lib/integrations/service");
+            try { return await verifyConnected(c.org, str(a.key, 40), process.env.APP_URL?.replace(/\/+$/, "") ?? ""); }
+            catch (e) { if (e instanceof IntegrationFlowError) throw new ToolError(e.message); throw e; }
+        },
+    },
+    {
+        module: "settings", write: false,
+        def: { name: "list_my_integrations", description: "The firm's connected integrations with their state. Never returns keys.", parameters: schema({}) },
+        run: async (c) => {
+            const rows = await prisma.integration.findMany({ where: { owner: c.org, type: { notIn: ["mail", "gdrive", "gcal", "ads", "icloud"] } }, select: { type: true, name: true, status: true, error: true } });
+            return rows.map((r) => ({ key: r.type, name: r.name, status: r.status, error: cut(r.error, 120) }));
+        },
+    },
 ];
 
 // ── Какие инструменты показать модели на этот запрос ──
@@ -1564,6 +1614,8 @@ export const TOOLS: AiTool[] = [
 // «открой страницу» обходится одним navigate. Если ни одна группа не узнана и это не переход — отдаём всё, как раньше:
 // медленнее, зато ничего не теряется.
 const GROUPS: { re: RegExp; tools: string[] }[] = [
+    { re: /интеграц|интегрир|подключ|підключ|интеграці|integrat|connect|anbind|verbind|эквайринг|приним.* оплат|приймат.* оплат|accept.* payment|zahlung.*annehm|telegram|viber|whatsapp|payme|click|didox|monobank|liqpay|wayforpay|checkbox|nova ?poshta|нова пошта|новая почта/i,
+      tools: ["find_integration", "explain_integration", "start_integration", "verify_integration", "list_my_integrations"] },
     { re: /робот|robot|делегир|delegate|поруч|порученн|поручи|офис|офіс|office|нанять|наймі|hire|начальник|boss/i,
       tools: ["list_robots", "delegate_task", "hire_robot"] },
     { re: /сч[её]т|рахун|rechnung|invoice|оплат|оплач|чек|квитанц|receipt|kasse|pdf|скача|завантаж|download|просроч|неоплач|не закры|незакры|долж|задолж|debt|overdue|unpaid|paid|фискаль|бухгалтер|фінанс|финанс|buchhalt|financ/i,
