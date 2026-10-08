@@ -1,6 +1,8 @@
 "use client";
 import { useTranslations } from "next-intl";
 import { useCompaniesStore, ClientCompany } from "@/store/useCompaniesStore";
+import CustomerOverview from "../shared/CustomerOverview";
+import ContactDocuments from "../Contacts/ContactDocuments";
 import EntityEditPage, { FieldDef } from "../shared/EntityEditPage";
 
 export default function CompanyEdit({ id }: { id: string }) {
@@ -39,6 +41,13 @@ export default function CompanyEdit({ id }: { id: string }) {
             update={updateCompany}
             addActivity={addActivity}
             removeActivity={removeActivity}
+            // Сводка и документы фирмы: сделки, оплаты, остаток к оплате, расходы, что ей выставили и подписали
+            extraPanel={(company) => (
+                <>
+                    <CustomerOverview url={`/api/companies/${company._id}/overview`} />
+                    <ContactDocuments contactId={company._id} url={`/api/companies/${company._id}/documents`} />
+                </>
+            )}
         />
     );
 }

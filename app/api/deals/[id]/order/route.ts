@@ -10,6 +10,8 @@ import { reserveForOrder } from "@/lib/finance/stock";
 import { toOrderDTO } from "@/lib/finance/dto";
 import { MARKETPLACES, type MarketplaceId } from "@/lib/marketplace";
 import { prisma } from "@/lib/prisma";
+import { dealScope } from "@/lib/sync/people";
+import { recordSyncError } from "@/lib/sync/errors";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -25,7 +27,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     try {
-        const deal = await prisma.deal.findFirst({ where: { id: params.id, owner: user.id } });
+        const deal = await prisma.deal.findFirst({ where: { id: params.id, owner: user.id, ...dealScope(user) } });
         if (!deal) return notFound();
         const market = (deal.market ?? {}) as any;
         if (!deal.source || !market.items?.length) {
@@ -79,7 +81,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
                     order: order.id,
                     notes: `Комісія ${label} ${commission} % за замовлення ${deal.externalId || ""}`.trim(),
                 },
-            }).catch(() => undefined);
+            }).catch((e) => recordSyncError(user.id, "marketplace.commission", e, { id: deal.id }));
         }
 
         await prisma.deal.update({ where: { id: deal.id }, data: { market: { ...market, order: order.id } as any } });

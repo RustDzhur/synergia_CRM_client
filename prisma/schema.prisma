@@ -118,6 +118,8 @@ model BankTransaction {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  @@index([org, account, date])
+  @@index([org, matchType])
   @@map("banktransactions")
 }
 
@@ -174,6 +176,7 @@ model Company {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  @@index([owner, updatedAt])
   @@map("companies")
 }
 
@@ -197,6 +200,8 @@ model Contact {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  @@index([owner, companyId])
+  @@index([owner, updatedAt])
   @@map("contacts")
 }
 
@@ -235,6 +240,9 @@ model Contract {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  @@unique([org, number])
+  @@index([org, deal])
+  @@index([org, contact])
   @@map("contracts")
 }
 
@@ -252,6 +260,7 @@ model Conversation {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([owner, contact])
   @@map("conversations")
 }
 
@@ -294,9 +303,15 @@ model Deal {
   externalId     String    @default("")
   market         Json?
   activities     Json?
+  responsibleUser String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  @@index([owner, stage])
+  @@index([owner, contact])
+  @@index([owner, company])
+  @@index([owner, wonAt])
+  @@index([owner, updatedAt])
   @@map("deals")
 }
 
@@ -423,6 +438,9 @@ model Expense {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  @@index([org, deal])
+  @@index([org, date])
+  @@index([org, updatedAt])
   @@map("expenses")
 }
 
@@ -511,6 +529,7 @@ model FinanceSettings {
   expenseCategories    String[] @default([])
   contractTemplate     String   @default("")
   counters             Json?
+  autoWinDealOnPaid    Boolean  @default(true)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -649,6 +668,13 @@ model Invoice {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
+  @@unique([org, number])
+  @@index([org, status, dueDate])
+  @@index([org, deal])
+  @@index([org, contact])
+  @@index([org, company])
+  @@index([org, order])
+  @@index([org, updatedAt])
   @@map("invoices")
 }
 
@@ -733,6 +759,7 @@ model Notification {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([org, createdAt])
   @@map("notifications")
 }
 
@@ -765,6 +792,11 @@ model Order {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
+  @@unique([org, number])
+  @@index([org, deal])
+  @@index([org, contact])
+  @@index([org, status])
+  @@index([org, updatedAt])
   @@map("orders")
 }
 
@@ -910,6 +942,10 @@ model Quote {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  @@unique([org, number])
+  @@index([org, deal])
+  @@index([org, contact])
+  @@index([org, updatedAt])
   @@map("quotes")
 }
 
@@ -1011,6 +1047,8 @@ model StockMovement {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([org, orderId])
+  @@index([org, product])
   @@map("stockmovements")
 }
 
@@ -1067,9 +1105,18 @@ model Task {
   project     String?
   deal        String?
   activities  Json?
+  contact     String?
+  company     String?
+  responsibleUser String?
+  createdByUser String?
+  completedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([owner, deal])
+  @@index([owner, completed, deadline])
+  @@index([owner, contact])
+  @@index([owner, updatedAt])
   @@map("tasks")
 }
 
@@ -1126,4 +1173,23 @@ model EmailCode {
   createdAt DateTime @default(now())
 
   @@map("emailcodes")
+}
+
+// Каждый учтённый платёж по счёту. Уникальный (org, source, externalId) делает учёт идемпотентным: повторная доставка
+// webhook, второй клик «оплачен» или повторная привязка банковской строки не прибавят сумму второй раз.
+// amount со знаком: возврат платежа (отвязка банковского движения) записывается отрицательной суммой.
+model PaymentEvent {
+  id         String   @id @default(cuid())
+  org        String
+  invoice    String
+  source     String   // manual | assistant | webhook | bank
+  externalId String
+  amount     Float
+  currency   String   @default("EUR")
+  via        String   @default("")
+  createdAt  DateTime @default(now())
+
+  @@unique([org, source, externalId])
+  @@index([org, invoice])
+  @@map("paymentevents")
 }

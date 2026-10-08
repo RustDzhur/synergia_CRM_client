@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { mkActivity } from "@/lib/activities";
+import { plainFx } from "@/lib/sync/texts";
 import { ensureStages } from "@/lib/stages";
 import { emit } from "@/lib/automation/emit";
 import { logAudit } from "@/lib/audit";
@@ -11,7 +12,7 @@ export class LeadToolError extends Error {}
 export const SCOPES = ["deals", "contacts", "companies", "mail", "conversations"] as const;
 type Scope = (typeof SCOPES)[number];
 const clip = (v: unknown, n: number) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, n);
-const actText = (acts: unknown, n = 6) => (Array.isArray(acts) ? acts.slice(0, n).map((a: { text?: string }) => String(a?.text ?? "")).join(" · ") : "");
+const actText = (acts: unknown, n = 6) => (Array.isArray(acts) ? acts.slice(0, n).map((a: { text?: string }) => plainFx(a?.text)).join(" · ") : "");
 
 interface Row { id: string; title: string; cand: Candidate }
 

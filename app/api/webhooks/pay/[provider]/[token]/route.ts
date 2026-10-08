@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 import { findByToken } from "@/lib/integrations";
 import { verifyPayWebhook, type PayProvider } from "@/lib/payments";
-import { emit } from "@/lib/automation/emit";
-import { logAudit } from "@/lib/audit";
-import { notify } from "@/lib/notify";
-import { applyPayment, statusAfterPayment } from "@/lib/finance/payments";
-import { computeTotals } from "@/lib/finance/totals";
+import { registerPayment } from "@/lib/sync/payments";
 import { prisma } from "@/lib/prisma";
+import { createHash } from "node:crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -41,28 +38,13 @@ export async function POST(req: Request, { params }: { params: { provider: strin
 
     const inv = await prisma.invoice.findFirst({ where: { org: String(integration.owner), number: result.reference } });
     if (!inv) return NextResponse.json({ ok: true, note: "invoice not found" });
-    // Повторный вебхук по уже оплаченному счёту — просто подтверждаем получение
-    if (inv.status === "paid") return NextResponse.json({ ok: true, duplicate: true });
 
-    const { gross } = computeTotals(inv.items as never);
-    const { paid, full } = applyPayment(inv, Number(result.amount) || gross);
-    await prisma.invoice.update({
-        where: { id: inv.id },
-        data: { paidAmount: paid, status: statusAfterPayment(inv.status, full), ...(full ? { paidAt: new Date() } : {}), paidVia: provider },
-    });
-
+    // Ключ идемпотентности — отпечаток тела уведомления: провайдеры повторяют доставку байт-в-байт, и повтор
+    // не должен ни прибавить сумму ещё раз (частичная оплата), ни запустить следствия заново.
+    const externalId = createHash("sha256").update(raw).digest("hex").slice(0, 40);
     const label = provider === "cryptopay" ? "криптою" : provider;
-    if (full) {
-        await emit(integration.owner, { type: "invoice_paid", data: { id: inv.id, number: inv.number, customerName: inv.customerName, amount: String(paid), dealId: inv.deal ?? "" } });
-    }
-    await notify(integration.owner, { type: "message", params: { name: inv.customerName || inv.number, channel: label, text: `Счёт ${inv.number} оплачен ${paid} ${inv.currency}` }, link: "/crm/finance?tab=invoices", key: `pay:${inv.id}:${paid}` }).catch(() => undefined);
-    await logAudit({
-        org: integration.owner,
-        action: full ? "invoice.paid" : "invoice.partially_paid",
-        entityType: "invoice",
-        entityId: inv.id,
-        summary: `Invoice ${inv.number}: ${paid} ${inv.currency} paid via ${label} — ${paid} of ${gross} paid`,
-        meta: { provider, amount: paid, gross, currency: inv.currency },
-    });
-    return NextResponse.json({ ok: true, paid, full });
+    const res = await registerPayment(String(integration.owner), inv.id, { amount: Number(result.amount) || undefined, source: "webhook", externalId, via: provider, actor: { name: label } });
+    if (!res.ok) return NextResponse.json({ ok: true, duplicate: true }); // счёт уже оплачен или закрыт — подтверждаем получение
+    if (res.duplicate) return NextResponse.json({ ok: true, duplicate: true });
+    return NextResponse.json({ ok: true, paid: res.paid, full: res.full });
 }

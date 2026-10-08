@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { TbChevronDown, TbChevronLeft, TbChevronRight } from "react-icons/tb";
 import { CalEvent, CalendarKind, useCollabHydration, useCollabStore } from "@/store/useCollabStore";
 import { Task, useTaskStore } from "@/store/useTaskStore";
+import { apiCall } from "@/store/crmApi";
 import { addDays, dayKey, localeTag } from "@/utils/dateHelpers";
 import Dropdown from "@/utils/Dropdown";
 import { useClickOutside } from "@/utils/useClickOutside";
@@ -23,7 +25,10 @@ const MAX_PILLS = 3;
 const mondayOf = (d: Date) => addDays(new Date(d.getFullYear(), d.getMonth(), d.getDate()), -((d.getDay() + 6) % 7));
 const isWeekend = (d: Date) => d.getDay() === 0 || d.getDay() === 6;
 
-interface Pill { id: string; title: string; color: string; done?: boolean; event?: CalEvent; task?: Task }
+interface Pill { id: string; title: string; color: string; done?: boolean; event?: CalEvent; task?: Task; href?: string }
+// Сроки из других разделов (оплата счетов, окончание договоров, срок сделок): GET /api/calendar/derived
+interface Derived { id: string; kind: "invoice" | "contract" | "deal"; date: string; title: string; overdue: boolean; href: string }
+const DERIVED_COLOR = { invoice: "#F4A100", contract: "#8A8FF5", deal: "#c6ff4d" };
 
 // Calendar (/crm/collaboration/calendar): месяц и неделя, «My / Company Calendar», события с цветом и напоминанием.
 // Задачи с дедлайном из раздела Tasks показываются тут же (синие) и открываются в окне задачи.
@@ -31,6 +36,7 @@ export default function Calendar() {
 	const t = useTranslations("collab");
 	const locale = useLocale();
 	const tag = localeTag(locale);
+	const router = useRouter();
 	useCollabHydration();
 	const events = useCollabStore((s) => s.events);
 	const { tasks, fetchTasks } = useTaskStore();
@@ -49,6 +55,8 @@ export default function Calendar() {
 
 	useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
+	const [derived, setDerived] = useState<Derived[]>([]);
+
 	const todayKey = dayKey(new Date());
 	const q = query.trim().toLowerCase();
 
@@ -65,6 +73,19 @@ export default function Calendar() {
 		return Array.from({ length: weeks * 7 }, (_, i) => addDays(start, i));
 	}, [cursor, view]);
 
+	// сроки из счетов, договоров и сделок на видимые дни; перечитываются, когда что-то меняется в других разделах (crm:changed)
+	const rangeFrom = dayKey(days[0]);
+	const rangeTo = dayKey(days[days.length - 1]);
+	useEffect(() => {
+		let cancelled = false;
+		const load = () => {
+			void apiCall<Derived[]>(`/api/calendar/derived?from=${rangeFrom}&to=${rangeTo}`, "GET", undefined, { cache: "no-store" }).then((r) => { if (!cancelled && r.ok && r.data) setDerived(r.data); });
+		};
+		load();
+		window.addEventListener("crm:changed", load);
+		return () => { cancelled = true; window.removeEventListener("crm:changed", load); };
+	}, [rangeFrom, rangeTo]);
+
 	// события по дням: свои события выбранной вкладки + задачи с дедлайном (только на «My Calendar»)
 	const pillsByDay = useMemo(() => {
 		const map = new Map<string, Pill[]>();
@@ -79,9 +100,15 @@ export default function Calendar() {
 				push(task.deadline.slice(0, 10), { id: task._id, title: `${task.deadline.slice(11, 16)} ${task.title}`, color: task.completed ? DONE_COLOR : TASK_COLOR, done: task.completed, task });
 			});
 		}
+		if (tab === "company") {
+			for (const d of derived) {
+				if (q && !d.title.toLowerCase().includes(q)) continue;
+				push(d.date, { id: d.id, title: d.title, color: d.overdue ? "#ff7a70" : DERIVED_COLOR[d.kind], href: d.href });
+			}
+		}
 		map.forEach((list) => list.sort((a, b) => a.title.localeCompare(b.title)));
 		return map;
-	}, [events, tasks, tab, q]);
+	}, [events, tasks, derived, tab, q]);
 
 	const title = cursor.toLocaleDateString(tag, { month: "long", day: "2-digit", year: "numeric" });
 	const weekdays = Array.from({ length: 7 }, (_, i) => new Date(2023, 0, 2 + i).toLocaleDateString(tag, { weekday: "short" }));
@@ -105,6 +132,7 @@ export default function Calendar() {
 	function openPill(pill: Pill) {
 		if (pill.event) { setDraft(pill.event); setEventOpen(true); }
 		else if (pill.task) setTaskId(pill.task._id);
+		else if (pill.href) router.push(`/${locale}${pill.href}`);
 	}
 	function onDay(key: string) {
 		// на телефоне нажатие выбирает день (события ниже сетки), с планшета — сразу открывает форму нового события

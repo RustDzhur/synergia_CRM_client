@@ -22,6 +22,7 @@ import { decideRequest, listRequests } from "@/lib/connect/tools";
 import { LeadToolError, SCOPES as LEAD_SCOPES, analyze as analyzeLeads, cleanup as cleanupLeads, leadLog, restoreLead, saveRules } from "./leadTools";
 import { BrowseError, ENTITY_KEYS, browse, listProducts } from "./browse";
 import { mkActivity } from "@/lib/activities";
+import { plainFx } from "@/lib/sync/texts";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
 import { deleteDemo, seedDemo } from "./demoData";
 import { TEMPLATES, templateById } from "@/lib/office/templates";
@@ -83,7 +84,7 @@ const iso = (d: unknown) => (d ? new Date(d as Date).toISOString().slice(0, 10) 
 const COMM = new Set(["email", "call", "sms", "whatsapp", "telegram", "note", "comment", "activity", "schedule"]);
 type Act = { type: string; text?: string; meta?: string; createdAt?: Date };
 const lastContactAt = (acts: Act[] | undefined, fallback: Date) => (acts ?? []).filter((a) => COMM.has(a.type) && a.createdAt).reduce((m, a) => Math.max(m, new Date(a.createdAt as Date).getTime()), new Date(fallback).getTime());
-const acts = (a: Act[] | undefined) => (a ?? []).slice(-15).map((x) => ({ type: x.type, text: cut(x.text, 300), at: iso(x.createdAt) }));
+const acts = (a: Act[] | undefined) => (a ?? []).slice(-15).map((x) => ({ type: x.type, text: cut(plainFx(x.text), 300), at: iso(x.createdAt) }));
 
 const schema = (properties: Record<string, unknown>, required: string[] = []) => ({ type: "object", properties, required, additionalProperties: false });
 const S = (description: string) => ({ type: "string", description });

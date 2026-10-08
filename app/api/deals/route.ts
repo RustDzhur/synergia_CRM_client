@@ -7,13 +7,14 @@ import { emitDeal } from "@/lib/automation/emit";
 import { ownedContact, ownedCompany } from "@/lib/deals";
 import { prisma } from "@/lib/prisma";
 import { toDTO, toDTOs } from "@/lib/serialize";
+import { dealScope, resolveResponsible } from "@/lib/sync/people";
 
 // GET /api/deals — все сделки текущего пользователя
 export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
 
-    const deals = await prisma.deal.findMany({ where: { owner: user.id }, orderBy: { order: "asc" } });
+    const deals = await prisma.deal.findMany({ where: { owner: user.id, ...dealScope(user) }, orderBy: { order: "asc" } });
     return NextResponse.json(toDTOs(deals));
 }
 
@@ -42,6 +43,7 @@ export async function POST(req: Request) {
             clientName,
             contact: contact ?? undefined,
             company: company ?? undefined,
+            responsibleUser: (await resolveResponsible(user.id, body.responsible)) ?? undefined,
             order: count,
             activities: [mkActivity("created", clientName)],
         },

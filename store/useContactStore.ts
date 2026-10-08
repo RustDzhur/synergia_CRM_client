@@ -1,5 +1,7 @@
 import { create } from "zustand";
+import { registerRefresher } from "./invalidate";
 import type { Activity } from "@/types/crm";
+import { deleteWithGuards } from "./deleteGuards";
 import { api, addActivityRequest, removeActivityRequest, NewActivity } from "./crmApi";
 
 export interface Contact {
@@ -69,7 +71,7 @@ export const useContactStore = create<ContactStore>((set, get) => {
         },
 
         deleteContacts: async (ids) => {
-            const results = await Promise.all(ids.map((id) => api<{ ok: boolean }>(`/api/contacts/${id}`, "DELETE")));
+            const results = await Promise.all(ids.map((id) => deleteWithGuards(`/api/contacts/${id}`)));
             const deleted = ids.filter((_, i) => results[i]);
             set({ contacts: get().contacts.filter((c) => !deleted.includes(c._id)) });
         },
@@ -87,3 +89,5 @@ export const useContactStore = create<ContactStore>((set, get) => {
         },
     };
 });
+
+registerRefresher("contacts", () => useContactStore.getState().fetchContacts());

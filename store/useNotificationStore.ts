@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { apiCall } from "./crmApi";
+import { invalidate, lastOwnMutationAt } from "./invalidate";
 
 export interface Notif { id: string; type: string; params: Record<string, string | number>; link: string; at: string; read: boolean }
 
@@ -27,6 +28,9 @@ const EVENT_FRESH_MS = 10 * 60_000;
 // «прочитано», и если его ответ придёт раньше, чем завершится POST /notifications/read, он принесёт ещё старые данные
 // и отменит отметку в интерфейсе. Помним такие id и считаем их прочитанными, пока сервер не пришлёт того же.
 const readLocally = new Set<string>();
+
+// Ревизия данных фирмы из прошлого опроса (см. lib/sync/revision.ts)
+let lastRev = "";
 
 // До какого момента ответам опроса верим: запрос, отправленный раньше завершения отметки «прочитано», посчитан
 // по состоянию до неё, и его число непрочитанных уже устарело. Пока отметка в пути — счётчик из опроса не принимаем.
@@ -58,8 +62,13 @@ export const useNotificationStore = create<NotificationStore>()((set, get) => {
         load: async () => {
             const startedAt = Date.now();
             // no-store: иначе браузер может отдать список из кэша вместе со старым числом непрочитанных
-            const res = await apiCall<{ items: Notif[]; unread: number }>("/api/notifications", "GET", undefined, { cache: "no-store" });
+            const res = await apiCall<{ items: Notif[]; unread: number; rev?: string }>("/api/notifications", "GET", undefined, { cache: "no-store" });
             if (!res.ok || !res.data) return;
+            // данные фирмы изменил кто-то другой (или другая вкладка): открытые разделы перечитываются без перезагрузки страницы.
+            // Собственные изменения вкладка уже учла (store/invalidate.ts), поэтому в окне после них ревизия лишь запоминается.
+            const rev = res.data.rev ?? "";
+            if (rev && lastRev && rev !== lastRev && Date.now() - lastOwnMutationAt() > 40_000) invalidate("deals", "contacts", "companies", "tasks", "finance");
+            if (rev) lastRev = rev;
             const fresh = res.data.items.filter((n) => !n.read && !announced.has(n.id) && Date.now() - new Date(n.at).getTime() < (n.type === "event" ? EVENT_FRESH_MS : FRESH_MS));
             fresh.forEach((n) => announced.add(n.id));
             const items = res.data.items.map((n) => (readLocally.has(n.id) ? { ...n, read: true } : n));

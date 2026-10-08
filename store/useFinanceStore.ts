@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { registerRefresher } from "./invalidate";
 import { apiCall } from "./crmApi";
 
 export interface LineItem { description: string; qty: number; unitPrice: number; taxRate: number; product?: string }
@@ -27,7 +28,7 @@ export interface OrderWaybill {
 	seats?: number; street?: string; house?: string; flat?: string; returnNumber?: string; returnAt?: string;
 }
 export interface Order {
-	id: string; number: string; status: "draft" | "confirmed" | "fulfilled" | "invoiced" | "closed" | "cancelled";
+	id: string; number: string; status: "draft" | "confirmed" | "fulfilled" | "invoiced" | "paid" | "closed" | "cancelled";
 	contact: string; company: string; customerName: string; deal: string; contract: string;
 	items: LineItem[]; currency: string; notes: string; responsible: string; invoice: string; totals: Totals;
 	// Накладная (Lieferschein): номер присваивается при первой выписке, дата — фактической поставки
@@ -374,3 +375,8 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 		return null;
 	},
 }));
+
+registerRefresher("finance", () => {
+	const f = useFinanceStore.getState();
+	return Promise.all([f.loadOrders(), f.loadInvoices(), f.loadExpenses(), f.loadQuotes(), f.loadContracts(), f.loadDashboard()]);
+});

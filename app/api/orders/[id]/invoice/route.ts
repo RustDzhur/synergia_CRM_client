@@ -8,6 +8,8 @@ import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
 import "@/lib/finance/pdf";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import { prisma } from "@/lib/prisma";
+import { logDocEvent } from "@/lib/sync/documents";
+import { fx } from "@/lib/sync/texts";
 
 // POST /api/orders/:id/invoice — { customerAddress?, customerTaxId? }: выставить счёт по заказу. Заказ переходит в "invoiced"
 // и получает ссылку на счёт; повторно выставить счёт по тому же заказу нельзя (один заказ — один счёт).
@@ -41,6 +43,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         },
     });
     await prisma.order.update({ where: { id: order.id }, data: { invoice: invoice.id, status: "invoiced" } });
+    await logDocEvent(user.id, invoice, "invoice", fx("invoice_from_order", { number: invoice.number, order: order.number }), "created");
     await emit(user.id, { type: "order_status", data: { id: order.id, number: order.number, status: "invoiced", customerName: order.customerName } });
     return NextResponse.json(toInvoiceDTO(invoice), { status: 201 });
 }

@@ -4,6 +4,7 @@ import { unauthorized } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
 import { CONTACT_FIELDS, contactFullName } from "@/lib/crmFields";
 import { emit } from "@/lib/automation/emit";
+import { resolveContactCompany } from "@/lib/sync/customer";
 import { prisma } from "@/lib/prisma";
 import { toDTO, toDTOs } from "@/lib/serialize";
 
@@ -26,7 +27,8 @@ export async function POST(req: Request) {
     const name = contactFullName(fields, body.name);
     if (!name) return NextResponse.json({ message: "Name is required" }, { status: 400 });
 
-    const contact = await prisma.contact.create({ data: { ...fields, name, owner: user.id } });
+    const link = await resolveContactCompany(user.id, { companyId: body.companyId, company: fields.company });
+    const contact = await prisma.contact.create({ data: { ...fields, ...(link ?? {}), name, owner: user.id } as any });
     await emit(user.id, { type: "contact_created", data: { id: contact.id, name: contact.name, email: contact.email ?? "", phone: contact.phone ?? "" } });
     return NextResponse.json(toDTO(contact), { status: 201 });
 }

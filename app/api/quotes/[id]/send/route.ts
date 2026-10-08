@@ -11,6 +11,8 @@ import { assertCompliant } from "@/lib/finance/compliance";
 import { computeTotals } from "@/lib/finance/totals";
 import { toQuoteDTO } from "@/lib/finance/dto";
 import { prisma } from "@/lib/prisma";
+import { logDocEvent } from "@/lib/sync/documents";
+import { fx } from "@/lib/sync/texts";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -70,6 +72,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     const saved = await prisma.quote.update({ where: { id: q.id }, data: { status: "sent", sentAt: new Date(), sentTo: recipient.email } });
     await emit(user.id, { type: "quote_sent", data: { id: q.id, number: q.number, customerName: q.customerName, dealId: q.deal ?? "" } });
+    await logDocEvent(user.id, q, "quote", fx("quote_sent", { number: q.number, email: recipient.email }), "sent");
     await logAudit({ org: user.id, userId: user.userId, action: "quote.sent", entityType: "quote", entityId: q.id, summary: `Quote ${q.number} emailed to ${recipient.email}`, meta: { currency: q.currency, to: recipient.email, source: recipient.source } });
     return NextResponse.json(toQuoteDTO(saved));
 }

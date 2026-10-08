@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized, validId } from "@/lib/api";
-import { logAudit } from "@/lib/audit";
+import { emit } from "@/lib/automation/emit";
 import { parseBankCsv } from "@/lib/finance/bank";
 import { importBankRows } from "@/lib/finance/bankImport";
-import { applyPayment, statusAfterPayment } from "@/lib/finance/payments";
+import { registerPayment, revertPayment } from "@/lib/sync/payments";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -131,34 +131,20 @@ export async function PATCH(req: Request) {
 
     // Привязка движения к счёту — это те же деньги, которых ждёт счёт, поэтому оплату учитываем
     // здесь же: иначе сверка оставалась бы «бумажной», а счёт вечно вис «к оплате». Снятие привязки
-    // возвращает сумму назад.
+    // возвращает сумму назад. Учёт — общий с кнопкой «оплачен», webhook и ассистентом (lib/sync/payments.ts):
+    // оплата с банка запускает автоматизацию, пишет в ленту клиента и пробивает чек так же, как остальные.
+    // Ключ платежа — id банковской строки: повторная привязка той же строки не прибавит сумму дважды.
     const wasInvoice = tx.matchType === "invoice" && tx.matchId ? String(tx.matchId) : "";
     const nowInvoice = matchType === "invoice" ? matchId : "";
-    if (wasInvoice && wasInvoice !== nowInvoice) await bookPayment(user.id, wasInvoice, -Math.abs(tx.amount), user.userId, "unmatched");
-    if (nowInvoice && nowInvoice !== wasInvoice) await bookPayment(user.id, nowInvoice, Math.abs(tx.amount), user.userId, "matched");
+    const actor = { userId: user.userId };
+    if (wasInvoice && wasInvoice !== nowInvoice) await revertPayment(user.id, wasInvoice, { source: "bank", externalId: tx.id, amount: Math.abs(tx.amount), actor });
+    if (nowInvoice && nowInvoice !== wasInvoice) {
+        const res = await registerPayment(user.id, nowInvoice, { amount: Math.abs(tx.amount), source: "bank", externalId: tx.id, paidAt: /^\d{4}-\d{2}-\d{2}$/.test(String(tx.date)) ? new Date(`${tx.date}T12:00:00.000Z`) : undefined, via: "bank", actor });
+        if (res.ok && !res.duplicate) await emit(user.id, { type: "bank_matched", data: { id: nowInvoice, number: res.invoice.number, customerName: res.invoice.customerName, amount: String(Math.abs(tx.amount)), dealId: res.invoice.deal ?? "" } });
+    }
 
     const data: Record<string, any> = { matchType, matchId: matchType ? matchId : null };
     if (typeof b?.notes === "string") data.notes = str(b.notes, 1000);
     const updated = await prisma.bankTransaction.update({ where: { id: tx.id }, data });
     return NextResponse.json(toDTO(updated));
-}
-
-// Учитывает деньги по счёту: приход из выписки закрывает оплату, отвязка — снимает её.
-// Статус и сумма считаются общим правилом (lib/finance/payments.ts), журнал хранит обе операции.
-async function bookPayment(org: string, invoiceId: string, amount: number, userId: string, reason: "matched" | "unmatched") {
-    const inv = await prisma.invoice.findFirst({ where: { id: invoiceId, org } });
-    if (!inv) return;
-    // черновик и отменённый счёт деньгами не закрывают: привязка остаётся просто пометкой
-    if (!["sent", "overdue", "paid"].includes(String(inv.status))) return;
-    const { paid, gross, full } = applyPayment(inv, amount);
-    await prisma.invoice.update({
-        where: { id: inv.id },
-        data: { paidAmount: paid, status: statusAfterPayment(String(inv.status), full), ...(full ? { paidAt: new Date() } : {}) },
-    });
-    await logAudit({
-        org, userId, action: reason === "matched" ? "invoice.payment_booked" : "invoice.payment_reverted",
-        entityType: "invoice", entityId: inv.id,
-        summary: `Invoice ${inv.number}: ${reason === "matched" ? "payment" : "payment removed"} ${amount} ${inv.currency} from the bank statement — ${paid} of ${gross}`,
-        meta: { amount, paid, gross, currency: inv.currency },
-    });
 }

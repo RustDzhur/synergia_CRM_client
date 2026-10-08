@@ -9,7 +9,9 @@ import { toQuoteDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal, contactForCustomer, dealForCustomer } from "@/lib/deals";
 import { prisma } from "@/lib/prisma";
+import { logDocEvent } from "@/lib/sync/documents";
 import { numberPrefix } from "@/lib/finance/documents/store";
+import { fx } from "@/lib/sync/texts";
 
 export const dynamic = "force-dynamic";
 
@@ -60,5 +62,6 @@ export async function POST(req: Request) {
             createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
         },
     });
+    await logDocEvent(user.id, quote, "quote", fx("quote_created", { number: quote.number }), "created");
     return NextResponse.json(toQuoteDTO(quote), { status: 201 });
 }

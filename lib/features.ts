@@ -34,20 +34,25 @@ export function orgFeatures(org: FeatureOrg): Record<FeatureKey, boolean> {
 export const enabledFeatures = (org: FeatureOrg): FeatureKey[] => FEATURE_KEYS.filter((key) => orgFeatures(org)[key]);
 
 // Раздел, который защищает адрес API. null — адрес доступен всем участникам фирмы.
-export function featureForApi(pathname: string): FeatureKey | null {
+export function featureForApi(pathname: string, search?: URLSearchParams): FeatureKey | null {
     const p = pathname.replace(/^\/api\//, "");
     const first = p.split("/")[0];
     switch (first) {
         case "deals": case "stages": case "contacts": case "companies": return "crm";
-        case "tasks": return "tasks";
+        case "tasks": case "projects": return "tasks";
         case "employees": return "company";
-        case "feed": case "events": return "collab";
-        case "conversations": case "twilio": case "calls": case "sip": return "channels";
-        case "documents": case "drive": return "documents";
+        case "feed": case "events": case "calendar": return "collab";
+        case "conversations": case "twilio": case "calls": case "sip": case "messages": return "channels";
+        case "documents": case "drive": case "onedrive": return "documents";
         case "mail": return "mail";
         case "marketing": return "marketing";
         case "ads": return "ads";
         case "products": case "orders": case "invoices": case "expenses": case "finance": case "quotes": case "contracts": return "inventory";
+        // остальная бухгалтерия — тот же раздел тарифа, что и «Финансы»: раньше эти адреса тарифом не проверялись
+        case "bank": case "boms": case "pos": case "production": case "production-orders": case "purchases": case "reconciliation":
+        case "recurring-invoices": case "stock": case "stock-docs": case "supplier-invoices": case "suppliers": case "warehouses":
+        case "issued-docs": case "assets": case "novaposhta": case "ukrposhta": case "marketplace": return "inventory";
+        case "export": return ["contacts", "companies"].includes(search?.get("kind") ?? "") ? "crm" : "inventory";
         case "automation": case "office": return "automation";
         case "ai": return "aiAssistant";
         case "orgs": return p.startsWith("orgs/members") || p.startsWith("orgs/invitations") ? "multiFirm" : null;

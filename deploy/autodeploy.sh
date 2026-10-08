@@ -80,6 +80,12 @@ if grep -q '^DEPLOYED_COMMIT=' deploy/.env 2>/dev/null; then
 else
     echo "DEPLOYED_COMMIT=$REMOTE_SHA" >> deploy/.env
 fi
+# Схема БД накатывается ДО запуска нового контейнера. Не прошла (дубли номеров, отказ db push) — контейнер не трогаем:
+# старая версия продолжает работать на старой схеме (новая только добавляет).
+if ! bash deploy/migrate.sh; then
+    log "СБОЙ накатки схемы — контейнер не перезапущен (см. строки migrate выше)"
+    exit 1
+fi
 if docker compose -f deploy/docker-compose.yml up -d --build >> "$LOG" 2>&1; then
     echo "$REMOTE_SHA" > "$DEPLOYED_FILE"; rm -f "$HOME_DIR/.crm-deploy-tries"
     log "готово: запущено в $(docker inspect -f '{{.State.StartedAt}}' firmspace-crm 2>/dev/null || echo '?')"

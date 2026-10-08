@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { unauthorized, validId } from "@/lib/api";
 import { toDTO } from "@/lib/serialize";
+import { dealScope } from "@/lib/sync/people";
 
 // Записи «ленты активности» у сделки, контакта и компании: заметки, комментарии, звонки, письма и т.д.
 // Типы "stage" и "created" — системные, их создаёт сервер, через API их добавить нельзя.
@@ -46,7 +47,7 @@ export function activityHandlers(model: "contact" | "task" | "deal" | "company")
         }
         if (!text) return NextResponse.json({ message: "Text is required" }, { status: 400 });
 
-        const doc = await delegate.findFirst({ where: { id: params.id, owner: user.id } });
+        const doc = await delegate.findFirst({ where: { id: params.id, owner: user.id, ...(model === "deal" ? dealScope(user) : {}) } });
         if (!doc) return NextResponse.json({ message: "Not found" }, { status: 404 });
         const activities = Array.isArray(doc.activities) ? doc.activities : [];
         activities.push({ _id: randomUUID(), type, text, meta, createdAt: new Date().toISOString() });
@@ -63,7 +64,7 @@ export function activityHandlers(model: "contact" | "task" | "deal" | "company")
             return NextResponse.json({ message: "Not found" }, { status: 404 });
         }
 
-        const doc = await delegate.findFirst({ where: { id: params.id, owner: user.id } });
+        const doc = await delegate.findFirst({ where: { id: params.id, owner: user.id, ...(model === "deal" ? dealScope(user) : {}) } });
         if (!doc) return NextResponse.json({ message: "Not found" }, { status: 404 });
         const activities = Array.isArray(doc.activities) ? doc.activities.filter((a: any) => String(a?._id) !== activityId) : [];
         const updated = await delegate.update({ where: { id: params.id }, data: { activities } });

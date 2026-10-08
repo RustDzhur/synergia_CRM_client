@@ -121,10 +121,10 @@ export async function resolveAudience(org: string, raw: unknown): Promise<{ ids:
 }
 
 // Новая запись коллеги: остальные участники фирмы получают уведомление. Запись «лично» уходит только адресатам.
-export async function announcePost(org: string, post: Doc) {
+export async function announcePost(org: string, post: Doc, alsoExcept: string[] = []) {
     const ids = ((post.audienceIds as unknown[]) ?? []).map((v) => String(v));
     const only = post.audience === "people" && ids.length ? ids : undefined;
-    await notifyMembers(org, { type: "team", params: { name: post.authorName, text: short(post.kind === "task" ? post.taskTitle : post.text) }, link: LINK, key: `feed:${post.id}` }, { except: String(post.author), only });
+    await notifyMembers(org, { type: "team", params: { name: post.authorName, text: short(post.kind === "task" ? post.taskTitle : post.text) }, link: LINK, key: `feed:${post.id}` }, { except: [String(post.author), ...alsoExcept], only });
 }
 
 // Комментарий: получают автор записи и те, кто за ней следит, — плюс все, кто уже комментировал ветку
@@ -134,11 +134,12 @@ export async function announceComment(org: string, post: Doc, commentId: string,
 }
 
 // Задача, созданная в CRM, попадает в ленту карточкой: коллеги видят, кто и что поручил
-export async function postTask(org: string, userId: string, task: { id: string; title: string; responsible?: string; deadline?: string }) {
+// assigneeId — ответственный получает отдельное личное уведомление «Вам поручена задача», общее ему не дублируется
+export async function postTask(org: string, userId: string, task: { id: string; title: string; responsible?: string; deadline?: string }, assigneeId?: string | null) {
     try {
         const authorName = await userName(userId);
         const post = await prisma.feedPost.create({ data: { org, author: userId, authorName, kind: "task", taskId: task.id, taskTitle: task.title, responsible: task.responsible ?? "", dueAt: task.deadline ?? "" } });
-        await announcePost(org, post);
+        await announcePost(org, post, assigneeId ? [assigneeId] : []);
     } catch (e) {
         console.error("postTask failed", e);
     }

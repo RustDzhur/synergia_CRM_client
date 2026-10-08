@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
+import { canImportKind } from "@/lib/access";
+import { prisma } from "@/lib/prisma";
 import { badRequest, failure, unauthorized, validId } from "@/lib/api";
 import { rollbackImport } from "@/lib/import/engine";
 import { logAudit } from "@/lib/audit";
@@ -16,6 +18,8 @@ export async function POST(req: Request) {
     const b = await req.json().catch(() => ({}));
     const batchId = String(b?.batchId ?? "");
     if (!validId(batchId)) return badRequest("batchId is required");
+    const batch = await prisma.importBatch.findFirst({ where: { id: batchId, org: user.id }, select: { kind: true } });
+    if (batch && !canImportKind(user, String(batch.kind))) return unauthorized(req);
     try {
             const result = await rollbackImport(user.id, batchId);
         if (!result.ok) return badRequest(result.message === "already_rolled_back" ? "Пакет вже відкочено" : "Пакет не знайдено");

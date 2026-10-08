@@ -4,13 +4,15 @@ import { badRequest, unauthorized } from "@/lib/api";
 import { nextNumber } from "@/lib/finance/numbering";
 import { financeSettings, defaultCurrency } from "@/lib/finance/settings";
 import { firmRate } from "@/lib/finance/rates";
-import { cleanItems } from "@/lib/finance/totals";
+import { cleanItems, computeTotals } from "@/lib/finance/totals";
 import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal, contactForCustomer, dealForCustomer } from "@/lib/deals";
 import { prisma } from "@/lib/prisma";
+import { logDocEvent } from "@/lib/sync/documents";
 import { numberPrefix } from "@/lib/finance/documents/store";
+import { fx } from "@/lib/sync/texts";
 
 export const dynamic = "force-dynamic";
 
@@ -75,5 +77,6 @@ export async function POST(req: Request) {
             createdByName: author ? `${author.firstname} ${author.lastname}`.trim() : "",
         },
     });
+    await logDocEvent(user.id, invoice, "invoice", fx("invoice_created", { number: invoice.number, amount: computeTotals(items as never).gross, currency: invoice.currency }), "created");
     return NextResponse.json(toInvoiceDTO(invoice), { status: 201 });
 }

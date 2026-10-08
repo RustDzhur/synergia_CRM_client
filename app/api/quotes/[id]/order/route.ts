@@ -5,6 +5,8 @@ import { emit } from "@/lib/automation/emit";
 import { nextNumber } from "@/lib/finance/numbering";
 import { toOrderDTO } from "@/lib/finance/dto";
 import { prisma } from "@/lib/prisma";
+import { logDocEvent } from "@/lib/sync/documents";
+import { fx } from "@/lib/sync/texts";
 
 // POST /api/quotes/:id/order — превращает принятое клиентом предложение в заказ (как orders/:id/invoice для счёта).
 // Одно предложение — один заказ; повторно нельзя.
@@ -29,6 +31,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     });
     await prisma.quote.update({ where: { id: quote.id }, data: { order: order.id } });
     const totals = ((order.items as any[]) ?? []).reduce((s, it) => s + it.qty * it.unitPrice, 0);
+    await logDocEvent(user.id, order, "order", fx("order_from_quote", { number: order.number, quote: quote.number }), "created");
     await emit(user.id, { type: "order_created", data: { id: order.id, number: order.number, customerName: order.customerName, total: String(totals), currency: order.currency } });
     return NextResponse.json(toOrderDTO(order), { status: 201 });
 }

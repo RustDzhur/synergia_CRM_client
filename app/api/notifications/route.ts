@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
-import { emit } from "@/lib/automation/emit";
 import { sweepEventReminders } from "@/lib/calendar/reminders";
-import { notify, unreadFor, visibleTo } from "@/lib/notify";
+import { unreadFor, visibleTo } from "@/lib/notify";
+import { notifyDeadline, sweepDeadlines } from "@/lib/sync/deadlines";
+import { orgRevision } from "@/lib/sync/revision";
+import { recordSyncError } from "@/lib/sync/errors";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -13,16 +15,20 @@ export async function GET(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     // отложенные действия автоматизации выполняются, пока кто-то из фирмы работает в CRM (этот запрос приходит каждые 30 секунд)
-    await (await import("@/lib/automation")).runDueJobs(user.id).catch(() => undefined);
+    await (await import("@/lib/automation")).runDueJobs(user.id).catch((e) => recordSyncError(user.id, "automation.due_jobs", e));
     // то же и для напоминаний календаря: суточный крон Vercel для минутных напоминаний слишком редок
-    await sweepEventReminders(user.id, tzOffset(req)).catch(() => undefined);
+    await sweepEventReminders(user.id, tzOffset(req)).catch((e) => recordSyncError(user.id, "calendar.reminders", e));
+    // сроки задач и сделок — тоже на сервере, адресно ответственному (lib/sync/deadlines.ts)
+    await sweepDeadlines(user.id, tzOffset(req));
     const mine = visibleTo(user.id, user.userId);
-    const [items, unread] = await Promise.all([
+    const [items, unread, rev] = await Promise.all([
         prisma.notification.findMany({ where: mine as any, orderBy: { createdAt: "desc" }, take: 50 }),
         prisma.notification.count({ where: unreadFor(user.id, user.userId) as any }),
+        orgRevision(user.id).catch(() => ""),
     ]);
     return NextResponse.json({
         unread,
+        rev, // меняется, когда кто-то из фирмы изменил данные: клиент перечитывает открытые разделы (store/useNotificationStore.ts)
         items: items.map((n) => ({ id: n.id, type: n.type, params: n.params ?? {}, link: n.link, at: n.createdAt.toISOString(), read: (n.readBy ?? []).some((id) => String(id) === user.userId) })),
     });
 }
@@ -46,13 +52,6 @@ export async function POST(req: Request) {
     if (!b || !["task", "deal"].includes(b.kind) || !validId(String(b.id)) || !STAGES.includes(b.stage)) return badRequest("Invalid notification");
     const doc = b.kind === "task" ? await prisma.task.findFirst({ where: { id: b.id, owner: user.id } }) : await prisma.deal.findFirst({ where: { id: b.id, owner: user.id } });
     if (!doc) return notFound();
-    const title = String(b.kind === "task" ? (doc as any).title : (doc as any).clientName).slice(0, 120);
-    const created = await notify(user.id, {
-        type: "deadline",
-        params: { kind: b.kind, title, stage: b.stage },
-        link: b.kind === "task" ? "/crm/tasks" : "/crm/crm",
-        key: `deadline:${b.kind}:${b.id}:${b.stage}:${b.kind === "task" ? (doc as any).deadline : (doc as any).endDate}`, // новый срок — новое уведомление
-    });
-    if (created) await emit(user.id, { type: "deadline", data: { kind: b.kind, title, stage: b.stage, id: String(b.id) } });
+    const created = await notifyDeadline(user.id, b.kind, doc as never, b.stage);
     return NextResponse.json({ created });
 }
