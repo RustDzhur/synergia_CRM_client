@@ -81,3 +81,27 @@ describe("запрос распознавания узбекского", () => {
         expect(langs).toEqual(["uz", null]);
     });
 });
+
+import { complete } from "@/lib/ai/provider";
+
+describe("цепочка моделей чата при прямом OpenAI", () => {
+    const saved = { ...process.env };
+    afterEach(() => { process.env = { ...saved }; vi.unstubAllGlobals(); });
+    it("модели шлюза из старого .env пропускаются: ответ даёт модель OpenAI с первой попытки", async () => {
+        process.env.OPENAI_API_KEY = "sk-test"; delete process.env.OPENAI_API_URL; delete process.env.AI_API_URL; delete process.env.AI_API_KEY; delete process.env.AI_PROVIDER; delete process.env.ANTHROPIC_API_KEY;
+        process.env.AI_MODEL = "auto/best-chat";
+        process.env.AI_VOICE_MODEL = "openrouter/inclusionai/ling-3.1-flash";
+        process.env.AI_FALLBACK_MODELS = "openrouter/inclusionai/ling-3.1-flash,auto/pro-fast,auto/pro-chat";
+        const used: string[] = [];
+        vi.stubGlobal("fetch", vi.fn(async (_u: string, init: RequestInit) => {
+            const m = JSON.parse(String(init.body)).model as string;
+            used.push(m);
+            return /^gpt-/.test(m)
+                ? new Response(JSON.stringify({ choices: [{ message: { content: "Salom!" } }] }), { status: 200 })
+                : new Response(JSON.stringify({ error: { message: "invalid model ID" } }), { status: 400 });
+        }));
+        const r = await complete("sys", [{ role: "user", content: "hi" }] as never, [], { model: process.env.AI_VOICE_MODEL });
+        expect(used).toEqual(["gpt-4.1-mini"]);
+        expect(JSON.stringify(r)).toContain("Salom");
+    });
+});
