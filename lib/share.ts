@@ -29,7 +29,7 @@ export async function revokeShare(org: string, kind: "order" | "quote", ref: str
 export interface ShareItem { name: string; qty: number; price: number }
 export interface ShareView {
     kind: "order" | "quote";
-    market: "DE" | "UA";
+    market: string;
     contract: string;
     company: { name: string; phone: string; email: string; site: string; logo: string };
     number: string;

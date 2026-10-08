@@ -23,7 +23,7 @@ export interface StockDocPdfSettings {
 	address: string;
 	taxId: string;
 	/** Рынок фирмы: украинской документ печатается по-украински независимо от языка интерфейса */
-	market: "DE" | "UA" | null;
+	market: string | null;
 }
 
 const L: Record<string, Record<string, string>> = {
