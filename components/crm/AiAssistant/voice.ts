@@ -81,9 +81,10 @@ export function useVoiceInput({ locale, serverStt, onText, onError }: {
 		if (stateRef.current !== "idle") return void stopAll();
 		baseRef.current = base.trim();
 
-		// Путь 1: распознавание в браузере — без ключей и без сервера (Chrome, Edge, Android)
+		// Путь 1: распознавание в браузере — без ключей и без сервера (Chrome, Edge, Android).
+		// Узбекский: браузерная модель слабая, поэтому при настроенном сервере диктует он (модель лучше, словарь CRM — docs/UZ_VOICE.md)
 		const Ctor = recognitionCtor();
-		if (Ctor) {
+		if (Ctor && !(locale === "uz" && serverStt && recorderSupported())) {
 			const recog = new Ctor();
 			recog.lang = speechLang(locale);
 			recog.continuous = true;
@@ -461,4 +462,122 @@ export function useContinuousListening({ lang, active, onPhrase, onError }: {
 	}, [active, lang]);
 
 	return { interim, supported: dictationSupported() };
+}
+
+/**
+ * Слушание разговора через сервер (для узбекского): браузерное распознавание узбекского слабое, поэтому речь записывается здесь,
+ * граница фразы определяется по громкости (как в useBargeIn), запись уходит на /api/ai/transcribe и фраза приходит текстом.
+ * Контракт тот же, что у useContinuousListening: onPhrase зовётся один раз на фразу, interim непустой, пока человек говорит.
+ */
+const SRV_MIN_LEVEL = 0.014; // ниже — тишина комнаты
+const SRV_SILENCE_MS = 1500; // пауза, после которой фраза закончена
+const SRV_MIN_SPEECH_MS = 450; // короче — щелчок или кашель, не фраза
+const SRV_MAX_MS = 30_000;
+export function useServerListening({ lang, active, onPhrase, onError }: {
+	lang: string; // язык речи: ru, uk, de, en, uz
+	active: boolean;
+	onPhrase: (text: string) => void;
+	onError: (code: MicError) => void;
+}) {
+	const [interim, setInterim] = useState("");
+	const onPhraseRef = useRef(onPhrase);
+	const onErrorRef = useRef(onError);
+	onPhraseRef.current = onPhrase;
+	onErrorRef.current = onError;
+
+	useEffect(() => {
+		setInterim("");
+		if (!active || !recorderSupported()) return;
+		let disposed = false;
+		let stream: MediaStream | null = null;
+		let ctx: AudioContext | null = null;
+		let timer: ReturnType<typeof setInterval> | null = null;
+		let recorder: MediaRecorder | null = null;
+		const cleanup = () => {
+			if (timer) { clearInterval(timer); timer = null; }
+			try { recorder?.state === "recording" && recorder.stop(); } catch { /* уже остановлен */ }
+			stream?.getTracks().forEach((t) => t.stop());
+			stream = null;
+			void ctx?.close().catch(() => undefined);
+			ctx = null;
+		};
+		void (async () => {
+			try {
+				stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+			} catch {
+				if (!disposed) onErrorRef.current("micDenied");
+				return;
+			}
+			if (disposed) return cleanup();
+			ctx = new AudioContext();
+			const analyser = ctx.createAnalyser();
+			analyser.fftSize = 1024;
+			ctx.createMediaStreamSource(stream).connect(analyser);
+			const data = new Float32Array(analyser.fftSize);
+			const level = () => {
+				analyser.getFloatTimeDomainData(data);
+				let sum = 0;
+				for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+				return Math.sqrt(sum / data.length);
+			};
+			let baseline = 0;
+			for (let i = 0; i < 6; i++) { baseline += level(); await new Promise((r) => setTimeout(r, 40)); }
+			baseline /= 6;
+			const threshold = Math.max(SRV_MIN_LEVEL, baseline * 3);
+
+			let chunks: Blob[] = [];
+			let startedAt = 0;
+			let lastLoud = 0;
+			let loudFrames = 0;
+			let sending = false;
+
+			const send = async (blob: Blob, spokenMs: number) => {
+				if (spokenMs < SRV_MIN_SPEECH_MS || !blob.size) return;
+				sending = true;
+				try {
+					const body = new FormData();
+					body.append("file", blob, `voice.${voiceExt(blob.type || "audio/webm")}`);
+					body.append("language", lang);
+					const res = await fetch("/api/ai/transcribe", { method: "POST", headers: authHeaders(false), body });
+					const json = (await res.json().catch(() => null)) as { text?: string } | null;
+					if (disposed) return;
+					if (!res.ok || !json) onErrorRef.current("micFailed");
+					else if (json.text?.trim()) onPhraseRef.current(json.text.trim());
+				} catch {
+					if (!disposed) onErrorRef.current("micFailed");
+				} finally {
+					sending = false;
+					if (!disposed) setInterim("");
+				}
+			};
+
+			const begin = () => {
+				chunks = [];
+				recorder = new MediaRecorder(stream as MediaStream);
+				recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+				const spokenFrom = Date.now();
+				const rec = recorder;
+				rec.onstop = () => { void send(new Blob(chunks, { type: rec.mimeType || "audio/webm" }), lastLoud - spokenFrom); };
+				startedAt = spokenFrom;
+				rec.start();
+				setInterim("…"); // «слышу речь»: держит Айрис бодрствующей, пока человек говорит
+			};
+
+			timer = setInterval(() => {
+				if (disposed || sending) return;
+				const now = Date.now();
+				const loud = level() > threshold;
+				if (recorder?.state === "recording") {
+					if (loud) lastLoud = now;
+					if (now - lastLoud > SRV_SILENCE_MS || now - startedAt > SRV_MAX_MS) { try { recorder.stop(); } catch { /* уже остановлен */ } }
+					return;
+				}
+				loudFrames = loud ? loudFrames + 1 : 0;
+				if (loudFrames >= 2) { loudFrames = 0; lastLoud = now; begin(); }
+			}, 50);
+		})();
+		return () => { disposed = true; cleanup(); setInterim(""); };
+	}, [active, lang]);
+
+	return { interim, supported: recorderSupported() };
 }

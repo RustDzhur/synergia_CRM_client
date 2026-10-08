@@ -183,6 +183,7 @@ export default function AiAssistant() {
 		locale,
 		page: stripLocale(pathname),
 		blocked,
+		serverStt: !!status?.stt,
 		onError: (code) => toast.error(t(code)),
 	});
 	useEffect(() => { void loadStatus(); }, [loadStatus]);

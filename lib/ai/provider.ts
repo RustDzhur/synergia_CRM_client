@@ -208,7 +208,7 @@ export async function completeVision(system: string, prompt: string, image: Imag
 //     процессоре без AVX разбирает 4 секунды речи 12–25 секунд, для разговора в реальном времени он слишком медленный.
 //     STT_LOCAL_FIRST=1 ставит его первым (если у сервера есть GPU или современный процессор).
 // Браузерное распознавание (SpeechRecognition) ключей не требует вовсе — сервер нужен остальным браузерам.
-export const sttConfigured = () => !!process.env.OPENAI_API_KEY || !!process.env.TRANSCRIBE_API_URL;
+export const sttConfigured = () => !!process.env.OPENAI_API_KEY || !!process.env.TRANSCRIBE_API_URL || !!process.env.ELEVENLABS_API_KEY;
 // Модель локального Whisper — HF-имя (speaches/faster-whisper): Systran/faster-whisper-small
 export const sttModel = () => process.env.AI_TRANSCRIBE_MODEL || "whisper-1";
 // На шлюзе (не api.openai.com) нужны полные имена моделей, у самого OpenAI — короткие
@@ -232,25 +232,49 @@ const PHANTOM = [
 export function isPhantomTranscript(text: string): boolean {
     const t = String(text ?? "").trim();
     if (!t || t.replace(/[\s.,!?…\-–—]/g, "").length < 2) return true;
+    // подсказка узбекского распознавания (UZ_STT_PROMPT) на тишине может вернуться как «речь»: любой её кусок — не фраза пользователя
+    if (t.length >= 8 && UZ_STT_PROMPT.toLowerCase().includes(t.toLowerCase().replace(/[.!?]+$/, ""))) return true;
     return PHANTOM.some((re) => re.test(t));
 }
 
-interface SttTarget { url: string; key?: string; model: string }
+interface SttTarget { url: string; key?: string; model: string; kind?: "openai" | "elevenlabs" }
 
-function sttTargets(): SttTarget[] {
+// Узбекский: общая модель Whisper ошибается в окончаниях и в словах CRM. Три приёма (docs/UZ_VOICE.md):
+//  • модель получше — gpt-4o-transcribe у самого OpenAI (на шлюзе имя задаёт AI_VOICE_STT_MODEL_UZ);
+//  • подсказка со словарём CRM латиницей — распознаватель выбирает «hisob-faktura», а не созвучное слово;
+//  • необязательный ElevenLabs Scribe (ELEVENLABS_API_KEY) — отдельная модель с узбекским, ставится первой, если ключ задан.
+export const UZ_STT_PROMPT = "Ayris, Айрис. Firmspace CRM. mijoz, mijozlar, hisob-faktura, hisob-fakturalar, buyurtma, shartnoma, taklif, vazifa, bitim, to‘lov, ombor, mahsulot, xodim, hisobot, soliq, QQS, so‘m, bank, kassa. Ayris, to‘lanmagan hisob-fakturalarni ko‘rsat. Yangi vazifa yarat. Buyurtmalarni och.";
+const uzCloudModel = () => process.env.AI_VOICE_STT_MODEL_UZ || (onGateway() ? cloudSttModel() : "gpt-4o-transcribe");
+
+function sttTargets(language?: string): SttTarget[] {
     const targets: SttTarget[] = [];
     const cloudKey = process.env.OPENAI_API_KEY;
-    if (cloudKey) targets.push({ url: trim(process.env.OPENAI_API_URL || "https://api.openai.com/v1"), key: cloudKey, model: cloudSttModel() });
+    if (language === "uz" && process.env.ELEVENLABS_API_KEY) targets.push({ url: "https://api.elevenlabs.io/v1", key: process.env.ELEVENLABS_API_KEY, model: process.env.ELEVENLABS_STT_MODEL || "scribe_v1", kind: "elevenlabs" });
+    if (cloudKey) targets.push({ url: trim(process.env.OPENAI_API_URL || "https://api.openai.com/v1"), key: cloudKey, model: language === "uz" ? uzCloudModel() : cloudSttModel() });
     if (process.env.TRANSCRIBE_API_URL) targets.push({ url: trim(process.env.TRANSCRIBE_API_URL), key: process.env.TRANSCRIBE_API_KEY || undefined, model: sttModel() });
-    return process.env.STT_LOCAL_FIRST === "1" ? targets.reverse() : targets;
+    return process.env.STT_LOCAL_FIRST === "1" && !targets.some((t) => t.kind === "elevenlabs") ? targets.reverse() : targets;
 }
 
 async function transcribeOnce(t: SttTarget, bytes: Buffer, type: string, language?: string): Promise<string> {
     const form = new FormData();
     form.append("file", new Blob([new Uint8Array(bytes)], { type }), `voice.${AUDIO_EXT[type] ?? "webm"}`);
+    if (t.kind === "elevenlabs") {
+        // ElevenLabs Scribe: POST /v1/speech-to-text, ключ в xi-api-key, язык — трёхбуквенный код (uzb)
+        form.append("model_id", t.model);
+        form.append("language_code", language === "uz" ? "uzb" : language || "");
+        form.append("tag_audio_events", "false");
+        const r = await fetchProvider(`${t.url}/speech-to-text`, { method: "POST", headers: { "xi-api-key": t.key ?? "" }, body: form }, 55000);
+        const j = (await r.json().catch(() => null)) as { text?: string; detail?: unknown } | null;
+        if (!r.ok || !j) {
+            console.error("transcribe error (elevenlabs)", r.status);
+            throw new ProviderError(r.status === 401 ? "The speech provider rejected the API key" : `The speech provider returned an error (${r.status})`);
+        }
+        return String(j.text ?? "").trim();
+    }
     form.append("model", t.model);
     // Язык записи подсказываем, но не настаиваем: whisper и так определит по речи
     if (language) form.append("language", language);
+    if (language === "uz") { form.append("prompt", UZ_STT_PROMPT); form.append("temperature", "0"); }
     const res = await fetchProvider(`${t.url}/audio/transcriptions`, { method: "POST", headers: t.key ? { Authorization: `Bearer ${t.key}` } : {}, body: form }, 55000);
     const json = (await res.json().catch(() => null)) as ({ text?: string; error?: { message?: string } } & Record<string, unknown>) | null;
     if (!res.ok || !json) {
@@ -261,7 +285,7 @@ async function transcribeOnce(t: SttTarget, bytes: Buffer, type: string, languag
 }
 
 export async function transcribeAudio(bytes: Buffer, mime: string, language?: string): Promise<string> {
-    const targets = sttTargets();
+    const targets = sttTargets(language);
     if (!targets.length) throw new ProviderError("Speech recognition is not configured on this site");
     const type = (mime || "audio/webm").split(";")[0];
     let lastError: unknown;
