@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbLock, TbLockOpen } from "react-icons/tb";
 import { apiCall } from "@/store/crmApi";
+import { downloadAuthed } from "./download";
 import { useActiveOrg } from "@/store/useOrgStore";
 
 // «Закрытие периода»: чек-лист, закрытие и повторное открытие (с причиной), очередь проверки документов и запросы специалиста клиенту.
@@ -86,6 +87,7 @@ export default function PeriodClose() {
 						<TbLock size={15} /> {blockers ? t("closeAnyway") : t("closeBtn")}
 					</button>
 				)}
+				<button type="button" className="fs-btn fs-btn-ghost mt-14 ml-8 h-40" onClick={() => void downloadAuthed(`/api/finance/handoff?from=${range.from}&to=${range.to}`, `handoff-${range.from}_${range.to}.zip`, t("closeHandoffError"))}>{t("closeHandoff")}</button>
 				{already && <p className="mt-8 text-12 text-[#9AA396]">{t("closeAlready")}</p>}
 			</section>
 

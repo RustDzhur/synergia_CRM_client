@@ -1228,7 +1228,21 @@
         "prNoClients": "No clients yet.",
         "prWaitingClient": "waiting for the client",
         "prAcceptClient": "Accept",
-        "prEnd": "End"
+        "prEnd": "End",
+        "prDashTitle": "My clients",
+        "prDashEmpty": "No active clients yet.",
+        "prDashUnmatched": "Unmatched bank",
+        "prDashOverdue": "Overdue invoices",
+        "prDashReview": "To review",
+        "prDashFix": "To fix",
+        "prDashRequests": "Requests",
+        "prDashClosedUntil": "Closed until {date}",
+        "prDashNotClosed": "Period not closed",
+        "prDashDeadline_vat_return": "VAT return",
+        "prDashDays": "in {n} d",
+        "prDashUnverified": "unverified date",
+        "prDashOpen": "Open",
+        "prDashOpenClient": "Open client"
     },
     "upgrade": {
         "free": "Free",
@@ -3196,7 +3210,9 @@
         "requestsAnswer": "Your answer",
         "requestsReply": "Reply",
         "requestsAnswered": "Answer sent",
-        "requestsCancelled": "Request cancelled"
+        "requestsCancelled": "Request cancelled",
+        "closeHandoff": "Package for the accountant (ZIP)",
+        "closeHandoffError": "Could not build the package"
     },
     "ads": {
         "needsUpgrade": "Ad performance needs the Professional plan.",

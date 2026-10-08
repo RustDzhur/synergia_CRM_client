@@ -1228,7 +1228,21 @@
         "prNoClients": "Noch keine Mandanten.",
         "prWaitingClient": "wartet auf den Mandanten",
         "prAcceptClient": "Annehmen",
-        "prEnd": "Beenden"
+        "prEnd": "Beenden",
+        "prDashTitle": "Meine Mandanten",
+        "prDashEmpty": "Noch keine aktiven Mandanten.",
+        "prDashUnmatched": "Bank offen",
+        "prDashOverdue": "Überfällige Rechnungen",
+        "prDashReview": "Zu prüfen",
+        "prDashFix": "Zu korrigieren",
+        "prDashRequests": "Anfragen",
+        "prDashClosedUntil": "Abgeschlossen bis {date}",
+        "prDashNotClosed": "Periode nicht abgeschlossen",
+        "prDashDeadline_vat_return": "Umsatzsteuer-Voranmeldung",
+        "prDashDays": "in {n} Tg.",
+        "prDashUnverified": "Datum ungeprüft",
+        "prDashOpen": "Öffnen",
+        "prDashOpenClient": "Mandant öffnen"
     },
     "upgrade": {
         "free": "Kostenlos",
@@ -3196,7 +3210,9 @@
         "requestsAnswer": "Ihre Antwort",
         "requestsReply": "Antworten",
         "requestsAnswered": "Antwort gesendet",
-        "requestsCancelled": "Anfrage abgebrochen"
+        "requestsCancelled": "Anfrage abgebrochen",
+        "closeHandoff": "Paket für den Steuerberater (ZIP)",
+        "closeHandoffError": "Paket konnte nicht erstellt werden"
     },
     "ads": {
         "needsUpgrade": "Werbeleistung erfordert den Tarif Professional.",
