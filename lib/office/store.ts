@@ -1,7 +1,9 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import type { ExecutedAction, PendingAction } from "@/lib/ai/run";
-import { ACCENTS, type Accent, PLATFORM_IDS, STARTER_IDS, TEMPLATES, type SkillId, type ZoneId, isAccent, isSkill, isZone, templateById } from "./templates";
+import { ACCENTS, TEMPLATES as CODE_TEMPLATES, type Accent, type SkillId, type ZoneId, isAccent, isSkill, isZone } from "./templates";
+import { catalogById, hireCatalog, isPlatformTemplate, loadCatalog, starterIds } from "./catalog";
+import { orgMarket } from "@/lib/finance/marketGuard";
 
 // Роботы, их регулярные задачи и поручения лежат в записях разделов (SectionRecord), как правила автоматизации: отдельной
 // миграции базы не нужно. Ключи: office:robot (rid = id робота), office:task (rid = id поручения), office:meta (флаг «стартовый состав нанят»).
@@ -82,7 +84,7 @@ const toRobot = (r: { rid: string; values: unknown; createdAt: Date }): Robot =>
 const robotValues = (r: Robot) => ({ name: r.name, title: r.title, template: r.template, zone: r.zone, accent: r.accent, skills: r.skills, instructions: r.instructions, autonomy: r.autonomy, enabled: r.enabled, routines: r.routines });
 
 /** Робот платформы (Rex, Sven, Ada): виден и доступен только администратору платформы. */
-export const isPlatformRobot = (r: { template: string }) => !!templateById(r.template)?.platform;
+export const isPlatformRobot = (r: { template: string }) => isPlatformTemplate(r.template);
 
 /** Доступ к роботам платформы. По умолчанию закрыт: роботы платформы видны только там, где вызывающий явно передал platform: true
  *  (администратор платформы или внутренний запуск по расписанию). Для всех остальных такого робота «нет» — как будто id не существует. */
@@ -91,19 +93,23 @@ export interface Scope { platform?: boolean }
 export async function listRobots(org: string, scope: Scope = {}): Promise<Robot[]> {
     const rows = await prisma.sectionRecord.findMany({ where: { org, key: K_ROBOT }, orderBy: { createdAt: "asc" } });
     const all = rows.map(toRobot);
-    return scope.platform ? all : all.filter((r) => !isPlatformRobot(r));
+    if (scope.platform) return all;
+    const flags = await Promise.all(all.map((r) => isPlatformRobot(r)));
+    return all.filter((_, i) => !flags[i]);
 }
 
 export async function getRobot(org: string, id: string, scope: Scope = {}): Promise<Robot | null> {
     const row = await prisma.sectionRecord.findFirst({ where: { org, key: K_ROBOT, rid: id } });
     const robot = row ? toRobot(row) : null;
-    return robot && (scope.platform || !isPlatformRobot(robot)) ? robot : null;
+    return robot && (scope.platform || !(await isPlatformRobot(robot))) ? robot : null;
 }
 
 /** Поручения без поручений роботам платформы, если доступа к ним нет. */
 export async function visibleTasks(org: string, tasks: OfficeTask[], scope: Scope = {}): Promise<OfficeTask[]> {
     if (scope.platform) return tasks;
-    const hidden = new Set((await listRobots(org, { platform: true })).filter(isPlatformRobot).map((r) => r.id));
+    const all = await listRobots(org, { platform: true });
+    const flags = await Promise.all(all.map((r) => isPlatformRobot(r)));
+    const hidden = new Set(all.filter((_, i) => flags[i]).map((r) => r.id));
     return tasks.filter((t) => !hidden.has(t.robot));
 }
 
@@ -112,9 +118,13 @@ export interface RobotInput { template?: string; name?: string; title?: string; 
 /** Нанимает робота: из шаблона каталога или своего («custom»). Для шаблона пустые поля берутся из него. */
 export async function createRobot(org: string, input: RobotInput, opts: { platform?: boolean } = {}): Promise<Robot> {
     if ((await prisma.sectionRecord.count({ where: { org, key: K_ROBOT } })) >= MAX_ROBOTS) throw new OfficeError(`At most ${MAX_ROBOTS} robots`);
-    const tpl = input.template && input.template !== "custom" ? templateById(input.template) : null;
+    const tpl = input.template && input.template !== "custom" ? await catalogById(input.template) : null;
     if (input.template && input.template !== "custom" && !tpl) throw new OfficeError("Unknown robot template");
     if (tpl?.platform && !opts.platform) throw new OfficeError("Unknown robot template"); // роботов платформы нанимает только сама платформа
+    if (tpl && !tpl.platform) {
+        const offered = await hireCatalog(await orgMarket(org));
+        if (!offered.some((t) => t.id === tpl.id)) throw new OfficeError("Unknown robot template"); // отключена или не для рынка фирмы
+    }
     const name = clean(input.name, 40) || tpl?.name || "";
     if (!name) throw new OfficeError("Robot name is required");
     const skills = tpl && !Array.isArray(input.skills) ? tpl.skills : (Array.isArray(input.skills) ? input.skills : []).filter(tpl?.platform ? isSkill : ownSkill);
@@ -122,7 +132,8 @@ export async function createRobot(org: string, input: RobotInput, opts: { platfo
     const robot: Robot = {
         id: rid("r"),
         name,
-        title: clean(input.title, 60),
+        // у ролей из кода должность — перевод интерфейса; у ролей, добавленных администратором, переводов в интерфейсе нет — подпись берётся из записи
+        title: clean(input.title, 60) || (tpl && !CODE_TEMPLATES.some((c) => c.id === tpl.id) ? clean(tpl.texts.en?.title || tpl.name, 60) : ""),
         template: tpl?.id ?? "custom",
         zone: tpl?.platform ? "platform" : isZone(input.zone) && input.zone !== "platform" ? input.zone : tpl?.zone ?? "office",
         accent: isAccent(input.accent) ? input.accent : tpl?.accent ?? ACCENTS[Math.floor(Math.random() * ACCENTS.length)],
@@ -154,7 +165,7 @@ export async function updateRobot(org: string, id: string, patch: RobotInput & {
     const next: Robot = { ...cur };
     if (patch.name !== undefined) { next.name = clean(patch.name, 40); if (!next.name) throw new OfficeError("Robot name is required"); }
     if (patch.title !== undefined) next.title = clean(patch.title, 60);
-    const fixed = !!templateById(cur.template)?.platform; // роботу платформы зону и навыки не меняют
+    const fixed = await isPlatformTemplate(cur.template); // роботу платформы зону и навыки не меняют
     if (patch.zone !== undefined && !fixed) { if (!isZone(patch.zone) || patch.zone === "platform") throw new OfficeError("Unknown zone"); next.zone = patch.zone; }
     if (patch.accent !== undefined) { if (!isAccent(patch.accent)) throw new OfficeError("Unknown color"); next.accent = patch.accent; }
     if (patch.skills !== undefined && !fixed) {
@@ -190,10 +201,7 @@ export async function ensureStarters(org: string): Promise<boolean> {
     // отметка ставится до найма: параллельное открытие раздела не наймёт состав второй раз
     try { await prisma.sectionRecord.create({ data: { org, key: K_META, rid: "meta", values: { starters: new Date().toISOString() } as never } }); } catch { return false; }
     if ((await prisma.sectionRecord.count({ where: { org, key: K_ROBOT } })) > 0) return false;
-    for (const id of STARTER_IDS) {
-        const tpl = TEMPLATES.find((t) => t.id === id);
-        if (tpl) await createRobot(org, { template: tpl.id });
-    }
+    for (const id of await starterIds(await orgMarket(org))) await createRobot(org, { template: id }).catch(() => undefined);
     return true;
 }
 
@@ -203,9 +211,9 @@ export async function ensurePlatformRobots(org: string): Promise<boolean> {
     if (mark) return false;
     try { await prisma.sectionRecord.create({ data: { org, key: K_META, rid: "platform", values: { at: new Date().toISOString() } as never } }); } catch { return false; }
     const have = new Set((await listRobots(org, { platform: true })).map((r) => r.template));
-    for (const id of PLATFORM_IDS) {
-        if (have.has(id)) continue;
-        await createRobot(org, { template: id }, { platform: true }).catch(() => undefined);
+    for (const t of (await loadCatalog()).filter((x) => x.platform && x.active)) {
+        if (have.has(t.id)) continue;
+        await createRobot(org, { template: t.id }, { platform: true }).catch(() => undefined);
     }
     return true;
 }

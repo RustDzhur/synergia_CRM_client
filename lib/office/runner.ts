@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { StepBudgetError, continuationTask, dailyLimit, log, runChat, takeQuota, type RunOpts } from "@/lib/ai/run";
 import { ToolError, allowedTools, type AiCtx } from "@/lib/ai/tools";
 import { OfficeError, IRIS_ID, type OfficeTask, type Robot, createTask, getRobot, getTask, getTaskScoped, listRobots, updateTask } from "./store";
-import { bossPersona, robotPersona, templateById, toolsFor } from "./templates";
+import { bossPersona, robotPersona, toolsFor } from "./templates";
+import { catalogById } from "./catalog";
 
 // Исполнитель поручений Робот-офиса. Поручение роботу — это обычный разговор Айрис (runChat), в котором:
 //   • инструменты ограничены навыками робота, а подсказка — его должностной инструкцией;
@@ -57,7 +58,7 @@ async function execute(ctx: OfficeCtx, taskId: string): Promise<void> {
         const base: RunOpts = { history: [{ role: "user", text: task.text }], locale: task.locale ?? ctx.locale ?? "en", page: "/crm/automation", orgName, noQueue: true };
         const opts: RunOpts = boss
             ? { ...base, allTools: true, persona: bossPersona((await listRobots(org)).filter((r) => !watchOnly(r)).map((r) => ({ id: r.id, name: r.name, title: robotTitle(r), skills: r.skills, enabled: r.enabled }))) }
-            : { ...base, auto: robot!.autonomy === "auto", onlyTools: toolsFor(robot!.skills), persona: robotPersona({ name: robot!.name, title: robotTitle(robot!), duties: robotDuties(robot!) }, orgName) };
+            : { ...base, auto: robot!.autonomy === "auto", onlyTools: toolsFor(robot!.skills), persona: robotPersona({ name: robot!.name, title: robotTitle(robot!), duties: await robotDuties(robot!) }, orgName) };
 
         // Большое поручение может не уложиться в шаги одного круга: продолжаем с описанием сделанного (до двух раз), а не сдаёмся
         let current = task.text, res = null as Awaited<ReturnType<typeof runChat>> | null;
@@ -81,7 +82,7 @@ async function execute(ctx: OfficeCtx, taskId: string): Promise<void> {
 }
 
 export const robotTitle = (r: Robot) => r.title;
-export const robotDuties = (r: Robot) => r.instructions || templateById(r.template)?.duties || "Help the company owner within your skills.";
+export const robotDuties = async (r: Robot) => r.instructions || (await catalogById(r.template))?.duties || "Help the company owner within your skills.";
 
 /** «Работает» без живого исполнителя — поручение прервал перезапуск сервера: показываем как сорвавшееся, а не как вечную работу. */
 export async function sweepInterrupted(org: string, tasks: OfficeTask[]): Promise<OfficeTask[]> {

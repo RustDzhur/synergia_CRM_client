@@ -1193,3 +1193,27 @@ model PaymentEvent {
   @@index([org, invoice])
   @@map("paymentevents")
 }
+
+// Каталог ролей роботов Робот-офиса. Хранится в базе, чтобы администратор платформы правил роли без выкладки.
+// Начальные роли подгружаются из lib/office/templates.ts один раз (существующие записи сидом не перезаписываются).
+model RobotTemplate {
+  id        String   @id
+  name      String
+  zone      String
+  accent    String
+  skills    String[] @default([])
+  duties    String   @default("")
+  platform  Boolean  @default(false)
+  routines  Json?
+  // рынки, для которых роль предлагается при найме; пусто — для всех
+  markets   String[] @default([])
+  // название и описание по языкам: { de: {title, desc}, en: {...}, ua: {...}, uz: {...} }; пусто — берутся из переводов интерфейса
+  texts     Json?
+  starter   Boolean  @default(false)
+  sort      Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("robot_templates")
+}
