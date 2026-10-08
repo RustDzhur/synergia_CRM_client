@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { storageProblem } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
+import { missingTables } from "@/lib/schemaCheck";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,11 @@ export async function GET() {
                   : "Database error";
         }
     }
+    // Схема базы: после выкладки таблицы из schema.prisma должны существовать (иначе накатка схемы не прошла)
+    let schema: string | string[] = "skipped";
+    if (db === "ok") {
+        try { const missing = await missingTables(); schema = missing.length ? missing : "ok"; } catch { schema = "unknown"; }
+    }
     // Необязательные возможности: только «настроено или что не так», значения не раскрываются
     const features = {
         storage: storageProblem() || "ok",
@@ -34,9 +40,9 @@ export async function GET() {
         admin: !!process.env.ADMIN_EMAILS,
         cron: !!process.env.CRON_SECRET,
     };
-    const ok = env.DATABASE_URL && env.JWT_SECRET && db === "ok";
+    const ok = env.DATABASE_URL && env.JWT_SECRET && db === "ok" && (schema === "ok" || schema === "unknown" || schema === "skipped");
     // Задеплоенный коммит: его пишет deploy/autodeploy.sh перед сборкой — видно, какая
     // версия кода сейчас живёт (как номер деплоя)
     const commit = process.env.DEPLOYED_COMMIT ?? "";
-    return NextResponse.json({ ok, commit, env, db, features }, { status: ok ? 200 : 503 });
+    return NextResponse.json({ ok, commit, env, db, schema, features }, { status: ok ? 200 : 503 });
 }
