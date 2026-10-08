@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
-import { type Role, ASSIGNABLE_ROLES, GRANTABLE, NO_MODULES } from "@/lib/access";
+import { type Role, ASSIGNABLE_ROLES, GRANTABLE, NO_MODULES, isPracticeRole } from "@/lib/access";
+import { endLink } from "@/lib/practice/service";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,7 @@ export async function PATCH(req: Request, { params }: { params: { userId: string
     const m = await prisma.membership.findFirst({ where: { org: user.id, user: params.userId } });
     if (!m) return notFound();
     if (m.role === "owner") return forbidden("The owner's access cannot be changed");
+    if (isPracticeRole(m.role)) return forbidden("A specialist's access is managed through the practice link");
     if (m.role === "admin" && user.role !== "owner") return forbidden("Only the owner can change administrators");
     let role = m.role;
     let modules = m.modules;
@@ -43,6 +45,11 @@ export async function DELETE(req: Request, { params }: { params: { userId: strin
     const m = await prisma.membership.findFirst({ where: { org: user.id, user: params.userId } });
     if (!m) return notFound();
     if (m.role === "owner") return forbidden("The owner cannot be removed");
+    // доступ специалиста — это связь с практикой: убрать его из «Команды» значит завершить связь целиком (и согласие)
+    if (isPracticeRole(m.role) && m.link) {
+        await endLink(m.link, { userId: user.userId, role: user.role, org: user.id }, "removed from the team");
+        return NextResponse.json({ ok: true, linkEnded: true });
+    }
     if (m.role === "admin" && user.role !== "owner") return forbidden("Only the owner can remove administrators");
     await prisma.membership.delete({ where: { id: m.id } });
     return NextResponse.json({ ok: true });

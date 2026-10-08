@@ -1,8 +1,14 @@
 // Роли и доступ к разделам CRM. Раздел определяется по адресу запроса; проверка — в requireUser (lib/auth.ts).
-export type Role = "owner" | "admin" | "manager" | "employee" | "viewer";
+// advisor (бухгалтер) и counsel (юрист) — роли специалистов практики в фирме клиента (lib/practice): существуют только вместе
+// с действующей связью ClientLink, не назначаются через «Команду» и никогда не получают оплату, состав фирмы, настройки и автоматизацию.
+export type Role = "owner" | "admin" | "manager" | "employee" | "viewer" | "advisor" | "counsel";
 export type Module = "crm" | "tasks" | "company" | "collab" | "mail" | "marketing" | "inventory" | "automation" | "settings" | "billing" | "members";
 
-export const ROLES: Role[] = ["owner", "admin", "manager", "employee", "viewer"];
+export const ROLES: Role[] = ["owner", "admin", "manager", "employee", "viewer", "advisor", "counsel"];
+export const PRACTICE_ROLES: Role[] = ["advisor", "counsel"];
+export const isPracticeRole = (r: unknown): r is "advisor" | "counsel" => r === "advisor" || r === "counsel";
+/** Разделы, которые клиент может открыть специалисту практики. Оплата, состав фирмы, настройки, автоматизация, маркетинг и почта — никогда. */
+export const PRACTICE_GRANTABLE: Module[] = ["inventory", "crm", "tasks", "collab"];
 export const ASSIGNABLE_ROLES: Role[] = ["admin", "manager", "employee", "viewer"]; // владельцем можно только быть, не назначить
 export const MODULES: Module[] = ["crm", "tasks", "company", "collab", "mail", "marketing", "inventory", "automation", "settings", "billing", "members"];
 // Разделы, которые можно выдавать сотруднику выборочно (оплата и состав фирмы — только владельцу и администратору по роли)
@@ -18,6 +24,8 @@ export const ROLE_MODULES: Record<Role, Module[]> = {
     manager: ["crm", "tasks", "company", "collab", "mail", "marketing", "inventory"],
     employee: ["crm", "tasks", "collab", "mail"],
     viewer: ["crm", "tasks", "collab", "mail"],
+    advisor: ["inventory", "crm", "tasks", "collab"],
+    counsel: ["inventory", "crm", "tasks", "collab"],
 };
 
 // Адреса API, которые не относятся к данным фирмы или проверяют доступ сами (публичные хуки, вход, кабинет владельца
@@ -63,12 +71,18 @@ export function moduleForPath(pathname: string, method: string, search?: URLSear
         case "env": return "settings"; // переменные окружения фирмы: смотреть и менять — владелец и администраторы
         case "notify-settings": return method === "GET" ? null : "settings"; // бот фирмы: смотреть можно всем, менять — по правам
         case "integrations": case "messenger": case "whatsapp": return method === "GET" ? "collab" : "settings"; // список каналов нужен звонилке всем; менять — только с доступом к настройкам
+        case "practice": return null; // кабинет практики и согласия клиента: каждый маршрут проверяет права сам (lib/practice)
         case "orgs": return p.startsWith("orgs/members") || p.startsWith("orgs/invitations") ? "members" : null;
         default: return (OPEN_API_SEGMENTS as readonly string[]).includes(first) ? null : "deny";
     }
 }
 
 export function effectiveModules(role: Role, custom: string[]): Module[] {
+    if (isPracticeRole(role)) {
+        // доступ специалиста: то, что клиент выдал в связи, но не шире PRACTICE_GRANTABLE
+        const given = custom.length ? custom : ROLE_MODULES[role];
+        return given.filter((m): m is Module => (PRACTICE_GRANTABLE as string[]).includes(m));
+    }
     if (role === "owner" || role === "admin" || !custom.length) return ROLE_MODULES[role];
     return custom.filter((m): m is Module => (GRANTABLE as string[]).includes(m));
 }
