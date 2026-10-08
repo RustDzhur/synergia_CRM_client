@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AiFillCheckCircle } from "react-icons/ai";
 import free from "@/assets/svgs/plans/free.svg";
@@ -10,6 +10,7 @@ import useAuthFormStore from "@/store/useAuthFormStore";
 import { useSiteMenuState } from "@/store/useSiteMenuState";
 import { useLocale, useTranslations } from "next-intl";
 import { FEATURE_KEYS, PLANS, PlanId, YEAR_MONTHS, limitsLine } from "@/config/plans";
+import { formatPlanPrice } from "@/lib/currency";
 import PromoBanner from "@/components/shared/PromoBanner";
 import PromoModal from "./PromoModal";
 
@@ -26,6 +27,16 @@ export default function PaidPlan() {
 	const { menu, toggleMenu } = useSiteMenuState();
 	const yearly = active === t("year");
 	const [promoOpen, setPromoOpen] = useState(false);
+	const [rates, setRates] = useState<Record<string, number> | null>(null);
+	// Курс местной валюты тянем один раз с сервера; пока его нет, цена показывается в евро (без «моргания»).
+	useEffect(() => {
+		let alive = true;
+		fetch("/api/currency")
+			.then((r) => r.json())
+			.then((j) => { if (alive && j?.rates) setRates(j.rates); })
+			.catch(() => {});
+		return () => { alive = false; };
+	}, []);
 
 	// Кнопки тарифов: у вошедшего пользователя — прямо в кабинет (платный тариф — на страницу оплаты). У гостя пока действует
 	// программа «первые 500 — год бесплатно»: кнопка открывает окно с её условиями, а регистрация — по кнопке в этом окне.
@@ -92,7 +103,7 @@ export default function PaidPlan() {
 									titles.free
 								) : (
 									<>
-										{price}€
+										{formatPlanPrice(price, locale, rates)}
 										<span className="text-20 font-normal tracking-[0.4px]">/{yearly ? t("year") : t("month")}</span>
 									</>
 								)}
