@@ -35,6 +35,7 @@ export const marketDocumentLocale = (country?: string | null): DocLocale | null 
 /** Вкладки финансового раздела (ключи совпадают с Finance/index.tsx и ?tab= в ссылках). */
 export type FinanceTabId =
     | "overview"
+    | "close"
     | "esf"
     | "quotes"
     | "orders"
@@ -133,7 +134,7 @@ const DE: MarketProfile = {
     currencyDefault: "EUR",
     localeDefault: "de",
     // Порядок совпадает с NAV в Finance/index.tsx: огляд → документы → деньги → отчёты → настройки
-    nav: ["overview", "quotes", "orders", "contracts", "invoices", "recurring", "dunning", "expenses", "assets", "bank", "products", "vat", "eur", "bwa", "susa", "settings", "audit"],
+    nav: ["overview", "quotes", "orders", "contracts", "invoices", "recurring", "dunning", "expenses", "assets", "bank", "products", "vat", "eur", "bwa", "susa", "close", "settings", "audit"],
     documents: ["invoice", "quote", "order", "contract", "credit_note", "delivery_note"],
     integrations: [],
     taxModules: ["ustva", "eur", "bwa", "susa"],
@@ -161,7 +162,7 @@ const UA: MarketProfile = {
     localeDefault: "ua",
     // Огляд · замовлення · рахунки · договори · акти · накладні · регулярні рахунки · витрати · банк ·
     // товари/склад · доставка (НП/Укрпошта) · ПРРО (чеки/зміни) · податки · аудит · налаштування
-    nav: ["overview", "quotes", "orders", "contracts", "acts", "deliveryNotes", "invoices", "recurring", "expenses", "bank", "products", "delivery", "fiscal", "vat", "eur", "audit", "settings"],
+    nav: ["overview", "quotes", "orders", "contracts", "acts", "deliveryNotes", "invoices", "recurring", "expenses", "bank", "products", "delivery", "fiscal", "vat", "eur", "audit", "close", "settings"],
     documents: ["invoice", "quote", "order", "contract", "credit_note", "delivery_note", "act", "tax_invoice", "correction_invoice", "fiscal_receipt"],
     integrations: ["novaposhta", "ukrposhta", "checkbox", "monobank", "liqpay", "wayforpay", "cryptopay", "prom", "rozetka", "horoshop", "olx", "nbu"],
     taxModules: ["ua_vat_register", "ua_income_book", "ua_profit_tax"],
@@ -189,7 +190,7 @@ const UZ: MarketProfile = {
     nameGenitive: "Узбекистана",
     currencyDefault: "UZS",
     localeDefault: "uz",
-    nav: ["overview", "quotes", "orders", "contracts", "acts", "deliveryNotes", "invoices", "recurring", "esf", "expenses", "bank", "products", "vat", "audit", "settings"],
+    nav: ["overview", "quotes", "orders", "contracts", "acts", "deliveryNotes", "invoices", "recurring", "esf", "expenses", "bank", "products", "vat", "audit", "close", "settings"],
     documents: ["invoice", "quote", "order", "contract", "credit_note", "delivery_note", "act", "tax_invoice"],
     integrations: ["cbu"],
     taxModules: ["uz_vat", "uz_esf_register"],

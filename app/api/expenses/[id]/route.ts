@@ -3,8 +3,9 @@ import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { logAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
+import { withPeriodLock } from "@/lib/finance/periodLock";
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+async function handleDELETE(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
@@ -17,7 +18,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
 // PATCH /api/expenses/:id — пока только отметка полученного электронного счёта-фактуры поставщика (рынок UZ):
 // { esf: { number, date, supplierInn } } — основание для вычета входного QQS. null снимает отметку.
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+async function handlePATCH(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
@@ -31,3 +32,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     await prisma.expense.update({ where: { id: expense.id }, data: { esf: (esf && esf.number ? esf : null) as never } });
     return NextResponse.json({ esf: esf && esf.number ? esf : null });
 }
+
+// Закрытый период (сторож в lib/prisma.ts) отвечает здесь 423, а не «Server error»
+export const DELETE = withPeriodLock(handleDELETE);
+export const PATCH = withPeriodLock(handlePATCH);

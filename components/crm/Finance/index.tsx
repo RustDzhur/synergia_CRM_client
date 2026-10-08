@@ -26,6 +26,7 @@ import {
 	TbTruckLoading,
 	TbWallet,
 	TbFileInvoice,
+	TbLock,
 } from "react-icons/tb";
 import { TAB_BAR, TAB_ITEM, TAB_ITEM_ACTIVE, TAB_ITEM_IDLE } from "../shared/tabBar";
 import PageHeader from "@/components/crm/shared/PageHeader";
@@ -57,6 +58,7 @@ import FinanceSettingsTab from "./Settings";
 import Taxes from "./Taxes";
 import UzBetaBanner from "./UzBetaBanner";
 import EsfJournal from "./EsfJournal";
+import PeriodClose from "./PeriodClose";
 import Reports from "./Reports";
 
 // Finance (/crm/finance; старый адрес /crm/inventory перенаправляется в next.config.js): счета,
@@ -67,7 +69,7 @@ import Reports from "./Reports";
 // из проверок country === "UA" по месту. Пока страна не выбрана, раздел показывает только её выбор
 // и настройки (см. CountryPicker).
 
-type Tab = "overview" | "esf" | "quotes" | "orders" | "contracts" | "invoices" | "recurring" | "dunning" | "expenses" | "assets" | "bank" | "products" | "purchases" | "production" | "pos" | "acts" | "deliveryNotes" | "delivery" | "fiscal" | "vat" | "eur" | "bwa" | "susa" | "audit" | "settings";
+type Tab = "overview" | "close" | "esf" | "quotes" | "orders" | "contracts" | "invoices" | "recurring" | "dunning" | "expenses" | "assets" | "bank" | "products" | "purchases" | "production" | "pos" | "acts" | "deliveryNotes" | "delivery" | "fiscal" | "vat" | "eur" | "bwa" | "susa" | "audit" | "settings";
 
 interface NavLeaf { key: Tab; icon: IconType }
 // Пункт ведёт на экран; группа — только заголовок в колонке навигации (как группы сайдбара), собственного
@@ -107,6 +109,7 @@ const NAV_DE: NavNode[] = [
 		{ key: "bwa", icon: TbChartBar },
 		{ key: "susa", icon: TbTable },
 	] },
+	{ kind: "item", key: "close", icon: TbLock },
 	{ kind: "item", key: "settings", icon: TbSettings },
 	{ kind: "item", key: "audit", icon: TbHistory },
 ];
@@ -140,6 +143,7 @@ const NAV_UA: NavNode[] = [
 		{ key: "vat", icon: TbReceiptTax },
 		{ key: "eur", icon: TbScale },
 	] },
+	{ kind: "item", key: "close", icon: TbLock },
 	{ kind: "item", key: "settings", icon: TbSettings },
 	{ kind: "item", key: "audit", icon: TbHistory },
 ];
@@ -166,6 +170,7 @@ const NAV_UZ: NavNode[] = [
 	{ kind: "item", key: "purchases", icon: TbTruckLoading },
 	{ kind: "item", key: "production", icon: TbTools },
 	{ kind: "item", key: "vat", icon: TbReceiptTax },
+	{ kind: "item", key: "close", icon: TbLock },
 	{ kind: "item", key: "settings", icon: TbSettings },
 	{ kind: "item", key: "audit", icon: TbHistory },
 ];
@@ -437,6 +442,7 @@ export default function Finance() {
 					{tab === "deliveryNotes" && <IssuedDocs kind="delivery_note" />}
 					{tab === "delivery" && <Delivery />}
 					{tab === "fiscal" && <Fiscal />}
+					{tab === "close" && <PeriodClose />}
 					{tab === "esf" && <EsfJournal />}
 					{tab === "vat" && <Taxes kind="vat" />}
 					{tab === "eur" && <Taxes kind="eur" />}

@@ -14,6 +14,7 @@ import { ensureSupplyDate } from "@/lib/finance/issue";
 import { prisma } from "@/lib/prisma";
 import { logDocEvent } from "@/lib/sync/documents";
 import { fx } from "@/lib/sync/texts";
+import { withPeriodLock } from "@/lib/finance/periodLock";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -26,7 +27,7 @@ const needsSetup = (message: string, code: string) => NextResponse.json({ messag
 // Отправляет клиенту письмо с PDF счёта вложением и только после успешной отправки переводит счёт в «отправлен»
 // (счёт после этого не редактируется). Кому уходить — введённый адрес, иначе e-mail контакта, иначе фирмы клиента;
 // ящик — выбранный или первый подключённый в Web Mails. Адрес сохраняем в sentTo, как и в аудите.
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+async function handlePOST(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
@@ -95,3 +96,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     await logAudit({ org: user.id, userId: user.userId, action: "invoice.sent", entityType: "invoice", entityId: inv.id, summary: `Invoice ${inv.number} emailed to ${recipient.email}`, meta: { currency: inv.currency, to: recipient.email, source: recipient.source } });
     return NextResponse.json(toInvoiceDTO(saved));
 }
+
+// Закрытый период (сторож в lib/prisma.ts) отвечает здесь 423, а не «Server error»
+export const POST = withPeriodLock(handlePOST);

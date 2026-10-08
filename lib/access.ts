@@ -63,6 +63,7 @@ export function moduleForPath(pathname: string, method: string, search?: URLSear
         case "bank": case "boms": case "pos": case "production": case "production-orders": case "purchases": case "reconciliation":
         case "recurring-invoices": case "stock": case "stock-docs": case "supplier-invoices": case "suppliers": case "warehouses":
         case "issued-docs": case "assets": case "novaposhta": case "ukrposhta": case "marketplace": return "inventory";
+        case "review": return "inventory"; // проверка документов, закрытие периода и запросы клиенту — раздел «Финансы»
         case "export": return EXPORT_MODULE[search?.get("kind") ?? ""] ?? "inventory";
         case "import": return "crm"; // вид данных приходит в теле запроса: маршруты import/* дополнительно проверяют IMPORT_MODULE
         case "billing": return "billing";

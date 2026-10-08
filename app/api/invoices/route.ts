@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { logDocEvent } from "@/lib/sync/documents";
 import { numberPrefix } from "@/lib/finance/documents/store";
 import { fx } from "@/lib/sync/texts";
+import { withPeriodLock } from "@/lib/finance/periodLock";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export async function GET(req: Request) {
 }
 
 // POST /api/invoices — счёт напрямую (не через заказ), например разовая услуга без отдельного Order
-export async function POST(req: Request) {
+async function handlePOST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     const b = await req.json().catch(() => null);
@@ -80,3 +81,6 @@ export async function POST(req: Request) {
     await logDocEvent(user.id, invoice, "invoice", fx("invoice_created", { number: invoice.number, amount: computeTotals(items as never).gross, currency: invoice.currency }), "created");
     return NextResponse.json(toInvoiceDTO(invoice), { status: 201 });
 }
+
+// Закрытый период (сторож в lib/prisma.ts) отвечает здесь 423, а не «Server error»
+export const POST = withPeriodLock(handlePOST);

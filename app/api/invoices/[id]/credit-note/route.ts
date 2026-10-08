@@ -14,11 +14,12 @@ import { isTemplate } from "@/lib/finance/pdf";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import { numberPrefix } from "@/lib/finance/documents/store";
 import { fx } from "@/lib/sync/texts";
+import { withPeriodLock } from "@/lib/finance/periodLock";
 
 // POST /api/invoices/:id/credit-note — { items?, notes? }: выпускает кредит-ноту (Gutschrift/storno) к отправленному
 // счёту. Номер счёта, однажды выданный, не меняется и не удаляется (§14 UStG) — корректировка оформляется отдельным
 // документом со своей нумерацией (creditNotePrefix), который эту сумму вычитает.
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+async function handlePOST(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
@@ -70,3 +71,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     await logAudit({ org: user.id, userId: user.userId, action: "invoice.credit_note", entityType: "invoice", entityId: credit.id, summary: `Credit note ${credit.number} issued for invoice ${source.number}`, meta: { sourceInvoice: source.number, currency: credit.currency } });
     return NextResponse.json(toInvoiceDTO(credit), { status: 201 });
 }
+
+// Закрытый период (сторож в lib/prisma.ts) отвечает здесь 423, а не «Server error»
+export const POST = withPeriodLock(handlePOST);

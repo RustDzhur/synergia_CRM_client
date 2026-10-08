@@ -7,10 +7,11 @@ import { applyTaxPolicy, taxExempt } from "@/lib/finance/tax";
 import "@/lib/finance/pdf";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import { prisma } from "@/lib/prisma";
+import { withPeriodLock } from "@/lib/finance/periodLock";
 
 // POST /api/invoices/:id/duplicate — новый черновик с теми же клиентом и позициями (повторный/шаблонный счёт без
 // отдельной модели шаблонов: любой существующий счёт можно переиспользовать как основу).
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+async function handlePOST(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
@@ -33,3 +34,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     });
     return NextResponse.json(toInvoiceDTO(copy), { status: 201 });
 }
+
+// Закрытый период (сторож в lib/prisma.ts) отвечает здесь 423, а не «Server error»
+export const POST = withPeriodLock(handlePOST);

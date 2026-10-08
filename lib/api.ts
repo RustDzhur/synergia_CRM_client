@@ -3,6 +3,7 @@ import { MarketError, ProviderError } from "@/lib/http";
 import { ComplianceError } from "@/lib/finance/compliance";
 import { reportError } from "@/lib/reportError";
 import { wasDemoDenied, wasDenied, wasPlanDenied } from "@/lib/auth";
+import { PeriodLockedError, lockedBody } from "@/lib/finance/periodLock";
 
 // 403, если пользователь вошёл, но у его роли нет доступа к разделу (или фирма заблокирована); иначе 401.
 // Отдельный код plan — раздел есть, но его нет в тарифе фирмы: интерфейс покажет предложение сменить тариф, а не «нет прав».
@@ -35,6 +36,8 @@ export function contentDisposition(filename: string, kind: "inline" | "attachmen
 // человек узнаёт о них, не дожидаясь, пока кто-нибудь пожалуется. Провайдерные не отправляем: их видно
 // в интерфейсе, и это не поломка приложения, а ответ внешнего сервиса.
 export function failure(e: unknown) {
+    // Закрытый период: 423 с границами периода — интерфейс объяснит, что править можно только корректировкой в открытом периоде
+    if (e instanceof PeriodLockedError) return NextResponse.json(lockedBody(e), { status: 423 });
     // Режим рынка: 409 и код market — интерфейс переведёт его сам (кому функция доступна)
     if (e instanceof MarketError) return NextResponse.json({ message: e.message, code: "market", market: e.market }, { status: 409 });
     // Чек-лист реквизитов: 400 со списком отсутствующих полей (ТЗ §14 — документ не выпускается)

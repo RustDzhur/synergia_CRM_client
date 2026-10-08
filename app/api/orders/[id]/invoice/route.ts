@@ -10,10 +10,11 @@ import { toInvoiceDTO } from "@/lib/finance/dto";
 import { prisma } from "@/lib/prisma";
 import { logDocEvent } from "@/lib/sync/documents";
 import { fx } from "@/lib/sync/texts";
+import { withPeriodLock } from "@/lib/finance/periodLock";
 
 // POST /api/orders/:id/invoice — { customerAddress?, customerTaxId? }: выставить счёт по заказу. Заказ переходит в "invoiced"
 // и получает ссылку на счёт; повторно выставить счёт по тому же заказу нельзя (один заказ — один счёт).
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+async function handlePOST(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
@@ -47,3 +48,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     await emit(user.id, { type: "order_status", data: { id: order.id, number: order.number, status: "invoiced", customerName: order.customerName } });
     return NextResponse.json(toInvoiceDTO(invoice), { status: 201 });
 }
+
+// Закрытый период (сторож в lib/prisma.ts) отвечает здесь 423, а не «Server error»
+export const POST = withPeriodLock(handlePOST);

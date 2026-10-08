@@ -6,6 +6,7 @@ import { parseBankCsv } from "@/lib/finance/bank";
 import { importBankRows } from "@/lib/finance/bankImport";
 import { registerPayment, revertPayment } from "@/lib/sync/payments";
 import { prisma } from "@/lib/prisma";
+import { withPeriodLock } from "@/lib/finance/periodLock";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export async function GET(req: Request) {
 // import=1 — тело содержит { csv } выписки: строки разбираются терпимым парсером,
 // дубликаты отсекаются по внешнему идентификатору, а к каждой новой строке сразу
 // подбирается предполагаемая пара (счёт клиенту или расход) — но только как подсказка.
-export async function POST(req: Request) {
+async function handlePOST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     const b = await req.json().catch(() => null);
@@ -92,7 +93,7 @@ export async function POST(req: Request) {
 }
 
 // DELETE /api/bank/transactions?account= — очистить все движения по счёту (например, ошибочный импорт)
-export async function DELETE(req: Request) {
+async function handleDELETE(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     const url = new URL(req.url);
@@ -111,7 +112,7 @@ export async function DELETE(req: Request) {
 }
 
 // PATCH /api/bank/transactions — привязать движение к счёту клиенту или расходу, либо снять привязку
-export async function PATCH(req: Request) {
+async function handlePATCH(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     const b = await req.json().catch(() => null);
@@ -148,3 +149,8 @@ export async function PATCH(req: Request) {
     const updated = await prisma.bankTransaction.update({ where: { id: tx.id }, data });
     return NextResponse.json(toDTO(updated));
 }
+
+// Закрытый период (сторож в lib/prisma.ts) отвечает здесь 423, а не «Server error»
+export const POST = withPeriodLock(handlePOST);
+export const DELETE = withPeriodLock(handleDELETE);
+export const PATCH = withPeriodLock(handlePATCH);

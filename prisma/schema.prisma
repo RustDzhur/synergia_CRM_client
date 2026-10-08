@@ -436,6 +436,7 @@ model Expense {
   notes         String   @default("")
   // Узбекистан: полученный ЭСФ поставщика { number, date, supplierInn } — основание для вычета входного QQS
   esf           Json?
+  review        Json?
   createdByName String   @default("")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -670,6 +671,8 @@ model Invoice {
   paidVia            String    @default("")
   // Узбекистан: отметка электронного счёта-фактуры (ЭСФ) { status, number, at, operator }: ведётся вручную, пока нет интеграции с оператором
   esf                Json?
+  // Проверка специалистом: { status: draft | needs_review | approved | needs_fix, by, byName, at, note }
+  review             Json?
   createdByName      String    @default("")
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -1357,4 +1360,46 @@ model AccessLogEntry {
   @@index([org, at])
   @@index([link, at])
   @@map("access_log")
+}
+
+// Закрытый период: правка документов и операций с датой внутри периода запрещена на сервере (lib/finance/periodLock.ts).
+// Исправления — только сторно/корректировочным документом. Повторное открытие — с обязательной причиной, запись остаётся.
+model PeriodLock {
+  id            String    @id @default(cuid())
+  org           String
+  from          String
+  to            String
+  note          String    @default("")
+  lockedBy      String
+  lockedByName  String    @default("")
+  lockedAt      DateTime  @default(now())
+  reopenedAt    DateTime?
+  reopenedBy    String    @default("")
+  reopenReason  String    @default("")
+
+  @@index([org, reopenedAt])
+  @@map("period_locks")
+}
+
+// Запрос специалиста клиенту («пришлите чек к платежу…»): виден клиенту в сводке, закрывается ответом
+model ClientRequest {
+  id          String    @id @default(cuid())
+  org         String
+  link        String    @default("")
+  createdBy   String
+  createdName String    @default("")
+  subject     String
+  body        String    @default("")
+  entityType  String    @default("")
+  entityId    String    @default("")
+  // open | answered | cancelled
+  status      String    @default("open")
+  answer      String    @default("")
+  answeredBy  String    @default("")
+  answeredAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([org, status])
+  @@map("client_requests")
 }
