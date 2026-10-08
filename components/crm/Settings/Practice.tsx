@@ -182,7 +182,7 @@ function Subprocessors({ practiceId }: { practiceId: string }) {
 				{d.subprocessors.length === 0 && <li className="text-12 text-[#8c948b]">{t("prSubEmpty")}</li>}
 				{d.subprocessors.map((x) => <li key={x.id} className={`text-12 ${x.removedAt ? "text-[#8c948b] line-through" : "text-[#cfd4cb]"}`}>{x.name} — {x.purpose}{x.country ? ` (${x.country})` : ""}</li>)}
 			</ul>
-			<p className="mt-10 text-12 text-[#8c948b]">{t("prTerms", { n: d.terms.freeClients })}{d.terms.monthlyPrice != null ? ` · ${t("prTermsPrice", { price: d.terms.monthlyPrice, cur: d.terms.currency })}` : ""}</p>
+			<p className="mt-10 text-12 text-[#8c948b]">{t("prFreeTerms", { n: d.terms.freeClients })}{d.terms.monthlyPrice != null ? ` · ${t("prTermsPrice", { price: d.terms.monthlyPrice, cur: d.terms.currency })}` : ""}</p>
 		</>
 	);
 }
