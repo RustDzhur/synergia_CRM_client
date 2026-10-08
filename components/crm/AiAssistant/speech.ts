@@ -136,7 +136,6 @@ export function chime(kind: "wake" | "ok" | "err" = "wake") {
 
 // ── сервер ───────────────────────────────────────────────────────────────────────────────────────────
 async function fetchClip(text: string, lang: VoiceLang | undefined, gender: VoiceGender, speed?: number): Promise<Blob | null> {
-	if (lang === "uz") return null; // у серверной озвучки нет узбекского голоса: говорит голос браузера (если он есть)
 	if (!serverEnabled || Date.now() < downUntil) return null;
 	try {
 		const res = await fetch("/api/ai/tts", { method: "POST", headers: authHeaders(), body: JSON.stringify({ text, lang, gender, speed }) });
