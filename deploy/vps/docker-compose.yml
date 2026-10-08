@@ -8,7 +8,7 @@ services:
     image: caddy:2
     container_name: firmspace-caddy
     restart: unless-stopped
-    # Сеть хоста, как на прежнем сервере: Caddy ходит к сайту (127.0.0.1:3210), Harness (127.0.0.1:3080) и OmniRoute
+    # Сеть хоста, как на прежнем сервере: Caddy ходит к сайту (127.0.0.1:3210), Harness (127.0.0.1:3080) 
     network_mode: host
     environment:
       # Домены через запятую, как в Caddyfile: например "firmspace.de, www.firmspace.de"
@@ -113,55 +113,8 @@ services:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
 
-  # OmniRoute: OPENAI_API_URL=http://omniroute:20128/v1. Каталог ./omniroute (data, .env) переносится со старого сервера
-  omniroute-redis:
-    networks: [ai]
-    image: redis:8.6.5-alpine
-    container_name: omniroute-redis
-    restart: unless-stopped
-    volumes:
-      - omniroute_redis:/data
-    command: redis-server --save 60 1 --loglevel warning
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  omniroute:
-    networks: [ai]
-    image: diegosouzapw/omniroute:latest
-    container_name: omniroute
-    restart: unless-stopped
-    stop_grace_period: 40s
-    env_file: ./omniroute/.env
-    environment:
-      - DATA_DIR=/app/data
-      - REDIS_URL=redis://omniroute-redis:6379
-      - AUGGIE_BIN=/opt/auggie/node_modules/.bin/auggie
-      - AUGMENT_DISABLE_AUTO_UPDATE=1
-    ports:
-      # только на самом сервере; наружу — через Caddy (панель omiroute.firmspace.eu)
-      - "127.0.0.1:3111:20128"
-      - "127.0.0.1:20132:20132"
-    volumes:
-      - ./omniroute/data:/app/data
-      - auggie-bin:/opt/auggie
-    depends_on:
-      omniroute-redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "node", "healthcheck.mjs"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 180s
-    logging:
-      driver: json-file
-      options: { max-size: "10m", max-file: "3" }
-
-# Сети разделены по назначению: базу видит только сайт; ИИ-сервисы (OmniRoute, Whisper, TTS, Redis) изолированы друг от друга
-# и от базы. db — без выхода в интернет (internal), ai — с выходом (OmniRoute и TTS ходят к внешним сервисам).
+# Сети разделены по назначению: базу видит только сайт; ИИ-сервисы (Whisper, TTS, Redis) изолированы друг от друга
+# и от базы. db — без выхода в интернет (internal), ai — с выходом (TTS ходит к внешним сервисам).
 networks:
   db:
     internal: true
@@ -173,5 +126,3 @@ volumes:
   crm_storage:
   pg_data:
   speaches_cache:
-  omniroute_redis:
-  auggie-bin:

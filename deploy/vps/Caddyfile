@@ -6,19 +6,6 @@
 	reverse_proxy 127.0.0.1:3210
 }
 
-# Панель OmniRoute (A-запись omiroute.firmspace.eu → этот сервер). Закрыта логином и паролем (те же, что у Harness) поверх собственного входа панели.
-omiroute.firmspace.eu {
-	basic_auth {
-		{$HARNESS_USER} {$HARNESS_PASS_HASH}
-	}
-	handle /live-ws* {
-		reverse_proxy 127.0.0.1:20132
-	}
-	handle {
-		reverse_proxy 127.0.0.1:3111
-	}
-}
-
 # DeepSeek Harness (dsh web): у Harness есть доступ к серверу и сайту, поэтому две ступени защиты:
 # 1) логин и пароль на уровне Caddy (HARNESS_USER / HARNESS_PASS_HASH из .env; хеш: caddy hash-password);
 # 2) собственный токен dsh (DSH_WEB_TOKEN) — ссылка с ним лежит в ~/harness-login.txt на сервере.
