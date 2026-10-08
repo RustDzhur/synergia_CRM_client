@@ -25,6 +25,7 @@ const toDTO = (t: any) => ({
     matchId: t.matchId ? String(t.matchId) : "",
     source: t.source ?? "manual",
     notes: t.notes ?? "",
+    category: t.category ?? "",
 });
 
 // GET /api/bank/transactions?account=&from=&to=&unmatched=1 — движения по счёту или кассе

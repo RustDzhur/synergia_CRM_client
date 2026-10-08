@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { TbLock, TbLockOpen } from "react-icons/tb";
 import { apiCall } from "@/store/crmApi";
 import { downloadAuthed } from "./download";
+import BankRules from "./BankRules";
 import { useActiveOrg } from "@/store/useOrgStore";
 
 // «Закрытие периода»: чек-лист, закрытие и повторное открытие (с причиной), очередь проверки документов и запросы специалиста клиенту.
@@ -162,6 +163,7 @@ export default function PeriodClose() {
 					))}
 				</ul>
 			</section>
+			<BankRules canEdit={reviewer} />
 		</div>
 	);
 }

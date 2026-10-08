@@ -1877,7 +1877,19 @@
     "requestsAnswered": "Javob yuborildi",
     "requestsCancelled": "So‘rov bekor qilindi",
     "closeHandoff": "Buxgalter uchun paket (ZIP)",
-    "closeHandoffError": "Paketni shakllantirib bo‘lmadi"
+    "closeHandoffError": "Paketni shakllantirib bo‘lmadi",
+    "rulesTitle": "Solishtirish qoidalari",
+    "rulesHint": "Kontragent yoki to‘lov maqsadida matn bo‘lsa, operatsiyaga toifa beriladi. Qoidalar aniq va ko‘rinadigan; hech narsa sezdirmay o‘rganilmaydi. Yopilgan davrlar o‘zgartirilmaydi.",
+    "rulesEmpty": "Hozircha qoidalar yo‘q.",
+    "rulesField_counterparty": "Kontragent tarkibida",
+    "rulesField_reference": "To‘lov maqsadi tarkibida",
+    "rulesPattern": "Qidiriladigan matn (kamida 3 belgi)",
+    "rulesCategory": "Toifa",
+    "rulesAdd": "Qoida qo‘shish",
+    "rulesAdded": "Qoida qo‘shildi, {n} ta operatsiyaga toifa berildi",
+    "rulesHits": "{n} marta qo‘llangan",
+    "bankSyncAll": "Barcha banklarni yangilash",
+    "bankSyncDone": "Banklar yangilandi: {ok}, xatolik bilan: {failed}"
   },
   "inventory": {
     "tab_inventory": "Inventarizatsiya",

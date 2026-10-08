@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { badRequest, failure, unauthorized, validId } from "@/lib/api";
 import { logAudit } from "@/lib/audit";
-import { decryptJSON } from "@/lib/crypto";
-import { privatBalance, privatStatement, privatSyncWindow } from "@/lib/banks/privatbank";
-import { finishBankSync, linkBankAccount } from "@/lib/banks/link";
+import { privatBalance } from "@/lib/banks/privatbank";
+import { linkBankAccount } from "@/lib/banks/link";
+import { BankSyncError, syncAccount } from "@/lib/banks/provider";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -65,12 +65,12 @@ export async function POST(req: Request) {
             if (!validId(accountId)) return badRequest("accountId is required");
             const doc = await prisma.bankAccount.findFirst({ where: { id: accountId, org: user.id, provider: "privatbank" } });
             if (!doc) return badRequest("Account not found");
-            const { id, token } = decryptJSON<{ id?: string; token?: string }>(doc.providerSecret) ?? {};
-            if (!id || !token) return badRequest("Ключі не збережено — прив'яжіть рахунок заново");
-            const { from, to } = privatSyncWindow(doc.providerSyncAt);
-            const rows = await privatStatement({ id, token }, doc.providerAccountId as string, from, to);
-            const result = await finishBankSync(user.id, doc as never, rows.map((r) => ({ date: r.date, amount: r.amount, counterparty: r.counterparty, reference: r.reference, externalId: `privat:${r.externalId}` })), to);
-            return NextResponse.json({ imported: result.created.length, suggestions: result.suggestions, from: new Date(from * 1000).toISOString().slice(0, 10), to: new Date(to * 1000).toISOString().slice(0, 10) });
+            try {
+                return NextResponse.json(await syncAccount(user.id, doc));
+            } catch (e) {
+                if (e instanceof BankSyncError) return badRequest(e.message);
+                throw e;
+            }
         }
 
         return badRequest("action must be link, sync or unlink");

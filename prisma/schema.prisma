@@ -115,6 +115,8 @@ model BankTransaction {
   matchId      String?
   source       String   @default("manual")
   notes        String   @default("")
+  // статья/категория: проставляется правилами практики (PracticeRule) или вручную
+  category     String   @default("")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -1416,4 +1418,22 @@ model IntegrationManifest {
   updatedAt DateTime @updatedAt
 
   @@map("integration_manifests")
+}
+
+// Правило сверки фирмы: «контрагент/назначение содержит ... → статья». Задаёт владелец или специалист практики (уровень review и выше);
+// применяется при загрузке выписки и по кнопке к ещё не размеченным движениям.
+model PracticeRule {
+  id            String   @id @default(cuid())
+  org           String
+  // counterparty | reference
+  field         String   @default("counterparty")
+  pattern       String
+  category      String
+  createdBy     String
+  createdByName String   @default("")
+  hits          Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  @@index([org])
+  @@map("practice_rules")
 }
