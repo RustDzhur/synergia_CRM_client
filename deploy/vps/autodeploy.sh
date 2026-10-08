@@ -79,7 +79,9 @@ if grep -q '^DEPLOYED_COMMIT=' deploy/vps/.env 2>/dev/null; then
 else
     echo "DEPLOYED_COMMIT=$REMOTE_SHA" >> deploy/vps/.env
 fi
-if docker compose -f deploy/vps/docker-compose.yml up -d --build >> "$LOG" 2>&1; then
+# осиротевшие контейнеры от оборванной пересборки блокируют `up` («Conflict. The container name … is already in use») — убираем заранее
+bash deploy/vps/cleanup-orphans.sh >> "$LOG" 2>&1 || true
+if docker compose -f deploy/vps/docker-compose.yml up -d --build --remove-orphans >> "$LOG" 2>&1; then
     echo "$REMOTE_SHA" > "$DEPLOYED_FILE"; rm -f "$HOME_DIR/.crm-deploy-tries"
     log "готово: запущено в $(docker inspect -f '{{.State.StartedAt}}' firmspace-crm 2>/dev/null || echo '?')"
     # Каждая сборка оставляет слои в кэше (до 35 ГБ за пару дней) — именно они переполнили диск VM и пул Proxmox 03.10.2026.
