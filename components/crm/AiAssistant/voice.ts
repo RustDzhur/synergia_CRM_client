@@ -41,7 +41,10 @@ export const recorderSupported = () => typeof window !== "undefined" && !!naviga
 export const ttsSupported = () => typeof window !== "undefined" && "speechSynthesis" in window;
 
 export type MicState = "idle" | "listening" | "transcribing";
-export type MicError = "micDenied" | "micUnavailable" | "micFailed" | "micNoSpeech";
+export type MicError = "micDenied" | "micUnavailable" | "micFailed" | "micNoSpeech" | "micFallback";
+export type SttMode = "auto" | "browser" | "server";
+export const STT_KEY = "crm.voice.stt";
+export const readSttMode = (): SttMode => { try { const v = localStorage.getItem(STT_KEY); return v === "browser" || v === "server" ? v : "auto"; } catch { return "auto"; } };
 
 const voiceExt = (type: string) => (type.includes("mp4") ? "mp4" : type.includes("ogg") ? "ogg" : "webm");
 // Склейка уже набранного текста и распознанного: диктовка дописывает, а не затирает
@@ -49,6 +52,8 @@ const join = (base: string, speech: string) => {
 	const s = speech.trim();
 	return base ? (s ? `${base} ${s}` : base) : s;
 };
+
+const g = globalThis as { serverBroken?: boolean }; // сервер распознавания отказал на этой странице: дальше (в режиме «авто») слушает браузер
 
 export function useVoiceInput({ locale, serverStt, onText, onError }: {
 	locale: string;
@@ -84,7 +89,10 @@ export function useVoiceInput({ locale, serverStt, onText, onError }: {
 		// Путь 1: распознавание в браузере — без ключей и без сервера (Chrome, Edge, Android).
 		// Узбекский: браузерная модель слабая, поэтому при настроенном сервере диктует он (модель лучше, словарь CRM — docs/UZ_VOICE.md)
 		const Ctor = recognitionCtor();
-		if (Ctor && !(locale === "uz" && serverStt && recorderSupported())) {
+		const mode = readSttMode();
+		// режим «браузер» — всегда он; «сервер» — всегда сервер; «авто» — сервер для узбекского, а после сбоя сервера до перезагрузки страницы — браузер
+		const preferServer = serverStt && recorderSupported() && (mode === "server" || (mode === "auto" && locale === "uz" && !g.serverBroken));
+		if (Ctor && !preferServer) {
 			const recog = new Ctor();
 			recog.lang = speechLang(locale);
 			recog.continuous = true;
@@ -137,10 +145,11 @@ export function useVoiceInput({ locale, serverStt, onText, onError }: {
 				body.append("language", locale);
 				const res = await fetch("/api/ai/transcribe", { method: "POST", headers: authHeaders(false), body });
 				const json = (await res.json().catch(() => null)) as { text?: string } | null;
-				if (!res.ok || !json) onErrorRef.current("micFailed");
+				if (!res.ok || !json) { g.serverBroken = true; onErrorRef.current(Ctor ? "micFallback" : "micFailed"); }
 				else onTextRef.current(join(baseRef.current, String(json.text ?? "")));
 			} catch {
-				onErrorRef.current("micFailed");
+				g.serverBroken = true;
+				onErrorRef.current(Ctor ? "micFallback" : "micFailed");
 			}
 			set("idle");
 		};
@@ -434,6 +443,9 @@ const SRV_MIN_LEVEL = 0.014; // ниже — тишина комнаты
 const SRV_SILENCE_MS = 1500; // пауза, после которой фраза закончена
 const SRV_MIN_SPEECH_MS = 450; // короче — щелчок или кашель, не фраза
 const SRV_MAX_MS = 30_000;
+export const serverSttBroken = () => !!g.serverBroken;
+export const resetServerStt = () => { g.serverBroken = false; };
+
 export function useServerListening({ lang, active, onPhrase, onError }: {
 	lang: string; // язык речи: ru, uk, de, en, uz
 	active: boolean;
@@ -513,11 +525,12 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 					const res = await fetch("/api/ai/transcribe", { method: "POST", headers: authHeaders(false), body });
 					const json = (await res.json().catch(() => null)) as { text?: string } | null;
 					if (disposed) return;
-					if (!res.ok || !json) onErrorRef.current("micFailed");
+					if (!res.ok || !json) { g.serverBroken = true; onErrorRef.current("micFallback"); }
 					else if (json.text?.trim()) onPhraseRef.current(json.text.trim());
 					else if (Date.now() - lastNoSpeech > 30_000) { lastNoSpeech = Date.now(); onErrorRef.current("micNoSpeech"); } // сервер речи не разобрал: молчать нельзя, но и сыпать подсказками на каждый шум не нужно
 				} catch {
-					if (!disposed) onErrorRef.current("micFailed");
+					g.serverBroken = true;
+					if (!disposed) onErrorRef.current("micFallback");
 				} finally {
 					sending = false;
 					if (!disposed) setInterim("");

@@ -107,6 +107,14 @@ export default function VoiceHud({ agent, onOpenChat }: { agent: Agent; onOpenCh
 							</select>
 						</label>
 						<label className="flex items-center justify-between gap-12">
+							<span>{t("agentStt")}</span>
+							<select value={agent.sttMode} onChange={(e) => agent.setSttMode(e.target.value as "auto" | "browser" | "server")} className="fs-field h-30 max-w-[220px] px-8 text-12 outline-none">
+								<option value="auto">{t("agentSttAuto")}</option>
+								<option value="browser">{t("agentSttBrowser")}</option>
+								<option value="server">{t("agentSttServer")}</option>
+							</select>
+						</label>
+						<label className="flex items-center justify-between gap-12">
 							<span>{t("agentAuto")}<span className="mt-[2px] block text-11 text-[#8c948b]">{t("agentAutoHint")}</span></span>
 							<input type="checkbox" checked={agent.autoApprove} onChange={(e) => agent.setAutoApprove(e.target.checked)} className="h-16 w-16 shrink-0 accent-[#c6ff4d]" />
 						</label>

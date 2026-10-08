@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { type AiAction, type AiMessage, useAiStore } from "@/store/useAiStore";
 import { BCP47, type VoiceGender, type VoiceLang, chime, isAudioBlocked, isSpeaking, playFiller, prefetchFillers, readGender, saveGender, speakText, stopFiller, stopSpeech, subscribeSpeech, unlockAudio } from "./speech";
-import { dictationSupported, isOffCommand, isStopCommand, stripWake, recorderSupported, useBargeIn, useContinuousListening, useServerListening, voiceDecision, type MicError } from "./voice";
+import { dictationSupported, isOffCommand, isStopCommand, stripWake, readSttMode, recorderSupported, resetServerStt, serverSttBroken, STT_KEY, type SttMode, useBargeIn, useContinuousListening, useServerListening, voiceDecision, type MicError } from "./voice";
 
 // Голосовое управление всем приложением («Привет, Айрис, открой бухгалтерию и покажи неоплаченные счета»).
 //
@@ -58,6 +58,8 @@ export function useVoiceAgent({ locale, page, blocked, serverStt = false, onErro
 	const [gender, setGenderState] = useState<VoiceGender>("f");
 	const [requireWake, setRequireWakeState] = useState(true);
 	const [awake, setAwake] = useState(false);
+	const [sttMode, setSttModeState] = useState<SttMode>("auto");
+	const [brokenTick, setBrokenTick] = useState(0); // сбой сервера распознавания → перерисовка → слушает браузер
 	// Режим «без подтверждения»: сервер выполняет изменения сразу (кроме удаления и случаев, когда ассистент читал чужой текст)
 	const [autoApprove, setAutoApproveState] = useState(true); // по умолчанию включён (выбор владельца): выключается в настройках панели
 	const speaking = useSyncExternalStore(subscribeSpeech, isSpeaking, () => false);
@@ -80,6 +82,7 @@ export function useVoiceAgent({ locale, page, blocked, serverStt = false, onErro
 		setLangState((["ru", "uk", "de", "en", "uz"] as VoiceLang[]).includes(savedLang as VoiceLang) ? (savedLang as VoiceLang) : defaultLang(locale));
 		setGenderState(readGender());
 		setRequireWakeState(wake !== "0");
+		setSttModeState(readSttMode());
 		try { setAutoApproveState(localStorage.getItem(AUTO_KEY) !== "0"); } catch { /* приватный режим */ }
 		if (ok && on) setEnabledState(true); // после перезагрузки продолжаем слушать
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -136,6 +139,7 @@ export function useVoiceAgent({ locale, page, blocked, serverStt = false, onErro
 	const setLang = (l: VoiceLang) => { setLangState(l); try { localStorage.setItem(LANG_KEY, l); } catch { /* приватный режим */ } };
 	const setGender = (g: VoiceGender) => { setGenderState(g); saveGender(g); };
 	const setAutoApprove = (v: boolean) => { setAutoApproveState(v); try { localStorage.setItem(AUTO_KEY, v ? "1" : "0"); } catch { /* приватный режим */ } };
+	const setSttMode = (m: SttMode) => { setSttModeState(m); resetServerStt(); try { localStorage.setItem(STT_KEY, m); } catch { /* приватный режим */ } };
 	const setRequireWake = (v: boolean) => { setRequireWakeState(v); try { localStorage.setItem(WAKE_KEY, v ? "1" : "0"); } catch { /* приватный режим */ } };
 
 	const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
@@ -189,10 +193,16 @@ export function useVoiceAgent({ locale, page, blocked, serverStt = false, onErro
 	useEffect(() => () => clearFillers(), [clearFillers]);
 
 	const listening = enabled && supported && !blocked && !busy && !speaking;
-	// Узбекский слушает сервер (браузерное распознавание слабое), остальные языки — браузер; если браузер не умеет распознавать, а сервер настроен — тоже сервер
-	const viaServer = serverStt && recorderSupported() && (lang === "uz" || !dictationSupported());
-	// «речи не разобрал» — только подсказка, режим разговора не выключается
-	const onListenError = (code: MicError) => { onErrorRef.current(code); if (code !== "micNoSpeech") setEnabled(false, false); };
+	// Откуда слушаем. «авто»: узбекский — сервер (браузерное распознавание узбекского слабое), остальные языки — браузер; сбой сервера → браузер
+	// до перезагрузки страницы. «браузер»/«сервер» — выбор человека. Если браузер сам не умеет распознавать, а сервер настроен — сервер.
+	void brokenTick;
+	const serverOk = serverStt && recorderSupported();
+	const viaServer = serverOk && (sttMode === "server" || (!dictationSupported()) || (sttMode === "auto" && lang === "uz" && !serverSttBroken()));
+	const onListenError = (code: MicError) => {
+		if (code === "micFallback") { setBrokenTick((n) => n + 1); onErrorRef.current(code); return; } // не выключаем режим: просто переходим на браузер
+		onErrorRef.current(code);
+		if (code !== "micNoSpeech") setEnabled(false, false);
+	};
 	const browserListen = useContinuousListening({ lang: BCP47[lang], active: listening && !viaServer, onPhrase: handlePhrase, onError: onListenError });
 	const serverListen = useServerListening({ lang, active: listening && viaServer, onPhrase: handlePhrase, onError: onListenError });
 	const interim = viaServer ? serverListen.interim : browserListen.interim;
@@ -224,5 +234,5 @@ export function useVoiceAgent({ locale, page, blocked, serverStt = false, onErro
 	const phase: AgentPhase = !enabled ? "off" : busy ? "thinking" : speaking ? "speaking" : awake ? "listening" : "sleeping";
 	// Распознанное показываем, только когда обращаются к Айрис: чужие разговоры на экране не нужны
 	const caption = awake || stripWake(interim).hit ? interim : "";
-	return { supported, enabled, toggle, setEnabled, phase, caption, lang, setLang, gender, setGender, requireWake, setRequireWake, autoApprove, setAutoApprove, pending, lastAssistant, audioBlocked, awake };
+	return { sttMode, setSttMode, supported, enabled, toggle, setEnabled, phase, caption, lang, setLang, gender, setGender, requireWake, setRequireWake, autoApprove, setAutoApprove, pending, lastAssistant, audioBlocked, awake };
 }
