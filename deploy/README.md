@@ -8,7 +8,7 @@
 - код: `~/crm-duplicate` (пользователь `server`; каталог `/opt/projects` принадлежит root)
 - образ: `firmspace-crm:latest`, контейнер `firmspace-crm`
 - файлы: том `crm-duplicate_crm_storage`, внутри — `/data/storage`
-- база: контейнер `postgres` (сеть `infrastructure`), база `crm`, роль `crm_app`
+- база: контейнер `postgres` (сеть `firmspace_db`), база `crm`, роль `crm_app`
 - порт: `127.0.0.1:3210` (наружу не публикуется)
 
 ## Автоматическая выкладка из GitHub (без Vercel)
