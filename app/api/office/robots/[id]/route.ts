@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized, validId } from "@/lib/api";
-import { officeFailure } from "@/lib/office/api";
+import { officeFailure, platformScope } from "@/lib/office/api";
 import { deleteRobot, updateRobot } from "@/lib/office/store";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const b = await req.json().catch(() => null);
     if (!b || typeof b !== "object") return badRequest("Invalid body");
     try {
-        return NextResponse.json(await updateRobot(user.id, params.id, b));
+        return NextResponse.json(await updateRobot(user.id, params.id, b, await platformScope(user)));
     } catch (e) {
         return officeFailure(e);
     }
@@ -26,7 +26,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return badRequest("Invalid id");
     try {
-        await deleteRobot(user.id, params.id);
+        await deleteRobot(user.id, params.id, await platformScope(user));
         return NextResponse.json({ ok: true });
     } catch (e) {
         return officeFailure(e);

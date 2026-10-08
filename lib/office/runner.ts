@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { StepBudgetError, continuationTask, dailyLimit, log, runChat, takeQuota, type RunOpts } from "@/lib/ai/run";
 import { ToolError, allowedTools, type AiCtx } from "@/lib/ai/tools";
-import { OfficeError, IRIS_ID, type OfficeTask, type Robot, createTask, getRobot, getTask, listRobots, updateTask } from "./store";
+import { OfficeError, IRIS_ID, type OfficeTask, type Robot, createTask, getRobot, getTask, getTaskScoped, listRobots, updateTask } from "./store";
 import { bossPersona, robotPersona, templateById, toolsFor } from "./templates";
 
 // Исполнитель поручений Робот-офиса. Поручение роботу — это обычный разговор Айрис (runChat), в котором:
@@ -10,7 +10,7 @@ import { bossPersona, robotPersona, templateById, toolsFor } from "./templates";
 //     удаления и правки выставленных счетов — всегда с подтверждением, как у Айрис).
 // Один робот делает по одному поручению за раз (следующие ждут в его очереди), разные роботы работают параллельно.
 
-export interface OfficeCtx extends AiCtx { orgName?: string }
+export interface OfficeCtx extends AiCtx { orgName?: string; /** вызывает администратор платформы (или внутренний запуск): роботы платформы доступны */ platformAdmin?: boolean }
 
 // Подмена для тестов: настоящий разговор с моделью дорог и недетерминирован
 export const deps = { runChat };
@@ -27,7 +27,7 @@ const fail = async (org: string, id: string, message: string) => updateTask(org,
 /** Ставит поручение в очередь робота и запускает в фоне. robot — id робота или "iris" (начальник распределяет сам). */
 export async function startOfficeTask(ctx: OfficeCtx, input: { robot: string; text: string; source: OfficeTask["source"]; locale?: string }): Promise<OfficeTask> {
     const boss = input.robot === IRIS_ID;
-    const robot = boss ? null : await getRobot(ctx.org, input.robot);
+    const robot = boss ? null : await getRobot(ctx.org, input.robot, { platform: ctx.platformAdmin });
     if (!boss && !robot) throw new OfficeError("Robot not found");
     if (robot && !robot.enabled) throw new OfficeError("This robot is switched off");
     if (robot && watchOnly(robot)) throw new OfficeError("This robot only watches the platform and takes no tasks");
@@ -44,7 +44,7 @@ async function execute(ctx: OfficeCtx, taskId: string): Promise<void> {
     const task = await getTask(org, taskId);
     if (!task || task.status !== "queued") return; // отменено, пока ждало очереди
     const boss = task.robot === IRIS_ID;
-    const robot = boss ? null : await getRobot(org, task.robot);
+    const robot = boss ? null : await getRobot(org, task.robot, { platform: true }); // доступ уже проверен при постановке поручения
     if (!boss && !robot) return void (await fail(org, taskId, "The robot was dismissed"));
     if (robot && !robot.enabled) return void (await fail(org, taskId, "This robot is switched off"));
     if (robot && watchOnly(robot)) return void (await fail(org, taskId, "This robot only watches the platform and takes no tasks"));
@@ -138,7 +138,7 @@ export async function cancelTask(org: string, taskId: string): Promise<OfficeTas
 
 /** Перетащили поручение на другого робота: ещё не начатое переезжает, остальное повторяется у нового робота. */
 export async function reassignTask(ctx: OfficeCtx, taskId: string, robotId: string): Promise<OfficeTask> {
-    const task = await getTask(ctx.org, taskId);
+    const task = await getTaskScoped(ctx.org, taskId, { platform: ctx.platformAdmin });
     if (!task) throw new OfficeError("Task not found");
     if (task.robot === robotId) return task;
     if (task.status === "running") throw new OfficeError("The task is being worked on right now");
