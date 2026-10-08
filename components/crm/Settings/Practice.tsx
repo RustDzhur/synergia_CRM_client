@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { PRACTICE_GRANTABLE } from "@/lib/access";
-import { apiCall } from "@/store/crmApi";
+import { ORG_KEY, apiCall } from "@/store/crmApi";
 import PageHeader from "@/components/crm/shared/PageHeader";
 import SettingsTabs from "./SettingsTabs";
 
@@ -128,6 +128,39 @@ function ClientSide() {
 	);
 }
 
+interface DashRow { link: string; org: string; orgName: string; access: string; market: string | null; unmatchedBank: number; overdueInvoices: number; needsReview: number; needsFix: number; openRequests: number; closedUntil: string | null; lastActivity: string | null; deadlines: { code: string; date: string; daysLeft: number; verified: boolean; source: string }[] }
+
+// Панель «Мои клиенты»: только агрегаты; каждое открытие панели пишется в журнал доступа клиента
+function Dashboard({ practiceId }: { practiceId: string }) {
+	const t = useTranslations("settings");
+	const [rows, setRows] = useState<DashRow[] | null>(null);
+	useEffect(() => { void apiCall<{ clients: DashRow[] }>(`/api/practice/${practiceId}/dashboard`).then((r) => { if (r.ok && r.data) setRows(r.data.clients); }); }, [practiceId]);
+	if (!rows) return null;
+	const open = (org: string) => { try { localStorage.setItem(ORG_KEY, org); } catch { /* приватный режим */ } window.location.href = "/crm/finance"; };
+	const chip = (n: number, label: string, warn: boolean) => <span className={`fs-chip h-22 px-8 text-10 ${n > 0 ? (warn ? "text-[#ff9f9f]" : "text-[#F4A100]") : "text-[#9AA396]"}`}>{label}: {n}</span>;
+	return (
+		<>
+			<h3 className="mb-8 mt-18 text-13 font-semibold text-[#f1f4ee]">{t("prDashTitle")}</h3>
+			<ul className="flex flex-col gap-8">
+				{rows.length === 0 && <li className="text-12 text-[#8c948b]">{t("prDashEmpty")}</li>}
+				{rows.map((r) => (
+					<li key={r.link} className="fs-card flex flex-wrap items-center gap-x-10 gap-y-6 p-14">
+						<span className="min-w-[160px] flex-1 truncate text-13 text-[#f1f4ee]">{r.orgName}</span>
+						{chip(r.unmatchedBank, t("prDashUnmatched"), true)}
+						{chip(r.overdueInvoices, t("prDashOverdue"), true)}
+						{chip(r.needsReview, t("prDashReview"), false)}
+						{chip(r.needsFix, t("prDashFix"), true)}
+						{chip(r.openRequests, t("prDashRequests"), false)}
+						<span className="text-12 text-[#8c948b]">{r.closedUntil ? t("prDashClosedUntil", { date: r.closedUntil }) : t("prDashNotClosed")}</span>
+						{r.deadlines.map((d) => <span key={d.code} className="text-12 text-[#8c948b]" title={d.source}>{t(`prDashDeadline_${d.code}` as never)} {d.date} ({t("prDashDays", { n: d.daysLeft })}){d.verified ? "" : " · " + t("prDashUnverified")}</span>)}
+						<button type="button" className="text-12 text-[#c6ff4d] hover:underline" onClick={() => open(r.org)}>{t("prDashOpen")}</button>
+					</li>
+				))}
+			</ul>
+		</>
+	);
+}
+
 function PracticeSide() {
 	const t = useTranslations("settings");
 	const [list, setList] = useState<PracticeInfo[] | null>(null);
@@ -219,6 +252,7 @@ function PracticeSide() {
 						</div>
 					)}
 
+					<Dashboard practiceId={p.id} />
 					<h3 className="mb-8 mt-18 text-13 font-semibold text-[#f1f4ee]">{t("prClients")}</h3>
 					<ul className="flex flex-col gap-8">
 						{detail!.links.length === 0 && <li className="text-12 text-[#8c948b]">{t("prNoClients")}</li>}

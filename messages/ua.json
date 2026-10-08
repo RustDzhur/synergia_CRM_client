@@ -1228,7 +1228,21 @@
         "prNoClients": "Клієнтів ще немає.",
         "prWaitingClient": "чекає на клієнта",
         "prAcceptClient": "Прийняти",
-        "prEnd": "Завершити"
+        "prEnd": "Завершити",
+        "prDashTitle": "Мої клієнти",
+        "prDashEmpty": "Активних клієнтів поки немає.",
+        "prDashUnmatched": "Не рознесено в банку",
+        "prDashOverdue": "Прострочені рахунки",
+        "prDashReview": "На перевірку",
+        "prDashFix": "На виправлення",
+        "prDashRequests": "Запити",
+        "prDashClosedUntil": "Закрито до {date}",
+        "prDashNotClosed": "Період не закрито",
+        "prDashDeadline_vat_return": "Декларація з ПДВ",
+        "prDashDays": "через {n} дн.",
+        "prDashUnverified": "дата не перевірена",
+        "prDashOpen": "Відкрити",
+        "prDashOpenClient": "Відкрити клієнта"
     },
     "upgrade": {
         "free": "Безкоштовний",
@@ -3196,7 +3210,9 @@
         "requestsAnswer": "Ваша відповідь",
         "requestsReply": "Відповісти",
         "requestsAnswered": "Відповідь надіслано",
-        "requestsCancelled": "Запит скасовано"
+        "requestsCancelled": "Запит скасовано",
+        "closeHandoff": "Пакет для бухгалтера (ZIP)",
+        "closeHandoffError": "Не вдалося сформувати пакет"
     },
     "ads": {
         "needsUpgrade": "Ефективність реклами доступна від тарифу Professional.",

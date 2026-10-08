@@ -1875,7 +1875,9 @@
     "requestsAnswer": "Javobingiz",
     "requestsReply": "Javob berish",
     "requestsAnswered": "Javob yuborildi",
-    "requestsCancelled": "So‘rov bekor qilindi"
+    "requestsCancelled": "So‘rov bekor qilindi",
+    "closeHandoff": "Buxgalter uchun paket (ZIP)",
+    "closeHandoffError": "Paketni shakllantirib bo‘lmadi"
   },
   "inventory": {
     "tab_inventory": "Inventarizatsiya",
@@ -2497,7 +2499,21 @@
     "prNoClients": "Hozircha mijozlar yo‘q.",
     "prWaitingClient": "mijozni kutmoqda",
     "prAcceptClient": "Qabul qilish",
-    "prEnd": "Tugatish"
+    "prEnd": "Tugatish",
+    "prDashTitle": "Mening mijozlarim",
+    "prDashEmpty": "Faol mijozlar hali yo‘q.",
+    "prDashUnmatched": "Bankda taqsimlanmagan",
+    "prDashOverdue": "Muddati o‘tgan hisob-fakturalar",
+    "prDashReview": "Tekshirish uchun",
+    "prDashFix": "Tuzatish uchun",
+    "prDashRequests": "So‘rovlar",
+    "prDashClosedUntil": "{date} gacha yopilgan",
+    "prDashNotClosed": "Davr yopilmagan",
+    "prDashDeadline_vat_return": "QQS deklaratsiyasi",
+    "prDashDays": "{n} kundan keyin",
+    "prDashUnverified": "sana tekshirilmagan",
+    "prDashOpen": "Ochish",
+    "prDashOpenClient": "Mijozni ochish"
   },
   "collab": {
     "calButton": "Kalendarlar",
