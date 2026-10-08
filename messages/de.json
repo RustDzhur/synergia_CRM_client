@@ -2083,9 +2083,9 @@
         "agentLang_uz": "Oʻzbekcha",
         "micNoSpeech": "Ich habe etwas gehört, aber keine Worte verstanden – bitte näher am Mikrofon sprechen",
         "agentStt": "Spracherkennung",
-        "agentSttAuto": "Automatisch (Server für Usbekisch, sonst Browser als Rückfall)",
+        "agentSttAuto": "Automatisch (Usbekisch über den Server, andere Sprachen im Browser)",
         "agentSttBrowser": "Browser (kostenlos)",
-        "agentSttServer": "Server (genauer, kostenpflichtig)",
+        "agentSttServer": "Server (für Usbekisch; für Englisch, Deutsch, Russisch und Ukrainisch ist der Browser besser)",
         "micFallback": "Die Server-Spracherkennung ist nicht verfügbar – auf die Browser-Erkennung umgestellt"
     },
     "finance": {

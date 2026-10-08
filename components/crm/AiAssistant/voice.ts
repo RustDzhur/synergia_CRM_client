@@ -439,7 +439,7 @@ export function useContinuousListening({ lang, active, onPhrase, onError }: {
  * граница фразы определяется по громкости (как в useBargeIn), запись уходит на /api/ai/transcribe и фраза приходит текстом.
  * Контракт тот же, что у useContinuousListening: onPhrase зовётся один раз на фразу, interim непустой, пока человек говорит.
  */
-const SRV_MIN_LEVEL = 0.014; // ниже — тишина комнаты
+const SRV_MIN_LEVEL = 0.009; // ниже — тишина комнаты
 const SRV_SILENCE_MS = 1500; // пауза, после которой фраза закончена
 const SRV_MIN_SPEECH_MS = 450; // короче — щелчок или кашель, не фраза
 const SRV_MAX_MS = 30_000;
@@ -510,7 +510,7 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 			let baseline = 0;
 			for (let i = 0; i < 6; i++) { baseline += level(); await new Promise((r) => setTimeout(r, 40)); }
 			baseline /= 6;
-			const threshold = Math.max(SRV_MIN_LEVEL, baseline * 3);
+			const threshold = Math.max(SRV_MIN_LEVEL, baseline * 2.5);
 			const track = stream.getAudioTracks()[0];
 			let peak = 0;
 			let holdUntil = 0; // важное сообщение (результат, ошибка) не затирается строкой с уровнем несколько секунд

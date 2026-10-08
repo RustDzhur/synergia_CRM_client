@@ -2083,9 +2083,9 @@
         "agentLang_uz": "Oʻzbekcha",
         "micNoSpeech": "I heard you but could not make out any words — please speak closer to the microphone",
         "agentStt": "Speech recognition",
-        "agentSttAuto": "Automatic (server for Uzbek, falls back to the browser)",
+        "agentSttAuto": "Automatic (Uzbek on the server, other languages in the browser)",
         "agentSttBrowser": "Browser (free)",
-        "agentSttServer": "Server (more accurate, paid)",
+        "agentSttServer": "Server (for Uzbek; for English, German, Russian and Ukrainian the browser is better)",
         "micFallback": "Server speech recognition is unavailable — switched to the browser's recognition"
     },
     "finance": {
