@@ -90,6 +90,7 @@ const LABELS: Record<string, Record<string, string>> = {
 export interface PdfLineItem {
     description: string; qty: number; unitPrice: number; taxRate: number;
     // Упаковочный лист (ВЭД): код УКТ ЗЕД/HS, вес единицы и страна происхождения — печатаются своими колонками
+    unit?: string; // единица измерения (обязательна в ЭСФ Узбекистана): печатается рядом с количеством
     hsCode?: string;
     unitWeightKg?: number;
     originCountry?: string;
@@ -100,7 +101,7 @@ export interface PdfDocumentData {
     number: string;
     // Курс к гривне: у счёта в валюте печатается и сумма в ₴ (НБУ плюс наценка фирмы).
     // Здесь именно данные, а не настройки: строка попадает в те же итоги, что и остальные суммы.
-    uahRate?: { rate: number; base: number; margin: number; at: string } | null;
+    uahRate?: { rate: number; base: number; margin: number; at: string; home?: string } | null;
     orderNumber?: string; // накладная: номер заказа, по которому она выписана
     creditForNumber?: string; // для kind "credit_note" — номер исправляемого счёта
     customer: PdfParty;

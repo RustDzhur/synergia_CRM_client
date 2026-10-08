@@ -38,7 +38,7 @@ export function taxBreakdown(items: LineItem[], opts: TotalsOptions = {}): Array
         .sort((a, b) => b.rate - a.rate);
 }
 
-type CleanItem = { description: string; qty: number; unitPrice: number; taxRate: number; product?: string };
+type CleanItem = { description: string; qty: number; unitPrice: number; taxRate: number; product?: string; unit?: string };
 
 const cleanItem = (v: unknown): CleanItem | null => {
     if (!v || typeof v !== "object") return null;
@@ -53,6 +53,8 @@ const cleanItem = (v: unknown): CleanItem | null => {
         taxRate: Math.min(100, Math.max(0, num(o.taxRate, 0))),
     };
     if (typeof o.product === "string" && /^[0-9a-f]{24}$/i.test(o.product)) out.product = o.product;
+    // единица измерения: обязательный реквизит электронного счёта-фактуры Узбекистана; в других рынках просто сохраняется
+    if (typeof o.unit === "string" && o.unit.trim()) out.unit = o.unit.replace(/[\p{Cc}<>]/gu, " ").trim().slice(0, 16);
     return out;
 };
 

@@ -189,7 +189,7 @@ const UZ: MarketProfile = {
     nameGenitive: "Узбекистана",
     currencyDefault: "UZS",
     localeDefault: "uz",
-    nav: ["overview", "quotes", "orders", "contracts", "acts", "deliveryNotes", "invoices", "recurring", "expenses", "bank", "products", "vat", "audit", "settings"],
+    nav: ["overview", "quotes", "orders", "contracts", "acts", "deliveryNotes", "invoices", "recurring", "esf", "expenses", "bank", "products", "vat", "audit", "settings"],
     documents: ["invoice", "quote", "order", "contract", "credit_note", "delivery_note", "act", "tax_invoice"],
     integrations: ["cbu"],
     taxModules: ["uz_vat", "uz_esf_register"],
