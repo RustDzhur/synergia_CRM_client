@@ -52,3 +52,11 @@ if (models.status === 200) {
   const ids = (await (await fetch(`${base}/models`, { headers: { Authorization: `Bearer ${key}` } })).json().catch(() => ({}))).data?.map((m) => m.id) ?? [];
   for (const m of ["whisper-1", "gpt-4o-transcribe"]) line(ids.includes(m), `модель распознавания речи ${m} ${ids.includes(m) ? "доступна" : "недоступна для этого ключа"}`);
 }
+
+if (process.env.ELEVENLABS_API_KEY) {
+  console.log("— ElevenLabs (распознавание узбекского) —");
+  try {
+    const r = await fetch("https://api.elevenlabs.io/v1/user", { headers: { "xi-api-key": process.env.ELEVENLABS_API_KEY.trim() }, signal: AbortSignal.timeout(20000) });
+    line(r.ok, r.ok ? "ключ ElevenLabs принят" : `ElevenLabs ответил ${r.status}${r.status === 401 ? " — ключ не подходит" : ""}`);
+  } catch (e) { line(false, `нет соединения с ElevenLabs: ${e?.cause?.code || e?.message}`); }
+}
