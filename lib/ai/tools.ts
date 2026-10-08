@@ -951,12 +951,12 @@ export const TOOLS: AiTool[] = [
         module: null, write: true,
         def: {
             name: "save_blog_draft",
-            description: "Save an article of the landing-page blog as a DRAFT (never published by this tool; a human publishes it). The article must be in all three languages en, de, ua: title, excerpt and every body paragraph. Plain text, no HTML. Platform administrators only. Call list_blog_posts first to avoid repeating a topic.",
+            description: "Save an article of the landing-page blog as a DRAFT (never published by this tool; a human publishes it). The article must be in all four languages en, de, ua, uz: title, excerpt and every body paragraph. Plain text, no HTML. Platform administrators only. Call list_blog_posts first to avoid repeating a topic.",
             parameters: schema({
                 slug: S("optional latin slug (a-z, 0-9, dashes); built from the English title when omitted"),
-                title: { type: "object", description: "title in en, de and ua (up to 160 characters each)", properties: { en: { type: "string" }, de: { type: "string" }, ua: { type: "string" } }, required: ["en", "de", "ua"] },
-                excerpt: { type: "object", description: "one or two sentences for the blog list in en, de and ua (up to 400 characters each)", properties: { en: { type: "string" }, de: { type: "string" }, ua: { type: "string" } }, required: ["en", "de", "ua"] },
-                body: { type: "array", description: "5–8 paragraphs, each in en, de and ua", items: { type: "object", properties: { en: { type: "string" }, de: { type: "string" }, ua: { type: "string" } }, required: ["en", "de", "ua"] } },
+                title: { type: "object", description: "title in en, de, ua and uz (up to 160 characters each)", properties: { en: { type: "string" }, de: { type: "string" }, ua: { type: "string" }, uz: { type: "string" } }, required: ["en", "de", "ua", "uz"] },
+                excerpt: { type: "object", description: "one or two sentences for the blog list in en, de, ua and uz (up to 400 characters each)", properties: { en: { type: "string" }, de: { type: "string" }, ua: { type: "string" }, uz: { type: "string" } }, required: ["en", "de", "ua", "uz"] },
+                body: { type: "array", description: "5–8 paragraphs, each in en, de, ua and uz", items: { type: "object", properties: { en: { type: "string" }, de: { type: "string" }, ua: { type: "string" }, uz: { type: "string" } }, required: ["en", "de", "ua", "uz"] } },
             }, ["title", "excerpt", "body"]),
         },
         check: (a) => {

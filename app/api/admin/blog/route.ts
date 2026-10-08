@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     if (!titleEn) return badRequest("English title is required");
     const base = slugify(typeof b.slug === "string" && b.slug.trim() ? b.slug : titleEn);
     const slug = await uniqueSlug(base);
-    const tx = (v: any) => ({ en: String(v?.en ?? "").slice(0, 4000), de: String(v?.de ?? "").slice(0, 4000), ua: String(v?.ua ?? "").slice(0, 4000) });
+    const tx = (v: any) => ({ en: String(v?.en ?? "").slice(0, 4000), de: String(v?.de ?? "").slice(0, 4000), ua: String(v?.ua ?? "").slice(0, 4000), uz: String(v?.uz ?? "").slice(0, 4000) });
     const post = await prisma.blogPost.create({
         data: {
             slug,

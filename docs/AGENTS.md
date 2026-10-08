@@ -42,17 +42,17 @@ curl -s -H "Authorization: Bearer $AGENT_BLOG_TOKEN" https://www.firmspace.de/ap
 curl -s -H "Authorization: Bearer $AGENT_BLOG_TOKEN" "https://www.firmspace.de/api/agent/blog?slug=some-slug"
 ```
 
-Запись — статья на трёх языках (все три обязательны: en, de, ua), текст без HTML:
+Запись — статья на четырёх языках (все четыре обязательны: en, de, ua, uz), текст без HTML:
 ```bash
 curl -s -X POST https://www.firmspace.de/api/agent/blog \
   -H "Authorization: Bearer $AGENT_BLOG_TOKEN" -H "Content-Type: application/json" \
   -d '{
     "slug": "how-to-qualify-leads",
-    "title":   { "en": "How to qualify leads", "de": "…", "ua": "…" },
-    "excerpt": { "en": "One or two sentences for the blog list", "de": "…", "ua": "…" },
+    "title":   { "en": "How to qualify leads", "de": "…", "ua": "…", "uz": "…" },
+    "excerpt": { "en": "One or two sentences for the blog list", "de": "…", "ua": "…", "uz": "…" },
     "body": [
-      { "en": "First paragraph", "de": "…", "ua": "…" },
-      { "en": "Second paragraph", "de": "…", "ua": "…" }
+      { "en": "First paragraph", "de": "…", "ua": "…", "uz": "…" },
+      { "en": "Second paragraph", "de": "…", "ua": "…", "uz": "…" }
     ]
   }'
 ```
@@ -65,7 +65,7 @@ curl -s -X POST https://www.firmspace.de/api/agent/blog \
 
 > Ты автор блога Firmspace AI (платформа для малого бизнеса: CRM, финансы, склад, ИИ-ассистент Айрис). Раз в N дней пиши одну
 > статью для лендинга: практичную, без воды, 5–8 абзацев, тема из мира продаж, CRM, учёта, автоматизации. Каждая статья — на
-> трёх языках (en, de, ua), текст без HTML и без выдуманных цифр/цен/обещаний про продукт. Перед написанием получи список
+> четырёх языках (en, de, ua, uz), текст без HTML и без выдуманных цифр/цен/обещаний про продукт. Перед написанием получи список
 > существующих статей (GET) и не повторяй темы. Отправляй статью POST-запросом на `/api/agent/blog` с заголовком
 > `Authorization: Bearer <токен>`; она сохранится черновиком — публикует владелец. Токен никуда не выводи и не записывай в файлы.
 

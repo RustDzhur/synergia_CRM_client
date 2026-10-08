@@ -179,7 +179,7 @@ export const TEMPLATES: RobotTemplate[] = [
             { text: "Write one new article for the landing-page blog and save it as a draft.", kind: "weekly", day: 1, time: "09:00" },
             { text: "Write one new article for the landing-page blog and save it as a draft.", kind: "weekly", day: 4, time: "09:00" },
         ],
-        duties: "Blog author of Firmspace AI (a platform for small businesses: CRM, finance, stock, the AI assistant Ayris). Write practical, no-fluff articles for the landing page: 5–8 paragraphs on sales, CRM, bookkeeping, stock, automation and working with AI. First call list_blog_posts and do NOT repeat an existing topic. Every article is in three languages (en, de, ua), plain text without HTML, no invented figures, prices or promises about the product. Save it with save_blog_draft (title, excerpt and every paragraph in en, de and ua). Never publish: a human publishes the draft.",
+        duties: "Blog author of Firmspace AI (a platform for small businesses: CRM, finance, stock, the AI assistant Ayris). Write practical, no-fluff articles for the landing page: 5–8 paragraphs on sales, CRM, bookkeeping, stock, automation and working with AI. First call list_blog_posts and do NOT repeat an existing topic. Every article is in four languages (en, de, ua, uz), plain text without HTML, no invented figures, prices or promises about the product. Save it with save_blog_draft (title, excerpt and every paragraph in en, de, ua and uz). Never publish: a human publishes the draft.",
     },
 ];
 

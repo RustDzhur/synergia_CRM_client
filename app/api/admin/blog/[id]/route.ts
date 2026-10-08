@@ -8,7 +8,7 @@ const toAdminDTO = (p: any) => ({
     title: p.title, excerpt: p.excerpt, body: p.body,
     published: p.published, publishedAt: p.publishedAt.toISOString().slice(0, 10),
 });
-const tx = (v: any) => ({ en: String(v?.en ?? "").slice(0, 4000), de: String(v?.de ?? "").slice(0, 4000), ua: String(v?.ua ?? "").slice(0, 4000) });
+const tx = (v: any) => ({ en: String(v?.en ?? "").slice(0, 4000), de: String(v?.de ?? "").slice(0, 4000), ua: String(v?.ua ?? "").slice(0, 4000), uz: String(v?.uz ?? "").slice(0, 4000) });
 
 // PATCH /api/admin/blog/:id — { slug?, image?, title?, excerpt?, body?, published? }
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {

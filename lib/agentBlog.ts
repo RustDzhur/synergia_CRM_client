@@ -1,7 +1,7 @@
 // Статья от внешнего агента (например, из DeepSeek Harness): разбор и проверка. Токены и права агентов — в lib/agents.ts
 // (реестр в CRM → Настройки → «Агенты»; право «blog» — читать список статей и класть статьи в блог, по умолчанию черновиками).
-export const LANGS = ["en", "de", "ua"] as const;
-export type Tx3 = { en: string; de: string; ua: string };
+export const LANGS = ["en", "de", "ua", "uz"] as const;
+export type Tx3 = { en: string; de: string; ua: string; uz: string };
 
 // Только текст: теги вырезаем, чтобы статья не принесла на лендинг чужую разметку или скрипт
 const plain = (v: unknown, max: number) => String(v ?? "").replace(/<[^>]*>/g, "").replace(/\r/g, "").trim().slice(0, max);
@@ -11,7 +11,7 @@ function tx3(v: unknown, what: string, max: number): Tx3 {
     const out = {} as Tx3;
     for (const l of LANGS) {
         const s = plain(o[l], max);
-        if (!s) throw new Error(`${what}: text in "${l}" is required (all of en, de, ua)`);
+        if (!s) throw new Error(`${what}: text in "${l}" is required (all of en, de, ua, uz)`);
         out[l] = s;
     }
     return out;
@@ -27,7 +27,7 @@ export function parsePost(b: unknown): ParsedPost {
     const o = (b ?? {}) as Record<string, unknown>;
     const title = tx3(o.title, "title", 160);
     const excerpt = tx3(o.excerpt, "excerpt", 400);
-    if (!Array.isArray(o.body) || !o.body.length) throw new Error("body must be a non-empty array of paragraphs, each {en, de, ua}");
+    if (!Array.isArray(o.body) || !o.body.length) throw new Error("body must be a non-empty array of paragraphs, each {en, de, ua, uz}");
     if (o.body.length > 60) throw new Error("body has too many paragraphs (max 60)");
     const body = o.body.map((p, i) => tx3(p, `body[${i}]`, 4000));
     const slug = plain(o.slug, 80) ? slugify(plain(o.slug, 80)) : slugify(title.en);
