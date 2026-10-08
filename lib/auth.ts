@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { prisma } from "@/lib/prisma";
-import { type Role, canAccess, moduleForPath } from "@/lib/access";
+import { type Role, canAccess, isPracticeRole, moduleForPath } from "@/lib/access";
+import { practiceGate, recordAccess } from "@/lib/practice/gate";
 import { featureForApi, orgFeatures, orgPlan } from "@/lib/features";
 import type { FeatureKey, PlanId } from "@/config/plans";
 import { demoBlocked, isDemoEmail } from "@/lib/demo/rules";
@@ -90,6 +91,12 @@ export async function requireUser(req: Request): Promise<AuthContext | null> {
         if (needed && !features[needed]) {
             planDenied.add(req);
             return null;
+        }
+        // специалист практики: доступ только при действующей связи и согласии клиента, уровень доступа ограничивает запись; всё попадает в журнал клиента
+        if (isPracticeRole(membership.role)) {
+            const gate = await practiceGate(membership, url.pathname, req.method);
+            if (!gate.ok) { denied.add(req); return null; }
+            void recordAccess({ org: org.id, link: gate.link as string, user: user.id, userName: `${user.firstname} ${user.lastname}`.trim(), module: String(moduleForPath(url.pathname, req.method, url.searchParams) ?? ""), method: req.method, path: url.pathname });
         }
         return { id: org.id, userId: user.id, role: membership.role, modules: membership.modules ?? [], orgName: org.name, plan: orgPlan(org), features, demo };
     } catch {

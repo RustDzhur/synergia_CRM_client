@@ -729,9 +729,12 @@ model Membership {
   user      String
   role      String   @default("employee")
   modules   String[] @default([])
+  // Доступ специалиста (role advisor / counsel) существует только вместе со связью с практикой: id ClientLink
+  link      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([link])
   @@map("memberships")
 }
 
@@ -1246,4 +1249,112 @@ model TaxRule {
   @@unique([market, code, validFrom])
   @@index([market, code])
   @@map("tax_rules")
+}
+
+// ── Практика: бухгалтеры и юристы, ведущие несколько фирм-клиентов (docs/TZ_MASTER.md §5) ─────────────────────────────
+// Практика — рабочий кабинет специалиста, а не посредник: клиентов приглашают вручную, каталога специалистов нет.
+model Practice {
+  id               String   @id @default(cuid())
+  name             String
+  // accountant | lawyer: определяет роль специалиста в фирме клиента (advisor | counsel)
+  kind             String   @default("accountant")
+  market           String   @default("")
+  // короткий код практики: клиент по нему приглашает «своего» специалиста
+  code             String   @unique
+  ownerUser        String
+  // акцепт договора обработки данных и обязательства о сохранении тайны (тексты готовит юрист; платформа хранит версию и время)
+  termsVersion     String   @default("")
+  termsAcceptedAt  DateTime?
+  termsAcceptedBy  String   @default("")
+  // режим ИИ для данных клиентов практики: none (без ИИ) | own (только подключённый ключ фирмы) | platform
+  aiMode           String   @default("none")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("practices")
+}
+
+model PracticeMember {
+  id        String   @id @default(cuid())
+  practice  String
+  user      String
+  // partner | senior | junior | assistant
+  role      String   @default("junior")
+  createdAt DateTime @default(now())
+
+  @@unique([practice, user])
+  @@index([user])
+  @@map("practice_members")
+}
+
+// Связь практики с фирмой клиента. org пуст, пока клиент не принял приглашение практики по токену.
+model ClientLink {
+  id            String    @id @default(cuid())
+  practice      String
+  org           String?
+  // invited | active | ended
+  status        String    @default("invited")
+  // practice | client — кто пригласил
+  initiatedBy   String    @default("practice")
+  token         String    @unique
+  // read | review | edit
+  access        String    @default("read")
+  modules       String[]  @default([])
+  // сотрудники практики, получившие доступ к фирме клиента
+  members       String[]  @default([])
+  note          String    @default("")
+  invitedByUser String    @default("")
+  confirmedBy   String    @default("")
+  confirmedAt   DateTime?
+  expiresAt     DateTime?
+  endedAt       DateTime?
+  endedBy       String    @default("")
+  endReason     String    @default("")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([practice, status])
+  @@index([org, status])
+  @@map("client_links")
+}
+
+// Единая запись согласия: кому, зачем, что, срок, отзыв. Доступ специалиста (и позже банка) работает только через действующее согласие.
+model ConsentRecord {
+  id          String    @id @default(cuid())
+  org         String
+  // practice_access | bank_connect | bank_lead
+  kind        String
+  subjectType String
+  subjectId   String
+  purpose     String    @default("")
+  scope       Json?
+  grantedBy   String
+  grantedAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  revokedBy   String    @default("")
+  version     String    @default("1")
+
+  @@index([org, kind])
+  @@index([subjectType, subjectId])
+  @@map("consent_records")
+}
+
+// Журнал доступа специалиста к данным фирмы: виден клиенту (записи — по запросам advisor/counsel)
+model AccessLogEntry {
+  id       String   @id @default(cuid())
+  org      String
+  link     String
+  user     String
+  userName String   @default("")
+  // read | write
+  action   String
+  module   String   @default("")
+  method   String   @default("")
+  path     String   @default("")
+  at       DateTime @default(now())
+
+  @@index([org, at])
+  @@index([link, at])
+  @@map("access_log")
 }

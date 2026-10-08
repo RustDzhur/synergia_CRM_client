@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { TbX } from "react-icons/tb";
-import { type Role, type Module, ASSIGNABLE_ROLES, GRANTABLE, NO_MODULES } from "@/lib/access";
+import { type Role, type Module, ASSIGNABLE_ROLES, GRANTABLE, NO_MODULES, isPracticeRole } from "@/lib/access";
 import { apiCall } from "@/store/crmApi";
 import { useActiveOrg } from "@/store/useOrgStore";
 import PageHeader from "@/components/crm/shared/PageHeader";
@@ -122,6 +122,12 @@ export default function Team() {
 											</div>
 											{m.role === "owner" ? (
 												<span className="fs-chip h-24 border-[rgba(198,255,77,0.35)] text-10 text-[#c6ff4d]">{t("role_owner")}</span>
+											) : isPracticeRole(m.role) ? (
+												<>
+													{/* доступ специалиста — это связь с практикой: роль и разделы правятся там, убрать можно только целиком */}
+													<span className="fs-chip h-24 text-10 text-[#cfd4cb]">{t(`role_${m.role}`)}</span>
+													<button type="button" onClick={() => setRemove(m)} aria-label={t("teamRemove")} title={t("teamRemove")} className="text-[#9AA396] transition-colors hover:text-danger"><TbX size={18} /></button>
+												</>
 											) : (
 												<>
 													<select value={m.role} onChange={(e) => change(m, { role: e.target.value as Role })} disabled={m.role === "admin" && !canAdmin} aria-label={t("teamRole")} className={select}>
@@ -133,7 +139,7 @@ export default function Team() {
 												</>
 											)}
 										</div>
-										{m.role !== "owner" && m.role !== "admin" && (
+										{m.role !== "owner" && m.role !== "admin" && !isPracticeRole(m.role) && (
 											<div className="mt-10 flex flex-wrap items-center gap-x-16 gap-y-6">
 												{GRANTABLE.map((mod) => (
 													<label key={mod} className="flex cursor-pointer items-center gap-6 text-12 text-[#cfd4cb]">
