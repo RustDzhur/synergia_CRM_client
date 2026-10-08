@@ -41,5 +41,6 @@ COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=build /app/deploy/entrypoint.sh /entrypoint.sh
 # разовый идемпотентный перенос данных Робот-офиса в таблицы (вызывается из entrypoint.sh)
 COPY --from=build /app/scripts/migrate-office.mjs ./scripts/migrate-office.mjs
+COPY --from=build /app/scripts/check-ai.mjs ./scripts/check-ai.mjs
 EXPOSE 3000
 CMD ["/entrypoint.sh"]
