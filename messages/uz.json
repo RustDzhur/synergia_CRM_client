@@ -3238,7 +3238,8 @@
     "done_propose_rules_batch": "Paket tayyorlandi: {count} ta o‘zgarish tasdig‘ingizni kutmoqda",
     "done_save_legal_draft": "“{title}” qoralamasi saqlandi (SI qoralamasi — mutaxassis tekshirishi kerak)",
     "f_counterparty": "Kontragent",
-    "agentLang_uz": "Oʻzbekcha"
+    "agentLang_uz": "Oʻzbekcha",
+    "micNoSpeech": "Ovoz eshitildi, lekin so‘zlarni ajrata olmadim — mikrofonga yaqinroq gapiring"
   },
   "automation": {
     "tab_rules": "Avtomatlashtirish qoidalari",

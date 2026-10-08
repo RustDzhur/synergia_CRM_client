@@ -2080,7 +2080,8 @@
         "done_propose_rules_batch": "Пакет підготовлено: {count} змін чекають на ваше затвердження",
         "done_save_legal_draft": "Чернетку «{title}» збережено (чернетка ШІ — має перевірити спеціаліст)",
         "f_counterparty": "Контрагент",
-        "agentLang_uz": "Oʻzbekcha"
+        "agentLang_uz": "Oʻzbekcha",
+        "micNoSpeech": "Я щось почула, але не розібрала слів — говоріть ближче до мікрофона"
     },
     "finance": {
         "title": "Бухгалтерія",

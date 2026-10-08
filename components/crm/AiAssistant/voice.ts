@@ -41,7 +41,7 @@ export const recorderSupported = () => typeof window !== "undefined" && !!naviga
 export const ttsSupported = () => typeof window !== "undefined" && "speechSynthesis" in window;
 
 export type MicState = "idle" | "listening" | "transcribing";
-export type MicError = "micDenied" | "micUnavailable" | "micFailed";
+export type MicError = "micDenied" | "micUnavailable" | "micFailed" | "micNoSpeech";
 
 const voiceExt = (type: string) => (type.includes("mp4") ? "mp4" : type.includes("ogg") ? "ogg" : "webm");
 // Склейка уже набранного текста и распознанного: диктовка дописывает, а не затирает
@@ -470,7 +470,17 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 				return;
 			}
 			if (disposed) return cleanup();
-			ctx = new AudioContext();
+			// Браузер создаёт AudioContext «спящим», пока на странице не было клика, — тогда громкость всегда ноль, и фраза никогда не начиналась бы
+			const Audio = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+			ctx = new Audio();
+			try { await ctx.resume(); } catch { /* без жеста пользователя остаётся спящим */ }
+			if (disposed) return cleanup();
+			if (ctx.state === "suspended") {
+				// клик по странице разбудит звук; пока этого не было, ждём его и поднимаем контекст сами
+				const wake = () => { void ctx?.resume(); };
+				window.addEventListener("pointerdown", wake, { once: true });
+				window.addEventListener("keydown", wake, { once: true });
+			}
 			const analyser = ctx.createAnalyser();
 			analyser.fftSize = 1024;
 			ctx.createMediaStreamSource(stream).connect(analyser);
@@ -491,6 +501,7 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 			let lastLoud = 0;
 			let loudFrames = 0;
 			let sending = false;
+			let lastNoSpeech = 0;
 
 			const send = async (blob: Blob, spokenMs: number) => {
 				if (spokenMs < SRV_MIN_SPEECH_MS || !blob.size) return;
@@ -504,6 +515,7 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 					if (disposed) return;
 					if (!res.ok || !json) onErrorRef.current("micFailed");
 					else if (json.text?.trim()) onPhraseRef.current(json.text.trim());
+					else if (Date.now() - lastNoSpeech > 30_000) { lastNoSpeech = Date.now(); onErrorRef.current("micNoSpeech"); } // сервер речи не разобрал: молчать нельзя, но и сыпать подсказками на каждый шум не нужно
 				} catch {
 					if (!disposed) onErrorRef.current("micFailed");
 				} finally {

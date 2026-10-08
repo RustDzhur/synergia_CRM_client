@@ -191,7 +191,8 @@ export function useVoiceAgent({ locale, page, blocked, serverStt = false, onErro
 	const listening = enabled && supported && !blocked && !busy && !speaking;
 	// Узбекский слушает сервер (браузерное распознавание слабое), остальные языки — браузер; если браузер не умеет распознавать, а сервер настроен — тоже сервер
 	const viaServer = serverStt && recorderSupported() && (lang === "uz" || !dictationSupported());
-	const onListenError = (code: MicError) => { onErrorRef.current(code); setEnabled(false, false); };
+	// «речи не разобрал» — только подсказка, режим разговора не выключается
+	const onListenError = (code: MicError) => { onErrorRef.current(code); if (code !== "micNoSpeech") setEnabled(false, false); };
 	const browserListen = useContinuousListening({ lang: BCP47[lang], active: listening && !viaServer, onPhrase: handlePhrase, onError: onListenError });
 	const serverListen = useServerListening({ lang, active: listening && viaServer, onPhrase: handlePhrase, onError: onListenError });
 	const interim = viaServer ? serverListen.interim : browserListen.interim;

@@ -2080,7 +2080,8 @@
         "done_propose_rules_batch": "Batch prepared: {count} changes wait for your approval",
         "done_save_legal_draft": "Draft “{title}” saved (AI draft — specialist must review)",
         "f_counterparty": "Other party",
-        "agentLang_uz": "Oʻzbekcha"
+        "agentLang_uz": "Oʻzbekcha",
+        "micNoSpeech": "I heard you but could not make out any words — please speak closer to the microphone"
     },
     "finance": {
         "title": "Accounting",
