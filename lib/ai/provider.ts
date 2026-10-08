@@ -287,10 +287,20 @@ async function transcribeOnce(t: SttTarget, bytes: Buffer, type: string, languag
         return String(j.text ?? "").trim();
     }
     form.append("model", t.model);
-    // Язык записи подсказываем, но не настаиваем: whisper и так определит по речи
-    if (language) form.append("language", language);
-    if (language === "uz") { form.append("prompt", UZ_STT_PROMPT); form.append("temperature", "0"); }
-    const res = await fetchProvider(`${t.url}/audio/transcriptions`, { method: "POST", headers: t.key ? { Authorization: `Bearer ${t.key}` } : {}, body: form }, 55000);
+    // Язык записи подсказываем, но не настаиваем: whisper и так определит по речи.
+    // gpt-4o-transcribe код «uz» не принимает («Language code 'uz' is not recognized») — для него язык называем в подсказке, а не параметром.
+    const noCode = language === "uz" && /^gpt-4o/.test(t.model);
+    if (language && !noCode) form.append("language", language);
+    if (language === "uz") { form.append("prompt", (noCode ? "The audio is in Uzbek (Latin script). " : "") + UZ_STT_PROMPT); form.append("temperature", "0"); }
+    let res = await fetchProvider(`${t.url}/audio/transcriptions`, { method: "POST", headers: t.key ? { Authorization: `Bearer ${t.key}` } : {}, body: form }, 55000);
+    // Провайдер не знает код языка (400 «Language code … is not recognized»): повторяем без параметра языка — распознавание определит его само
+    if (res.status === 400 && language && !noCode) {
+        const peek = (await res.clone().json().catch(() => null)) as { error?: { message?: string } } | null;
+        if (/language/i.test(peek?.error?.message ?? "")) {
+            form.delete("language");
+            res = await fetchProvider(`${t.url}/audio/transcriptions`, { method: "POST", headers: t.key ? { Authorization: `Bearer ${t.key}` } : {}, body: form }, 55000);
+        }
+    }
     const json = (await res.json().catch(() => null)) as ({ text?: string; error?: { message?: string } } & Record<string, unknown>) | null;
     if (!res.ok || !json) {
         console.error("transcribe error", res.status, json?.error?.message);

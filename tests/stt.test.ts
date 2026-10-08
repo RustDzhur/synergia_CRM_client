@@ -50,3 +50,34 @@ describe("шлюзы отключены", () => {
         expect(cloudSttModel()).toBe("whisper-1");
     });
 });
+
+import { vi } from "vitest";
+import { transcribeAudio } from "@/lib/ai/provider";
+
+describe("запрос распознавания узбекского", () => {
+    const saved = { ...process.env };
+    afterEach(() => { process.env = { ...saved }; vi.unstubAllGlobals(); });
+    const audio = Buffer.from("fake-audio");
+    const ok = () => new Response(JSON.stringify({ text: "Salom Ayris" }), { status: 200 });
+
+    it("gpt-4o-transcribe: код uz не отправляется, язык назван в подсказке", async () => {
+        process.env.OPENAI_API_KEY = "sk-test"; delete process.env.OPENAI_API_URL; delete process.env.TRANSCRIBE_API_URL; delete process.env.ELEVENLABS_API_KEY; delete process.env.AI_VOICE_STT_MODEL_UZ;
+        const sent: FormData[] = [];
+        vi.stubGlobal("fetch", vi.fn(async (_u: string, init: RequestInit) => { sent.push(init.body as FormData); return ok(); }));
+        expect(await transcribeAudio(audio, "audio/webm", "uz")).toBe("Salom Ayris");
+        expect(sent[0].get("model")).toBe("gpt-4o-transcribe");
+        expect(sent[0].get("language")).toBeNull();
+        expect(String(sent[0].get("prompt"))).toContain("Uzbek");
+    });
+    it("whisper-1: код uz отправляется; если провайдер его отверг (400 language) — повтор без кода", async () => {
+        process.env.OPENAI_API_KEY = "sk-test"; process.env.AI_VOICE_STT_MODEL_UZ = "whisper-1"; delete process.env.OPENAI_API_URL; delete process.env.TRANSCRIBE_API_URL; delete process.env.ELEVENLABS_API_KEY;
+        const langs: (string | null)[] = [];
+        let n = 0;
+        vi.stubGlobal("fetch", vi.fn(async (_u: string, init: RequestInit) => {
+            langs.push((init.body as FormData).get("language") as string | null);
+            return n++ === 0 ? new Response(JSON.stringify({ error: { message: "Language code 'uz' is not recognized." } }), { status: 400 }) : ok();
+        }));
+        expect(await transcribeAudio(audio, "audio/webm", "uz")).toBe("Salom Ayris");
+        expect(langs).toEqual(["uz", null]);
+    });
+});
