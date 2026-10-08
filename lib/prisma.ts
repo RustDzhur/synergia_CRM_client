@@ -1,7 +1,8 @@
 import { PrismaClient } from "@prisma/client";
+import { checkPeriodWrite } from "@/lib/finance/periodGuard";
 
 // Один экземпляр PrismaClient на процесс (в dev Next перезагружает модули — держим в globalThis).
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient; prismaWatch?: boolean };
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient; prismaWatch?: boolean; prismaPeriod?: boolean };
 export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
@@ -28,5 +29,14 @@ if (!globalForPrisma.prismaWatch && typeof prisma.$use === "function") {
             } catch { /* сторож не должен ломать сам запрос */ }
             throw e;
         }
+    });
+}
+
+// Закрытые периоды: запись счетов, расходов и банковских операций с датой в закрытом периоде отклоняется (lib/finance/periodGuard.ts)
+if (!globalForPrisma.prismaPeriod && typeof prisma.$use === "function") {
+    globalForPrisma.prismaPeriod = true;
+    prisma.$use(async (params, next) => {
+        await checkPeriodWrite(params, prisma as unknown as Record<string, unknown>);
+        return next(params);
     });
 }

@@ -10,6 +10,8 @@ import { logActivity } from "@/lib/sync/feed";
 import { setOrderStatus } from "@/lib/finance/orderStatus";
 import { recordSyncError } from "@/lib/sync/errors";
 import { fx } from "@/lib/sync/texts";
+import { assertPeriodOpen } from "@/lib/finance/periodLock";
+import { periodBypass } from "@/lib/finance/periodGuard";
 
 // Единственная точка, где деньги зачитываются в счёт. Раньше оплата считалась в четырёх местах (кнопка «оплачен»,
 // webhook эквайринга, ассистент Айрис, сверка с банком), и результат у них был разным: банковская оплата не
@@ -47,8 +49,11 @@ const lockInvoice = (tx: Prisma.TransactionClient, id: string) => tx.$queryRaw`S
 export async function registerPayment(org: string, invoiceId: string, input: PaymentInput): Promise<PaymentOutcome> {
     const first = await prisma.invoice.findFirst({ where: { id: invoiceId, org } });
     if (!first) return { ok: false, reason: "not_found" };
+    // Платёж — новый факт на свою дату: в закрытый период его провести нельзя, а в открытый по старому счёту — можно (сам счёт при этом
+    // обновляется в обход сторожа периода: меняются только сумма оплаты и статус, дата и строки счёта остаются)
+    await assertPeriodOpen(org, input.paidAt ?? new Date());
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await periodBypass.run({ reason: "payment" }, () => prisma.$transaction(async (tx) => {
         // блокировка строки счёта: два платежа одновременно не прочитают одну и ту же сумму «уже оплачено»
         await lockInvoice(tx, first.id);
         const inv = await tx.invoice.findUniqueOrThrow({ where: { id: first.id } });
@@ -73,7 +78,7 @@ export async function registerPayment(org: string, invoiceId: string, input: Pay
             },
         });
         return { inv: updated, gross, paid, full, applied, previous: inv };
-    }).catch((e) => {
+    })).catch((e) => {
         // два одинаковых платежа пришли одновременно: второй упёрся в уникальный ключ — это повтор, а не ошибка
         if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") return { duplicate: true as const, inv: first, gross: computeTotals(first.items as never).gross };
         throw e;
@@ -187,7 +192,8 @@ export async function revertPayment(org: string, invoiceId: string, input: { sou
     const inv0 = await prisma.invoice.findFirst({ where: { id: invoiceId, org } });
     if (!inv0) return { ok: false as const, reason: "not_found" as const };
     const revertKey = `revert:${input.externalId}`;
-    const result = await prisma.$transaction(async (tx) => {
+    await assertPeriodOpen(org, new Date()); // снятие платежа — запись сегодняшнего числа: в закрытый период её не сделать
+    const result = await periodBypass.run({ reason: "payment" }, () => prisma.$transaction(async (tx) => {
         await lockInvoice(tx, inv0.id);
         const inv = await tx.invoice.findUniqueOrThrow({ where: { id: inv0.id } });
         if (!["sent", "overdue", "paid"].includes(inv.status)) return null;
@@ -202,7 +208,7 @@ export async function revertPayment(org: string, invoiceId: string, input: { sou
             data: { paidAmount: paid, status: statusAfterPayment(inv.status, full), ...(full ? {} : { paidAt: null }) },
         });
         return { inv: updated, paid, amount };
-    }).catch((e) => {
+    })).catch((e) => {
         if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") return null;
         throw e;
     });

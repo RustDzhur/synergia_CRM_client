@@ -5,11 +5,12 @@ import { registerPayment } from "@/lib/sync/payments";
 import { ensureSupplyDate } from "@/lib/finance/issue";
 import { prisma } from "@/lib/prisma";
 import { toInvoiceDTO } from "@/lib/finance/dto";
+import { withPeriodLock } from "@/lib/finance/periodLock";
 
 // POST /api/invoices/:id/pay — { amount? }: «деньги поступили» (без amount — вся сумма, с amount — частично). Работает для черновика, отправленного и просроченного счёта.
 // Оплата фиксируется вручную: деньги приходят переводом или наличными, а в CRM их вносят человек
 // или сверка с банком (app/api/bank/transactions). Тарифы платформы оплачиваются отдельно, переводом (lib/transferPay.ts).
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+async function handlePOST(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
@@ -28,3 +29,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!res.ok) return badRequest(res.reason === "closed" ? "Only an open invoice (draft, sent or overdue) can be marked paid" : "Not found");
     return NextResponse.json(toInvoiceDTO(res.invoice));
 }
+
+// Закрытый период (сторож в lib/prisma.ts) отвечает здесь 423, а не «Server error»
+export const POST = withPeriodLock(handlePOST);

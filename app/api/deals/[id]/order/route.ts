@@ -12,6 +12,7 @@ import { MARKETPLACES, type MarketplaceId } from "@/lib/marketplace";
 import { prisma } from "@/lib/prisma";
 import { dealScope } from "@/lib/sync/people";
 import { recordSyncError } from "@/lib/sync/errors";
+import { withPeriodLock } from "@/lib/finance/periodLock";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -22,7 +23,7 @@ export const maxDuration = 60;
 // заявки (снимок в Deal.market) превращается в настоящий заказ: товарные строки резервируют склад,
 // комиссия площадки уходит отдельным расходом к сделке, а дальше работают обычные шаги —
 // заказ → счёт одной кнопкой → оплата → доставка → акт.
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+async function handlePOST(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
@@ -91,3 +92,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         return failure(e);
     }
 }
+
+// Закрытый период (сторож в lib/prisma.ts) отвечает здесь 423, а не «Server error»
+export const POST = withPeriodLock(handlePOST);

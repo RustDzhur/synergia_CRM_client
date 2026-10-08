@@ -5,6 +5,7 @@ import { cleanItems } from "@/lib/finance/totals";
 import { toInvoiceDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
 import { prisma } from "@/lib/prisma";
+import { withPeriodLock } from "@/lib/finance/periodLock";
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
@@ -16,7 +17,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 // PATCH /api/invoices/:id — правка возможна, только пока счёт "draft" (выданный номер уже не переиспользуется,
 // но отправленный клиенту счёт содержимое не меняет — это отдельный документ, законность номера того требует)
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+async function handlePATCH(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
@@ -43,10 +44,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 // DELETE /api/invoices/:id — только черновик; отправленный счёт лучше отменить (credit note), не удалить — номер не пропадает
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+async function handleDELETE(req: Request, { params }: { params: { id: string } }) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return notFound();
     const r = await prisma.invoice.deleteMany({ where: { id: params.id, org: user.id, status: "draft" } });
     return r.count ? NextResponse.json({ ok: true }) : notFound();
 }
+
+// Закрытый период (сторож в lib/prisma.ts) отвечает здесь 423, а не «Server error»
+export const PATCH = withPeriodLock(handlePATCH);
+export const DELETE = withPeriodLock(handleDELETE);

@@ -4,6 +4,7 @@ import { verifyPayWebhook, type PayProvider } from "@/lib/payments";
 import { registerPayment } from "@/lib/sync/payments";
 import { prisma } from "@/lib/prisma";
 import { createHash } from "node:crypto";
+import { withPeriodLock } from "@/lib/finance/periodLock";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export const dynamic = "force-dynamic";
 
 const PROVIDERS: PayProvider[] = ["monobank", "liqpay", "wayforpay", "cryptopay"];
 
-export async function POST(req: Request, { params }: { params: { provider: string; token: string } }) {
+async function handlePOST(req: Request, { params }: { params: { provider: string; token: string } }) {
     const provider = params.provider as PayProvider;
     if (!PROVIDERS.includes(provider)) return NextResponse.json({ message: "Unknown provider" }, { status: 404 });
     const integration = await findByToken(provider, params.token);
@@ -48,3 +49,6 @@ export async function POST(req: Request, { params }: { params: { provider: strin
     if (res.duplicate) return NextResponse.json({ ok: true, duplicate: true });
     return NextResponse.json({ ok: true, paid: res.paid, full: res.full });
 }
+
+// Закрытый период (сторож в lib/prisma.ts) отвечает здесь 423, а не «Server error»
+export const POST = withPeriodLock(handlePOST);
