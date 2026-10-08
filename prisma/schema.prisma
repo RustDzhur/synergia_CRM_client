@@ -1403,3 +1403,17 @@ model ClientRequest {
   @@index([org, status])
   @@map("client_requests")
 }
+
+// Паспорт интеграции (docs/TZ_MASTER.md §6): накладка поверх начальных паспортов из кода (lib/integrations/manifests.ts)
+model IntegrationManifest {
+  key       String   @id
+  // available | beta | planned
+  status    String   @default("planned")
+  title     String   @default("")
+  source    String   @default("")
+  version   Int      @default(1)
+  updatedBy String   @default("")
+  updatedAt DateTime @updatedAt
+
+  @@map("integration_manifests")
+}
