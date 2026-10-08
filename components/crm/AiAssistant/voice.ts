@@ -453,6 +453,8 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 	onError: (code: MicError) => void;
 }) {
 	const [interim, setInterim] = useState("");
+	// Строка состояния для панели: что делает микрофон прямо сейчас (слышно ли голос, ушла ли запись, что вернул сервер) — чтобы «не слышит» не гадать
+	const [diag, setDiag] = useState("");
 	const onPhraseRef = useRef(onPhrase);
 	const onErrorRef = useRef(onError);
 	onPhraseRef.current = onPhrase;
@@ -460,6 +462,7 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 
 	useEffect(() => {
 		setInterim("");
+		setDiag("");
 		if (!active || !recorderSupported()) return;
 		let disposed = false;
 		let stream: MediaStream | null = null;
@@ -475,10 +478,11 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 			ctx = null;
 		};
 		void (async () => {
+			setDiag("Микрофон: запрашиваю доступ…");
 			try {
 				stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
 			} catch {
-				if (!disposed) onErrorRef.current("micDenied");
+				if (!disposed) { setDiag("Микрофон: доступ запрещён браузером"); onErrorRef.current("micDenied"); }
 				return;
 			}
 			if (disposed) return cleanup();
@@ -507,6 +511,13 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 			for (let i = 0; i < 6; i++) { baseline += level(); await new Promise((r) => setTimeout(r, 40)); }
 			baseline /= 6;
 			const threshold = Math.max(SRV_MIN_LEVEL, baseline * 3);
+			const track = stream.getAudioTracks()[0];
+			let peak = 0;
+			let holdUntil = 0; // важное сообщение (результат, ошибка) не затирается строкой с уровнем несколько секунд
+			let lastLevelAt = 0;
+			const note = (msg: string) => { holdUntil = Date.now() + 6000; setDiag(msg); };
+			const ctxState = () => (ctx?.state === "running" ? "" : ` · звук браузера «${ctx?.state}» — кликните по странице`);
+			setDiag(`Слушаю · микрофон «${track?.label || "?"}» · порог ${threshold.toFixed(3)}${ctxState()}`);
 
 			let chunks: Blob[] = [];
 			let startedAt = 0;
@@ -516,8 +527,9 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 			let lastNoSpeech = 0;
 
 			const send = async (blob: Blob, spokenMs: number) => {
-				if (spokenMs < SRV_MIN_SPEECH_MS || !blob.size) return;
+				if (spokenMs < SRV_MIN_SPEECH_MS || !blob.size) { note(`Слишком коротко (${Math.max(0, Math.round(spokenMs))} мс) — отброшено`); return; }
 				sending = true;
+				note(`Отправляю на сервер ${Math.round(blob.size / 1024)} КБ, речь ${(spokenMs / 1000).toFixed(1)} с…`);
 				try {
 					const body = new FormData();
 					body.append("file", blob, `voice.${voiceExt(blob.type || "audio/webm")}`);
@@ -525,9 +537,9 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 					const res = await fetch("/api/ai/transcribe", { method: "POST", headers: authHeaders(false), body });
 					const json = (await res.json().catch(() => null)) as { text?: string } | null;
 					if (disposed) return;
-					if (!res.ok || !json) { g.serverBroken = true; onErrorRef.current("micFallback"); }
-					else if (json.text?.trim()) onPhraseRef.current(json.text.trim());
-					else if (Date.now() - lastNoSpeech > 30_000) { lastNoSpeech = Date.now(); onErrorRef.current("micNoSpeech"); } // сервер речи не разобрал: молчать нельзя, но и сыпать подсказками на каждый шум не нужно
+					if (!res.ok || !json) { g.serverBroken = true; note(`Сервер ответил ${res.status} — переключаюсь на браузер`); onErrorRef.current("micFallback"); }
+					else if (json.text?.trim()) { note(`Распознано: «${json.text.trim().slice(0, 80)}»`); onPhraseRef.current(json.text.trim()); }
+					else if (note("Сервер ответил, но слов не разобрал") === undefined && Date.now() - lastNoSpeech > 30_000) { lastNoSpeech = Date.now(); onErrorRef.current("micNoSpeech"); } // сервер речи не разобрал: молчать нельзя, но и сыпать подсказками на каждый шум не нужно
 				} catch {
 					g.serverBroken = true;
 					if (!disposed) onErrorRef.current("micFallback");
@@ -546,13 +558,20 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 				rec.onstop = () => { void send(new Blob(chunks, { type: rec.mimeType || "audio/webm" }), lastLoud - spokenFrom); };
 				startedAt = spokenFrom;
 				rec.start();
+				note("Слышу речь…");
 				setInterim("…"); // «слышу речь»: держит Айрис бодрствующей, пока человек говорит
 			};
 
 			timer = setInterval(() => {
 				if (disposed || sending) return;
 				const now = Date.now();
-				const loud = level() > threshold;
+				const lv = level();
+				if (lv > peak) peak = lv;
+				const loud = lv > threshold;
+				if (now - lastLevelAt > 500 && now > holdUntil && recorder?.state !== "recording") {
+					lastLevelAt = now;
+					setDiag(`Слушаю · громкость ${lv.toFixed(3)} · порог ${threshold.toFixed(3)} · пик ${peak.toFixed(3)}${ctxState()}`);
+				}
 				if (recorder?.state === "recording") {
 					if (loud) lastLoud = now;
 					if (now - lastLoud > SRV_SILENCE_MS || now - startedAt > SRV_MAX_MS) { try { recorder.stop(); } catch { /* уже остановлен */ } }
@@ -565,5 +584,5 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 		return () => { disposed = true; cleanup(); setInterim(""); };
 	}, [active, lang]);
 
-	return { interim, supported: recorderSupported() };
+	return { interim, diag, supported: recorderSupported() };
 }

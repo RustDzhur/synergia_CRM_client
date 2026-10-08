@@ -206,6 +206,7 @@ export function useVoiceAgent({ locale, page, blocked, serverStt = false, onErro
 	const browserListen = useContinuousListening({ lang: BCP47[lang], active: listening && !viaServer, onPhrase: handlePhrase, onError: onListenError });
 	const serverListen = useServerListening({ lang, active: listening && viaServer, onPhrase: handlePhrase, onError: onListenError });
 	const interim = viaServer ? serverListen.interim : browserListen.interim;
+	const diag = viaServer && enabled ? serverListen.diag : "";
 
 	// Пока человек говорит (идёт распознавание), Айрис не засыпает: окно бодрствования продлевается с каждым новым словом, а не истекает
 	// посреди длинной просьбы
@@ -234,5 +235,5 @@ export function useVoiceAgent({ locale, page, blocked, serverStt = false, onErro
 	const phase: AgentPhase = !enabled ? "off" : busy ? "thinking" : speaking ? "speaking" : awake ? "listening" : "sleeping";
 	// Распознанное показываем, только когда обращаются к Айрис: чужие разговоры на экране не нужны
 	const caption = awake || stripWake(interim).hit ? interim : "";
-	return { sttMode, setSttMode, supported, enabled, toggle, setEnabled, phase, caption, lang, setLang, gender, setGender, requireWake, setRequireWake, autoApprove, setAutoApprove, pending, lastAssistant, audioBlocked, awake };
+	return { diag, sttMode, setSttMode, supported, enabled, toggle, setEnabled, phase, caption, lang, setLang, gender, setGender, requireWake, setRequireWake, autoApprove, setAutoApprove, pending, lastAssistant, audioBlocked, awake };
 }

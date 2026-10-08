@@ -63,6 +63,7 @@ export default function VoiceHud({ agent, onOpenChat }: { agent: Agent; onOpenCh
 				</div>
 
 				{agent.audioBlocked && <p className="mt-8 text-12 text-[#f4a100]">{t("agentUnlock")}</p>}
+				{agent.diag && <p className="mt-8 break-words text-11 text-[#8c948b]" aria-live="off">🎙 {agent.diag}</p>}
 				{reply && <p className="mt-10 max-h-[4.6em] overflow-hidden text-13 text-[#cfd4cb]">{reply}</p>}
 
 				{pending.map((a) => (
