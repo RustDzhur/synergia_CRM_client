@@ -46,6 +46,8 @@ export const CONTACT = {
 // ── Утилиты ──────────────────────────────────────────────────────────────────
 
 export function asLocale(value?: string): Locale {
+	// у узбекской версии пока нет своих SEO-текстов: заголовки и описания берутся английские
+	if (value === "uz") return "en";
 	return value === "en" || value === "ua" ? value : "de";
 }
 

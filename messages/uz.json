@@ -16,10 +16,10 @@
     "role_employee": "Xodim",
     "role_viewer": "Kuzatuvchi",
     "lang": {
-      "ua": "Ukrainacha",
-      "de": "Nemischa",
-      "en": "Inglizcha",
-      "uz": "O‘zbekcha"
+      "ua": "Українська",
+      "de": "Deutsch",
+      "en": "English",
+      "uz": "Oʻzbekcha"
     },
     "search": "Qidirish",
     "language": "Til",
@@ -3933,5 +3933,212 @@
     "templateBody": "Shablon matni",
     "templateSaved": "Shablon saqlandi",
     "saveTemplate": "Shablonni saqlash"
+  },
+  "navWebsite": {
+    "home": "Bosh sahifa",
+    "about_us": "Biz haqimizda",
+    "our_services": "Xizmatlarimiz",
+    "blog": "Blog",
+    "contact": "Aloqa",
+    "auth": {
+      "signin": "Kirish",
+      "signup": "Ro‘yxatdan o‘tish"
+    }
+  },
+  "hero": {
+    "eyebrow": "Kompaniyalar uchun SI avtomatlashtirish",
+    "title1": "Kamroq rutina.",
+    "title2": "Ko‘proq o‘rin",
+    "title3": "muhim ishlar uchun.",
+    "lead": "Firmspace AI savdo, jamoa muloqoti, loyihalar va buxgalteriyani yagona platformada birlashtiradi. Takrorlanuvchi ishlarni qoidalar va SI yordamchi bajaradi — har bir qadam jurnalda qoladi.",
+    "ctaPrimary": "Imkoniyatlarni ko‘rish",
+    "ctaSecondary": "Qanday ishlashini ko‘rish",
+    "frame": {
+      "navOverview": "Umumiy ko‘rinish",
+      "navCollab": "Hamkorlik",
+      "navCrm": "CRM",
+      "navCompany": "Kompaniya",
+      "navTasks": "Vazifalar va loyihalar",
+      "navFinance": "Buxgalteriya",
+      "navMarketing": "Marketing",
+      "navAutomation": "Avtomatlashtirish",
+      "navPlan": "Tarif",
+      "navSettings": "Sozlamalar",
+      "groupWorkspace": "Ish maydoni",
+      "groupCollab": "Hamkorlik",
+      "groupCustomers": "Mijozlar",
+      "groupOperations": "Operatsiyalar",
+      "groupAdmin": "Boshqaruv",
+      "screen_overview_eyebrow": "Ish maydoni",
+      "screen_overview_title": "Umumiy ko‘rinish",
+      "screen_crm_eyebrow": "Mijozlar",
+      "screen_crm_title": "Savdo voronkasi",
+      "screen_chat_eyebrow": "Hamkorlik",
+      "screen_chat_title": "Chat va qo‘ng‘iroqlar",
+      "screen_finance_eyebrow": "Buxgalteriya",
+      "screen_finance_title": "Hisob-fakturalar",
+      "dashProgress": "20 ta vazifadan 12 tasi bajarildi",
+      "dashDate": "Sana: 2026-yil 26-sentabr",
+      "dashTasks": "Vazifalar",
+      "dashTask1": "Acme ga taklifni yuborish",
+      "dashTask1Who": "Mas’ul: Anna Link",
+      "dashTask2": "RE-2026-19 hisob-fakturasini tekshirish",
+      "dashTask2Who": "Mas’ul: Maria Weber",
+      "dashTask3": "Mijoz Bergerga qayta qo‘ng‘iroq qilish",
+      "dashTask3Who": "Mas’ul: Tom Klein",
+      "dashDeals": "Yopilgan bitimlar",
+      "crmStage1": "Yangi lid",
+      "crmStage2": "Saralangan",
+      "crmStage3": "Taklif",
+      "crmDeal1": "Acme Ltd",
+      "crmDeal2": "Berger Trading",
+      "crmDeal3": "Nordlicht AG",
+      "crmDeal4": "Weber & Co",
+      "crmDeal5": "Klein Logistics",
+      "crmOwner": "Mas’ul: savdo jamoasi",
+      "chatName": "Anna Meier",
+      "chatIn1": "Salom, yetkazib berish qachon keladi?",
+      "chatOut1": "Salom! Bugun jo‘natiladi, kuzatuv raqami keyin yuboriladi.",
+      "chatIn2": "Rahmat, kutaman.",
+      "chatOut2": "Kuzatuv raqami yuborildi — iltimos, e-pochtangizni tekshiring.",
+      "finClient1": "Acme Ltd",
+      "finClient2": "Berger Trading",
+      "finClient3": "Nordlicht AG",
+      "finPaid": "To‘langan",
+      "finOpen": "Ochiq",
+      "finOverdue": "Muddati o‘tgan",
+      "flowTitle": "Mumkin bo‘lgan jarayonlardan biri",
+      "example": "Misol",
+      "step1": "Kelgan ishni aniqlash",
+      "step2": "Ma’lumotni saralash",
+      "step3": "Tasdiq so‘rash",
+      "checksTitle": "Nazorat nuqtalari",
+      "check1": "Ruxsatlarni belgilash",
+      "check2": "Tasdiqlashlarni belgilash",
+      "check3": "Natijalarni kuzatish"
+    }
+  },
+  "aboutUs": {
+    "title": "Biz haqimizda",
+    "description": "Firmspace AI ni o‘zimiz yaratamiz va o‘zimizning kundalik ishimizda foydalanamiz.",
+    "link": "Batafsil"
+  },
+  "advantages": {
+    "marketing": "Marketing",
+    "integration": "Integratsiya",
+    "accesbility": "Qulaylik"
+  },
+  "whatIsCrm": {
+    "stepContentFirst": {
+      "step1": "Bosh sahifamizdagi `Ro‘yxatdan o‘tish` yoki `Hisob yaratish` tugmasini bosing. Ro‘yxatdan o‘tish shaklini ma’lumotlaringiz bilan to‘ldiring va to‘g‘ri ma’lumot kiriting. Noyob foydalanuvchi nomi va kuchli parol tanlang. Foydalanuvchi nomingiz platformadagi shaxsingiz bo‘ladi, shuning uchun esda qoladigan nom tanlang.",
+      "step2": "`Boshqaruv paneliga kirish` — platformadagi imkoniyatlar dunyosiga eshik. Kirganingizdan so‘ng siz barcha funksiyalar, vositalar va ma’lumotlarni boshqarish va o‘rganish mumkin bo‘lgan markaziy bo‘limga tushasiz. Jarayoningizni kuzatishdan tortib, boshqalar bilan bog‘lanish va resurslarga kirishgacha — panel qulay va samarali ish uchun sizning boshqaruv markazingizdir.",
+      "step3": "Vazifalar — ishlar ro‘yxatini yuritish va tartibda bo‘lish uchun kuchli vosita. Vazifa yaratish uchun panelingizga kirib, `Vazifalar` bo‘limini toping va `Vazifa yaratish` tugmasini bosing. Vazifa ma’lumotlarini to‘ldiring: sarlavha, tavsif, muddat va kerakli teglar yoki toifalar. Vazifalaringizni ustuvorlashtirish uchun muhimlik darajasini ham belgilashingiz mumkin. Ma’lumotlarni to‘ldirgach, vazifani ro‘yxatga qo‘shish uchun `Saqlash` yoki `Yaratish` tugmasini bosing. Vazifalarni osongina tahrirlash, bajarilgan deb belgilash yoki o‘chirish mumkin.",
+      "step4": "Ilovamiz taklif qiladigan imkoniyatlar olamiga sho‘ng‘ing va u raqamli hayotingizga olib keladigan qulaylikdan zavqlaning."
+    },
+    "stepContentSecond": {
+      "step1": "Kelajakda platformaga qaytganingizda `Kirish` tugmasini bosing. Foydalanuvchi nomi va parolingizni kiriting, `Kirish` tugmasini bosing — hisobingizga kirasiz.",
+      "step2": "`Boshqaruv paneliga kirganingizda` ehtiyojlaringizga moslashtirilgan shaxsiy muhit ochiladi. Bu dinamik interfeys sizning buyruq markazingiz bo‘lib, real vaqtdagi ko‘rsatkichlar, bildirishnomalar va asosiy funksiyalarga oson kirishni taqdim etadi. Hisobingizni kuzatasizmi, sozlamalarni o‘zgartirasizmi yoki so‘nggi loyihalaringizga sho‘ng‘iysizmi — panel platformadagi barcha ishlaringiz uchun qulay va tushunarli markazdir.",
+      "step3": "Lenta — platformadagi so‘nggi yangilanishlar, yangiliklar va boshqa foydalanuvchilar xabarlari manbai. Lentani ochish uchun panelingizdagi `Lenta` yoki `Yangiliklar` bo‘limini bosing. Aloqalaringiz yoki tegishli manbalarning xabarlari, maqolalari va yangilanishlarini ko‘rib chiqing. Hamjamiyat bilan muloqot qilish uchun xabarlarga yoqtirish bosing, izoh qoldiring va ulashing. Qiziqtirgan mazmunni topish uchun filtr yoki qidiruvdan foydalaning. Foydali ma’lumotlardan xabardor bo‘lish uchun lentani muntazam tekshirib turing.",
+      "step4": "Biz bu ilovani sizning mamnunligingizni o‘ylab yaratdik — uning imkoniyatlaridan to‘liq foydalaning va tajribangizni unutilmas qiling."
+    },
+    "whatIsCrm": "CRM nima?",
+    "defaultTextFirst": "Firmspace AI — kichik va o‘rta kompaniyalar uchun CRM: mijozlar va savdo, jamoa muloqoti, loyihalar, buxgalteriya va hisobotlar bitta ilovada. Ma’lumotlar kompaniyalar bo‘yicha ajratilgan, kirish huquqlari rollar orqali boshqariladi.",
+    "defaultTextSecond": "Bir nechta alohida vosita o‘rniga har bir bo‘lim bir xil ma’lumotlar bilan ishlaydi. Savdo darhol panelda ko‘rinadi, muddati o‘tgan hisob-faktura qoidani ishga tushiradi, SI yordamchi esa mijozlar, vazifalar va hujjatlar haqidagi savollarga javob beradi.",
+    "steps": {
+      "createaccount": "Hisob yarating va tizimga kiring",
+      "access": "Boshqaruv paneliga kiring",
+      "createtask": "Vazifalar yarating va lentani o‘qing",
+      "enjoy": "Ilovadan zavqlaning!",
+      "step": "Qadam"
+    }
+  },
+  "joinUs": {
+    "whyJoinUs": "Platforma nimani anglatadi",
+    "comprehensiveData": {
+      "title": "Hammasi bir joyda",
+      "text": "Mijozlar, vazifalar, hujjatlar va hisob-fakturalar bir xil ma’lumotlar bilan ishlaydi — takroriy kiritish ham, vositalar o‘rtasida sinxronlash ham yo‘q."
+    },
+    "interface": {
+      "title": "Odamlar tushunadigan interfeys",
+      "text": "Aniq bo‘limlar, izchil boshqaruv elementlari va murakkab so‘zlarsiz — IT bilimi bo‘lmagan hamkasblar ham foydalana oladi."
+    },
+    "integration": {
+      "title": "Kuningizga ulangan",
+      "text": "Telegram, Viber, WhatsApp, pochta qutilari, Google Drive va reklama hisoblari to‘g‘ridan-to‘g‘ri ulanadi."
+    }
+  },
+  "discoverCrm": {
+    "title": "Barcha yechimlarni bitta CRM platformasida kashf eting",
+    "description": "Barcha yechimlaringizni bir tom ostida jamlaydigan CRM platformasiga xush kelibsiz. Bir nechta vositalar o‘rtasida adashishni unuting va uzluksiz integratsiya kuchidan foydalaning. Bizning hammasi birida CRM platformamiz ish jarayonlaringizni soddalashtirish va jamoangizga ko‘proq natijaga erishishda yordam berish uchun yaratilgan.",
+    "comprehensive": "Keng qamrovli va markazlashgan",
+    "efficiency": "Samaradorlik qo‘l ostingizda",
+    "insights": "Ma’lumotlarga asoslangan xulosalar",
+    "integration": "Uzluksiz integratsiya"
+  },
+  "paidPlan": {
+    "titleFree": "Bepul",
+    "subTitleFree": "1 foydalanuvchi",
+    "titleStandart": "Standart",
+    "subTitleStandart": "50 tagacha foydalanuvchi",
+    "titleProfessional": "Professional",
+    "subTitleProfessional": "Cheklanmagan foydalanuvchilar",
+    "features": {
+      "crm": "Savdo voronkasi: bitimlar, kontaktlar, kompaniyalar",
+      "tasks": "Vazifalar va loyihalar",
+      "company": "Kompaniya profili va xodimlar kataloki",
+      "collab": "Jamoa lentasi va kalendar",
+      "documents": "Onlayn hujjatlar: umumiy fayllar va papkalar",
+      "inventory": "Ombor, buyurtmalar, hisob-fakturalar va buxgalteriya",
+      "channels": "Chat va qo‘ng‘iroqlar: Telegram, Viber, Messenger, veb-chat, SIP/Twilio",
+      "mail": "Avtomatik lidlar bilan veb-pochta",
+      "automation": "Avtomatlashtirish qoidalari",
+      "aiAssistant": "Firmspace AI yordamchisi",
+      "marketing": "Marketing kampaniyalari va segmentlar",
+      "multiFirm": "Bir nechta firma, jamoa rollari va ruxsatlar",
+      "ads": "Reklama natijalari: Google Ads / Meta Ads",
+      "aiAutomation": "Avtomatlashtirishda mustaqil SI qadami"
+    },
+    "limitRules": "{count} ta avtomatlashtirish qoidasi",
+    "limitAi": "kuniga {count} ta SI so‘rovi",
+    "limitStorage": "{size} xotira",
+    "choosePlan": "Tarifingizni tanlang",
+    "month": "Oy",
+    "year": "Yil",
+    "button": "Tarifni tanlash",
+    "fullAccess": "To‘liq kirish"
+  },
+  "revolutionalySalotions": {
+    "title": "Biznesingiz uchun inqilobiy yechim taklif qilamiz",
+    "button": "Biz bilan bog‘laning"
+  },
+  "footer": {
+    "careers": "Vakansiyalar",
+    "privacyPolicy": "Maxfiylik siyosati",
+    "documentation": "Hujjatlar",
+    "aboutUs": "Biz haqimizda",
+    "team": "Jamoa",
+    "support": "Yordam / Savollar",
+    "features": "Imkoniyatlar",
+    "referral": "Referal dasturi",
+    "contacts": "Aloqa",
+    "impressum": "Huquqiy ma’lumot",
+    "terms": "Shartlar (AGB)",
+    "rights": "© {year} Firmspace AI. Barcha huquqlar himoyalangan."
+  },
+  "contacts": {
+    "title": "Kontaktlar",
+    "search": "Qidirish",
+    "add": "Kontakt qo‘shish",
+    "name": "Ism",
+    "email": "E-pochta",
+    "phone": "Telefon",
+    "company": "Kompaniya",
+    "position": "Lavozim",
+    "notes": "Izohlar",
+    "edit": "Tahrirlash",
+    "delete": "O‘chirish",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "confirmDelete": "Bu kontakt o‘chirilsinmi?"
   }
 }
