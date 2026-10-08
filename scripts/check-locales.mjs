@@ -48,4 +48,15 @@ if (problems) {
     console.error(`\nВсего расхождений: ${problems}`);
     process.exit(1);
 }
-console.log(`Локали сходятся: ${locales.join(", ")} — одинаковый набор ключей, пустых значений нет`);
+// uz — язык с запасным английским (lib/messages.ts): можно неполный перевод, но нельзя лишние ключи, пустые значения и расхождение плейсхолдеров.
+const uz = flat(JSON.parse(readFileSync(join(root, "messages", "uz.json"), "utf8")));
+const ph = (s) => (typeof s === "string" ? (s.match(/\{[^{}]+\}|<[a-zA-Z/][^>]*>/g) ?? []).sort().join("|") : "");
+let uzProblems = 0;
+for (const [k, v] of Object.entries(uz)) {
+    if (!(k in maps.en)) { console.error(`[uz] лишний ключ ${k}`); uzProblems++; continue; }
+    if (typeof v === "string" && v.trim() === "") { console.error(`[uz] пусто: ${k}`); uzProblems++; }
+    if (ph(v) !== ph(maps.en[k])) { console.error(`[uz] плейсхолдеры не совпадают: ${k}`); uzProblems++; }
+}
+if (uzProblems) process.exit(1);
+const covered = Object.keys(uz).length;
+console.log(`Локали сходятся: ${locales.join(", ")} — одинаковый набор ключей, пустых значений нет; uz: ${covered} из ${Object.keys(maps.en).length} ключей (${Math.round((100 * covered) / Object.keys(maps.en).length)} %), остальное — запасной английский`);

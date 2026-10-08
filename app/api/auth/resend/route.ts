@@ -3,13 +3,14 @@ import { serverError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { rateLimited } from "@/lib/rateLimit";
 import { sendVerificationCode, verificationEnabled } from "@/lib/emailVerification";
+import { isFullLocale } from "@/lib/locales";
 
 // POST /api/auth/resend — { email, locale? }: отправить код подтверждения ещё раз (не чаще раза в минуту и 5 раз в час)
 export async function POST(req: Request) {
     try {
         const b = await req.json().catch(() => null);
         const email = String(b?.email ?? "").trim().toLowerCase();
-        const locale = ["en", "de", "ua"].includes(b?.locale) ? b.locale : "en";
+        const locale = isFullLocale(b?.locale) ? b.locale : "en";
         const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
         if (rateLimited(`resend:${ip}`, 10, 60 * 60 * 1000)) return NextResponse.json({ message: "Too many", code: "too_many" }, { status: 429 });
         if (!(await verificationEnabled()) || !email) return NextResponse.json({ ok: true });

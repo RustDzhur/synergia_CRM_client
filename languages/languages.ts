@@ -1,5 +1,6 @@
 import ukraine from "@/assets/svgs/ukraine-flag-icon.svg";
 import germany from "@/assets/svgs/germany-flag-icon.svg";
+import uzbekistan from "@/assets/svgs/uzbekistan-flag-icon.svg";
 import unitedKingdom from "@/assets/svgs/united-kingdom-flag-icon.svg";
 
 interface Language {
@@ -16,7 +17,13 @@ interface Language {
     {
       code: "ua",
     },
+    {
+      code: "uz",
+    },
   ];
+
+  // Публичный сайт (лендинг, блог, юридические страницы) пока на трёх языках; узбекский есть в кабинете.
+  export const siteLanguages: Language[] = languages.filter((l) => l.code !== "uz");
 
   export const languageCodeToProperties = (
     code: string
@@ -25,6 +32,8 @@ interface Language {
       return { flagUrl: ukraine, width: 40, height: 30 };
     } else if (code === "de") {
       return { flagUrl: germany, width: 40, height: 30 };
+    } else if (code === "uz") {
+      return { flagUrl: uzbekistan, width: 40, height: 30 };
     } else if (code === "en") {
       return { flagUrl: unitedKingdom, width: 40, height: 30 };
     }

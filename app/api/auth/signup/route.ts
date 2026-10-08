@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { rateLimited } from "@/lib/rateLimit";
 import { checkAddress, checkEmail, checkName, checkPassword, checkPhone, checkTax, type RuleResult } from "@/lib/authRules";
 import { sendVerificationCode, verificationEnabled } from "@/lib/emailVerification";
+import { isFullLocale } from "@/lib/locales";
 
 // Реквизиты фирмы приходят только со вкладки «Company»: там регистрируют фирму, а не человека,
 // поэтому фамилия не спрашивается, а название фирмы становится именем аккаунта
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
         const { firstname, lastname, email, password } = body as Record<string, unknown>;
         const firm = (body.company ?? null) as CompanyInput | null;
         const companyName = text(firm?.name, 80);
-        const locale = ["en", "de", "ua"].includes(body.locale) ? body.locale : "en";
+        const locale = isFullLocale(body.locale) ? body.locale : "en";
 
         // проверки по порядку полей: первая ошибка возвращается с названием поля
         const nameRule = companyName ? checkName(companyName) : checkName(firstname);

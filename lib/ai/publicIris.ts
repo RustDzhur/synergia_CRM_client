@@ -13,7 +13,7 @@ export interface VisitorMsg { role: "user" | "assistant"; text: string }
 export interface VisitorReply { text: string; handoff: boolean }
 
 const HANDOFF = "[[HANDOFF]]";
-const LANG_NAME: Record<string, string> = { de: "German", uk: "Ukrainian", ua: "Ukrainian", en: "English", ru: "Russian" };
+const LANG_NAME: Record<string, string> = { de: "German", uk: "Ukrainian", ua: "Ukrainian", en: "English", ru: "Russian", uz: "Uzbek (Latin script)" };
 const HANDOFF_TEXT: Record<string, string> = {
     de: "Das beantwortet am besten ein Kollege. Ich habe Ihre Frage weitergegeben — er antwortet Ihnen hier im Chat. Hinterlassen Sie gern Ihre E-Mail, falls Sie den Chat verlassen.",
     uk: "На це краще відповість колега. Я передала ваше запитання — він відповість тут, у чаті. Залиште e-mail, якщо підете з чату.",

@@ -27,7 +27,7 @@ function sessionExpired() {
     if (leaving) return;
     leaving = true;
     try { localStorage.removeItem("token"); } catch { /* приватный режим */ }
-    const locale = (window.location.pathname.match(/^\/(de|en|ua)(?=\/|$)/) ?? [])[1] ?? "de";
+    const locale = (window.location.pathname.match(/^\/(de|en|ua|uz)(?=\/|$)/) ?? [])[1] ?? "de";
     window.location.href = `/${locale}`;
 }
 

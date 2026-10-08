@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { appOrigin } from "@/lib/appUrl";
 import { badRequest, unauthorized } from "@/lib/api";
 import { ONEDRIVE_SCOPE, authorizeUrl, makeState, oauthAvailable } from "@/lib/mail/oauth";
+import { isLocale } from "@/lib/locales";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,6 @@ export async function POST(req: Request) {
     if (!user) return unauthorized(req);
     if (!oauthAvailable().microsoft) return badRequest("Microsoft sign-in is not configured on this site");
     const body = await req.json().catch(() => ({}));
-    const locale = ["en", "de", "ua"].includes(body?.locale) ? body.locale : "en";
+    const locale = isLocale(body?.locale) ? body.locale : "en";
     return NextResponse.json({ url: authorizeUrl("microsoft", appOrigin(req), makeState(user.id, "microsoft", locale, "onedrive"), ONEDRIVE_SCOPE) });
 }
