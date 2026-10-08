@@ -125,12 +125,16 @@ export function ZoneSign({ room, label, count, hot }: { room: RoomDef; label: st
 	const text = count > 0 ? `${label} · ${count}` : label;
 	const w = Math.max(88, text.length * 7 + 44);
 	return (
-		<g transform={`translate(${sx.toFixed(1)} ${(sy - 62).toFixed(1)})`} style={{ pointerEvents: "none" }} className="sc-float">
-			<line x1="0" y1="14" x2="0" y2="58" stroke={col} strokeOpacity="0.55" strokeDasharray="2 3" />
-			<rect x={-w / 2} y={-14} width={w} height={28} rx={14} fill="rgba(8,12,10,0.9)" stroke={col} strokeWidth="1.3" filter="url(#f-glow)" />
-			<circle cx={-w / 2 + 16} cy={0} r="10" fill={col} fillOpacity="0.16" stroke={col} strokeOpacity="0.7" />
-			<Icon size={13} color={col} x={-w / 2 + 9.5} y={-6.5} />
-			<text x={-w / 2 + 32} y={4.4} fontSize="12" fontWeight="600" fill="#eef3e8" letterSpacing="0.3">{text}</text>
+		// позиция — атрибутом внешней группы, покачивание (CSS-анимация transform) — на внутренней: анимация перекрывает transform той же группы,
+		// и вывески сбивались в левый верхний угол сцены
+		<g transform={`translate(${sx.toFixed(1)} ${(sy - 62).toFixed(1)})`} style={{ pointerEvents: "none" }}>
+			<g className="sc-float">
+				<line x1="0" y1="14" x2="0" y2="58" stroke={col} strokeOpacity="0.55" strokeDasharray="2 3" />
+				<rect x={-w / 2} y={-14} width={w} height={28} rx={14} fill="rgba(8,12,10,0.9)" stroke={col} strokeWidth="1.3" filter="url(#f-glow)" />
+				<circle cx={-w / 2 + 16} cy={0} r="10" fill={col} fillOpacity="0.16" stroke={col} strokeOpacity="0.7" />
+				<Icon size={13} color={col} x={-w / 2 + 9.5} y={-6.5} />
+				<text x={-w / 2 + 32} y={4.4} fontSize="12" fontWeight="600" fill="#eef3e8" letterSpacing="0.3">{text}</text>
+			</g>
 		</g>
 	);
 }

@@ -64,10 +64,12 @@ function Actor({ robot, view, fresh, lane, selected, register, onSelect, onFile 
 				<g transform={`translate(${-40 * S} ${-97 * S}) scale(${S})`}><Bot accent={robot.accent} state={view.state} /></g>
 			</g>
 			{bubble && (
-				<g transform={`translate(0 ${-98 * S - 12 - lane * 21})`} style={{ pointerEvents: "none" }} className="sc-float">
-					<rect x={-bw / 2} y="-9" width={bw} height="17" rx="8.5" fill="rgba(10,14,12,0.92)" stroke="#c6ff4d" strokeOpacity="0.8" filter="url(#f-glow)" />
-					<path d="M-3 8 L0 12 L3 8 Z" fill="rgba(10,14,12,0.92)" stroke="#c6ff4d" strokeOpacity="0.8" />
-					<text x="0" y="3.2" textAnchor="middle" fontSize="9" fontWeight="600" fill="#e6f5c8">{bubble}</text>
+				<g transform={`translate(0 ${-98 * S - 12 - lane * 21})`} style={{ pointerEvents: "none" }}>
+					<g className="sc-float">
+						<rect x={-bw / 2} y="-9" width={bw} height="17" rx="8.5" fill="rgba(10,14,12,0.92)" stroke="#c6ff4d" strokeOpacity="0.8" filter="url(#f-glow)" />
+						<path d="M-3 8 L0 12 L3 8 Z" fill="rgba(10,14,12,0.92)" stroke="#c6ff4d" strokeOpacity="0.8" />
+						<text x="0" y="3.2" textAnchor="middle" fontSize="9" fontWeight="600" fill="#e6f5c8">{bubble}</text>
+					</g>
 				</g>
 			)}
 			{icon && (
