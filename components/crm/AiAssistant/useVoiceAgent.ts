@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { type AiAction, type AiMessage, useAiStore } from "@/store/useAiStore";
 import { BCP47, type VoiceGender, type VoiceLang, chime, isAudioBlocked, isSpeaking, playFiller, prefetchFillers, readGender, saveGender, speakText, stopFiller, stopSpeech, subscribeSpeech, unlockAudio } from "./speech";
-import { dictationSupported, isOffCommand, isStopCommand, stripWake, useBargeIn, useContinuousListening, voiceDecision, type MicError } from "./voice";
+import { dictationSupported, isOffCommand, isStopCommand, stripWake, recorderSupported, useBargeIn, useContinuousListening, useServerListening, voiceDecision, type MicError } from "./voice";
 
 // Голосовое управление всем приложением («Привет, Айрис, открой бухгалтерию и покажи неоплаченные счета»).
 //
@@ -50,7 +50,7 @@ const defaultLang = (locale: string): VoiceLang => {
 
 export type AgentPhase = "off" | "sleeping" | "listening" | "thinking" | "speaking";
 
-export function useVoiceAgent({ locale, page, blocked, onError }: { locale: string; page: string; blocked: boolean; onError: (code: MicError) => void }) {
+export function useVoiceAgent({ locale, page, blocked, serverStt = false, onError }: { locale: string; page: string; blocked: boolean; serverStt?: boolean; onError: (code: MicError) => void }) {
 	const { messages, busy, send, confirm, cancel } = useAiStore();
 	const [supported, setSupported] = useState(false);
 	const [enabled, setEnabledState] = useState(false);
@@ -74,7 +74,7 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 	// Настройки и поддержка браузера — только на клиенте: в разметке сервера этих данных нет
 	useEffect(() => {
 		const ok = dictationSupported();
-		setSupported(ok);
+		setSupported(ok || (serverStt && recorderSupported()));
 		let on = false, savedLang: string | null = null, wake: string | null = null;
 		try { on = localStorage.getItem(ON_KEY) === "1"; savedLang = localStorage.getItem(LANG_KEY); wake = localStorage.getItem(WAKE_KEY); } catch { /* приватный режим */ }
 		setLangState((["ru", "uk", "de", "en", "uz"] as VoiceLang[]).includes(savedLang as VoiceLang) ? (savedLang as VoiceLang) : defaultLang(locale));
@@ -84,6 +84,9 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 		if (ok && on) setEnabledState(true); // после перезагрузки продолжаем слушать
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
+
+	// Статус сервера приходит позже первой отрисовки: серверное распознавание включает поддержку, даже если браузер сам не распознаёт
+	useEffect(() => { if (serverStt && recorderSupported()) setSupported(true); }, [serverStt]);
 
 	// Первый клик по странице снимает запрет браузера на автовоспроизведение (если слушание поднялось само после перезагрузки)
 	useEffect(() => {
@@ -186,12 +189,12 @@ export function useVoiceAgent({ locale, page, blocked, onError }: { locale: stri
 	useEffect(() => () => clearFillers(), [clearFillers]);
 
 	const listening = enabled && supported && !blocked && !busy && !speaking;
-	const { interim } = useContinuousListening({
-		lang: BCP47[lang],
-		active: listening,
-		onPhrase: handlePhrase,
-		onError: (code) => { onErrorRef.current(code); setEnabled(false, false); },
-	});
+	// Узбекский слушает сервер (браузерное распознавание слабое), остальные языки — браузер; если браузер не умеет распознавать, а сервер настроен — тоже сервер
+	const viaServer = serverStt && recorderSupported() && (lang === "uz" || !dictationSupported());
+	const onListenError = (code: MicError) => { onErrorRef.current(code); setEnabled(false, false); };
+	const browserListen = useContinuousListening({ lang: BCP47[lang], active: listening && !viaServer, onPhrase: handlePhrase, onError: onListenError });
+	const serverListen = useServerListening({ lang, active: listening && viaServer, onPhrase: handlePhrase, onError: onListenError });
+	const interim = viaServer ? serverListen.interim : browserListen.interim;
 
 	// Пока человек говорит (идёт распознавание), Айрис не засыпает: окно бодрствования продлевается с каждым новым словом, а не истекает
 	// посреди длинной просьбы
