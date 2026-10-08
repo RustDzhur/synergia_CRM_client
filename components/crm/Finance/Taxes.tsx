@@ -10,6 +10,7 @@ import { money } from "./format";
 import { AiAnalysis, PeriodSwitch, ReportDisclaimer, ReportFailed, ReportLoading, useReport } from "./reportParts";
 import type { IncomeSurplus, PeriodKind, VatReturn, VatLine } from "@/lib/finance/reports";
 import type { IncomeBook, VatRegister } from "@/lib/finance/ua";
+import type { UzVatReport } from "@/lib/finance/uz";
 
 // Steuern: UStVA (Voranmeldung по НДС) и EÜR (доходы минус расходы). Цифры считает сервер
 // (lib/finance/reports.ts → /api/finance/reports), здесь — только таблицы, итог, подсказки ELSTER и разбор от ИИ.
@@ -114,6 +115,56 @@ function VatView({ period, currency }: { period: PeriodKind; currency: string })
 					</p>
 					<ul className="mt-8 flex list-disc flex-col gap-6 pl-18 text-13 leading-[1.5] text-[#cfd4cb]">
 						{report.warnings.map((w, i) => <li key={i}>{typeof w === "string" ? w : t(`uaWarn_${(w as { code: string }).code}`, (w as { params?: Record<string, string | number> }).params ?? {})}</li>)}
+					</ul>
+				</div>
+			)}
+		</div>
+	);
+}
+
+// ── Узбекистан: QQS ────────────────────────────────────────────────────────────────────────────────────
+// Те же две таблицы, что и в UStVA, но без ELSTER: отчёт готовит цифры для кабинета налогоплательщика, подаёт их человек.
+// Предупреждения приходят кодами (uzWarn_*) и пояснением о режиме — вычет входного налога зависит от режима.
+function UzVatView({ period, currency }: { period: PeriodKind; currency: string }) {
+	const t = useTranslations("finance");
+	const locale = useLocale();
+	const { report, loading, failed } = useReport<UzVatReport>("uz-vat", period);
+	const fmt = (n: number) => money(n, currency, locale);
+	if (loading) return <ReportLoading />;
+	if (failed || !report) return <ReportFailed />;
+	const owesTax = report.payable >= 0;
+	return (
+		<div className="flex flex-col gap-16">
+			<p className="text-12 text-[#9AA396]">{t("periodLabel")}: {report.from} – {report.to} · {t("uzVatRegime", { regime: t(`uzRegime_${report.regime}` as never) })}</p>
+			{!report.vatPayer && (
+				<div className="flex items-start gap-10 rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
+					<TbInfoCircle size={17} className="mt-[2px] shrink-0 text-[#F4A100]" aria-hidden />
+					<p className="text-13 leading-[1.5] text-[#e6eae2]">{t("uzWarn_not_vat_payer")}</p>
+				</div>
+			)}
+			<VatLines title={t("vatSalesTitle")} lines={report.sales} fmt={fmt} />
+			<VatLines title={t("vatInputTitle")} lines={report.inputVat} fmt={fmt} />
+			<section className="fs-card p-16 md:p-20">
+				<div className="flex items-center justify-between gap-16 border-b border-inkLineSoft py-9 text-13">
+					<span className="text-[#8c948b]">{t("vatSalesTax")}</span>
+					<span className="font-medium text-[#f1f4ee]">{fmt(report.salesTax)}</span>
+				</div>
+				<div className="flex items-center justify-between gap-16 border-b border-inkLineSoft py-9 text-13">
+					<span className="text-[#8c948b]">{t("vatInputTax")}</span>
+					<span className="font-medium text-[#f1f4ee]">− {fmt(report.inputTax)}</span>
+				</div>
+				{!report.inputCreditAllowed && <p className="mt-8 text-12 text-[#F4A100]">{t("uzVatNoCredit")}</p>}
+				<div className="flex items-center justify-between gap-16 pt-12">
+					<span className="text-15 font-semibold text-[#e6eae2]">{owesTax ? t("vatPayable") : t("vatRefund")}</span>
+					<span className="text-20 font-semibold" style={{ color: owesTax ? "#F4A100" : "#c6ff4d" }}>{fmt(Math.abs(report.payable))}</span>
+				</div>
+				<p className="mt-10 text-11 text-[#9AA396]">{t("uzVatPrepared")}</p>
+			</section>
+			{report.warnings.length > 0 && (
+				<div className="rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
+					<p className="flex items-center gap-8 text-12 font-semibold text-[#F4A100]"><TbAlertTriangle size={15} aria-hidden /> {t("warningTitle")}</p>
+					<ul className="mt-8 flex list-disc flex-col gap-6 pl-18 text-13 leading-[1.5] text-[#cfd4cb]">
+						{report.warnings.filter((w) => w.code !== "not_vat_payer").map((w, i) => <li key={i}>{t(`uzWarn_${w.code}` as never, (w.params ?? {}) as never)}</li>)}
 					</ul>
 				</div>
 			)}
@@ -458,6 +509,19 @@ export default function Taxes({ kind }: { kind: "vat" | "eur" }) {
 	// Украинская отчётность отличается от немецкой по существу, а не переводом: у UA-фирмы те же
 	// вкладки показывают реестр налоговых накладных и книгу доходов с единым налогом
 	const ua = market === "UA";
+
+	if (market === "UZ") {
+		return (
+			<div>
+				<div className="mb-16 flex flex-wrap items-center justify-between gap-x-20 gap-y-10">
+					<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("uzVatTitle")}</h2>
+					<PeriodSwitch value={period} onChange={setPeriod} />
+				</div>
+				<UzVatView period={period} currency={currency} />
+				<ReportDisclaimer className="mt-14" />
+			</div>
+		);
+	}
 
 	return (
 		<div>

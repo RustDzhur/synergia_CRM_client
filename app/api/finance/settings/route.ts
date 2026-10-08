@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { unauthorized } from "@/lib/api";
 import { COUNTRY_CODES, COUNTRY_TAX } from "@/lib/finance/taxRates";
 import { MARKET_DEFAULTS, marketOf } from "@/lib/finance/market";
+import { mergeUz, emptyUz, type UzProfile } from "@/lib/validation/uz";
 import { UA_TAX_SYSTEMS, taxSystemOf, uaProfileErrors, formAndGroup } from "@/lib/validation/ua";
 import { financeSettings } from "@/lib/finance/settings";
 import { isTemplate } from "@/lib/finance/pdf";
@@ -67,6 +68,8 @@ function toDTO(s: any) {
         uaMilitaryFixed: Number.isFinite(Number(s.uaMilitaryFixed)) ? Number(s.uaMilitaryFixed) : 800,
         uaVatLimit: Number(s.uaVatLimit) || 1000000,
         uaVatPeriod: s.uaVatPeriod === "quarter" ? "quarter" : "month",
+        // Реквизиты рынка UZ: объект целиком (пустые строки, если фирма ещё ничего не заполнила)
+        uz: { ...emptyUz(), ...((s.uz && typeof s.uz === "object" ? s.uz : {}) as Partial<UzProfile>) },
         rateMargin: Number(s.rateMargin) || 0,
         template: isTemplate(s.template) ? s.template : "classic",
         paymentQr: s.paymentQr !== false,
@@ -179,6 +182,14 @@ export async function PATCH(req: Request) {
             if (Number.isFinite(n) && n >= 0 && n <= max) set[key] = n;
         }
     }
+    // Реквизиты Узбекистана: те же правила, что для UA — поле с ошибкой формата не сохраняется, остальное сохраняется
+    let uzErrors: { field: string; code: string }[] = [];
+    if (b.uz && typeof b.uz === "object") {
+        const cur = await prisma.financeSettings.findUnique({ where: { org: user.id }, select: { uz: true } });
+        const merged = mergeUz(cur?.uz as Partial<UzProfile> | null, b.uz);
+        set.uz = merged.value;
+        uzErrors = merged.errors.map((e) => ({ field: `uz.${e.field}`, code: e.code }));
+    }
     // Поля с неверными реквизитами не сохраняем — остальную форму сохраняем целиком
     for (const issue of uaErrors) delete set[issue.field];
     // Смена режима рынка может применить набор по умолчанию (валюта, префиксы, срок оплаты, шаблон,
@@ -194,5 +205,5 @@ export async function PATCH(req: Request) {
         create: { org: user.id, ...(set as any) },
         update: set as any,
     });
-    return NextResponse.json({ ...toDTO(s), fieldErrors: uaErrors });
+    return NextResponse.json({ ...toDTO(s), fieldErrors: [...uaErrors, ...uzErrors] });
 }

@@ -529,6 +529,8 @@ model FinanceSettings {
   expenseCategories    String[] @default([])
   contractTemplate     String   @default("")
   counters             Json?
+  // Реквизиты и налоговая модель фирмы-плательщика Узбекистана (STIR, PINFL, MFO, счёт, режим QQS и т.д.); null вне рынка UZ
+  uz                   Json?
   autoWinDealOnPaid    Boolean  @default(true)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -1216,4 +1218,28 @@ model RobotTemplate {
   updatedAt DateTime @updatedAt
 
   @@map("robot_templates")
+}
+
+// Налоговые правила рынка с датами действия и источником. Документ считается по правилу, действовавшему на его дату;
+// изменение закона = новая запись, не правка кода. verifiedBy пуст, пока специалист рынка не подтвердил запись.
+model TaxRule {
+  id         String    @id @default(cuid())
+  market     String
+  code       String
+  title      Json?
+  rate       Float?
+  params     Json?
+  validFrom  String
+  validTo    String?
+  source     String    @default("")
+  sourceUrl  String    @default("")
+  note       String    @default("")
+  verifiedBy String?
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([market, code, validFrom])
+  @@index([market, code])
+  @@map("tax_rules")
 }

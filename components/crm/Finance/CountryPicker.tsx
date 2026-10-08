@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { TbBuildingBank, TbReceipt, TbSettings, TbTruckDelivery } from "react-icons/tb";
+import { TbBuildingBank, TbReceipt, TbSettings, TbTruckDelivery, TbFileInvoice } from "react-icons/tb";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { MARKET_DEFAULTS, profile, type Market } from "@/lib/finance/market";
 import FinanceSettingsTab from "./Settings";
@@ -13,6 +13,7 @@ import FinanceSettingsTab from "./Settings";
 const CARDS: Array<{ market: Market; icon: typeof TbBuildingBank; bulletKeys: string[] }> = [
 	{ market: "DE", icon: TbBuildingBank, bulletKeys: ["market_de_1", "market_de_2", "market_de_3"] },
 	{ market: "UA", icon: TbTruckDelivery, bulletKeys: ["market_ua_1", "market_ua_2", "market_ua_3"] },
+	{ market: "UZ", icon: TbFileInvoice, bulletKeys: ["market_uz_1", "market_uz_2", "market_uz_3"] },
 ];
 
 export default function CountryPicker({ onOpenSettings, settingsOpen }: { onOpenSettings: () => void; settingsOpen: boolean }) {
@@ -43,7 +44,7 @@ export default function CountryPicker({ onOpenSettings, settingsOpen }: { onOpen
 
 	if (settingsOpen) {
 		return (
-			<div className="max-w-[720px]">
+			<div className="max-w-[960px]">
 				<button type="button" onClick={() => window.location.reload()} className="fs-btn fs-btn-ghost mb-12">
 					{t("market_back")}
 				</button>
@@ -53,12 +54,12 @@ export default function CountryPicker({ onOpenSettings, settingsOpen }: { onOpen
 	}
 
 	return (
-		<div className="max-w-[720px]">
+		<div className="max-w-[960px]">
 			<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("market_title")}</h2>
 			<p className="mt-6 max-w-[560px] text-13 text-[#8c948b]">{t("market_hint")}</p>
 			{error && <p className="mt-10 text-13 text-[#ff9f9f]">{error}</p>}
 
-			<div className="mt-18 grid gap-12 md:grid-cols-2">
+			<div className="mt-18 grid gap-12 md:grid-cols-2 lg:grid-cols-3">
 				{CARDS.map(({ market, icon: Icon, bulletKeys }) => {
 					const p = profile(market);
 					return (

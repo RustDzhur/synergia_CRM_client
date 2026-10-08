@@ -10,7 +10,7 @@ import type { PeriodKind } from "@/lib/finance/reportMath";
 // у сервера и разбор от ИИ. Оба экрана пользуются ими, чтобы не дублировать разметку и запросы.
 
 // vat/eur/bwa/susa — немецкие отчёты, vat-register/income-book — украинские (lib/finance/ua.ts)
-export type ReportKind = "vat" | "eur" | "bwa" | "susa" | "vat-register" | "income-book";
+export type ReportKind = "vat" | "eur" | "bwa" | "susa" | "vat-register" | "income-book" | "uz-vat";
 
 // Плитка сводки: подпись сверху, крупная цифра снизу (дашборд, Anlagen, Bank, Mahnwesen)
 export function Stat({ label, value, color }: { label: string; value: string; color?: string }) {

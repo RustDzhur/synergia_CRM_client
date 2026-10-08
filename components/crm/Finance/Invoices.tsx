@@ -346,7 +346,7 @@ export default function Invoices({ openId, prefill, preset, onPrefillDone }: { o
 					    украинскому рахунку он не нужен, и подсказка про немецкий закон там только путала.
 					    Инкотермс и номер декларации — ВЭД, они применимы обеим странам */}
 					<div className="mb-16 md:max-w-[calc(50%-6px)]">
-						{marketLoaded && market !== "UA" && (
+						{marketLoaded && market === "DE" && (
 							<>
 								<FormField label={t("supplyDate")} type="date" value={supplyDate} onChange={(e) => setSupplyDate(e.target.value)} />
 								<p className="mt-[4px] text-11 text-[#9AA396]">{t("supplyDateHint")}</p>

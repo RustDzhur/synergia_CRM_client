@@ -1,3 +1,4 @@
+import type { UzProfile } from "@/lib/validation/uz";
 import { create } from "zustand";
 import { registerRefresher } from "./invalidate";
 import { apiCall } from "./crmApi";
@@ -108,6 +109,8 @@ export interface FinanceSettings {
 	uaEdrpou: string; uaIpn: string; uaKved: string[]; uaBank: string; uaIban: string; uaMfo: string;
 	uaSignerName: string; uaSignerPosition: string; uaSignature: string; uaSeal: string;
 	uaLimits: Array<{ year: number; group: number; amount: number }>;
+	// Реквизиты и налоговый режим фирмы рынка UZ (lib/validation/uz.ts)
+	uz?: UzProfile;
 	// Наценка к курсу НБУ (%), 0 — чистый курс
 	rateMargin: number;
 	// Справочник категорий расходов фирмы; пусто — форма предлагает типовой набор страны
