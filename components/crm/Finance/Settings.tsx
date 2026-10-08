@@ -26,7 +26,7 @@ type DunningFields = { dunningFees?: number[]; dunningInterestRate?: number; dun
 export default function FinanceSettingsTab() {
 	const t = useTranslations("finance");
 	const { settings, countries, loadSettings, saveSettings } = useFinanceStore();
-	const { market } = useMarket();
+	const { market, profile: mp } = useMarket();
 	// Смена страны — отдельное действие с подтверждением: окно показывает, что скроется и что появится,
 	// и предлагает применить набор по умолчанию. Данные подключений и документов не удаляются (ТЗ §3).
 	const [switchTo, setSwitchTo] = useState<Market | null>(null);
@@ -229,7 +229,7 @@ export default function FinanceSettingsTab() {
 
 			{/* Украинская налоговая модель: профиль фирмы целиком — система налогообложения, ПДВ,
 			    реквизиты, банк, подписант с подписью и печатью, лимиты групп по годам (ТЗ §6) */}
-			{market === "UA" && (
+			{mp?.features.legalProfile && (
 				<UaProfileCard
 					form={form as unknown as UaProfileForm}
 					set={(patch) => setForm({ ...form, ...patch } as typeof form)}
@@ -241,7 +241,7 @@ export default function FinanceSettingsTab() {
 			{market === "UZ" && <UzProfileCard value={uz} onChange={setUz} />}
 
 			{/* Налаштування → Документи: бланки документів с текстами, блоками, подписью и печатью (ТЗ §7) */}
-			{market === "UA" && <DocumentsCard />}
+			{mp?.features.legalProfile && <DocumentsCard />}
 
 			{/* Категории расходов: справочник для формы расхода и группировки в отчётах */}
 			<ExpenseCategoriesCard />
@@ -306,7 +306,7 @@ export default function FinanceSettingsTab() {
 				<p className="mb-14 text-12 text-[#8c948b]">{t("templateSectionHint")}</p>
 				<TemplatePicker value={form.template || "classic"} onChange={(v) => setForm({ ...form, template: v || "classic" })} columns={5} />
 				{/* EPC/SEPA-QR — немецкий способ оплаты по QR; украинскому счёту он ничего не даёт */}
-				{market !== "UA" && (
+				{(mp?.features.sepaQr ?? true) && (
 					<>
 						<label className="mt-16 flex items-center gap-10 text-13 text-[#cfd4cb]">
 							<input type="checkbox" checked={form.paymentQr} onChange={(e) => setForm({ ...form, paymentQr: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
@@ -331,7 +331,7 @@ export default function FinanceSettingsTab() {
 			{/* Манаведение: сбор за каждую ступень напоминания и справочная ставка процентов. Пока сборы не заполнены,
 			    они нулевые — начислять их или нет, решает фирма, и подсказка говорит об этом прямо.
 			    Mahnwesen — немецкий институт: украинской фирме его настройки не показываем. */}
-			{market !== "UA" && (
+			{(mp?.features.dunning ?? true) && (
 			<div className="mb-16 fs-card p-16 md:p-20">
 				<h3 className="mb-8 text-14 font-semibold text-[#f1f4ee]">{t("dunningSection")}</h3>
 				<p className="mb-14 text-12 leading-[1.5] text-[#8c948b]">{t("dunningSettingsHint")}</p>

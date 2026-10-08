@@ -125,6 +125,7 @@ export interface MarketProfile {
         cbuRate: boolean; // фиксация курса ЦБ Узбекистана в документе — только UZ
         esf: boolean; // электронные счета-фактуры (подготовка данных и журналы) — только UZ
         smallBusiness: boolean; // Kleinunternehmerregelung §19 — только DE
+        legalProfile: boolean; // карточка реквизитов подписанта и редактор бланков документов — пока только UA
     };
 }
 
@@ -152,6 +153,7 @@ const DE: MarketProfile = {
         cbuRate: false,
         esf: false,
         smallBusiness: true,
+        legalProfile: false,
     },
 };
 
@@ -180,6 +182,7 @@ const UA: MarketProfile = {
         cbuRate: false,
         esf: false,
         smallBusiness: false,
+        legalProfile: true,
     },
 };
 
@@ -208,6 +211,7 @@ const UZ: MarketProfile = {
         cbuRate: true,
         esf: true,
         smallBusiness: false,
+        legalProfile: false,
     },
 };
 

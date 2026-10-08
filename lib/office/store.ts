@@ -5,10 +5,9 @@ import { ACCENTS, hasUiTexts, type Accent, type SkillId, type ZoneId, isAccent, 
 import { catalogById, hireCatalog, isPlatformTemplate, loadCatalog, starterIds } from "./catalog";
 import { orgMarket } from "@/lib/finance/marketGuard";
 
-// Роботы, их регулярные задачи и поручения лежат в записях разделов (SectionRecord), как правила автоматизации: отдельной
-// миграции базы не нужно. Ключи: office:robot (rid = id робота), office:task (rid = id поручения), office:meta (флаг «стартовый состав нанят»).
-const K_ROBOT = "office:robot";
-const K_TASK = "office:task";
+// Роботы и поручения — таблицы Robot и RobotTask (индексы (org,status) и (org,robot)); тело записи в data. Раньше они лежали
+// в SectionRecord (office:robot / office:task): scripts/migrate-office.mjs переносит их идемпотентно, с проверкой количества.
+// Флаги «стартовый состав нанят» остаются в SectionRecord под ключом office:meta.
 const K_META = "office:meta";
 
 export class OfficeError extends Error {}
@@ -63,8 +62,8 @@ const cleanLong = (v: unknown, max: number) => (typeof v === "string" ? v.replac
 
 // ── роботы ─────────────────────────────────────────────────────────────────────
 
-const toRobot = (r: { rid: string; values: unknown; createdAt: Date }): Robot => {
-    const v = (r.values ?? {}) as Partial<Robot>;
+const toRobot = (r: { rid: string; data: unknown; createdAt: Date }): Robot => {
+    const v = (r.data ?? {}) as Partial<Robot>;
     return {
         id: r.rid,
         name: String(v.name ?? ""),
@@ -91,7 +90,7 @@ export const isPlatformRobot = (r: { template: string }) => isPlatformTemplate(r
 export interface Scope { platform?: boolean }
 
 export async function listRobots(org: string, scope: Scope = {}): Promise<Robot[]> {
-    const rows = await prisma.sectionRecord.findMany({ where: { org, key: K_ROBOT }, orderBy: { createdAt: "asc" } });
+    const rows = await prisma.robot.findMany({ where: { org }, orderBy: { createdAt: "asc" } });
     const all = rows.map(toRobot);
     if (scope.platform) return all;
     const flags = await Promise.all(all.map((r) => isPlatformRobot(r)));
@@ -99,7 +98,7 @@ export async function listRobots(org: string, scope: Scope = {}): Promise<Robot[
 }
 
 export async function getRobot(org: string, id: string, scope: Scope = {}): Promise<Robot | null> {
-    const row = await prisma.sectionRecord.findFirst({ where: { org, key: K_ROBOT, rid: id } });
+    const row = await prisma.robot.findFirst({ where: { org, rid: id } });
     const robot = row ? toRobot(row) : null;
     return robot && (scope.platform || !(await isPlatformRobot(robot))) ? robot : null;
 }
@@ -117,7 +116,7 @@ export interface RobotInput { template?: string; name?: string; title?: string; 
 
 /** Нанимает робота: из шаблона каталога или своего («custom»). Для шаблона пустые поля берутся из него. */
 export async function createRobot(org: string, input: RobotInput, opts: { platform?: boolean } = {}): Promise<Robot> {
-    if ((await prisma.sectionRecord.count({ where: { org, key: K_ROBOT } })) >= MAX_ROBOTS) throw new OfficeError(`At most ${MAX_ROBOTS} robots`);
+    if ((await prisma.robot.count({ where: { org } })) >= MAX_ROBOTS) throw new OfficeError(`At most ${MAX_ROBOTS} robots`);
     const tpl = input.template && input.template !== "custom" ? await catalogById(input.template) : null;
     if (input.template && input.template !== "custom" && !tpl) throw new OfficeError("Unknown robot template");
     if (tpl?.platform && !opts.platform) throw new OfficeError("Unknown robot template"); // роботов платформы нанимает только сама платформа
@@ -145,7 +144,7 @@ export async function createRobot(org: string, input: RobotInput, opts: { platfo
         createdAt: new Date().toISOString(),
     };
     if (!tpl && !robot.title && !robot.instructions) throw new OfficeError("Describe the job: give a title or instructions");
-    const row = await prisma.sectionRecord.create({ data: { org, key: K_ROBOT, rid: robot.id, values: robotValues(robot) as never } });
+    const row = await prisma.robot.create({ data: { org, rid: robot.id, data: robotValues(robot) as never, enabled: robot.enabled } });
     return { ...robot, createdAt: row.createdAt.toISOString() };
 }
 
@@ -181,14 +180,14 @@ export async function updateRobot(org: string, id: string, patch: RobotInput & {
         // дата последнего запуска серверная: клиент не должен ни сбросить, ни выдумать её
         next.routines = list.map((r) => ({ ...r, lastRun: cur.routines.find((o) => o.id === r.id)?.lastRun }));
     }
-    await prisma.sectionRecord.updateMany({ where: { org, key: K_ROBOT, rid: id }, data: { values: robotValues(next) as never } });
+    await prisma.robot.updateMany({ where: { org, rid: id }, data: { data: robotValues(next) as never, enabled: next.enabled } });
     return next;
 }
 
 /** Увольнение: робот удаляется, его очередь отменяется; готовые поручения остаются в истории. */
 export async function deleteRobot(org: string, id: string, scope: Scope = {}): Promise<void> {
     if (!(await getRobot(org, id, scope))) throw new OfficeError("Robot not found");
-    const n = (await prisma.sectionRecord.deleteMany({ where: { org, key: K_ROBOT, rid: id } })).count;
+    const n = (await prisma.robot.deleteMany({ where: { org, rid: id } })).count;
     if (!n) throw new OfficeError("Robot not found");
     const open = await listTasks(org, 300);
     for (const t of open) if (t.robot === id && (t.status === "queued" || t.status === "waiting")) await updateTask(org, t.id, { status: "cancelled", finishedAt: new Date().toISOString(), error: "The robot was dismissed" });
@@ -200,7 +199,7 @@ export async function ensureStarters(org: string): Promise<boolean> {
     if (meta) return false;
     // отметка ставится до найма: параллельное открытие раздела не наймёт состав второй раз
     try { await prisma.sectionRecord.create({ data: { org, key: K_META, rid: "meta", values: { starters: new Date().toISOString() } as never } }); } catch { return false; }
-    if ((await prisma.sectionRecord.count({ where: { org, key: K_ROBOT } })) > 0) return false;
+    if ((await prisma.robot.count({ where: { org } })) > 0) return false;
     for (const id of await starterIds(await orgMarket(org))) await createRobot(org, { template: id }).catch(() => undefined);
     return true;
 }
@@ -220,8 +219,8 @@ export async function ensurePlatformRobots(org: string): Promise<boolean> {
 
 // ── поручения ──────────────────────────────────────────────────────────────────
 
-const toTask = (r: { rid: string; values: unknown }): OfficeTask => {
-    const v = (r.values ?? {}) as Partial<OfficeTask>;
+const toTask = (r: { rid: string; data: unknown }): OfficeTask => {
+    const v = (r.data ?? {}) as Partial<OfficeTask>;
     return {
         id: r.rid,
         robot: String(v.robot ?? ""),
@@ -242,12 +241,12 @@ const toTask = (r: { rid: string; values: unknown }): OfficeTask => {
 };
 
 export async function listTasks(org: string, limit = 80): Promise<OfficeTask[]> {
-    const rows = await prisma.sectionRecord.findMany({ where: { org, key: K_TASK }, orderBy: { createdAt: "desc" }, take: limit });
+    const rows = await prisma.robotTask.findMany({ where: { org }, orderBy: { createdAt: "desc" }, take: limit });
     return rows.map(toTask);
 }
 
 export async function getTask(org: string, id: string): Promise<OfficeTask | null> {
-    const row = await prisma.sectionRecord.findFirst({ where: { org, key: K_TASK, rid: id } });
+    const row = await prisma.robotTask.findFirst({ where: { org, rid: id } });
     return row ? toTask(row) : null;
 }
 
@@ -264,7 +263,7 @@ export async function createTask(org: string, input: { robot: string; robotName:
     };
     if (!task.text) throw new OfficeError("Task text is required");
     const { id, ...values } = task;
-    await prisma.sectionRecord.create({ data: { org, key: K_TASK, rid: id, values: values as never } });
+    await prisma.robotTask.create({ data: { org, rid: id, robot: task.robot, status: task.status, data: values as never } });
     void pruneTasks(org).catch(() => undefined);
     return task;
 }
@@ -273,20 +272,17 @@ export async function updateTask(org: string, id: string, patch: Partial<Omit<Of
     const cur = await getTask(org, id);
     if (!cur) return null;
     const { id: _id, ...values } = { ...cur, ...patch };
-    await prisma.sectionRecord.updateMany({ where: { org, key: K_TASK, rid: id }, data: { values: values as never } });
+    await prisma.robotTask.updateMany({ where: { org, rid: id }, data: { data: values as never, robot: String(values.robot), status: String(values.status) } });
     return { ...cur, ...patch };
 }
 
 export async function deleteFinishedTasks(org: string): Promise<number> {
-    const rows = await prisma.sectionRecord.findMany({ where: { org, key: K_TASK } });
-    const ids = rows.filter((r) => ["done", "failed", "cancelled"].includes(String((r.values as { status?: string })?.status))).map((r) => r.rid);
-    if (!ids.length) return 0;
-    return (await prisma.sectionRecord.deleteMany({ where: { org, key: K_TASK, rid: { in: ids } } })).count;
+    return (await prisma.robotTask.deleteMany({ where: { org, status: { in: ["done", "failed", "cancelled"] } } })).count;
 }
 
 // История не растёт бесконечно: храним последние поручения, самые старые завершённые убираем
 async function pruneTasks(org: string) {
-    const rows = await prisma.sectionRecord.findMany({ where: { org, key: K_TASK }, orderBy: { createdAt: "desc" }, skip: MAX_TASKS_KEPT, take: 100 });
-    const old = rows.filter((r) => ["done", "failed", "cancelled"].includes(String((r.values as { status?: string })?.status))).map((r) => r.rid);
-    if (old.length) await prisma.sectionRecord.deleteMany({ where: { org, key: K_TASK, rid: { in: old } } });
+    const rows = await prisma.robotTask.findMany({ where: { org }, orderBy: { createdAt: "desc" }, skip: MAX_TASKS_KEPT, take: 100, select: { rid: true, status: true } });
+    const old = rows.filter((r) => ["done", "failed", "cancelled"].includes(r.status)).map((r) => r.rid);
+    if (old.length) await prisma.robotTask.deleteMany({ where: { org, rid: { in: old } } });
 }

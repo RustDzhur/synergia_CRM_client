@@ -43,7 +43,7 @@ export default function Bank() {
 	const loadInvoices = useFinanceStore((s) => s.loadInvoices);
 	const loadExpenses = useFinanceStore((s) => s.loadExpenses);
 
-	const { market } = useMarket();
+	const { market, profile: mp } = useMarket();
 	const [accounts, setAccounts] = useState<BankAccountRow[] | null>(null);
 	// Подключение monobank и служебные состояния привязки к банку (ТЗ «Банки і каса»)
 	const [mbOpen, setMbOpen] = useState(false);
@@ -444,7 +444,7 @@ export default function Bank() {
 						<div className="flex flex-wrap items-center gap-10">
 							{/* Прямое подключение банка по API — пока украинское (monobank). Немецким фирмам
 							    честно говорим, что FinTS ещё не сделан и выписка импортируется файлом */}
-							{market === "UA" && (
+							{mp?.integrations.includes("monobank") && (
 								<button type="button" onClick={() => setMbOpen(true)} className="fs-btn fs-btn-ghost h-40">
 									{t("bankConnect")}
 								</button>
