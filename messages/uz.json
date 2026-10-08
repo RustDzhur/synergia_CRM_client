@@ -3221,7 +3221,8 @@
     "act_save_legal_draft": "Shartnoma qoralamasini saqlash",
     "done_propose_rules_batch": "Paket tayyorlandi: {count} ta o‘zgarish tasdig‘ingizni kutmoqda",
     "done_save_legal_draft": "“{title}” qoralamasi saqlandi (SI qoralamasi — mutaxassis tekshirishi kerak)",
-    "f_counterparty": "Kontragent"
+    "f_counterparty": "Kontragent",
+    "agentLang_uz": "Oʻzbekcha"
   },
   "automation": {
     "tab_rules": "Avtomatlashtirish qoidalari",

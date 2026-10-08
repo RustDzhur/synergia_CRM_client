@@ -8,10 +8,10 @@ import { authHeaders } from "@/store/crmApi";
 // Как получается беглая речь: ответ режется на предложения, первое запрашивается сразу, следующие
 // подгружаются, пока играет предыдущее — пауз между предложениями нет, а начало речи не ждёт весь ответ.
 
-export type VoiceLang = "ru" | "uk" | "de" | "en";
+export type VoiceLang = "ru" | "uk" | "de" | "en" | "uz";
 export type VoiceGender = "f" | "m";
-export const BCP47: Record<VoiceLang, string> = { ru: "ru-RU", uk: "uk-UA", de: "de-DE", en: "en-US" };
-export const VOICE_LANGS: VoiceLang[] = ["ru", "uk", "de", "en"];
+export const BCP47: Record<VoiceLang, string> = { ru: "ru-RU", uk: "uk-UA", de: "de-DE", en: "en-US", uz: "uz-UZ" };
+export const VOICE_LANGS: VoiceLang[] = ["ru", "uk", "de", "en", "uz"];
 
 const GENDER_KEY = "ai.voice.gender";
 export const readGender = (): VoiceGender => { try { return localStorage.getItem(GENDER_KEY) === "m" ? "m" : "f"; } catch { return "f"; } };
@@ -28,6 +28,9 @@ export function guessLang(text: string, hint?: VoiceLang): VoiceLang {
 		return hint === "uk" ? "uk" : "ru";
 	}
 	if (/[äöüß]/i.test(s)) return "de";
+	// узбекская латиница: oʻ, gʻ (апостроф-модификатор) — однозначный признак; без них решает язык, выбранный человеком
+	if (/[oOgG][ʻʼ'’`]/.test(s) || /\b(va|bilan|uchun|emas|yoki|salom)\b/i.test(s)) return "uz";
+	if (hint === "uz") return "uz";
 	return hint === "de" ? "de" : hint === "ru" || hint === "uk" ? hint : "en";
 }
 
@@ -133,6 +136,7 @@ export function chime(kind: "wake" | "ok" | "err" = "wake") {
 
 // ── сервер ───────────────────────────────────────────────────────────────────────────────────────────
 async function fetchClip(text: string, lang: VoiceLang | undefined, gender: VoiceGender, speed?: number): Promise<Blob | null> {
+	if (lang === "uz") return null; // у серверной озвучки нет узбекского голоса: говорит голос браузера (если он есть)
 	if (!serverEnabled || Date.now() < downUntil) return null;
 	try {
 		const res = await fetch("/api/ai/tts", { method: "POST", headers: authHeaders(), body: JSON.stringify({ text, lang, gender, speed }) });
@@ -189,6 +193,8 @@ function browserSpeak(text: string, lang: VoiceLang, gender: VoiceGender): Promi
 		const u = new SpeechSynthesisUtterance(text.slice(0, 1000));
 		u.lang = BCP47[lang];
 		const voices = speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().replace("_", "-").startsWith(lang));
+		// узбекский голос есть не на каждом устройстве: без него читать латиницу чужим голосом хуже, чем промолчать (ответ остаётся текстом)
+		if (!voices.length && lang === "uz") return resolve();
 		if (voices.length) u.voice = voices.sort((a, b) => voiceScore(b, gender) - voiceScore(a, gender))[0];
 		let done = false;
 		const finish = () => { if (done) return; done = true; abortCurrent = null; resolve(); };
@@ -211,6 +217,7 @@ const FILLERS: Record<VoiceLang, { ack: string[]; wait: string[] }> = {
 	uk: { ack: ["Секунду.", "Так, дивлюсь.", "Зараз зроблю.", "Добре, одну хвилину."], wait: ["Ще працюю, трішки.", "Майже готово.", "Хвилинку, це займе трохи часу."] },
 	de: { ack: ["Einen Moment.", "Ich schaue nach.", "Mache ich gleich.", "Okay, eine Minute."], wait: ["Ich arbeite noch daran.", "Gleich fertig.", "Einen Augenblick, das dauert etwas."] },
 	en: { ack: ["One second.", "Let me look.", "On it.", "Okay, one moment."], wait: ["Still working on it.", "Almost done.", "Bear with me, this takes a moment."] },
+	uz: { ack: ["Bir soniya.", "Ko‘rib chiqaman.", "Hozir qilaman."], wait: ["Hali ishlayapman.", "Deyarli tayyor.", "Bir daqiqa, biroz vaqt oladi."] },
 };
 const fillerCache = new Map<string, Blob>();
 let fillerEl: HTMLAudioElement | null = null;
