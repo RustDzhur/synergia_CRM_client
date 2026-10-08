@@ -164,6 +164,8 @@ export async function complete(system: string, msgs: Msg[], tools: ToolDef[], op
     if (!direct) add(opts.model, primary);
     add(ov?.model || undefined, primary);
     for (const m of ov?.fallbacks.length ? ov.fallbacks : fallbackModels()) add(m, direct ? gateway : primary);
+    // Последняя страховка: основной провайдер чата (например DeepSeek) отказал, а ключ OpenAI есть — отвечает OpenAI, чем Айрис молчать
+    if (p === "openai" && direct && process.env.OPENAI_API_KEY) add("gpt-4.1-mini", gateway);
     if (!chain.length) add(undefined, primary); // все названные модели оказались чужими — работает модель по умолчанию
     const started = Date.now();
     let last: unknown;

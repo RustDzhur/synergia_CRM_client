@@ -34,7 +34,7 @@ export const ROLE_MODULES: Record<Role, Module[]> = {
 // новый маршрут нельзя «забыть» — пока для него не выбран раздел, им никто не пользуется (см. tests/access.test.ts).
 export const OPEN_API_SEGMENTS = [
     "auth", "health", "client-error", "errors", "contact", "cron", "hooks", "webhooks", "webchat", "media", "public", "promo",
-    "blog", "agent", "agents", "admin", "ai", "iris-bot", "lookup", "records", "notifications", "people", "demo",
+    "blog", "agent", "agents", "admin", "ai", "iris-bot", "lookup", "records", "notifications", "people", "demo", "internal",
 ] as const;
 
 // Разделы, которые открывает выгрузка/загрузка файла: зависят от вида данных (export?kind=…, import: kind в теле)
