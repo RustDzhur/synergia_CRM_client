@@ -14,20 +14,29 @@ interface Draft { name: string; body: string; fields: Field[] }
 
 const EMPTY: Draft = { name: "", body: "", fields: [] };
 
-// Встроенные поля договора — их значения подставляются сами (номер, сумма, клиент, реквизиты).
+// Встроенные поля договора — их значения подставляются сами из карточки клиента и настроек фирмы.
 const BUILTIN: { key: string; label: string }[] = [
-	{ key: "number", label: "Номер договора (подставляется сам)" },
+	{ key: "number", label: "Номер договора" },
 	{ key: "date", label: "Дата договора" },
-	{ key: "firm", label: "Название фирмы (исполнитель)" },
-	{ key: "signer", label: "Подписант (ФОП или директор)" },
-	{ key: "customer", label: "Клиент (заказчик)" },
+	{ key: "today", label: "Сегодняшняя дата (день печати)" },
+	{ key: "customer", label: "Клиент (название или ФИО)" },
+	{ key: "customerPerson", label: "Контактное лицо клиента" },
+	{ key: "customerAddress", label: "Адрес клиента" },
+	{ key: "customerTaxId", label: "Код клиента (ЄДРПОУ / ІПН / STIR)" },
+	{ key: "customerPhone", label: "Телефон клиента" },
+	{ key: "customerEmail", label: "E-mail клиента" },
 	{ key: "value", label: "Сумма договора" },
 	{ key: "start", label: "Начало работ" },
 	{ key: "end", label: "Окончание работ" },
-	{ key: "firmTaxId", label: "Код фирмы (ЄДРПОУ / ИНН / STIR)" },
-	{ key: "customerTaxId", label: "Код клиента" },
+	{ key: "firm", label: "Название фирмы (исполнитель)" },
 	{ key: "firmAddress", label: "Адрес фирмы" },
-	{ key: "customerAddress", label: "Адрес клиента" },
+	{ key: "firmTaxId", label: "Код фирмы (ЄДРПОУ / ІПН / STIR)" },
+	{ key: "signer", label: "Подписант (ФОП или директор)" },
+	{ key: "firmPhone", label: "Телефон фирмы" },
+	{ key: "firmEmail", label: "E-mail фирмы" },
+	{ key: "firmWebsite", label: "Сайт фирмы" },
+	{ key: "firmBank", label: "Банк фирмы" },
+	{ key: "firmIban", label: "IBAN фирмы" },
 ];
 const PALETTE = ["#C6FF4D", "#FFD166", "#FF6B6B", "#4ECDC4", "#A78BFA", "#F472B6", "#60A5FA", "#34D399", "#FB923C", "#2DD4BF", "#E879F9", "#94A3B8"];
 const chipColor = (i: number) => PALETTE[i % PALETTE.length];
@@ -88,11 +97,11 @@ export default function ContractTemplatesManager() {
 			draggable
 			onDragStart={(e) => e.dataTransfer.setData("text/plain", key)}
 			onClick={() => insertToken(key)}
-			title={label}
+			title={`${label} — в текст встанет ${`{{${key}}}`}`}
 			className="cursor-grab select-none rounded-full px-10 py-4 text-12 font-semibold text-[#0A0A0A] shadow-[0_2px_6px_rgba(0,0,0,0.25)] transition-transform hover:scale-105 active:cursor-grabbing"
 			style={{ background: color }}
 		>
-			{`{{${key}}}`}
+			{label}
 		</button>
 	);
 

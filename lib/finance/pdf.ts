@@ -95,7 +95,7 @@ export interface PdfLineItem {
     unitWeightKg?: number;
     originCountry?: string;
 }
-export interface PdfParty { name: string; address?: string; taxId?: string }
+export interface PdfParty { name: string; address?: string; taxId?: string; phone?: string; email?: string; person?: string }
 export interface PdfDocumentData {
     kind: DocKind;
     number: string;

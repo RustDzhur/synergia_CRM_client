@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { apiCall } from "@/store/crmApi";
 import PageHeader from "@/components/crm/shared/PageHeader";
 import SettingsTabs from "@/components/crm/Settings/SettingsTabs";
+import ContractTemplatesManager from "@/components/crm/Finance/ContractTemplatesManager";
 
 interface Doc { id: string; title: string; counterparty: string; status: string; dueDate: string; currentVersion: number; checklist: Record<string, boolean> | null }
 interface Version { n: number; body: string; note: string; aiDraft: boolean; createdByName: string; createdAt: string }
@@ -53,6 +54,12 @@ export default function LegalStore() {
 				<div className="min-w-0 flex-1">
 					<h2 className="text-15 font-semibold text-[#f1f4ee]">{t("title")}</h2>
 					<p className="mt-6 max-w-[640px] text-12 leading-[1.5] text-[#8c948b]">{t("hint")}</p>
+
+					{/* Шаблоны договоров с полями-меточками: создаются здесь (Налаштування → Договори),
+					    а при выписке договора клиенту в бухгалтерии остаётся выбрать шаблон и клиента. */}
+					<div className="mt-14">
+						<ContractTemplatesManager />
+					</div>
 
 					<ul className="mt-14 flex flex-col gap-8">
 						{docs.length === 0 && <li className="text-12 text-[#8c948b]">{t("empty")}</li>}

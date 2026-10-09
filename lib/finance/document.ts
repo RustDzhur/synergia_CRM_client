@@ -84,11 +84,19 @@ export async function customerParty(org: string, doc: { customerName?: string; c
             if (!party.name) party.name = c.name;
             party.address = c.address || "";
             party.taxId = c.code || "";
+            party.email = c.email || "";
+            party.person = c.authorisedPerson || "";
         }
     }
-    if (!party.name && doc.contact && validId(String(doc.contact))) {
-        const c = await prisma.contact.findFirst({ where: { id: String(doc.contact), owner: org }, select: { name: true } });
-        if (c) party.name = c.name;
+    // Контакт даёт телефон, e-mail и контактное лицо; имя — если ещё не задано (для договоров важно: {{customerPhone}} и т.п.)
+    if (doc.contact && validId(String(doc.contact))) {
+        const c = await prisma.contact.findFirst({ where: { id: String(doc.contact), owner: org }, select: { name: true, phone: true, email: true } });
+        if (c) {
+            if (!party.name) party.name = c.name;
+            party.phone = c.phone ?? "";
+            if (!party.email) party.email = c.email ?? "";
+            if (!party.person) party.person = c.name;
+        }
     }
     return party;
 }
@@ -231,9 +239,18 @@ export async function contractPdfBuffer(org: string, c: any, locale: string, tem
         customer: party.name,
         customerAddress: party.address ?? "",
         customerTaxId: party.taxId ?? "",
+        customerPhone: party.phone ?? "",
+        customerEmail: party.email ?? "",
+        customerPerson: party.person ?? "",
         value: contractValueText(Number(c.value) || 0, tpl?.currency || c.currency),
         start: contractDate(c.startDate),
         end: contractDate(c.endDate),
+        firmPhone: settings.phone ?? "",
+        firmEmail: settings.email ?? "",
+        firmWebsite: settings.website ?? "",
+        firmBank: settings.uaBank || "",
+        firmIban: settings.uaIban || settings.iban || "",
+        today: contractDate(new Date().toISOString().slice(0, 10)),
     });
     return renderDocumentPdf(
         {
