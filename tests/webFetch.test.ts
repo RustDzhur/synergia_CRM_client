@@ -17,7 +17,7 @@ describe("web_fetch для роботов", () => {
         expect(r.links[0].url).toBe("https://example.com/kontakt");
     });
     it("навык web даёт инструменты и есть робот-исследователь", () => {
-        expect(toolsFor(["web"]).sort()).toEqual(["list_research", "save_research", "web_fetch"]);
+        expect(toolsFor(["web"]).sort()).toEqual(["list_research", "save_research", "send_telegram_report", "web_fetch"]);
         expect(TEMPLATES.find((t) => t.id === "scout")?.skills).toContain("web");
     });
 });

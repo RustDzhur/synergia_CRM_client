@@ -401,6 +401,20 @@ export const TOOLS: AiTool[] = [
     },
     {
         module: "collab", write: false,
+        def: { name: "send_telegram_report", description: "Send a text report to the firm owner's Telegram (the firm's notification bot from Settings → Integrations → «Notifications to the team»). Use it as the final step when the task says to send the findings to Telegram. Plain text, up to 3500 characters per message; long reports are split.", parameters: schema({ text: S("the report text") }, ["text"]) },
+        check: (a) => ({ text: need(str(a.text, 12000), "text") }),
+        run: async (c, a) => {
+            const { firmNotifyBot } = await import("@/lib/firmNotify");
+            const { sendTelegram } = await import("@/lib/channels/telegram");
+            const { chunkText } = await import("./telegramBot");
+            const bot = await firmNotifyBot(c.org);
+            if (!bot.botToken || !bot.chatId) throw new ToolError("The Telegram bot is not connected: Settings → Integrations → Notifications to the team (bot token and chat id). Tell the owner.");
+            try { for (const part of chunkText(String(a.text), 3500)) await sendTelegram(bot.botToken, bot.chatId, part); } catch { throw new ToolError("Telegram did not accept the message — check the bot token and chat id in Settings → Integrations"); }
+            return { sent: true };
+        },
+    },
+    {
+        module: "collab", write: false,
         def: { name: "list_research", description: "Read earlier research reports from the research log (newest first) to compare with today's findings — e.g. to see what changed in a competitor's prices since last week.", parameters: schema({ query: S("optional word in the title"), limit: { type: "integer", description: "1-10, default 5" } }) },
         run: async (c, a) => {
             const q = str(a.query, 80).toLowerCase();
