@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import toast from "react-hot-toast";
-import { TbEye, TbFileImport, TbPencil, TbPlus, TbTrash } from "react-icons/tb";
+import { TbEye, TbFileImport, TbListDetails, TbPencil, TbPlus, TbTrash } from "react-icons/tb";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { apiCall, authHeaders } from "@/store/crmApi";
 import { marketOf } from "@/lib/finance/market";
@@ -33,6 +33,7 @@ export default function ContractTemplatesManager() {
 	const [query, setQuery] = useState("");
 	const [allCountries, setAllCountries] = useState(false);
 	const [preview, setPreview] = useState(false);
+	const [fieldsOpen, setFieldsOpen] = useState(false);
 	const editorRef = useRef<RichEditorHandle>(null);
 	const fileRef = useRef<HTMLInputElement>(null);
 
@@ -121,6 +122,47 @@ export default function ContractTemplatesManager() {
 		</button>
 	);
 
+	const quick = ["number", "date", "firm", "signer", "customer", "customerPerson", "value", "start", "end"];
+	const paletteNode = (
+		<div className="border-b border-[rgba(255,255,255,0.1)] bg-[#12181b] px-8 py-8">
+			<div className="flex flex-wrap items-center gap-6">
+				<span className="mr-4 text-11 text-[#8c948b]">{tr("quickFields")}</span>
+				{quick.map((k) => { const f = fieldOf(k); return f ? chip(f.key, labelOf(f, locale), groupColor(f.group), `{{${f.key}}}`) : null; })}
+			</div>
+			{fieldsOpen && (
+				<div className="mt-8 border-t border-[rgba(255,255,255,0.08)] pt-8">
+					<div className="mb-8 flex flex-wrap items-center gap-8">
+						<span className="text-12 font-medium text-[#f1f4ee]">{tr("paletteTitle")}</span>
+						<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr("search")} className="fs-field ml-auto h-30 min-w-[180px] flex-1 px-8 text-12 outline-none md:max-w-[280px]" />
+						<select value={allCountries ? "all" : "mine"} onChange={(e) => setAllCountries(e.target.value === "all")} className="fs-field h-30 px-8 text-12 outline-none">
+							<option value="mine">{tr("forCountry")}</option>
+							<option value="all">{tr("allCountries")}</option>
+						</select>
+					</div>
+					<div className="fs-scroll flex max-h-[320px] flex-col gap-8 overflow-y-auto pr-4">
+						{draft.fields.some((f) => f.key) && (
+							<div>
+								<p className="mb-4 text-11 text-[#8c948b]">{tr("customFields")}</p>
+								<div className="flex flex-wrap gap-6">{draft.fields.map((f, i) => (f.key ? chip(f.key, f.label || f.key, PALETTE[(i + 5) % PALETTE.length]) : null))}</div>
+							</div>
+						)}
+						{groups.map((g) => (
+							<details key={g.id} open={g.id === "contract" || !!query.trim() || g.id === "person"}>
+								<summary className="cursor-pointer select-none text-12 font-medium text-[#cfd4cb]">{GROUP_LABEL[g.id][locale === "de" || locale === "ua" || locale === "uz" ? locale : "en"]} <span className="text-[#8c948b]">({g.items.length})</span></summary>
+								<div className="mt-6 flex flex-wrap gap-6">{g.items.map((f: CatalogField) => chip(f.key, labelOf(f, locale), groupColor(f.group), `{{${f.key}}}`))}</div>
+							</details>
+						))}
+					</div>
+				</div>
+			)}
+		</div>
+	);
+	const fieldsButton = (
+		<button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setFieldsOpen((v) => !v)} className="fs-btn fs-btn-ghost h-32 gap-4 px-10 text-12">
+			<TbListDetails size={15} /> {tr("allFields")} {fieldsOpen ? "▴" : "▾"}
+		</button>
+	);
+
 	return (
 		<div className="flex flex-col gap-16">
 			{!hasEditor && <FirmContractData />}
@@ -156,31 +198,6 @@ export default function ContractTemplatesManager() {
 						<div className="flex flex-col gap-10">
 							<FormField label={tr("nameLabel")} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
 
-							<div className="fs-card p-12">
-								<div className="mb-8 flex flex-wrap items-center gap-8">
-									<span className="text-12 font-medium text-[#f1f4ee]">{tr("paletteTitle")}</span>
-									<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr("search")} className="fs-field ml-auto h-30 min-w-[180px] flex-1 px-8 text-12 outline-none md:max-w-[280px]" />
-									<select value={allCountries ? "all" : "mine"} onChange={(e) => setAllCountries(e.target.value === "all")} className="fs-field h-30 px-8 text-12 outline-none">
-										<option value="mine">{tr("forCountry")}</option>
-										<option value="all">{tr("allCountries")}</option>
-									</select>
-								</div>
-								<div className="fs-scroll flex max-h-[320px] flex-col gap-8 overflow-y-auto pr-4">
-									{draft.fields.some((f) => f.key) && (
-										<div>
-											<p className="mb-4 text-11 text-[#8c948b]">{tr("customFields")}</p>
-											<div className="flex flex-wrap gap-6">{draft.fields.map((f, i) => (f.key ? chip(f.key, f.label || f.key, PALETTE[(i + 5) % PALETTE.length]) : null))}</div>
-										</div>
-									)}
-									{groups.map((g) => (
-										<details key={g.id} open={g.id === "contract" || !!query.trim() || g.id === "person"}>
-											<summary className="cursor-pointer select-none text-12 font-medium text-[#cfd4cb]">{GROUP_LABEL[g.id][locale === "de" || locale === "ua" || locale === "uz" ? locale : "en"]} <span className="text-[#8c948b]">({g.items.length})</span></summary>
-											<div className="mt-6 flex flex-wrap gap-6">{g.items.map((f: CatalogField) => chip(f.key, labelOf(f, locale), groupColor(f.group), `{{${f.key}}}`))}</div>
-										</details>
-									))}
-								</div>
-							</div>
-
 							<div>
 								<div className="mb-6 flex flex-wrap items-center gap-8">
 									<span className="text-12 text-[#8c948b]">{tr("yourText")}</span>
@@ -198,6 +215,8 @@ export default function ContractTemplatesManager() {
 										onChange={(h) => setDraft((d) => ({ ...d, bodyHtml: h, body: htmlToText(h) }))}
 										placeholder={tr("placeholder")}
 										blockLabels={{ p: tr("styleNormal") }}
+										toolbarExtra={fieldsButton}
+										palette={paletteNode}
 									/>
 								)}
 								{unknown.length > 0 && (

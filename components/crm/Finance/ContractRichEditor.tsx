@@ -36,7 +36,7 @@ export function sanitizeHtml(html: string): string {
 
 const BLOCKS = [["p", "Normal"], ["h1", "H1"], ["h2", "H2"], ["h3", "H3"]] as const;
 
-const ContractRichEditor = forwardRef<RichEditorHandle, { html: string; onChange: (html: string) => void; placeholder?: string; blockLabels?: Record<string, string> }>(function ContractRichEditor({ html, onChange, placeholder, blockLabels }, ref) {
+const ContractRichEditor = forwardRef<RichEditorHandle, { html: string; onChange: (html: string) => void; placeholder?: string; blockLabels?: Record<string, string>; toolbarExtra?: React.ReactNode; palette?: React.ReactNode }>(function ContractRichEditor({ html, onChange, placeholder, blockLabels, toolbarExtra, palette }, ref) {
 	const box = useRef<HTMLDivElement>(null);
 	const saved = useRef<Range | null>(null);
 	const lastHtml = useRef<string | null>(null);
@@ -135,7 +135,9 @@ const ContractRichEditor = forwardRef<RichEditorHandle, { html: string; onChange
 				{btn("Numbered list", <TbListNumbers size={16} />, () => cmd("insertOrderedList"))}
 				{btn("Link", <TbLink size={16} />, () => { const url = window.prompt("URL (https://…)"); if (url && /^(https?:|mailto:)/i.test(url)) cmd("createLink", url); })}
 				{btn("Image", <TbPhoto size={16} />, () => { const url = window.prompt("Image URL (https://…)"); if (url && /^https?:/i.test(url)) cmd("insertImage", url); })}
+				{toolbarExtra && <span className="ml-auto flex items-center">{toolbarExtra}</span>}
 			</div>
+			{palette}
 			<div className="fs-scroll max-h-[640px] overflow-auto bg-[#0b0f11] p-12 md:p-20">
 				<div
 					ref={box}

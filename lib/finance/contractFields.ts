@@ -202,6 +202,7 @@ export const ALIASES: Record<string, string> = {
 	company: "firm", executor: "firm", contractor: "firm", seller: "firm", landlord: "firm", employer: "firm",
 	buyer: "customer", tenant: "customer", employee: "customer", customercompany: "customer",
 	sum: "value", amount: "value", price: "value", total: "value", city: "contractCity", place: "contractCity", subject: "contractSubject",
+	companyname: "firm", contactperson: "signer", clientcontactperson: "customerPerson",
 	startdate: "start", enddate: "end", contractnumber: "number", contractdate: "date",
 };
 
