@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findByToken, secretsOf } from "@/lib/integrations";
+import { findByToken, secretsOf, verifyTokenOf } from "@/lib/integrations";
 import { markMessageFailed, recordMessage } from "@/lib/channels";
 import { WaIncoming, WaStatus, parseWhatsAppWebhookByNumber, verifyWhatsAppChallenge, verifyWhatsAppSignature } from "@/lib/channels/whatsapp";
 import { prisma } from "@/lib/prisma";
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request, { params }: { params: { token: string } }) {
     const integration = await findByToken("whatsapp", params.token);
     if (!integration) return new Response("Not found", { status: 404 });
-    const challenge = verifyWhatsAppChallenge(new URL(req.url).searchParams, (integration.config as any)?.verifyToken);
+    const challenge = verifyWhatsAppChallenge(new URL(req.url).searchParams, verifyTokenOf(integration));
     if (challenge === null) return new Response("Forbidden", { status: 403 });
     return new Response(challenge, { status: 200 });
 }

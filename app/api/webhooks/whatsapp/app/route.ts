@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { metaApp, whatsappVerifyToken } from "@/lib/platformSettings";
 import { reportError } from "@/lib/reportError";
 import { markMessageFailed, recordMessage } from "@/lib/channels";
-import { secretsOf } from "@/lib/integrations";
+import { secretsOf, verifyTokenOf } from "@/lib/integrations";
 import { parseWhatsAppWebhookByNumber, verifyWhatsAppChallenge, verifyWhatsAppSignature } from "@/lib/channels/whatsapp";
 import { prisma } from "@/lib/prisma";
 
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     if (challenge === null) {
         const token = query.get("hub.verify_token") ?? "";
         const list = token ? await prisma.integration.findMany({ where: { type: "whatsapp" } }) : [];
-        const doc = list.find((d) => String((d.config as any)?.verifyToken ?? "") === token) ?? null;
+        const doc = list.find((d) => verifyTokenOf(d) === token) ?? null;
         if (doc) challenge = query.get("hub.challenge") ?? "";
     }
     if (challenge === null) return new Response("Forbidden", { status: 403 });
