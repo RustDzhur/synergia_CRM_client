@@ -6,7 +6,7 @@ import { TbMinus, TbPlus } from "react-icons/tb";
 import { useOfficeStore, type Robot, type Zone } from "@/store/useOfficeStore";
 import { useDragKit } from "../dragKit";
 import { ACCENT_HEX, type RobotView, isMonitor, isPlatformRobot, titleOf, viewOf } from "../theme";
-import { HUB, ROOMS, SCENE_H, SCENE_W, pt, slotFor } from "./iso";
+import { HUB, ROOMS, SCENE_H, SCENE_W, pt, roomOf, slotFor } from "./iso";
 import { COFFEE, LOUNGE, SERVER } from "./layout";
 import { OfficeSim, type Mode, type RobotInput } from "./sim";
 import Bot from "./Bot";
@@ -97,7 +97,8 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 	const t = useTranslations("office");
 	const locale = useLocale();
 	const drag = useDragKit();
-	const { robots, tasks, selected, assign, platform } = useOfficeStore();
+	const { robots, tasks, selected, assign, platform, rooms } = useOfficeStore();
+	const zoneName = (z: string) => rooms.find((r) => r.id === z)?.name ?? t(`zone_${z}` as never);
 	const [zoom, setZoom] = useState(1);
 	const scrollRef = useRef<HTMLDivElement>(null);
 	// точка, которую при смене масштаба нужно удержать под пальцами/курсором: доля содержимого и позиция внутри окна
@@ -238,7 +239,7 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 	const hotZone = drag.payload?.kind === "robot" && drag.over?.type === "zone" ? drag.over.id : null;
 	const zoneLive = (z: Zone) => robots.some((r) => r.zone === z && !isMonitor(r) && views[r.id]?.state === "working");
 	const flows: Flow[] = ROOMS.map((room) => ({ id: `z-${room.zone}`, to: [room.x + room.w / 2, room.y + room.d / 2 + 0.5] as [number, number], color: ZONE_LIGHT[room.zone], live: zoneLive(room.zone) }));
-	robots.forEach((r, ri) => { if (views[r.id]?.state !== "working" || isMonitor(r)) return; const room = ROOMS.find((x) => x.zone === r.zone)!; const seat = slotFor(room, inputs.current[ri]?.index ?? 0).robot; flows.push({ id: `r-${r.id}`, to: [seat.x, seat.y], color: ACCENT_HEX[r.accent], live: true, strong: true }); });
+	robots.forEach((r, ri) => { if (views[r.id]?.state !== "working" || isMonitor(r)) return; const room = roomOf(r.zone); const seat = slotFor(room, inputs.current[ri]?.index ?? 0).robot; flows.push({ id: `r-${r.id}`, to: [seat.x, seat.y], color: ACCENT_HEX[r.accent], live: true, strong: true }); });
 	const items: Item[] = [];
 	const counts: Record<string, number> = {};
 	for (const room of ROOMS) {
@@ -263,7 +264,7 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 	// роботы: глубина — по последнему снимку; новому роботу — по месту стола
 	robots.forEach((r, ri) => {
 		const input = inputs.current[ri];
-		const room = ROOMS.find((x) => x.zone === r.zone)!;
+		const room = roomOf(r.zone);
 		const seat = slotFor(room, input?.index ?? 0).robot;
 		items.push({
 			depth: depths[r.id] ?? seat.x + seat.y + 0.15, key: `rb-${r.id}`,
@@ -284,7 +285,7 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 					<BackWalls />
 					{ROOMS.map((room) => <ZoneGlass key={room.zone} room={room} />)}
 					<ServiceGlass />
-					{ROOMS.map((room) => <ZoneSign key={room.zone} room={room} label={t(`zone_${room.zone as Zone}`)} count={counts[room.zone] ?? 0} hot={hotZone === room.zone} />)}
+					{ROOMS.map((room) => <ZoneSign key={room.zone} room={room} label={zoneName(room.zone)} count={counts[room.zone] ?? 0} hot={hotZone === room.zone} />)}
 					<g>{items.map((it) => <g key={it.key} style={it.key.startsWith("rb-") || it.key === "hub" ? undefined : { pointerEvents: "none" }}>{it.node}</g>)}</g>
 				</svg>
 			</div>

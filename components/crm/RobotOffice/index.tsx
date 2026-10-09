@@ -1,13 +1,15 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { TbLayoutGrid, TbPlus, TbBuildingSkyscraper } from "react-icons/tb";
+import { TbLayoutGrid, TbPlus, TbBuildingSkyscraper, TbDoor } from "react-icons/tb";
 import { useOfficeStore } from "@/store/useOfficeStore";
 import PageHeader from "../shared/PageHeader";
 import BossCard from "./BossCard";
 import { DragProvider, type DragPayload, type DropTarget } from "./dragKit";
 import HireDialog from "./HireDialog";
+import RoomsDialog from "./RoomsDialog";
+import { trRooms } from "./roomsUi";
 import OfficeFloor from "./OfficeFloor";
 import RobotPanel from "./RobotPanel";
 import OfficeScene from "./scene/OfficeScene";
@@ -22,6 +24,8 @@ export default function RobotOffice() {
 	const { robots, selected, select, load, loaded, canEdit, update, reassign, tasks } = useOfficeStore();
 	const [view, setView] = useState<"scene" | "list">("scene");
 	const [hireOpen, setHireOpen] = useState(false);
+	const [roomsOpen, setRoomsOpen] = useState(false);
+	const trR = trRooms(useLocale());
 	const panelRef = useRef<HTMLDivElement>(null);
 	const busy = tasks.some((x) => x.status === "running" || x.status === "queued");
 
@@ -69,9 +73,12 @@ export default function RobotOffice() {
 					<div className="flex min-w-0 flex-col gap-12">
 						<div className="flex items-center justify-between gap-12">
 							<p className="min-w-0 truncate px-4 text-12 text-[#8c948b]">{canEdit && robots.length > 0 ? t("dragHint") : ""}</p>
+							<div className="flex shrink-0 items-center gap-8">
+								{canEdit && <button type="button" onClick={() => setRoomsOpen(true)} className="fs-btn fs-btn-ghost h-38 px-14 text-12"><TbDoor size={15} aria-hidden />{trR("rooms")}</button>}
 							<div className="flex shrink-0 rounded-50 border border-inkLine bg-[rgba(255,255,255,0.03)] p-2" role="tablist" aria-label={t("title")}>
 								<button type="button" role="tab" aria-selected={view === "scene"} onClick={() => changeView("scene")} className={seg(view === "scene")}><TbBuildingSkyscraper size={15} aria-hidden />{t("viewScene")}</button>
 								<button type="button" role="tab" aria-selected={view === "list"} onClick={() => changeView("list")} className={seg(view === "list")}><TbLayoutGrid size={15} aria-hidden />{t("viewList")}</button>
+							</div>
 							</div>
 						</div>
 						{!loaded ? <div className="fs-card h-[320px] animate-pulse" aria-hidden /> : robots.length === 0 ? <p className="fs-card p-24 text-center text-13 text-[#8c948b]">{t("emptyOffice")}</p> : view === "scene" ? <OfficeScene onSelect={pick} onBoss={focusBoss} /> : <OfficeFloor onSelect={pick} />}
@@ -83,6 +90,7 @@ export default function RobotOffice() {
 					</div>
 				</div>
 				<HireDialog open={hireOpen} onClose={() => setHireOpen(false)} />
+				<RoomsDialog open={roomsOpen} onClose={() => setRoomsOpen(false)} />
 			</DragProvider>
 		</div>
 	);

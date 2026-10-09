@@ -7,7 +7,7 @@ import { sweepInterrupted } from "@/lib/office/runner";
 import { platformInfo } from "@/lib/office/platform";
 import { hireCatalog } from "@/lib/office/catalog";
 import { orgMarket } from "@/lib/finance/marketGuard";
-import { MAX_ROBOTS, ensurePlatformRobots, ensureStarters, listRobots, listTasks, visibleTasks } from "@/lib/office/store";
+import { MAX_ROBOTS, MAX_ROOMS, ensurePlatformRobots, ensureStarters, listRobots, listRooms, listTasks, visibleTasks } from "@/lib/office/store";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
         const [robots, allTasks] = await Promise.all([listRobots(user.id, scope), listTasks(user.id, 80)]);
         const tasks = await visibleTasks(user.id, allTasks, scope);
         const catalog = (await hireCatalog(await orgMarket(user.id))).map((t) => ({ id: t.id, name: t.name, zone: t.zone, accent: t.accent, skills: t.skills, texts: t.texts }));
-        return NextResponse.json({ robots, catalog, tasks: await sweepInterrupted(user.id, tasks), ai: aiConfigured(), canEdit: user.role !== "viewer", maxRobots: MAX_ROBOTS, ...(admin ? { platform: await platformInfo() } : {}) });
+        return NextResponse.json({ robots, rooms: await listRooms(user.id), maxRooms: MAX_ROOMS, catalog, tasks: await sweepInterrupted(user.id, tasks), ai: aiConfigured(), canEdit: user.role !== "viewer", maxRobots: MAX_ROBOTS, ...(admin ? { platform: await platformInfo() } : {}) });
     } catch (e) {
         return officeFailure(e);
     }

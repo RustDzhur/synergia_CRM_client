@@ -1,5 +1,5 @@
 import type { Zone } from "@/store/useOfficeStore";
-import { ROOMS, slotFor } from "./iso";
+import { roomOf, slotFor } from "./iso";
 import { POIS, type Poi, type Pose, deskBlocked, findPath, staticBlocked } from "./layout";
 
 // Живой офис: каждый робот — «агент» с позицией на полу. Кто работает (есть поручение) — сидит за своим столом и печатает;
@@ -38,7 +38,7 @@ export class OfficeSim {
         }
         this.seats.clear();
         for (const r of inputs) {
-            const room = ROOMS.find((x) => x.zone === r.zone)!;
+            const room = roomOf(r.zone);
             const s = slotFor(room, r.index);
             this.seats.set(r.id, { x: s.robot.x, y: s.robot.y, standing: s.standing });
         }

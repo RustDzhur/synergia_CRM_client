@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import type { ExecutedAction, PendingAction } from "@/lib/ai/run";
-import { ACCENTS, hasUiTexts, type Accent, type SkillId, type ZoneId, isAccent, isSkill, isZone } from "./templates";
+import { ACCENTS, hasUiTexts, type Accent, type SkillId, isAccent, isRoomId, isSkill, isZone } from "./templates";
 import { catalogById, hireCatalog, isPlatformTemplate, loadCatalog, starterIds } from "./catalog";
 import { orgMarket } from "@/lib/finance/marketGuard";
 
@@ -19,7 +19,7 @@ export interface Robot {
     /** Должность. Пусто у роботов из каталога — подпись берётся из перевода шаблона (на языке интерфейса). */
     title: string;
     template: string; // id шаблона или "custom"
-    zone: ZoneId;
+    zone: string;
     accent: Accent;
     skills: SkillId[];
     /** Должностная инструкция (для модели). У робота из каталога пусто — берётся из шаблона. */
@@ -69,7 +69,7 @@ const toRobot = (r: { rid: string; data: unknown; createdAt: Date }): Robot => {
         name: String(v.name ?? ""),
         title: String(v.title ?? ""),
         template: String(v.template ?? "custom"),
-        zone: isZone(v.zone) ? v.zone : "office",
+        zone: isZone(v.zone) || isRoomId(v.zone) ? v.zone : "office",
         accent: isAccent(v.accent) ? v.accent : "lime",
         skills: (Array.isArray(v.skills) ? v.skills : []).filter(isSkill),
         instructions: String(v.instructions ?? ""),
@@ -134,7 +134,7 @@ export async function createRobot(org: string, input: RobotInput, opts: { platfo
         // у ролей из кода должность — перевод интерфейса; у ролей, добавленных администратором, переводов в интерфейсе нет — подпись берётся из записи
         title: clean(input.title, 60) || (tpl && !hasUiTexts(tpl.id) ? clean(tpl.texts.en?.title || tpl.name, 60) : ""),
         template: tpl?.id ?? "custom",
-        zone: tpl?.platform ? "platform" : isZone(input.zone) && input.zone !== "platform" ? input.zone : tpl?.zone ?? "office",
+        zone: tpl?.platform ? "platform" : isRoomId(input.zone) && (await roomExists(org, input.zone)) ? input.zone : isZone(input.zone) && input.zone !== "platform" ? input.zone : tpl?.zone ?? "office",
         accent: isAccent(input.accent) ? input.accent : tpl?.accent ?? ACCENTS[Math.floor(Math.random() * ACCENTS.length)],
         skills: Array.from(new Set(skills)),
         instructions: cleanLong(input.instructions, 1500),
@@ -165,7 +165,11 @@ export async function updateRobot(org: string, id: string, patch: RobotInput & {
     if (patch.name !== undefined) { next.name = clean(patch.name, 40); if (!next.name) throw new OfficeError("Robot name is required"); }
     if (patch.title !== undefined) next.title = clean(patch.title, 60);
     const fixed = await isPlatformTemplate(cur.template); // роботу платформы зону и навыки не меняют
-    if (patch.zone !== undefined && !fixed) { if (!isZone(patch.zone) || patch.zone === "platform") throw new OfficeError("Unknown zone"); next.zone = patch.zone; }
+    if (patch.zone !== undefined && !fixed) {
+        const ok = isRoomId(patch.zone) ? await roomExists(org, patch.zone) : isZone(patch.zone) && patch.zone !== "platform";
+        if (!ok) throw new OfficeError("Unknown zone");
+        next.zone = patch.zone;
+    }
     if (patch.accent !== undefined) { if (!isAccent(patch.accent)) throw new OfficeError("Unknown color"); next.accent = patch.accent; }
     if (patch.skills !== undefined && !fixed) {
         next.skills = Array.from(new Set((Array.isArray(patch.skills) ? patch.skills : []).filter(ownSkill)));
@@ -285,4 +289,42 @@ async function pruneTasks(org: string) {
     const rows = await prisma.robotTask.findMany({ where: { org }, orderBy: { createdAt: "desc" }, skip: MAX_TASKS_KEPT, take: 100, select: { rid: true, status: true } });
     const old = rows.filter((r) => ["done", "failed", "cancelled"].includes(r.status)).map((r) => r.rid);
     if (old.length) await prisma.robotTask.deleteMany({ where: { org, rid: { in: old } } });
+}
+
+
+// ── свои комнаты офиса ─────────────────────────────────────────────────────────
+// Кроме шести готовых зон владелец может добавлять свои комнаты (например «Реклама», «Исследования»): запись office:room, значения { name }.
+export const MAX_ROOMS = 9;
+const K_ROOM = "office:room";
+export interface Room { id: string; name: string }
+
+export async function listRooms(org: string): Promise<Room[]> {
+    const rows = await prisma.sectionRecord.findMany({ where: { org, key: K_ROOM }, orderBy: { createdAt: "asc" }, take: MAX_ROOMS + 5 });
+    return rows.filter((r) => isRoomId(r.rid)).map((r) => ({ id: r.rid, name: String((r.values as { name?: string } | null)?.name ?? "") })).slice(0, MAX_ROOMS);
+}
+export const roomExists = async (org: string, id: string) => !!(await prisma.sectionRecord.findFirst({ where: { org, key: K_ROOM, rid: id }, select: { id: true } }));
+
+export async function addRoom(org: string, nameIn: unknown): Promise<Room> {
+    const name = clean(nameIn, 30);
+    if (name.length < 2) throw new OfficeError("Room name is too short");
+    const list = await listRooms(org);
+    if (list.length >= MAX_ROOMS) throw new OfficeError(`At most ${MAX_ROOMS} own rooms`);
+    if (list.some((r) => r.name.toLowerCase() === name.toLowerCase())) throw new OfficeError("A room with this name already exists");
+    const id = `room_${rid("").replace(/[^a-z0-9]/g, "").slice(-6).padStart(6, "0")}`;
+    await prisma.sectionRecord.create({ data: { org, key: K_ROOM, rid: id, values: { name } as never } });
+    return { id, name };
+}
+export async function renameRoom(org: string, id: string, nameIn: unknown): Promise<Room> {
+    const name = clean(nameIn, 30);
+    if (name.length < 2) throw new OfficeError("Room name is too short");
+    const n = (await prisma.sectionRecord.updateMany({ where: { org, key: K_ROOM, rid: id }, data: { values: { name } as never } })).count;
+    if (!n) throw new OfficeError("Room not found");
+    return { id, name };
+}
+/** Удаление комнаты: роботы из неё переезжают в «Офис», сами роботы и поручения не теряются. */
+export async function removeRoom(org: string, id: string): Promise<void> {
+    const n = (await prisma.sectionRecord.deleteMany({ where: { org, key: K_ROOM, rid: id } })).count;
+    if (!n) throw new OfficeError("Room not found");
+    const rows = await prisma.robot.findMany({ where: { org } });
+    for (const r of rows) if ((r.data as { zone?: string })?.zone === id) await prisma.robot.updateMany({ where: { id: r.id }, data: { data: { ...(r.data as object), zone: "office" } as never } });
 }
