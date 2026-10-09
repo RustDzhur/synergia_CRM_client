@@ -29,7 +29,7 @@ export default function Footer({ slanted = false }: { slanted?: boolean }) {
 				<div className="flex justify-start mb-40 md:mb-0 md:hidden">
 					<Logo light />
 				</div>
-				<div className="flex justify-between sm:mb-[39px] md:mb-[48px] lg:mb-0 lg:grid lg:grid-cols-[283px_281px_293px_1fr_auto]">
+				<div className="flex justify-between sm:mb-[39px] md:mb-[48px] lg:mb-0 lg:grid lg:grid-cols-[minmax(0,283px)_minmax(0,281px)_minmax(0,293px)_minmax(0,1fr)_auto]">
 					<div className="sm:hidden md:block lg:-translate-y-[4px]">
 						<Logo light />
 					</div>

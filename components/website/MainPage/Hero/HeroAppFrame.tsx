@@ -82,7 +82,7 @@ export default function HeroAppFrame({ screen = "overview" }: { screen?: FrameSc
 
 					{/* Нижний ряд — пояснение, как это работает */}
 					<div className="mt-6 grid gap-6 lg:grid-cols-2">
-						<div className="rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-8">
+						<div className="min-w-0 overflow-hidden rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-8">
 							<div className="flex items-center justify-between gap-8">
 								<p className="text-9 font-semibold text-[#f1f4ee]">{t("flowTitle")}</p>
 								<span className="rounded-50 border border-[rgba(198,255,77,0.3)] px-6 py-[2px] text-7 text-[#c6ff4d]">{t("example")}</span>
@@ -96,7 +96,7 @@ export default function HeroAppFrame({ screen = "overview" }: { screen?: FrameSc
 								))}
 							</div>
 						</div>
-						<div className="rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-8">
+						<div className="min-w-0 overflow-hidden rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-8">
 							<p className="text-9 font-semibold text-[#f1f4ee]">{t("checksTitle")}</p>
 							<div className="mt-5 flex flex-col gap-3">
 								{CHECKS.map((check, i) => (
@@ -123,7 +123,7 @@ function OverviewScreen({ t }: { t: T }) {
 	const days = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 	return (
 		<div>
-			<div className="rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-8">
+			<div className="min-w-0 overflow-hidden rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-8">
 				<div className="flex items-center justify-between text-8 text-[#8C948B]">
 					<span>{t("dashProgress")}</span>
 					<span className="text-[#c6ff4d]">{t("dashDate")}</span>
@@ -146,7 +146,7 @@ function OverviewScreen({ t }: { t: T }) {
 			</div>
 
 			<div className="mt-6 grid gap-6 md:grid-cols-2">
-				<div className="rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-8">
+				<div className="min-w-0 overflow-hidden rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-8">
 					<p className="mb-5 text-9 font-semibold text-[#f1f4ee]">{t("dashTasks")}</p>
 					{[
 						{ title: t("dashTask1"), who: t("dashTask1Who"), done: true },
@@ -165,7 +165,7 @@ function OverviewScreen({ t }: { t: T }) {
 					))}
 				</div>
 
-				<div className="rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-8">
+				<div className="min-w-0 overflow-hidden rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-8">
 					<p className="mb-5 text-9 font-semibold text-[#f1f4ee]">{t("dashDeals")}</p>
 					{/* столбики закрытых сделок по неделям периода */}
 					<div className="flex h-60 items-end gap-6">

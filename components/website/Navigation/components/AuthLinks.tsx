@@ -41,7 +41,7 @@ export default function AuthLinks() {
 	};
 
 	return (
-		<ul className="flex items-center gap-16 sm:justify-between sm:px-20 lg:gap-22 lg:px-0">
+		<ul className="flex items-center gap-16 sm:justify-between sm:px-20 lg:gap-14 lg:px-0 xl:gap-22 whitespace-nowrap">
 			<li className="text-16 font-medium text-[#c6ff4d] transition-opacity hover:opacity-80 lg:text-14 lg:tracking-[0.2px]">
 				<DemoButton className="flex cursor-pointer items-center gap-6" onDone={() => { if (menu) toggleMenu(); }} />
 			</li>

@@ -18,6 +18,20 @@ const ICONS: Record<PlanId, string> = { free, standard: standart, professional }
 
 // Тарифы (app/config/plans.ts): на десктопе три карточки в ряд, на планшете и телефоне — лента с горизонтальной прокруткой.
 // Средняя (Standard) — тёмная. Год = 10 месяцев цены за месяц.
+
+// Длинные суммы в национальной валюте («264 000 soʻm», «6 996 000 soʻm») и длинные названия тарифа
+// («Безкоштовний») при кегле 40 px шире самой карточки: замер в браузере — 245 px полезной ширины,
+// «Безкоштовний» требует 296 px при 40 px. Поэтому кегль подбирается по длине строки: короткое «€20»
+// остаётся крупным, длинное — уменьшается. Обрезанная цена хуже, чем мелкая.
+function priceClass(text: string): string {
+	const n = text.length;
+	if (n >= 16) return "text-[22px] leading-[30px] lg:text-24 lg:leading-[32px]";
+	if (n >= 13) return "text-[26px] leading-[34px] lg:text-28 lg:leading-[36px]";
+	if (n >= 11) return "text-30 leading-[40px] lg:text-34 lg:leading-[44px]";
+	if (n >= 9) return "text-36 leading-[46px] lg:text-40 lg:leading-[48px]";
+	return "text-40 leading-[48px]";
+}
+
 export default function PaidPlan({ rates: serverRates }: { rates?: Record<string, number> } = {}) {
     const t = useTranslations ("paidPlan")
 	const locale = useLocale();
@@ -100,7 +114,7 @@ export default function PaidPlan({ rates: serverRates }: { rates?: Record<string
 							<p className={`text-20 font-medium leading-[28px] tracking-[0.4px] mb-[39px] ${dark ? "text-white" : "text-textChoosePlan"}`}>
 								{titles[plan.id]}
 							</p>
-							<p className={`text-40 font-medium leading-[48px] tracking-[0.8px] ${dark ? "text-white" : "text-[#666666]"}`}>
+							<p className={`${priceClass(plan.priceMonth === 0 ? titles.free : formatPlanPrice(price, locale, rates))} font-medium tracking-[0.8px] flex flex-wrap items-baseline gap-x-1 ${dark ? "text-white" : "text-[#666666]"}`}>
 								{plan.priceMonth === 0 ? (
 									titles.free
 								) : (

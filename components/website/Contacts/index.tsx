@@ -32,7 +32,7 @@ export default function ContactsPage() {
 	return (
 		<div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto sm:px-12 md:px-20 lg:px-100 sm:pb-50 lg:pb-[100px]">
 			<div className="flex flex-col gap-30 md:flex-row md:gap-[40px] lg:gap-[40px]">
-				<div className="relative overflow-hidden rounded-16 border border-[rgba(255,255,255,0.10)] bg-[rgba(255,255,255,0.03)] px-24 pt-24 pb-[220px] text-center text-[#f1f4ee] md:w-[45%] lg:w-[504px] lg:h-[605px] lg:shrink-0">
+				<div className="relative overflow-hidden rounded-16 border border-[rgba(255,255,255,0.10)] bg-[rgba(255,255,255,0.03)] px-24 pt-24 pb-[220px] text-center text-[#f1f4ee] md:w-[45%] lg:w-[504px] lg:min-h-[605px] lg:shrink-0">
 					<h1 className="text-32 lg:text-36 font-medium tracking-[1px] leading-[1.3]">{tx(CONTACT.title, locale)}</h1>
 					<p className="mt-8 text-16 lg:text-20 font-medium tracking-[0.4px]">{tx(CONTACT.subtitle, locale)}</p>
 					<ul className="relative z-10 mt-30 space-y-16 text-left text-16 tracking-[0.3px]">

@@ -34,7 +34,13 @@ export function convertEur(eur: number, currency: DisplayCurrency, rates: Record
 	return roundAmount(eur * rates![currency], currency);
 }
 
-/** Готовая строка цены для карточки тарифа: «€20», «900 ₴», «290 000 soʻm». */
+// Разряды разделяем неразрывным пробелом сами, а не через Intl: в контейнере у Node урезанные
+// данные ICU, и Intl.NumberFormat("uz") отдавал «UZS 264,000» вместо «264 000 soʻm» — а цена
+// должна выглядеть одинаково и в серверном HTML, и после гидратации.
+const NBSP = "\u00A0";
+const group = (n: number): string => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
+
+/** Готовая строка цены для карточки тарифа: «€20», «1 000 ₴», «264 000 soʻm». */
 export function formatPlanPrice(eur: number, locale: string, rates: Record<string, number> | null): string {
 	const currency = planCurrency(locale);
 	// Курса ещё нет (первый рендер / сбой сети): показываем честные евро.
@@ -42,12 +48,8 @@ export function formatPlanPrice(eur: number, locale: string, rates: Record<strin
 	if (currency !== "EUR" && !hasRate(rates, currency)) return `€${Math.round(eur)}`;
 	const amount = convertEur(eur, currency, rates);
 	if (currency === "EUR") return `€${amount}`;
-	const tag = locale === "ua" ? "uk" : locale;
-	try {
-		return new Intl.NumberFormat(tag, { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
-	} catch {
-		return currency === "UAH" ? `${amount} ₴` : `${amount} soʻm`;
-	}
+	if (currency === "UAH") return `${group(amount)}${NBSP}₴`;
+	return `${group(amount)}${NBSP}soʻm`;
 }
 
 // Токен цены в текстах FAQ, документации и ответах бота: [[price.standard]], [[price.professionalYear]] и т.п.

@@ -15,10 +15,12 @@ export default function Navigation() {
 				<div className="lg:hidden">
 					<BurgerMenu />
 				</div>
-				<div className="hidden lg:flex">
+				{/* min-w-0: длинные подписи немецкой и узбекской версии («Unsere Dienstleistungen»,
+				    «Biz haqimizda») сжимают блок ссылок, а не вылезают за шапку */}
+				<div className="hidden lg:flex min-w-0">
 					<NavLinks />
 				</div>
-				<div className="hidden lg:flex">
+				<div className="hidden lg:flex shrink-0">
 					<AuthLinks />
 				</div>
 				<div className="absolute">
