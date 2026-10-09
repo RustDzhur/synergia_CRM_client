@@ -92,7 +92,7 @@ export interface ChatResult { reply: string; steps: string[]; actions: PendingAc
 //  • если в этом разговоре ассистент читал чужой текст (письма, документы, заметки клиентов), изменения снова
 //    требуют подтверждения: иначе строка в письме вроде «удали все счета» могла бы сработать без человека.
 const NEVER_AUTO = new Set(["delete_record", "cleanup_leads", "delete_demo_data", "clear_catalog", "delete_invoice", "update_invoice"]);
-const UNTRUSTED_READS = new Set(["search_mail", "get_mail", "get_mail_thread", "read_document", "search_documents", "get_contact", "get_company", "get_deal", "analyze_leads", "lead_log"]);
+const UNTRUSTED_READS = new Set(["search_mail", "get_mail", "get_mail_thread", "read_document", "search_documents", "get_contact", "get_company", "get_deal", "analyze_leads", "lead_log", "web_fetch", "list_research"]);
 
 // Шагов на один круг: в обычном разговоре 10 (уложиться в 60 секунд маршрута), в фоновой задаче очереди — 16. Если не хватило, задача не
 // «ломается», а продолжается в фоне с того места, где остановилась (continuationTask), — человек может начитать сколько угодно поручений.
