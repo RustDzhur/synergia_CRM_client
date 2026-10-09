@@ -9,7 +9,9 @@ import PaidPlan from "./PaidPlan/PaidPlan";
 import RevolutionarySolution from "./RevolutionarySolution/RevolutionarySolution";
 import Testimonials from "./Testimonials/Testimonials";
 
-export default function MainPage() {
+// rates — курсы валют с сервера (app/[locale]/page.tsx): карточки тарифов получают их сразу,
+// первый HTML уже с ценой в валюте локали, без «прыжка» после гидратации.
+export default function MainPage({ rates }: { rates?: Record<string, number> }) {
 	return (
 		<div>
 			<div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg lg:px-100 m-auto sm:px-12 md:px-20">
@@ -33,7 +35,7 @@ export default function MainPage() {
 				<DiscoverCrm/>
 			</div>
 			<div id="choose-plan" className="lg:max-w-screen-lg m-auto sm:px-12 sm:pt-[58px] sm:pb-[52px] md:px-20 md:pt-[32px] md:pb-[51px] lg:px-100 lg:pt-[48px] lg:pb-[80px] scroll-mt-[80px]">
-				<PaidPlan/>
+				<PaidPlan rates={rates}/>
 			</div>
 			<div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto">
 				<RevolutionarySolution/>

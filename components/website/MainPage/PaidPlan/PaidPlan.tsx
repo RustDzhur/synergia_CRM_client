@@ -18,7 +18,7 @@ const ICONS: Record<PlanId, string> = { free, standard: standart, professional }
 
 // Тарифы (app/config/plans.ts): на десктопе три карточки в ряд, на планшете и телефоне — лента с горизонтальной прокруткой.
 // Средняя (Standard) — тёмная. Год = 10 месяцев цены за месяц.
-export default function PaidPlan() {
+export default function PaidPlan({ rates: serverRates }: { rates?: Record<string, number> } = {}) {
     const t = useTranslations ("paidPlan")
 	const locale = useLocale();
 	const router = useRouter();
@@ -27,16 +27,18 @@ export default function PaidPlan() {
 	const { menu, toggleMenu } = useSiteMenuState();
 	const yearly = active === t("year");
 	const [promoOpen, setPromoOpen] = useState(false);
-	const [rates, setRates] = useState<Record<string, number> | null>(null);
-	// Курс местной валюты тянем один раз с сервера; пока его нет, цена показывается в евро (без «моргания»).
+	// Курс приходит с сервера (app/[locale]/page.tsx) — в первом HTML уже цена локали, «прыжка» нет.
+	// Клиентский запрос остаётся только подстраховкой: если сервер курс не отдал, цену дотянем из /api/currency.
+	const [rates, setRates] = useState<Record<string, number> | null>(serverRates ?? null);
 	useEffect(() => {
+		if (serverRates) return;
 		let alive = true;
 		fetch("/api/currency")
 			.then((r) => r.json())
 			.then((j) => { if (alive && j?.rates) setRates(j.rates); })
 			.catch(() => {});
 		return () => { alive = false; };
-	}, []);
+	}, [serverRates]);
 
 	// Кнопки тарифов: у вошедшего пользователя — прямо в кабинет (платный тариф — на страницу оплаты). У гостя пока действует
 	// программа «первые 500 — год бесплатно»: кнопка открывает окно с её условиями, а регистрация — по кнопке в этом окне.
