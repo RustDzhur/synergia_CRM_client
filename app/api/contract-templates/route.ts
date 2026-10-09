@@ -13,6 +13,7 @@ const toDTO = (t: any) => ({
     id: t.id,
     name: t.name,
     body: t.body ?? "",
+    bodyHtml: t.bodyHtml ?? "",
     fields: Array.isArray(t.fields) ? t.fields : [],
     active: !!t.active,
 });
@@ -41,6 +42,6 @@ export async function POST(req: Request) {
     if (!name) return badRequest("name is required");
     const body = String(b?.body ?? "").slice(0, 60000);
     const fields = (Array.isArray(b?.fields) ? b.fields : []).map(cleanField).filter(Boolean).slice(0, 200);
-    const t = await prisma.contractTemplate.create({ data: { org: user.id, name, body, fields } });
+    const t = await prisma.contractTemplate.create({ data: { org: user.id, name, body, bodyHtml: String(b?.bodyHtml ?? "").slice(0, 200000) || null, fields } });
     return NextResponse.json(toDTO(t), { status: 201 });
 }

@@ -90,7 +90,7 @@ export interface Contract {
 	startDate: string; endDate: string; notes: string; body: string; signedAt: string; file: string;
 	template: string; templateId: string; fields: Record<string, string>; createdAt: string; updatedAt: string;
 }
-export interface ContractTemplate { id: string; name: string; body: string; fields: { key: string; label: string; type: string; source: string }[]; active: boolean }
+export interface ContractTemplate { id: string; name: string; body: string; bodyHtml?: string; fields: { key: string; label: string; type: string; source: string }[]; active: boolean }
 export interface FinanceSettings {
 	country: string; currency: string; smallBusiness: boolean; legalName: string; address: string; taxId: string;
 	// Реквизиты и контакты для шапки документов, свой текст внизу и логотип (data-URL) — печатает lib/finance/layouts.ts
@@ -142,8 +142,8 @@ interface FinanceStore {
 	loadQuotes: () => Promise<void>;
 	loadContracts: () => Promise<void>;
 	loadContractTemplates: () => Promise<void>;
-	createContractTemplate: (data: { name: string; body: string; fields: unknown[] }) => Promise<string | null>;
-	updateContractTemplate: (id: string, data: Partial<{ name: string; body: string; fields: unknown[]; active: boolean }>) => Promise<string | null>;
+	createContractTemplate: (data: { name: string; body: string; bodyHtml?: string; fields: unknown[] }) => Promise<string | null>;
+	updateContractTemplate: (id: string, data: Partial<{ name: string; body: string; bodyHtml: string; fields: unknown[]; active: boolean }>) => Promise<string | null>;
 	deleteContractTemplate: (id: string) => Promise<string | null>;
 	loadRecurringInvoices: () => Promise<void>;
 	loadSettings: () => Promise<void>;

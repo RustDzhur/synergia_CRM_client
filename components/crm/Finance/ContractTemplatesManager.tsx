@@ -7,7 +7,9 @@ import { useFinanceStore } from "@/store/useFinanceStore";
 import { apiCall, authHeaders } from "@/store/crmApi";
 import { marketOf } from "@/lib/finance/market";
 import { CATALOG, GROUP_LABEL, GROUP_ORDER, fieldOf, fieldsForCountry, labelOf, tokensIn, type CatalogField, type Country } from "@/lib/finance/contractFields";
+import { htmlToText, textToHtml } from "@/lib/finance/contractRich";
 import FormField from "../shared/FormField";
+import ContractRichEditor, { type RichEditorHandle } from "./ContractRichEditor";
 import { trFor } from "./contractUi";
 
 // Редактор шаблонов договоров. Юрист загружает файл (.docx/.txt) или вставляет текст, затем из палитры перетаскивает в текст поля-меточки
@@ -15,8 +17,8 @@ import { trFor } from "./contractUi";
 // Список полей — lib/finance/contractFields.ts (около 200, с учётом страны); чего нет в списке — добавляется «своим полем».
 
 interface Field { key: string; label: string; type: "text" | "date" | "number" | "money"; source: "manual" | "contact" }
-interface Draft { name: string; body: string; fields: Field[] }
-const EMPTY: Draft = { name: "", body: "", fields: [] };
+interface Draft { name: string; body: string; bodyHtml: string; fields: Field[] }
+const EMPTY: Draft = { name: "", body: "", bodyHtml: "", fields: [] };
 
 const PALETTE = ["#C6FF4D", "#FFD166", "#FF6B6B", "#4ECDC4", "#A78BFA", "#F472B6", "#60A5FA", "#34D399", "#FB923C", "#2DD4BF", "#E879F9", "#94A3B8"];
 const groupColor = (g: string) => PALETTE[Math.max(0, GROUP_ORDER.indexOf(g as never)) % PALETTE.length];
@@ -31,7 +33,7 @@ export default function ContractTemplatesManager() {
 	const [query, setQuery] = useState("");
 	const [allCountries, setAllCountries] = useState(false);
 	const [preview, setPreview] = useState(false);
-	const taRef = useRef<HTMLTextAreaElement>(null);
+	const editorRef = useRef<RichEditorHandle>(null);
 	const fileRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => { loadContractTemplates(); if (!settings) void loadSettings(); }, [loadContractTemplates, loadSettings, settings]);
@@ -39,11 +41,11 @@ export default function ContractTemplatesManager() {
 	const country = (marketOf(settings?.country) as Country | null) ?? null;
 
 	function startNew() { setEditing(null); setDraft({ ...EMPTY }); setPreview(false); }
-	function startEdit(t: { id: string; name: string; body: string; fields: { key: string; label: string; type: string; source: string }[] }) {
+	function startEdit(t: { id: string; name: string; body: string; bodyHtml?: string; fields: { key: string; label: string; type: string; source: string }[] }) {
 		setEditing({ id: t.id });
 		setPreview(false);
 		setDraft({
-			name: t.name, body: t.body,
+			name: t.name, body: t.body, bodyHtml: t.bodyHtml || textToHtml(t.body),
 			fields: t.fields.map((f) => ({
 				key: f.key, label: f.label,
 				type: (["text", "date", "number", "money"].includes(f.type) ? f.type : "text") as Field["type"],
@@ -53,14 +55,8 @@ export default function ContractTemplatesManager() {
 	}
 	function back() { setEditing(null); setDraft(EMPTY); setPreview(false); }
 
-	// Вставка метки {{key}} в позицию курсора (клик по чипу); перетаскивание в текст вставляет её браузер сам — в место, куда отпустили
-	function insertToken(key: string) {
-		const ta = taRef.current;
-		const pos = ta ? (ta.selectionStart ?? draft.body.length) : draft.body.length;
-		const token = `{{${key}}}`;
-		setDraft((d) => ({ ...d, body: d.body.slice(0, pos) + token + d.body.slice(pos) }));
-		requestAnimationFrame(() => { if (ta) { ta.focus(); const p = pos + token.length; ta.setSelectionRange(p, p); } });
-	}
+	// Вставка поля чипом в позицию курсора (клик по чипу палитры); перетаскивание обрабатывает сам редактор — в место, куда отпустили
+	function insertToken(key: string) { editorRef.current?.insertToken(key); }
 
 	function setField(i: number, patch: Partial<Field>) { setDraft((d) => ({ ...d, fields: d.fields.map((f, j) => (j === i ? { ...f, ...patch } : f)) })); }
 	function addField() { setDraft((d) => ({ ...d, fields: [...d.fields, { key: "", label: "", type: "text", source: "manual" }] })); }
@@ -73,7 +69,7 @@ export default function ContractTemplatesManager() {
 			const res = await fetch("/api/contract-templates/import", { method: "POST", headers: authHeaders(false), body: form });
 			const json = (await res.json().catch(() => null)) as { text?: string; message?: string } | null;
 			if (!res.ok || !json?.text) return void toast.error(json?.message || tr("importFailed"));
-			setDraft((d) => ({ ...d, body: json.text as string, name: d.name || file.name.replace(/\.[^.]+$/, "") }));
+			setDraft((d) => ({ ...d, body: json.text as string, bodyHtml: textToHtml(json.text as string), name: d.name || file.name.replace(/\.[^.]+$/, "") }));
 			toast.success(tr("imported"));
 		} catch { toast.error(tr("importFailed")); }
 		if (fileRef.current) fileRef.current.value = "";
@@ -188,6 +184,7 @@ export default function ContractTemplatesManager() {
 							<div>
 								<div className="mb-6 flex flex-wrap items-center gap-8">
 									<span className="text-12 text-[#8c948b]">{tr("yourText")}</span>
+									<span className="inline-flex items-center gap-6 rounded-full bg-[rgba(255,255,255,0.06)] px-10 py-4 text-12 text-[#f1f4ee]"><span className="h-8 w-8 rounded-full bg-[#34D399]" />{tr("autoFields")}{used.length ? ` · ${used.length}` : ""}</span>
 									<input ref={fileRef} type="file" accept=".docx,.txt,.md,text/plain" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void importFile(f); }} />
 									<button type="button" onClick={() => fileRef.current?.click()} className="fs-btn fs-btn-ghost ml-auto h-30"><TbFileImport size={14} /> {tr("importFile")}</button>
 									<button type="button" onClick={() => setPreview((v) => !v)} className="fs-btn fs-btn-ghost h-30"><TbEye size={14} /> {preview ? tr("previewOff") : tr("preview")}</button>
@@ -195,13 +192,12 @@ export default function ContractTemplatesManager() {
 								{preview ? (
 									<pre className="fs-field fs-scroll max-h-[480px] w-full overflow-auto whitespace-pre-wrap p-10 text-12 leading-[1.5]">{previewText}</pre>
 								) : (
-									<textarea
-										ref={taRef}
-										value={draft.body}
-										onChange={(e) => setDraft({ ...draft, body: e.target.value })}
-										rows={16}
+									<ContractRichEditor
+										ref={editorRef}
+										html={draft.bodyHtml}
+										onChange={(h) => setDraft((d) => ({ ...d, bodyHtml: h, body: htmlToText(h) }))}
 										placeholder={tr("placeholder")}
-										className="fs-field fs-scroll w-full resize-y p-10 text-12 leading-[1.5] outline-none"
+										blockLabels={{ p: tr("styleNormal") }}
 									/>
 								)}
 								{unknown.length > 0 && (

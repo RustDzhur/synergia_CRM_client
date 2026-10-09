@@ -7,6 +7,7 @@ const toDTO = (t: any) => ({
     id: t.id,
     name: t.name,
     body: t.body ?? "",
+    bodyHtml: t.bodyHtml ?? "",
     fields: Array.isArray(t.fields) ? t.fields : [],
     active: !!t.active,
 });
@@ -30,6 +31,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const data: Record<string, unknown> = {};
     if (typeof b.name === "string") data.name = b.name.trim().slice(0, 120);
     if (typeof b.body === "string") data.body = b.body.slice(0, 60000);
+    if (typeof b.bodyHtml === "string") data.bodyHtml = b.bodyHtml.slice(0, 200000) || null;
     if (Array.isArray(b.fields)) data.fields = b.fields.map(cleanField).filter(Boolean).slice(0, 200);
     if (typeof b.active === "boolean") data.active = b.active;
     const updated = await prisma.contractTemplate.update({ where: { id: params.id }, data });

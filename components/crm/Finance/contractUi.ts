@@ -34,6 +34,8 @@ const D = {
 	firmTitle: { en: "Your firm’s details for contracts", ua: "Реквізити вашої фірми для договорів", de: "Daten Ihrer Firma für Verträge", uz: "Firmangiz rekvizitlari" },
 	firmHint: { en: "Filled from the accounting settings. Add what is missing: position and basis of the signer, registration numbers, bank codes.", ua: "Підставляються з налаштувань бухгалтерії. Додайте те, чого бракує: посаду й підставу підписанта, реєстраційні номери, банківські коди.", de: "Wird aus den Buchhaltungseinstellungen übernommen. Ergänzen Sie, was fehlt: Position und Befugnis des Unterzeichners, Registernummern, Bankcodes.", uz: "Buxgalteriya sozlamalaridan olinadi. Yetishmaganini qo‘shing: imzolovchi lavozimi va asosi, ro‘yxat raqamlari, bank kodlari." },
 	firmSave: { en: "Save firm details", ua: "Зберегти реквізити фірми", de: "Firmendaten speichern", uz: "Firma rekvizitlarini saqlash" },
+	autoFields: { en: "Auto fields active", ua: "Авто-поля активні", de: "Auto-Felder aktiv", uz: "Avto-maydonlar faol" },
+	styleNormal: { en: "Normal", ua: "Звичайний", de: "Normal", uz: "Oddiy" },
 	// форма договора
 	dataTitle: { en: "Contract data", ua: "Дані для договору", de: "Vertragsdaten", uz: "Shartnoma ma’lumotlari" },
 	dataHint: { en: "Taken from the client card and your settings. Fill the highlighted ones — they are empty.", ua: "Взято з картки клієнта та ваших налаштувань. Заповніть підсвічені — вони порожні.", de: "Aus Kundenkarte und Einstellungen übernommen. Füllen Sie die markierten aus – sie sind leer.", uz: "Mijoz kartasi va sozlamalardan olindi. Belgilanganlarni to‘ldiring — ular bo‘sh." },
