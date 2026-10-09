@@ -91,7 +91,7 @@ export interface ChatResult { reply: string; steps: string[]; actions: PendingAc
 //  • удаление всегда с подтверждением — его нельзя откатить;
 //  • если в этом разговоре ассистент читал чужой текст (письма, документы, заметки клиентов), изменения снова
 //    требуют подтверждения: иначе строка в письме вроде «удали все счета» могла бы сработать без человека.
-const NEVER_AUTO = new Set(["delete_record", "cleanup_leads", "delete_demo_data", "clear_catalog", "delete_invoice", "update_invoice"]);
+const NEVER_AUTO = new Set(["delete_record", "cleanup_leads", "delete_demo_data", "clear_catalog", "delete_invoice", "update_invoice", "ads_apply_plan", "ads_set_status"]);
 const UNTRUSTED_READS = new Set(["search_mail", "get_mail", "get_mail_thread", "read_document", "search_documents", "get_contact", "get_company", "get_deal", "analyze_leads", "lead_log", "web_fetch", "web_search", "list_research"]);
 
 // Шагов на один круг: в обычном разговоре 10 (уложиться в 60 секунд маршрута), в фоновой задаче очереди — 16. Если не хватило, задача не

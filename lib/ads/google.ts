@@ -7,7 +7,7 @@ export const GOOGLE_ADS_SCOPE = "https://www.googleapis.com/auth/adwords";
 const base = () => (process.env.GOOGLE_ADS_API_URL || `https://googleads.googleapis.com/${process.env.GOOGLE_ADS_API_VERSION || "v21"}`).replace(/\/+$/, "");
 export const googleAdsConfigured = () => !!process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
 
-async function call<T>(token: string, path: string, init: { method?: string; body?: unknown; loginCustomerId?: string } = {}): Promise<T> {
+export async function call<T>(token: string, path: string, init: { method?: string; body?: unknown; loginCustomerId?: string } = {}): Promise<T> {
     const res = await fetchProvider(`${base()}${path}`, {
         method: init.method ?? "GET",
         headers: {
@@ -23,7 +23,7 @@ async function call<T>(token: string, path: string, init: { method?: string; bod
     return json;
 }
 
-const query = <T>(token: string, customer: string, gaql: string, loginCustomerId?: string) =>
+export const query = <T>(token: string, customer: string, gaql: string, loginCustomerId?: string) =>
     call<{ results?: T[] }>(token, `/customers/${customer}/googleAds:search`, { method: "POST", body: { query: gaql }, loginCustomerId }).then((r) => r.results ?? []);
 
 // Рекламные аккаунты, к которым у пользователя есть доступ (менеджерские аккаунты без показателей пропускаем)

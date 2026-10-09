@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import { apiCall } from "./crmApi";
 
 // Робот-офис на клиенте (сервер — lib/office). Данные обновляются опросом: часто, пока кто-то работает или ждёт, и редко в покое.
-export type Skill = "crm" | "quotes" | "invoices" | "finance" | "stock" | "purchasing" | "production" | "tasks" | "mail" | "documents" | "blog" | "hr" | "data" | "blogwrite" | "monitor" | "web";
+export type Skill = "crm" | "quotes" | "invoices" | "finance" | "stock" | "purchasing" | "production" | "tasks" | "mail" | "documents" | "blog" | "hr" | "data" | "blogwrite" | "monitor" | "web" | "ads";
 export type Zone = "sales" | "finance" | "warehouse" | "office" | "marketing" | "service" | "platform";
 export type AgentName = "seo-agent" | "article-writer" | "mail-sorter";
 export interface PlatformInfo { errors: { telegram: boolean; items: { at: string; title: string; count: number; source: string }[] }; agents: Partial<Record<AgentName, { lastActivity: string; seenAt: string; note: string }>> }
