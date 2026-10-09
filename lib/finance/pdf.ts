@@ -8,7 +8,7 @@ export type { TemplateDef, TemplateVariant } from "./templates";
 
 // Данные шрифта из data-URI — см. scripts/ttf-data-uri-loader.js и правило webpack в next.config.js. Шрифт встроен
 // в бандл, поэтому рендер PDF не зависит от файлов node_modules: иначе pdfkit для своей встроенной гарнитуры
-// Helvetica лениво грузит node_modules/pdfkit/js/standard-fonts/*, которых в функциях на Vercel нет, и генерация
+// Helvetica лениво грузит node_modules/pdfkit/js/standard-fonts/*, которых в serverless-функциях нет, и генерация
 // падала с "Cannot find module '#standard-fonts/Helvetica'". Noto Sans заодно покрывает кириллицу и знаки €/₴/№,
 // которых у Helvetica нет.
 // Экспортируется: печать складских документов (lib/finance/stockDocPdf.ts) собирает свой простой PDF

@@ -16,7 +16,7 @@ export type MediaKind = "image" | "file" | "voice";
 export const MAX_MEDIA_MB = 20;
 export const MAX_MEDIA_BYTES = MAX_MEDIA_MB * 1024 * 1024;
 
-// Предел размера запроса у функций Vercel — 4,5 МБ, поэтому из браузера принимаем файл не больше 4 МБ
+// Предел размера запроса — 4,5 МБ, поэтому из браузера принимаем файл не больше 4 МБ
 export const MAX_ATTACH_MB = 4;
 export const MAX_ATTACH_BYTES = MAX_ATTACH_MB * 1024 * 1024;
 

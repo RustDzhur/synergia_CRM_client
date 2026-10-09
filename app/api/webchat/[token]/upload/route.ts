@@ -27,7 +27,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
     if (!validVisitor(visitor) || !(file instanceof File)) return corsJson({ message: "Bad request" }, 400);
     const mime = file.type || "application/octet-stream";
     if (!ALLOWED.test(mime)) return corsJson({ message: "This file type is not accepted" }, 415);
-    // Предел тела запроса у функций Vercel — 4,5 МБ, поэтому проверяем размер сами: иначе отказ пришёл бы
+    // Предел тела запроса — 4,5 МБ, поэтому проверяем размер сами: иначе отказ пришёл бы
     // без понятного текста
     if (file.size > 4 * 1024 * 1024) return corsJson({ message: "The file is too large (max 4 MB)" }, 413);
 

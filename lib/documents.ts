@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 
 type Doc = any;
 
-export const MAX_UPLOAD_MB = 4; // предел размера запроса у функций Vercel — 4,5 МБ
+export const MAX_UPLOAD_MB = 4; // предел размера запроса запроса — 4,5 МБ
 export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
 // Сколько файлов и фото может хранить фирма всего — зависит от тарифа (app/config/plans.ts)
