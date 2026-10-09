@@ -9,6 +9,40 @@ export const PRACTICE_ROLES: Role[] = ["advisor", "counsel"];
 export const isPracticeRole = (r: unknown): r is "advisor" | "counsel" => r === "advisor" || r === "counsel";
 /** Разделы, которые клиент может открыть специалисту практики. Оплата, состав фирмы, настройки, автоматизация, маркетинг и почта — никогда. */
 export const PRACTICE_GRANTABLE: Module[] = ["inventory", "crm", "tasks", "collab"];
+
+// Тонкие права специалиста практики внутри выданных разделов. Хранятся в том же списке modules связи с префиксом «p:».
+// Нет ни одного «p:» — прежнее поведение (раздел целиком). Есть хотя бы один — открыто только перечисленное (lib/practice/gate.ts).
+export const PERM_PREFIX = "p:";
+export const PRACTICE_PERMS = [
+    { id: "invoices", module: "inventory" }, { id: "expenses", module: "inventory" }, { id: "bank", module: "inventory" },
+    { id: "stock", module: "inventory" }, { id: "reports", module: "inventory" }, { id: "contracts", module: "inventory" },
+    { id: "export", module: "inventory" }, { id: "import", module: "inventory" },
+    { id: "clients", module: "crm" }, { id: "deals", module: "crm" },
+] as const;
+export type PracticePerm = (typeof PRACTICE_PERMS)[number]["id"];
+export const isPerm = (v: unknown): v is string => typeof v === "string" && v.startsWith(PERM_PREFIX) && PRACTICE_PERMS.some((p) => PERM_PREFIX + p.id === v);
+export const permsOf = (modules: string[]): PracticePerm[] => modules.filter(isPerm).map((m) => m.slice(PERM_PREFIX.length) as PracticePerm);
+
+/** Какое тонкое право нужно для адреса. null — отдельного права нет (хватает раздела). */
+export function permForPath(pathname: string): PracticePerm | null {
+    const p = pathname.replace(/^\/api\//, "");
+    const [first, second] = p.split("/");
+    switch (first) {
+        case "invoices": case "quotes": case "orders": case "recurring-invoices": return "invoices";
+        case "expenses": case "suppliers": case "supplier-invoices": case "purchases": return "expenses";
+        case "bank": case "reconciliation": return "bank";
+        case "products": case "stock": case "stock-docs": case "warehouses": case "boms": case "production": case "production-orders": case "pos": case "novaposhta": case "ukrposhta": case "marketplace": return "stock";
+        case "contracts": case "contract-templates": case "legal": return "contracts";
+        case "export": return "export";
+        case "import": return "import";
+        case "contacts": case "companies": return "clients";
+        case "deals": case "stages": return "deals";
+        case "finance": return second === "settings" ? null : "reports";
+        case "review": case "assets": case "issued-docs": return "reports";
+        default: return null;
+    }
+}
+
 export const ASSIGNABLE_ROLES: Role[] = ["admin", "manager", "employee", "viewer"]; // владельцем можно только быть, не назначить
 export const MODULES: Module[] = ["crm", "tasks", "company", "collab", "mail", "marketing", "inventory", "automation", "settings", "billing", "members"];
 // Разделы, которые можно выдавать сотруднику выборочно (оплата и состав фирмы — только владельцу и администратору по роли)
