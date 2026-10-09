@@ -20,19 +20,34 @@
 
 1. **CI** — `.github/workflows/ci.yml`: на каждый пуш и пул-реквест ставит зависимости,
    генерирует клиент Prisma, проверяет типы (`tsc --noEmit`) и собирает приложение (`next build`).
-2. **Автовыкладка** — `deploy/autodeploy.sh` на сервере, запускается по cron раз в 2 минуты:
+2. **Автовыкладка** — `deploy/vps/autodeploy.sh` на сервере, запускается по cron раз в 2 минуты:
    делает `git fetch` ветки выкладки и, если появился новый коммит **с зелёным CI**,
    выполняет `git reset --hard` и `docker compose up -d --build`.
 
 Cron на сервере:
 
 ```
-*/2 * * * * flock -n /tmp/crm-autodeploy.lock /home/server/crm-duplicate/deploy/autodeploy.sh
+*/2 * * * * flock -n /tmp/crm-autodeploy.lock /home/server/crm-duplicate/deploy/vps/autodeploy.sh
 ```
 
-Настройки (ветка, репозиторий, обязателен ли зелёный CI) — в `deploy/autodeploy.env`
-(образец: `deploy/autodeploy.env.example`). Выкладывается ветка `main` — единственная основная ветка (с 03.10.2026 миграцию на
-PostgreSQL слили в `main`; прежняя линия на MongoDB сохранена тегом `backup/main-before-merge-20261003`).
+Настройки (ветка, репозиторий, обязателен ли зелёный CI) — в `deploy/vps/autodeploy.env`
+(образец: `deploy/vps/autodeploy.env.example`). Выкладывается ветка **`deploy`**: CI публикует в неё только коммит
+с зелёными проверками (`.github/workflows/ci.yml`, задача `publish-deploy`), поэтому серверу не нужен доступ к API CI.
+Основная ветка `main` — единственная линия разработки (с 03.10.2026 миграцию на PostgreSQL слили в `main`;
+прежняя линия на MongoDB сохранена тегом `backup/main-before-merge-20261003`).
+
+**Жива ли автовыкладка** — три команды на сервере (они только *показывают* состояние, ничего не включают;
+cron ставится один раз через `crontab -e` — строка выше):
+
+```bash
+crontab -l                       # есть ли строка запуска раз в 2 минуты
+tail -20 ~/crm-autodeploy.log    # «готово: запущено в …» = последняя выкладка удалась
+cat ~/.crm-deployed              # коммит, который реально запущен на сервере
+```
+
+Если в журнале «три неудачные сборки подряд — пауза 30 минут, потом попробую снова», скрипт ждёт и пробует
+сам; разбудить сразу — `rm -f ~/.crm-deploy-tries`. Ручная выкладка одной командой (когда нужно немедленно):
+`cd ~/crm-duplicate && git pull && ./deploy/vps/up.sh`.
 
 **Какая версия живёт на сервере** — видно в ответе `/api/health`:
 
