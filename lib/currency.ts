@@ -21,17 +21,25 @@ export function roundAmount(amount: number, currency: DisplayCurrency): number {
 	return Math.round(amount);
 }
 
+/** Есть ли пригодный курс для валюты (конечное положительное число). */
+export const hasRate = (rates: Record<string, number> | null, currency: string): boolean => {
+	const r = rates?.[currency];
+	return typeof r === "number" && isFinite(r) && r > 0;
+};
+
 /** Конвертирует цену в евро в валюту локали; если курса нет — возвращает цену в евро как есть. */
 export function convertEur(eur: number, currency: DisplayCurrency, rates: Record<string, number> | null): number {
 	if (currency === "EUR") return eur;
-	const rate = rates?.[currency];
-	if (!rate || !isFinite(rate)) return eur;
-	return roundAmount(eur * rate, currency);
+	if (!hasRate(rates, currency)) return eur;
+	return roundAmount(eur * rates![currency], currency);
 }
 
 /** Готовая строка цены для карточки тарифа: «€20», «900 ₴», «290 000 soʻm». */
 export function formatPlanPrice(eur: number, locale: string, rates: Record<string, number> | null): string {
 	const currency = planCurrency(locale);
+	// Курса ещё нет (первый рендер / сбой сети): показываем честные евро.
+	// Иначе получалось «20 ₴» — число евро под символом местной валюты (в 45 раз дешевле).
+	if (currency !== "EUR" && !hasRate(rates, currency)) return `€${Math.round(eur)}`;
 	const amount = convertEur(eur, currency, rates);
 	if (currency === "EUR") return `€${amount}`;
 	const tag = locale === "ua" ? "uk" : locale;
