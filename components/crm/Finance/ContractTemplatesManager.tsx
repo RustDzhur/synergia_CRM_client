@@ -1,58 +1,47 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocale } from "next-intl";
 import toast from "react-hot-toast";
-import { TbPencil, TbPlus, TbTrash } from "react-icons/tb";
+import { TbEye, TbFileImport, TbPencil, TbPlus, TbTrash } from "react-icons/tb";
 import { useFinanceStore } from "@/store/useFinanceStore";
+import { apiCall, authHeaders } from "@/store/crmApi";
+import { marketOf } from "@/lib/finance/market";
+import { CATALOG, GROUP_LABEL, GROUP_ORDER, fieldOf, fieldsForCountry, labelOf, tokensIn, type CatalogField, type Country } from "@/lib/finance/contractFields";
 import FormField from "../shared/FormField";
+import { trFor } from "./contractUi";
 
-// Редактор шаблонов договоров. Текст вставляется сверху, а в него — специальные поля-меточки:
-// их видно как цветные чипы, их можно взять мышкой и перетащить в текст (или кликнуть — встанет в место курсора).
-// Каждый чип подписан, что за поле он подставляет. Сохраняется шаблон с именем (аренда, найм, подряд…).
+// Редактор шаблонов договоров. Юрист загружает файл (.docx/.txt) или вставляет текст, затем из палитры перетаскивает в текст поля-меточки
+// (имя, адрес, паспорт, коды, суммы…): при создании договора они подставляются из карточки выбранного клиента и настроек фирмы.
+// Список полей — lib/finance/contractFields.ts (около 200, с учётом страны); чего нет в списке — добавляется «своим полем».
 
 interface Field { key: string; label: string; type: "text" | "date" | "number" | "money"; source: "manual" | "contact" }
 interface Draft { name: string; body: string; fields: Field[] }
-
 const EMPTY: Draft = { name: "", body: "", fields: [] };
 
-// Встроенные поля договора — их значения подставляются сами из карточки клиента и настроек фирмы.
-const BUILTIN: { key: string; label: string }[] = [
-	{ key: "number", label: "Номер договора" },
-	{ key: "date", label: "Дата договора" },
-	{ key: "today", label: "Сегодняшняя дата (день печати)" },
-	{ key: "customer", label: "Клиент (название или ФИО)" },
-	{ key: "customerPerson", label: "Контактное лицо клиента" },
-	{ key: "customerAddress", label: "Адрес клиента" },
-	{ key: "customerTaxId", label: "Код клиента (ЄДРПОУ / ІПН / STIR)" },
-	{ key: "customerPhone", label: "Телефон клиента" },
-	{ key: "customerEmail", label: "E-mail клиента" },
-	{ key: "value", label: "Сумма договора" },
-	{ key: "start", label: "Начало работ" },
-	{ key: "end", label: "Окончание работ" },
-	{ key: "firm", label: "Название фирмы (исполнитель)" },
-	{ key: "firmAddress", label: "Адрес фирмы" },
-	{ key: "firmTaxId", label: "Код фирмы (ЄДРПОУ / ІПН / STIR)" },
-	{ key: "signer", label: "Подписант (ФОП или директор)" },
-	{ key: "firmPhone", label: "Телефон фирмы" },
-	{ key: "firmEmail", label: "E-mail фирмы" },
-	{ key: "firmWebsite", label: "Сайт фирмы" },
-	{ key: "firmBank", label: "Банк фирмы" },
-	{ key: "firmIban", label: "IBAN фирмы" },
-];
 const PALETTE = ["#C6FF4D", "#FFD166", "#FF6B6B", "#4ECDC4", "#A78BFA", "#F472B6", "#60A5FA", "#34D399", "#FB923C", "#2DD4BF", "#E879F9", "#94A3B8"];
-const chipColor = (i: number) => PALETTE[i % PALETTE.length];
+const groupColor = (g: string) => PALETTE[Math.max(0, GROUP_ORDER.indexOf(g as never)) % PALETTE.length];
 
 export default function ContractTemplatesManager() {
-	const { contractTemplates, loadContractTemplates, createContractTemplate, updateContractTemplate, deleteContractTemplate } = useFinanceStore();
+	const locale = useLocale();
+	const tr = trFor(locale);
+	const { contractTemplates, loadContractTemplates, createContractTemplate, updateContractTemplate, deleteContractTemplate, settings, loadSettings } = useFinanceStore();
 	const [editing, setEditing] = useState<{ id: string } | null>(null);
 	const [draft, setDraft] = useState<Draft>(EMPTY);
 	const [saving, setSaving] = useState(false);
+	const [query, setQuery] = useState("");
+	const [allCountries, setAllCountries] = useState(false);
+	const [preview, setPreview] = useState(false);
 	const taRef = useRef<HTMLTextAreaElement>(null);
+	const fileRef = useRef<HTMLInputElement>(null);
 
-	useEffect(() => { loadContractTemplates(); }, [loadContractTemplates]);
+	useEffect(() => { loadContractTemplates(); if (!settings) void loadSettings(); }, [loadContractTemplates, loadSettings, settings]);
 
-	function startNew() { setEditing(null); setDraft({ ...EMPTY }); }
+	const country = (marketOf(settings?.country) as Country | null) ?? null;
+
+	function startNew() { setEditing(null); setDraft({ ...EMPTY }); setPreview(false); }
 	function startEdit(t: { id: string; name: string; body: string; fields: { key: string; label: string; type: string; source: string }[] }) {
 		setEditing({ id: t.id });
+		setPreview(false);
 		setDraft({
 			name: t.name, body: t.body,
 			fields: t.fields.map((f) => ({
@@ -62,15 +51,14 @@ export default function ContractTemplatesManager() {
 			})),
 		});
 	}
-	function back() { setEditing(null); setDraft(EMPTY); }
+	function back() { setEditing(null); setDraft(EMPTY); setPreview(false); }
 
-	// Вставка метки {{key}} в текст: в позицию курсора (или в конец)
+	// Вставка метки {{key}} в позицию курсора (клик по чипу); перетаскивание в текст вставляет её браузер сам — в место, куда отпустили
 	function insertToken(key: string) {
 		const ta = taRef.current;
 		const pos = ta ? (ta.selectionStart ?? draft.body.length) : draft.body.length;
 		const token = `{{${key}}}`;
-		const next = draft.body.slice(0, pos) + token + draft.body.slice(pos);
-		setDraft((d) => ({ ...d, body: next }));
+		setDraft((d) => ({ ...d, body: d.body.slice(0, pos) + token + d.body.slice(pos) }));
 		requestAnimationFrame(() => { if (ta) { ta.focus(); const p = pos + token.length; ta.setSelectionRange(p, p); } });
 	}
 
@@ -78,26 +66,58 @@ export default function ContractTemplatesManager() {
 	function addField() { setDraft((d) => ({ ...d, fields: [...d.fields, { key: "", label: "", type: "text", source: "manual" }] })); }
 	function removeField(i: number) { setDraft((d) => ({ ...d, fields: d.fields.filter((_, j) => j !== i) })); }
 
+	async function importFile(file: File) {
+		const form = new FormData();
+		form.append("file", file);
+		try {
+			const res = await fetch("/api/contract-templates/import", { method: "POST", headers: authHeaders(false), body: form });
+			const json = (await res.json().catch(() => null)) as { text?: string; message?: string } | null;
+			if (!res.ok || !json?.text) return void toast.error(json?.message || tr("importFailed"));
+			setDraft((d) => ({ ...d, body: json.text as string, name: d.name || file.name.replace(/\.[^.]+$/, "") }));
+			toast.success(tr("imported"));
+		} catch { toast.error(tr("importFailed")); }
+		if (fileRef.current) fileRef.current.value = "";
+	}
+
 	async function save() {
-		if (!draft.name.trim()) return toast.error("Укажите название шаблона");
+		if (!draft.name.trim()) return toast.error(tr("nameRequired"));
 		setSaving(true);
 		const err = editing ? await updateContractTemplate(editing.id, draft) : await createContractTemplate(draft);
 		setSaving(false);
 		if (err) return toast.error(err);
-		toast.success("Сохранено");
+		toast.success(tr("saved"));
 		back();
 	}
 	async function remove(id: string) { const err = await deleteContractTemplate(id); if (err) toast.error(err); }
 
+	// Палитра: поля страны фирмы (или все), с поиском, по группам
+	const groups = useMemo(() => {
+		const q = query.trim().toLowerCase();
+		const list = fieldsForCountry(allCountries ? null : country, CATALOG).filter((f) => !q || f.key.toLowerCase().includes(q) || labelOf(f, locale).toLowerCase().includes(q));
+		return GROUP_ORDER.map((g) => ({ id: g, items: list.filter((f) => f.group === g) })).filter((g) => g.items.length);
+	}, [query, allCountries, country, locale]);
+
+	const used = useMemo(() => tokensIn(draft.body), [draft.body]);
+	const customKeys = useMemo(() => new Set(draft.fields.map((f) => f.key.toLowerCase())), [draft.fields]);
+	const unknown = used.filter((k) => !fieldOf(k) && !customKeys.has(k.toLowerCase()));
+	const previewText = useMemo(
+		() => draft.body.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (whole, k: string) => {
+			const f = fieldOf(k);
+			const c = draft.fields.find((x) => x.key.toLowerCase() === k.toLowerCase());
+			return f ? `‹${labelOf(f, locale)}›` : c ? `‹${c.label || c.key}›` : whole;
+		}),
+		[draft.body, draft.fields, locale]
+	);
+
 	const hasEditor = editing !== null || draft.name !== "" || draft.body !== "" || draft.fields.length > 0;
-	const chip = (key: string, label: string, color: string) => (
+	const chip = (key: string, label: string, color: string, title?: string) => (
 		<button
 			type="button"
 			key={key}
 			draggable
-			onDragStart={(e) => e.dataTransfer.setData("text/plain", key)}
+			onDragStart={(e) => { e.dataTransfer.setData("text/plain", `{{${key}}}`); e.dataTransfer.effectAllowed = "copy"; }}
 			onClick={() => insertToken(key)}
-			title={`${label} — в текст встанет ${`{{${key}}}`}`}
+			title={title ?? `{{${key}}}`}
 			className="cursor-grab select-none rounded-full px-10 py-4 text-12 font-semibold text-[#0A0A0A] shadow-[0_2px_6px_rgba(0,0,0,0.25)] transition-transform hover:scale-105 active:cursor-grabbing"
 			style={{ background: color }}
 		>
@@ -106,28 +126,28 @@ export default function ContractTemplatesManager() {
 	);
 
 	return (
-		<div className="fs-card p-16 md:p-24">
+		<div className="flex flex-col gap-16">
+			{!hasEditor && <FirmContractData />}
+			<div className="fs-card p-16 md:p-24">
 				{!hasEditor ? (
 					<>
 						<div className="mb-12 flex items-center justify-between">
-							<h3 className="text-14 font-semibold text-[#f1f4ee]">Шаблоны договоров</h3>
-							<button type="button" onClick={startNew} className="fs-btn fs-btn-primary h-36"><TbPlus size={15} /> Новый шаблон</button>
+							<h3 className="text-14 font-semibold text-[#f1f4ee]">{tr("templates")}</h3>
+							<button type="button" onClick={startNew} className="fs-btn fs-btn-primary h-36"><TbPlus size={15} /> {tr("newTemplate")}</button>
 						</div>
 						{contractTemplates.length === 0 ? (
-							<p className="fs-card p-20 text-center text-12 text-[#8c948b]">
-								Шаблонов пока нет. Создайте первый: «Договор аренды», «Договор найма»… — вставьте текст и перетащите в него поля-меточки.
-							</p>
+							<p className="fs-card p-20 text-center text-12 text-[#8c948b]">{tr("empty")}</p>
 						) : (
 							<ul className="flex flex-col gap-8">
 								{contractTemplates.map((t) => (
 									<li key={t.id} className="fs-card flex items-center justify-between gap-8 p-12">
 										<div className="min-w-0">
 											<p className="text-13 font-semibold text-[#f1f4ee]">{t.name}</p>
-											<p className="text-11 text-[#8c948b]">{t.fields.length} своих полей</p>
+											<p className="text-11 text-[#8c948b]">{tokensIn(t.body).length} {tr("used")} · {t.fields.length} {tr("ownFields")}</p>
 										</div>
 										<div className="flex items-center gap-6">
-											<button type="button" onClick={() => startEdit(t)} className="fs-btn fs-btn-ghost h-32"><TbPencil size={14} /> Изменить</button>
-											<button type="button" onClick={() => void remove(t.id)} className="fs-btn fs-btn-ghost h-32 text-[#9AA396] hover:text-danger"><TbTrash size={14} /></button>
+											<button type="button" onClick={() => startEdit(t)} className="fs-btn fs-btn-ghost h-32"><TbPencil size={14} /> {tr("edit")}</button>
+											<button type="button" onClick={() => void remove(t.id)} className="fs-btn fs-btn-ghost h-32 text-[#9AA396] hover:text-danger" aria-label="delete"><TbTrash size={14} /></button>
 										</div>
 									</li>
 								))}
@@ -136,68 +156,163 @@ export default function ContractTemplatesManager() {
 					</>
 				) : (
 					<>
-						<h3 className="mb-12 text-14 font-semibold text-[#f1f4ee]">{editing ? "Изменить шаблон" : "Новый шаблон"}</h3>
+						<h3 className="mb-12 text-14 font-semibold text-[#f1f4ee]">{editing ? tr("editTemplate") : tr("newTemplate")}</h3>
 						<div className="flex flex-col gap-10">
-							<FormField label="Название шаблона (например «Договор аренды»)" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+							<FormField label={tr("nameLabel")} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
 
-							{/* Палитра полей-меток: перетащите в текст или кликните */}
 							<div className="fs-card p-12">
-								<span className="mb-8 block text-12 font-medium text-[#f1f4ee]">Поля-меточки (перетащите в текст или кликните)</span>
-								<div className="flex flex-wrap gap-6">
-									{BUILTIN.map((f, i) => chip(f.key, f.label, chipColor(i)))}
-									{draft.fields.map((f, i) => f.key ? chip(f.key, f.label || f.key, chipColor(i + BUILTIN.length)) : null)}
+								<div className="mb-8 flex flex-wrap items-center gap-8">
+									<span className="text-12 font-medium text-[#f1f4ee]">{tr("paletteTitle")}</span>
+									<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr("search")} className="fs-field ml-auto h-30 min-w-[180px] flex-1 px-8 text-12 outline-none md:max-w-[280px]" />
+									<select value={allCountries ? "all" : "mine"} onChange={(e) => setAllCountries(e.target.value === "all")} className="fs-field h-30 px-8 text-12 outline-none">
+										<option value="mine">{tr("forCountry")}</option>
+										<option value="all">{tr("allCountries")}</option>
+									</select>
+								</div>
+								<div className="fs-scroll flex max-h-[320px] flex-col gap-8 overflow-y-auto pr-4">
+									{draft.fields.some((f) => f.key) && (
+										<div>
+											<p className="mb-4 text-11 text-[#8c948b]">{tr("customFields")}</p>
+											<div className="flex flex-wrap gap-6">{draft.fields.map((f, i) => (f.key ? chip(f.key, f.label || f.key, PALETTE[(i + 5) % PALETTE.length]) : null))}</div>
+										</div>
+									)}
+									{groups.map((g) => (
+										<details key={g.id} open={g.id === "contract" || !!query.trim() || g.id === "person"}>
+											<summary className="cursor-pointer select-none text-12 font-medium text-[#cfd4cb]">{GROUP_LABEL[g.id][locale === "de" || locale === "ua" || locale === "uz" ? locale : "en"]} <span className="text-[#8c948b]">({g.items.length})</span></summary>
+											<div className="mt-6 flex flex-wrap gap-6">{g.items.map((f: CatalogField) => chip(f.key, labelOf(f, locale), groupColor(f.group), `{{${f.key}}}`))}</div>
+										</details>
+									))}
 								</div>
 							</div>
 
-							{/* Текст договора — сюда перетаскиваются метки */}
 							<div>
-								<span className="mb-6 block text-12 text-[#8c948b]">Текст договора</span>
-								<textarea
-									ref={taRef}
-									value={draft.body}
-									onChange={(e) => setDraft({ ...draft, body: e.target.value })}
-									onDragOver={(e) => e.preventDefault()}
-									onDrop={(e) => { e.preventDefault(); const k = e.dataTransfer.getData("text/plain"); if (k) insertToken(k); }}
-									rows={14}
-									placeholder={"Вставьте текст договора. В нужное место перетащите метку, например {{customer}} и {{passport}}."}
-									className="fs-field fs-scroll w-full resize-y p-10 text-12 leading-[1.5] outline-none"
-								/>
+								<div className="mb-6 flex flex-wrap items-center gap-8">
+									<span className="text-12 text-[#8c948b]">{tr("yourText")}</span>
+									<input ref={fileRef} type="file" accept=".docx,.txt,.md,text/plain" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void importFile(f); }} />
+									<button type="button" onClick={() => fileRef.current?.click()} className="fs-btn fs-btn-ghost ml-auto h-30"><TbFileImport size={14} /> {tr("importFile")}</button>
+									<button type="button" onClick={() => setPreview((v) => !v)} className="fs-btn fs-btn-ghost h-30"><TbEye size={14} /> {preview ? tr("previewOff") : tr("preview")}</button>
+								</div>
+								{preview ? (
+									<pre className="fs-field fs-scroll max-h-[480px] w-full overflow-auto whitespace-pre-wrap p-10 text-12 leading-[1.5]">{previewText}</pre>
+								) : (
+									<textarea
+										ref={taRef}
+										value={draft.body}
+										onChange={(e) => setDraft({ ...draft, body: e.target.value })}
+										rows={16}
+										placeholder={tr("placeholder")}
+										className="fs-field fs-scroll w-full resize-y p-10 text-12 leading-[1.5] outline-none"
+									/>
+								)}
+								{unknown.length > 0 && (
+									<p className="mt-6 text-11 text-[#F4A100]">{tr("unknown")} {unknown.map((k) => `{{${k}}}`).join(", ")}</p>
+								)}
 							</div>
 
-							{/* Свои поля */}
 							<div>
 								<div className="mb-8 flex items-center justify-between">
-									<span className="text-12 text-[#8c948b]">Свои поля (паспорт, адрес прописки, арендатор…)</span>
-									<button type="button" onClick={addField} className="fs-btn fs-btn-ghost h-32"><TbPlus size={14} /> Добавить поле</button>
+									<span className="text-12 text-[#8c948b]">{tr("customFields")}</span>
+									<button type="button" onClick={addField} className="fs-btn fs-btn-ghost h-32"><TbPlus size={14} /> {tr("addField")}</button>
 								</div>
-								{draft.fields.length === 0 && <p className="text-11 text-[#8c948b]">Добавьте свои поля, чтобы договор подставлял данные, которых нет среди встроенных.</p>}
 								<ul className="flex flex-col gap-8">
 									{draft.fields.map((f, i) => (
 										<li key={i} className="fs-card flex flex-wrap items-end gap-8 p-10">
 											<div className="min-w-[130px] flex-1">
-												<span className="mb-4 block text-11 text-[#8c948b]">Ключ (латиницей, для {"{{…}}"})</span>
+												<span className="mb-4 block text-11 text-[#8c948b]">{tr("key")}</span>
 												<input value={f.key} onChange={(e) => setField(i, { key: e.target.value.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase() })} className="fs-field w-full px-8 py-6 text-12 outline-none" placeholder="passport" />
 											</div>
 											<div className="min-w-[160px] flex-1">
-												<span className="mb-4 block text-11 text-[#8c948b]">Подпись (что за поле)</span>
-												<input value={f.label} onChange={(e) => setField(i, { label: e.target.value })} className="fs-field w-full px-8 py-6 text-12 outline-none" placeholder="Паспортные данные" />
+												<span className="mb-4 block text-11 text-[#8c948b]">{tr("label")}</span>
+												<input value={f.label} onChange={(e) => setField(i, { label: e.target.value })} className="fs-field w-full px-8 py-6 text-12 outline-none" />
 											</div>
 											<label className="flex items-center gap-6 pb-6 text-12 text-[#8c948b]">
 												<input type="checkbox" checked={f.source === "contact"} onChange={(e) => setField(i, { source: e.target.checked ? "contact" : "manual" })} className="accent-[#C6FF4D]" />
-												из карточки клиента
+												{tr("fromCard")}
 											</label>
-											<button type="button" onClick={() => removeField(i)} className="fs-btn fs-btn-ghost h-32 text-[#9AA396] hover:text-danger"><TbTrash size={14} /></button>
+											<button type="button" onClick={() => removeField(i)} className="fs-btn fs-btn-ghost h-32 text-[#9AA396] hover:text-danger" aria-label="delete"><TbTrash size={14} /></button>
 										</li>
 									))}
 								</ul>
 							</div>
 						</div>
 						<div className="mt-16 flex justify-end gap-8">
-							<button type="button" onClick={() => { setEditing(null); setDraft(EMPTY); }} className="fs-btn fs-btn-ghost h-38">Назад</button>
-							<button type="button" onClick={() => void save()} disabled={saving} className="fs-btn fs-btn-primary h-38 disabled:opacity-[0.5]">Сохранить</button>
+							<button type="button" onClick={back} className="fs-btn fs-btn-ghost h-38">{tr("back")}</button>
+							<button type="button" onClick={() => void save()} disabled={saving} className="fs-btn fs-btn-primary h-38 disabled:opacity-[0.5]">{tr("save")}</button>
 						</div>
 					</>
 				)}
+			</div>
+		</div>
+	);
+}
+
+// Реквизиты нашей фирмы для договоров: часть берётся из настроек бухгалтерии (видна серым), остальное — добавляется здесь
+function FirmContractData() {
+	const locale = useLocale();
+	const tr = trFor(locale);
+	const { settings, saveSettings } = useFinanceStore();
+	const [resolved, setResolved] = useState<Record<string, string>>({});
+	const [edits, setEdits] = useState<Record<string, string>>({});
+	const [open, setOpen] = useState(false);
+	const [query, setQuery] = useState("");
+	const country = (marketOf(settings?.country) as Country | null) ?? null;
+
+	useEffect(() => {
+		if (!open) return;
+		void apiCall<{ firm: Record<string, string> }>("/api/contract-templates/client-data").then((r) => { if (r.ok && r.data) setResolved(r.data.firm); });
+	}, [open, settings?.contractData]);
+
+	const fields = useMemo(() => {
+		const q = query.trim().toLowerCase();
+		return fieldsForCountry(country, CATALOG).filter((f) => f.side === "firm" && !f.computed && (!q || f.key.toLowerCase().includes(q) || labelOf(f, locale).toLowerCase().includes(q)));
+	}, [country, locale, query]);
+
+	async function save() {
+		const err = await saveSettings({ contractData: edits });
+		if (err) return void toast.error(err);
+		setEdits({});
+		toast.success(tr("saved"));
+	}
+
+	return (
+		<div className="fs-card p-16 md:p-24">
+			<button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between text-left">
+				<h3 className="text-14 font-semibold text-[#f1f4ee]">{tr("firmTitle")}</h3>
+				<span className="text-12 text-[#8c948b]">{open ? "−" : "+"}</span>
+			</button>
+			{open && (
+				<div className="mt-12">
+					<p className="mb-10 text-12 text-[#8c948b]">{tr("firmHint")}</p>
+					<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr("search")} className="fs-field mb-10 h-32 w-full px-8 text-12 outline-none md:max-w-[320px]" />
+					<div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+						{GROUP_ORDER.map((g) => {
+							const items = fields.filter((f) => f.group === g);
+							if (!items.length) return null;
+							return (
+								<div key={g} className="md:col-span-2">
+									<p className="mb-6 text-12 font-medium text-[#cfd4cb]">{GROUP_LABEL[g][locale === "de" || locale === "ua" || locale === "uz" ? locale : "en"]}</p>
+									<div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+										{items.map((f) => (
+											<label key={f.key} className="block">
+												<span className="mb-4 block text-11 text-[#8c948b]">{labelOf(f, locale).replace(/^[^:]+:\s*/, "")}</span>
+												<input
+													value={edits[f.base] ?? settings?.contractData?.[f.base] ?? ""}
+													onChange={(e) => setEdits((d) => ({ ...d, [f.base]: e.target.value }))}
+													placeholder={resolved[f.base] || ""}
+													className="fs-field w-full px-8 py-6 text-12 outline-none"
+												/>
+											</label>
+										))}
+									</div>
+								</div>
+							);
+						})}
+					</div>
+					<div className="mt-12 flex justify-end">
+						<button type="button" onClick={() => void save()} disabled={!Object.keys(edits).length} className="fs-btn fs-btn-primary h-36 disabled:opacity-[0.5]">{tr("firmSave")}</button>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

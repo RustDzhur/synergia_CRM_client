@@ -118,6 +118,7 @@ export interface FinanceSettings {
 	expenseCategories: string[];
 	// Типовой текст договора фирмы с подстановками {{…}}; пусто — встроенный типовой текст
 	contractTemplate: string;
+	contractData?: Record<string, string>;
 }
 export interface CountryOption { code: string; name: string; standard: number; reduced?: number; label: string }
 export interface FinanceDashboard {

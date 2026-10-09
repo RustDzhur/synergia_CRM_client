@@ -1,5 +1,6 @@
 import { formatMoney } from "./money";
 import type { Market } from "./market";
+import { ALIASES } from "./contractFields";
 
 // Текст договора: фирма правит один раз в настройках бухгалтерии (или отдельный договор — в самой форме),
 // а поля договора (номер, клиент, сумма, срок) подставляются в текст на месте подстановок {{…}}.
@@ -37,7 +38,10 @@ export function fillContractText(text: string, vars: Record<string, string>): st
 	const map: Record<string, string> = {};
 	for (const [key, value] of Object.entries(vars)) map[key.toLowerCase()] = String(value ?? "");
 	return String(text ?? "").replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (whole, key: string) => {
-		const value = map[key.toLowerCase()];
+		const k = key.toLowerCase();
+		// синонимы ({{Name}}, {{address}}, {{passport}}) — см. ALIASES в contractFields.ts; прямое имя всегда важнее
+		const alias = ALIASES[k];
+		const value = map[k] !== undefined ? map[k] : alias ? map[alias.toLowerCase()] : undefined;
 		return value === undefined ? whole : value;
 	});
 }

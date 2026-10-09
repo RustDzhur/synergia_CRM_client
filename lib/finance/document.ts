@@ -2,7 +2,8 @@ import { isTemplate, renderDocumentPdf, PdfSettings, PdfParty, PdfLineItem } fro
 import { financeSettings } from "./settings";
 import { marketOf } from "./market";
 import { activeTemplate, applyTemplate, templateAllowsRate } from "./documents/store";
-import { contractDate, contractValueText, defaultContractText, fillContractText } from "./contractText";
+import { defaultContractText, fillContractText } from "./contractText";
+import { contractVars } from "./contractVars";
 import { firmRate } from "./rates";
 import { validId } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
@@ -228,30 +229,7 @@ export async function contractPdfBuffer(org: string, c: any, locale: string, tem
     const party = await customerParty(org, c);
     const market = marketOf(settings.country);
     const rawBody = String(c.body ?? "").trim() || String(settings.contractTemplate ?? "").trim() || defaultContractText(market);
-    const body = fillContractText(rawBody, {
-        ...((c.fields && typeof c.fields === "object" ? c.fields : {}) as Record<string, string>),
-        number: c.number,
-        date: contractDate(new Date().toISOString().slice(0, 10)),
-        firm: settings.legalName ?? "",
-        firmAddress: settings.address ?? "",
-        firmTaxId: settings.taxId ?? "",
-        signer: settings.uaSignerName || settings.managingDirector || "",
-        customer: party.name,
-        customerAddress: party.address ?? "",
-        customerTaxId: party.taxId ?? "",
-        customerPhone: party.phone ?? "",
-        customerEmail: party.email ?? "",
-        customerPerson: party.person ?? "",
-        value: contractValueText(Number(c.value) || 0, tpl?.currency || c.currency),
-        start: contractDate(c.startDate),
-        end: contractDate(c.endDate),
-        firmPhone: settings.phone ?? "",
-        firmEmail: settings.email ?? "",
-        firmWebsite: settings.website ?? "",
-        firmBank: settings.uaBank || "",
-        firmIban: settings.uaIban || settings.iban || "",
-        today: contractDate(new Date().toISOString().slice(0, 10)),
-    });
+    const body = fillContractText(rawBody, await contractVars(org, c, settings, { currency: tpl?.currency || c.currency }));
     return renderDocumentPdf(
         {
             kind: "contract",
