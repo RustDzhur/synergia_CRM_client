@@ -1,5 +1,6 @@
 import type { Lang } from "../i18n";
 import type { DocSection } from "./types";
+import { UZ } from "../uz";
 
 export type ResolvedGroup = { id: string; title: string; steps: string[] };
 export type ResolvedSection = { id: string; title: string; intro?: string; groups: ResolvedGroup[] };
@@ -22,11 +23,18 @@ export function fill(text: string, messages: Messages): string {
 	return text.replace(LABEL, (_, path: string) => `**${lookup(messages, path) ?? path}**`);
 }
 
-export function resolveDocs(sections: DocSection[], locale: Lang, messages: Messages): ResolvedSection[] {
+// Текст для локали. Узбекский берётся из словаря UZ (content/uz.ts) по английскому исходнику,
+// остальные — из Tx (en/de/ua); нет перевода — английский.
+function pick(v: { en: string; de: string; ua: string }, locale: string): string {
+	if (locale === "uz") return UZ[v.en] ?? v.en;
+	return v[(locale as Lang) in v ? (locale as Lang) : "en"];
+}
+
+export function resolveDocs(sections: DocSection[], locale: string, messages: Messages): ResolvedSection[] {
 	return sections.map((s) => ({
 		id: s.id,
-		title: fill(s.title[locale], messages),
-		intro: s.intro && fill(s.intro[locale], messages),
-		groups: s.groups.map((g, i) => ({ id: `${s.id}-${i + 1}`, title: fill(g.title[locale], messages), steps: g.steps.map((step) => fill(step[locale], messages)) })),
+		title: fill(pick(s.title, locale), messages),
+		intro: s.intro && fill(pick(s.intro, locale), messages),
+		groups: s.groups.map((g, i) => ({ id: `${s.id}-${i + 1}`, title: fill(pick(g.title, locale), messages), steps: g.steps.map((step) => fill(pick(step, locale), messages)) })),
 	}));
 }

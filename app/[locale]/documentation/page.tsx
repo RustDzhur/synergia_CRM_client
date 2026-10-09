@@ -2,19 +2,18 @@ import { JsonLd } from "@/lib/seo";
 import { Footer, Navigation } from "@/components/website";
 import { pageJsonLd } from "./metadata";
 import Documentation from "@/components/website/Documentation/Documentation";
-import { tx, type Lang } from "@/content/i18n";
+import { tx } from "@/content/i18n";
 import { DOCS } from "@/content/footerPages";
 import { resolveDocs } from "@/content/docs/resolve";
 import "react";
 import { loadMessages } from "@/lib/messages";
-import { isFullLocale } from "@/lib/locales";
 
 export { generateMetadata } from "./metadata";
 
 // Названия кнопок и полей в тексте берутся из messages/{язык}.json на сервере: клиенту уходят готовые строки,
 // а не все сообщения кабинета.
 export default async function page({ params }: { params: { locale: string } }) {
-	const locale = (isFullLocale(params.locale) ? params.locale : "de") as Lang;
+	const locale = params.locale;
 	const messages = await loadMessages(locale);
 	const docs = {
 		title: tx(DOCS.title, locale),
