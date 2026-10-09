@@ -40,7 +40,7 @@ export default function Links() {
 	return (
 		<ul className="flex items-center min-w-0">
 			{commonLinks.map((link) => (
-				<li className="font-medium whitespace-nowrap lg:mr-18 lg:text-14 lg:tracking-[0.2px] xl:mr-26 2xl:mr-34" key={link.path}>
+				<li className="font-medium whitespace-nowrap lg:mr-18 lg:text-14 lg:tracking-[0.2px]" key={link.path}>
 					<NavLink href={link.path}>{link.label}</NavLink>
 				</li>
 			))}
