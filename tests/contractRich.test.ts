@@ -18,3 +18,14 @@ describe("contractRich", () => {
 		expect(keysIn("{{a}} {{ b }} {{a}}")).toEqual(["a", "b"]);
 	});
 });
+
+import { CATALOG, KIND_GROUPS, KIND_ORDER, groupsForKind } from "@/lib/finance/contractFields";
+describe("типы договоров", () => {
+	it("у каждого типа есть свои поля, чужие специальные группы скрыты, general показывает всё", () => {
+		for (const k of KIND_ORDER) for (const g of KIND_GROUPS[k]) expect(CATALOG.some((f) => f.group === g), `${k}/${g}`).toBe(true);
+		expect(groupsForKind("nda")).toContain("nda");
+		expect(groupsForKind("nda")).not.toContain("rent");
+		expect(groupsForKind("general")).toContain("rent");
+		expect(groupsForKind("services")).toContain("person");
+	});
+});

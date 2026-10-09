@@ -9,7 +9,7 @@ export type Lang = "en" | "de" | "ua" | "uz";
 export type Country = "DE" | "UA" | "UZ";
 export type FieldType = "text" | "date" | "number" | "money";
 export type Side = "customer" | "firm" | "contract";
-export type GroupId = "person" | "idDoc" | "taxReg" | "address" | "contact" | "bank" | "company" | "representative" | "contract" | "terms" | "rent" | "work" | "sale" | "loan" | "vehicle";
+export type GroupId = "person" | "idDoc" | "taxReg" | "address" | "contact" | "bank" | "company" | "representative" | "contract" | "terms" | "rent" | "work" | "sale" | "loan" | "vehicle" | "services" | "nda" | "agency" | "construction" | "license" | "transport";
 
 export interface CatalogField {
 	key: string; // имя подстановки {{key}}
@@ -172,6 +172,38 @@ const CONTRACT: Row[] = [
 	["vehicleMake", "vehicle", "text", ALL, "Vehicle make and model", "Марка та модель авто", "Fahrzeug (Marke, Modell)", "Avtomobil markasi va modeli", "m"],
 	["vehicleVin", "vehicle", "text", ALL, "VIN", "VIN-код", "Fahrgestellnummer (VIN)", "VIN kod", "m"],
 	["vehiclePlate", "vehicle", "text", ALL, "Licence plate", "Державний номер", "Kennzeichen", "Davlat raqami", "m"],
+	["serviceDescription", "services", "text", ALL, "Description of services", "Опис послуг", "Beschreibung der Leistungen", "Xizmatlar tavsifi", "m"],
+	["serviceScope", "services", "text", ALL, "Scope of work / appendix (Anlage)", "Обсяг робіт / додаток", "Leistungsumfang / Anlage", "Ishlar hajmi / ilova", "m"],
+	["servicePlace", "services", "text", ALL, "Place of performance", "Місце надання послуг", "Leistungsort", "Xizmat ko‘rsatish joyi", "m"],
+	["hourlyRate", "services", "money", ALL, "Hourly rate", "Погодинна ставка", "Stundensatz", "Soatlik stavka", "m"],
+	["monthlyFee", "services", "money", ALL, "Monthly fee", "Щомісячна оплата", "Monatliche Vergütung", "Oylik to‘lov", "m"],
+	["reportingPeriod", "services", "text", ALL, "Reporting / invoicing period", "Звітний період / період рахунків", "Abrechnungszeitraum", "Hisobot davri", "m"],
+	["actDays", "services", "number", ALL, "Days to sign the acceptance act", "Строк підписання акта, днів", "Frist zur Abnahmeerklärung in Tagen", "Dalolatnomani imzolash muddati, kun", "m"],
+	["slaResponseHours", "services", "number", ALL, "Response time (SLA), hours", "Час реакції (SLA), годин", "Reaktionszeit (SLA) in Stunden", "Javob vaqti (SLA), soat", "m"],
+	["confidentialInfo", "nda", "text", ALL, "Confidential information (definition)", "Конфіденційна інформація (визначення)", "Vertrauliche Informationen (Definition)", "Maxfiy ma’lumot (ta’rif)", "m"],
+	["ndaPurpose", "nda", "text", ALL, "Purpose of disclosure", "Мета розкриття інформації", "Zweck der Offenlegung", "Ma’lumotni oshkor qilish maqsadi", "m"],
+	["ndaYears", "nda", "number", ALL, "Confidentiality period, years", "Строк конфіденційності, років", "Geheimhaltungsdauer in Jahren", "Maxfiylik muddati, yil", "m"],
+	["ndaPenalty", "nda", "money", ALL, "Contractual penalty for breach", "Штраф за порушення", "Vertragsstrafe bei Verstoß", "Buzilgani uchun jarima", "m"],
+	["commissionPercent", "agency", "number", ALL, "Commission, %", "Комісійна винагорода, %", "Provision, %", "Komissiya, %", "m"],
+	["agentTerritory", "agency", "text", ALL, "Territory", "Територія дії", "Vertragsgebiet", "Faoliyat hududi", "m"],
+	["agentExclusive", "agency", "text", ALL, "Exclusivity (yes / no)", "Ексклюзивність (так / ні)", "Exklusivität (ja / nein)", "Eksklyuzivlik (ha / yo‘q)", "m"],
+	["reportDays", "agency", "number", ALL, "Report to the principal every, days", "Звіт принципалу кожні, днів", "Bericht an den Auftraggeber alle, Tage", "Hisobot har, kun", "m"],
+	["siteAddress", "construction", "text", ALL, "Construction site address", "Адреса об’єкта будівництва", "Baustellenadresse", "Qurilish obyekti manzili", "m"],
+	["workStages", "construction", "text", ALL, "Stages of work", "Етапи робіт", "Bauabschnitte / Leistungsphasen", "Ishlar bosqichlari", "m"],
+	["advanceAmount", "construction", "money", ALL, "Advance payment", "Авансовий платіж", "Vorauszahlung", "Avans to‘lovi", "m"],
+	["retentionPercent", "construction", "number", ALL, "Retention (holdback), %", "Гарантійне утримання, %", "Sicherheitseinbehalt, %", "Kafolat ushlab qolish, %", "m"],
+	["materialsBy", "construction", "text", ALL, "Materials provided by", "Матеріали надає", "Material stellt", "Materiallarni taqdim etadi", "m"],
+	["licenseObject", "license", "text", ALL, "Licensed object (software, work, trademark)", "Об’єкт ліцензії (ПЗ, твір, знак)", "Lizenzgegenstand (Software, Werk, Marke)", "Litsenziya obyekti (dastur, asar, belgi)", "m"],
+	["licenseType", "license", "text", ALL, "Licence type (exclusive / non-exclusive)", "Вид ліцензії (виключна / невиключна)", "Lizenzart (ausschließlich / einfach)", "Litsenziya turi (eksklyuziv / noeksklyuziv)", "m"],
+	["licenseTerritory", "license", "text", ALL, "Licence territory", "Територія ліцензії", "Lizenzgebiet", "Litsenziya hududi", "m"],
+	["licenseFee", "license", "money", ALL, "Licence fee", "Ліцензійна плата", "Lizenzgebühr", "Litsenziya to‘lovi", "m"],
+	["royaltyPercent", "license", "number", ALL, "Royalty, %", "Роялті, %", "Lizenzgebühr (Umsatzanteil), %", "Royalti, %", "m"],
+	["cargoDescription", "transport", "text", ALL, "Cargo description", "Опис вантажу", "Beschreibung der Ladung", "Yuk tavsifi", "m"],
+	["routeFrom", "transport", "text", ALL, "Loading place", "Місце завантаження", "Beladeort", "Yuklash joyi", "m"],
+	["routeTo", "transport", "text", ALL, "Unloading place", "Місце розвантаження", "Entladeort", "Tushirish joyi", "m"],
+	["cargoWeightKg", "transport", "number", ALL, "Cargo weight, kg", "Вага вантажу, кг", "Gewicht in kg", "Yuk og‘irligi, kg", "m"],
+	["loadingDate", "transport", "date", ALL, "Loading date", "Дата завантаження", "Beladedatum", "Yuklash sanasi", "m"],
+	["freightRate", "transport", "money", ALL, "Freight rate", "Вартість перевезення", "Frachtpreis", "Tashish narxi", "m"],
 	["witnessName", "terms", "text", ALL, "Witness name", "Свідок (ПІБ)", "Zeuge (Name)", "Guvoh (F.I.Sh.)", "m"],
 ];
 
@@ -222,8 +254,40 @@ export const GROUP_LABEL: Record<GroupId, Record<Lang, string>> = {
 	sale: { en: "Sale / delivery", ua: "Купівля-продаж / поставка", de: "Kauf / Lieferung", uz: "Oldi-sotdi / yetkazib berish" },
 	loan: { en: "Loan", ua: "Позика", de: "Darlehen", uz: "Qarz" },
 	vehicle: { en: "Vehicle", ua: "Транспортний засіб", de: "Fahrzeug", uz: "Transport vositasi" },
+	services: { en: "Services / work", ua: "Послуги / роботи", de: "Dienst- / Werkleistungen", uz: "Xizmatlar / ishlar" },
+	nda: { en: "Confidentiality (NDA)", ua: "Конфіденційність (NDA)", de: "Geheimhaltung (NDA)", uz: "Maxfiylik (NDA)" },
+	agency: { en: "Agency / commission", ua: "Агентський / комісія", de: "Handelsvertreter / Provision", uz: "Agentlik / komissiya" },
+	construction: { en: "Construction / subcontract", ua: "Будівництво / підряд", de: "Bau / Werkvertrag", uz: "Qurilish / pudrat" },
+	license: { en: "Licence / IP", ua: "Ліцензія / IP", de: "Lizenz / IP", uz: "Litsenziya / IP" },
+	transport: { en: "Transport / freight", ua: "Перевезення", de: "Transport / Fracht", uz: "Transport / yuk tashish" },
 };
-export const GROUP_ORDER: GroupId[] = ["contract", "person", "idDoc", "taxReg", "address", "contact", "bank", "company", "representative", "terms", "rent", "work", "sale", "loan", "vehicle"];
+export const GROUP_ORDER: GroupId[] = ["contract", "person", "idDoc", "taxReg", "address", "contact", "bank", "company", "representative", "terms", "rent", "work", "sale", "loan", "vehicle", "services", "nda", "agency", "construction", "license", "transport"];
+
+// Тип договора: какие группы полей показывать первыми (общие — договор, стороны, условия — есть всегда)
+export type ContractKind = "general" | "services" | "sale" | "rent" | "work" | "loan" | "vehicle" | "nda" | "agency" | "construction" | "license" | "transport";
+export const KIND_ORDER: ContractKind[] = ["general", "services", "sale", "rent", "work", "loan", "vehicle", "nda", "agency", "construction", "license", "transport"];
+export const KIND_GROUPS: Record<ContractKind, GroupId[]> = {
+	general: [], services: ["services"], sale: ["sale"], rent: ["rent"], work: ["work"], loan: ["loan"], vehicle: ["vehicle", "sale"],
+	nda: ["nda"], agency: ["agency"], construction: ["construction"], license: ["license"], transport: ["transport"],
+};
+export const KIND_LABEL: Record<ContractKind, Record<Lang, string>> = {
+	general: { en: "General (all fields)", ua: "Загальний (усі поля)", de: "Allgemein (alle Felder)", uz: "Umumiy (barcha maydonlar)" },
+	services: { en: "Services / work", ua: "Послуги / роботи", de: "Dienst- / Werkvertrag", uz: "Xizmatlar / ishlar" },
+	sale: { en: "Sale / supply", ua: "Купівля-продаж / поставка", de: "Kauf / Lieferung", uz: "Oldi-sotdi / yetkazib berish" },
+	rent: { en: "Lease", ua: "Оренда", de: "Miete / Pacht", uz: "Ijara" },
+	work: { en: "Employment", ua: "Трудовий", de: "Arbeitsvertrag", uz: "Mehnat shartnomasi" },
+	loan: { en: "Loan", ua: "Позика", de: "Darlehen", uz: "Qarz" },
+	vehicle: { en: "Vehicle sale", ua: "Продаж авто", de: "Fahrzeugkauf", uz: "Avtomobil sotish" },
+	nda: { en: "NDA", ua: "NDA", de: "NDA", uz: "NDA" },
+	agency: { en: "Agency / commission", ua: "Агентський / комісія", de: "Handelsvertreter", uz: "Agentlik / komissiya" },
+	construction: { en: "Construction / subcontract", ua: "Будівництво / підряд", de: "Bau / Werkvertrag", uz: "Qurilish / pudrat" },
+	license: { en: "Licence / IP", ua: "Ліцензія / IP", de: "Lizenz / IP", uz: "Litsenziya / IP" },
+	transport: { en: "Transport / freight", ua: "Перевезення", de: "Transport / Fracht", uz: "Transport / yuk tashish" },
+};
+const TYPE_GROUPS: GroupId[] = ["services", "sale", "rent", "work", "loan", "vehicle", "nda", "agency", "construction", "license", "transport"];
+/** Группы полей для типа договора: «специальные» группы чужих типов скрываются; general — все. */
+export const groupsForKind = (kind: ContractKind): GroupId[] =>
+	kind === "general" ? GROUP_ORDER : GROUP_ORDER.filter((g) => !TYPE_GROUPS.includes(g) || KIND_GROUPS[kind].includes(g));
 
 export const pickLang = (l: string): Lang => (l === "de" || l === "ua" || l === "uz" ? l : "en");
 export const labelOf = (f: CatalogField, locale: string) => f.label[pickLang(locale)] ?? f.label.en;

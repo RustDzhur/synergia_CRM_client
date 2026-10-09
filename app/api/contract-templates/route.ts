@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
+import { KIND_ORDER } from "@/lib/finance/contractFields";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ const toDTO = (t: any) => ({
     name: t.name,
     body: t.body ?? "",
     bodyHtml: t.bodyHtml ?? "",
+    kind: t.kind ?? "general",
     fields: Array.isArray(t.fields) ? t.fields : [],
     active: !!t.active,
 });
@@ -42,6 +44,6 @@ export async function POST(req: Request) {
     if (!name) return badRequest("name is required");
     const body = String(b?.body ?? "").slice(0, 60000);
     const fields = (Array.isArray(b?.fields) ? b.fields : []).map(cleanField).filter(Boolean).slice(0, 200);
-    const t = await prisma.contractTemplate.create({ data: { org: user.id, name, body, bodyHtml: String(b?.bodyHtml ?? "").slice(0, 200000) || null, fields } });
+    const t = await prisma.contractTemplate.create({ data: { org: user.id, name, body, bodyHtml: String(b?.bodyHtml ?? "").slice(0, 200000) || null, kind: KIND_ORDER.includes(b?.kind) ? b.kind : "general", fields } });
     return NextResponse.json(toDTO(t), { status: 201 });
 }

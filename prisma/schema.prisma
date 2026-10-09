@@ -261,6 +261,7 @@ model ContractTemplate {
   name      String
   body      String   @default("")
   bodyHtml  String?
+  kind      String?
   fields    Json?
   active    Boolean  @default(true)
   createdAt DateTime @default(now())

@@ -35,6 +35,7 @@ const D = {
 	firmHint: { en: "Filled from the accounting settings. Add what is missing: position and basis of the signer, registration numbers, bank codes.", ua: "Підставляються з налаштувань бухгалтерії. Додайте те, чого бракує: посаду й підставу підписанта, реєстраційні номери, банківські коди.", de: "Wird aus den Buchhaltungseinstellungen übernommen. Ergänzen Sie, was fehlt: Position und Befugnis des Unterzeichners, Registernummern, Bankcodes.", uz: "Buxgalteriya sozlamalaridan olinadi. Yetishmaganini qo‘shing: imzolovchi lavozimi va asosi, ro‘yxat raqamlari, bank kodlari." },
 	firmSave: { en: "Save firm details", ua: "Зберегти реквізити фірми", de: "Firmendaten speichern", uz: "Firma rekvizitlarini saqlash" },
 	autoFields: { en: "Auto fields active", ua: "Авто-поля активні", de: "Auto-Felder aktiv", uz: "Avto-maydonlar faol" },
+	kindLabel: { en: "Contract type (decides which fields are offered)", ua: "Тип договору (визначає, які поля пропонуються)", de: "Vertragsart (bestimmt die angebotenen Felder)", uz: "Shartnoma turi (qaysi maydonlar taklif etilishini belgilaydi)" },
 	quickFields: { en: "Fields:", ua: "Поля:", de: "Felder:", uz: "Maydonlar:" },
 	allFields: { en: "All fields", ua: "Усі поля", de: "Alle Felder", uz: "Barcha maydonlar" },
 	styleNormal: { en: "Normal", ua: "Звичайний", de: "Normal", uz: "Oddiy" },

@@ -6,7 +6,7 @@ import { TbEye, TbFileImport, TbListDetails, TbPencil, TbPlus, TbTrash } from "r
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { apiCall, authHeaders } from "@/store/crmApi";
 import { marketOf } from "@/lib/finance/market";
-import { CATALOG, GROUP_LABEL, GROUP_ORDER, fieldOf, fieldsForCountry, labelOf, tokensIn, type CatalogField, type Country } from "@/lib/finance/contractFields";
+import { CATALOG, GROUP_LABEL, GROUP_ORDER, KIND_GROUPS, KIND_LABEL, KIND_ORDER, groupsForKind, pickLang, fieldOf, fieldsForCountry, labelOf, tokensIn, type CatalogField, type ContractKind, type Country } from "@/lib/finance/contractFields";
 import { htmlToText, textToHtml } from "@/lib/finance/contractRich";
 import FormField from "../shared/FormField";
 import ContractRichEditor, { type RichEditorHandle } from "./ContractRichEditor";
@@ -17,8 +17,8 @@ import { trFor } from "./contractUi";
 // Список полей — lib/finance/contractFields.ts (около 200, с учётом страны); чего нет в списке — добавляется «своим полем».
 
 interface Field { key: string; label: string; type: "text" | "date" | "number" | "money"; source: "manual" | "contact" }
-interface Draft { name: string; body: string; bodyHtml: string; fields: Field[] }
-const EMPTY: Draft = { name: "", body: "", bodyHtml: "", fields: [] };
+interface Draft { name: string; body: string; bodyHtml: string; kind: ContractKind; fields: Field[] }
+const EMPTY: Draft = { name: "", body: "", bodyHtml: "", kind: "general", fields: [] };
 
 const PALETTE = ["#C6FF4D", "#FFD166", "#FF6B6B", "#4ECDC4", "#A78BFA", "#F472B6", "#60A5FA", "#34D399", "#FB923C", "#2DD4BF", "#E879F9", "#94A3B8"];
 const groupColor = (g: string) => PALETTE[Math.max(0, GROUP_ORDER.indexOf(g as never)) % PALETTE.length];
@@ -42,11 +42,11 @@ export default function ContractTemplatesManager() {
 	const country = (marketOf(settings?.country) as Country | null) ?? null;
 
 	function startNew() { setEditing(null); setDraft({ ...EMPTY }); setPreview(false); }
-	function startEdit(t: { id: string; name: string; body: string; bodyHtml?: string; fields: { key: string; label: string; type: string; source: string }[] }) {
+	function startEdit(t: { id: string; name: string; body: string; bodyHtml?: string; kind?: string; fields: { key: string; label: string; type: string; source: string }[] }) {
 		setEditing({ id: t.id });
 		setPreview(false);
 		setDraft({
-			name: t.name, body: t.body, bodyHtml: t.bodyHtml || textToHtml(t.body),
+			name: t.name, body: t.body, bodyHtml: t.bodyHtml || textToHtml(t.body), kind: (KIND_ORDER.includes(t.kind as ContractKind) ? t.kind : "general") as ContractKind,
 			fields: t.fields.map((f) => ({
 				key: f.key, label: f.label,
 				type: (["text", "date", "number", "money"].includes(f.type) ? f.type : "text") as Field["type"],
@@ -91,8 +91,9 @@ export default function ContractTemplatesManager() {
 	const groups = useMemo(() => {
 		const q = query.trim().toLowerCase();
 		const list = fieldsForCountry(allCountries ? null : country, CATALOG).filter((f) => !q || f.key.toLowerCase().includes(q) || labelOf(f, locale).toLowerCase().includes(q));
-		return GROUP_ORDER.map((g) => ({ id: g, items: list.filter((f) => f.group === g) })).filter((g) => g.items.length);
-	}, [query, allCountries, country, locale]);
+		const allowed = groupsForKind(draft.kind);
+		return GROUP_ORDER.filter((g) => allowed.includes(g)).map((g) => ({ id: g, items: list.filter((f) => f.group === g) })).filter((g) => g.items.length);
+	}, [query, allCountries, country, locale, draft.kind]);
 
 	const used = useMemo(() => tokensIn(draft.body), [draft.body]);
 	const customKeys = useMemo(() => new Set(draft.fields.map((f) => f.key.toLowerCase())), [draft.fields]);
@@ -122,7 +123,8 @@ export default function ContractTemplatesManager() {
 		</button>
 	);
 
-	const quick = ["number", "date", "firm", "signer", "customer", "customerPerson", "value", "start", "end"];
+	const kindKeys = CATALOG.filter((f) => KIND_GROUPS[draft.kind].includes(f.group)).slice(0, 6).map((f) => f.key);
+	const quick = ["number", "date", "firm", "signer", "customer", "customerPerson", "value", "start", "end", ...kindKeys];
 	const paletteNode = (
 		<div className="border-b border-[rgba(255,255,255,0.1)] bg-[#12181b] px-8 py-8">
 			<div className="flex flex-wrap items-center gap-6">
@@ -197,6 +199,12 @@ export default function ContractTemplatesManager() {
 						<h3 className="mb-12 text-14 font-semibold text-[#f1f4ee]">{editing ? tr("editTemplate") : tr("newTemplate")}</h3>
 						<div className="flex flex-col gap-10">
 							<FormField label={tr("nameLabel")} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+							<label className="block">
+								<span className="mb-4 block text-11 text-[#8c948b]">{tr("kindLabel")}</span>
+								<select value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value as ContractKind })} className="fs-field h-36 w-full px-8 text-13 outline-none md:max-w-[360px]">
+									{KIND_ORDER.map((k) => <option key={k} value={k}>{KIND_LABEL[k][pickLang(locale)]}</option>)}
+								</select>
+							</label>
 
 							<div>
 								<div className="mb-6 flex flex-wrap items-center gap-8">
