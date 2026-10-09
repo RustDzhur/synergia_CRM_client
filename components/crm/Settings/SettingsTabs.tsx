@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { TbBellPlus, TbBriefcase, TbGavel, TbHexagon, TbUserCircle, TbUsers, TbUsersGroup } from "react-icons/tb";
+import { TbBellPlus, TbBriefcase, TbHexagon, TbUserCircle, TbUsers, TbUsersGroup } from "react-icons/tb";
 import { stripLocale } from "@/utils/locale";
 
 export const SETTINGS_TABS = [
@@ -12,7 +12,6 @@ export const SETTINGS_TABS = [
 	{ key: "tabColleagues", href: "/crm/settings/colleagues", icon: TbUsers },
 	{ key: "tabTeam", href: "/crm/settings/team", icon: TbUsersGroup },
 	{ key: "tabPractice", href: "/crm/settings/practice", icon: TbBriefcase },
-	{ key: "tabLegal", href: "/crm/settings/legal", icon: TbGavel },
 ] as const;
 
 // Карточка со вкладками Settings: Account / Notifications / Integration / Colleagues.

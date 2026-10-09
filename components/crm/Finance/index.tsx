@@ -42,6 +42,7 @@ import Invoices, { InvoicePrefill, INVOICE_FILTERS } from "./Invoices";
 import Orders from "./Orders";
 import RecurringInvoices from "./RecurringInvoices";
 import Dunning from "./Dunning";
+import ContractTemplatesManager from "./ContractTemplatesManager";
 import Contracts from "./Contracts";
 import Products from "./Products";
 import Expenses from "./Expenses";
@@ -449,7 +450,7 @@ export default function Finance() {
 					{tab === "bwa" && <Reports kind="bwa" />}
 					{tab === "susa" && <Reports kind="susa" />}
 					{tab === "audit" && <AuditLog />}
-					{tab === "settings" && <FinanceSettingsTab />}
+					{tab === "settings" && (<><FinanceSettingsTab /><div className="mt-16"><ContractTemplatesManager /></div></>)}
 				</div>
 			</div>
 		</div>
