@@ -16,7 +16,6 @@ import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
 import { marketOf } from "@/lib/finance/market";
 import { defaultContractText } from "@/lib/finance/contractText";
-import ContractTemplatesManager from "./ContractTemplatesManager";
 
 const STATUS_COLOR: Record<string, string> = {
 	draft: STATUS_COLORS.neutral, active: STATUS_COLORS.success,
@@ -39,7 +38,6 @@ export default function Contracts() {
 	const [link, setLink] = useState<{ contact?: string; company?: string }>({});
 	const [busy, setBusy] = useState<string | null>(null);
 	const [toDelete, setToDelete] = useState<string | null>(null);
-	const [templatesOpen, setTemplatesOpen] = useState(false);
 
 	useEffect(() => { loadContracts(); }, [loadContracts]);
 	// Подсказки клиента — из CRM: грузим при открытии формы, списки общие с CRM-разделом
@@ -101,8 +99,7 @@ export default function Contracts() {
 
 	return (
 		<div>
-			<div className="mb-16 flex justify-end gap-8">
-				<button type="button" onClick={() => setTemplatesOpen(true)} className="fs-btn fs-btn-ghost h-40">Шаблоны</button>
+			<div className="mb-16 flex justify-end">
 				<button type="button" onClick={openNew} className="fs-btn fs-btn-primary h-40">
 					<TbPlus size={16} /> {t("newContract")}
 				</button>
@@ -215,8 +212,6 @@ export default function Contracts() {
 					</div>
 				</form>
 			</Modal>
-
-			<ContractTemplatesManager open={templatesOpen} onClose={() => setTemplatesOpen(false)} />
 
 			<ConfirmDialog open={!!toDelete} title={t("delete")} text={t("confirmDeleteContract")} onCancel={() => setToDelete(null)} onConfirm={() => { if (toDelete) deleteContract(toDelete); setToDelete(null); }} />
 		</div>

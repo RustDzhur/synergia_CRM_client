@@ -12,7 +12,6 @@ import TemplatePicker from "./TemplatePicker";
 import UaProfileCard, { type UaProfileForm } from "./settingsParts/UaProfileCard";
 import UzProfileCard from "./settingsParts/UzProfileCard";
 import ExpenseCategoriesCard from "./settingsParts/ExpenseCategoriesCard";
-import ContractTextCard from "./settingsParts/ContractTextCard";
 import ActivitiesCard from "./settingsParts/ActivitiesCard";
 import DocumentsCard from "./documentsParts/DocumentsCard";
 
@@ -245,9 +244,6 @@ export default function FinanceSettingsTab() {
 
 			{/* Категории расходов: справочник для формы расхода и группировки в отчётах */}
 			<ExpenseCategoriesCard />
-
-			{/* Текст договора: типовой для фирмы, поля подставляются на месте {{…}} при печати PDF */}
-			<ContractTextCard />
 
 			<div className="mb-16 fs-card p-16 md:p-20">
 				<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("companySection")}</h3>
