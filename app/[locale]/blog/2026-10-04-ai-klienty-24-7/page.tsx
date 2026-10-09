@@ -72,6 +72,21 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"бухгалтерія",
 		],
 	},
+	uz: {
+		title: "AI agent 24/7: chat, calls and receipts – Firmspace AI",
+		description:
+			"How the AI assistant works around the clock: web chat, Telegram, calls, a unified inbox, plus receipts, contracts and bank statements.",
+		keywords: [
+			"AI CRM",
+			"customer communication",
+			"AI automation",
+			"unified inbox",
+			"web mail",
+			"automation",
+			"invoicing software",
+			"accounting software",
+		],
+	},
 };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {

@@ -79,6 +79,21 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"спільний календар",
 		],
 	},
+	uz: {
+		title: "AI action step: what the agent does alone – Firmspace AI",
+		description:
+			"The AI action step in automation rules: which CRM events fire, what the agent carries out on its own, and where a human still decides.",
+		keywords: [
+			"AI CRM",
+			"automation",
+			"deals pipeline",
+			"sales automation",
+			"task management",
+			"AI automation",
+			"CRM practice",
+			"shared calendar",
+		],
+	},
 };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {

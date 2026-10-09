@@ -81,6 +81,21 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"спільний календар",
 		],
 	},
+	uz: {
+		title: "AI agent in the sales process: leads, deals, contracts",
+		description:
+			"How the AI assistant works in the sales process: the lead filter for mail and chat, cards on the deals board, contracts and documents.",
+		keywords: [
+			"AI CRM",
+			"sales pipeline",
+			"deals pipeline",
+			"AI automation",
+			"automation",
+			"CRM practice",
+			"customer communication",
+			"shared calendar",
+		],
+	},
 };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {

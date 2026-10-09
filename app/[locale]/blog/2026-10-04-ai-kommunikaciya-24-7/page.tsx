@@ -83,6 +83,21 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"ШІ автоматизація",
 		],
 	},
+	uz: {
+		title: "AI agent 24/7: chat, calls and human handoff – Firmspace AI",
+		description:
+			"How the AI assistant works around the clock: web chat, Telegram and Viber, browser calls — and when a person takes over.",
+		keywords: [
+			"AI CRM",
+			"team communication",
+			"unified inbox",
+			"web mail",
+			"shared calendar",
+			"automation",
+			"customer communication",
+			"AI automation",
+		],
+	},
 };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {

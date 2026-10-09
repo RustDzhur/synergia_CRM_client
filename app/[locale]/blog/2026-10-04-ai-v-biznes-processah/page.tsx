@@ -71,6 +71,21 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"спільний календар",
 		],
 	},
+	uz: {
+		title: "AI in sales: how the agent works with deals – Firmspace AI",
+		description:
+			"How the AI assistant handles deals in Firmspace: deals pipeline and stages, channel and lead, automation, contracts – every action is confirmed by a human.",
+		keywords: [
+			"AI CRM",
+			"deals pipeline",
+			"automation",
+			"AI automation",
+			"sales pipeline",
+			"CRM practice",
+			"task management",
+			"shared calendar",
+		],
+	},
 };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {

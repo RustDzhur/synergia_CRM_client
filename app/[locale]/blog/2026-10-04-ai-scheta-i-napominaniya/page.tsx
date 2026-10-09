@@ -80,6 +80,21 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
 			"спільний календар",
 		],
 	},
+	uz: {
+		title: "AI in accounting: invoices, dunning and bank – Firmspace AI",
+		description:
+			"How the AI assistant handles money in Firmspace: invoice draft, sending, payment, dunning levels and bank statements from monobank and PrivatBank.",
+		keywords: [
+			"AI CRM",
+			"invoicing software",
+			"accounting software",
+			"automation",
+			"CRM practice",
+			"sales pipeline",
+			"CRM software",
+			"shared calendar",
+		],
+	},
 };
 
 export function generateMetadata({ params }: { params: { locale: string } }): Metadata {
