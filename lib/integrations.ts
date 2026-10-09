@@ -1,5 +1,5 @@
 import type { IntegrationDTO, IntegrationType } from "@/types/integrations";
-import { decryptJSON, encryptJSON } from "@/lib/crypto";
+import { decryptJSON, derivedVerifyToken, encryptJSON } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
 
 // Документ интеграции — запись Prisma. По полям она совместима с прежним Mongoose-документом,
@@ -15,6 +15,9 @@ export function webhookPath(type: IntegrationType, token: string) {
     return `/api/webhooks/${type}/${token}`;
 }
 
+/** Verify-токен вебхука Meta (WhatsApp/Messenger): сохранённый при подключении или постоянный производный. */
+export const verifyTokenOf = (doc: Doc): string => String(doc.config?.verifyToken || "") || derivedVerifyToken(String(doc.token ?? ""));
+
 export function toIntegrationDTO(doc: Doc, origin: string): IntegrationDTO {
     // У WhatsApp адрес вебхука один на всё приложение Meta (фирма определяется по номеру из события),
     // поэтому в окне показываем именно его, а не адрес с маркером этой фирмы
@@ -26,7 +29,7 @@ export function toIntegrationDTO(doc: Doc, origin: string): IntegrationDTO {
         name: doc.name,
         status: doc.status,
         error: doc.error,
-        config: doc.config ?? {},
+        config: doc.type === "messenger" || doc.type === "whatsapp" ? { ...(doc.config ?? {}), verifyToken: verifyTokenOf(doc) } : doc.config ?? {},
         webhookUrl: url,
         createdAt: doc.createdAt?.toISOString?.() ?? "",
     };

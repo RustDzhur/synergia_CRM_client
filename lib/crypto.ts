@@ -23,10 +23,15 @@ export function decryptJSON<T>(payload: string): T {
     return JSON.parse(Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8")) as T;
 }
 
+/** Постоянный запасной verify-токен вебхука Meta, если при подключении он не был сохранён: считается от маркера интеграции и ключа сервера. */
+export const derivedVerifyToken = (marker: string) => createHash("sha256").update(`verify:${marker}:${process.env.ENCRYPTION_KEY || process.env.JWT_SECRET || ""}`).digest("hex").slice(0, 16);
+
 export const randomToken = (bytes = 18) => randomBytes(bytes).toString("hex");
 
 // Сравнение секретов за постоянное время (подписи вебхуков, verify-токены)
-export function safeEqual(a: string, b: string) {
+export function safeEqual(a: string | undefined | null, b: string | undefined | null) {
+    // пустое ожидаемое значение никогда не совпадает (раньше undefined ронял сервер в Buffer.from)
+    if (typeof a !== "string" || typeof b !== "string" || !b) return false;
     const x = Buffer.from(a);
     const y = Buffer.from(b);
     return x.length === y.length && timingSafeEqual(x, y);

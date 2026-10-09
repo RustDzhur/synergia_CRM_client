@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { safeEqual } from "@/lib/crypto";
-import { findByToken, secretsOf } from "@/lib/integrations";
+import { findByToken, secretsOf, verifyTokenOf } from "@/lib/integrations";
 import { recordMessage } from "@/lib/channels";
 import { messengerUserName, parseMessengerBody, verifyMetaSignature } from "@/lib/channels/messenger";
 import { reportError } from "@/lib/reportError";
@@ -12,7 +12,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     const integration = await findByToken("messenger", params.token);
     if (!integration) return new Response("Not found", { status: 404 });
     const q = new URL(req.url).searchParams;
-    if (q.get("hub.mode") === "subscribe" && safeEqual(q.get("hub.verify_token") ?? "", (integration.config as any)?.verifyToken)) {
+    if (q.get("hub.mode") === "subscribe" && safeEqual(q.get("hub.verify_token") ?? "", verifyTokenOf(integration))) {
         return new Response(q.get("hub.challenge") ?? "", { status: 200 });
     }
     return new Response("Forbidden", { status: 403 });
