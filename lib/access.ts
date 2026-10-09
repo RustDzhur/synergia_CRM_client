@@ -35,6 +35,7 @@ export const ROLE_MODULES: Record<Role, Module[]> = {
 export const OPEN_API_SEGMENTS = [
     "auth", "health", "client-error", "errors", "contact", "cron", "hooks", "webhooks", "webchat", "media", "public", "promo",
     "blog", "agent", "agents", "admin", "ai", "iris-bot", "lookup", "records", "notifications", "people", "demo", "internal",
+    "currency", // курсы валют для цен лендинга: публичные данные, авторизация не нужна
 ] as const;
 
 // Разделы, которые открывает выгрузка/загрузка файла: зависят от вида данных (export?kind=…, import: kind в теле)
@@ -73,6 +74,9 @@ export function moduleForPath(pathname: string, method: string, search?: URLSear
         case "notify-settings": return method === "GET" ? null : "settings"; // бот фирмы: смотреть можно всем, менять — по правам
         case "integrations": case "messenger": case "whatsapp": return method === "GET" ? "collab" : "settings"; // список каналов нужен звонилке всем; менять — только с доступом к настройкам
         case "legal": return "crm"; // хранилище договоров клиента (юрист): раздел «Клиенты»
+        // шаблоны договоров с полями-меточками: читать может любой участник фирмы (нужно при выписке договора
+        // в бухгалтерии), а создавать и менять — только с доступом к разделу «Клиенты», где они и настраиваются
+        case "contract-templates": return method === "GET" ? null : "crm";
         case "partner": case "bank-offers": case "bank-partner": return null; // страница банка, заявки клиента и кабинет банка: каждый маршрут проверяет права сам (lib/partner)
         case "practice": return null; // кабинет практики и согласия клиента: каждый маршрут проверяет права сам (lib/practice)
         case "orgs": return p.startsWith("orgs/members") || p.startsWith("orgs/invitations") ? "members" : null;
