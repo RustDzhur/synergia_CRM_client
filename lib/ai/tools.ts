@@ -1577,7 +1577,7 @@ export const TOOLS: AiTool[] = [
             const { createDoc, LegalError } = await import("@/lib/legal/service");
             try {
                 const d = await createDoc(c.org, { userId: c.userId, name: "Ayris" }, { title: a.title, counterparty: a.counterparty, body: a.body, dueDate: a.due_date, aiDraft: true });
-                return { params: { title: d.title }, link: "/crm/settings/legal" };
+                return { params: { title: d.title }, link: "/crm/finance" };
             } catch (e) { if (e instanceof LegalError) throw new ToolError(e.message); throw e; }
         },
     },

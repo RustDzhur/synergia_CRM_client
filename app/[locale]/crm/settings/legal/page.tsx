@@ -1,5 +1,6 @@
-import LegalStore from "@/components/crm/Legal/LegalStore";
+import { redirect } from "next/navigation";
 
-export default function SettingsLegalPage() {
-    return <LegalStore />;
+// Шаблоны договоров переехали в Бухгалтерию → Настройки; старую ссылку ведём туда.
+export default function SettingsLegalPage({ params }: { params: { locale: string } }) {
+    redirect(`/${params.locale}/crm/finance`);
 }
