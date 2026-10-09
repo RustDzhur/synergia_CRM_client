@@ -64,12 +64,13 @@ export default function DealsChart({ deals, stages }: Props) {
 	const W = Math.max(260, width);
 	const H = Math.round(Math.min(340, Math.max(200, W * 0.4)));
 
-	const { labels, values } = useMemo(() => {
+	const { labels, values, created } = useMemo(() => {
 		const now = new Date();
 		const tag = localeTag(locale);
 		const lastStage = [...stages].sort((a, b) => a.order - b.order).at(-1);
 		const closed = lastStage ? deals.filter((d) => d.stage === lastStage._id) : [];
 		const dates = closed.map((d) => new Date(d.updatedAt ?? d.createdAt ?? now));
+		const madeDates = deals.map((d) => new Date(d.createdAt ?? d.updatedAt ?? now));
 
 		let bucketCount: number;
 		let labelOf: (i: number) => string;
@@ -91,24 +92,30 @@ export default function DealsChart({ deals, stages }: Props) {
 		}
 
 		const counts = Array.from({ length: bucketCount }, () => 0);
+		const made = Array.from({ length: bucketCount }, () => 0);
 		dates.forEach((d) => {
 			const i = indexOf(d);
 			if (i >= 0 && i < bucketCount) counts[i] += 1;
 		});
-		return { labels: Array.from({ length: bucketCount }, (_, i) => labelOf(i)), values: counts };
+		madeDates.forEach((d) => {
+			const i = indexOf(d);
+			if (i >= 0 && i < bucketCount) made[i] += 1;
+		});
+		return { labels: Array.from({ length: bucketCount }, (_, i) => labelOf(i)), values: counts, created: made };
 	}, [deals, stages, period, locale]);
 
 	// Подписи по оси X: от 4 на узком до 10 на широком (примерно одна на 90 пикселей), равномерно от начала до конца
 	const last = values.length - 1;
 	const ticks = Math.max(2, Math.min(values.length, Math.floor((W - M.left - M.right) / 90)));
 	const tickIdx = Array.from(new Set(Array.from({ length: ticks }, (_, k) => Math.round((last * k) / (ticks - 1)))));
-	const max = Math.max(0, ...values);
+	const max = Math.max(0, ...values, ...created);
 	const { top, step } = niceAxis(max);
 	const plotW = W - M.left - M.right;
 	const plotH = H - M.top - M.bottom;
 	const x = (i: number) => M.left + (values.length === 1 ? plotW / 2 : (i / (values.length - 1)) * plotW);
 	const y = (v: number) => M.top + plotH - (v / top) * plotH;
 	const points = values.map((v, i) => [x(i), y(v)] as [number, number]);
+	const madeLine = smoothPath(created.map((v, i) => [x(i), y(v)] as [number, number]), y(0));
 	const floor = y(0);
 	const line = smoothPath(points, floor);
 	const area = points.length > 1 ? `${line} L${x(values.length - 1)},${floor} L${x(0)},${floor} Z` : "";
@@ -133,6 +140,8 @@ export default function DealsChart({ deals, stages }: Props) {
 			<p className="mt-14 flex items-center gap-8 text-12 text-[#8c948b]">
 				{t("closedDeals")}
 				<span className="inline-block h-[10px] w-[10px] rounded-50 border-2 border-primaryColor" />
+				<span className="ml-8">{t("newDeals")}</span>
+				<span className="inline-block h-[10px] w-[10px] rounded-50 border-2 border-[#8C948B]" />
 			</p>
 
 			<div ref={wrap} className="mt-8 w-full">
@@ -152,6 +161,7 @@ export default function DealsChart({ deals, stages }: Props) {
 				))}
 
 				{area && <path d={area} fill={`url(#${gradientId})`} />}
+				{madeLine && max > 0 && <path d={madeLine} fill="none" stroke="#8C948B" strokeWidth="2" strokeDasharray="5 4" />}
 				{line && max > 0 && <path d={line} fill="none" stroke="#C6FF4D" strokeWidth="2" />}
 
 				{tickIdx.map((i) => (

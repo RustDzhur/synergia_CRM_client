@@ -125,7 +125,7 @@ export interface FinanceDashboard {
 	revenue: number; outstandingAmount: number; overdueAmount: number; expenses: number; profit: number;
 	invoiceCounts: { paid: number; outstanding: number; overdue: number; draft: number };
 	orderCounts: Record<string, number>;
-	series: { month: string; revenue: number; expenses: number }[];
+	series: { month: string; revenue: number; expenses: number; invoiced?: number }[];
 	lowStock: { id: string; name: string; stockQty: number; reorderLevel: number }[];
 }
 

@@ -64,9 +64,11 @@ export async function GET(req: Request) {
         // «2026-03-01» читается как UTC-полночь, и в поясе западнее UTC месяц уезжал назад — для строк берём год и месяц как написано
         if (typeof d === "string" && /^\d{4}-\d{2}/.test(d)) return d.slice(0, 7);
         const dt = typeof d === "string" ? new Date(d) : d; return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`; };
-    const series: Record<string, { revenue: number; expenses: number }> = {};
-    for (let i = 0; i < months; i++) { const d = new Date(since); d.setMonth(d.getMonth() + i); series[key(d)] = { revenue: 0, expenses: 0 }; }
+    const series: Record<string, { revenue: number; expenses: number; invoiced: number }> = {};
+    for (let i = 0; i < months; i++) { const d = new Date(since); d.setMonth(d.getMonth() + i); series[key(d)] = { revenue: 0, expenses: 0, invoiced: 0 }; }
     for (const inv of paid) if ((inv.paidAt ?? inv.issueDate) && series[key((inv.paidAt ?? inv.issueDate) as string | Date)]) series[key((inv.paidAt ?? inv.issueDate) as string | Date)].revenue += computeTotals(inv.items as any).gross;
+    // выставленные счета по дате выписки (все, кроме черновиков): иначе при неоплаченных счетах график пуст, хотя работа идёт
+    for (const inv of inBase) if (inv.status !== "draft" && inv.issueDate && series[key(inv.issueDate as string | Date)]) series[key(inv.issueDate as string | Date)].invoiced += computeTotals(inv.items as any).gross;
     for (const e of expenses.filter((x) => (x.currency || base) === base)) if (series[key(e.date)]) series[key(e.date)].expenses += e.amount ?? 0;
     for (const p of purchaseInvoices) if (series[key(p.date)]) series[key(p.date)].expenses += p.amount ?? 0;
 
@@ -77,7 +79,7 @@ export async function GET(req: Request) {
         revenue, outstandingAmount, overdueAmount, expenses: totalExpenses, profit: round(revenue - totalExpenses), currency: base, otherCurrency,
         invoiceCounts: { paid: paid.length, outstanding: outstanding.length, overdue: inBase.filter((i) => i.status === "overdue").length, draft: inBase.filter((i) => i.status === "draft").length },
         orderCounts,
-        series: Object.entries(series).map(([month, v]) => ({ month, ...v })),
+        series: Object.entries(series).map(([month, v]) => ({ month, revenue: round(v.revenue), expenses: round(v.expenses), invoiced: round(v.invoiced) })),
         lowStock: lowStock.map((p) => ({ id: p.id, name: p.name, stockQty: p.stockQty, reorderLevel: p.reorderLevel })),
     });
 }
