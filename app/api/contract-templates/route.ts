@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { badRequest, unauthorized } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
+import { cleanBody } from "@/lib/finance/contractHtml";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
     const b = await req.json().catch(() => null);
     const name = String(b?.name ?? "").trim().slice(0, 120);
     if (!name) return badRequest("name is required");
-    const body = String(b?.body ?? "").slice(0, 60000);
+    const body = cleanBody(b?.body);
     const fields = (Array.isArray(b?.fields) ? b.fields : []).map(cleanField).filter(Boolean).slice(0, 200);
     const t = await prisma.contractTemplate.create({ data: { org: user.id, name, body, fields } });
     return NextResponse.json(toDTO(t), { status: 201 });

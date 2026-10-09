@@ -148,3 +148,18 @@ describe.skipIf(!hasDb)("реквизиты клиента и фирмы чер�
         expect((await importFile(mk("x.pdf", "%PDF", "application/pdf"))).status).toBe(400);
     });
 });
+
+import { docxToHtml } from "@/lib/docxText";
+describe("импорт .docx с форматированием", () => {
+    it("жирный, курсив, выравнивание, заголовок и список переходят в HTML", () => {
+        const xml = `<w:document xmlns:w="x"><w:body>
+<w:p><w:pPr><w:pStyle w:val="Title"/><w:jc w:val="center"/></w:pPr><w:r><w:t>ДОГОВІР</w:t></w:r></w:p>
+<w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Жирний</w:t></w:r><w:r><w:rPr><w:i/><w:u w:val="single"/></w:rPr><w:t xml:space="preserve"> курсив &amp; підкреслений</w:t></w:r></w:p>
+<w:p><w:pPr><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:b w:val="0"/></w:rPr><w:t>Звичайний</w:t></w:r></w:p>
+<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Пункт 1</w:t></w:r></w:p>
+<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Пункт 2</w:t></w:r></w:p>
+</w:body></w:document>`;
+        const html = docxToHtml(makeZip([{ name: "word/document.xml", data: xml }]));
+        expect(html).toBe(`<h1 style="text-align:center">ДОГОВІР</h1><p><strong>Жирний</strong><em><u> курсив &amp; підкреслений</u></em></p><p style="text-align:justify">Звичайний</p><ul><li>Пункт 1</li><li>Пункт 2</li></ul>`);
+    });
+});

@@ -1,3 +1,5 @@
+import { isHtmlBody, tokensInHtml } from "./contractHtml";
+
 // Каталог полей договора (docs/CONTRACT_FIELDS.md): что юрист может перетащить в шаблон и что подставляется само.
 // Три источника значений:
 //  • customer* — данные клиента: карточка контакта и компании CRM (стандартные колонки + произвольные реквизиты в extra);
@@ -271,6 +273,7 @@ export function partyVars(side: "customer" | "firm", values: Record<string, stri
 
 /** Метки {{…}} в тексте (в порядке появления, без повторов). */
 export function tokensIn(text: string): string[] {
+	if (isHtmlBody(text)) return tokensInHtml(text); // богатый текст редактора: поля-меточки и {{ключи}}
 	const seen = new Set<string>();
 	const out: string[] = [];
 	for (const m of Array.from(String(text ?? "").matchAll(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g))) {
