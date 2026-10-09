@@ -79,3 +79,32 @@ jobs:
         run: node scripts/reconcile-links.mjs
       - name: Тесты
         run: npm test
+
+  # ВАЖНО: эту задачу нельзя удалять как «наследство Vercel» — на неё опирается боевая выкладка.
+  # Сервер (deploy/autodeploy.env: DEPLOY_BRANCH=deploy) выкладывает ИМЕННО ветку deploy, а не main:
+  # так автовыкладке не нужен доступ к API GitHub для проверки CI, и репозиторий можно держать приватным.
+  # Если ветка перестанет обновляться, сервер замрёт на последнем коммите (так и случилось 09.10.2026,
+  # когда задачу убрали: коммиты #58 и дальше на сервер не попали).
+  # Ветка движется только вперёд: более старый коммит, закончивший проверку позже нового, её не откатит.
+  publish-deploy:
+    needs: [check, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: publish-deploy
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Опубликовать проверенный коммит в ветку deploy
+        run: |
+          git fetch origin deploy || true
+          if git rev-parse -q --verify refs/remotes/origin/deploy >/dev/null && ! git merge-base --is-ancestor refs/remotes/origin/deploy HEAD; then
+            echo "deploy уже впереди этого коммита — пропускаю"
+          else
+            git push origin HEAD:refs/heads/deploy
+          fi
