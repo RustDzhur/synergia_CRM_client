@@ -18,6 +18,7 @@ import { marketOf } from "@/lib/finance/market";
 import { defaultContractText } from "@/lib/finance/contractText";
 import { fieldOf } from "@/lib/finance/contractFields";
 import { apiCall } from "@/store/crmApi";
+import RichContractEditor from "./RichContractEditor";
 import ContractDataPanel, { belongsToContact } from "./ContractDataPanel";
 import { trFor } from "./contractUi";
 
@@ -212,11 +213,13 @@ export default function Contracts() {
 						/>
 						<div>
 							<span className="mb-6 block text-12 text-[#8c948b]">{t("contractBody")}</span>
-							<textarea
+							<RichContractEditor
 								value={form.body}
-								onChange={(e) => setForm({ ...form, body: e.target.value })}
-								rows={12}
-								className="fs-field fs-scroll w-full resize-y p-10 text-12 leading-[1.5] outline-none"
+								onChange={(html) => setForm((f) => ({ ...f, body: html }))}
+								country={(marketOf(settings?.country) as "DE" | "UA" | "UZ" | null) ?? null}
+								customFields={activeTemplate?.fields ?? []}
+								height={380}
+								palette={false}
 							/>
 							<span className="mt-[4px] block text-11 text-[#9AA396]">{t("contractBodyHint", { vars: "{{number}} {{customer}} {{value}} {{start}} {{end}}" })}</span>
 						</div>

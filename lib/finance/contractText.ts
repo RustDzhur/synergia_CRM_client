@@ -32,18 +32,21 @@ export function contractDate(iso?: string | null): string {
 	return m ? `${m[3]}.${m[2]}.${m[1]}` : "";
 }
 
-/** Подстановка значений в текст: {{number}}, {{ customerTaxId }}, {{passport}} — регистр и пробелы не важны. */
-export function fillContractText(text: string, vars: Record<string, string>): string {
-	// Ключи сравниваем без регистра: в тексте пишут {{customerTaxId}} и {{customertaxid}} — оба должны найтись
+/** Поиск значения метки по ключу: регистр не важен, синонимы ({{Name}}, {{address}}, {{passport}}) — см. ALIASES в contractFields.ts; прямое имя важнее. */
+export function varResolver(vars: Record<string, string>): (key: string) => string | undefined {
 	const map: Record<string, string> = {};
 	for (const [key, value] of Object.entries(vars)) map[key.toLowerCase()] = String(value ?? "");
-	return String(text ?? "").replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (whole, key: string) => {
+	return (key) => {
 		const k = key.toLowerCase();
-		// синонимы ({{Name}}, {{address}}, {{passport}}) — см. ALIASES в contractFields.ts; прямое имя всегда важнее
 		const alias = ALIASES[k];
-		const value = map[k] !== undefined ? map[k] : alias ? map[alias.toLowerCase()] : undefined;
-		return value === undefined ? whole : value;
-	});
+		return map[k] !== undefined ? map[k] : alias ? map[alias.toLowerCase()] : undefined;
+	};
+}
+
+/** Подстановка значений в обычный текст: {{number}}, {{ customerTaxId }}, {{passport}} — регистр и пробелы не важны; незнакомая метка остаётся как есть. */
+export function fillContractText(text: string, vars: Record<string, string>): string {
+	const get = varResolver(vars);
+	return String(text ?? "").replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (whole, key: string) => get(key) ?? whole);
 }
 
 // Произвольное поле шаблона договора: key — имя подстановки {{key}}, label — подпись в форме,

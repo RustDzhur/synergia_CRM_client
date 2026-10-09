@@ -6,6 +6,7 @@ import { toContractDTO } from "@/lib/finance/dto";
 import { isTemplate } from "@/lib/finance/pdf";
 import { ownedContact, ownedCompany, ownedDeal, contactForCustomer, dealForCustomer } from "@/lib/deals";
 import { prisma } from "@/lib/prisma";
+import { cleanBody } from "@/lib/finance/contractHtml";
 import { logDocEvent } from "@/lib/sync/documents";
 import { defaultCurrency } from "@/lib/finance/settings";
 import { fx } from "@/lib/sync/texts";
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
             endDate: typeof b.endDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.endDate) ? b.endDate : "",
             notes: typeof b.notes === "string" ? b.notes.trim().slice(0, 2000) : "",
             // Текст договора: пункты с подстановками {{…}} — печатаются PDF-ом (lib/finance/contractText.ts)
-            body: typeof b.body === "string" ? b.body.trim().slice(0, 20000) : "",
+            body: typeof b.body === "string" ? cleanBody(b.body) : "",
             template: isTemplate(b.template) ? b.template : "",
             templateId: typeof b.templateId === "string" && b.templateId.trim() ? b.templateId.trim().slice(0, 40) : undefined,
             fields: (b.fields && typeof b.fields === "object" && !Array.isArray(b.fields) ? b.fields : undefined),

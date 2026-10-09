@@ -2,7 +2,8 @@ import { isTemplate, renderDocumentPdf, PdfSettings, PdfParty, PdfLineItem } fro
 import { financeSettings } from "./settings";
 import { marketOf } from "./market";
 import { activeTemplate, applyTemplate, templateAllowsRate } from "./documents/store";
-import { defaultContractText, fillContractText } from "./contractText";
+import { defaultContractText, fillContractText, varResolver } from "./contractText";
+import { fillContractHtml, isHtmlBody } from "./contractHtml";
 import { contractVars } from "./contractVars";
 import { firmRate } from "./rates";
 import { validId } from "@/lib/api";
@@ -229,7 +230,9 @@ export async function contractPdfBuffer(org: string, c: any, locale: string, tem
     const party = await customerParty(org, c);
     const market = marketOf(settings.country);
     const rawBody = String(c.body ?? "").trim() || String(settings.contractTemplate ?? "").trim() || defaultContractText(market);
-    const body = fillContractText(rawBody, await contractVars(org, c, settings, { currency: tpl?.currency || c.currency }));
+    const vars = await contractVars(org, c, settings, { currency: tpl?.currency || c.currency });
+    // Богатый текст (редактор договоров) подставляется в HTML с экранированием значений; прежний обычный текст — как раньше
+    const body = isHtmlBody(rawBody) ? fillContractHtml(rawBody, varResolver(vars)) : fillContractText(rawBody, vars);
     return renderDocumentPdf(
         {
             kind: "contract",

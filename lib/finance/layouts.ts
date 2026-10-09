@@ -4,6 +4,8 @@ import { uahInWords } from "./ua/words";
 import { formatMoney } from "./money";
 import { epcPayload, qrMatrix } from "./qr";
 import { templateDef } from "./templates";
+import { isHtmlBody } from "./contractHtml";
+import { drawRichBody } from "./contractRich";
 export { TEMPLATES, TEMPLATE_IDS, isTemplate, templateDef } from "./templates";
 export type { TemplateDef, TemplateVariant } from "./templates";
 import type { TemplateDef } from "./templates";
@@ -608,6 +610,8 @@ function contractParagraphs(doc: Doc, d: PdfDocumentData, x: number, y: number, 
     const body = (d.body ?? "").trim();
     if (!body) return y;
     y += 10;
+    // богатый текст из редактора договоров: абзацы, заголовки, жирный/курсив, списки, картинки (lib/finance/contractRich.ts)
+    if (isHtmlBody(body)) return drawRichBody(doc, body, x, y, w, fl);
     // Наибольший кусок текста, который вообще может поместиться на одном листе: выше него ничего резать
     // не нужно (влезает целиком), ниже — режем по словам и продолжаем на новом листе
     const limit = Math.max(120, fl.bottom - PAGE_MARGIN - 40);

@@ -2,11 +2,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import toast from "react-hot-toast";
-import { TbEye, TbFileImport, TbPencil, TbPlus, TbTrash } from "react-icons/tb";
+import { TbFileImport, TbPencil, TbPlus, TbTrash } from "react-icons/tb";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { apiCall, authHeaders } from "@/store/crmApi";
 import { marketOf } from "@/lib/finance/market";
-import { CATALOG, GROUP_LABEL, GROUP_ORDER, fieldOf, fieldsForCountry, labelOf, tokensIn, type CatalogField, type Country } from "@/lib/finance/contractFields";
+import { CATALOG, GROUP_LABEL, GROUP_ORDER, fieldOf, fieldsForCountry, labelOf, tokensIn, type Country } from "@/lib/finance/contractFields";
+import { textToHtml } from "@/lib/finance/contractHtml";
+import RichContractEditor from "./RichContractEditor";
 import FormField from "../shared/FormField";
 import { trFor } from "./contractUi";
 
@@ -18,30 +20,25 @@ interface Field { key: string; label: string; type: "text" | "date" | "number" |
 interface Draft { name: string; body: string; fields: Field[] }
 const EMPTY: Draft = { name: "", body: "", fields: [] };
 
-const PALETTE = ["#C6FF4D", "#FFD166", "#FF6B6B", "#4ECDC4", "#A78BFA", "#F472B6", "#60A5FA", "#34D399", "#FB923C", "#2DD4BF", "#E879F9", "#94A3B8"];
-const groupColor = (g: string) => PALETTE[Math.max(0, GROUP_ORDER.indexOf(g as never)) % PALETTE.length];
-
 export default function ContractTemplatesManager() {
 	const locale = useLocale();
 	const tr = trFor(locale);
 	const { contractTemplates, loadContractTemplates, createContractTemplate, updateContractTemplate, deleteContractTemplate, settings, loadSettings } = useFinanceStore();
 	const [editing, setEditing] = useState<{ id: string } | null>(null);
 	const [draft, setDraft] = useState<Draft>(EMPTY);
+	const [creating, setCreating] = useState(false);
 	const [saving, setSaving] = useState(false);
-	const [query, setQuery] = useState("");
-	const [allCountries, setAllCountries] = useState(false);
-	const [preview, setPreview] = useState(false);
-	const taRef = useRef<HTMLTextAreaElement>(null);
+	const [reloadKey, setReloadKey] = useState(0); // файл загружен: редактор перечитывает текст
 	const fileRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => { loadContractTemplates(); if (!settings) void loadSettings(); }, [loadContractTemplates, loadSettings, settings]);
 
 	const country = (marketOf(settings?.country) as Country | null) ?? null;
 
-	function startNew() { setEditing(null); setDraft({ ...EMPTY }); setPreview(false); }
+	function startNew() { setCreating(true); setEditing(null); setDraft({ ...EMPTY }); setReloadKey((k) => k + 1); }
 	function startEdit(t: { id: string; name: string; body: string; fields: { key: string; label: string; type: string; source: string }[] }) {
-		setEditing({ id: t.id });
-		setPreview(false);
+		setEditing({ id: t.id }); setCreating(false);
+		setReloadKey((k) => k + 1);
 		setDraft({
 			name: t.name, body: t.body,
 			fields: t.fields.map((f) => ({
@@ -51,16 +48,7 @@ export default function ContractTemplatesManager() {
 			})),
 		});
 	}
-	function back() { setEditing(null); setDraft(EMPTY); setPreview(false); }
-
-	// Вставка метки {{key}} в позицию курсора (клик по чипу); перетаскивание в текст вставляет её браузер сам — в место, куда отпустили
-	function insertToken(key: string) {
-		const ta = taRef.current;
-		const pos = ta ? (ta.selectionStart ?? draft.body.length) : draft.body.length;
-		const token = `{{${key}}}`;
-		setDraft((d) => ({ ...d, body: d.body.slice(0, pos) + token + d.body.slice(pos) }));
-		requestAnimationFrame(() => { if (ta) { ta.focus(); const p = pos + token.length; ta.setSelectionRange(p, p); } });
-	}
+	function back() { setCreating(false); setEditing(null); setDraft(EMPTY); setReloadKey((k) => k + 1); }
 
 	function setField(i: number, patch: Partial<Field>) { setDraft((d) => ({ ...d, fields: d.fields.map((f, j) => (j === i ? { ...f, ...patch } : f)) })); }
 	function addField() { setDraft((d) => ({ ...d, fields: [...d.fields, { key: "", label: "", type: "text", source: "manual" }] })); }
@@ -71,9 +59,10 @@ export default function ContractTemplatesManager() {
 		form.append("file", file);
 		try {
 			const res = await fetch("/api/contract-templates/import", { method: "POST", headers: authHeaders(false), body: form });
-			const json = (await res.json().catch(() => null)) as { text?: string; message?: string } | null;
-			if (!res.ok || !json?.text) return void toast.error(json?.message || tr("importFailed"));
-			setDraft((d) => ({ ...d, body: json.text as string, name: d.name || file.name.replace(/\.[^.]+$/, "") }));
+			const json = (await res.json().catch(() => null)) as { text?: string; html?: string; message?: string } | null;
+			if (!res.ok || !(json?.html || json?.text)) return void toast.error(json?.message || tr("importFailed"));
+			setDraft((d) => ({ ...d, body: json.html || textToHtml(json.text ?? ""), name: d.name || file.name.replace(/\.[^.]+$/, "") }));
+			setReloadKey((k) => k + 1);
 			toast.success(tr("imported"));
 		} catch { toast.error(tr("importFailed")); }
 		if (fileRef.current) fileRef.current.value = "";
@@ -90,41 +79,10 @@ export default function ContractTemplatesManager() {
 	}
 	async function remove(id: string) { const err = await deleteContractTemplate(id); if (err) toast.error(err); }
 
-	// Палитра: поля страны фирмы (или все), с поиском, по группам
-	const groups = useMemo(() => {
-		const q = query.trim().toLowerCase();
-		const list = fieldsForCountry(allCountries ? null : country, CATALOG).filter((f) => !q || f.key.toLowerCase().includes(q) || labelOf(f, locale).toLowerCase().includes(q));
-		return GROUP_ORDER.map((g) => ({ id: g, items: list.filter((f) => f.group === g) })).filter((g) => g.items.length);
-	}, [query, allCountries, country, locale]);
-
 	const used = useMemo(() => tokensIn(draft.body), [draft.body]);
 	const customKeys = useMemo(() => new Set(draft.fields.map((f) => f.key.toLowerCase())), [draft.fields]);
 	const unknown = used.filter((k) => !fieldOf(k) && !customKeys.has(k.toLowerCase()));
-	const previewText = useMemo(
-		() => draft.body.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (whole, k: string) => {
-			const f = fieldOf(k);
-			const c = draft.fields.find((x) => x.key.toLowerCase() === k.toLowerCase());
-			return f ? `‹${labelOf(f, locale)}›` : c ? `‹${c.label || c.key}›` : whole;
-		}),
-		[draft.body, draft.fields, locale]
-	);
-
-	const hasEditor = editing !== null || draft.name !== "" || draft.body !== "" || draft.fields.length > 0;
-	const chip = (key: string, label: string, color: string, title?: string) => (
-		<button
-			type="button"
-			key={key}
-			draggable
-			onDragStart={(e) => { e.dataTransfer.setData("text/plain", `{{${key}}}`); e.dataTransfer.effectAllowed = "copy"; }}
-			onClick={() => insertToken(key)}
-			title={title ?? `{{${key}}}`}
-			className="cursor-grab select-none rounded-full px-10 py-4 text-12 font-semibold text-[#0A0A0A] shadow-[0_2px_6px_rgba(0,0,0,0.25)] transition-transform hover:scale-105 active:cursor-grabbing"
-			style={{ background: color }}
-		>
-			{label}
-		</button>
-	);
-
+	const hasEditor = creating || editing !== null || draft.name !== "" || draft.body !== "" || draft.fields.length > 0;
 	return (
 		<div className="flex flex-col gap-16">
 			{!hasEditor && <FirmContractData />}
@@ -160,50 +118,20 @@ export default function ContractTemplatesManager() {
 						<div className="flex flex-col gap-10">
 							<FormField label={tr("nameLabel")} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
 
-							<div className="fs-card p-12">
-								<div className="mb-8 flex flex-wrap items-center gap-8">
-									<span className="text-12 font-medium text-[#f1f4ee]">{tr("paletteTitle")}</span>
-									<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr("search")} className="fs-field ml-auto h-30 min-w-[180px] flex-1 px-8 text-12 outline-none md:max-w-[280px]" />
-									<select value={allCountries ? "all" : "mine"} onChange={(e) => setAllCountries(e.target.value === "all")} className="fs-field h-30 px-8 text-12 outline-none">
-										<option value="mine">{tr("forCountry")}</option>
-										<option value="all">{tr("allCountries")}</option>
-									</select>
-								</div>
-								<div className="fs-scroll flex max-h-[320px] flex-col gap-8 overflow-y-auto pr-4">
-									{draft.fields.some((f) => f.key) && (
-										<div>
-											<p className="mb-4 text-11 text-[#8c948b]">{tr("customFields")}</p>
-											<div className="flex flex-wrap gap-6">{draft.fields.map((f, i) => (f.key ? chip(f.key, f.label || f.key, PALETTE[(i + 5) % PALETTE.length]) : null))}</div>
-										</div>
-									)}
-									{groups.map((g) => (
-										<details key={g.id} open={g.id === "contract" || !!query.trim() || g.id === "person"}>
-											<summary className="cursor-pointer select-none text-12 font-medium text-[#cfd4cb]">{GROUP_LABEL[g.id][locale === "de" || locale === "ua" || locale === "uz" ? locale : "en"]} <span className="text-[#8c948b]">({g.items.length})</span></summary>
-											<div className="mt-6 flex flex-wrap gap-6">{g.items.map((f: CatalogField) => chip(f.key, labelOf(f, locale), groupColor(f.group), `{{${f.key}}}`))}</div>
-										</details>
-									))}
-								</div>
-							</div>
-
 							<div>
 								<div className="mb-6 flex flex-wrap items-center gap-8">
 									<span className="text-12 text-[#8c948b]">{tr("yourText")}</span>
 									<input ref={fileRef} type="file" accept=".docx,.txt,.md,text/plain" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void importFile(f); }} />
 									<button type="button" onClick={() => fileRef.current?.click()} className="fs-btn fs-btn-ghost ml-auto h-30"><TbFileImport size={14} /> {tr("importFile")}</button>
-									<button type="button" onClick={() => setPreview((v) => !v)} className="fs-btn fs-btn-ghost h-30"><TbEye size={14} /> {preview ? tr("previewOff") : tr("preview")}</button>
 								</div>
-								{preview ? (
-									<pre className="fs-field fs-scroll max-h-[480px] w-full overflow-auto whitespace-pre-wrap p-10 text-12 leading-[1.5]">{previewText}</pre>
-								) : (
-									<textarea
-										ref={taRef}
-										value={draft.body}
-										onChange={(e) => setDraft({ ...draft, body: e.target.value })}
-										rows={16}
-										placeholder={tr("placeholder")}
-										className="fs-field fs-scroll w-full resize-y p-10 text-12 leading-[1.5] outline-none"
-									/>
-								)}
+								<RichContractEditor
+									value={draft.body}
+									onChange={(html) => setDraft((d) => ({ ...d, body: html }))}
+									country={country}
+									customFields={draft.fields}
+									reloadKey={reloadKey}
+									placeholder={tr("placeholder")}
+								/>
 								{unknown.length > 0 && (
 									<p className="mt-6 text-11 text-[#F4A100]">{tr("unknown")} {unknown.map((k) => `{{${k}}}`).join(", ")}</p>
 								)}
