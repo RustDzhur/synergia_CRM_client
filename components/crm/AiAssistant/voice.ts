@@ -453,6 +453,7 @@ export function useContinuousListening({ lang, active, onPhrase, onError }: {
  * Контракт тот же, что у useContinuousListening: onPhrase зовётся один раз на фразу, interim непустой, пока человек говорит.
  */
 const SRV_MIN_LEVEL = 0.009; // ниже — тишина комнаты
+const SRV_MAX_GATE = 0.05; // потолок порога: выше тихая речь его не пробьёт и микрофон «молчит»
 const SRV_SILENCE_MS = 1500; // пауза, после которой фраза закончена
 const SRV_MIN_SPEECH_MS = 450; // короче — щелчок или кашель, не фраза
 const SRV_MAX_MS = 30_000;
@@ -589,10 +590,13 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 				for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
 				return Math.sqrt(sum / data.length);
 			};
-			let baseline = 0;
-			for (let i = 0; i < 6; i++) { baseline += level(); await new Promise((r) => setTimeout(r, 40)); }
-			baseline /= 6;
-			const threshold = Math.max(SRV_MIN_LEVEL, baseline * 2.5);
+			// Порог срабатывания. Раньше брали СРЕДНИЙ уровень за 240 мс сразу после нажатия: если человек
+			// начинал говорить в тот же момент, средним оказывался его же голос, порог вырастал в 2.5 раза —
+			// и фразу нельзя было пробить уже никогда (микрофон «молчит», хотя сервер исправен).
+			// Теперь стартуем от уровня тишины и ведём оценку фона: вниз — мгновенно, вверх — очень медленно,
+			// с потолком. Тихий микрофон порог пробивает, а шумная комната поднимает его за десяток секунд.
+			let floor = SRV_MIN_LEVEL;
+			let threshold = SRV_MIN_LEVEL;
 			const track = stream.getAudioTracks()[0];
 			let peak = 0;
 			let holdUntil = 0; // важное сообщение (результат, ошибка) не затирается строкой с уровнем несколько секунд
@@ -652,6 +656,12 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 				const now = Date.now();
 				const lv = level();
 				if (lv > peak) peak = lv;
+				// Оценка фона и порог: вниз — сразу, вверх — примерно вдвое за 17 секунд, не выше потолка.
+				// Пока идёт запись фразы порог не трогаем: иначе растущий порог обрезал бы её конец.
+				if (recorder?.state !== "recording") {
+					floor = lv < floor ? lv : Math.min(floor * 1.002 + 0.00001, SRV_MAX_GATE);
+					threshold = Math.max(SRV_MIN_LEVEL, Math.min(SRV_MAX_GATE, floor * 2.2));
+				}
 				const loud = lv > threshold;
 				if (now - lastLevelAt > 500 && now > holdUntil && recorder?.state !== "recording") {
 					lastLevelAt = now;
