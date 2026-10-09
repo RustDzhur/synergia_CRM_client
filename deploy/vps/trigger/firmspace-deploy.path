@@ -1,0 +1,11 @@
+[Unit]
+Description=Файл-триггер выкладки Firmspace (вебхук GitHub)
+
+[Path]
+# Тот же каталог, что смонтирован в контейнер сайта как /deploy-request
+# (deploy/vps/docker-compose.yml). Вебхук GitHub кладёт сюда файл — выкладка начинается сразу.
+PathExists=/home/server/deploy-request/request
+Unit=firmspace-deploy.service
+
+[Install]
+WantedBy=multi-user.target

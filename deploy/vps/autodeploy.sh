@@ -22,6 +22,15 @@ CI_RECHECK_SECONDS="${CI_RECHECK_SECONDS:-180}"
 
 log() { printf '%s %s\n' "$(date -Is)" "$*" >> "$LOG"; }
 
+# Триггер из вебхука (см. deploy/vps/trigger/): GitHub кладёт файл в каталог, смонтированный в контейнер
+# сайта, systemd-путь запускает этот скрипт сразу — без ожидания двухминутного cron. Файл нужен только
+# как сигнал, поэтому убираем его здесь; если что-то пойдёт не так, cron выложит по расписанию.
+TRIGGER_FILE="${DEPLOY_TRIGGER_FILE:-$HOME_DIR/deploy-request/request}"
+if [ -f "$TRIGGER_FILE" ]; then
+    rm -f "$TRIGGER_FILE"
+    log "запуск по триггеру из вебхука"
+fi
+
 cd "$REPO_DIR" || { log "нет каталога $REPO_DIR"; exit 1; }
 
 git fetch --quiet "$REMOTE" "$BRANCH" || { log "git fetch не удался"; exit 1; }

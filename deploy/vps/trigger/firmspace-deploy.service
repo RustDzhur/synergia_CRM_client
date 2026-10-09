@@ -1,0 +1,11 @@
+[Unit]
+Description=Выкладка Firmspace по триггеру из вебхука GitHub
+
+[Service]
+Type=oneshot
+User=server
+Group=server
+WorkingDirectory=/home/server/crm-duplicate
+# Тот же flock, что у cron: две выкладки одновременно не запустятся, лишний триггер просто подождёт
+ExecStart=/usr/bin/flock -n /tmp/crm-autodeploy.lock /home/server/crm-duplicate/deploy/vps/autodeploy.sh
+TimeoutStartSec=1800

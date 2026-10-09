@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import { reportError } from "@/lib/reportError";
 
 export const dynamic = "force-dynamic";
@@ -7,8 +9,15 @@ export const dynamic = "force-dynamic";
 // Вебхук для сборок: упавшая сборка в GitHub должна попадать в тот же Telegram, что и ошибки приложения —
 // иначе о поломке узнаёшь, только зайдя в панель.
 //
+// Второе назначение — ТРИГГЕР ВЫКЛАДКИ. CI публикует зелёный коммит в ветку выкладки, GitHub шлёт сюда
+// событие push, маршрут кладёт файл-флаг в каталог, смонтированный с хоста, а на сервере за ним следит
+// systemd-путь (deploy/vps/trigger/firmspace-deploy.path): он запускает deploy/vps/autodeploy.sh сразу,
+// не дожидаясь двухминутного cron. Без флага и юнита выкладка идёт по cron как раньше — триггер дополняет,
+// а не заменяет его.
+//
 // Настраивается так (см. docs/PLATFORM.md):
-//   GitHub → репозиторий → Settings → Webhooks → https://<домен>/api/hooks/deploy?secret=<DEPLOY_HOOK_SECRET>, content type application/json
+//   GitHub → репозиторий → Settings → Webhooks → https://<домен>/api/hooks/deploy?secret=<DEPLOY_HOOK_SECRET>,
+//   content type application/json, события: push и workflow_run.
 // Без переменной DEPLOY_HOOK_SECRET маршрут выключен: публичная ручка, которую может дёрнуть кто угодно,
 // хуже, чем отсутствие уведомлений.
 //
@@ -20,6 +29,21 @@ function allowed(secret: string | null, expected: string): boolean {
     const a = Buffer.from(secret);
     const b = Buffer.from(expected);
     return a.length === b.length && timingSafeEqual(a, b);
+}
+
+// Файл-триггер: путь внутри контейнера, каталог приходит с хоста (deploy/vps/docker-compose.yml).
+const TRIGGER_FILE = process.env.DEPLOY_TRIGGER_FILE || "/deploy-request/request";
+const TRIGGER_BRANCH = process.env.DEPLOY_HOOK_BRANCH || "deploy";
+
+/** Кладём флаг для systemd-пути/скрипта выкладки. Ошибку не поднимаем: cron всё равно выложит по расписанию. */
+async function requestDeploy(sha: string): Promise<boolean> {
+    try {
+        await mkdir(dirname(TRIGGER_FILE), { recursive: true });
+        await writeFile(TRIGGER_FILE, `${new Date().toISOString()} ${sha}\n`);
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 // Что случилось и куда смотреть. Разбираем только то, что нам нужно, остальное игнорируем молча:
@@ -53,6 +77,16 @@ export async function POST(req: Request) {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     // Тип события GitHub лежит в заголовке
     const type = String(req.headers.get("x-github-event") ?? "").toLowerCase();
+
+    // push в ветку выкладки — просим сервер пересобраться немедленно (файл-триггер для systemd-пути)
+    if (type === "push") {
+        const branch = String(body.ref ?? "").replace("refs/heads/", "");
+        if (branch !== TRIGGER_BRANCH) return NextResponse.json({ ok: true, ignored: `branch ${branch || "?"}` });
+        const sha = String(body.after ?? "").slice(0, 40);
+        const triggered = await requestDeploy(sha);
+        return NextResponse.json({ ok: true, triggered, branch, commit: sha.slice(0, 7) });
+    }
+
     const failure = describe(type, body);
     if (!failure) return NextResponse.json({ ok: true, ignored: type || "unknown" });
 
