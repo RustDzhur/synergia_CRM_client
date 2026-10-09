@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Сборка для собственного сервера (Docker): Next кладёт в .next/standalone минимальный сервер.
-  // Vercel это не мешает — там используется обычный вывод.
   output: "standalone",
   // instrumentation.ts: запуск фоновых задач при старте сервера (опрос Telegram для управления Айрис)
   experimental: { instrumentationHook: true },
@@ -32,7 +31,7 @@ const nextConfig = {
   webpack: (config) => {
     // Шрифт документов (assets/fonts/*.ttf) кладём в бандл как data-URI: у pdfkit данные его собственной
     // гарнитуры подгружаются в рантайме через createRequire("#standard-fonts/...") относительно
-    // node_modules/pdfkit, а в функциях на Vercel этих файлов нет — генерация PDF падала с
+    // node_modules/pdfkit, а в serverless-функциях этих файлов нет — генерация PDF падала с
     // "Cannot find module '#standard-fonts/Helvetica'". Со встроенным шрифтом файловых зависимостей нет.
     // Правило намеренно узкое (только assets/fonts) — остальные .ttf в проекте оно не затрагивает.
     config.module.rules.push({

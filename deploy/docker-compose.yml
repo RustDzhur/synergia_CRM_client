@@ -1,5 +1,5 @@
 # Дубликат CRM на своём сервере: тот же код, но база — PostgreSQL, файлы — каталог на диске.
-# Оригинал на Vercel продолжает работать на MongoDB + Firebase Storage; это отдельный контур.
+# Прежний контур продолжает работать на MongoDB + Firebase Storage; это отдельный контур.
 #
 # Запуск (на сервере, из каталога с Dockerfile и .env):
 #   docker compose -f deploy/docker-compose.yml up -d --build

@@ -586,7 +586,7 @@ export function webchatConfig(input: Input) {
     };
 }
 
-// Проверка канала: у Telegram спрашиваем, дошёл ли до нас вебхук и почему нет (например, сайт закрыт паролем Vercel)
+// Проверка канала: у Telegram спрашиваем, дошёл ли до нас вебхук и почему нет (например, сайт закрыт паролем)
 export async function checkIntegration(docIn: Doc, origin: string) {
     const doc = rowOf(docIn?.owner, docIn?.type, docIn);
     // у WhatsApp проверяем доступ к номеру: токен мог истечь или номер отвязали от приложения

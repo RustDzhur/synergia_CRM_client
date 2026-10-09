@@ -16,7 +16,7 @@ export async function GET(req: Request) {
     if (!user) return unauthorized(req);
     // отложенные действия автоматизации выполняются, пока кто-то из фирмы работает в CRM (этот запрос приходит каждые 30 секунд)
     await (await import("@/lib/automation")).runDueJobs(user.id).catch((e) => recordSyncError(user.id, "automation.due_jobs", e));
-    // то же и для напоминаний календаря: суточный крон Vercel для минутных напоминаний слишком редок
+    // то же и для напоминаний календаря: суточный крон для минутных напоминаний слишком редок
     await sweepEventReminders(user.id, tzOffset(req)).catch((e) => recordSyncError(user.id, "calendar.reminders", e));
     // сроки задач и сделок — тоже на сервере, адресно ответственному (lib/sync/deadlines.ts)
     await sweepDeadlines(user.id, tzOffset(req));

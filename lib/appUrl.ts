@@ -5,7 +5,7 @@ function isLocalHost(hostWithPort: string) {
 }
 
 // Публичный адрес сайта: по нему провайдеры (Telegram, Viber, Twilio, Meta) присылают вебхуки, а Google/Microsoft возвращают
-// пользователя после входа. Порядок: APP_URL из окружения → заголовок x-forwarded-host (его ставит Vercel и другие прокси)
+// пользователя после входа. Порядок: APP_URL из окружения → заголовок x-forwarded-host (его ставит прокси)
 // → адрес самого запроса. Заголовок Host не используем: в режиме разработки Next подставляет в него внутренний адрес вида [::1]:53737.
 export function appOrigin(req: Request) {
     const fromEnv = process.env.APP_URL?.replace(/\/+$/, "");
