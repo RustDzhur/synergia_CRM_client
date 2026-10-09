@@ -11,6 +11,8 @@
 
 import type { Metadata } from "next";
 import { asLocale, breadcrumbLd, pageMetadata, softwareApplicationLd, type Locale } from "@/lib/seo";
+import { convertEur, planCurrency } from "@/lib/currency";
+import { getRates } from "@/lib/currencyServer";
 
 export const PATH = "/features";
 
@@ -131,16 +133,25 @@ export function generateMetadata({ params }: { params: { locale: string } }): Me
 	return pageMetadata({ path: PATH, locale, ...SEO[locale] });
 }
 
-export function pageJsonLd(localeCode: string) {
+export async function pageJsonLd(localeCode: string) {
 	const locale = asLocale(localeCode);
+	// Разметка должна называть ту же валюту и сумму, что человек видит в блоке тарифов:
+	// для ua и uz это гривна и сум по актуальному курсу, иначе поисковик видит расхождение с ценой на странице.
+	const rates = await getRates();
+	const currency = planCurrency(locale);
+	const amount = (eur: number) => Math.round(convertEur(eur, currency, rates));
 	return [
 		breadcrumbLd(locale, [
 			{ name: "Firmspace AI", path: "/" },
 			{ name: CRUMB[locale], path: PATH },
 		]),
-		softwareApplicationLd(locale, {
-			description: SEO[locale].description,
-			features: FEATURE_LIST[locale],
-		}),
+		softwareApplicationLd(
+			locale,
+			{
+				description: SEO[locale].description,
+				features: FEATURE_LIST[locale],
+			},
+			{ currency, standard: amount(20), professional: amount(53) },
+		),
 	];
 }

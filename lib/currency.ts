@@ -49,3 +49,12 @@ export function formatPlanPrice(eur: number, locale: string, rates: Record<strin
 		return currency === "UAH" ? `${amount} ₴` : `${amount} soʻm`;
 	}
 }
+
+// Токен цены в текстах FAQ, документации и ответах бота: [[price.standard]], [[price.professionalYear]] и т.п.
+// В словарях текстов держать числа нельзя — цена зависит от локали и курса, поэтому она приходит картой
+// (lib/currencyServer.ts priceTokens) и подставляется при рендере, на сервере.
+export const PRICE_TOKEN = /\[\[(price\.[A-Za-z]+)\]\]/g;
+
+/** Подставляет цены в готовый текст; без карты цен текст уходит как есть. */
+export const applyPrices = (text: string, prices?: Record<string, string>): string =>
+	prices ? text.replace(PRICE_TOKEN, (whole, key: string) => prices[key] ?? whole) : text;

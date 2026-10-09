@@ -7,6 +7,7 @@ import { DOCS } from "@/content/footerPages";
 import { resolveDocs } from "@/content/docs/resolve";
 import "react";
 import { loadMessages } from "@/lib/messages";
+import { priceTokens } from "@/lib/currencyServer";
 
 export { generateMetadata } from "./metadata";
 
@@ -15,11 +16,14 @@ export { generateMetadata } from "./metadata";
 export default async function page({ params }: { params: { locale: string } }) {
 	const locale = params.locale;
 	const messages = await loadMessages(locale);
+	// Цены тарифов считаются на сервере по актуальному курсу: в текстах стоят токены [[price.…]],
+	// а не числа, иначе в узбекской и украинской версии цены оставались бы в евро.
+	const prices = await priceTokens(locale);
 	const docs = {
 		title: tx(DOCS.title, locale),
 		intro: tx(DOCS.intro, locale),
 		soon: tx(DOCS.soon, locale),
-		sections: resolveDocs(DOCS.sections, locale, messages),
+		sections: resolveDocs(DOCS.sections, locale, messages, prices),
 	};
 	return (
 		<div className="lg:max-w-screen-lg m-auto">

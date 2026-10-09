@@ -1,6 +1,6 @@
 import { rateLimited } from "@/lib/rateLimit";
-import { tx } from "@/content/i18n";
-import { matchFaq } from "@/lib/chatbotMatch";
+import { matchFaq, faqAnswer } from "@/lib/chatbotMatch";
+import { priceTokens } from "@/lib/currencyServer";
 import { answerVisitor } from "@/lib/ai/publicIris";
 import { notifyTeamTelegram } from "@/lib/notifyTeam";
 import { findByToken } from "@/lib/integrations";
@@ -68,7 +68,8 @@ export async function POST(req: Request, { params }: { params: { token: string }
             else if (ai && ai.handoff) { await botSay(ai.text, true); /* ответ человеку: reply остаётся пустым — виджет предложит оставить контакт */ }
             else {
                 const hit = matchFaq(text);
-                if (hit) { reply = await botSay(tx(hit.a, lang), false); answered = true; }
+                // цены в готовом ответе — по курсу языка посетителя, как на странице тарифов
+                if (hit) { reply = await botSay(faqAnswer(hit, lang, await priceTokens(lang)), false); answered = true; }
             }
         }
     }

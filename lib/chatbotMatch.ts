@@ -1,5 +1,6 @@
 import { type FaqEntry, CHATBOT_FAQ } from "@/content/chatbotFaq";
 import { tx } from "@/content/i18n";
+import { applyPrices } from "@/lib/currency";
 
 // Простой подбор ответа по ключевым словам — без обращения к языковой модели (осознанный выбор для публичного
 // лендингового бота, см. app/content/chatbotFaq.ts). Каждая запись получает очки за каждое своё ключевое слово,
@@ -27,6 +28,8 @@ export function matchFaq(query: string): FaqEntry | null {
 export function faqQuestion(entry: FaqEntry, locale: string) {
     return tx(entry.q, locale);
 }
-export function faqAnswer(entry: FaqEntry, locale: string) {
-    return tx(entry.a, locale);
+// Цены в ответах бота приходят картой с сервера ([[price.standard]] → «900 ₴ (≈ €20)»): иначе
+// украинский и узбекский посетитель получал бы евро, а на странице тарифов видит свою валюту.
+export function faqAnswer(entry: FaqEntry, locale: string, prices?: Record<string, string>) {
+    return applyPrices(tx(entry.a, locale), prices);
 }

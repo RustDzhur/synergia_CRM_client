@@ -15,11 +15,13 @@ const FEATURE_LABEL: Record<string, string> = {
     multiFirm: "several firms under one account, team roles", ads: "Ad performance (Google Ads / Meta Ads)", aiAutomation: "AI step in automation",
 };
 
-function plansText(): string {
+function plansText(prices?: Record<string, string>): string {
     return PLANS.map((p) => {
         const on = Object.entries(p.features).filter(([, v]) => v).map(([k]) => FEATURE_LABEL[k] ?? k);
+        // Цену называем в валюте локали посетителя (карта prices приходит с сервера), иначе в евро.
+        const price = p.priceMonth === 0 ? "free" : `${prices?.[`price.${p.id}`] ?? `€${p.priceMonth}`} per month (yearly billing = ${YEAR_MONTHS} months, two months free)`;
         return [
-            `- ${p.id.toUpperCase()}: ${p.priceMonth === 0 ? "free" : `€${p.priceMonth} per month (yearly billing = ${YEAR_MONTHS} months, two months free)`}`,
+            `- ${p.id.toUpperCase()}: ${price}`,
             `  users: ${p.users === null ? "unlimited" : `up to ${p.users}`}`,
             p.features.automation ? `  automation rules: up to ${p.automationRules}` : "",
             p.features.aiAssistant ? `  AI assistant conversations: ${p.aiDailyRequests} per day per firm` : "",
@@ -29,7 +31,7 @@ function plansText(): string {
     }).join("\n");
 }
 
-export function platformKnowledge(): string {
+export function platformKnowledge(prices?: Record<string, string>): string {
     return `# Firmspace AI — platform knowledge
 
 ## What it is
@@ -56,7 +58,7 @@ Firmspace AI is an all-in-one business platform for small and medium companies, 
 - AI assistant availability depends on the plan (see plans).
 
 ## Plans and prices
-${plansText()}
+${plansText(prices)}
 All prices are per firm. A free plan exists; registration needs no credit card.
 
 ## Payments and billing

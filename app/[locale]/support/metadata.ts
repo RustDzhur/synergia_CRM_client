@@ -8,10 +8,12 @@
 //   export default function Page({ params }: { params: { locale: string } }) { ... <JsonLd data={pageJsonLd(params.locale)} /> ... }
 //
 // FAQPage собирается из тех же вопросов, что видит пользователь: content/footerPages.ts (SUPPORT.faq).
-// Тексты не переписаны — взяты дословно, включая цены тарифов из config/plans.ts (20 € / 53 €).
+// Тексты не переписаны — взяты дословно, включая цены тарифов из config/plans.ts ([[price.standard]] / [[price.professional]]).
 
 import type { Metadata } from "next";
 import { asLocale, breadcrumbLd, faqPageLd, pageMetadata, siteUrl, type Locale } from "@/lib/seo";
+import { applyPrices } from "@/lib/currency";
+import { priceTokens } from "@/lib/currencyServer";
 
 export const PATH = "/support";
 
@@ -73,7 +75,7 @@ const FAQ: Record<Locale, { q: string; a: string }[]> = {
 		},
 		{
 			q: "Gibt es einen kostenlosen Tarif?",
-			a: "Ja, aber eingeschränkt: Free deckt einen Benutzer mit Vertriebspipeline und Aufgaben ab. Der Team-Teil — Mitarbeiter und Wissensbasis, Feed und Kalender — beginnt mit Standard für 20 € im Monat (bis zu 50 Benutzer). Chat mit Kunden, Dokumente, Finanzen, Marketing, Werbung, Automatisierung und der KI-Assistent kommen mit Professional für 53 € im Monat, das auch die Benutzergrenze aufhebt.",
+			a: "Ja, aber eingeschränkt: Free deckt einen Benutzer mit Vertriebspipeline und Aufgaben ab. Der Team-Teil — Mitarbeiter und Wissensbasis, Feed und Kalender — beginnt mit Standard für [[price.standard]] im Monat (bis zu 50 Benutzer). Chat mit Kunden, Dokumente, Finanzen, Marketing, Werbung, Automatisierung und der KI-Assistent kommen mit Professional für [[price.professional]] im Monat, das auch die Benutzergrenze aufhebt.",
 		},
 		{
 			q: "Kann ich meinen Tarif ändern oder kündigen?",
@@ -107,7 +109,7 @@ const FAQ: Record<Locale, { q: string; a: string }[]> = {
 		},
 		{
 			q: "Is there a free plan?",
-			a: "Yes, but a limited one: Free covers one user with the sales pipeline and tasks. The team part — employees and knowledge base, the feed and the calendar — starts with Standard at €20 a month (up to 50 users). Chat with customers, documents, finance, marketing, ads, automation and the AI assistant come with Professional at €53 a month, which also removes the user limit.",
+			a: "Yes, but a limited one: Free covers one user with the sales pipeline and tasks. The team part — employees and knowledge base, the feed and the calendar — starts with Standard at [[price.standard]] a month (up to 50 users). Chat with customers, documents, finance, marketing, ads, automation and the AI assistant come with Professional at [[price.professional]] a month, which also removes the user limit.",
 		},
 		{
 			q: "Can I change or cancel my plan?",
@@ -141,7 +143,7 @@ const FAQ: Record<Locale, { q: string; a: string }[]> = {
 		},
 		{
 			q: "Чи є безкоштовний тариф?",
-			a: "Так, але обмежений: Free покриває одного користувача з воронкою продажів і завданнями. Командна частина — співробітники та база знань, стрічка й календар — починається з тарифу Standard за 20 € на місяць (до 50 користувачів). Чат із клієнтами, документи, фінанси, маркетинг, реклама, автоматизація та AI-асистент доступні в Professional за 53 € на місяць, там же знімається обмеження на кількість користувачів.",
+			a: "Так, але обмежений: Free покриває одного користувача з воронкою продажів і завданнями. Командна частина — співробітники та база знань, стрічка й календар — починається з тарифу Standard за [[price.standard]] на місяць (до 50 користувачів). Чат із клієнтами, документи, фінанси, маркетинг, реклама, автоматизація та AI-асистент доступні в Professional за [[price.professional]] на місяць, там же знімається обмеження на кількість користувачів.",
 		},
 		{
 			q: "Чи можна змінити або скасувати тариф?",
@@ -175,7 +177,7 @@ const FAQ: Record<Locale, { q: string; a: string }[]> = {
 		},
 		{
 			q: "Bepul tarif bormi?",
-			a: "Ha, lekin cheklangan: Free bitta foydalanuvchini savdo voronkasi va vazifalar bilan qamrab oladi. Jamoa qismi — xodimlar va bilimlar bazasi, lenta va kalendar — oyiga 20 € lik Standard tarifidan boshlanadi (50 tagacha foydalanuvchi). Mijozlar bilan chat, hujjatlar, moliya, marketing, reklama, avtomatlashtirish va AI-yordamchi oyiga 53 € lik Professional tarifida mavjud, u foydalanuvchilar chegarasini ham olib tashlaydi.",
+			a: "Ha, lekin cheklangan: Free bitta foydalanuvchini savdo voronkasi va vazifalar bilan qamrab oladi. Jamoa qismi — xodimlar va bilimlar bazasi, lenta va kalendar — oyiga [[price.standard]] lik Standard tarifidan boshlanadi (50 tagacha foydalanuvchi). Mijozlar bilan chat, hujjatlar, moliya, marketing, reklama, avtomatlashtirish va AI-yordamchi oyiga [[price.professional]] lik Professional tarifida mavjud, u foydalanuvchilar chegarasini ham olib tashlaydi.",
 		},
 		{
 			q: "Tarifimni o'zgartirish yoki bekor qilish mumkinmi?",
@@ -209,8 +211,12 @@ export function generateMetadata({ params }: { params: { locale: string } }): Me
 	return pageMetadata({ path: PATH, locale, ...SEO[locale] });
 }
 
-export function pageJsonLd(localeCode: string) {
+export async function pageJsonLd(localeCode: string) {
 	const locale = asLocale(localeCode);
+	// Цены в ответах FAQ подставляются по актуальному курсу: в разметке должны стоять те же суммы,
+	// что видит человек на странице, иначе поисковик получает расхождение с видимой ценой.
+	const prices = await priceTokens(locale);
+	const faq = FAQ[locale].map((item) => ({ q: applyPrices(item.q, prices), a: applyPrices(item.a, prices) }));
 	return [
 		breadcrumbLd(locale, [
 			{ name: "Firmspace AI", path: "/" },
@@ -224,6 +230,6 @@ export function pageJsonLd(localeCode: string) {
 			url: siteUrl(locale, PATH),
 			inLanguage: locale === "ua" ? "uk" : locale,
 		},
-		faqPageLd(FAQ[locale]),
+		faqPageLd(faq),
 	];
 }

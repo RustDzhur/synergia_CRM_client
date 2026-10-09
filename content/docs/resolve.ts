@@ -19,8 +19,11 @@ export function lookup(messages: Messages, path: string): string | undefined {
 }
 
 // [[ns.key]] → **подпись из кабинета**. Жирный маркер ** превращает в выделение сам компонент страницы.
-export function fill(text: string, messages: Messages): string {
-	return text.replace(LABEL, (_, path: string) => `**${lookup(messages, path) ?? path}**`);
+// Цены тарифов приходят отдельной картой ([[price.standard]] и т.п.): они зависят от курса и локали,
+// поэтому в словарях текстов их держать нельзя. Подстановка идёт ДО разметки ** — цена не жирная.
+export function fill(text: string, messages: Messages, prices?: Record<string, string>): string {
+	const withPrices = prices ? text.replace(LABEL, (whole, path: string) => prices[path] ?? whole) : text;
+	return withPrices.replace(LABEL, (_, path: string) => `**${lookup(messages, path) ?? path}**`);
 }
 
 // Текст для локали. Узбекский берётся из словаря UZ (content/uz.ts) по английскому исходнику,
@@ -30,11 +33,11 @@ function pick(v: { en: string; de: string; ua: string }, locale: string): string
 	return v[(locale as Lang) in v ? (locale as Lang) : "en"];
 }
 
-export function resolveDocs(sections: DocSection[], locale: string, messages: Messages): ResolvedSection[] {
+export function resolveDocs(sections: DocSection[], locale: string, messages: Messages, prices?: Record<string, string>): ResolvedSection[] {
 	return sections.map((s) => ({
 		id: s.id,
-		title: fill(pick(s.title, locale), messages),
-		intro: s.intro && fill(pick(s.intro, locale), messages),
-		groups: s.groups.map((g, i) => ({ id: `${s.id}-${i + 1}`, title: fill(pick(g.title, locale), messages), steps: g.steps.map((step) => fill(pick(step, locale), messages)) })),
+		title: fill(pick(s.title, locale), messages, prices),
+		intro: s.intro && fill(pick(s.intro, locale), messages, prices),
+		groups: s.groups.map((g, i) => ({ id: `${s.id}-${i + 1}`, title: fill(pick(g.title, locale), messages, prices), steps: g.steps.map((step) => fill(pick(step, locale), messages, prices)) })),
 	}));
 }

@@ -20,14 +20,14 @@ export const BILLING_DOCS: DocSection[] = [
 						"[[upgrade.free]]: €0. Один користувач; [[upgrade.crm]] та [[upgrade.tasks]]; без правил автоматизації, без запитів до ШІ та без сховища документів.",
 					),
 					t3(
-						"[[upgrade.standard]]: €20 per month. Up to 50 users; everything of Free plus [[upgrade.company]], [[upgrade.collab]] and [[upgrade.multiFirm]]; no automation, AI assistant or document storage.",
-						"[[upgrade.standard]]: 20 € pro Monat. Bis zu 50 Benutzer; alles aus Free plus [[upgrade.company]], [[upgrade.collab]] und [[upgrade.multiFirm]]; keine Automatisierung, kein KI-Assistent und kein Dokumentenspeicher.",
-						"[[upgrade.standard]]: €20 на місяць. До 50 користувачів; усе з Free плюс [[upgrade.company]], [[upgrade.collab]] та [[upgrade.multiFirm]]; без автоматизації, ШІ-асистента та сховища документів.",
+						"[[upgrade.standard]]: [[price.standard]] per month. Up to 50 users; everything of Free plus [[upgrade.company]], [[upgrade.collab]] and [[upgrade.multiFirm]]; no automation, AI assistant or document storage.",
+						"[[upgrade.standard]]: [[price.standard]] pro Monat. Bis zu 50 Benutzer; alles aus Free plus [[upgrade.company]], [[upgrade.collab]] und [[upgrade.multiFirm]]; keine Automatisierung, kein KI-Assistent und kein Dokumentenspeicher.",
+						"[[upgrade.standard]]: [[price.standard]] на місяць. До 50 користувачів; усе з Free плюс [[upgrade.company]], [[upgrade.collab]] та [[upgrade.multiFirm]]; без автоматизації, ШІ-асистента та сховища документів.",
 					),
 					t3(
-						"[[upgrade.professional]]: €53 per month. Unlimited users; all sections, including [[upgrade.documents]], [[upgrade.channels]], [[upgrade.mail]], [[upgrade.inventory]], [[upgrade.automation]], [[upgrade.aiAssistant]], [[upgrade.marketing]], [[upgrade.ads]] and [[upgrade.aiAutomation]]; 10 GB of storage. The card carries the line “[[upgrade.fullAccess]]”.",
-						"[[upgrade.professional]]: 53 € pro Monat. Unbegrenzt viele Benutzer; alle Bereiche, einschließlich [[upgrade.documents]], [[upgrade.channels]], [[upgrade.mail]], [[upgrade.inventory]], [[upgrade.automation]], [[upgrade.aiAssistant]], [[upgrade.marketing]], [[upgrade.ads]] und [[upgrade.aiAutomation]]; 10 GB Speicher. Die Karte trägt die Zeile „[[upgrade.fullAccess]]“.",
-						"[[upgrade.professional]]: €53 на місяць. Необмежена кількість користувачів; усі розділи, зокрема [[upgrade.documents]], [[upgrade.channels]], [[upgrade.mail]], [[upgrade.inventory]], [[upgrade.automation]], [[upgrade.aiAssistant]], [[upgrade.marketing]], [[upgrade.ads]] та [[upgrade.aiAutomation]]; 10 ГБ сховища. Картка має рядок «[[upgrade.fullAccess]]».",
+						"[[upgrade.professional]]: [[price.professional]] per month. Unlimited users; all sections, including [[upgrade.documents]], [[upgrade.channels]], [[upgrade.mail]], [[upgrade.inventory]], [[upgrade.automation]], [[upgrade.aiAssistant]], [[upgrade.marketing]], [[upgrade.ads]] and [[upgrade.aiAutomation]]; 10 GB of storage. The card carries the line “[[upgrade.fullAccess]]”.",
+						"[[upgrade.professional]]: [[price.professional]] pro Monat. Unbegrenzt viele Benutzer; alle Bereiche, einschließlich [[upgrade.documents]], [[upgrade.channels]], [[upgrade.mail]], [[upgrade.inventory]], [[upgrade.automation]], [[upgrade.aiAssistant]], [[upgrade.marketing]], [[upgrade.ads]] und [[upgrade.aiAutomation]]; 10 GB Speicher. Die Karte trägt die Zeile „[[upgrade.fullAccess]]“.",
+						"[[upgrade.professional]]: [[price.professional]] на місяць. Необмежена кількість користувачів; усі розділи, зокрема [[upgrade.documents]], [[upgrade.channels]], [[upgrade.mail]], [[upgrade.inventory]], [[upgrade.automation]], [[upgrade.aiAssistant]], [[upgrade.marketing]], [[upgrade.ads]] та [[upgrade.aiAutomation]]; 10 ГБ сховища. Картка має рядок «[[upgrade.fullAccess]]».",
 					),
 					t3(
 						"Under the price the card names the limits that really apply to the plan (“rules · AI requests/day · storage”). Free and Standard show no such line, because automation, the AI assistant and document storage are part of Professional; Professional shows 200 rules, 300 AI requests a day and 10 GB.",
@@ -45,9 +45,9 @@ export const BILLING_DOCS: DocSection[] = [
 				title: t3("The page: period, notices and cards", "Die Seite: Zeitraum, Hinweise und Karten", "Сторінка: період, повідомлення й картки"),
 				steps: [
 					t3(
-						"At the top is a switch [[upgrade.monthly]] / [[upgrade.yearly]]. The yearly option carries a badge “2 months free”: a year costs ten months (€200 for Standard, €530 for Professional). The prices on the cards change at once, with “per month” or “per year” next to them.",
-						"Oben steht ein Umschalter [[upgrade.monthly]] / [[upgrade.yearly]]. Die Jahresoption trägt ein Abzeichen „2 Monate gratis“: Ein Jahr kostet zehn Monate (200 € für Standard, 530 € für Professional). Die Preise auf den Karten wechseln sofort, mit „pro Monat“ oder „pro Jahr“ daneben.",
-						"Угорі перемикач [[upgrade.monthly]] / [[upgrade.yearly]]. Річний варіант має значок «2 місяці безкоштовно»: рік коштує десять місяців (€200 за Standard, €530 за Professional). Ціни на картках змінюються одразу, поруч стоїть «на місяць» або «на рік».",
+						"At the top is a switch [[upgrade.monthly]] / [[upgrade.yearly]]. The yearly option carries a badge “2 months free”: a year costs ten months ([[price.standardYear]] for Standard, [[price.professionalYear]] for Professional). The prices on the cards change at once, with “per month” or “per year” next to them.",
+						"Oben steht ein Umschalter [[upgrade.monthly]] / [[upgrade.yearly]]. Die Jahresoption trägt ein Abzeichen „2 Monate gratis“: Ein Jahr kostet zehn Monate ([[price.standardYear]] für Standard, [[price.professionalYear]] für Professional). Die Preise auf den Karten wechseln sofort, mit „pro Monat“ oder „pro Jahr“ daneben.",
+						"Угорі перемикач [[upgrade.monthly]] / [[upgrade.yearly]]. Річний варіант має значок «2 місяці безкоштовно»: рік коштує десять місяців ([[price.standardYear]] за Standard, [[price.professionalYear]] за Professional). Ціни на картках змінюються одразу, поруч стоїть «на місяць» або «на рік».",
 					),
 					t3(
 						"Above the cards a notice may appear. Orange: you came from a locked section — “… is not included in your current plan. Please change your plan first.” with the name of that section. If you already have an unpaid invoice, a list [[upgrade.openInvoices]] shows it with the status (awaiting payment / awaiting confirmation) and the link [[upgrade.openInvoice]].",

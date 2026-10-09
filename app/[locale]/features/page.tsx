@@ -6,12 +6,12 @@ import "react";
 
 export { generateMetadata } from "./metadata";
 
-export default function page({ params }: { params: { locale: string } }) {
+export default async function page({ params }: { params: { locale: string } }) {
 	return (
 		<div className="lg:max-w-screen-lg m-auto">
 			<Navigation />
 			<Features />
-			<JsonLd data={pageJsonLd(params.locale)} />
+			<JsonLd data={await pageJsonLd(params.locale)} />
 			<Footer />
 		</div>
 	);

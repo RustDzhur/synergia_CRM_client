@@ -1,4 +1,5 @@
 import { platformKnowledge } from "@/content/platformKnowledge";
+import { priceTokens } from "@/lib/currencyServer";
 import { complete } from "./provider";
 
 // Публичная Айрис — бот на лендинге (виджет чата). Отвечает посетителю по базе знаний о платформе
@@ -22,7 +23,7 @@ const HANDOFF_TEXT: Record<string, string> = {
     en: "A colleague can answer that best. I have passed your question on — they will reply here in the chat. Leave your e-mail if you need to leave.",
 };
 
-const sys = (lang: string, page: string) => `You are Ayris, the friendly AI assistant of the Firmspace AI platform, talking to a visitor of the website in a chat widget.
+const sys = (lang: string, page: string, prices?: Record<string, string>) => `You are Ayris, the friendly AI assistant of the Firmspace AI platform, talking to a visitor of the website in a chat widget.
 
 Your job: answer questions about the Firmspace AI platform — what it does, modules, features, plans and prices, how it works, who it suits — using ONLY the knowledge below. You are warm, clear and concise: 1–5 short sentences, a short list only when it really helps. No markdown headings. Answer in the language the visitor writes in (their page language is ${LANG_NAME[lang] ?? "English"}).${page ? ` The visitor is on this page: ${page}.` : ""}
 
@@ -34,7 +35,7 @@ Rules:
 - Do not ask for passwords, card numbers or other secrets. You may invite them to try the free plan.
 
 KNOWLEDGE:
-${platformKnowledge()}`;
+${platformKnowledge(prices ?? undefined)}`;
 
 // суточный потолок по всему сайту
 const g = globalThis as { __irisPublic?: { day: string; n: number } };
@@ -54,9 +55,11 @@ export async function answerVisitor(opts: { history: VisitorMsg[]; lang: string;
     if (!history.length || history[history.length - 1].role !== "user") return null;
     if (!underCap()) return null;
     const lang = opts.lang.slice(0, 2).toLowerCase();
+    // Цены в знаниях — в валюте языка посетителя (на странице тарифов он видит ту же сумму)
+    const prices = await priceTokens(lang);
     try {
         const reply = await Promise.race([
-            complete(sys(lang, (opts.page ?? "").slice(0, 120)), history.map((m) => ({ role: m.role, text: m.text.slice(0, 1000) })), [], { model: process.env.AI_PUBLIC_MODEL || undefined }),
+            complete(sys(lang, (opts.page ?? "").slice(0, 120), prices), history.map((m) => ({ role: m.role, text: m.text.slice(0, 1000) })), [], { model: process.env.AI_PUBLIC_MODEL || undefined }),
             new Promise<null>((r) => setTimeout(() => r(null), 25_000)),
         ]);
         if (!reply) return null;

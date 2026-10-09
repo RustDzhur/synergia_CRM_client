@@ -222,7 +222,11 @@ export interface SoftwareLdCopy {
 }
 
 // Цены — из config/plans.ts (0 / 20 / 53 € в месяц), годовой платёж = 10 месяцев.
-export function softwareApplicationLd(locale: Locale, copy: SoftwareLdCopy) {
+// Валюта разметки должна совпадать с той, что человек видит на странице: для украинской и узбекской
+// версии это гривна и сум, поэтому сумму и валюту передаёт вызывающая сторона (она знает курс).
+// Без money.* разметка остаётся в евро — как было раньше.
+export function softwareApplicationLd(locale: Locale, copy: SoftwareLdCopy, money?: { currency: string; standard: number; professional: number }) {
+	const currency = money?.currency ?? "EUR";
 	return {
 		"@context": "https://schema.org",
 		"@type": "SoftwareApplication",
@@ -235,9 +239,9 @@ export function softwareApplicationLd(locale: Locale, copy: SoftwareLdCopy) {
 		inLanguage: HREFLANG[locale],
 		featureList: copy.features,
 		offers: [
-			{ "@type": "Offer", name: "Free", price: "0", priceCurrency: "EUR", url: siteUrl(locale, "/") },
-			{ "@type": "Offer", name: "Standard", price: "20", priceCurrency: "EUR", url: siteUrl(locale, "/") },
-			{ "@type": "Offer", name: "Professional", price: "53", priceCurrency: "EUR", url: siteUrl(locale, "/") },
+			{ "@type": "Offer", name: "Free", price: "0", priceCurrency: currency, url: siteUrl(locale, "/") },
+			{ "@type": "Offer", name: "Standard", price: String(money?.standard ?? 20), priceCurrency: currency, url: siteUrl(locale, "/") },
+			{ "@type": "Offer", name: "Professional", price: String(money?.professional ?? 53), priceCurrency: currency, url: siteUrl(locale, "/") },
 		],
 	};
 }
