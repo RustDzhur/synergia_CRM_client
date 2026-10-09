@@ -6,6 +6,7 @@ import { pickStrings } from "@/lib/activities";
 import { prisma } from "@/lib/prisma";
 import { toDTO } from "@/lib/serialize";
 import { CONTACT_FIELDS, contactFullName } from "@/lib/crmFields";
+import { cleanExtra, mergeExtra } from "@/lib/finance/contractFields";
 import { customerBlockers, propagateContactChange, resolveContactCompany, unlinkCustomer } from "@/lib/sync/customer";
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
@@ -36,7 +37,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!existing || existing.owner !== user.id) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
     const link = await resolveContactCompany(user.id, { companyId: body.companyId, company: data.company });
-    const contact = await prisma.contact.update({ where: { id: params.id }, data: { ...data, ...(link ?? {}) } as any });
+    // произвольные реквизиты для договоров (паспорт, коды…): сливаются с уже сохранёнными, пустая строка удаляет
+    const extra = body && typeof body === "object" && "extra" in body ? { extra: mergeExtra(existing.extra, cleanExtra(body.extra)) } : {};
+    const contact = await prisma.contact.update({ where: { id: params.id }, data: { ...data, ...(link ?? {}), ...extra } as any });
     // имя и реквизиты клиента разошлись по сделкам и документам — подтягиваем (lib/sync/customer.ts)
     await propagateContactChange(user.id, existing, contact);
     return NextResponse.json(toDTO(contact));

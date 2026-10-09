@@ -16,6 +16,10 @@ import DocumentTemplateButton from "./DocumentTemplateButton";
 import { money } from "./format";
 import { marketOf } from "@/lib/finance/market";
 import { defaultContractText } from "@/lib/finance/contractText";
+import { fieldOf } from "@/lib/finance/contractFields";
+import { apiCall } from "@/store/crmApi";
+import ContractDataPanel, { belongsToContact } from "./ContractDataPanel";
+import { trFor } from "./contractUi";
 
 const STATUS_COLOR: Record<string, string> = {
 	draft: STATUS_COLORS.neutral, active: STATUS_COLORS.success,
@@ -38,6 +42,8 @@ export default function Contracts() {
 	const [link, setLink] = useState<{ contact?: string; company?: string }>({});
 	const [busy, setBusy] = useState<string | null>(null);
 	const [toDelete, setToDelete] = useState<string | null>(null);
+	const [saveToCard, setSaveToCard] = useState(false);
+	const tr = trFor(locale);
 
 	useEffect(() => { loadContracts(); }, [loadContracts]);
 	// Подсказки клиента — из CRM: грузим при открытии формы, списки общие с CRM-разделом
@@ -66,10 +72,7 @@ export default function Contracts() {
 	function selectTemplate(id: string) {
 		const tpl = contractTemplates.find((t) => t.id === id);
 		if (!tpl) { setForm((f) => ({ ...f, templateId: "", body: settings?.contractTemplate?.trim() || defaultContractText(marketOf(settings?.country) ?? null), fields: {} })); return; }
-		const contact = link.contact ? contacts.find((c) => c._id === link.contact) : undefined;
-		const extra = (contact && (contact as any).extra && typeof (contact as any).extra === "object") ? (contact as any).extra : {};
-		const fields: Record<string, string> = {};
-		for (const f of tpl.fields) if (f.source === "contact") fields[f.key] = String(extra?.[f.key] ?? "");
+		const fields: Record<string, string> = {}; // значения подставляются из карточек панелью «Данные для договора»; здесь только то, что вводится вручную
 		setForm((f) => ({ ...f, templateId: id, body: tpl.body, fields }));
 	}
 
@@ -86,8 +89,21 @@ export default function Contracts() {
 		if (!form.customerName.trim()) return toast.error(t("customerRequired"));
 		const err = await createContract({ ...form, ...link, customerName: form.customerName.trim(), value: Number(form.value) || 0, currency: settings?.currency || form.currency });
 		if (err) return toast.error(err);
+		if (saveToCard) await saveClientDetails();
 		toast.success(t("saved"));
 		setOpen(false); setForm(EMPTY); setLink({});
+	}
+	// Реквизиты клиента, поправленные в форме, — в его карточку: данные человека в контакт, организации — в компанию
+	async function saveClientDetails() {
+		const toContact: Record<string, string> = {}, toCompany: Record<string, string> = {};
+		for (const [key, value] of Object.entries(form.fields)) {
+			const f = fieldOf(key);
+			if (!f || f.side !== "customer" || f.computed || !value.trim()) continue;
+			const toPerson = belongsToContact(f) ? !!link.contact : !link.company && !!link.contact;
+			(toPerson ? toContact : toCompany)[f.base] = value.trim();
+		}
+		if (link.contact && Object.keys(toContact).length) await apiCall(`/api/contacts/${link.contact}`, "PATCH", { extra: toContact });
+		if (link.company && Object.keys(toCompany).length) await apiCall(`/api/companies/${link.company}`, "PATCH", { extra: toCompany });
 	}
 	async function act(id: string, fn: (id: string) => Promise<string | null>) { setBusy(id); const err = await fn(id); setBusy(null); if (err) toast.error(err); }
 	async function downloadContractPdf(id: string, number: string) {
@@ -172,9 +188,9 @@ export default function Contracts() {
 							{link.contact || link.company ? <span className="mt-6 block text-11 text-[#9AA396]">{t("contractClientLinked")}</span> : null}
 						</div>
 						<div>
-							<span className="mb-6 block text-12 text-[#8c948b]">Шаблон</span>
+							<span className="mb-6 block text-12 text-[#8c948b]">{tr("templates")}</span>
 							<select value={form.templateId} onChange={(e) => selectTemplate(e.target.value)} className="fs-field w-full px-8 py-8 text-13 outline-none">
-								<option value="">— типовой (из настроек) —</option>
+								<option value="">—</option>
 							{contractTemplates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.name}</option>)}
 							</select>
 						</div>
@@ -184,16 +200,16 @@ export default function Contracts() {
 							<FormField label={t("endDate")} type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
 						</div>
 						{/* Текст договора: правится под фирму; поля подставляются на месте {{…}} при печати PDF */}
-{activeTemplate && activeTemplate.fields.length > 0 && (
-						<div className="rounded-12 border border-inkLine p-12">
-							<span className="mb-8 block text-12 font-medium text-[#f1f4ee]">Поля договора</span>
-							<div className="flex flex-col gap-8">
-							{activeTemplate.fields.map((f) => (
-								<FormField key={f.key} label={f.label} type={f.type === "date" ? "date" : (f.type === "number" || f.type === "money") ? "number" : "text"} value={form.fields[f.key] ?? ""} onChange={(e) => setForm({ ...form, fields: { ...form.fields, [f.key]: e.target.value } })} />
-							))}
-							</div>
-						</div>
-						)}
+<ContractDataPanel
+							body={form.body}
+							customFields={activeTemplate?.fields ?? []}
+							link={link}
+							customerName={form.customerName}
+							values={form.fields}
+							onChange={(key, value) => setForm((f) => ({ ...f, fields: { ...f.fields, [key]: value } }))}
+							saveToCard={saveToCard}
+							onSaveToCard={setSaveToCard}
+						/>
 						<div>
 							<span className="mb-6 block text-12 text-[#8c948b]">{t("contractBody")}</span>
 							<textarea

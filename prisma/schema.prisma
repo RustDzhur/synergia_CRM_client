@@ -168,6 +168,7 @@ model Company {
   code             String   @default("")
   registrationDate String   @default("")
   authorisedPerson String   @default("")
+  extra            Json?
   businessType     String   @default("")
   ownershipForm    String   @default("")
   address          String   @default("")
@@ -553,6 +554,7 @@ model FinanceSettings {
   stockCosting         String   @default("avg")
   expenseCategories    String[] @default([])
   contractTemplate     String   @default("")
+  contractData        Json?
   counters             Json?
   // Реквизиты и налоговая модель фирмы-плательщика Узбекистана (STIR, PINFL, MFO, счёт, режим QQS и т.д.); null вне рынка UZ
   uz                   Json?

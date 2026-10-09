@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { unauthorized, validId } from "@/lib/api";
 import { pickStrings } from "@/lib/activities";
+import { cleanExtra, mergeExtra } from "@/lib/finance/contractFields";
 import { prisma } from "@/lib/prisma";
 import { toDTO } from "@/lib/serialize";
 import { COMPANY_FIELDS } from "@/lib/crmFields";
@@ -22,12 +23,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!user) return unauthorized(req);
     if (!validId(params.id)) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
-    const data = pickStrings(await req.json(), COMPANY_FIELDS);
+    const body = await req.json();
+    const data = pickStrings(body, COMPANY_FIELDS);
     if ("name" in data && !data.name) return NextResponse.json({ message: "Name is required" }, { status: 400 });
 
     const existing = await prisma.company.findUnique({ where: { id: params.id } });
     if (!existing || existing.owner !== user.id) return NextResponse.json({ message: "Not found" }, { status: 404 });
-    const company = await prisma.company.update({ where: { id: params.id }, data: data as any });
+    const extra = body && typeof body === "object" && "extra" in body ? { extra: mergeExtra(existing.extra, cleanExtra(body.extra)) } : {};
+    const company = await prisma.company.update({ where: { id: params.id }, data: { ...data, ...extra } as any });
     await propagateCompanyChange(user.id, existing, company);
     return NextResponse.json(toDTO(company));
 }

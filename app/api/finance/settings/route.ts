@@ -8,6 +8,7 @@ import { UA_TAX_SYSTEMS, taxSystemOf, uaProfileErrors, formAndGroup } from "@/li
 import { financeSettings } from "@/lib/finance/settings";
 import { isTemplate } from "@/lib/finance/pdf";
 import { parseCategories } from "@/lib/finance/expenseCategories";
+import { cleanExtra, mergeExtra } from "@/lib/finance/contractFields";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -77,6 +78,8 @@ function toDTO(s: any) {
         expenseCategories: parseCategories(s.expenseCategories),
         // Типовой текст договора фирмы (подстановки {{…}} заполняет PDF); пусто — встроенный типовой
         contractTemplate: s.contractTemplate ?? "",
+        // реквизиты фирмы для договоров, которых нет в настройках (должность и основание подписанта, регистрационные номера, банковские коды…)
+        contractData: s.contractData && typeof s.contractData === "object" ? s.contractData : {},
     };
 }
 
@@ -176,6 +179,10 @@ export async function PATCH(req: Request) {
     if (Array.isArray(b.expenseCategories)) set.expenseCategories = parseCategories(b.expenseCategories);
     // Типовой текст договора: длинный текст, ограничение только по размеру поля
     if (typeof b.contractTemplate === "string") set.contractTemplate = b.contractTemplate.trim().slice(0, 20000);
+    if (b.contractData && typeof b.contractData === "object") {
+        const cur = await prisma.financeSettings.findUnique({ where: { org: user.id }, select: { contractData: true } });
+        set.contractData = mergeExtra(cur?.contractData, cleanExtra(b.contractData));
+    }
     for (const [key, max] of [["uaEsvMonthly", 100000], ["uaMilitaryFixed", 100000], ["uaVatLimit", 100000000], ["uaMilitaryRate", 100]] as const) {
         if (b[key] !== undefined) {
             const n = Number(b[key]);
