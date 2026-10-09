@@ -2,7 +2,10 @@ import React from "react";
 import { ROOMS } from "./iso";
 
 // Общие «источники света» сцены: свечение неона, мягкие тени, стекло, блики на полу. Подключаются один раз в <defs>.
-export const ZONE_LIGHT: Record<string, string> = { sales: "#c6ff4d", finance: "#2DDEB6", warehouse: "#F4A100", office: "#B8A2FF", marketing: "#FF8A7A", service: "#7CC4FF", platform: "#FF6FB5" };
+const ZONE_BASE: Record<string, string> = { sales: "#c6ff4d", finance: "#2DDEB6", warehouse: "#F4A100", office: "#B8A2FF", marketing: "#FF8A7A", service: "#7CC4FF", platform: "#FF6FB5" };
+const OWN = ["#5EEAD4", "#FDE047", "#A5B4FC", "#F9A8D4", "#86EFAC", "#FDBA74", "#67E8F9", "#D8B4FE", "#FCA5A5"];
+/** Цвет зоны: у готовых зон свой, у своих комнат — из палитры по номеру в id. */
+export const ZONE_LIGHT: Record<string, string> = new Proxy(ZONE_BASE, { get: (t, k: string) => t[k] ?? OWN[Array.from(String(k)).reduce((n, ch) => n + ch.charCodeAt(0), 0) % OWN.length] });
 
 export default function SceneDefs() {
 	return (

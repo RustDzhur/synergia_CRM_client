@@ -10,9 +10,9 @@ export const SKEW = 26.565; // atan(1/2): наклон «экрана» на л�
 /** Точка пола (x, y) на высоте z → координаты картинки до сдвига сцены. */
 export const project = (x: number, y: number, z = 0): [number, number] => [((x - y) * TW) / 2, ((x + y) * TH) / 2 - z];
 
-export interface RoomDef { zone: Zone; x: number; y: number; w: number; d: number; col: 0 | 1 | 2; row: 0 | 1 | 2 }
+export interface RoomDef { zone: Zone; x: number; y: number; w: number; d: number; col: number; row: number }
 export type CellKind = "zone" | "coffee" | "hub" | "server";
-export interface CellDef { id: string; kind: CellKind; zone: Zone | null; x: number; y: number; w: number; d: number; col: 0 | 1 | 2; row: 0 | 1 | 2 }
+export interface CellDef { id: string; kind: CellKind; zone: Zone | null; x: number; y: number; w: number; d: number; col: number; row: number }
 
 // Один большой открытый офис 24×18 клеток: сетка 3×3 «островов» по 8×6. По углам и бокам — рабочие зоны, сверху в центре — кофе-пойнт
 // и лаунж, справа снизу — серверная, в самом центре — Айрис. Между островами свободный пол: по нему ходят роботы.
@@ -22,17 +22,29 @@ const LAYOUT: [CellKind, Zone | null][][] = [
     [["zone", "sales"], ["hub", null], ["zone", "finance"]],
     [["zone", "office"], ["zone", "warehouse"], ["zone", "platform"]], // справа внизу — «платформа»: серверная и роботы платформы
 ];
-export const CELLS: CellDef[] = LAYOUT.flatMap((rowDef, row) => rowDef.map(([kind, zone], col) => ({ id: zone ?? kind, kind, zone, x: col * CELL_W, y: row * CELL_D, w: CELL_W, d: CELL_D, col: col as 0 | 1 | 2, row: row as 0 | 1 | 2 })));
-export const ROOMS: RoomDef[] = CELLS.filter((c) => c.zone).map((c) => ({ zone: c.zone as Zone, x: c.x, y: c.y, w: c.w, d: c.d, col: c.col, row: c.row }));
+const BASE_CELLS: CellDef[] = LAYOUT.flatMap((rowDef, row) => rowDef.map(([kind, zone], col) => ({ id: zone ?? kind, kind, zone, x: col * CELL_W, y: row * CELL_D, w: CELL_W, d: CELL_D, col, row })));
 export const GRID_W = 3 * CELL_W; // 24
-export const GRID_D = 3 * CELL_D; // 18
-export const HUB = { x: GRID_W / 2, y: GRID_D / 2 }; // центр офиса
+export const HUB = { x: GRID_W / 2, y: (3 * CELL_D) / 2 }; // центр базового офиса (свои комнаты достраиваются ниже)
 const PAD = 24;
-// сдвиг, чтобы вся сцена попала в положительные координаты
-export const OFF_X = (GRID_D * TW) / 2 + PAD;
-export const OFF_Y = WALL_H + 70 + PAD;
-export const SCENE_W = Math.round(((GRID_W + GRID_D) * TW) / 2 + PAD * 2);
-export const SCENE_H = Math.round(((GRID_W + GRID_D) * TH) / 2 + WALL_H + 70 + PAD * 2 + 28);
+// Эти значения пересчитываются при добавлении или удалении своих комнат (configureRooms): остальные файлы сцены читают их «вживую».
+export let CELLS: CellDef[] = BASE_CELLS;
+export let ROOMS: RoomDef[] = [];
+export let GRID_D = 3 * CELL_D; // 18 + по 6 на каждый ряд своих комнат
+export let OFF_X = 0, OFF_Y = 0, SCENE_W = 0, SCENE_H = 0;
+
+/** Свои комнаты достраиваются рядами по три под базовым офисом, в порядке создания. */
+export function configureRooms(ids: string[]) {
+    const extra: CellDef[] = ids.map((id, i) => ({ id, kind: "zone", zone: id, x: (i % 3) * CELL_W, y: (3 + Math.floor(i / 3)) * CELL_D, w: CELL_W, d: CELL_D, col: i % 3, row: 3 + Math.floor(i / 3) }));
+    CELLS = [...BASE_CELLS, ...extra];
+    ROOMS = CELLS.filter((c) => c.zone).map((c) => ({ zone: c.zone as Zone, x: c.x, y: c.y, w: c.w, d: c.d, col: c.col, row: c.row }));
+    GRID_D = (3 + Math.ceil(ids.length / 3)) * CELL_D;
+    // сдвиг, чтобы вся сцена попала в положительные координаты
+    OFF_X = (GRID_D * TW) / 2 + PAD;
+    OFF_Y = WALL_H + 70 + PAD;
+    SCENE_W = Math.round(((GRID_W + GRID_D) * TW) / 2 + PAD * 2);
+    SCENE_H = Math.round(((GRID_W + GRID_D) * TH) / 2 + WALL_H + 70 + PAD * 2 + 28);
+}
+configureRooms([]);
 
 /** Точка сцены в итоговых координатах SVG. */
 export const pt = (x: number, y: number, z = 0): [number, number] => {
@@ -41,7 +53,8 @@ export const pt = (x: number, y: number, z = 0): [number, number] => {
 };
 export const P = (x: number, y: number, z = 0) => pt(x, y, z).map((n) => n.toFixed(1)).join(",");
 
-export const roomOf = (zone: Zone) => ROOMS.find((r) => r.zone === zone)!;
+export const roomOf = (zone: Zone) => ROOMS.find((r) => r.zone === zone) ?? ROOMS.find((r) => r.zone === "office")!;
+export const roomFor = roomOf;
 
 /** Шесть столов зоны (левый верхний угол стола относительно острова): сначала центральный у задней стены, потом по бокам, потом второй ряд. */
 const DESKS: [number, number][] = [[3, 1.1], [0.5, 1.1], [5.5, 1.1], [3, 3.7], [0.5, 3.7], [5.5, 3.7]];

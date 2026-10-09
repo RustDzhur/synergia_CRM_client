@@ -46,6 +46,8 @@ export const ZONES: ZoneId[] = ["sales", "finance", "warehouse", "office", "mark
 /** Зоны, которые можно выбрать своему роботу: «платформа» — серверная, только для роботов платформы. */
 export const PICK_ZONES: ZoneId[] = ZONES.filter((z) => z !== "platform");
 export const isZone = (v: unknown): v is ZoneId => typeof v === "string" && (ZONES as string[]).includes(v);
+/** Свои комнаты офиса: id вида room_ab12cd (имя хранится отдельно, см. lib/office/store.ts). */
+export const isRoomId = (v: unknown): v is string => typeof v === "string" && /^room_[a-z0-9]{4,10}$/.test(v);
 
 export type Accent = "lime" | "teal" | "sky" | "amber" | "coral" | "violet";
 export const ACCENTS: Accent[] = ["lime", "teal", "sky", "amber", "coral", "violet"];

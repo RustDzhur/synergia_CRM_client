@@ -1,10 +1,14 @@
 import { create } from "zustand";
 import toast from "react-hot-toast";
 import { apiCall } from "./crmApi";
+import { configureRooms } from "@/components/crm/RobotOffice/scene/iso";
 
 // Робот-офис на клиенте (сервер — lib/office). Данные обновляются опросом: часто, пока кто-то работает или ждёт, и редко в покое.
 export type Skill = "crm" | "quotes" | "invoices" | "finance" | "stock" | "purchasing" | "production" | "tasks" | "mail" | "documents" | "blog" | "hr" | "data" | "blogwrite" | "monitor" | "web" | "ads";
-export type Zone = "sales" | "finance" | "warehouse" | "office" | "marketing" | "service" | "platform";
+export type BuiltinZone = "sales" | "finance" | "warehouse" | "office" | "marketing" | "service" | "platform";
+/** Готовая зона или своя комната (id вида room_ab12cd). */
+export type Zone = string;
+export interface Room { id: string; name: string }
 export type AgentName = "seo-agent" | "article-writer" | "mail-sorter";
 export interface PlatformInfo { errors: { telegram: boolean; items: { at: string; title: string; count: number; source: string }[] }; agents: Partial<Record<AgentName, { lastActivity: string; seenAt: string; note: string }>> }
 export type Accent = "lime" | "teal" | "sky" | "amber" | "coral" | "violet";
@@ -19,6 +23,12 @@ export interface CatalogItem { id: string; name: string; zone: Zone; accent: Acc
 
 interface OfficeStore {
     robots: Robot[];
+    /** Свои комнаты офиса (к шести готовым зонам). */
+    rooms: Room[];
+    maxRooms: number;
+    addRoom: (name: string) => Promise<boolean>;
+    renameRoom: (id: string, name: string) => Promise<boolean>;
+    removeRoom: (id: string) => Promise<boolean>;
     /** Каталог ролей для найма (приходит с сервера: администратор платформы правит его без выкладки). */
     catalog: CatalogItem[];
     tasks: OfficeTask[];
@@ -45,12 +55,34 @@ const fail = (message: string) => { toast.error(message); return false; };
 export const useOfficeStore = create<OfficeStore>()((set, get) => {
     const replaceTask = (t: OfficeTask) => set((s) => ({ tasks: s.tasks.some((x) => x.id === t.id) ? s.tasks.map((x) => (x.id === t.id ? t : x)) : [t, ...s.tasks] }));
     return {
-        robots: [], catalog: [], tasks: [], platform: null, loaded: false, ai: true, canEdit: true, maxRobots: 24, selected: null,
+        robots: [], rooms: [], maxRooms: 9, catalog: [], tasks: [], platform: null, loaded: false, ai: true, canEdit: true, maxRobots: 24, selected: null,
         select: (id) => set({ selected: id }),
 
+        addRoom: async (name) => {
+            const r = await apiCall<Room>("/api/office/rooms", "POST", { name });
+            if (!r.ok || !r.data) return fail(r.message);
+            configureRooms([...get().rooms.map((x) => x.id), r.data.id]);
+            set((s) => ({ rooms: [...s.rooms, r.data!] }));
+            return true;
+        },
+        renameRoom: async (id, name) => {
+            const r = await apiCall<Room>(`/api/office/rooms/${id}`, "PATCH", { name });
+            if (!r.ok || !r.data) return fail(r.message);
+            set((s) => ({ rooms: s.rooms.map((x) => (x.id === id ? r.data! : x)) }));
+            return true;
+        },
+        removeRoom: async (id) => {
+            const r = await apiCall(`/api/office/rooms/${id}`, "DELETE");
+            if (!r.ok) return fail(r.message);
+            configureRooms(get().rooms.filter((x) => x.id !== id).map((x) => x.id));
+            set((s) => ({ rooms: s.rooms.filter((x) => x.id !== id), robots: s.robots.map((x) => (x.zone === id ? { ...x, zone: "office" } : x)) }));
+            return true;
+        },
+
         load: async () => {
-            const r = await apiCall<{ robots: Robot[]; catalog: CatalogItem[]; tasks: OfficeTask[]; ai: boolean; canEdit: boolean; maxRobots: number; platform?: PlatformInfo }>("/api/office", "GET", undefined, { cache: "no-store" });
-            if (r.ok && r.data) set({ robots: r.data.robots, catalog: r.data.catalog ?? [], tasks: r.data.tasks, ai: r.data.ai, canEdit: r.data.canEdit, maxRobots: r.data.maxRobots, platform: r.data.platform ?? null, loaded: true });
+            const r = await apiCall<{ robots: Robot[]; rooms?: Room[]; maxRooms?: number; catalog: CatalogItem[]; tasks: OfficeTask[]; ai: boolean; canEdit: boolean; maxRobots: number; platform?: PlatformInfo }>("/api/office", "GET", undefined, { cache: "no-store" });
+            if (r.ok && r.data) { configureRooms((r.data.rooms ?? []).map((x) => x.id)); set({ rooms: r.data.rooms ?? [], maxRooms: r.data.maxRooms ?? 9 }); }
+            if (r.ok && r.data) set({ robots: r.data.robots.map((x) => (/^room_/.test(x.zone) && !(r.data!.rooms ?? []).some((m) => m.id === x.zone) ? { ...x, zone: "office" } : x)), catalog: r.data.catalog ?? [], tasks: r.data.tasks, ai: r.data.ai, canEdit: r.data.canEdit, maxRobots: r.data.maxRobots, platform: r.data.platform ?? null, loaded: true });
             else set({ loaded: true });
         },
 

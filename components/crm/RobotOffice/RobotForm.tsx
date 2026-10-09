@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { PICK_SKILLS, PICK_ZONES } from "@/lib/office/templates";
-import type { Accent, Robot, RobotInput, Skill, Zone } from "@/store/useOfficeStore";
+import { useOfficeStore, type Accent, type Robot, type RobotInput, type Skill, type Zone } from "@/store/useOfficeStore";
 import RobotAvatar from "./RobotAvatar";
 import { ACCENTS, ACCENT_HEX } from "./theme";
 
@@ -14,6 +14,7 @@ export default function RobotForm({ robot, onSubmit, onCancel, submitLabel }: { 
 	const t = useTranslations("office");
 	const [name, setName] = useState(robot?.name ?? "");
 	const [title, setTitle] = useState(robot?.title ?? "");
+	const rooms = useOfficeStore((s) => s.rooms);
 	const [zone, setZone] = useState<Zone>(robot?.zone ?? "office");
 	const [accent, setAccent] = useState<Accent>(robot?.accent ?? "lime");
 	const [skills, setSkills] = useState<Skill[]>(robot?.skills ?? []);
@@ -47,7 +48,8 @@ export default function RobotForm({ robot, onSubmit, onCancel, submitLabel }: { 
 				<div>
 					<label className={label} htmlFor="rb-zone">{t("fZone")}</label>
 					<select id="rb-zone" value={zone} onChange={(e) => setZone(e.target.value as Zone)} className="fs-field h-40 w-full px-12 text-13 outline-none">
-						{ZONE_IDS.map((z) => <option key={z} value={z}>{t(`zone_${z}`)}</option>)}
+						{ZONE_IDS.map((z) => <option key={z} value={z}>{t(`zone_${z}` as never)}</option>)}
+						{rooms.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
 					</select>
 				</div>
 				<div>

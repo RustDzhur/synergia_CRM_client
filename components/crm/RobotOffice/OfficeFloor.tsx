@@ -5,12 +5,12 @@ import toast from "react-hot-toast";
 import { TbBriefcase, TbBuildingWarehouse, TbBuildingSkyscraper, TbHeadset, TbReceipt2, TbServer, TbSpeakerphone } from "react-icons/tb";
 import type { IconType } from "react-icons";
 import { ZONES } from "@/lib/office/templates";
-import { useOfficeStore, type Robot, type Zone } from "@/store/useOfficeStore";
+import { useOfficeStore, type Robot } from "@/store/useOfficeStore";
 import { useDragKit } from "./dragKit";
 import RobotAvatar from "./RobotAvatar";
 import { type RobotView, titleOf, viewOf } from "./theme";
 
-const ZONE_ICON: Record<Zone, IconType> = { sales: TbBriefcase, finance: TbReceipt2, warehouse: TbBuildingWarehouse, office: TbBuildingSkyscraper, marketing: TbSpeakerphone, service: TbHeadset, platform: TbServer };
+const ZONE_ICON: Record<string, IconType> = { sales: TbBriefcase, finance: TbReceipt2, warehouse: TbBuildingWarehouse, office: TbBuildingSkyscraper, marketing: TbSpeakerphone, service: TbHeadset, platform: TbServer };
 const MAX_FILE = 40 * 1024;
 const TEXT_FILE = /\.(txt|csv|tsv|md|json|xml|log)$/i;
 
@@ -59,22 +59,23 @@ function RobotTile({ robot, view, selected, onSelect }: { robot: Robot; view: Ro
 
 export default function OfficeFloor({ onSelect }: { onSelect: (id: string) => void }) {
 	const t = useTranslations("office");
-	const { robots, tasks, selected } = useOfficeStore();
+	const { robots, tasks, selected, rooms } = useOfficeStore();
+	const zoneName = (z: string) => rooms.find((r) => r.id === z)?.name ?? t(`zone_${z}` as never);
 	const drag = useDragKit();
 	const now = Date.now();
 
 	return (
 		<div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-12">
-			{ZONES.map((z) => {
-				const Icon = ZONE_ICON[z];
+			{[...ZONES, ...rooms.map((r) => r.id)].map((z) => {
+				const Icon = ZONE_ICON[z] ?? TbBuildingSkyscraper;
 				const here = robots.filter((r) => r.zone === z);
 				const overZone = drag.payload?.kind === "robot" && drag.over?.type === "zone" && drag.over.id === z;
 				return (
-					<section key={z} data-drop-zone={z} aria-label={t(`zone_${z}`)}
+					<section key={z} data-drop-zone={z} aria-label={zoneName(z)}
 						className={`fs-card p-12 transition-colors ${overZone ? "!border-[rgba(198,255,77,0.6)] bg-[rgba(198,255,77,0.04)]" : ""} ${here.length === 0 ? "min-h-[92px]" : ""}`}>
 						<header className="mb-6 flex items-center gap-8 px-4 text-12 font-semibold text-[#cfd4cb]">
 							<Icon size={15} className="text-[#8c948b]" aria-hidden />
-							{t(`zone_${z}`)}
+							{zoneName(z)}
 							<span className="ml-auto text-11 font-normal text-[#8c948b]">{here.length}</span>
 						</header>
 						{here.length === 0 ? <p className="px-4 text-12 text-[#6b736a]">{t("emptyZone")}</p> : (
