@@ -376,6 +376,80 @@ export const TOOLS: AiTool[] = [
         },
     },
 
+    // ─────────── реклама Google Ads (навык «ads»): план → кампания на паузе → включение с подтверждением ───────────
+    {
+        module: "marketing", write: false,
+        def: { name: "ads_account", description: "Show the connected Google Ads account (id, currency) and its existing campaigns with 30-day results. Call it first. If nothing is connected, tell the owner to connect Google Ads in Marketing → Ad performance.", parameters: schema({}) },
+        run: async (c) => {
+            const { adsContext } = await import("@/lib/ads/robot");
+            const ctx = await adsContext(c.org);
+            const { insightsFor } = await import("@/lib/ads");
+            const data = await insightsFor(ctx.doc, 30);
+            return { accountId: ctx.customer, currency: ctx.currency, campaigns: data.campaigns.slice(0, 20) };
+        },
+    },
+    {
+        module: "marketing", write: false,
+        def: { name: "ads_keyword_ideas", description: "Google Keyword Planner ideas: real monthly searches, competition and top-of-page bid for seed keywords in a country and language. Use it before choosing keywords and the budget.", parameters: schema({ seeds: { type: "array", items: { type: "string" }, description: "1-10 seed keywords or phrases" }, country: S("2-letter country code, e.g. DE"), language: S("2-letter language code, e.g. de") }, ["seeds", "country", "language"]) },
+        check: (a) => ({ seeds: (Array.isArray(a.seeds) ? a.seeds : []).map((x) => str(x, 80)).filter(Boolean).slice(0, 10), country: str(a.country, 2).toUpperCase(), language: str(a.language, 5).toLowerCase() }),
+        run: async (c, a) => {
+            if (!(a.seeds as string[]).length) throw new ToolError("seeds is required");
+            const { adsContext } = await import("@/lib/ads/robot");
+            const { keywordIdeas } = await import("@/lib/ads/googleWrite");
+            const ctx = await adsContext(c.org);
+            try { return { ideas: await keywordIdeas(ctx.token, ctx.customer, a.seeds as string[], String(a.country), String(a.language), ctx.login) }; } catch (e) { throw new ToolError(e instanceof Error ? e.message : "Keyword ideas failed"); }
+        },
+    },
+    {
+        module: "marketing", write: false,
+        def: { name: "ads_save_plan", description: "Save the campaign PLAN that you wrote from the marketer's brief. It is checked against Google Ads limits (headline ≤30, description ≤90 characters, 3–15 headlines, 2–4 descriptions per group) — fix every error it returns and call again. Nothing is created in Google Ads yet. Returns plan_id.", parameters: schema({
+            name: S("campaign name"), url: S("landing page, full address"), dailyBudget: { type: "number", description: "per day, in the account currency" },
+            bidding: { type: "string", enum: ["maximize_clicks", "maximize_conversions", "manual_cpc"] }, maxCpc: { type: "number", description: "max cost per click, optional" },
+            country: S("2-letter country code"), locations: { type: "array", items: { type: "string" }, description: "cities/regions by name; empty = whole country" }, language: S("2-letter language code of the ads"),
+            negatives: { type: "array", items: { type: "string" }, description: "negative keywords for the whole campaign" },
+            groups: { type: "array", description: "ad groups, one per theme (max 10)", items: { type: "object", properties: { name: { type: "string" }, keywords: { type: "array", items: { type: "object", properties: { text: { type: "string" }, match: { type: "string", enum: ["EXACT", "PHRASE", "BROAD"] } }, required: ["text"] } }, headlines: { type: "array", items: { type: "string" } }, descriptions: { type: "array", items: { type: "string" } }, path1: { type: "string" }, path2: { type: "string" } }, required: ["name", "keywords", "headlines", "descriptions"] } },
+        }, ["name", "url", "dailyBudget", "country", "language", "groups"]) },
+        run: async (c, a) => {
+            const { validatePlan, PlanError } = await import("@/lib/ads/googleWrite");
+            try {
+                const { plan, warnings } = validatePlan(a);
+                const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+                await prisma.sectionRecord.create({ data: { org: c.org, key: "office:adsplan", rid: id, values: { plan, status: "draft", at: new Date().toISOString() } as never } });
+                return { plan_id: id, warnings, summary: `${plan.groups.length} ad group(s), ${plan.groups.reduce((n, g) => n + g.keywords.length, 0)} keywords, budget ${plan.dailyBudget}/day, ${plan.country}/${plan.language}` };
+            } catch (e) { if (e instanceof PlanError) throw new ToolError(e.message); throw e; }
+        },
+    },
+    {
+        module: "marketing", write: true,
+        def: { name: "ads_apply_plan", description: "CREATE the saved plan in the owner's Google Ads account as a new campaign in PAUSED state (nothing is spent). Needs user confirmation. Afterwards, ask the owner whether to launch it (ads_set_status).", parameters: schema({ plan_id: S("plan_id from ads_save_plan") }, ["plan_id"]) },
+        check: (a) => ({ plan_id: need(str(a.plan_id, 40), "plan_id") }),
+        run: async (c, a) => {
+            const row = await prisma.sectionRecord.findFirst({ where: { org: c.org, key: "office:adsplan", rid: String(a.plan_id) } });
+            if (!row) throw new ToolError("Plan not found — save it with ads_save_plan first");
+            const v = row.values as unknown as { plan: import("@/lib/ads/googleWrite").AdsPlan; status: string; campaignId?: string };
+            if (v.status === "applied") throw new ToolError(`This plan was already created (campaign ${v.campaignId})`);
+            const { adsContext } = await import("@/lib/ads/robot");
+            const { createCampaign } = await import("@/lib/ads/googleWrite");
+            const ctx = await adsContext(c.org);
+            let out: { campaignId: string };
+            try { out = await createCampaign(ctx.token, ctx.customer, v.plan, ctx.login); } catch (e) { throw new ToolError(e instanceof Error ? e.message : "Google Ads rejected the campaign"); }
+            await prisma.sectionRecord.update({ where: { id: row.id }, data: { values: { ...v, status: "applied", campaignId: out.campaignId, appliedAt: new Date().toISOString() } as never } });
+            return { params: { name: v.plan.name, campaign: out.campaignId }, link: "/crm/marketing" };
+        },
+    },
+    {
+        module: "marketing", write: true,
+        def: { name: "ads_set_status", description: "Launch (ENABLED) or pause (PAUSED) a Google Ads campaign by id. Launching starts spending real money, so it always needs the owner's confirmation.", parameters: schema({ campaign_id: S("numeric campaign id from ads_account"), status: { type: "string", enum: ["ENABLED", "PAUSED"] } }, ["campaign_id", "status"]) },
+        check: (a) => { const id = str(a.campaign_id, 20); if (!/^\d+$/.test(id)) throw new ToolError("campaign_id must be numeric"); return { campaign_id: id, status: a.status === "ENABLED" ? "ENABLED" : "PAUSED" }; },
+        run: async (c, a) => {
+            const { adsContext } = await import("@/lib/ads/robot");
+            const { setCampaignStatus } = await import("@/lib/ads/googleWrite");
+            const ctx = await adsContext(c.org);
+            try { await setCampaignStatus(ctx.token, ctx.customer, String(a.campaign_id), a.status as "ENABLED" | "PAUSED", ctx.login); } catch (e) { throw new ToolError(e instanceof Error ? e.message : "Google Ads rejected the change"); }
+            return { params: { campaign: String(a.campaign_id), status: String(a.status) }, link: "/crm/marketing" };
+        },
+    },
+
     // ─────────── веб-исследования роботов (навык «web») ───────────
     {
         module: "collab", write: false,
