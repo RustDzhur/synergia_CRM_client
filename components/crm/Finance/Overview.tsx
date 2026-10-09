@@ -36,8 +36,9 @@ export default function Overview() {
 
 			<div className="mt-16 fs-card p-16 md:p-20">
 				<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("chartTitle")}</h3>
-				<PairBars data={dashboard.series.map((s) => ({ label: s.month.slice(5), a: s.revenue, b: s.expenses, titleA: `${t("kpiRevenue")}: ${s.revenue}`, titleB: `${t("kpiExpenses")}: ${s.expenses}` }))} />
+				<PairBars data={dashboard.series.map((s) => ({ label: s.month.slice(5), a: s.revenue, b: s.expenses, c: s.invoiced ?? 0, titleC: `${t("kpiInvoiced")}: ${s.invoiced ?? 0}`, titleA: `${t("kpiRevenue")}: ${s.revenue}`, titleB: `${t("kpiExpenses")}: ${s.expenses}` }))} />
 				<div className="mt-10 flex gap-20 text-12 text-[#8c948b]">
+					<span className="flex items-center gap-6"><span className="h-[10px] w-[10px] rounded-[3px] bg-[#4d8bff]" />{t("kpiInvoiced")}</span>
 					<span className="flex items-center gap-6"><span className="h-[10px] w-[10px] rounded-[3px] bg-[#c6ff4d]" />{t("kpiRevenue")}</span>
 					<span className="flex items-center gap-6"><span className="h-[10px] w-[10px] rounded-[3px] bg-[#8C948B]" />{t("kpiExpenses")}</span>
 				</div>

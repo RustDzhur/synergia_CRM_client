@@ -53,8 +53,9 @@ function FinanceBars({ series }: { series: FinanceDashboard["series"] }) {
 	const t = useTranslations("finance");
 	return (
 		<div className="mt-16 border-t border-inkLine pt-14">
-			<PairBars compact data={series.map((s) => ({ label: String(Number(s.month.slice(5))).padStart(2, "0"), a: s.revenue, b: s.expenses, titleA: `${t("kpiRevenue")}: ${s.revenue}`, titleB: `${t("kpiExpenses")}: ${s.expenses}` }))} />
+			<PairBars compact data={series.map((s) => ({ label: String(Number(s.month.slice(5))).padStart(2, "0"), a: s.revenue, b: s.expenses, c: s.invoiced ?? 0, titleC: `${t("kpiInvoiced")}: ${s.invoiced ?? 0}`, titleA: `${t("kpiRevenue")}: ${s.revenue}`, titleB: `${t("kpiExpenses")}: ${s.expenses}` }))} />
 			<div className="mt-8 flex gap-20 text-11 text-[#8c948b]">
+				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#4d8bff]" />{t("kpiInvoiced")}</span>
 				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#c6ff4d]" />{t("kpiRevenue")}</span>
 				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#8C948B]" />{t("kpiExpenses")}</span>
 			</div>
