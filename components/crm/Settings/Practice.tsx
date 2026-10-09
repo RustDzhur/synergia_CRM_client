@@ -2,7 +2,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { PRACTICE_GRANTABLE } from "@/lib/access";
+import { PERM_PREFIX, PRACTICE_GRANTABLE, PRACTICE_PERMS, isPerm } from "@/lib/access";
+import { trPractice } from "./practiceUi";
 import { ORG_KEY, apiCall } from "@/store/crmApi";
 import PageHeader from "@/components/crm/shared/PageHeader";
 import SettingsTabs from "./SettingsTabs";
@@ -28,14 +29,54 @@ const label = "mb-6 block text-12 text-[#8c948b]";
 
 function ModulePicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
 	const t = useTranslations("settings");
+	const tp = trPractice(useLocale());
+	const perms = value.filter(isPerm);
+	const sectionOf = (id: string) => PRACTICE_PERMS.find((p) => PERM_PREFIX + p.id === id)?.module;
+	// набор перезаписывает права и подтягивает нужные разделы; ручные разделы (задачи, совместная работа) сохраняются
+	const apply = (ids: string[]) => {
+		const tokens = ids.map((i) => PERM_PREFIX + i);
+		const secs = new Set(tokens.map((tk) => sectionOf(tk)).filter(Boolean) as string[]);
+		const keep = value.filter((m) => !isPerm(m) && !["inventory", "crm"].includes(m));
+		onChange(Array.from(new Set([...keep, ...Array.from(secs), ...tokens])));
+	};
+	const toggle = (id: string) => { const cur = perms.map((m) => m.slice(PERM_PREFIX.length)); apply(cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]); };
+	const togglePlain = (m: string) => onChange(value.includes(m) ? value.filter((x) => x !== m) : [...value, m]);
+	const group = (mod: "inventory" | "crm", title: string) => (
+		<div className="mt-8">
+			<p className="mb-4 text-11 font-semibold uppercase tracking-wide text-[#8c948b]">{title}</p>
+			<div className="flex flex-wrap gap-x-16 gap-y-6">
+				{PRACTICE_PERMS.filter((p) => p.module === mod).map((p) => (
+					<label key={p.id} className="flex cursor-pointer items-center gap-6 text-12 text-[#cfd4cb]">
+						<input type="checkbox" className="accent-[#c6ff4d]" checked={perms.includes((PERM_PREFIX + p.id) as never)} onChange={() => toggle(p.id)} />{tp(p.id)}
+					</label>
+				))}
+			</div>
+		</div>
+	);
 	return (
-		<div className="flex flex-wrap gap-x-16 gap-y-6">
-			{PRACTICE_GRANTABLE.map((m) => (
-				<label key={m} className="flex cursor-pointer items-center gap-6 text-12 text-[#cfd4cb]">
-					<input type="checkbox" className="accent-[#c6ff4d]" checked={value.includes(m)} onChange={() => onChange(value.includes(m) ? value.filter((x) => x !== m) : [...value, m])} />
-					{t(`module_${m}`)}
-				</label>
-			))}
+		<div>
+			<p className="mb-6 text-11 text-[#8c948b]">{tp("whole")}</p>
+			<div className="flex flex-wrap gap-x-16 gap-y-6">
+				{PRACTICE_GRANTABLE.map((m) => (
+					<label key={m} className="flex cursor-pointer items-center gap-6 text-12 text-[#cfd4cb]">
+						<input type="checkbox" className="accent-[#c6ff4d]" checked={value.includes(m)} disabled={perms.length > 0 && (m === "inventory" || m === "crm")} onChange={() => togglePlain(m)} />
+						{t(`module_${m}`)}
+					</label>
+				))}
+			</div>
+			<div className="mt-14 rounded-10 border border-inkLine p-12">
+				<p className="text-12 font-semibold text-[#f1f4ee]">{tp("fine")}</p>
+				<p className="mt-4 text-11 leading-[1.5] text-[#8c948b]">{tp("fineHint")}</p>
+				<div className="mt-8 flex flex-wrap items-center gap-8">
+					<span className="text-11 text-[#8c948b]">{tp("presets")}:</span>
+					<button type="button" className="fs-chip h-26 px-10 text-11" onClick={() => apply(["contracts", "clients"])}>{tp("presetLawyer")}</button>
+					<button type="button" className="fs-chip h-26 px-10 text-11" onClick={() => apply(["invoices", "export"])}>{tp("presetAccountant")}</button>
+					<button type="button" className="fs-chip h-26 px-10 text-11" onClick={() => apply(["invoices", "expenses", "bank", "stock", "reports", "contracts", "export", "import"])}>{tp("presetFull")}</button>
+					<button type="button" className="text-11 text-[#c6ff4d] hover:underline" onClick={() => apply([])}>{tp("presetClear")}</button>
+				</div>
+				{group("inventory", tp("g_acc"))}
+				{group("crm", tp("g_crm"))}
+			</div>
 		</div>
 	);
 }
@@ -43,6 +84,7 @@ function ModulePicker({ value, onChange }: { value: string[]; onChange: (v: stri
 function ClientSide() {
 	const t = useTranslations("settings");
 	const locale = useLocale();
+	const tpL = trPractice(locale);
 	const [links, setLinks] = useState<Link[] | null>(null);
 	const [denied, setDenied] = useState(false);
 	const [log, setLog] = useState<LogEntry[]>([]);
@@ -106,7 +148,7 @@ function ClientSide() {
 						<div className="flex flex-wrap items-center gap-x-16 gap-y-6">
 							<div className="min-w-0 flex-1">
 								<p className="truncate text-13 font-medium text-[#f1f4ee]">{l.practice.name} <span className="text-11 font-normal text-[#9AA396]">({t(`prKind_${l.practice.kind || "accountant"}` as never)})</span></p>
-								<p className="text-12 text-[#8c948b]">{t(`prAccess_${l.access}` as never)} · {l.modules.map((m) => t(`module_${m}` as never)).join(", ")} · {t("prUntil")} {date(l.expiresAt)}</p>
+								<p className="text-12 text-[#8c948b]">{t(`prAccess_${l.access}` as never)} · {(l.modules.some(isPerm) ? l.modules.filter((m) => !(["inventory", "crm"] as string[]).includes(m)) : l.modules).map((m) => (isPerm(m) ? tpL(m.slice(PERM_PREFIX.length) as never) : t(`module_${m}` as never))).join(", ")} · {t("prUntil")} {date(l.expiresAt)}</p>
 								{l.members.length > 0 && <p className="text-12 text-[#8c948b]">{l.members.map((m) => m.name).join(", ")}</p>}
 							</div>
 							<span className={`fs-chip h-24 px-10 text-11 ${l.status === "active" ? "text-[#c6ff4d]" : "text-[#cfd4cb]"}`}>{t(`prStatus_${l.status}` as never)}</span>

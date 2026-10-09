@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { assertCanAddClient } from "./terms";
-import { PRACTICE_GRANTABLE, type Module } from "@/lib/access";
+import { PRACTICE_GRANTABLE, PRACTICE_PERMS, PERM_PREFIX, isPerm, type Module } from "@/lib/access";
 import { registeredMarkets } from "@/lib/finance/market";
 
 // Практика: бухгалтер или юрист ведёт нескольких клиентов. Ключевое правило — доступ специалиста существует только через
@@ -31,8 +31,10 @@ const roleFor = (kind: string) => (kind === "lawyer" ? "counsel" : "advisor");
 
 export function cleanModules(v: unknown): Module[] {
     const list = Array.isArray(v) ? v : [];
-    const out = Array.from(new Set(list.filter((m): m is Module => typeof m === "string" && (PRACTICE_GRANTABLE as string[]).includes(m))));
-    return out.length ? out : ["inventory"];
+    const out: string[] = Array.from(new Set(list.filter((m): m is Module => typeof m === "string" && (PRACTICE_GRANTABLE as string[]).includes(m))));
+    // тонкие права тянут за собой свой раздел
+    for (const m of list) if (isPerm(m)) { if (!out.includes(m)) out.push(m); const sec = PRACTICE_PERMS.find((p) => PERM_PREFIX + p.id === m)?.module; if (sec && !out.includes(sec)) out.push(sec); }
+    return (out.length ? out : ["inventory"]) as Module[];
 }
 const cleanAccess = (v: unknown): AccessLevel => ((ACCESS_LEVELS as readonly string[]).includes(String(v)) ? (v as AccessLevel) : "read");
 const cleanDays = (v: unknown) => Math.min(730, Math.max(1, Math.round(Number(v) || 365)));

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { permForPath, permsOf } from "@/lib/access";
 
 // Проверка запроса специалиста практики (role advisor / counsel) на действующую связь. Вызывается из requireUser на каждом запросе
 // такого пользователя, без кэша: отзыв, истечение срока и уход сотрудника из практики действуют немедленно.
@@ -20,6 +21,13 @@ export async function practiceGate(membership: { org: string; user: string; link
     if (link.expiresAt && link.expiresAt < new Date()) return { ok: false };
     if (!link.members.includes(membership.user)) return { ok: false };
     if (!(await prisma.practiceMember.findFirst({ where: { practice: link.practice, user: membership.user } }))) return { ok: false };
+    // тонкие права: если клиент выбрал отдельные пункты, всё остальное в разделе закрыто, а ИИ-помощник недоступен (он видел бы всё)
+    const perms = permsOf(link.modules);
+    if (perms.length) {
+        if (pathname.startsWith("/api/ai")) return { ok: false };
+        const need = permForPath(pathname);
+        if (need && !perms.includes(need)) return { ok: false };
+    }
     const read = method === "GET" || method === "HEAD";
     if (!read) {
         if (link.access === "read") return { ok: false };
