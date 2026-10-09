@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fetchPage, isPrivateIp, readHtml, WebError } from "@/lib/ai/webFetch";
+import { parseOpenAiSearch } from "@/lib/ai/webSearch";
 import { toolsFor, TEMPLATES } from "@/lib/office/templates";
 
 describe("web_fetch для роботов", () => {
@@ -17,7 +18,12 @@ describe("web_fetch для роботов", () => {
         expect(r.links[0].url).toBe("https://example.com/kontakt");
     });
     it("навык web даёт инструменты и есть робот-исследователь", () => {
-        expect(toolsFor(["web"]).sort()).toEqual(["list_research", "save_research", "send_telegram_report", "web_fetch"]);
+        expect(toolsFor(["web"]).sort()).toEqual(["list_research", "save_research", "send_telegram_report", "web_fetch", "web_search"]);
         expect(TEMPLATES.find((t) => t.id === "scout")?.skills).toContain("web");
+    });
+    it("разбор ответа поиска OpenAI: текст и уникальные источники", () => {
+        const r = parseOpenAiSearch({ output: [{ type: "web_search_call" }, { type: "message", content: [{ type: "output_text", text: "HubSpot от 20 €", annotations: [{ type: "url_citation", url: "https://hubspot.com/de/pricing", title: "HubSpot" }, { type: "url_citation", url: "https://hubspot.com/de/pricing", title: "dup" }] }] }] });
+        expect(r.answer).toContain("HubSpot");
+        expect(r.results).toHaveLength(1);
     });
 });
