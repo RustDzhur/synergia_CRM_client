@@ -31,7 +31,9 @@ export async function POST(req: Request) {
     const local = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(b.now)) ? String(b.now) : now.toISOString().slice(0, 16);
     try {
         const ctx = { org: user.id, userId: user.userId, role: user.role, modules: user.modules, today: local.slice(0, 10), now: local };
-        const opts = { history, locale: String(b.locale ?? "en"), page: String(b.page ?? "").slice(0, 120), orgName: user.orgName, voice: b.voice === true, auto: b.auto === true };
+        // speech — язык, на котором человек говорит (выбран в панели Айрис): ответ должен быть на нём, даже если
+        // распознавание записало слова другим алфавитом (Chrome не умеет узбекский и подставляет язык браузера).
+        const opts = { history, locale: String(b.locale ?? "en"), page: String(b.page ?? "").slice(0, 120), orgName: user.orgName, voice: b.voice === true, auto: b.auto === true, speech: String(b.speech ?? "").slice(0, 8) };
         const result = await runChat(ctx, opts);
         // Несколько поручений в одном сообщении: ставим в очередь и выполняем в фоне, ответ возвращаем сразу
         if (result.queue) {

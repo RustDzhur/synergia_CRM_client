@@ -452,7 +452,7 @@ export function useContinuousListening({ lang, active, onPhrase, onError }: {
  * граница фразы определяется по громкости (как в useBargeIn), запись уходит на /api/ai/transcribe и фраза приходит текстом.
  * Контракт тот же, что у useContinuousListening: onPhrase зовётся один раз на фразу, interim непустой, пока человек говорит.
  */
-const SRV_MIN_LEVEL = 0.009; // ниже — тишина комнаты
+const SRV_MIN_LEVEL = 0.005; // ниже — тишина комнаты (тихие микрофоны дают речь около 0.01)
 const SRV_MAX_GATE = 0.05; // потолок порога: выше тихая речь его не пробьёт и микрофон «молчит»
 const SRV_SILENCE_MS = 1500; // пауза, после которой фраза закончена
 const SRV_MIN_SPEECH_MS = 450; // короче — щелчок или кашель, не фраза
@@ -474,6 +474,7 @@ type DiagStrings = {
 	hearing: string;
 	level: (lv: string, threshold: string, peak: string) => string;
 	serverErr: (status: string) => string;
+	micSilent: string;
 };
 const DIAG: Record<VoiceLang, DiagStrings> = {
 	ru: {
@@ -483,6 +484,7 @@ const DIAG: Record<VoiceLang, DiagStrings> = {
 		noWords: "Сервер ответил, но слов не разобрал", tooShort: (ms) => `Слишком коротко (${ms} мс) — отброшено`,
 		hearing: "Слышу речь…", level: (l, t, p) => `Слушаю · громкость ${l} · порог ${t} · пик ${p}`,
 		serverErr: (s) => `Сервер ответил ${s} — переключаюсь на браузер`,
+		micSilent: "Микрофон отдаёт тишину — переподключаю вход",
 	},
 	uk: {
 		micAsk: "Мікрофон: запитую доступ…", micDenied: "Мікрофон: доступ заборонено браузером",
@@ -491,6 +493,7 @@ const DIAG: Record<VoiceLang, DiagStrings> = {
 		noWords: "Сервер відповів, але слів не розібрав", tooShort: (ms) => `Занадто коротко (${ms} мс) — відкинуто`,
 		hearing: "Чую мову…", level: (l, t, p) => `Слухаю · гучність ${l} · поріг ${t} · пік ${p}`,
 		serverErr: (s) => `Сервер відповів ${s} — перемикаюся на браузер`,
+		micSilent: "Мікрофон віддає тишу — перепідключаю вхід",
 	},
 	de: {
 		micAsk: "Mikrofon: fordere Zugriff an…", micDenied: "Mikrofon: Zugriff vom Browser verweigert",
@@ -499,6 +502,7 @@ const DIAG: Record<VoiceLang, DiagStrings> = {
 		noWords: "Server antwortete, aber keine Wörter verstanden", tooShort: (ms) => `Zu kurz (${ms} ms) — verworfen`,
 		hearing: "Höre Sprache…", level: (l, t, p) => `Höre zu · Lautstärke ${l} · Schwelle ${t} · Spitze ${p}`,
 		serverErr: (s) => `Server antwortete ${s} — wechsle zum Browser`,
+		micSilent: "Mikrofon liefert Stille — Eingang wird neu verbunden",
 	},
 	en: {
 		micAsk: "Microphone: requesting access…", micDenied: "Microphone: access denied by browser",
@@ -507,6 +511,7 @@ const DIAG: Record<VoiceLang, DiagStrings> = {
 		noWords: "Server answered but understood no words", tooShort: (ms) => `Too short (${ms} ms) — dropped`,
 		hearing: "Hearing speech…", level: (l, t, p) => `Listening · level ${l} · threshold ${t} · peak ${p}`,
 		serverErr: (s) => `Server answered ${s} — switching to browser`,
+		micSilent: "Microphone gives silence — reconnecting the input",
 	},
 	uz: {
 		micAsk: "Mikrofon: ruxsat so‘rayapman…", micDenied: "Mikrofon: brauzer ruxsat bermadi",
@@ -515,6 +520,7 @@ const DIAG: Record<VoiceLang, DiagStrings> = {
 		noWords: "Server javob berdi, lekin so‘z tushunmadi", tooShort: (ms) => `Juda qisqa (${ms} ms) — tashlandi`,
 		hearing: "Nutqni eshityapman…", level: (l, t, p) => `Tinglayapman · daraja ${l} · chegara ${t} · cho‘qqi ${p}`,
 		serverErr: (s) => `Server ${s} javob berdi — brauzerga o‘tmoqda`,
+		micSilent: "Mikrofon jim — kirishni qayta ulayapman",
 	},
 };
 
@@ -542,9 +548,14 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 		let ctx: AudioContext | null = null;
 		let timer: ReturnType<typeof setInterval> | null = null;
 		let recorder: MediaRecorder | null = null;
+		// Ссылку на источник звука держим: узел без ссылки сборщик мусора может забрать,
+		// и анализатор начинает читать тишину навсегда — микрофон «не слышит» при выданном разрешении.
+		let src: MediaStreamAudioSourceNode | null = null;
 		const cleanup = () => {
 			if (timer) { clearInterval(timer); timer = null; }
 			try { recorder?.state === "recording" && recorder.stop(); } catch { /* уже остановлен */ }
+			try { src?.disconnect(); } catch { /* уже отключён */ }
+			src = null;
 			stream?.getTracks().forEach((t) => t.stop());
 			stream = null;
 			void ctx?.close().catch(() => undefined);
@@ -582,7 +593,8 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 			if (disposed) { window.removeEventListener("pointerdown", wake); window.removeEventListener("keydown", wake); return cleanup(); }
 			const analyser = ctx.createAnalyser();
 			analyser.fftSize = 1024;
-			ctx.createMediaStreamSource(stream).connect(analyser);
+			src = ctx.createMediaStreamSource(stream);
+			src.connect(analyser);
 			const data = new Float32Array(analyser.fftSize);
 			const level = () => {
 				analyser.getFloatTimeDomainData(data);
@@ -651,10 +663,23 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 				setInterim("…"); // «слышу речь»: держит Айрис бодрствующей, пока человек говорит
 			};
 
+			let silentTicks = 0;
 			timer = setInterval(() => {
 				if (disposed || sending) return;
 				const now = Date.now();
+				// Контекст мог уснуть (фоновая вкладка, запрет автовоспроизведения) — тогда уровень всегда 0
+				if (ctx && ctx.state !== "running") void ctx.resume().catch(() => undefined);
 				const lv = level();
+				// Абсолютная тишина дольше трёх секунд: пересобираем граф звука — узел-источник мог быть
+				// собран сборщиком мусора, и анализатор читает нули, хотя микрофон работает.
+				silentTicks = lv < 0.0005 ? silentTicks + 1 : 0;
+				if (silentTicks > 60) {
+					silentTicks = 0;
+					try {
+						src?.disconnect();
+						if (src) { src.connect(analyser); note(D.micSilent); }
+					} catch { /* попробуем на следующем кадре */ }
+				}
 				if (lv > peak) peak = lv;
 				// Оценка фона и порог: вниз — сразу, вверх — примерно вдвое за 17 секунд, не выше потолка.
 				// Пока идёт запись фразы порог не трогаем: иначе растущий порог обрезал бы её конец.

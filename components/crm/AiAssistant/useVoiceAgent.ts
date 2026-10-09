@@ -167,7 +167,7 @@ export function useVoiceAgent({ locale, page, blocked, serverStt = false, onErro
 			// Раньше здесь был только chime, и на языках, где распознаватель сохраняет имя «Ayris» (en/de/uz), Айрис «молчала»
 			// после приветствия — владелец думал, что она не слышит. Отправляем приветствие модели, она отвечает «чем могу помочь».
 			chime("wake");
-			void send(greeting, { locale, page, voice: true, auto: autoApprove });
+			void send(greeting, { locale, page, voice: true, auto: autoApprove, speech: lang });
 			return;
 		}
 		armAwake(AWAKE_MS);
@@ -197,7 +197,7 @@ export function useVoiceAgent({ locale, page, blocked, serverStt = false, onErro
 		// Не молчим, пока думаю: через 0,7 с — «Секунду», дальше раз в ~10 секунд — «Ещё работаю» (отменяется, как только пришёл ответ)
 		clearFillers();
 		fillerTimers.current = [700, 9_000, 20_000, 35_000, 55_000].map((ms, i) => setTimeout(() => { if (useAiStore.getState().busy) playFiller(i === 0 ? "ack" : "wait", lang, gender); }, ms));
-		void send(utterance, { locale, page, voice: true, auto: autoApprove });
+		void send(utterance, { locale, page, voice: true, auto: autoApprove, speech: lang });
 	}
 
 	// Ответ пришёл (или запрос закончился) — вставки больше не нужны

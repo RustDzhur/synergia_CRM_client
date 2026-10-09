@@ -37,7 +37,7 @@ interface AiStore {
 	hide: () => void;
 	reset: () => void;
 	loadStatus: () => Promise<void>;
-	send: (text: string, ctx: { locale: string; page: string; voice?: boolean; auto?: boolean }) => Promise<void>;
+	send: (text: string, ctx: { locale: string; page: string; voice?: boolean; auto?: boolean; speech?: string }) => Promise<void>;
 	confirm: (messageId: string, actionId: string, args?: Record<string, unknown>) => Promise<void>;
 	cancel: (messageId: string, actionId: string) => void;
 }
@@ -100,7 +100,7 @@ export const useAiStore = create<AiStore>()((set, get) => {
 			if (!value || get().busy) return;
 			const history = [...get().messages.filter((m) => !m.error), { id: "", role: "user" as const, text: value }].slice(-20).map((m) => ({ role: m.role, text: m.text }));
 			set((s) => ({ busy: true, draft: "", messages: [...s.messages, { id: uid(), role: "user", text: value }] }));
-			const res = await apiCall<{ reply: string; steps: string[]; actions: Omit<AiAction, "state">[]; nav?: AiNav; download?: AiDownload; scroll?: { dir: string; pages: number }; find?: { text: string }; job?: { id: string; total: number }; executed?: (Omit<AiAction, "state"> & { state: "done" | "failed" })[] }>("/api/ai/chat", "POST", { messages: history, locale: ctx.locale, page: ctx.page, now: localNow(), voice: ctx.voice === true, auto: ctx.auto === true });
+			const res = await apiCall<{ reply: string; steps: string[]; actions: Omit<AiAction, "state">[]; nav?: AiNav; download?: AiDownload; scroll?: { dir: string; pages: number }; find?: { text: string }; job?: { id: string; total: number }; executed?: (Omit<AiAction, "state"> & { state: "done" | "failed" })[] }>("/api/ai/chat", "POST", { messages: history, locale: ctx.locale, page: ctx.page, now: localNow(), voice: ctx.voice === true, auto: ctx.auto === true, speech: ctx.speech ?? "" });
 			if (!res.ok || !res.data) {
 				set((s) => ({ busy: false, messages: [...s.messages, { id: uid(), role: "assistant", text: res.message, error: true, voice: ctx.voice }] }));
 			} else {
