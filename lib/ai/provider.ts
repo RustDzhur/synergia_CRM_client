@@ -278,6 +278,8 @@ function sttTargets(language?: string): SttTarget[] {
     const cloudKey = process.env.OPENAI_API_KEY;
     if (language === "uz" && process.env.ELEVENLABS_API_KEY) targets.push({ url: "https://api.elevenlabs.io/v1", key: process.env.ELEVENLABS_API_KEY, model: process.env.ELEVENLABS_STT_MODEL || "scribe_v1", kind: "elevenlabs" });
     if (cloudKey) targets.push({ url: openaiBase(), key: cloudKey, model: language === "uz" ? uzCloudModel() : cloudSttModel() });
+    // Узбекский: если лучшая модель отказала или занята, пробуем обычный whisper-1 (он тоже знает узбекский) — лучше чуть хуже, чем «не принимает»
+    if (cloudKey && language === "uz" && uzCloudModel() !== "whisper-1") targets.push({ url: openaiBase(), key: cloudKey, model: "whisper-1" });
     if (process.env.TRANSCRIBE_API_URL) targets.push({ url: trim(process.env.TRANSCRIBE_API_URL), key: process.env.TRANSCRIBE_API_KEY || undefined, model: sttModel() });
     return process.env.STT_LOCAL_FIRST === "1" && !targets.some((t) => t.kind === "elevenlabs") ? targets.reverse() : targets;
 }
@@ -327,12 +329,17 @@ export async function transcribeAudio(bytes: Buffer, mime: string, language?: st
     const type = (mime || "audio/webm").split(";")[0];
     let lastError: unknown;
     for (const t of targets) {
-        try {
-            const text = await transcribeOnce(t, bytes, type, language);
-            // Единая точка отсева фантомов для всех вызывающих (route и doctor): тишина/шум не должны возвращаться как «речь»
-            return isPhantomTranscript(text) ? "" : text;
-        } catch (e) {
-            lastError = e; // пробуем следующий путь: облако упало — выручает локальный Whisper
+        // два захода на путь: кратковременный отказ провайдера (занят, 5xx, обрыв) чаще всего проходит со второго раза; неверный ключ — нет
+        for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+                const text = await transcribeOnce(t, bytes, type, language);
+                // Единая точка отсева фантомов для всех вызывающих (route и doctor): тишина/шум не должны возвращаться как «речь»
+                return isPhantomTranscript(text) ? "" : text;
+            } catch (e) {
+                lastError = e; // пробуем следующий путь: облако упало — выручает следующая модель или локальный Whisper
+                if (e instanceof Error && /rejected the API key/i.test(e.message)) break;
+                if (attempt === 0) await new Promise((r) => setTimeout(r, 600));
+            }
         }
     }
     throw lastError instanceof Error ? lastError : new ProviderError("Speech recognition failed");
