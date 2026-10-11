@@ -7,6 +7,9 @@
 import { computeTotals } from "./totals";
 import { DOC_PRESETS } from "./documents/presets";
 
+/** Дата из JSON-поля (там строка ISO) или из Date — в строку ISO; пусто, если даты нет. */
+const isoOf = (v: unknown): string => (v instanceof Date ? v.toISOString() : typeof v === "string" ? v : "");
+
 export const toOrderDTO = (o: any) => ({
     deliveryNoteNumber: o.deliveryNoteNumber ?? "", deliveryDate: o.deliveryDate ?? "",
     actNumber: o.actNumber ?? "", actDate: o.actDate ?? "",
@@ -50,7 +53,7 @@ export const toInvoiceDTO = (inv: any) => ({
     status: inv.status, sentAt: inv.sentAt ? inv.sentAt.toISOString() : "", sentTo: inv.sentTo ?? "", paidAt: inv.paidAt ? inv.paidAt.toISOString() : "", paidAmount: inv.paidAmount,
     reminderCount: inv.reminderCount ?? 0, lastReminderAt: inv.lastReminderAt ? inv.lastReminderAt.toISOString() : "",
     dunningLevel: inv.dunningLevel ?? 0, dunningFee: inv.dunningFee ?? 0,
-    dunningLog: (inv.dunningLog ?? []).map((e: any) => ({ level: e.level, sentAt: e.sentAt ? e.sentAt.toISOString() : "", fee: e.fee ?? 0, dueDate: e.dueDate ?? "", method: e.method ?? "" })),
+    dunningLog: (inv.dunningLog ?? []).map((e: any) => ({ level: e.level, sentAt: isoOf(e.sentAt), fee: e.fee ?? 0, dueDate: e.dueDate ?? "", method: e.method ?? "" })),
     recurringSource: inv.recurringSource ? String(inv.recurringSource) : "",
     // Фискальный чек ПРРО: фискальный номер и ссылка для клиента (см. lib/finance/fiscal.ts)
     paidVia: inv.paidVia ?? "",
