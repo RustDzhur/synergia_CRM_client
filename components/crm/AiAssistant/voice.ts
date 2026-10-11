@@ -63,6 +63,8 @@ const join = (base: string, speech: string) => {
 	return base ? (s ? `${base} ${s}` : base) : s;
 };
 
+/** Кратковременный отказ сервера (занят, 5xx, обрыв): повторяем и НЕ объявляем сервер сломанным — иначе в режиме «авто» узбекская речь уходила бы в браузер, который узбекский не понимает. */
+const isTransient = (status: number) => status === 0 || status === 429 || status === 500 || status === 502 || status === 504;
 const g = globalThis as { serverBroken?: boolean }; // сервер распознавания отказал на этой странице: дальше (в режиме «авто») слушает браузер
 
 export function useVoiceInput({ locale, serverStt, onText, onError }: {
@@ -154,13 +156,13 @@ export function useVoiceInput({ locale, serverStt, onText, onError }: {
 				const body = new FormData();
 				body.append("file", blob, `voice.${voiceExt(type)}`);
 				body.append("language", lang);
-				const res = await fetch("/api/ai/transcribe", { method: "POST", headers: authHeaders(false), body });
+				let res = await fetch("/api/ai/transcribe", { method: "POST", headers: authHeaders(false), body });
+				if (!res.ok && isTransient(res.status)) { await new Promise((r) => setTimeout(r, 900)); res = await fetch("/api/ai/transcribe", { method: "POST", headers: authHeaders(false), body }); }
 				const json = (await res.json().catch(() => null)) as { text?: string } | null;
-				if (!res.ok || !json) { g.serverBroken = true; onErrorRef.current(Ctor ? "micFallback" : "micFailed"); }
+				if (!res.ok || !json) { if (!isTransient(res.status)) g.serverBroken = true; onErrorRef.current(isTransient(res.status) ? "micFailed" : Ctor ? "micFallback" : "micFailed"); }
 				else onTextRef.current(join(baseRef.current, String(json.text ?? "")));
 			} catch {
-				g.serverBroken = true;
-				onErrorRef.current(Ctor ? "micFallback" : "micFailed");
+				onErrorRef.current("micFailed");
 			}
 			set("idle");
 		};
@@ -634,15 +636,16 @@ export function useServerListening({ lang, active, onPhrase, onError }: {
 					const body = new FormData();
 					body.append("file", blob, `voice.${voiceExt(blob.type || "audio/webm")}`);
 					body.append("language", lang);
-					const res = await fetch("/api/ai/transcribe", { method: "POST", headers: authHeaders(false), body });
+					let res = await fetch("/api/ai/transcribe", { method: "POST", headers: authHeaders(false), body });
+					if (!res.ok && isTransient(res.status) && !disposed) { note(D.serverErr(String(res.status))); await new Promise((r) => setTimeout(r, 900)); res = await fetch("/api/ai/transcribe", { method: "POST", headers: authHeaders(false), body }); }
 					const json = (await res.json().catch(() => null)) as { text?: string } | null;
 					if (disposed) return;
-					if (!res.ok || !json) { g.serverBroken = true; note(D.serverErr(String(res.status))); onErrorRef.current("micFallback"); }
+					if (!res.ok || !json) { note(D.serverErr(String(res.status))); if (!isTransient(res.status)) { g.serverBroken = true; onErrorRef.current("micFallback"); } }
 					else if (json.text?.trim()) { note(D.recognized(json.text.trim().slice(0, 80))); onPhraseRef.current(json.text.trim()); }
 					else { note(D.noWords); if (Date.now() - lastNoSpeech > 30_000) { lastNoSpeech = Date.now(); onErrorRef.current("micNoSpeech"); } } // сервер речи не разобрал: молчать нельзя, но и сыпать подсказками на каждый шум не нужно
 				} catch {
-					g.serverBroken = true;
-					if (!disposed) onErrorRef.current("micFallback");
+					// обрыв сети: повторная попытка при следующей фразе, сервер сломанным не считаем
+					if (!disposed) note(D.serverErr("0"));
 				} finally {
 					sending = false;
 					if (!disposed) setInterim("");
