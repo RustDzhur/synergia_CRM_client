@@ -52,6 +52,10 @@ const IGNORE = [
     /Load failed$|NetworkError when attempting to fetch resource\.?$|Failed to fetch$/i, // обрыв связи у посетителя в момент ухода со страницы
     /Minified React error #4(18|23|25)/, // гидратация: чаще из-за расширений браузера, сами по себе не поломка
     /googletagmanager|google-analytics|doubleclick/i,
+    // Next 13.4: таймер дописывает в уже закрытый поток ответа, когда клиент успел уйти. Ответ клиенту не страдает, сервер не падает
+    /Invalid state: Unable to enqueue|ReadableStream is already closed/i,
+    // Запросы с заголовком Next-Action (сканеры, вкладки до обновления): серверных действий на сайте нет, middleware отвечает им 404
+    /reading 'workers'\)|action is not a function/i,
 ];
 
 const SOURCE_TITLE: Record<ErrorSource, string> = {
