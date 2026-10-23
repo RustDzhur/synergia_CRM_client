@@ -181,6 +181,9 @@
         "verifyError_email_required": "Geben Sie Ihre E-Mail-Adresse ein.",
         "verifyError_server": "Der Server ist gerade nicht erreichbar. Bitte versuchen Sie es in einer Minute erneut."
     },
+    "login": {
+        "pilot": "Pilotphase – noch kein kommerzielles Angebot. Die ersten 500 Nutzer arbeiten kostenlos mit und geben Feedback. Die erste Tarifrunde startet im Mai 2027."
+    },
     "hero": {
         "eyebrow": "KI-Automatisierung für Unternehmen",
         "title1": "Weniger Routine.",

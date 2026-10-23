@@ -181,6 +181,9 @@
         "verifyError_email_required": "Enter your e-mail.",
         "verifyError_server": "The server is not available right now. Please try again in a minute."
     },
+    "login": {
+        "pilot": "Pilot phase – not yet a commercial offer. The first 500 users join free of charge and share feedback. Pricing starts in May 2027."
+    },
     "hero": {
         "eyebrow": "AI automation for companies",
         "title1": "Less routine.",
