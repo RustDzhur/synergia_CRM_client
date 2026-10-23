@@ -10,18 +10,47 @@
 # иначе сломаются внешние вебхуки и ссылки, уже разосланные клиентам.
 {$SITE_DOMAINS} {
 	encode zstd gzip
-	handle /api/* { reverse_proxy 127.0.0.1:3210 }
-	handle /api { reverse_proxy 127.0.0.1:3210 }
-	handle /c/* { reverse_proxy 127.0.0.1:3210 }
-	handle /c { reverse_proxy 127.0.0.1:3210 }
-	handle /pay* { reverse_proxy 127.0.0.1:3210 }
-	handle /crm* { reverse_proxy 127.0.0.1:3210 }
-	handle /login* { reverse_proxy 127.0.0.1:3210 }
-	handle /connect* { reverse_proxy 127.0.0.1:3210 }
-	handle /agent* { reverse_proxy 127.0.0.1:3210 }
-	handle /documentation* { reverse_proxy 127.0.0.1:3210 }
-	handle /support* { reverse_proxy 127.0.0.1:3210 }
-	handle { reverse_proxy 127.0.0.1:3260 }
+	# Форма большого сайта (его собственный endpoint) — идёт в контейнер сайта,
+	# а не в CRM: все остальные /api/* — рабочие пути CRM.
+	handle /api/site/* {
+		reverse_proxy 127.0.0.1:3260
+	}
+	handle /api/* {
+		reverse_proxy 127.0.0.1:3210
+	}
+	handle /api {
+		reverse_proxy 127.0.0.1:3210
+	}
+	handle /c/* {
+		reverse_proxy 127.0.0.1:3210
+	}
+	handle /c {
+		reverse_proxy 127.0.0.1:3210
+	}
+	handle /pay* {
+		reverse_proxy 127.0.0.1:3210
+	}
+	handle /crm* {
+		reverse_proxy 127.0.0.1:3210
+	}
+	handle /login* {
+		reverse_proxy 127.0.0.1:3210
+	}
+	handle /connect* {
+		reverse_proxy 127.0.0.1:3210
+	}
+	handle /agent* {
+		reverse_proxy 127.0.0.1:3210
+	}
+	handle /documentation* {
+		reverse_proxy 127.0.0.1:3210
+	}
+	handle /support* {
+		reverse_proxy 127.0.0.1:3210
+	}
+	handle {
+		reverse_proxy 127.0.0.1:3260
+	}
 }
 
 # CRM — отдельный поддомен: только приложение, корень ведёт на вход (см. middleware CRM)
