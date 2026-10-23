@@ -101,11 +101,20 @@ describe("приём заявок с лендингов (lib/landingLeads)", () 
         expect(landingExternalId("automatisation", "x")).toBe("automatisation:x");
     });
 
-    it("site берётся из config интеграции, неизвестное значение — пусто", () => {
+    it("site из config интеграции: любая валидная метка приводится к нижнему регистру", () => {
         expect(landingSite({ site: "copilot" })).toBe("copilot");
         expect(landingSite({ site: "automatisation" })).toBe("automatisation");
+        expect(landingSite({ site: "My-Site" })).toBe("my-site");
+        expect(landingSite({ site: "my_site-2" })).toBe("my_site-2");
+    });
+
+    it("невалидная или отсутствующая метка site — пусто", () => {
         expect(landingSite({})).toBe("");
         expect(landingSite(null)).toBe("");
-        expect(landingSite({ site: "other" })).toBe("");
+        expect(landingSite({ site: 42 })).toBe(""); // не строка
+        expect(landingSite({ site: "a" })).toBe(""); // короче двух символов
+        expect(landingSite({ site: "-abc" })).toBe(""); // начинается с дефиса
+        expect(landingSite({ site: "a b" })).toBe(""); // пробел
+        expect(landingSite({ site: "x".repeat(32) })).toBe(""); // длиннее 31 символа
     });
 });

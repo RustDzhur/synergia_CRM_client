@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
 import { FaFacebookMessenger, FaTelegram, FaViber, FaWhatsapp } from "react-icons/fa";
-import { TbCreditCard, TbCurrencyBitcoin, TbShoppingCart, TbReceipt, TbTruckDelivery, TbCode, TbDeviceMobileMessage, TbHeadset, TbPhone } from "react-icons/tb";
+import { TbCreditCard, TbCurrencyBitcoin, TbShoppingCart, TbReceipt, TbTruckDelivery, TbCode, TbDeviceMobileMessage, TbForms, TbHeadset, TbPhone } from "react-icons/tb";
 import { SMS_PROVIDER_TYPES } from "@/config/smsProviders";
 import { useIntegrationsStore } from "@/store/useIntegrationsStore";
 import { useMarket } from "@/store/useMarket";
@@ -14,6 +14,7 @@ import { useFinanceStore } from "@/store/useFinanceStore";
 import type { IntegrationType } from "@/types/integrations";
 import PageHeader from "@/components/crm/shared/PageHeader";
 import IntegrationDialog from "./integrations/IntegrationDialog";
+import LandingFormsDialog from "./integrations/LandingFormsDialog";
 import SettingsTabs from "./SettingsTabs";
 import NotifyBotCard from "./NotifyBotCard";
 import IrisBotCard from "./IrisBotCard";
@@ -44,6 +45,9 @@ const INTEGRATIONS: Integration[] = [
 	{ id: "whatsapp", key: "intWhatsapp", icon: FaWhatsapp, real: "whatsapp" },
 	{ id: "onlinechat", key: "intOnlineChat", icon: TbHeadset, real: "webchat" },
 	{ id: "widget", key: "intWidget", icon: TbCode, real: "webchat" }, // код для сайта — в окне онлайн-чата
+	// Формы с сайтов: фирма сама заводит токен приёма заявок под метку своего сайта — отдельное окно
+	// со списком форм (не IntegrationDialog: у формы нет реквизитов)
+	{ id: "landingforms", key: "intLandingForms", icon: TbForms, real: "landing" },
 	// Доставка: у украинских фирм заказы уходят «Новою Поштою» — из этого окна настраивается ключ
 	// и данные отправителя, а ТТН создаются в разделе «Заказы»
 	{ id: "novaposhta", key: "intNovaPoshta", icon: TbTruckDelivery, real: "novaposhta" },
@@ -74,6 +78,7 @@ export default function IntegrationSettings() {
 	const t = useTranslations("settings");
 	const [enabled, setEnabled] = useState<string[]>([]);
 	const [dialog, setDialog] = useState<Integration | null>(null);
+	const [landingOpen, setLandingOpen] = useState(false);
 	const { items, load } = useIntegrationsStore();
 	const params = useSearchParams();
 	// Режим рынка фирмы: украинские плитки (НП, Укрпошта, Checkbox, эквайринги, маркетплейсы) видны
@@ -111,7 +116,10 @@ export default function IntegrationSettings() {
 		if (!want) return;
 		window.history.replaceState(null, "", window.location.pathname);
 		const item = INTEGRATIONS.find((i) => i.real === want || i.alt === want || i.providers?.includes(want));
-		if (item) setDialog({ ...item, real: want as Exclude<IntegrationType, "mail"> });
+		if (item) {
+			if (item.real === "landing") setLandingOpen(true);
+			else setDialog({ ...item, real: want as Exclude<IntegrationType, "mail"> });
+		}
 	}, [params]);
 
 	useEffect(() => {
@@ -122,6 +130,8 @@ export default function IntegrationSettings() {
 	}, []);
 
 	function press(item: Integration) {
+		// формы с сайтов: реквизитов нет — открываем своё окно со списком форм и созданием токена
+		if (item.real === "landing") return setLandingOpen(true);
 		if (item.real) {
 			// у СМС открываем плитку подключённого провайдера — иначе человек видел бы выбор там, где уже всё выбрано
 			if (item.providers) {
@@ -177,6 +187,7 @@ export default function IntegrationSettings() {
 				</ul>
 			</div>
 			<IntegrationDialog type={dialog?.real ?? null} title={dialog ? t(dialog.key) : ""} providerKind={dialog?.providerKind} onClose={() => setDialog(null)} />
+			<LandingFormsDialog open={landingOpen} onClose={() => setLandingOpen(false)} />
 		</div>
 	);
 }

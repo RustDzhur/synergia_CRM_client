@@ -4,7 +4,7 @@ import { appOrigin } from "@/lib/appUrl";
 import { badRequest, failure, unauthorized } from "@/lib/api";
 import { toIntegrationDTO } from "@/lib/integrations";
 import { whatsappVerifyToken } from "@/lib/platformSettings";
-import { connectIntegration, connectMetaChoice, healWebhooks } from "@/lib/channels/connect";
+import { connectIntegration, connectLandingForm, connectMetaChoice, healWebhooks } from "@/lib/channels/connect";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +34,12 @@ export async function POST(req: Request) {
     if (!body || typeof body.type !== "string") return badRequest("type is required");
     try {
         const origin = appOrigin(req);
+        // Форма с сайта: токен под метку сайта заводится сам, провайдеров и реквизитов нет
+        // (см. lib/channels/connect connectLandingForm). Фирма определяется по токену в самом вебхуке.
+        if (body.type === "landing") {
+            const doc = await connectLandingForm(user.id, String(body.site ?? ""));
+            return NextResponse.json({ integration: toIntegrationDTO(doc, origin) }, { status: 201 });
+        }
         // Выбор страницы (или номера) после входа через Facebook: токен уже получен на шаге возврата
         // и лежит в секретах, поэтому здесь достаточно указать, что подключаем.
         const chosen = body.type === "messenger" ? String(body.pageId ?? "") : body.type === "whatsapp" ? String(body.numberId ?? "") : "";

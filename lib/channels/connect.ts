@@ -1,4 +1,5 @@
 import { webhookPath, packSecrets, secretsOf } from "@/lib/integrations";
+import { SITE_PATTERN } from "@/lib/landingLeads";
 import { isPublicHttps } from "@/lib/appUrl";
 import { randomToken } from "@/lib/crypto";
 import { metaApp, whatsappVerifyToken } from "@/lib/platformSettings";
@@ -560,6 +561,21 @@ export async function connectIntegration(owner: string, type: string, input: Inp
     }
     await doc.save(); // registerWebhook мог изменить config (режим опроса Telegram)
     return { doc, warning };
+}
+
+// Форма с сайта (приём заявок лендингов, см. app/api/webhooks/landing/[token]): фирма сама заводит
+// токен под метку своего сайта — в Settings → Integration → «Формы с сайтов». Меток может быть
+// сколько угодно (по одной на сайт/форму); токен отзывается обычным удалением интеграции.
+export async function connectLandingForm(owner: string, site: string): Promise<Doc> {
+    const label = typeof site === "string" && SITE_PATTERN.test(site) ? site.toLowerCase() : "";
+    if (!label) throw new ProviderError("Site label must be 2–31 characters: letters, digits, hyphens or underscores");
+    const existing = await prisma.integration.findMany({ where: { owner, type: "landing" } });
+    if (existing.some((i) => (i.config as any)?.site === label)) {
+        throw new ProviderError("A landing form with this site label already exists");
+    }
+    return prisma.integration.create({
+        data: { owner, type: "landing", name: `Landing form: ${label}`, token: randomToken(), config: { site: label }, status: "connected" },
+    });
 }
 
 export function webchatConfig(input: Input) {

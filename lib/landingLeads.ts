@@ -118,9 +118,14 @@ export function parseLandingLead(
 // с лендинга не создаёт дублей.
 export const landingExternalId = (site: string, id: string) => `${site}:${id}`;
 
-// Сайт, с которого пришла заявка, — из config.site интеграции «landing» (его задаёт
-// scripts/seed-landing-tokens.mjs). Неизвестное значение → "" (интеграция не настроена).
-export function landingSite(config: unknown): "copilot" | "automatisation" | "" {
+// Метка сайта формы: латиница и цифры с дефисами/подчёркиванием, 2–31 символ, начинается с буквы
+// или цифры. «copilot» и «automatisation» — частный случай: метки лендингов фирмы, заданные
+// seed-скриптом; остальные фирма заводит сама (Settings → Integration → «Формы с сайтов»).
+export const SITE_PATTERN = /^[a-z0-9][a-z0-9_-]{1,30}$/i;
+
+// Сайт, с которого пришла заявка, — из config.site интеграции «landing». Метка приводится
+// к нижнему регистру; неизвестная или невалидная → "" (интеграция не настроена).
+export function landingSite(config: unknown): string {
     const site = config && typeof config === "object" ? (config as Record<string, unknown>).site : undefined;
-    return site === "copilot" || site === "automatisation" ? site : "";
+    return typeof site === "string" && SITE_PATTERN.test(site) ? site.toLowerCase() : "";
 }
