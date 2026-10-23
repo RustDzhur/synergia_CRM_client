@@ -1,5 +1,6 @@
 import createMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
+import { crmHostRedirect } from '@/lib/crmHostRedirect';
 
 const intl = createMiddleware({
   // A list of all locales that are supported
@@ -17,6 +18,17 @@ export default function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   // как и раньше, интернационализация не касается api, _next и файлов с расширением
   if (path.startsWith('/api') || path.startsWith('/_next') || path.includes('.')) return NextResponse.next();
+  // crm.firmspace.de — только вход и приложение: маркетинговые пути ведут на страницу входа
+  // (маркетинг переезжает на firmspace.de, редирект обратимый — см. lib/crmHostRedirect.ts).
+  // Другие хосты (firmspace.de, www, localhost) ведут себя как раньше.
+  const to = crmHostRedirect(req.headers.get('host') ?? '', path);
+  if (to) {
+    const url = req.nextUrl.clone();
+    url.pathname = to;
+    url.search = '';
+    url.hash = '';
+    return NextResponse.redirect(url, 307);
+  }
   return intl(req);
 }
 
