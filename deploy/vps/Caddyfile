@@ -3,27 +3,40 @@
 # Caddy работает в сети хоста (network_mode: host), поэтому все адреса — 127.0.0.1.
 # ВАЖНО: каждый домен — отдельный site-блок: если у нового поддомена ещё нет A-записи,
 # выпуск сертификата падает только для него, а не для CRM (общие SAN роняли бы всё).
+#
+# firmspace.de — большой сайт (контейнер firmspace-website, 127.0.0.1:3260). Рабочие пути CRM
+# (вебхуки Telegram/Viber/WhatsApp/платежей, OAuth-колбэки, портал клиентов /c, оплата /pay,
+# приложение /crm и вход /login, агенты /agent, MCP /connect) остаются на CRM (127.0.0.1:3210) —
+# иначе сломаются внешние вебхуки и ссылки, уже разосланные клиентам.
 {$SITE_DOMAINS} {
 	encode zstd gzip
-	reverse_proxy 127.0.0.1:3210
+	handle /api/* { reverse_proxy 127.0.0.1:3210 }
+	handle /api { reverse_proxy 127.0.0.1:3210 }
+	handle /c/* { reverse_proxy 127.0.0.1:3210 }
+	handle /c { reverse_proxy 127.0.0.1:3210 }
+	handle /pay* { reverse_proxy 127.0.0.1:3210 }
+	handle /crm* { reverse_proxy 127.0.0.1:3210 }
+	handle /login* { reverse_proxy 127.0.0.1:3210 }
+	handle /connect* { reverse_proxy 127.0.0.1:3210 }
+	handle /agent* { reverse_proxy 127.0.0.1:3210 }
+	handle /documentation* { reverse_proxy 127.0.0.1:3210 }
+	handle /support* { reverse_proxy 127.0.0.1:3210 }
+	handle { reverse_proxy 127.0.0.1:3260 }
 }
 
-# CRM — отдельный поддомен (та же бэкенд-точка, что и {$SITE_DOMAINS})
+# CRM — отдельный поддомен: только приложение, корень ведёт на вход (см. middleware CRM)
 crm.firmspace.de {
 	encode zstd gzip
 	reverse_proxy 127.0.0.1:3210
 }
 
-# Лендинг AI Business Automation (отдельный контейнер, см. ~/landing-automatisation/deploy)
+# Старые домены лендингов: контейнеры сняты, остались только 301 на разделы большого сайта
 automatisation.firmspace.de {
-	encode zstd gzip
-	reverse_proxy 127.0.0.1:3220
+	redir https://firmspace.de/automatisierung 301
 }
 
-# Лендинг Bürokratie-Copilot (отдельный контейнер, см. ~/landing-copilot/deploy)
 copilot.firmspace.de {
-	encode zstd gzip
-	reverse_proxy 127.0.0.1:3230
+	redir https://firmspace.de/buerokratie-copilot 301
 }
 
 # Платформа Bürokratie-Copilot (пилот, отдельный compose-проект): web-контейнер сам проксирует
