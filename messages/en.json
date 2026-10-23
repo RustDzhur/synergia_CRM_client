@@ -936,7 +936,7 @@
         "intLandingEmpty": "No forms yet — create one and connect your website's form to the CRM.",
         "intLandingRevoke": "Revoke",
         "intLandingToken": "Token",
-        "intLandingHint": "Send the visitor data as JSON '{name, company, email, message, …}' to the webhook URL with the header Authorization: Bearer <token>.",
+        "intLandingHint": "Send the visitor data as JSON (fields name, company, email, message, …) to the webhook URL with the Authorization: Bearer header and the form token.",
         "intLandingRevoked": "Form revoked",
         "intLandingCreated": "Form created",
         "intConnected": "{name} is switched on",

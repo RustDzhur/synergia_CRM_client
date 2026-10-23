@@ -936,7 +936,7 @@
         "intLandingEmpty": "Noch keine Formulare — erstellen Sie eines und verbinden Sie das Formular Ihrer Website mit dem CRM.",
         "intLandingRevoke": "Widerrufen",
         "intLandingToken": "Token",
-        "intLandingHint": "Senden Sie die Besucherdaten als JSON '{name, company, email, message, …}' per POST an die Webhook-URL mit dem Header Authorization: Bearer <token>.",
+        "intLandingHint": "Senden Sie die Besucherdaten als JSON (Felder name, company, email, message, …) per POST an die Webhook-URL mit dem Header Authorization: Bearer und dem Formular-Token.",
         "intLandingRevoked": "Formular widerrufen",
         "intLandingCreated": "Formular erstellt",
         "intConnected": "{name} ist eingeschaltet",

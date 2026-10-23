@@ -2241,7 +2241,7 @@
     "intLandingEmpty": "Hozircha formalar yo‘q — bittasini yarating va saytingiz formasini CRMga ulang.",
     "intLandingRevoke": "Bekor qilish",
     "intLandingToken": "Token",
-    "intLandingHint": "Tashrifchi maʼlumotlarini JSON '{name, company, email, message, …}' ko‘rinishida Authorization: Bearer <token> sarlavhasi bilan webhook manziliga POST so‘rovi orqali yuboring.",
+    "intLandingHint": "Tashrifchi maʼlumotlarini JSON ko‘rinishida (maydonlar name, company, email, message, …) Authorization: Bearer sarlavhasi va forma tokeni bilan webhook manziliga POST so‘rovi orqali yuboring.",
     "intLandingRevoked": "Forma bekor qilindi",
     "intLandingCreated": "Forma yaratildi",
     "intConnected": "{name} yoqildi",

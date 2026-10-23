@@ -936,7 +936,7 @@
         "intLandingEmpty": "Форм поки немає — створіть одну та підключіть форму вашого сайту до CRM.",
         "intLandingRevoke": "Відкликати",
         "intLandingToken": "Токен",
-        "intLandingHint": "Надсилайте дані відвідувача як JSON '{name, company, email, message, …}' запитом POST на адресу вебхука із заголовком Authorization: Bearer <token>.",
+        "intLandingHint": "Надсилайте дані відвідувача як JSON (поля name, company, email, message, …) запитом POST на адресу вебхука із заголовком Authorization: Bearer та токеном форми.",
         "intLandingRevoked": "Форму відкликано",
         "intLandingCreated": "Форму створено",
         "intConnected": "{name}: увімкнено",
