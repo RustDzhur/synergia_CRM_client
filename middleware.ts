@@ -21,11 +21,9 @@ export default function middleware(req: NextRequest) {
   // crm.firmspace.de — только вход и приложение: маркетинговые пути ведут на страницу входа
   // (маркетинг переезжает на firmspace.de, редирект обратимый — см. lib/crmHostRedirect.ts).
   // Другие хосты (firmspace.de, www, localhost) ведут себя как раньше.
-  const to = crmHostRedirect(req.headers.get('host') ?? req.nextUrl.hostname ?? '', path);
-  // ВРЕМЕННАЯ диагностика (убрать после проверки): какой host видит middleware
-  if (!path.startsWith('/_next') && !path.startsWith('/api')) {
-    console.error(`[mw-host] host=${req.headers.get('host')} urlHost=${req.nextUrl.hostname} path=${path}`);
-  }
+  // ВАЖНО: headers.get('host') в middleware отдаёт адрес соединения, а не Host-заголовок
+  // (в dev видно [::1]:port) — поэтому берём hostname из nextUrl, он строится из Host.
+  const to = crmHostRedirect(req.nextUrl.hostname || req.headers.get('host') || '', path);
   if (to) {
     const url = req.nextUrl.clone();
     url.pathname = to;
