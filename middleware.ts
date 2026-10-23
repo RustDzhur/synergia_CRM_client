@@ -26,7 +26,6 @@ export default function middleware(req: NextRequest) {
   // своё значение последним — берём последнее).
   const xfh = req.headers.get('x-forwarded-host');
   const host = (xfh ? xfh.split(',').pop()!.trim() : '') || req.nextUrl.hostname || '';
-  console.error(`[mw-host] xfh=${xfh} url=${req.nextUrl.hostname} h=${req.headers.get('host')} path=${path}`);
   const to = crmHostRedirect(host, path);
   if (to) {
     const url = req.nextUrl.clone();
