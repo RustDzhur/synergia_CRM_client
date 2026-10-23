@@ -508,7 +508,11 @@
     showOffline();
   }).catch(function () { paint(); });
   paint();
-  document.body.appendChild(host);
+  // React 19 поднимает async-скрипты в <head>: тело страницы может ещё не существовать, когда виджет
+  // исполняется. Монтируем узел сразу, а если body ещё нет — после DOMContentLoaded (остальное —
+  // paint/poll/schedule — тела не требует).
+  function mount() { document.body.appendChild(host); }
+  if (document.body) { mount(); } else { document.addEventListener("DOMContentLoaded", mount); }
   poll();
   schedule();
 })();

@@ -93,6 +93,9 @@ export const FIELDS: Record<Real, FieldDef[]> = {
 		{ key: "merchantUserId", label: "intfClickUser", optional: true },
 		{ key: "secretKey", label: "intfClickSecret", secret: true },
 	],
+	// Приём заявок с лендингов: реквизитов не имеет — токен и site задаёт scripts/seed-landing-tokens.mjs,
+	// в окне настроек интеграция не показывается
+	landing: [],
 	cryptopay: [
 		{ key: "apiKey", label: "intfCryptoKey", secret: true },
 		{ key: "ipnSecret", label: "intfCryptoIpn", secret: true },

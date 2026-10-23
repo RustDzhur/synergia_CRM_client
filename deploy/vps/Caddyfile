@@ -1,9 +1,37 @@
 # Домены берутся из SITE_DOMAINS (см. .env). Сертификаты Let's Encrypt Caddy получает и продлевает сам —
 # нужно лишь, чтобы A-запись домена уже указывала на этот сервер и были открыты порты 80 и 443.
 # Caddy работает в сети хоста (network_mode: host), поэтому все адреса — 127.0.0.1.
+# ВАЖНО: каждый домен — отдельный site-блок: если у нового поддомена ещё нет A-записи,
+# выпуск сертификата падает только для него, а не для CRM (общие SAN роняли бы всё).
 {$SITE_DOMAINS} {
 	encode zstd gzip
 	reverse_proxy 127.0.0.1:3210
+}
+
+# CRM — отдельный поддомен (та же бэкенд-точка, что и {$SITE_DOMAINS})
+crm.firmspace.de {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3210
+}
+
+# Лендинг AI Business Automation (отдельный контейнер, см. ~/landing-automatisation/deploy)
+automatisation.firmspace.de {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3220
+}
+
+# Лендинг Bürokratie-Copilot (отдельный контейнер, см. ~/landing-copilot/deploy)
+copilot.firmspace.de {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3230
+}
+
+# Платформа Bürokratie-Copilot (пилот, отдельный compose-проект): web-контейнер сам проксирует
+# /api/v1/* в свой API по внутренней сети (rewrites в apps/web/next.config.ts), поэтому наружу
+# торчит только один порт.
+burokratie.firmspace.de {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3240
 }
 
 # DeepSeek Harness (dsh web): у Harness есть доступ к серверу и сайту, поэтому две ступени защиты:

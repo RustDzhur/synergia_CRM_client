@@ -10,7 +10,8 @@ import IntegrationDialog from "../../Settings/integrations/IntegrationDialog";
 import Modal from "../../shared/Modal";
 
 type Connectable = Exclude<IntegrationType, "mail">;
-type Needed = Connectable | "mail";
+// Приём заявок с лендингов в кампаниях не участвует — каналом кампании он не бывает
+type Needed = Exclude<Connectable, "landing"> | "mail";
 
 // Какими интеграциями обслуживается канал кампании: e-mail уходит через почтовые ящики из Web Mails,
 // SMS и звонки — через Twilio (или SIP для звонков), мессенджеры — через своих ботов.
@@ -147,7 +148,7 @@ export default function ChannelDialog({ card, onClose, onCreate }: Props) {
 				</div>
 			</Modal>
 
-			<IntegrationDialog type={dialog} title={dialog ? ts(LABEL[dialog]) : ""} onClose={() => setDialog(null)} />
+			<IntegrationDialog type={dialog} title={dialog && dialog !== "landing" ? ts(LABEL[dialog]) : ""} onClose={() => setDialog(null)} />
 		</>
 	);
 }
