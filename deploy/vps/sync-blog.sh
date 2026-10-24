@@ -76,10 +76,12 @@ PY
 echo "$(date -Is) sync-blog: изменено файлов: ${CHANGED:-?}"
 if [ -f /home/server/translate-blog.js ]; then
   SECRET_T=$(grep -h "^CRON_SECRET=" "$HERE/../vps/.env" "$HERE/../.env" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"'"'"'")
-  docker run --rm --network host -e CRON_SECRET="$SECRET_T" \
+  TRANSLATED=$(docker run --rm --network host -e CRON_SECRET="$SECRET_T" \
     -v /home/server/translate-blog.js:/translate-blog.js:ro \
     -v "$SITE/content/blog:/blog" \
-    -e BLOG_DIR=/blog firmspace-crm:latest node /translate-blog.js >> /home/server/translate-blog.log 2>&1 || true
+    -e BLOG_DIR=/blog firmspace-crm:latest node /translate-blog.js 2>&1 || true)
+  echo "$TRANSLATED" >> /home/server/translate-blog.log
+  echo "$TRANSLATED" | grep -qE "переведено [1-9]" && CHANGED=$((CHANGED + 1))
 fi
 if [ "${CHANGED:-0}" -gt 0 ] 2>/dev/null; then
     echo "sync-blog: пересобираю сайт (content/ попадает в образ на сборке)"
