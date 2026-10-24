@@ -41,7 +41,17 @@ const used = new Set(
 // Каскад запросов: точный → покороче → общие темы (картинка находится почти всегда)
 const apiUrl = (q) =>
     `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&license=cc0,pdm&page_size=20&mature=false`;
-const queries = [query, query.split(/\s+/).slice(0, 2).join(" "), "artificial intelligence", "business technology", "technology"]
+// Каскад запросов: сперва тема статьи в деловом контексте (иначе Openverse отдаёт
+// случайные старые гравюры и пейзажи, не имеющие отношения к теме), затем общие деловые темы.
+const firstWords = query.split(/\s+/).slice(0, 3).join(" ");
+const queries = [
+    `${firstWords} office business`,
+    query,
+    firstWords,
+    "modern office computer",
+    "business team meeting",
+    "office documents desk",
+];
     .filter((q, i, a) => q && q.trim() && a.indexOf(q) === i);
 
 let pick = null;
