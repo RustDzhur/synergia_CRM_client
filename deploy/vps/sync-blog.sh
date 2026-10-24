@@ -78,7 +78,7 @@ if [ -f /home/server/translate-blog.js ]; then
   SECRET_T=$(grep -h "^CRON_SECRET=" "$HERE/../vps/.env" "$HERE/../.env" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"'"'"'")
   docker run --rm --network host -e CRON_SECRET="$SECRET_T" \
     -v /home/server/translate-blog.js:/translate-blog.js:ro \
-    -v "$SITE/data/content/blog:/blog" \
+    -v "$SITE/content/blog:/blog" \
     -e BLOG_DIR=/blog firmspace-crm:latest node /translate-blog.js >> /home/server/translate-blog.log 2>&1 || true
 fi
 if [ "${CHANGED:-0}" -gt 0 ] 2>/dev/null; then
