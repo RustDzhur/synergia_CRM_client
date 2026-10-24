@@ -5,6 +5,7 @@ import { OfficeError, IRIS_ID, type OfficeTask, type Robot, createTask, getRobot
 import { bossPersona, robotPersona, toolsFor } from "./templates";
 import { catalogById } from "./catalog";
 import { findAds } from "@/lib/ads";
+import { adsContext } from "@/lib/ads/robot";
 
 // Исполнитель поручений Робот-офиса. Поручение роботу — это обычный разговор Айрис (runChat), в котором:
 //   • инструменты ограничены навыками робота, а подсказка — его должностной инструкцией;
@@ -70,6 +71,14 @@ async function execute(ctx: OfficeCtx, taskId: string): Promise<void> {
         const cfg = (connection?.config ?? {}) as { accountId?: string };
         if (!connection || connection.status !== "connected" || !cfg.accountId) {
             return void (await fail(org, taskId, adsAccessMessage(task.locale)));
+        }
+        // Запись «connected» сама по себе ничего не значит: проверяем, что токен реально
+        // обменивается и аккаунт отвечает. Иначе робот снова «поработал» бы вхолостую.
+        try {
+            await adsContext(org);
+        } catch (e) {
+            const detail = e instanceof Error ? e.message : "access check failed";
+            return void (await fail(org, taskId, `${adsAccessMessage(task.locale)} (${detail})`));
         }
     }
 
