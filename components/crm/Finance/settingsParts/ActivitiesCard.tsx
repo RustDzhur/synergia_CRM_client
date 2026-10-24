@@ -15,8 +15,8 @@ export default function ActivitiesCard() {
 
 	return (
 		<div className="mb-16 fs-card p-16 md:p-20">
-			<h3 className="mb-8 text-14 font-semibold text-[#edf2ff]">{t("actSection")}</h3>
-			<p className="mb-12 text-12 leading-[1.5] text-[#9aa7c9]">{t("actSectionHint")}</p>
+			<h3 className="mb-8 text-14 font-semibold text-[#f1f4ee]">{t("actSection")}</h3>
+			<p className="mb-12 text-12 leading-[1.5] text-[#8c948b]">{t("actSectionHint")}</p>
 			<p className="mb-14 text-13 text-[#cfd4cb]">{activities.length ? activities.map((a) => t(`act_${a}`)).join(" · ") : t("actNone")}</p>
 			<button type="button" onClick={() => setOpen(true)} className="fs-btn fs-btn-ghost h-38">{t("actChange")}</button>
 			<ActivityWizard open={open} onClose={() => setOpen(false)} initial={activities} edit />

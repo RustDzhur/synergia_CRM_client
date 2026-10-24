@@ -302,7 +302,7 @@ export default function DealModal({ dealId, onClose }: Props) {
 						{/* Убранные разделы можно вернуть: без этого «Удалить раздел» было бы необратимым */}
 						{(hidden.includes("more") || hidden.includes("recurring")) && (
 							<div className="flex flex-wrap items-center gap-10 text-13">
-								<span className="text-[#9aa7c9]">{t("addSection")}:</span>
+								<span className="text-[#8c948b]">{t("addSection")}:</span>
 								{hidden.includes("more") && (
 									<button type="button" onClick={() => restoreSection("more")} className="fs-link">+ {t("more")}</button>
 								)}
@@ -324,7 +324,7 @@ export default function DealModal({ dealId, onClose }: Props) {
 						<button
 							type="button"
 							onClick={() => void setWon(deal._id, !deal.wonAt)}
-							className={`self-start text-13 transition-opacity hover:opacity-80 ${deal.wonAt ? "text-[#9aa7c9]" : "text-[#7c93ff]"}`}>
+							className={`self-start text-13 transition-opacity hover:opacity-80 ${deal.wonAt ? "text-[#8c948b]" : "text-[#c6ff4d]"}`}>
 							{deal.wonAt ? t("dealWonUndo") : t("dealWonMark")}
 						</button>
 					</div>

@@ -64,7 +64,7 @@ export default function SwitchLanguage() {
 				</span>
 				<RiArrowDownSLine
 					size={16}
-					color="#9aa7c9"
+					color="#8c948b"
 					className={`transition-transform duration-200 ${isOpenDropDown ? "rotate-180" : ""}`}
 				/>
 			</button>
@@ -85,7 +85,7 @@ export default function SwitchLanguage() {
 								height={languageCodeToProperties(lang.code).height}
 								className="h-[16px] w-[22px] mr-12 rounded-4 object-cover"
 							/>
-							<p className="text-14 font-medium text-[#edf2ff] whitespace-nowrap transition-colors duration-150 hover:text-[#7c93ff]">
+							<p className="text-14 font-medium text-[#f1f4ee] whitespace-nowrap transition-colors duration-150 hover:text-[#c6ff4d]">
 								{t(`lang.${lang.code}`)}
 							</p>
 						</li>

@@ -47,7 +47,7 @@ export default function OrgSwitcher({ collapsed = false }: { collapsed?: boolean
 						: "fs-card flex w-full items-center gap-10 p-10 text-left transition-colors hover:bg-[rgba(255,255,255,0.05)]"
 				}>
 				{collapsed ? (
-					<TbBuildingSkyscraper size={18} className="text-[#7c93ff]" />
+					<TbBuildingSkyscraper size={18} className="text-[#c6ff4d]" />
 				) : (
 					<>
 						<span className="fs-icon-tile h-34 w-34 shrink-0">
@@ -55,9 +55,9 @@ export default function OrgSwitcher({ collapsed = false }: { collapsed?: boolean
 						</span>
 						<span className="min-w-0 flex-1">
 							<span className="fs-nav-group block">{t("activeOrg")}</span>
-							<span className="mt-4 block truncate text-14 font-medium text-[#edf2ff]">{active ? active.name : t("company")}</span>
+							<span className="mt-4 block truncate text-14 font-medium text-[#f1f4ee]">{active ? active.name : t("company")}</span>
 						</span>
-						<TbChevronDown size={16} className={`shrink-0 text-[#9aa7c9] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+						<TbChevronDown size={16} className={`shrink-0 text-[#8c948b] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
 					</>
 				)}
 			</button>
@@ -73,9 +73,9 @@ export default function OrgSwitcher({ collapsed = false }: { collapsed?: boolean
 									className="fs-popover-row flex w-full items-center gap-10 px-12 py-10 text-left transition-colors">
 									<span className="min-w-0 flex-1">
 										<span className="block truncate text-14 font-medium">{o.name}</span>
-										<span className="mt-2 block text-11 text-[#9aa7c9]">{t(`role_${o.role}`)}</span>
+										<span className="mt-2 block text-11 text-[#8c948b]">{t(`role_${o.role}`)}</span>
 									</span>
-									{o.id === activeId && <TbCheck size={16} className="shrink-0 text-[#7c93ff]" />}
+									{o.id === activeId && <TbCheck size={16} className="shrink-0 text-[#c6ff4d]" />}
 								</button>
 							</li>
 						))}
@@ -85,14 +85,14 @@ export default function OrgSwitcher({ collapsed = false }: { collapsed?: boolean
 							<button
 								type="button"
 								onClick={() => { setName(""); setMode("new"); }}
-								className="fs-popover-row flex w-full items-center gap-8 px-12 py-10 text-left text-13 font-medium text-[#7c93ff] transition-colors">
+								className="fs-popover-row flex w-full items-center gap-8 px-12 py-10 text-left text-13 font-medium text-[#c6ff4d] transition-colors">
 								<TbPlus size={16} /> {t("newFirm")}
 							</button>
 							{canRename && (
 								<button
 									type="button"
 									onClick={() => { setName(active?.name ?? ""); setMode("rename"); }}
-									className="fs-popover-row flex w-full items-center px-12 py-10 text-left text-13 text-[#9aa7c9] transition-colors">
+									className="fs-popover-row flex w-full items-center px-12 py-10 text-left text-13 text-[#8c948b] transition-colors">
 									{t("renameFirm")}
 								</button>
 							)}

@@ -21,18 +21,18 @@ export default function ManualDialog({ open, onClose, form, onChange, notice, bu
 	return (
 		<Modal open={open} onClose={onClose} label={t("bankAddMovement")} className="w-full max-w-[440px]">
 			<form onSubmit={onSubmit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
-				<h2 className="text-16 font-semibold text-[#edf2ff]">{t("bankAddMovement")}</h2>
-				<p className="mb-14 mt-6 text-12 leading-[1.5] text-[#9aa7c9]">{t("bankManualHint")}</p>
+				<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("bankAddMovement")}</h2>
+				<p className="mb-14 mt-6 text-12 leading-[1.5] text-[#8c948b]">{t("bankManualHint")}</p>
 				<div className="flex flex-col gap-12">
 					<div className="grid grid-cols-2 gap-12">
 						<FormField label={t("colDate")} type="date" value={form.date} onChange={(e) => onChange({ ...form, date: e.target.value })} />
 						<FormField label={t("colAmount")} type="number" step="0.01" value={form.amount} onChange={(e) => onChange({ ...form, amount: e.target.value })} autoFocus />
 					</div>
-					<p className="text-11 leading-[1.5] text-[#9AA7C9]">{t("bankAmountHint")}</p>
+					<p className="text-11 leading-[1.5] text-[#8C948B]">{t("bankAmountHint")}</p>
 					<FormField label={t("colCounterparty")} value={form.counterparty} onChange={(e) => onChange({ ...form, counterparty: e.target.value })} maxLength={200} />
 					<FormField label={t("colReference")} value={form.reference} onChange={(e) => onChange({ ...form, reference: e.target.value })} maxLength={500} />
 					<label className="block">
-						<span className="mb-6 block text-12 text-[#9aa7c9]">{t("notes")}</span>
+						<span className="mb-6 block text-12 text-[#8c948b]">{t("notes")}</span>
 						<textarea value={form.notes} onChange={(e) => onChange({ ...form, notes: e.target.value })} maxLength={1000} rows={3} className="fs-field fs-scroll w-full resize-none p-10 text-13 outline-none" />
 					</label>
 				</div>

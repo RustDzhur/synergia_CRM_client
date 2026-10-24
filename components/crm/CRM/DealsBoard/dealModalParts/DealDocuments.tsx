@@ -67,7 +67,7 @@ export default function DealDocuments({ dealId, customerName, contact, company, 
 	return (
 		<section className="fs-card overflow-hidden">
 			<header className="flex flex-wrap items-center justify-between gap-8 border-b border-inkLine px-16 py-12">
-				<h3 className="text-14 font-semibold text-[#edf2ff]">{t("dealDocuments")}</h3>
+				<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("dealDocuments")}</h3>
 				<div className="flex items-center gap-16">
 					{isMarket && <button type="button" disabled={busy} onClick={() => void orderFromMarket()} className="fs-link disabled:opacity-50">{t("dealCreateOrderFromMarket")}</button>}
 					<button type="button" onClick={() => create("quote")} className="fs-link">{t("dealCreateQuote")}</button>
@@ -76,14 +76,14 @@ export default function DealDocuments({ dealId, customerName, contact, company, 
 			</header>
 			<div className="p-16">
 				{!docs || docs.length === 0 ? (
-					<p className="text-13 text-[#9aa7c9]">{t("dealNoDocuments")}</p>
+					<p className="text-13 text-[#8c948b]">{t("dealNoDocuments")}</p>
 				) : (
 					<ul className="flex flex-col gap-8">
 						{docs.map((d) => (
 							<li key={`${d.kind}-${d.id}`}>
-								<button type="button" onClick={() => openInFinance(d)} className="flex w-full items-center justify-between gap-10 text-left text-13 transition-colors hover:text-[#7c93ff]">
-									<span className="flex min-w-0 items-center gap-8 text-[#edf2ff]">
-										<span className="shrink-0 text-12 text-[#9aa7c9]">{t(`doc_${d.kind}`)}</span>
+								<button type="button" onClick={() => openInFinance(d)} className="flex w-full items-center justify-between gap-10 text-left text-13 transition-colors hover:text-[#c6ff4d]">
+									<span className="flex min-w-0 items-center gap-8 text-[#f1f4ee]">
+										<span className="shrink-0 text-12 text-[#8c948b]">{t(`doc_${d.kind}`)}</span>
 										<span className="truncate">{d.number}</span>
 										<span className="fs-chip h-22 shrink-0 gap-6 px-8 text-10">
 											<span className="h-6 w-6 rounded-50" style={{ background: STATUS_COLOR[d.status] ?? STATUS_COLORS.neutral }} />
@@ -91,7 +91,7 @@ export default function DealDocuments({ dealId, customerName, contact, company, 
 										</span>
 									</span>
 									<span className="flex shrink-0 items-center gap-10">
-										<span className="text-12 text-[#9aa7c9]">{new Date(d.at).toLocaleDateString(localeTag(locale))}</span>
+										<span className="text-12 text-[#8c948b]">{new Date(d.at).toLocaleDateString(localeTag(locale))}</span>
 										<span className="font-medium text-[#cfd4cb]">{d.total.toFixed(2)} {d.currency}</span>
 									</span>
 								</button>

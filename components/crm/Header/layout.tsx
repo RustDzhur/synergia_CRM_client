@@ -23,8 +23,8 @@ function Layout() {
 			{/* Телефон: знак бренда и название продукта — сайдбара с логотипом тут нет */}
 			<div className="flex min-w-0 items-center gap-10 md:hidden">
 				<BrandMark size={26} />
-				<span className="truncate text-15 font-semibold tracking-[-0.2px] text-[#edf2ff]">
-					Firmspace <span className="text-[#7c93ff]">AI</span>
+				<span className="truncate text-15 font-semibold tracking-[-0.2px] text-[#f1f4ee]">
+					Firmspace <span className="text-[#c6ff4d]">AI</span>
 				</span>
 			</div>
 
@@ -43,7 +43,7 @@ function Layout() {
 				<Notification />
 				{/* Индикатор защищённого контура: в макете стоит справа в шапке */}
 				<span className="fs-chip hidden lg:inline-flex">
-					<span className="h-6 w-6 rounded-50 bg-[#7c93ff]" aria-hidden />
+					<span className="h-6 w-6 rounded-50 bg-[#c6ff4d]" aria-hidden />
 					{t("protectedArea")}
 				</span>
 				{/* На планшете и телефоне узкий сайдбар не помещается в экран — разделы открываются этой кнопкой */}

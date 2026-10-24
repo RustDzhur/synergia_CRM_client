@@ -32,7 +32,7 @@ function Rich({ text }: { text: string }) {
 		<>
 			{text.split("**").map((part, i) =>
 				i % 2 ? (
-					<strong key={i} className="rounded-4 bg-[rgba(124,147,255,0.10)] px-4 font-medium text-[#7c93ff]">
+					<strong key={i} className="rounded-4 bg-[rgba(198,255,77,0.10)] px-4 font-medium text-[#c6ff4d]">
 						{part}
 					</strong>
 				) : (
@@ -63,14 +63,14 @@ export default function Documentation({ docs }: { docs: DocsData }) {
 					<ul className="space-y-4 rounded-16 border border-[rgba(255,255,255,0.10)] bg-[rgba(255,255,255,0.02)] p-16">
 						{docs.sections.map((s) => (
 							<li key={s.id}>
-								<a href={`#${s.id}`} className="block rounded-8 px-12 py-8 text-16 tracking-[0.3px] text-[#edf2ff] transition-colors hover:bg-[rgba(124,147,255,0.10)] hover:text-[#7c93ff]">
+								<a href={`#${s.id}`} className="block rounded-8 px-12 py-8 text-16 tracking-[0.3px] text-[#f1f4ee] transition-colors hover:bg-[rgba(198,255,77,0.10)] hover:text-[#c6ff4d]">
 									{s.title}
 								</a>
 							</li>
 						))}
 						{auto.map((item) => (
 							<li key={item.key}>
-								<a href={`#${item.key}`} className="block rounded-8 px-12 py-8 text-16 tracking-[0.3px] text-[#9aa7c9] transition-colors hover:bg-[rgba(124,147,255,0.10)] hover:text-[#7c93ff]">
+								<a href={`#${item.key}`} className="block rounded-8 px-12 py-8 text-16 tracking-[0.3px] text-[#8c948b] transition-colors hover:bg-[rgba(198,255,77,0.10)] hover:text-[#c6ff4d]">
 									{t(item.key)}
 								</a>
 							</li>
@@ -80,9 +80,9 @@ export default function Documentation({ docs }: { docs: DocsData }) {
 				<div className="min-w-0 flex-1">
 					{docs.sections.map((s) => (
 						<section key={s.id} id={s.id} className="mb-[60px] scroll-mt-[20px]">
-							<h2 className="mb-16 text-24 font-medium text-[#edf2ff]">{s.title}</h2>
+							<h2 className="mb-16 text-24 font-medium text-[#f1f4ee]">{s.title}</h2>
 							{s.intro && (
-								<p className="mb-20 text-16 leading-[1.7] tracking-[0.3px] text-[#edf2ff] lg:text-18">
+								<p className="mb-20 text-16 leading-[1.7] tracking-[0.3px] text-[#f1f4ee] lg:text-18">
 									<Rich text={s.intro} />
 								</p>
 							)}
@@ -95,7 +95,7 @@ export default function Documentation({ docs }: { docs: DocsData }) {
 								<ul className="mb-24 flex flex-wrap gap-8">
 									{s.groups.map((g) => (
 										<li key={g.id}>
-											<a href={`#${g.id}`} className="block rounded-50 border border-[rgba(255,255,255,0.14)] px-12 py-4 text-13 text-[#9aa7c9] transition-colors hover:border-[rgba(124,147,255,0.55)] hover:text-[#7c93ff]">
+											<a href={`#${g.id}`} className="block rounded-50 border border-[rgba(255,255,255,0.14)] px-12 py-4 text-13 text-[#8c948b] transition-colors hover:border-[rgba(198,255,77,0.55)] hover:text-[#c6ff4d]">
 												<Rich text={g.title} />
 											</a>
 										</li>
@@ -104,11 +104,11 @@ export default function Documentation({ docs }: { docs: DocsData }) {
 							)}
 							{s.groups.map((g) => (
 								<div key={g.id} id={g.id} className="mb-32 scroll-mt-[20px]">
-									<h3 className="mb-12 text-20 font-medium text-[#edf2ff]"><Rich text={g.title} /></h3>
+									<h3 className="mb-12 text-20 font-medium text-[#f1f4ee]"><Rich text={g.title} /></h3>
 									<ol className="space-y-12">
 										{g.steps.map((step, i) => (
-											<li key={i} className="flex gap-12 text-16 leading-[1.7] tracking-[0.3px] text-[#edf2ff] lg:text-18">
-												<span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[50%] bg-[#7c93ff] text-14 font-medium text-[#0A0A0A]">{i + 1}</span>
+											<li key={i} className="flex gap-12 text-16 leading-[1.7] tracking-[0.3px] text-[#f1f4ee] lg:text-18">
+												<span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[50%] bg-[#c6ff4d] text-14 font-medium text-[#0A0A0A]">{i + 1}</span>
 												<span>
 													<Rich text={step} />
 												</span>
@@ -124,8 +124,8 @@ export default function Documentation({ docs }: { docs: DocsData }) {
 					    ссылки из оглавления не пропадали, когда раздел появился в кабинете */}
 					{auto.map((item) => (
 						<section key={item.key} id={item.key} className="mb-[50px] scroll-mt-[20px]">
-							<h2 className="mb-12 text-24 font-medium text-[#edf2ff]">{t(item.key)}</h2>
-							<p className="text-16 leading-[1.7] text-[#9aa7c9]">{docs.soon}</p>
+							<h2 className="mb-12 text-24 font-medium text-[#f1f4ee]">{t(item.key)}</h2>
+							<p className="text-16 leading-[1.7] text-[#8c948b]">{docs.soon}</p>
 						</section>
 					))}
 				</div>

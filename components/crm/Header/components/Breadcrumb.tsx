@@ -25,19 +25,19 @@ export default function Breadcrumb() {
 		<nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-8 text-13">
 			{inMenu && (
 				<>
-					<span className="truncate text-[#9aa7c9]">{t(`groups.${item.group}`)}</span>
-					<span className="shrink-0 text-[#9AA7C9]" aria-hidden>
+					<span className="truncate text-[#8c948b]">{t(`groups.${item.group}`)}</span>
+					<span className="shrink-0 text-[#8C948B]" aria-hidden>
 						/
 					</span>
 				</>
 			)}
-			<span className={`truncate font-medium ${child ? "text-[#9aa7c9]" : "text-[#edf2ff]"}`}>{t(item.key)}</span>
+			<span className={`truncate font-medium ${child ? "text-[#8c948b]" : "text-[#f1f4ee]"}`}>{t(item.key)}</span>
 			{child && (
 				<>
-					<span className="shrink-0 text-[#9AA7C9]" aria-hidden>
+					<span className="shrink-0 text-[#8C948B]" aria-hidden>
 						/
 					</span>
-					<span className="truncate font-medium text-[#edf2ff]">{t(child.key)}</span>
+					<span className="truncate font-medium text-[#f1f4ee]">{t(child.key)}</span>
 				</>
 			)}
 		</nav>

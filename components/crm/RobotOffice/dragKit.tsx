@@ -93,7 +93,7 @@ export function DragProvider({ onDrop, children }: { onDrop: (p: DragPayload, t:
 		<Ctx.Provider value={{ payload: state?.payload ?? null, over: state?.over ?? null, start, justDragged }}>
 			{children}
 			{state && (
-				<div className="pointer-events-none fixed z-[90] max-w-[220px] truncate rounded-10 border border-[rgba(124,147,255,0.55)] bg-[#1D2320] px-12 py-6 text-12 font-medium text-[#edf2ff] shadow-[0_10px_28px_rgba(0,0,0,0.5)]" style={{ left: state.x + 14, top: state.y + 14 }}>
+				<div className="pointer-events-none fixed z-[90] max-w-[220px] truncate rounded-10 border border-[rgba(198,255,77,0.55)] bg-[#1D2320] px-12 py-6 text-12 font-medium text-[#f1f4ee] shadow-[0_10px_28px_rgba(0,0,0,0.5)]" style={{ left: state.x + 14, top: state.y + 14 }}>
 					{state.payload.label}
 				</div>
 			)}

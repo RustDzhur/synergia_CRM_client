@@ -23,22 +23,22 @@ export default function FeedCard({ enabled }: { enabled: boolean }) {
 	return (
 		<div className="fs-card flex flex-col p-16">
 			<div className="mb-12 flex items-center justify-between gap-12">
-				<h2 className="flex items-center gap-8 text-14 font-semibold text-[#edf2ff]">
-					<TbSpeakerphone size={16} className="text-[#7c93ff]" aria-hidden />
+				<h2 className="flex items-center gap-8 text-14 font-semibold text-[#f1f4ee]">
+					<TbSpeakerphone size={16} className="text-[#c6ff4d]" aria-hidden />
 					{t("announcements")}
 				</h2>
-				<Link href={`/${locale}/crm/collaboration/feed`} className="text-12 font-semibold text-[#7c93ff] transition-opacity hover:opacity-80">
+				<Link href={`/${locale}/crm/collaboration/feed`} className="text-12 font-semibold text-[#c6ff4d] transition-opacity hover:opacity-80">
 					{t("openFeed")}
 				</Link>
 			</div>
 			{latest.length === 0 ? (
-				<p className="text-13 text-[#9aa7c9]">{t("noAnnouncements")}</p>
+				<p className="text-13 text-[#8c948b]">{t("noAnnouncements")}</p>
 			) : (
 				<ul className="flex flex-col gap-10">
 					{latest.map((p) => (
 						<li key={p.id} className="min-w-0 border-b border-[rgba(255,255,255,0.06)] pb-10 last:border-0 last:pb-0">
-							<p className="line-clamp-2 text-13 [overflow-wrap:anywhere] text-[#edf2ff]">{p.text || p.taskTitle}</p>
-							<p className="mt-4 text-11 text-[#9AA7C9]">
+							<p className="line-clamp-2 text-13 [overflow-wrap:anywhere] text-[#f1f4ee]">{p.text || p.taskTitle}</p>
+							<p className="mt-4 text-11 text-[#8C948B]">
 								{p.author} · {relativeTime(p.at, locale, t("justNow"))}
 							</p>
 						</li>

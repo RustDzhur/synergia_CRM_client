@@ -46,8 +46,8 @@ export default function UaProfileCard({ form, set, year }: { form: UaProfileForm
 	const sealInput = useRef<HTMLInputElement>(null);
 
 	const field = "fs-field h-40 w-full px-12 text-13 outline-none";
-	const label = "mb-6 block text-12 text-[#9aa7c9]";
-	const hint = "mt-[4px] block text-11 text-[#9AA7C9]";
+	const label = "mb-6 block text-12 text-[#8c948b]";
+	const hint = "mt-[4px] block text-11 text-[#8C948B]";
 	const err = "mt-[4px] block text-11 text-[#ff9f9f]";
 
 	// Ошибка поля — код из общего валидатора; пустое поле ошибкой не считается
@@ -86,9 +86,9 @@ export default function UaProfileCard({ form, set, year }: { form: UaProfileForm
 
 	return (
 		<div className="mb-16 fs-card p-16 md:p-20">
-			<h3 className="mb-4 text-14 font-semibold text-[#edf2ff]">{t("uaSection")}</h3>
-			<p className="mb-14 text-12 leading-[1.5] text-[#9aa7c9]">{t("uaSectionHint")}</p>
-			<p className="mb-14 text-11 text-[#9AA7C9]">{rulesNotice(year)} · {rates.source}</p>
+			<h3 className="mb-4 text-14 font-semibold text-[#f1f4ee]">{t("uaSection")}</h3>
+			<p className="mb-14 text-12 leading-[1.5] text-[#8c948b]">{t("uaSectionHint")}</p>
+			<p className="mb-14 text-11 text-[#8C948B]">{rulesNotice(year)} · {rates.source}</p>
 
 			<div className="grid grid-cols-1 gap-12 md:grid-cols-2">
 				<label className="block">
@@ -132,7 +132,7 @@ export default function UaProfileCard({ form, set, year }: { form: UaProfileForm
 
 			{/* ПДВ: у неплатника документы печатают «ПДВ не нараховується», поэтому ставки спрашиваем только у плательщика */}
 			<label className="mt-14 flex items-center gap-10 text-13 text-[#cfd4cb]">
-				<input type="checkbox" checked={form.uaVatPayer} onChange={(e) => set({ uaVatPayer: e.target.checked })} className="h-16 w-16 accent-[#7c93ff]" />
+				<input type="checkbox" checked={form.uaVatPayer} onChange={(e) => set({ uaVatPayer: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
 				{t("uaVatPayer")}
 			</label>
 			{form.uaVatPayer && (
@@ -154,12 +154,12 @@ export default function UaProfileCard({ form, set, year }: { form: UaProfileForm
 										type="checkbox"
 										checked={form.uaVatRates.includes(rate)}
 										onChange={(e) => set({ uaVatRates: e.target.checked ? [...form.uaVatRates, rate].sort((a, b) => b - a) : form.uaVatRates.filter((r) => r !== rate) })}
-										className="h-16 w-16 accent-[#7c93ff]"
+										className="h-16 w-16 accent-[#c6ff4d]"
 									/>
 									{rate} %
 								</label>
 							))}
-							<span className="text-11 text-[#9AA7C9]">{t("uaVatRatesHint")}</span>
+							<span className="text-11 text-[#8C948B]">{t("uaVatRatesHint")}</span>
 						</div>
 					</div>
 				</div>
@@ -205,7 +205,7 @@ export default function UaProfileCard({ form, set, year }: { form: UaProfileForm
 				{([["uaSignature", t("uaSignature"), signatureInput] as const, ["uaSeal", t("uaSeal"), sealInput] as const]).map(([key, caption, ref]) => (
 					<div key={key} className="flex items-start gap-12">
 						<div className="flex h-[84px] w-[168px] shrink-0 items-center justify-center overflow-hidden rounded-10 border border-inkLine bg-white p-8">
-							{form[key] ? <img src={form[key]} alt={caption} className="max-h-full max-w-full object-contain" /> : <span className="text-11 text-[#9AA7C9]">{caption}</span>}
+							{form[key] ? <img src={form[key]} alt={caption} className="max-h-full max-w-full object-contain" /> : <span className="text-11 text-[#8C948B]">{caption}</span>}
 						</div>
 						<div className="flex flex-col items-start gap-6">
 							<button type="button" onClick={() => ref.current?.click()} className="fs-btn fs-btn-ghost h-34">
@@ -226,7 +226,7 @@ export default function UaProfileCard({ form, set, year }: { form: UaProfileForm
 				<div className="grid grid-cols-2 gap-12 md:grid-cols-3">
 					{[1, 2, 3].map((group) => (
 						<label key={group} className="block">
-							<span className="mb-4 block text-11 text-[#9AA7C9]">{t("uaGroupLimit", { group })}</span>
+							<span className="mb-4 block text-11 text-[#8C948B]">{t("uaGroupLimit", { group })}</span>
 							<input
 								inputMode="numeric"
 								value={limitsText[String(group)] ?? String(limits.find((l) => l.group === group)?.amount ?? "")}

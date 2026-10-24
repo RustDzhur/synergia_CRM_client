@@ -37,7 +37,7 @@ export default function PayRequisitesCard() {
 	}
 
 	const field = (label: string, value: string | number, on: (v: string) => void, extra: { wide?: boolean; type?: string } = {}) => (
-		<label className={`flex flex-col gap-4 text-11 text-[#9aa7c9] ${extra.wide ? "sm:col-span-2" : ""}`}>
+		<label className={`flex flex-col gap-4 text-11 text-[#8c948b] ${extra.wide ? "sm:col-span-2" : ""}`}>
 			{label}
 			<input value={value} type={extra.type ?? "text"} onChange={(e) => on(e.target.value)} className={`${inputClass} w-full`} />
 		</label>
@@ -46,13 +46,13 @@ export default function PayRequisitesCard() {
 	return (
 		<div className={`${cardClass} mb-24`}>
 			<button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center justify-between gap-12 text-left">
-				<span><span className="block text-14 font-medium text-[#edf2ff]">{t("reqTitle")}</span><span className="block text-12 text-[#9aa7c9]">{t("reqHelp")}</span></span>
-				<span className="text-12 text-[#7c93ff]">{open ? t("reqHide") : t("reqShow")}</span>
+				<span><span className="block text-14 font-medium text-[#f1f4ee]">{t("reqTitle")}</span><span className="block text-12 text-[#8c948b]">{t("reqHelp")}</span></span>
+				<span className="text-12 text-[#c6ff4d]">{open ? t("reqHide") : t("reqShow")}</span>
 			</button>
 			{open && r && (
 				<div className="mt-16 flex flex-col gap-20">
 					<section>
-						<h3 className="mb-8 text-13 font-semibold text-[#edf2ff]">{t("reqDe")}</h3>
+						<h3 className="mb-8 text-13 font-semibold text-[#f1f4ee]">{t("reqDe")}</h3>
 						<div className="grid gap-10 sm:grid-cols-2">
 							{field(t("reqName"), r.de.name, (v) => set("de", "name", v))}
 							{field(t("reqVatId"), r.de.vatId, (v) => set("de", "vatId", v))}
@@ -64,7 +64,7 @@ export default function PayRequisitesCard() {
 						</div>
 					</section>
 					<section>
-						<h3 className="mb-8 text-13 font-semibold text-[#edf2ff]">{t("reqUa")}</h3>
+						<h3 className="mb-8 text-13 font-semibold text-[#f1f4ee]">{t("reqUa")}</h3>
 						<div className="grid gap-10 sm:grid-cols-2">
 							{field(t("reqName"), r.ua.name, (v) => set("ua", "name", v))}
 							{field("ЄДРПОУ / РНОКПП", r.ua.edrpou, (v) => set("ua", "edrpou", v))}
@@ -74,7 +74,7 @@ export default function PayRequisitesCard() {
 							{field("МФО", r.ua.mfo, (v) => set("ua", "mfo", v))}
 							{field(t("reqVatNote"), r.ua.vatNote, (v) => set("ua", "vatNote", v))}
 						</div>
-						<p className="mb-6 mt-12 text-12 text-[#9aa7c9]">{t("reqUahPrices")}</p>
+						<p className="mb-6 mt-12 text-12 text-[#8c948b]">{t("reqUahPrices")}</p>
 						<div className="grid gap-10 sm:grid-cols-4">
 							{field(`Company · ${t("month")}, ₴`, r.uahPrices.standard.month, (v) => price("standard", "month", v), { type: "number" })}
 							{field(`Company · ${t("year")}, ₴`, r.uahPrices.standard.year, (v) => price("standard", "year", v), { type: "number" })}
@@ -83,7 +83,7 @@ export default function PayRequisitesCard() {
 						</div>
 					</section>
 					<section>
-						<h3 className="mb-8 text-13 font-semibold text-[#edf2ff]">{t("reqUsdt")}</h3>
+						<h3 className="mb-8 text-13 font-semibold text-[#f1f4ee]">{t("reqUsdt")}</h3>
 						<div className="grid gap-10 sm:grid-cols-2">
 							{field(t("reqWallet"), r.usdt.address, (v) => set("usdt", "address", v), { wide: true })}
 							{field(t("reqRate"), r.usdt.perEur, (v) => set("usdt", "perEur", Number(v) || 0), { type: "number" })}

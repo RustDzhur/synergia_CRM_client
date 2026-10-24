@@ -9,7 +9,7 @@ import { IsoBox, Plane, Shadow } from "./prims";
 
 // Крупные части офиса: парящая плита со скруглёнными углами, изогнутые стеклянные стены с панорамой города, зоны-капсулы с дугами из стекла,
 // кофе-пойнт с неоновой вывеской, лаунж с круглым столиком и дугой-диваном, серверная. Всё подсвечивается неоном.
-const LIME = "#7c93ff", TEAL = "#2DDEB6";
+const LIME = "#c6ff4d", TEAL = "#2DDEB6";
 const FLOOR_R = 2.6;
 
 const isNear = (a: Pt, b: Pt, c: Pt) => { const mx = (a[0] + b[0]) / 2 - c[0], my = (a[1] + b[1]) / 2 - c[1]; return mx + my > 0; };
@@ -30,7 +30,7 @@ export function FloorSlab() {
 			{near.map(([a, b], i) => <polygon key={i} points={[P(a[0], a[1], 0), P(b[0], b[1], 0), P(b[0], b[1], -T), P(a[0], a[1], -T)].join(" ")} fill={i % 2 ? "#0e1411" : "#141b17"} />)}
 			<polygon points={poly(pts)} fill="url(#g-floor)" />
 			<g clipPath="url(#floor-clip)">
-				<g stroke="rgba(124,147,255,0.07)" strokeWidth="1">{lines}</g>
+				<g stroke="rgba(198,255,77,0.07)" strokeWidth="1">{lines}</g>
 				<polygon points={[P(2, 0), P(9, 0), P(0, 9), P(0, 2)].join(" ")} fill="#fff" opacity="0.035" />
 				<polygon points={[P(14, 0), P(17, 0), P(0, 17), P(0, 14)].join(" ")} fill="#fff" opacity="0.03" />
 				<polygon points={poly(pts)} fill="url(#g-sheen)" />
@@ -161,20 +161,20 @@ export function CoffeeBar() {
 			<Shadow x={x} y={y} w={w} d={d} o={0.5} />
 			<IsoBox x={x} y={y} w={w} d={d} h={14} c={body} />
 			<Plane x={x} y={y + d} z={14}>
-				{Array.from({ length: Math.round(w) }, (_, i) => <rect key={i} x={3 + i * 32} y="3" width="26" height="9" rx="4.5" fill="none" stroke="rgba(124,147,255,0.28)" />)}
+				{Array.from({ length: Math.round(w) }, (_, i) => <rect key={i} x={3 + i * 32} y="3" width="26" height="9" rx="4.5" fill="none" stroke="rgba(198,255,77,0.28)" />)}
 				<rect x="3" y="12.2" width={w * 32 - 6} height="1.6" fill={LIME} opacity="0.7" />
 			</Plane>
-			<IsoBox x={x - 0.03} y={y - 0.03} z={14} w={w + 0.06} d={d + 0.06} h={2.2} c={tone("#e9eee5")} edge="rgba(124,147,255,0.7)" />
-			<IsoBox x={x + 0.45} y={y + 0.15} z={16.2} w={1.0} d={0.7} h={13} c={C.dark} edge="rgba(124,147,255,0.55)" />
+			<IsoBox x={x - 0.03} y={y - 0.03} z={14} w={w + 0.06} d={d + 0.06} h={2.2} c={tone("#e9eee5")} edge="rgba(198,255,77,0.7)" />
+			<IsoBox x={x + 0.45} y={y + 0.15} z={16.2} w={1.0} d={0.7} h={13} c={C.dark} edge="rgba(198,255,77,0.55)" />
 			<Plane x={x + 0.45} y={y + 0.85} z={29}><rect x="3" y="2" width="26" height="5" rx="2" fill="#06140c" /><rect className="sc-pulse" x="5" y="3.6" width="10" height="1.8" fill={LIME} /><circle cx="24" cy="4.5" r="1.4" fill={TEAL} /></Plane>
-			{[1.8, 2.15, 2.5].map((dx) => <IsoBox key={dx} x={x + dx} y={y + 0.4} z={16.2} w={0.2} d={0.2} h={3.4} c={tone("#edf2ff")} />)}
+			{[1.8, 2.15, 2.5].map((dx) => <IsoBox key={dx} x={x + dx} y={y + 0.4} z={16.2} w={0.2} d={0.2} h={3.4} c={tone("#f1f4ee")} />)}
 			{/* неоновая вывеска */}
 			<g transform={`translate(${nx.toFixed(1)} ${ny.toFixed(1)}) skewY(26.565)`} style={{ pointerEvents: "none" }}>
 				<text x="0" y="0" textAnchor="middle" fontSize="23" fontWeight="800" fontStyle="italic" fill="none" stroke={LIME} strokeWidth="1.6" filter="url(#f-glow)" letterSpacing="2" className="sc-blink-soft">COFFEE</text>
 				<text x="0" y="0" textAnchor="middle" fontSize="23" fontWeight="800" fontStyle="italic" fill={LIME} fillOpacity="0.18" letterSpacing="2">COFFEE</text>
 			</g>
 			<Pendant x={x + 0.8} y={y + 0.9} /><Pendant x={x + 2.4} y={y + 0.9} />
-			{[0, 1].map((i) => <g key={i}><Cyl x={x + w + 0.35} y={y + 0.4 + i * 0.75} r={0.2} h={9} side="#26302a" top="#7c93ff" /></g>)}
+			{[0, 1].map((i) => <g key={i}><Cyl x={x + w + 0.35} y={y + 0.4 + i * 0.75} r={0.2} h={9} side="#26302a" top="#c6ff4d" /></g>)}
 		</g>
 	);
 }

@@ -51,7 +51,7 @@ export default function RecordsTable({ rows, fields, columns, hiddenKeys, sort, 
 									<button
 										type="button"
 										onClick={() => onSort(active && sort!.dir === -1 ? null : { key: f.key, dir: active ? -1 : 1 })}
-										className={`inline-flex max-w-full items-center gap-6 transition-colors hover:text-[#7c93ff] ${active ? "text-[#7c93ff]" : ""}`}>
+										className={`inline-flex max-w-full items-center gap-6 transition-colors hover:text-[#c6ff4d] ${active ? "text-[#c6ff4d]" : ""}`}>
 										<span className="truncate">{fieldLabel(f.key)}</span>
 										{active && (sort!.dir === 1 ? <MdArrowUpward size={14} /> : <MdArrowDownward size={14} />)}
 									</button>
@@ -67,12 +67,12 @@ export default function RecordsTable({ rows, fields, columns, hiddenKeys, sort, 
 							<tr
 								key={r.id}
 								onClick={() => onOpen(r)}
-								className={`animate-fade-in cursor-pointer transition-colors duration-150 ${checked ? "bg-[rgba(124,147,255,0.06)]" : ""}`}>
+								className={`animate-fade-in cursor-pointer transition-colors duration-150 ${checked ? "bg-[rgba(198,255,77,0.06)]" : ""}`}>
 								<td className="pl-16" onClick={(e) => e.stopPropagation()}>
 									<Checkbox checked={checked} onChange={() => toggle(r.id)} label={tc("selectRow")} />
 								</td>
 								<td className="text-center">
-									<button type="button" aria-label={tr("editRow")} onClick={(e) => { e.stopPropagation(); onOpen(r); }} className="text-[#9AA7C9] transition-colors hover:text-[#7c93ff]">
+									<button type="button" aria-label={tr("editRow")} onClick={(e) => { e.stopPropagation(); onOpen(r); }} className="text-[#8C948B] transition-colors hover:text-[#c6ff4d]">
 										<MdEdit size={17} />
 									</button>
 								</td>
@@ -96,7 +96,7 @@ export default function RecordsTable({ rows, fields, columns, hiddenKeys, sort, 
 					})}
 				</tbody>
 			</table>
-			{rows.length === 0 && <p className="py-40 text-center text-14 text-[#9aa7c9]">{searching ? tr("nothingFound") : tr("empty")}</p>}
+			{rows.length === 0 && <p className="py-40 text-center text-14 text-[#8c948b]">{searching ? tr("nothingFound") : tr("empty")}</p>}
 		</div>
 	);
 }

@@ -27,11 +27,11 @@ export default function DealTasks({ dealId }: { dealId: string }) {
 	return (
 		<section className="fs-card overflow-hidden">
 			<header className="flex items-center justify-between border-b border-inkLine px-16 py-12">
-				<h3 className="text-14 font-semibold text-[#edf2ff]">{t("dealTasks")}</h3>
+				<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("dealTasks")}</h3>
 			</header>
 			<div className="p-16">
 				{mine.length === 0 ? (
-					<p className="text-13 text-[#9aa7c9]">{t("dealNoTasks")}</p>
+					<p className="text-13 text-[#8c948b]">{t("dealNoTasks")}</p>
 				) : (
 					<ul className="flex flex-col gap-8">
 						{mine.map((task) => (
@@ -41,12 +41,12 @@ export default function DealTasks({ dealId }: { dealId: string }) {
 										type="checkbox"
 										checked={task.completed}
 										onChange={(e) => void toggle(task._id, e.target.checked)}
-										className="h-[15px] w-[15px] shrink-0 cursor-pointer accent-[#7c93ff]"
+										className="h-[15px] w-[15px] shrink-0 cursor-pointer accent-[#c6ff4d]"
 									/>
-									<span className={`truncate ${task.completed ? "text-[#9aa7c9] line-through" : "text-[#edf2ff]"}`}>{task.title}</span>
+									<span className={`truncate ${task.completed ? "text-[#8c948b] line-through" : "text-[#f1f4ee]"}`}>{task.title}</span>
 								</label>
 								{task.deadline && (
-									<span className="shrink-0 text-12 text-[#9aa7c9]">
+									<span className="shrink-0 text-12 text-[#8c948b]">
 										{new Date(task.deadline).toLocaleString(localeTag(locale), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
 									</span>
 								)}

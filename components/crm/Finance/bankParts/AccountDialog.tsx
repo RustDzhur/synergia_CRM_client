@@ -21,11 +21,11 @@ export default function AccountDialog({ open, onClose, form, onChange, notice, b
 	return (
 		<Modal open={open} onClose={onClose} label={t("bankNewAccount")} className="w-full max-w-[480px]">
 			<form onSubmit={onSubmit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
-				<h2 className="mb-14 text-16 font-semibold text-[#edf2ff]">{t("bankNewAccount")}</h2>
+				<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("bankNewAccount")}</h2>
 				<div className="flex flex-col gap-12">
 					<FormField label={t("bankName")} value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} maxLength={200} autoFocus />
 					<label className="block">
-						<span className="mb-6 block text-12 text-[#9aa7c9]">{t("bankKind")}</span>
+						<span className="mb-6 block text-12 text-[#8c948b]">{t("bankKind")}</span>
 						<select value={form.kind} onChange={(e) => onChange({ ...form, kind: e.target.value as Kind })} className="fs-field h-40 w-full px-12 text-13 outline-none">
 							<option value="bank">{t("bankKindBank")}</option>
 							<option value="cash">{t("bankKindCash")}</option>
@@ -39,7 +39,7 @@ export default function AccountDialog({ open, onClose, form, onChange, notice, b
 						<FormField label={t("bankOpeningBalance")} type="number" step="0.01" value={form.openingBalance} onChange={(e) => onChange({ ...form, openingBalance: e.target.value })} />
 						<FormField label={t("bankOpeningDate")} type="date" value={form.openingDate} onChange={(e) => onChange({ ...form, openingDate: e.target.value })} />
 					</div>
-					<p className="text-11 leading-[1.5] text-[#9AA7C9]">{t("bankOpeningHint")}</p>
+					<p className="text-11 leading-[1.5] text-[#8C948B]">{t("bankOpeningHint")}</p>
 				</div>
 				{notice && <p className="mt-10 text-12 leading-[1.5] text-[#F4A100]">{notice}</p>}
 				<div className="mt-20 flex justify-end gap-10">

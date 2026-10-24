@@ -33,7 +33,7 @@ export default function SettingsTabs({ className = "" }: { className?: string })
 								href={`/${locale}${href}`}
 								aria-current={active ? "page" : undefined}
 								className={`flex h-44 items-center gap-10 rounded-10 px-10 text-13 font-medium transition-colors duration-150 ${
-									active ? "bg-[rgba(124,147,255,0.08)] text-[#7c93ff]" : "text-[#9aa7c9] hover:text-[#edf2ff]"
+									active ? "bg-[rgba(198,255,77,0.08)] text-[#c6ff4d]" : "text-[#8c948b] hover:text-[#f1f4ee]"
 								}`}>
 								<Icon size={18} className="shrink-0" />
 								<span className="truncate" title={t(key)}>{t(key)}</span>

@@ -11,7 +11,7 @@ interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
 export default function FormField({ label, wrapperClassName = "", className = "", ...rest }: Props) {
 	return (
 		<label className={`block ${wrapperClassName}`}>
-			<span className="mb-6 block text-12 text-[#9aa7c9]">{label}</span>
+			<span className="mb-6 block text-12 text-[#8c948b]">{label}</span>
 			<input className={`${fieldClass} ${className}`} {...rest} />
 		</label>
 	);

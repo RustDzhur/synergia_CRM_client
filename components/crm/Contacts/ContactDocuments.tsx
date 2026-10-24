@@ -47,18 +47,18 @@ export default function ContactDocuments({ contactId, url }: { contactId: string
 
 	return (
 		<div className="fs-card mb-20 p-16 md:p-20">
-			<p className="mb-10 text-13 font-medium text-[#edf2ff]">{t("contactDocuments")}</p>
+			<p className="mb-10 text-13 font-medium text-[#f1f4ee]">{t("contactDocuments")}</p>
 			{rows === null ? (
-				<p className="text-12 text-[#9aa7c9]">{t("loading")}</p>
+				<p className="text-12 text-[#8c948b]">{t("loading")}</p>
 			) : rows.length === 0 ? (
-				<p className="text-12 text-[#9aa7c9]">{t("contactDocsEmpty")}</p>
+				<p className="text-12 text-[#8c948b]">{t("contactDocsEmpty")}</p>
 			) : (
 				<ul className="flex flex-col">
 					{rows.map((row) => (
 						<li key={`${row.kind}-${row.id}`} className="flex flex-wrap items-center gap-x-10 gap-y-6 border-t border-inkLineSoft py-8 text-12 first:border-t-0">
-							<span className="fs-chip h-22 shrink-0 px-8 text-10 text-[#7c93ff]">{t(LABEL_OF[row.kind] ?? "tab_invoices")}</span>
-							<span className="text-[#edf2ff]">{row.number || "—"}</span>
-							<span className="text-[#9aa7c9]">{row.at ? new Date(row.at).toLocaleDateString(locale) : ""}</span>
+							<span className="fs-chip h-22 shrink-0 px-8 text-10 text-[#c6ff4d]">{t(LABEL_OF[row.kind] ?? "tab_invoices")}</span>
+							<span className="text-[#f1f4ee]">{row.number || "—"}</span>
+							<span className="text-[#8c948b]">{row.at ? new Date(row.at).toLocaleDateString(locale) : ""}</span>
 							<span className="ml-auto text-[#cfd4cb]">{money(row.total, row.currency || "UAH", locale)}</span>
 							<span className="flex items-center gap-6">
 								<button type="button" disabled={busy === row.id + "view"} onClick={() => open(row, "view")} title={t("viewPdf")} aria-label={t("viewPdf")} className="fs-btn fs-btn-ghost h-28 w-28 justify-center p-0 disabled:opacity-50">

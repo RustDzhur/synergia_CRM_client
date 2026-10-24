@@ -62,11 +62,11 @@ export default function IrisBotCard() {
 		<div className="fs-card mb-20 p-16">
 			<div className="flex flex-wrap items-start justify-between gap-12">
 				<div className="min-w-0">
-					<p className="text-14 font-medium text-[#edf2ff]">
+					<p className="text-14 font-medium text-[#f1f4ee]">
 						{t("irisTitle")}
-						{enabled && <span className="ml-10 rounded-8 border border-[rgba(124,147,255,0.4)] px-8 py-[2px] text-11 font-normal text-[#7c93ff]">{username ? `@${username}` : t("irisActive")}</span>}
+						{enabled && <span className="ml-10 rounded-8 border border-[rgba(198,255,77,0.4)] px-8 py-[2px] text-11 font-normal text-[#c6ff4d]">{username ? `@${username}` : t("irisActive")}</span>}
 					</p>
-					<p className="mt-4 max-w-[720px] text-12 leading-[1.5] text-[#9aa7c9]">{t("irisHelp")}</p>
+					<p className="mt-4 max-w-[720px] text-12 leading-[1.5] text-[#8c948b]">{t("irisHelp")}</p>
 				</div>
 				<div className="flex items-center gap-10">
 					{hasToken && <button type="button" onClick={clear} disabled={busy} className="fs-btn fs-btn-ghost h-34 text-[#F4A100] disabled:opacity-60">{t("notifyClear")}</button>}
@@ -75,13 +75,13 @@ export default function IrisBotCard() {
 			</div>
 			<div className="mt-12 flex flex-wrap items-end gap-12">
 				<label className="flex min-w-[240px] flex-1 flex-col gap-6">
-					<span className="text-11 text-[#9aa7c9]">{t("irisToken")}</span>
+					<span className="text-11 text-[#8c948b]">{t("irisToken")}</span>
 					<input value={token} onChange={(e) => setToken(e.target.value)} type="password" autoComplete="off" maxLength={120} placeholder={hasToken ? t("intKeepSecret") : "123456:ABC…"} className={input} />
 				</label>
 				<button type="button" onClick={findChat} disabled={busy || (!token && !hasToken)} className="fs-btn fs-btn-ghost h-40 disabled:opacity-60">{t("notifyFind")}</button>
 				{chat && (
-					<span className="pb-10 text-12 text-[#9aa7c9]">
-						{t("notifyChat")}: <span className="text-[#edf2ff]">{name || chat}</span>
+					<span className="pb-10 text-12 text-[#8c948b]">
+						{t("notifyChat")}: <span className="text-[#f1f4ee]">{name || chat}</span>
 					</span>
 				)}
 			</div>

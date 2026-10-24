@@ -333,12 +333,12 @@ export default function Bank() {
 
 					<div className="mb-16 flex flex-wrap items-center justify-between gap-x-20 gap-y-10">
 						<div className="flex min-w-0 flex-wrap items-center gap-x-10 gap-y-6">
-							<h2 className="text-16 font-semibold text-[#edf2ff]">{account.name}</h2>
+							<h2 className="text-16 font-semibold text-[#f1f4ee]">{account.name}</h2>
 							<span className={`fs-chip ${account.kind === "cash" ? "border-[rgba(244,161,0,0.35)] text-[#F4A100]" : ""}`}>
 								{account.kind === "cash" ? <TbCash size={14} aria-hidden /> : <TbBuildingBank size={14} aria-hidden />}
 								{account.kind === "cash" ? t("bankKindCash") : t("bankKindBank")}
 							</span>
-							{account.iban && <span className="text-12 text-[#9aa7c9]">{account.iban}</span>}
+							{account.iban && <span className="text-12 text-[#8c948b]">{account.iban}</span>}
 							{/* Счёт привязан к банку: движения забираются по API — видно чипом и датой последней синхронизации */}
 							{account.provider && (
 								<span className="fs-chip" title={account.lastSyncAt ? t("mbLastSync", { at: new Date(account.lastSyncAt).toLocaleString() }) : t("mbNeverSynced")}>
@@ -374,12 +374,12 @@ export default function Bank() {
 							type="button"
 							aria-pressed={onlyUnmatched}
 							onClick={() => setOnlyUnmatched((v) => !v)}
-							className={`fs-chip h-34 px-14 transition-colors ${onlyUnmatched ? "border-[#7c93ff] bg-[rgba(124,147,255,0.10)] text-[#7c93ff]" : "text-[#9AA7C9] hover:text-[#edf2ff]"}`}>
+							className={`fs-chip h-34 px-14 transition-colors ${onlyUnmatched ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.10)] text-[#c6ff4d]" : "text-[#8C948B] hover:text-[#f1f4ee]"}`}>
 							{onlyUnmatched && <TbCheck size={14} aria-hidden />}
 							{t("bankOnlyUnmatched")}
 						</button>
 						<div className="flex flex-wrap items-center gap-x-16 gap-y-10">
-							<span className="text-12 text-[#9AA7C9]">{t("periodLabel")}: {range.from} – {range.to}</span>
+							<span className="text-12 text-[#8C948B]">{t("periodLabel")}: {range.from} – {range.to}</span>
 							<input
 								ref={fileRef}
 								type="file"
@@ -409,7 +409,7 @@ export default function Bank() {
 
 					{/* Итог импорта: сколько строк принято, сколько пропущено и сколько пар подсказал сервер */}
 					{importResult && (
-						<p className="mb-16 rounded-10 border border-[rgba(124,147,255,0.22)] bg-[rgba(124,147,255,0.06)] px-12 py-8 text-12 leading-[1.5] text-[#cfd4cb]">
+						<p className="mb-16 rounded-10 border border-[rgba(198,255,77,0.22)] bg-[rgba(198,255,77,0.06)] px-12 py-8 text-12 leading-[1.5] text-[#cfd4cb]">
 							{t("bankImportDone", { imported: importResult.imported, skipped: importResult.skipped, suggestions: importResult.suggestions })}
 						</p>
 					)}
@@ -418,7 +418,7 @@ export default function Bank() {
 					{rows === null ? (
 						rowsFailed ? <p className="fs-card p-30 text-center text-13 text-[#F4A100]">{t("bankLoadFailed")}</p> : <ReportLoading />
 					) : rows.length === 0 ? (
-						<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{onlyUnmatched ? t("bankAllMatched") : t("bankNoMovements")}</p>
+						<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{onlyUnmatched ? t("bankAllMatched") : t("bankNoMovements")}</p>
 					) : (
 						<TransactionsTable
 							rows={rows}
@@ -430,9 +430,9 @@ export default function Bank() {
 					)}
 
 					<div className="mt-10 flex flex-wrap items-center justify-between gap-x-16 gap-y-10">
-						<p className="text-12 text-[#9AA7C9]">{rows === null ? "—" : t("bankShownCount", { count: rows.length })}</p>
+						<p className="text-12 text-[#8C948B]">{rows === null ? "—" : t("bankShownCount", { count: rows.length })}</p>
 						{hasImported && (
-							<button type="button" onClick={() => setClearOpen(true)} className="fs-btn fs-btn-ghost h-36 text-[#9AA7C9] hover:text-danger">
+							<button type="button" onClick={() => setClearOpen(true)} className="fs-btn fs-btn-ghost h-36 text-[#8C948B] hover:text-danger">
 								<TbTrash size={15} /> {t("bankClearImported")}
 							</button>
 						)}
@@ -442,7 +442,7 @@ export default function Bank() {
 				<>
 					<PartnerOffer onConnect={() => setMbOpen(true)} />
 					<div className="mb-16 flex flex-wrap items-center justify-between gap-x-20 gap-y-10">
-						<h2 className="text-16 font-semibold text-[#edf2ff]">{t("bankTitle")}</h2>
+						<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("bankTitle")}</h2>
 						<div className="flex flex-wrap items-center gap-10">
 							{/* Прямое подключение банка по API — пока украинское (monobank). Немецким фирмам
 							    честно говорим, что FinTS ещё не сделан и выписка импортируется файлом */}
@@ -456,14 +456,14 @@ export default function Bank() {
 							</button>
 						</div>
 					</div>
-					<p className="mb-16 text-12 leading-[1.5] text-[#9aa7c9]">{t("bankHint")}</p>
-					{market === "DE" && <p className="mb-16 text-12 leading-[1.5] text-[#9AA7C9]">{t("mbDeNote")}</p>}
+					<p className="mb-16 text-12 leading-[1.5] text-[#8c948b]">{t("bankHint")}</p>
+					{market === "DE" && <p className="mb-16 text-12 leading-[1.5] text-[#8C948B]">{t("mbDeNote")}</p>}
 					<p className="fs-eyebrow mb-10">{t("bankAccounts")}</p>
 
 					{accounts === null ? (
 						accountsFailed ? <p className="fs-card p-30 text-center text-13 text-[#F4A100]">{t("bankLoadFailed")}</p> : <ReportLoading />
 					) : accounts.length === 0 ? (
-						<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("bankEmpty")}</p>
+						<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("bankEmpty")}</p>
 					) : (
 						<AccountCards accounts={accounts} onOpen={openAccount} />
 					)}

@@ -90,7 +90,7 @@ export default function ProfileModal() {
 	const initials = `${form.firstname[0] ?? ""}${form.lastname[0] ?? ""}`.toUpperCase();
 	const input =
 		"fs-field h-40 w-full px-12 text-13 outline-none transition-colors";
-	const label = "mb-6 block text-12 text-[#9aa7c9]";
+	const label = "mb-6 block text-12 text-[#8c948b]";
 
 	return createPortal(
 		<div
@@ -124,7 +124,7 @@ export default function ProfileModal() {
 							type="button"
 							onClick={() => fileRef.current?.click()}
 							aria-label={t("uploadPhoto")}
-							className="absolute -bottom-2 -right-2 flex h-30 w-30 items-center justify-center rounded-50 bg-[#7c93ff] text-[#0b1120] shadow-[0_4px_12px_rgba(0,0,0,0.45)] transition-transform hover:scale-110">
+							className="absolute -bottom-2 -right-2 flex h-30 w-30 items-center justify-center rounded-50 bg-[#c6ff4d] text-[#0a0c0b] shadow-[0_4px_12px_rgba(0,0,0,0.45)] transition-transform hover:scale-110">
 							<MdPhotoCamera size={18} />
 						</button>
 						<input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
@@ -140,7 +140,7 @@ export default function ProfileModal() {
 							<button
 								type="button"
 								onClick={() => setAvatar("")}
-								className="text-12 text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
+								className="text-12 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
 								{t("removePhoto")}
 							</button>
 						)}
@@ -158,7 +158,7 @@ export default function ProfileModal() {
 					</div>
 					<div className="md:col-span-2">
 						<label className={label}>{t("email")}</label>
-						<input className={`${input} cursor-not-allowed text-[#9aa7c9]`} value={user?.email ?? ""} readOnly />
+						<input className={`${input} cursor-not-allowed text-[#8c948b]`} value={user?.email ?? ""} readOnly />
 					</div>
 					<div>
 						<label className={label}>{t("phone")}</label>

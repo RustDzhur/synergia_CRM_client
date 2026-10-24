@@ -46,7 +46,7 @@ export default function ShareClient({ data, token }: { data: ShareView; token: s
     }
 
     return (
-        <main className="min-h-screen bg-[#0a0a0a] px-16 py-32 text-[#edf2ff] md:px-24">
+        <main className="min-h-screen bg-[#0a0a0a] px-16 py-32 text-[#f1f4ee] md:px-24">
             <div className="mx-auto w-full max-w-[720px]">
                 <header className="mb-20 flex flex-wrap items-center gap-14">
                     {data.company.logo ? (
@@ -55,21 +55,21 @@ export default function ShareClient({ data, token }: { data: ShareView; token: s
                     ) : null}
                     <div className="min-w-0">
                         <p className="text-15 font-semibold">{data.company.name || "—"}</p>
-                        <p className="text-12 text-[#9aa7c9]">{[data.company.phone, data.company.email, data.company.site].filter(Boolean).join(" · ")}</p>
+                        <p className="text-12 text-[#8c948b]">{[data.company.phone, data.company.email, data.company.site].filter(Boolean).join(" · ")}</p>
                     </div>
                 </header>
 
                 <section className="rounded-14 border border-[rgba(255,255,255,0.10)] bg-[rgba(255,255,255,0.03)] p-20">
-                    <p className="text-12 uppercase tracking-wide text-[#9aa7c9]">{data.kind === "order" ? (ua ? t("orderTitleUa") : t("orderTitle")) : ua ? t("quoteTitleUa") : t("quoteTitle")}</p>
+                    <p className="text-12 uppercase tracking-wide text-[#8c948b]">{data.kind === "order" ? (ua ? t("orderTitleUa") : t("orderTitle")) : ua ? t("quoteTitleUa") : t("quoteTitle")}</p>
                     <h1 className="mt-6 text-22 font-semibold">{data.number}</h1>
-                    <p className="mt-6 text-13 text-[#9aa7c9]">
+                    <p className="mt-6 text-13 text-[#8c948b]">
                         {data.customer}
                         {data.validUntil ? ` · ${t("validUntil")}: ${data.validUntil}` : ""}
                         {data.contract ? ` · ${t("contract")}: ${data.contract}` : ""}
                     </p>
 
                     {data.kind === "order" && (
-                        <p className="mt-14 inline-flex rounded-full bg-[rgba(124,147,255,0.12)] px-12 py-4 text-12 font-medium text-[#7c93ff]">
+                        <p className="mt-14 inline-flex rounded-full bg-[rgba(198,255,77,0.12)] px-12 py-4 text-12 font-medium text-[#c6ff4d]">
                             {t(`status_${data.status}` as never)}
                         </p>
                     )}
@@ -84,7 +84,7 @@ export default function ShareClient({ data, token }: { data: ShareView; token: s
                 <section className="mt-16 overflow-x-auto rounded-14 border border-[rgba(255,255,255,0.10)] bg-[rgba(255,255,255,0.03)]">
                     <table className="w-full min-w-[420px] text-13">
                         <thead>
-                            <tr className="text-left text-11 uppercase tracking-wide text-[#9aa7c9]">
+                            <tr className="text-left text-11 uppercase tracking-wide text-[#8c948b]">
                                 {data.kind === "quote" && <th className="w-40 px-16 py-12" aria-label={t("choose")} />}
                                 <th className="px-16 py-12">{t("colName")}</th>
                                 <th className="px-10 py-12 text-right">{t("colQty")}</th>
@@ -104,7 +104,7 @@ export default function ShareClient({ data, token }: { data: ShareView; token: s
                                                     checked={on}
                                                     disabled={accepted}
                                                     onChange={() => setPicked((list) => (on ? list.filter((x) => x !== i) : [...list, i]))}
-                                                    className="h-16 w-16 accent-[#7c93ff]"
+                                                    className="h-16 w-16 accent-[#c6ff4d]"
                                                     aria-label={item.name}
                                                 />
                                             </td>
@@ -120,7 +120,7 @@ export default function ShareClient({ data, token }: { data: ShareView; token: s
                     </table>
                     <div className="flex items-center justify-between border-t border-[rgba(255,255,255,0.10)] px-16 py-14">
                         <span className="text-13 font-semibold">{t("total")}</span>
-                        <span className="text-16 font-semibold text-[#7c93ff]">{money(total, data.currency)}</span>
+                        <span className="text-16 font-semibold text-[#c6ff4d]">{money(total, data.currency)}</span>
                     </div>
                 </section>
 
@@ -131,7 +131,7 @@ export default function ShareClient({ data, token }: { data: ShareView; token: s
                         {accepted ? (
                             <p className="rounded-12 border border-[rgba(45,222,182,0.35)] bg-[rgba(45,222,182,0.08)] p-14 text-13 text-[#2DDEB6]">{t("accepted")}</p>
                         ) : (
-                            <button type="button" onClick={() => void accept()} disabled={busy || picked.length === 0} className="h-46 w-full rounded-10 bg-[#7c93ff] text-14 font-semibold text-[#0a0a0a] transition-opacity hover:opacity-[0.9] disabled:opacity-50 md:w-auto md:px-32">
+                            <button type="button" onClick={() => void accept()} disabled={busy || picked.length === 0} className="h-46 w-full rounded-10 bg-[#c6ff4d] text-14 font-semibold text-[#0a0a0a] transition-opacity hover:opacity-[0.9] disabled:opacity-50 md:w-auto md:px-32">
                                 {busy ? t("accepting") : t("accept")}
                             </button>
                         )}
@@ -139,7 +139,7 @@ export default function ShareClient({ data, token }: { data: ShareView; token: s
                 )}
 
                 {data.kind === "order" && data.payment && !data.payment.paid && data.payment.url && (
-                    <a href={data.payment.url} className="mt-20 inline-flex h-46 items-center justify-center rounded-10 bg-[#7c93ff] px-32 text-14 font-semibold text-[#0a0a0a] transition-opacity hover:opacity-[0.9]">
+                    <a href={data.payment.url} className="mt-20 inline-flex h-46 items-center justify-center rounded-10 bg-[#c6ff4d] px-32 text-14 font-semibold text-[#0a0a0a] transition-opacity hover:opacity-[0.9]">
                         {t("payInvoice", { number: data.payment.number })}
                     </a>
                 )}
@@ -147,7 +147,7 @@ export default function ShareClient({ data, token }: { data: ShareView; token: s
                     <p className="mt-20 rounded-12 border border-[rgba(45,222,182,0.35)] bg-[rgba(45,222,182,0.08)] p-14 text-13 text-[#2DDEB6]">{t("paid")}</p>
                 )}
 
-                <p className="mt-24 text-center text-11 text-[#9aa7c9]">{t("footer")}</p>
+                <p className="mt-24 text-center text-11 text-[#8c948b]">{t("footer")}</p>
             </div>
         </main>
     );

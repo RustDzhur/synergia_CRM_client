@@ -30,10 +30,10 @@ export default function Testimonials() {
 
 	return (
 		<div>
-			<h2 className="text-24 lg:text-36 font-medium text-[#edf2ff] text-center tracking-[0.48px] lg:tracking-[1px] sm:mb-8 lg:mb-[14px]">
+			<h2 className="text-24 lg:text-36 font-medium text-[#f1f4ee] text-center tracking-[0.48px] lg:tracking-[1px] sm:mb-8 lg:mb-[14px]">
 				{t("title")}
 			</h2>
-			<p className="mx-auto mb-[26px] max-w-[720px] text-center text-16 leading-[1.7] tracking-[0.3px] text-[#9aa7c9] lg:mb-[45px] lg:text-18">
+			<p className="mx-auto mb-[26px] max-w-[720px] text-center text-16 leading-[1.7] tracking-[0.3px] text-[#8c948b] lg:mb-[45px] lg:text-18">
 				{t("subtitle")}
 			</p>
 			<div className="relative testimonials-slider">
@@ -66,14 +66,14 @@ export default function Testimonials() {
 					modules={[Mousewheel, Navigation, Pagination]}>
 					{CARDS.map(({ icon: Icon, key }) => (
 						<SwiperSlide key={key}>
-							<div className="h-full rounded-[30px] border-[3px] border-authBtn px-[18px] pb-30 pt-[30px] shadow-[0_4px_10px_rgba(124,147,255,0.18)] sm:min-h-[380px] md:min-h-[360px]">
-								<IconContext.Provider value={{ size: "40px", color: "#7C93FF" }}>
+							<div className="h-full rounded-[30px] border-[3px] border-authBtn px-[18px] pb-30 pt-[30px] shadow-[0_4px_10px_rgba(198,255,77,0.18)] sm:min-h-[380px] md:min-h-[360px]">
+								<IconContext.Provider value={{ size: "40px", color: "#C6FF4D" }}>
 									<div className="mb-[18px] flex justify-start">
 										<Icon />
 									</div>
 								</IconContext.Provider>
-								<p className="mb-[12px] text-20 font-medium leading-[1.4] tracking-[0.4px] text-[#edf2ff]">{t(`${key}_title`)}</p>
-								<p className="text-15 leading-[26px] tracking-[0.3px] text-[#9aa7c9]">{t(`${key}_text`)}</p>
+								<p className="mb-[12px] text-20 font-medium leading-[1.4] tracking-[0.4px] text-[#f1f4ee]">{t(`${key}_title`)}</p>
+								<p className="text-15 leading-[26px] tracking-[0.3px] text-[#8c948b]">{t(`${key}_text`)}</p>
 							</div>
 						</SwiperSlide>
 					))}

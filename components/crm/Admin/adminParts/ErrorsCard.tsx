@@ -75,7 +75,7 @@ export default function ErrorsCard() {
 	return (
 		<div className="fs-card mb-24 p-16">
 			<div className="flex flex-wrap items-center justify-between gap-12">
-				<div><p className="text-14 font-medium text-[#edf2ff]">{t("errTitle")}</p><p className="text-12 text-[#9aa7c9]">{t("errHelp")}</p></div>
+				<div><p className="text-14 font-medium text-[#f1f4ee]">{t("errTitle")}</p><p className="text-12 text-[#8c948b]">{t("errHelp")}</p></div>
 				<div className="flex items-center gap-10">
 					{errFromEnv && <span className="fs-chip h-24 px-10 text-10">{t("metaFromEnv")}</span>}
 					{/* Проверка нужна в обоих случаях: значения могли задать давно, и надо видеть, что они рабочие */}
@@ -90,28 +90,28 @@ export default function ErrorsCard() {
 			    легко ошибиться — например, вписать id бота, которому Telegram писать не разрешает */}
 			<div className="mt-12 flex flex-wrap items-end gap-12">
 				<label className="flex flex-col gap-6">
-					<span className="text-11 text-[#9aa7c9]">{t("errToken")}</span>
+					<span className="text-11 text-[#8c948b]">{t("errToken")}</span>
 					<input value={errToken} onChange={(e) => setErrToken(e.target.value)} type="password" autoComplete="off" maxLength={120} placeholder={errHasToken ? t("metaKeepSecret") : "123456:ABC…"} className={inputClass} />
 				</label>
 				<button type="button" onClick={findErrorChat} disabled={errBusy} className="fs-btn fs-btn-ghost h-34 disabled:opacity-60">{t("errFindChat")}</button>
 				{errChat && (
-					<span className="text-12 text-[#9aa7c9]">
-						{t("errChat")}: <span className="text-[#edf2ff]">{errName || errChat}</span>
+					<span className="text-12 text-[#8c948b]">
+						{t("errChat")}: <span className="text-[#f1f4ee]">{errName || errChat}</span>
 					</span>
 				)}
 			</div>
 			{!errHasToken && !errFromEnv && <p role="alert" className="mt-10 rounded-10 bg-[rgba(244,161,0,0.10)] px-12 py-8 text-12 text-[#F4A100]">{t("errNoToken")}</p>}
-			{errFromEnv && <p className="mt-8 text-11 text-[#9aa7c9]">{t("errFromEnvHelp")}</p>}
+			{errFromEnv && <p className="mt-8 text-11 text-[#8c948b]">{t("errFromEnvHelp")}</p>}
 			{/* Журнал: что бот уже поймал и как объяснил — видно, что цепочка работает, даже если сообщение в Telegram пропустили */}
-			<button type="button" onClick={() => setShowJournal((v) => !v)} aria-expanded={showJournal} className="mt-12 text-12 text-[#7c93ff] hover:underline">{t("errJournal")}</button>
+			<button type="button" onClick={() => setShowJournal((v) => !v)} aria-expanded={showJournal} className="mt-12 text-12 text-[#c6ff4d] hover:underline">{t("errJournal")}</button>
 			{showJournal && (
 				<ul className="mt-8 flex max-h-[360px] flex-col gap-6 overflow-y-auto fs-scroll">
-					{journal.length === 0 && <li className="text-12 text-[#9aa7c9]">{t("errJournalEmpty")}</li>}
+					{journal.length === 0 && <li className="text-12 text-[#8c948b]">{t("errJournalEmpty")}</li>}
 					{journal.map((j, i) => (
 						<li key={`${j.at}-${i}`} className="rounded-10 border border-inkLine px-12 py-8 text-12">
-							<p className="text-[#edf2ff]"><span className="mr-6 text-[#9aa7c9]">{j.at.slice(5, 16).replace("T", " ")}</span>{j.kind ? `${j.kind}: ` : ""}{j.title}</p>
-							{j.explanation && <p className="mt-2 text-[#7c93ff]">{j.explanation}</p>}
-							{j.where && <p className="mt-2 text-[#9aa7c9]">{j.where}</p>}
+							<p className="text-[#f1f4ee]"><span className="mr-6 text-[#8c948b]">{j.at.slice(5, 16).replace("T", " ")}</span>{j.kind ? `${j.kind}: ` : ""}{j.title}</p>
+							{j.explanation && <p className="mt-2 text-[#c6ff4d]">{j.explanation}</p>}
+							{j.where && <p className="mt-2 text-[#8c948b]">{j.where}</p>}
 						</li>
 					))}
 				</ul>

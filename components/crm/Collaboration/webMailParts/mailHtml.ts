@@ -51,8 +51,8 @@ export function mailSrcDoc(html: string): string {
     return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><base target="_blank">
 <style>
     html { color-scheme: dark; }
-    body { margin: 0; padding: 2px; font: 400 13px/1.55 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #edf2ff; background: transparent; overflow-wrap: anywhere; }
-    a { color: #7c93ff; }
+    body { margin: 0; padding: 2px; font: 400 13px/1.55 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #f1f4ee; background: transparent; overflow-wrap: anywhere; }
+    a { color: #c6ff4d; }
     img { max-width: 100%; height: auto; }
     table { max-width: 100%; }
     blockquote { margin: 8px 0; padding-left: 10px; border-left: 2px solid rgba(255,255,255,0.2); }

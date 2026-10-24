@@ -15,7 +15,7 @@ export default function OrgsTable({ orgs, query, onQuery, onPatch, onFeatures }:
 	return (
 		<>
 			<div className="mb-12 flex items-center gap-12">
-				<h2 className="text-14 font-semibold text-[#edf2ff]">{t("firms")}</h2>
+				<h2 className="text-14 font-semibold text-[#f1f4ee]">{t("firms")}</h2>
 				<input value={query} onChange={(e) => onQuery(e.target.value)} placeholder={t("search")} aria-label={t("search")} className={`${inputClass} w-[240px]`} />
 			</div>
 			<div className="fs-card overflow-x-auto">
@@ -28,9 +28,9 @@ export default function OrgsTable({ orgs, query, onQuery, onPatch, onFeatures }:
 					<tbody>
 						{orgs.map((o) => (
 							<tr key={o.id} className={o.blocked ? "bg-[rgba(235,87,87,0.06)]" : ""}>
-								<td className="px-12 py-10 text-13 font-medium text-[#edf2ff] fs-wrap">{o.name}{o.blocked && <span className="ml-6 text-12 text-danger">({t("blockedTag")})</span>}</td>
-								<td className="px-12 py-10 text-13 text-[#9aa7c9] fs-wrap"><span className="block">{o.ownerName}</span><span className="text-12 text-[#9AA7C9]">{o.ownerEmail}</span></td>
-								<td className="px-12 py-10"><span className="fs-chip h-24 border-[rgba(124,147,255,0.30)] px-8 text-10 text-[#7c93ff]">{o.plan}</span></td>
+								<td className="px-12 py-10 text-13 font-medium text-[#f1f4ee] fs-wrap">{o.name}{o.blocked && <span className="ml-6 text-12 text-danger">({t("blockedTag")})</span>}</td>
+								<td className="px-12 py-10 text-13 text-[#8c948b] fs-wrap"><span className="block">{o.ownerName}</span><span className="text-12 text-[#8C948B]">{o.ownerEmail}</span></td>
+								<td className="px-12 py-10"><span className="fs-chip h-24 border-[rgba(198,255,77,0.30)] px-8 text-10 text-[#c6ff4d]">{o.plan}</span></td>
 								<td className="px-12 py-10">
 									<div className="flex flex-wrap items-center gap-6">
 										<select value={o.override} onChange={(e) => onPatch(o.id, { planOverride: e.target.value, planOverrideUntil: e.target.value ? addDays(31) : null })} aria-label={t("colOverride")} className={inputClass}>
@@ -40,12 +40,12 @@ export default function OrgsTable({ orgs, query, onQuery, onPatch, onFeatures }:
 										{o.override && <input type="date" value={day(o.overrideUntil)} onChange={(e) => onPatch(o.id, { planOverrideUntil: e.target.value ? new Date(`${e.target.value}T23:59:00`).toISOString() : null })} aria-label={t("until")} className={inputClass} />}
 									</div>
 								</td>
-								<td className="px-12 py-10 text-13 text-[#9aa7c9]">{o.members}</td>
-								<td className="px-12 py-10 text-13 text-[#9AA7C9]">{day(o.createdAt)}</td>
+								<td className="px-12 py-10 text-13 text-[#8c948b]">{o.members}</td>
+								<td className="px-12 py-10 text-13 text-[#8C948B]">{day(o.createdAt)}</td>
 								<td className="px-12 py-10">
 									<div className="flex flex-wrap gap-8">
 										<button type="button" onClick={() => onPatch(o.id, { promo: !o.promoUntil })} className={`text-12 hover:underline ${o.promoUntil ? "text-[#ffc857]" : "text-[#2DDEB6]"}`}>{o.promoUntil ? t("promoRevoke", { date: day(o.promoUntil) }) : t("promoGrant")}</button>
-										<button type="button" onClick={() => onFeatures(o)} className="text-12 text-[#7c93ff] hover:underline">{t("features")}</button>
+										<button type="button" onClick={() => onFeatures(o)} className="text-12 text-[#c6ff4d] hover:underline">{t("features")}</button>
 										<button type="button" onClick={() => onPatch(o.id, { blocked: !o.blocked })} className={`text-12 hover:underline ${o.blocked ? "text-[#2DDEB6]" : "text-danger"}`}>{o.blocked ? t("unblock") : t("block")}</button>
 									</div>
 								</td>
@@ -53,7 +53,7 @@ export default function OrgsTable({ orgs, query, onQuery, onPatch, onFeatures }:
 						))}
 					</tbody>
 				</table>
-				{orgs.length === 0 && <p className="py-30 text-center text-13 text-[#9aa7c9]">{t("none")}</p>}
+				{orgs.length === 0 && <p className="py-30 text-center text-13 text-[#8c948b]">{t("none")}</p>}
 			</div>
 		</>
 	);

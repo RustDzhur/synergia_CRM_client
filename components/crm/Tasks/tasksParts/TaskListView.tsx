@@ -43,14 +43,14 @@ export default function TaskListView({ rows, isLoading, selected, onSelect, stat
 							<th className="w-[46px] pl-16">
 								<Checkbox checked={allChecked} onChange={(c) => onSelect(c ? rows.map((r) => r._id) : [])} label={t("selectAll")} />
 							</th>
-							<th className="w-[60px]"><TbSettings size={18} className="mx-auto block text-[#9aa7c9]" aria-hidden /></th>
+							<th className="w-[60px]"><TbSettings size={18} className="mx-auto block text-[#8c948b]" aria-hidden /></th>
 							<th className={th}>{t("name")}</th>
 							<th className={`${th} w-[200px]`}>
 								<Menu
 									align="right"
 									options={(["all", "active", "completed", "ended"] as const).map((s) => ({ label: statusLabel[s], onClick: () => onStatusFilter(s) }))}>
 									{({ open, toggle }) => (
-										<button type="button" onClick={toggle} aria-expanded={open} className="inline-flex items-center gap-6 transition-colors hover:text-[#7c93ff]">
+										<button type="button" onClick={toggle} aria-expanded={open} className="inline-flex items-center gap-6 transition-colors hover:text-[#c6ff4d]">
 											{statusFilter === "all" ? t("status") : statusLabel[statusFilter]}
 											<TbChevronDown size={16} className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
 										</button>
@@ -64,14 +64,14 @@ export default function TaskListView({ rows, isLoading, selected, onSelect, stat
 					</thead>
 					<tbody>
 						{rows.map((task) => (
-							<tr key={task._id} className={`h-[52px] animate-fade-in transition-colors duration-150 ${selected.includes(task._id) ? "bg-[rgba(124,147,255,0.06)]" : ""}`}>
+							<tr key={task._id} className={`h-[52px] animate-fade-in transition-colors duration-150 ${selected.includes(task._id) ? "bg-[rgba(198,255,77,0.06)]" : ""}`}>
 								<td className="pl-16">
 									<Checkbox checked={selected.includes(task._id)} onChange={() => toggle(task._id)} label={t("selectRow")} />
 								</td>
 								<td className="text-center">
 									<Menu options={[{ label: t("editTask"), onClick: () => onOpen(task) }, { label: t("actionDelete"), danger: true, onClick: () => onDelete([task._id]) }]}>
 										{({ open, toggle }) => (
-											<button type="button" onClick={toggle} aria-expanded={open} aria-label={t("options")} className="text-[#9aa7c9] transition-colors hover:text-[#7c93ff]"><TbDots size={20} /></button>
+											<button type="button" onClick={toggle} aria-expanded={open} aria-label={t("options")} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]"><TbDots size={20} /></button>
 										)}
 									</Menu>
 								</td>
@@ -79,12 +79,12 @@ export default function TaskListView({ rows, isLoading, selected, onSelect, stat
 									<span className="inline-flex max-w-full items-center gap-8">
 										{/* Отметка «выполнено» прямо в строке: не нужно искать пакетное действие внизу таблицы */}
 										<button type="button" role="checkbox" aria-checked={task.completed} aria-label={task.completed ? t("actionActive") : t("actionDone")} title={task.completed ? t("actionActive") : t("actionDone")} onClick={() => onUpdate(task._id, { completed: !task.completed })}
-											className={`flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-50 border transition-colors ${task.completed ? "border-[#7c93ff] bg-[#7c93ff] text-[#0b1120]" : "border-[rgba(255,255,255,0.28)] text-transparent hover:border-[#7c93ff] hover:text-[#7c93ff]"}`}>
+											className={`flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-50 border transition-colors ${task.completed ? "border-[#c6ff4d] bg-[#c6ff4d] text-[#0a0c0b]" : "border-[rgba(255,255,255,0.28)] text-transparent hover:border-[#c6ff4d] hover:text-[#c6ff4d]"}`}>
 											<TbCheck size={13} aria-hidden />
 										</button>
-										<button type="button" onClick={() => onOpen(task)} className={`truncate text-13 text-[#edf2ff] transition-colors hover:text-[#7c93ff] ${task.completed ? "line-through" : ""}`}>{task.title}</button>
-										<button type="button" aria-label={t("pinned")} aria-pressed={task.pinned} onClick={() => onUpdate(task._id, { pinned: !task.pinned })} className={`shrink-0 transition-colors ${task.pinned ? "text-[#7c93ff]" : "text-[#9AA7C9] hover:text-[#9aa7c9]"}`}><TbPin size={16} /></button>
-										<button type="button" aria-label={task.muted ? t("unmute") : t("muted")} title={task.muted ? t("unmute") : t("muted")} aria-pressed={task.muted} onClick={() => onUpdate(task._id, { muted: !task.muted })} className={`shrink-0 transition-colors ${task.muted ? "text-[#9AA7C9] hover:text-[#cfd4cb]" : "text-[#7c93ff] hover:text-[#edf2ff]"}`}>{task.muted ? <TbBellOff size={16} /> : <TbBell size={16} />}</button>
+										<button type="button" onClick={() => onOpen(task)} className={`truncate text-13 text-[#f1f4ee] transition-colors hover:text-[#c6ff4d] ${task.completed ? "line-through" : ""}`}>{task.title}</button>
+										<button type="button" aria-label={t("pinned")} aria-pressed={task.pinned} onClick={() => onUpdate(task._id, { pinned: !task.pinned })} className={`shrink-0 transition-colors ${task.pinned ? "text-[#c6ff4d]" : "text-[#8C948B] hover:text-[#8c948b]"}`}><TbPin size={16} /></button>
+										<button type="button" aria-label={task.muted ? t("unmute") : t("muted")} title={task.muted ? t("unmute") : t("muted")} aria-pressed={task.muted} onClick={() => onUpdate(task._id, { muted: !task.muted })} className={`shrink-0 transition-colors ${task.muted ? "text-[#8C948B] hover:text-[#cfd4cb]" : "text-[#c6ff4d] hover:text-[#f1f4ee]"}`}>{task.muted ? <TbBellOff size={16} /> : <TbBell size={16} />}</button>
 									</span>
 								</td>
 								<td className={td}>{dateText(tag, task.updatedAt ?? task.createdAt, "short")}</td>
@@ -95,8 +95,8 @@ export default function TaskListView({ rows, isLoading, selected, onSelect, stat
 						))}
 					</tbody>
 				</table>
-				{rows.length === 0 && <p className="py-40 text-center text-13 text-[#9aa7c9]">{isLoading ? "…" : t("empty")}</p>}
-				<footer className="flex flex-wrap items-center justify-between gap-x-24 gap-y-8 border-t border-inkLine px-18 py-14 text-11 uppercase tracking-[0.08em] text-[#9aa7c9]">
+				{rows.length === 0 && <p className="py-40 text-center text-13 text-[#8c948b]">{isLoading ? "…" : t("empty")}</p>}
+				<footer className="flex flex-wrap items-center justify-between gap-x-24 gap-y-8 border-t border-inkLine px-18 py-14 text-11 uppercase tracking-[0.08em] text-[#8c948b]">
 					<span>{t("selected", { selected: selected.length, total: rows.length })}</span>
 					<span>{t("total", { total: rows.length })}</span>
 					<span>{t("pages", { pages: 1 })}</span>

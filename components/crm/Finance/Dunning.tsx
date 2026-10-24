@@ -100,8 +100,8 @@ export default function Dunning() {
 	return (
 		<div>
 			<div className="mb-16">
-				<h2 className="text-16 font-semibold text-[#edf2ff]">{t("dunningTitle")}</h2>
-				<p className="mt-6 text-12 leading-[1.5] text-[#9aa7c9]">{t("dunningHint")}</p>
+				<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("dunningTitle")}</h2>
+				<p className="mt-6 text-12 leading-[1.5] text-[#8c948b]">{t("dunningHint")}</p>
 			</div>
 
 			<div className="mb-16 grid grid-cols-1 gap-12 md:grid-cols-3">
@@ -111,7 +111,7 @@ export default function Dunning() {
 			</div>
 
 			{prepared.length === 0 ? (
-				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("dunningEmpty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("dunningEmpty")}</p>
 			) : (
 				<section className="fs-card overflow-x-auto">
 					<table className="fs-table min-w-[880px]">
@@ -143,7 +143,7 @@ export default function Dunning() {
 													{t(`level_${level}`)}
 												</span>
 											) : (
-												<span className="text-12 text-[#9AA7C9]">{t("dunningNone")}</span>
+												<span className="text-12 text-[#8C948B]">{t("dunningNone")}</span>
 											)}
 										</td>
 										<td className="px-10 text-right text-13">{fee > 0 ? money(fee, inv.currency, locale) : "—"}</td>
@@ -164,7 +164,7 @@ export default function Dunning() {
 									</tr>
 									{notice?.id === inv.id && (
 										<tr>
-											<td colSpan={9} className="pt-0 text-12 leading-[1.5] text-[#9AA7C9] fs-wrap">{notice.text}</td>
+											<td colSpan={9} className="pt-0 text-12 leading-[1.5] text-[#8C948B] fs-wrap">{notice.text}</td>
 										</tr>
 									)}
 								</React.Fragment>

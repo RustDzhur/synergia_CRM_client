@@ -77,7 +77,7 @@ export default function BlogAdmin() {
 	return (
 		<div className="mt-24">
 			<div className="mb-12 flex items-center justify-between gap-12">
-				<h2 className="text-14 font-semibold text-[#edf2ff]">{t("blogTitle")}</h2>
+				<h2 className="text-14 font-semibold text-[#f1f4ee]">{t("blogTitle")}</h2>
 				<button type="button" onClick={openNew} className="fs-btn fs-btn-primary h-34">
 					<TbPlus size={16} /> {t("blogNew")}
 				</button>
@@ -92,35 +92,35 @@ export default function BlogAdmin() {
 					<tbody>
 						{posts.map((p) => (
 							<tr key={p.id}>
-								<td className="px-12 py-10 text-13 font-medium text-[#edf2ff] fs-wrap">{p.title.en || "—"}</td>
-								<td className="px-12 py-10 text-13 text-[#9aa7c9]">{p.slug}</td>
-								<td className="px-12 py-10 text-13 text-[#9aa7c9]">{p.publishedAt}</td>
+								<td className="px-12 py-10 text-13 font-medium text-[#f1f4ee] fs-wrap">{p.title.en || "—"}</td>
+								<td className="px-12 py-10 text-13 text-[#8c948b]">{p.slug}</td>
+								<td className="px-12 py-10 text-13 text-[#8c948b]">{p.publishedAt}</td>
 								<td className="px-12 py-10">
-									<span className={`rounded-50 px-10 py-2 text-10 font-medium ${p.published ? "bg-[rgba(45,222,182,0.12)] text-[#2DDEB6]" : "bg-[rgba(255,255,255,0.05)] text-[#9aa7c9]"}`}>
+									<span className={`rounded-50 px-10 py-2 text-10 font-medium ${p.published ? "bg-[rgba(45,222,182,0.12)] text-[#2DDEB6]" : "bg-[rgba(255,255,255,0.05)] text-[#8c948b]"}`}>
 										{p.published ? t("blogPublished") : t("blogDraft")}
 									</span>
 								</td>
 								<td className="px-12 py-10">
 									<div className="flex items-center gap-12">
-										<button type="button" onClick={() => openEdit(p)} aria-label={t("edit")} className="text-[#7c93ff] hover:opacity-80"><TbPencil size={16} /></button>
-										<button type="button" onClick={() => setToDelete(p.id)} aria-label={t("blogDelete")} className="text-[#9AA7C9] hover:text-danger"><TbTrash size={16} /></button>
+										<button type="button" onClick={() => openEdit(p)} aria-label={t("edit")} className="text-[#c6ff4d] hover:opacity-80"><TbPencil size={16} /></button>
+										<button type="button" onClick={() => setToDelete(p.id)} aria-label={t("blogDelete")} className="text-[#8C948B] hover:text-danger"><TbTrash size={16} /></button>
 									</div>
 								</td>
 							</tr>
 						))}
 					</tbody>
 				</table>
-				{posts.length === 0 && <p className="py-30 text-center text-13 text-[#9aa7c9]">{t("none")}</p>}
+				{posts.length === 0 && <p className="py-30 text-center text-13 text-[#8c948b]">{t("none")}</p>}
 			</div>
 
 			<Modal open={open} onClose={() => setOpen(false)} label={editId ? t("blogEdit") : t("blogNew")} className="w-full max-w-[720px]">
 				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20">
-					<h2 className="mb-16 text-16 font-semibold text-[#edf2ff]">{editId ? t("blogEdit") : t("blogNew")}</h2>
+					<h2 className="mb-16 text-16 font-semibold text-[#f1f4ee]">{editId ? t("blogEdit") : t("blogNew")}</h2>
 
 					<div className="mb-14 grid grid-cols-1 gap-14 md:grid-cols-2">
 						<FormField label={t("blogSlug")} value={slug} onChange={(e) => setSlug(e.target.value)} placeholder={t("blogSlugHint")} maxLength={80} />
 						<label className="block">
-							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("blogImage")}</span>
+							<span className="mb-6 block text-12 text-[#8c948b]">{t("blogImage")}</span>
 							<select value={PRESET_IMAGES.includes(image) ? image : "custom"} onChange={(e) => setImage(e.target.value === "custom" ? "" : e.target.value)} className={field}>
 								{PRESET_IMAGES.map((src) => <option key={src} value={src}>{src.split("/").pop()}</option>)}
 								<option value="custom">{t("blogImageCustom")}</option>
@@ -132,20 +132,20 @@ export default function BlogAdmin() {
 					)}
 
 					<label className="mb-16 flex items-center gap-10 text-13 text-[#cfd4cb]">
-						<input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} className="h-18 w-18 accent-[#7c93ff]" />
+						<input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} className="h-18 w-18 accent-[#c6ff4d]" />
 						{t("blogPublished")}
 					</label>
 
 					{LANGS.map((l) => (
 						<div key={l.key} className="mb-20 rounded-10 border border-inkLine p-14">
-							<p className="mb-10 text-12 font-semibold text-[#9aa7c9]">{l.label}</p>
+							<p className="mb-10 text-12 font-semibold text-[#8c948b]">{l.label}</p>
 							<div className="mb-10"><FormField label={t("blogArticleTitle")} value={title[l.key]} onChange={(e) => setTitle({ ...title, [l.key]: e.target.value })} maxLength={200} /></div>
 							<div className="mb-10">
-								<span className="mb-6 block text-12 text-[#9aa7c9]">{t("blogExcerpt")}</span>
+								<span className="mb-6 block text-12 text-[#8c948b]">{t("blogExcerpt")}</span>
 								<textarea value={excerpt[l.key]} onChange={(e) => setExcerpt({ ...excerpt, [l.key]: e.target.value })} maxLength={400} rows={2} className={area} />
 							</div>
 							<div>
-								<span className="mb-6 block text-12 text-[#9aa7c9]">{t("blogBody")}</span>
+								<span className="mb-6 block text-12 text-[#8c948b]">{t("blogBody")}</span>
 								<textarea value={bodyText[l.key]} onChange={(e) => setBodyText({ ...bodyText, [l.key]: e.target.value })} rows={6} placeholder={t("blogBodyHint")} className={area} />
 							</div>
 						</div>

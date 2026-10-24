@@ -113,16 +113,16 @@ function SignupForm() {
 							<div className="text-left">
 								<label>
 									<input type="checkbox" className="mr-8" checked={!!field.value} onChange={(e) => { field.onChange(e.target.checked); if (e.target.checked) setAgreementError(false); }} />
-									<span className="text-16 font-normal text-[#9aa7c9]">{t("agreement")}</span>
+									<span className="text-16 font-normal text-[#8c948b]">{t("agreement")}</span>
 								</label>
 								{agreementError && <p role="alert" className="mt-4 text-12 text-[#eb5757]">{t("v_agreement")}</p>}
 							</div>
 						)}
 					/>
 				</div>
-				<div className="text-left text-16 text-[#9aa7c9] sm:mb-30 mb-40">
+				<div className="text-left text-16 text-[#8c948b] sm:mb-30 mb-40">
 					{t("haveaccount.yes")}{" "}
-					<span className="text-[#7c93ff] cursor-pointer" onClick={handleChangeForm}>
+					<span className="text-[#c6ff4d] cursor-pointer" onClick={handleChangeForm}>
 						{t("login")}
 					</span>
 				</div>

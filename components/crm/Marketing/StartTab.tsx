@@ -44,9 +44,9 @@ export default function StartTab({ query, create }: CustomTabApi) {
 
 	return (
 		<section>
-			<h1 className="mb-16 text-15 font-semibold text-[#edf2ff]">{t("createCampaign")}</h1>
+			<h1 className="mb-16 text-15 font-semibold text-[#f1f4ee]">{t("createCampaign")}</h1>
 			{cards.length === 0 ? (
-				<p className="fs-card p-24 text-center text-13 text-[#9aa7c9]">{tr("nothingFound")}</p>
+				<p className="fs-card p-24 text-center text-13 text-[#8c948b]">{tr("nothingFound")}</p>
 			) : (
 				<ul className="grid grid-cols-2 gap-12 md:grid-cols-3 md:gap-16 lg:grid-cols-5">
 					{cards.map((c) => {
@@ -57,7 +57,7 @@ export default function StartTab({ query, create }: CustomTabApi) {
 								<button
 									type="button"
 									onClick={() => (c.target === "campaigns" ? setChannel(c) : create(c.target, c.preset))}
-									className="fs-card flex h-[108px] w-full flex-col items-center justify-center gap-10 px-8 transition-all duration-200 hover:-translate-y-2 hover:border-[rgba(124,147,255,0.35)]">
+									className="fs-card flex h-[108px] w-full flex-col items-center justify-center gap-10 px-8 transition-all duration-200 hover:-translate-y-2 hover:border-[rgba(198,255,77,0.35)]">
 									<span className="flex h-[52px] w-[52px] items-center justify-center">
 										{Circle && c.circle && (
 											<span className="flex h-[52px] w-[52px] items-center justify-center rounded-50 text-white" style={{ background: c.circle.bg }}>

@@ -134,39 +134,39 @@ export default function Quotes({ onOpenOrder, prefill, onPrefillDone }: { onOpen
 				</button>
 			</div>
 			{quotes.length === 0 ? (
-				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("empty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("empty")}</p>
 			) : (
 				<ul className="flex flex-col gap-10">
 					{quotes.map((q) => (
 						<li key={q.id} className="fs-card p-14 md:p-18">
 							<div className="flex flex-wrap items-start justify-between gap-12">
 								<div className="min-w-0">
-									<p className="flex flex-wrap items-center gap-8 text-14 font-semibold text-[#edf2ff]">
+									<p className="flex flex-wrap items-center gap-8 text-14 font-semibold text-[#f1f4ee]">
 										{q.number}
 										<span className="fs-chip h-22 gap-6 px-8 text-10">
 											<span className="h-6 w-6 rounded-50" style={{ background: STATUS_COLOR[q.status] }} />
 											{t(`qstatus_${q.status}`)}
 										</span>
 										{q.version > 1 && (
-											<button type="button" onClick={() => toggleHistory(q.id)} className="fs-chip h-22 px-8 text-10 transition-colors hover:border-[rgba(255,255,255,0.20)] hover:text-[#edf2ff]">
+											<button type="button" onClick={() => toggleHistory(q.id)} className="fs-chip h-22 px-8 text-10 transition-colors hover:border-[rgba(255,255,255,0.20)] hover:text-[#f1f4ee]">
 												v{q.version} · {t("history")}
 											</button>
 										)}
 									</p>
-									<p className="mt-[4px] text-12 text-[#9aa7c9]">
+									<p className="mt-[4px] text-12 text-[#8c948b]">
 										{q.customerName} · {t("validUntil")}: {q.validUntil}
 										{/* Связь с CRM видно в строке: иначе непонятно, «привязалась» ли пропозиция к клиенту */}
-										{(q.contact || q.company) && <span className="ml-8 text-11 text-[#9AA7C9]">· {t("contractClientLinked")}</span>}
+										{(q.contact || q.company) && <span className="ml-8 text-11 text-[#8C948B]">· {t("contractClientLinked")}</span>}
 									</p>
 								</div>
-								<p className="text-15 font-semibold text-[#edf2ff]">{money(q.totals.gross, q.currency, locale)}</p>
+								<p className="text-15 font-semibold text-[#f1f4ee]">{money(q.totals.gross, q.currency, locale)}</p>
 							</div>
 							{historyOpen.has(q.id) && q.versions.length > 0 && (
 								<ul className="mt-10 flex flex-col gap-6 rounded-10 border border-inkLineSoft bg-[rgba(255,255,255,0.02)] p-10">
 									{[...q.versions].reverse().map((v) => (
-										<li key={v.version} className="flex items-center justify-between text-11 text-[#9AA7C9]">
+										<li key={v.version} className="flex items-center justify-between text-11 text-[#8C948B]">
 											<span>v{v.version} · {v.customerName} · {new Date(v.savedAt).toLocaleString(localeTag(locale))}</span>
-											<span className="font-medium text-[#9aa7c9]">{money(v.totals.gross, v.currency, locale)}</span>
+											<span className="font-medium text-[#8c948b]">{money(v.totals.gross, v.currency, locale)}</span>
 										</li>
 									))}
 								</ul>
@@ -186,7 +186,7 @@ export default function Quotes({ onOpenOrder, prefill, onPrefillDone }: { onOpen
 								<DocumentTemplateButton kind="quotes" id={q.id} number={q.number} template={q.template} onSave={updateQuote} />
 								{q.status === "sent" && (
 									<>
-										<button type="button" disabled={busy === q.id} onClick={() => decide(q.id, true)} className="fs-btn fs-btn-ghost h-34 border-[rgba(124,147,255,0.4)] text-[#7c93ff] disabled:opacity-[0.5]">{t("markAccepted")}</button>
+										<button type="button" disabled={busy === q.id} onClick={() => decide(q.id, true)} className="fs-btn fs-btn-ghost h-34 border-[rgba(198,255,77,0.4)] text-[#c6ff4d] disabled:opacity-[0.5]">{t("markAccepted")}</button>
 										<button type="button" disabled={busy === q.id} onClick={() => decide(q.id, false)} className="fs-btn fs-btn-ghost h-34 border-[rgba(235,87,87,0.35)] text-danger disabled:opacity-[0.5]">{t("markDeclined")}</button>
 									</>
 								)}
@@ -202,11 +202,11 @@ export default function Quotes({ onOpenOrder, prefill, onPrefillDone }: { onOpen
 
 			<Modal open={open} onClose={() => { setOpen(false); setDealLink({}); }} label={t("newQuote")} className="w-full max-w-[640px]">
 				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
-					<h2 className="mb-14 text-16 font-semibold text-[#edf2ff]">{t("newQuote")}</h2>
-					{dealLink.deal && <p className="mb-14 rounded-10 border border-inkLineSoft bg-[rgba(255,255,255,0.02)] px-12 py-8 text-12 text-[#9aa7c9]">{t("linkedToDeal")}</p>}
+					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("newQuote")}</h2>
+					{dealLink.deal && <p className="mb-14 rounded-10 border border-inkLineSoft bg-[rgba(255,255,255,0.02)] px-12 py-8 text-12 text-[#8c948b]">{t("linkedToDeal")}</p>}
 					{/* Клиент подтягивается из CRM (контакты и фирмы): тот же список, что в разделе CRM */}
 					<div className="mb-16">
-						<span className="mb-6 block text-12 text-[#9aa7c9]">{t("customer")}</span>
+						<span className="mb-6 block text-12 text-[#8c948b]">{t("customer")}</span>
 						<SuggestInput
 							value={customerName}
 							onChange={(v) => { setCustomerName(v); setDealLink((l) => ({ deal: l.deal })); }}
@@ -219,7 +219,7 @@ export default function Quotes({ onOpenOrder, prefill, onPrefillDone }: { onOpen
 							placeholder={t("contractClientPlaceholder")}
 							showSearchIcon
 						/>
-						{(dealLink.contact || dealLink.company) && <span className="mt-6 block text-11 text-[#9AA7C9]">{t("contractClientLinked")}</span>}
+						{(dealLink.contact || dealLink.company) && <span className="mt-6 block text-11 text-[#8C948B]">{t("contractClientLinked")}</span>}
 					</div>
 					<LineItemsEditor items={items} onChange={setItems} products={products.filter((p) => !p.archived)} currency={settings?.currency ?? "EUR"} />
 					<div className="mt-20 flex justify-end gap-10">

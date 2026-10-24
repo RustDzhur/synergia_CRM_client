@@ -25,16 +25,16 @@ export default function MatchDialog({ open, onClose, tx, candidates, notice, bus
 		<Modal open={open} onClose={onClose} label={t("bankMatchTitle")} className="w-full max-w-[480px]">
 			{tx && (
 				<div className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
-					<h2 className="text-16 font-semibold text-[#edf2ff]">{t("bankMatchTitle")}</h2>
-					<p className="mt-6 text-12 leading-[1.5] text-[#9aa7c9]">{t("bankMatchHint", { days: MATCH_WINDOW_DAYS })}</p>
+					<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("bankMatchTitle")}</h2>
+					<p className="mt-6 text-12 leading-[1.5] text-[#8c948b]">{t("bankMatchHint", { days: MATCH_WINDOW_DAYS })}</p>
 					<div className="mt-12 flex items-center justify-between gap-16 rounded-10 border border-inkLine px-12 py-9 text-13">
-						<span className="min-w-0 truncate text-[#9aa7c9]">{tx.date} · {tx.counterparty || "—"}</span>
+						<span className="min-w-0 truncate text-[#8c948b]">{tx.date} · {tx.counterparty || "—"}</span>
 						<span className="shrink-0 font-medium" style={{ color: amountColor(tx.amount) }}>{money(tx.amount, tx.currency, locale)}</span>
 					</div>
-					{tx.reference && <p className="mt-8 text-12 leading-[1.5] text-[#9AA7C9]">{tx.reference}</p>}
+					{tx.reference && <p className="mt-8 text-12 leading-[1.5] text-[#8C948B]">{tx.reference}</p>}
 
 					{candidates.list.length === 0 ? (
-						<p className="mt-14 text-13 leading-[1.5] text-[#9aa7c9]">{t("bankNoCandidates")}</p>
+						<p className="mt-14 text-13 leading-[1.5] text-[#8c948b]">{t("bankNoCandidates")}</p>
 					) : (
 						<ul className="mt-10 flex flex-col">
 							{candidates.list.map((c) => {
@@ -45,13 +45,13 @@ export default function MatchDialog({ open, onClose, tx, candidates, notice, bus
 											type="button"
 											disabled={busy}
 											onClick={() => onPick(tx, c.id)}
-											className="flex w-full items-center justify-between gap-14 rounded-10 border border-transparent px-12 py-10 text-left transition-colors hover:border-[rgba(124,147,255,0.35)] hover:bg-[rgba(124,147,255,0.06)] disabled:opacity-[0.5]">
+											className="flex w-full items-center justify-between gap-14 rounded-10 border border-transparent px-12 py-10 text-left transition-colors hover:border-[rgba(198,255,77,0.35)] hover:bg-[rgba(198,255,77,0.06)] disabled:opacity-[0.5]">
 											<span className="min-w-0">
-												<span className="block truncate text-13 font-medium text-[#edf2ff]">{c.label}</span>
-												<span className="mt-4 flex flex-wrap items-center gap-8 text-12 text-[#9aa7c9]">
+												<span className="block truncate text-13 font-medium text-[#f1f4ee]">{c.label}</span>
+												<span className="mt-4 flex flex-wrap items-center gap-8 text-12 text-[#8c948b]">
 													{c.date}
 													{suggested && (
-														<span className="fs-chip h-22 border-[rgba(124,147,255,0.35)] px-8 text-10 text-[#7c93ff]">
+														<span className="fs-chip h-22 border-[rgba(198,255,77,0.35)] px-8 text-10 text-[#c6ff4d]">
 															{t("bankMatchSuggestion")}
 															{candidates.hint?.reason ? ` · ${t(`bankReason_${candidates.hint.reason}`)}` : ""}
 														</span>

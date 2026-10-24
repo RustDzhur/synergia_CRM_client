@@ -63,7 +63,7 @@ export default function RobotOffice() {
 	};
 	const focusBoss = () => { const el = document.getElementById("boss-input") as HTMLTextAreaElement | null; el?.scrollIntoView({ behavior: "smooth", block: "center" }); el?.focus(); };
 	const robot = robots.find((r) => r.id === selected) ?? null;
-	const seg = (on: boolean) => `flex h-34 items-center gap-6 rounded-50 px-14 text-12 font-medium transition-colors ${on ? "bg-[#7c93ff] text-[#0b1120]" : "text-[#9aa7c9] hover:text-[#edf2ff]"}`;
+	const seg = (on: boolean) => `flex h-34 items-center gap-6 rounded-50 px-14 text-12 font-medium transition-colors ${on ? "bg-[#c6ff4d] text-[#0a0c0b]" : "text-[#8c948b] hover:text-[#f1f4ee]"}`;
 
 	return (
 		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
@@ -72,7 +72,7 @@ export default function RobotOffice() {
 				<div className="grid min-w-0 items-start gap-12 min-[1240px]:grid-cols-[minmax(0,1fr)_340px]">
 					<div className="flex min-w-0 flex-col gap-12">
 						<div className="flex items-center justify-between gap-12">
-							<p className="min-w-0 truncate px-4 text-12 text-[#9aa7c9]">{canEdit && robots.length > 0 ? t("dragHint") : ""}</p>
+							<p className="min-w-0 truncate px-4 text-12 text-[#8c948b]">{canEdit && robots.length > 0 ? t("dragHint") : ""}</p>
 							<div className="flex shrink-0 items-center gap-8">
 								{canEdit && <button type="button" onClick={() => setRoomsOpen(true)} className="fs-btn fs-btn-ghost h-38 px-14 text-12"><TbDoor size={15} aria-hidden />{trR("rooms")}</button>}
 							<div className="flex shrink-0 rounded-50 border border-inkLine bg-[rgba(255,255,255,0.03)] p-2" role="tablist" aria-label={t("title")}>
@@ -81,7 +81,7 @@ export default function RobotOffice() {
 							</div>
 							</div>
 						</div>
-						{!loaded ? <div className="fs-card h-[320px] animate-pulse" aria-hidden /> : robots.length === 0 ? <p className="fs-card p-24 text-center text-13 text-[#9aa7c9]">{t("emptyOffice")}</p> : view === "scene" ? <OfficeScene onSelect={pick} onBoss={focusBoss} /> : <OfficeFloor onSelect={pick} />}
+						{!loaded ? <div className="fs-card h-[320px] animate-pulse" aria-hidden /> : robots.length === 0 ? <p className="fs-card p-24 text-center text-13 text-[#8c948b]">{t("emptyOffice")}</p> : view === "scene" ? <OfficeScene onSelect={pick} onBoss={focusBoss} /> : <OfficeFloor onSelect={pick} />}
 					</div>
 					{/* справа: поручение Айрис и доска поручений — карточку с доски можно перетащить на робота в офисе; выбранный робот открывается вместо доски */}
 					<div ref={panelRef} className="flex min-w-0 scroll-mt-16 flex-col gap-12">

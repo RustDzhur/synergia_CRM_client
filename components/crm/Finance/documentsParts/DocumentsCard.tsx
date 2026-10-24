@@ -91,14 +91,14 @@ export default function DocumentsCard() {
 		void openAuthedPreview(`/api/finance/document-templates/preview?kind=${encodeURIComponent(current.kind)}&id=${current.id}&locale=${current.language}`, t("pdfFailed"));
 	}
 
-	const label = "mb-6 block text-12 text-[#9aa7c9]";
+	const label = "mb-6 block text-12 text-[#8c948b]";
 	const field = "fs-field h-40 w-full px-12 text-13 outline-none";
 
 	return (
 		<div className="mb-16 fs-card p-16 md:p-20">
-			<h3 className="mb-8 text-14 font-semibold text-[#edf2ff]">{t("uaDocsSection")}</h3>
-			<p className="mb-14 text-12 leading-[1.5] text-[#9aa7c9]">{t("uaDocsHint")}</p>
-			<p className="mb-14 text-11 text-[#9AA7C9]">{t("uaDocsCurrencyNote", { currency: settings?.currency ?? "" })}</p>
+			<h3 className="mb-8 text-14 font-semibold text-[#f1f4ee]">{t("uaDocsSection")}</h3>
+			<p className="mb-14 text-12 leading-[1.5] text-[#8c948b]">{t("uaDocsHint")}</p>
+			<p className="mb-14 text-11 text-[#8C948B]">{t("uaDocsCurrencyNote", { currency: settings?.currency ?? "" })}</p>
 			<button type="button" onClick={() => setOpen(true)} className="fs-btn fs-btn-ghost h-38">
 				<TbFileText size={15} />
 				{t("uaDocsOpen")}
@@ -106,8 +106,8 @@ export default function DocumentsCard() {
 
 			<Modal open={open} onClose={() => setOpen(false)} label={t("uaDocsSection")} className="w-full max-w-[880px]">
 				<div className="fs-popover fs-scroll max-h-[calc(100vh-32px)] overflow-y-auto">
-					<div className="flex items-center justify-between border-b border-inkLine bg-[rgba(124,147,255,0.06)] px-20 py-12">
-						<h2 className="text-15 font-semibold text-[#edf2ff]">{t("uaDocsSection")}</h2>
+					<div className="flex items-center justify-between border-b border-inkLine bg-[rgba(198,255,77,0.06)] px-20 py-12">
+						<h2 className="text-15 font-semibold text-[#f1f4ee]">{t("uaDocsSection")}</h2>
 						<button type="button" onClick={() => setOpen(false)} className="fs-link">{t("market_change_cancel")}</button>
 					</div>
 					<div className="flex flex-col gap-16 p-20 md:flex-row">
@@ -120,7 +120,7 @@ export default function DocumentsCard() {
 										onClick={() => setCurrent(item)}
 										className={`w-full rounded-10 border px-10 py-8 text-left text-13 transition-colors ${
 											current?.id === item.id
-												? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)] text-[#edf2ff]"
+												? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#f1f4ee]"
 												: "border-transparent text-[#cfd4cb] hover:bg-[rgba(255,255,255,0.04)]"
 										}`}>
 										{item.name}
@@ -158,18 +158,18 @@ export default function DocumentsCard() {
 													type="checkbox"
 													checked={current.blocks.includes(b)}
 													onChange={(e) => setCurrent({ ...current, blocks: e.target.checked ? [...current.blocks, b] : current.blocks.filter((x) => x !== b) })}
-													className="h-16 w-16 accent-[#7c93ff]"
+													className="h-16 w-16 accent-[#c6ff4d]"
 												/>
 												{t(`uaBlock_${b}`)}
 											</label>
 										))}
 									</div>
 									<label className="mt-12 flex items-center gap-10 text-13 text-[#cfd4cb]">
-										<input type="checkbox" checked={current.showSignature} onChange={(e) => setCurrent({ ...current, showSignature: e.target.checked })} className="h-16 w-16 accent-[#7c93ff]" />
+										<input type="checkbox" checked={current.showSignature} onChange={(e) => setCurrent({ ...current, showSignature: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
 										{t("uaDocsShowSignature")}
 									</label>
 									<label className="mt-8 flex items-center gap-10 text-13 text-[#cfd4cb]">
-										<input type="checkbox" checked={current.showStamp} onChange={(e) => setCurrent({ ...current, showStamp: e.target.checked })} className="h-16 w-16 accent-[#7c93ff]" />
+										<input type="checkbox" checked={current.showStamp} onChange={(e) => setCurrent({ ...current, showStamp: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
 										{t("uaDocsShowStamp")}
 									</label>
 								</div>

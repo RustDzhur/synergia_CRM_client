@@ -207,23 +207,23 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 				</button>
 			</div>
 			{orders.length === 0 ? (
-				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("empty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("empty")}</p>
 			) : (
 				<ul className="flex flex-col gap-10">
 					{orders.map((o) => (
 						<li key={o.id} ref={(el) => { rowRefs.current[o.id] = el; }} className={`fs-card p-14 transition-shadow md:p-18 ${openId === o.id ? "ring-[1.5px] ring-inkAccentLine" : ""}`}>
 							<div className="flex flex-wrap items-start justify-between gap-12">
 								<div className="min-w-0">
-									<p className="flex flex-wrap items-center gap-8 text-14 font-semibold text-[#edf2ff]">
+									<p className="flex flex-wrap items-center gap-8 text-14 font-semibold text-[#f1f4ee]">
 										{o.number}
 										<span className="fs-chip h-22 gap-6 px-8 text-10">
 											<span className="h-6 w-6 rounded-50" style={{ background: STATUS_COLOR[o.status] }} />
 											{t(`status_${o.status}`)}
 										</span>
 									</p>
-									<p className="mt-[4px] text-12 text-[#9aa7c9]">{o.customerName}{o.responsible ? ` · ${o.responsible}` : ""}</p>
+									<p className="mt-[4px] text-12 text-[#8c948b]">{o.customerName}{o.responsible ? ` · ${o.responsible}` : ""}</p>
 								</div>
-								<p className="text-15 font-semibold text-[#edf2ff]">{money(o.totals.gross, o.currency, locale)}</p>
+								<p className="text-15 font-semibold text-[#f1f4ee]">{money(o.totals.gross, o.currency, locale)}</p>
 							</div>
 							<div className="mt-12 flex flex-wrap items-center gap-8">
 								{NEXT[o.status] && (
@@ -232,7 +232,7 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 									</button>
 								)}
 								{["confirmed", "fulfilled"].includes(o.status) && !o.invoice && (
-									<button type="button" disabled={busy === o.id} onClick={() => toInvoice(o.id)} className="fs-btn fs-btn-ghost h-34 border-[rgba(124,147,255,0.4)] text-[#7c93ff] disabled:opacity-[0.5]">
+									<button type="button" disabled={busy === o.id} onClick={() => toInvoice(o.id)} className="fs-btn fs-btn-ghost h-34 border-[rgba(198,255,77,0.4)] text-[#c6ff4d] disabled:opacity-[0.5]">
 										<TbReceipt size={15} /> {t("makeInvoice")}
 									</button>
 								)}
@@ -301,7 +301,7 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 									<button type="button" onClick={() => onOpenInvoice(o.invoice)} className="fs-link">{t("viewInvoice")}</button>
 								)}
 								{o.status === "draft" && (
-									<button type="button" disabled={busy === o.id} onClick={() => advance(o.id, "cancelled")} className="text-12 text-[#9AA7C9] transition-colors hover:text-danger">{t("cancel")}</button>
+									<button type="button" disabled={busy === o.id} onClick={() => advance(o.id, "cancelled")} className="text-12 text-[#8C948B] transition-colors hover:text-danger">{t("cancel")}</button>
 								)}
 							</div>
 						</li>
@@ -312,9 +312,9 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 			{/* Укрпошта: менеджер вписывает штрихкод, CRM сохраняет его и сразу тянет статус */}
 			<Modal open={upFor !== null} onClose={() => setUpFor(null)} label={t("upTitle")} className="w-full max-w-[460px]">
 				<form onSubmit={(e) => { e.preventDefault(); void saveUkrposhta(); }} className="fs-popover p-20">
-					<h2 className="mb-12 text-16 font-semibold text-[#edf2ff]">{t("upTitle")}</h2>
+					<h2 className="mb-12 text-16 font-semibold text-[#f1f4ee]">{t("upTitle")}</h2>
 					<FormField label={t("upBarcode")} value={upCode} onChange={(e) => setUpCode(e.target.value.toUpperCase())} placeholder="RB123456789UA" maxLength={20} autoFocus required />
-					<p className="mt-8 text-11 leading-[1.5] text-[#9AA7C9]">{t("upHint")}</p>
+					<p className="mt-8 text-11 leading-[1.5] text-[#8C948B]">{t("upHint")}</p>
 					<div className="mt-16 flex flex-wrap items-center justify-between gap-10">
 						{/* Отправление можно и создать здесь: номер назначит сама Укрпошта (нужен договор) */}
 						<button
@@ -349,11 +349,11 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 
 			<Modal open={open} onClose={() => setOpen(false)} label={t("newOrder")} className="w-full max-w-[640px]">
 				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
-					<h2 className="mb-14 text-16 font-semibold text-[#edf2ff]">{t("newOrder")}</h2>
+					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("newOrder")}</h2>
 					<div className="mb-16 grid grid-cols-1 gap-12 md:grid-cols-2">
 						{/* Клиент подтягивается из CRM (контакты и фирмы) — как в предложениях, счетах и договорах */}
 						<div>
-							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("customer")}</span>
+							<span className="mb-6 block text-12 text-[#8c948b]">{t("customer")}</span>
 							<SuggestInput
 								value={customerName}
 								onChange={(v) => { setCustomerName(v); setClientLink({}); }}
@@ -366,7 +366,7 @@ export default function Orders({ onOpenInvoice, openId }: { onOpenInvoice: (id: 
 								placeholder={t("contractClientPlaceholder")}
 								showSearchIcon
 							/>
-							{(clientLink.contact || clientLink.company) && <span className="mt-6 block text-11 text-[#9AA7C9]">{t("contractClientLinked")}</span>}
+							{(clientLink.contact || clientLink.company) && <span className="mt-6 block text-11 text-[#8C948B]">{t("contractClientLinked")}</span>}
 						</div>
 						<FormField label={t("responsible")} value={responsible} onChange={(e) => setResponsible(e.target.value)} maxLength={120} />
 					</div>

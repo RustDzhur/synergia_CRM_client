@@ -144,62 +144,62 @@ export default function Page({ params }: { params: { locale: string } }) {
 					priority
 				/>
 
-				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Событие, правило, действие</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
-					Раздел <code className="text-14 text-[#edf2ff]">crm/automation</code> состоит из четырёх вкладок:
+				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Событие, правило, действие</h2>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+					Раздел <code className="text-14 text-[#f1f4ee]">crm/automation</code> состоит из четырёх вкладок:
 					rules, variables, constants и logs. Движок слушает восемнадцать событий — создание сделки или
 					контакта, смену стадии, новый лид, полученное сообщение, пропущенный звонок, задачу и дедлайн,
 					заказ и его статус, отправленный, оплаченный или просроченный счёт, подписанный договор,
 					отправленное предложение. Правило срабатывает сразу либо с задержкой: через час, день или три дня.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Шаг AI action: инструкция вместо шаблона</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Шаг AI action: инструкция вместо шаблона</h2>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
 					Действие выбирается из списка: уведомить команду, создать задачу, добавить заметку, передвинуть
 					сделку, отправить письмо, вызвать webhook — или шаг{" "}
-					<code className="text-14 text-[#edf2ff]">ai_action</code>. В первых шести случаях вы пишете текст с
-					подстановками вроде <code className="text-14 text-[#edf2ff]">{"{{contact.name}}"}</code> или{" "}
-					<code className="text-14 text-[#edf2ff]">{"{{deal.stageName}}"}</code>. В шаге AI action вы пишете
+					<code className="text-14 text-[#f1f4ee]">ai_action</code>. В первых шести случаях вы пишете текст с
+					подстановками вроде <code className="text-14 text-[#f1f4ee]">{"{{contact.name}}"}</code> или{" "}
+					<code className="text-14 text-[#f1f4ee]">{"{{deal.stageName}}"}</code>. В шаге AI action вы пишете
 					инструкцию — что сделать, когда правило сработало, — и модель сама подбирает инструмент и работает
 					с данными фирмы.
 				</p>
-				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Один изменяющий инструмент за запуск</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
+				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Один изменяющий инструмент за запуск</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
 					Рядом с автоматизацией нет человека, поэтому шаг устроен осторожнее чата: за один запуск агент
 					выполняет не больше одного инструмента, который меняет данные, и до четырёх кругов рассуждения.
-					Переходы по страницам (<code className="text-14 text-[#edf2ff]">navigate</code>) здесь
+					Переходы по страницам (<code className="text-14 text-[#f1f4ee]">navigate</code>) здесь
 					недоступны — они нужны только в диалоге. Если инструкция непонятна или уверенности нет, агент не
 					делает ничего и объясняет почему.
 				</p>
-				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Права, квота и журнал</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
+				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Права, квота и журнал</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
 					Шаг действует с правами владельца фирмы — как и остальные действия автоматизации, — и расходует ту
 					же дневную квоту ИИ, что и чат. Результат виден во вкладке logs: название правила, дата, статус
 					success или error и сообщение. Отдельный журнал ИИ доступен в{" "}
-					<code className="text-14 text-[#edf2ff]">api/ai/log</code>.
+					<code className="text-14 text-[#f1f4ee]">api/ai/log</code>.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Где это работает в сделке</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
-					Правило на событие <code className="text-14 text-[#edf2ff]">deal_stage</code> может, например,
-					подготовить задачу следующего шага, на <code className="text-14 text-[#edf2ff]">invoice_overdue</code>{" "}
-					— собрать письмо-напоминание. События <code className="text-14 text-[#edf2ff]">deadline</code> и{" "}
-					<code className="text-14 text-[#edf2ff]">task_created</code> связывают автоматизацию с задачами и
-					календарём, <code className="text-14 text-[#edf2ff]">contract_signed</code> — с договорами, а{" "}
-					<code className="text-14 text-[#edf2ff]">lead_created</code> и{" "}
-					<code className="text-14 text-[#edf2ff]">message_received</code> — с каналами и заявками.
+				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Где это работает в сделке</h2>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+					Правило на событие <code className="text-14 text-[#f1f4ee]">deal_stage</code> может, например,
+					подготовить задачу следующего шага, на <code className="text-14 text-[#f1f4ee]">invoice_overdue</code>{" "}
+					— собрать письмо-напоминание. События <code className="text-14 text-[#f1f4ee]">deadline</code> и{" "}
+					<code className="text-14 text-[#f1f4ee]">task_created</code> связывают автоматизацию с задачами и
+					календарём, <code className="text-14 text-[#f1f4ee]">contract_signed</code> — с договорами, а{" "}
+					<code className="text-14 text-[#f1f4ee]">lead_created</code> и{" "}
+					<code className="text-14 text-[#f1f4ee]">message_received</code> — с каналами и заявками.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Человек остаётся в контуре</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Человек остаётся в контуре</h2>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
 					Шаг AI action включают осознанно: в окне правила интерфейс предупреждает, что действие выполнится
 					без подтверждения. Это и есть согласие владельца фирмы — оно даётся один раз, при включении шага.
 					Там, где цена ошибки выше, автоматика останавливается сама: ступени напоминаний выше
 					четвёртой не поднимаются, дальше решает человек. А удаление в чате подтверждается всегда.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Итог</h2>
-				<p className="text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Итог</h2>
+				<p className="text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
 					Правила ведут сделку по стадиям, а шаг AI action добавляет туда решение, которое не опишешь
 					шаблоном. Остальные возможности платформы — в разделе{" "}
 					<Link href={sitePath(locale, "/features")} className="text-authBtn">

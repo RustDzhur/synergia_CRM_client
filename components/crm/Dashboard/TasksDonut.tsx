@@ -6,7 +6,7 @@ import PeriodSelect from "./PeriodSelect";
 
 type Period = "all" | "month" | "week" | "year";
 
-const COLORS = { active: "#FFB02E", completed: "#7C93FF", ended: "#F04333" } as const;
+const COLORS = { active: "#FFB02E", completed: "#C6FF4D", ended: "#F04333" } as const;
 
 // Задача относится к периоду по сроку, а без срока — по дате создания (раньше задачи без срока в кольцо не попадали вовсе). «Все» берёт любые задачи.
 function inPeriod(deadline: string | undefined, period: Period, now: Date, createdAt?: string): boolean {
@@ -51,7 +51,7 @@ export default function TasksDonut({ tasks }: { tasks: Task[] }) {
 	return (
 		<section className="fs-card p-16 md:p-20">
 			<header className="flex items-center justify-between gap-12">
-				<h2 className="shrink-0 text-14 font-semibold text-[#edf2ff]">{t("tasksTitle")}</h2>
+				<h2 className="shrink-0 text-14 font-semibold text-[#f1f4ee]">{t("tasksTitle")}</h2>
 				<PeriodSelect<Period>
 					value={period}
 					onChange={setPeriod}
@@ -64,11 +64,11 @@ export default function TasksDonut({ tasks }: { tasks: Task[] }) {
 				/>
 			</header>
 
-			<ul className="mt-8 flex flex-wrap items-center justify-center gap-16 text-12 text-[#9aa7c9]">
+			<ul className="mt-8 flex flex-wrap items-center justify-center gap-16 text-12 text-[#8c948b]">
 				{(["active", "completed", "ended"] as const).map((k) => (
 					<li key={k} className="flex items-center gap-6">
 						{t(k)}
-						<span className="font-semibold text-[#edf2ff]">{counts[k]}</span>
+						<span className="font-semibold text-[#f1f4ee]">{counts[k]}</span>
 						<span className="inline-block h-[10px] w-[10px] rounded-50" style={{ backgroundColor: COLORS[k] }} />
 					</li>
 				))}
@@ -99,9 +99,9 @@ export default function TasksDonut({ tasks }: { tasks: Task[] }) {
 					</g>
 				</svg>
 				<div className="absolute inset-0 flex flex-col items-center justify-center">
-					<p className="text-[56px] font-bold leading-none md:text-[64px]" style={{ color: total ? COLORS.completed : "#9AA7C9" }}>{percent} %</p>
+					<p className="text-[56px] font-bold leading-none md:text-[64px]" style={{ color: total ? COLORS.completed : "#8C948B" }}>{percent} %</p>
 					{/* Подпись объясняет круг: сколько из скольких выполнено; цвет дуги показывает долю активных и просроченных */}
-					<p className="mt-8 text-12 text-[#9aa7c9]">{total ? t("doneOf", { done: counts.completed, total }) : t("noTasksYet")}</p>
+					<p className="mt-8 text-12 text-[#8c948b]">{total ? t("doneOf", { done: counts.completed, total }) : t("noTasksYet")}</p>
 				</div>
 			</div>
 		</section>

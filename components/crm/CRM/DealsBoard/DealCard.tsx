@@ -27,28 +27,28 @@ export default function DealCard({ deal, isDragging }: Props) {
 		(acc, a) => (!acc || new Date(a.createdAt) > new Date(acc) ? a.createdAt : acc),
 		undefined
 	);
-	const icon = (active: boolean) => (active ? "text-[#7c93ff]" : "text-[#9AA7C9]");
+	const icon = (active: boolean) => (active ? "text-[#c6ff4d]" : "text-[#8C948B]");
 
 	return (
 		<div
 			className={`cursor-pointer rounded-12 border bg-[rgba(255,255,255,0.02)] p-12 transition-[border-color,box-shadow] duration-200 hover:border-[rgba(255,255,255,0.16)] ${
-				deal.wonAt ? "border-[rgba(124,147,255,0.4)]" : "border-inkLine"
+				deal.wonAt ? "border-[rgba(198,255,77,0.4)]" : "border-inkLine"
 			} ${isDragging ? "shadow-[0_18px_44px_rgba(0,0,0,0.55)]" : ""}`}>
 			<div className="flex items-start justify-between gap-8">
 				<div className="min-w-0">
-					<p className="flex items-center gap-6 truncate text-13 font-semibold text-[#edf2ff]">
+					<p className="flex items-center gap-6 truncate text-13 font-semibold text-[#f1f4ee]">
 						{/* выигранную сделку видно сразу: кубок и салатовая рамка */}
-						{deal.wonAt && <TbTrophy size={14} className="shrink-0 text-[#7c93ff]" aria-label={t("dealWon")} />}
+						{deal.wonAt && <TbTrophy size={14} className="shrink-0 text-[#c6ff4d]" aria-label={t("dealWon")} />}
 						<span className="truncate">{deal.clientName}</span>
 					</p>
 					{(deal.contactName || deal.companyName) && (
-						<p className="mt-2 truncate text-11 text-[#9aa7c9]">
+						<p className="mt-2 truncate text-11 text-[#8c948b]">
 							{[deal.contactName, deal.companyName].filter(Boolean).join(" · ")}
 						</p>
 					)}
 					{/* Источник заявки: менеджер сразу видит, что это заказ с площадки, а не заведённый вручную */}
 					{deal.source && (
-						<p className="mt-2 truncate text-10 text-[#9AA7C9]">
+						<p className="mt-2 truncate text-10 text-[#8C948B]">
 							{SOURCE_LABEL[deal.source] ?? deal.source}{deal.externalId ? ` №${deal.externalId}` : ""}
 						</p>
 					)}
@@ -61,8 +61,8 @@ export default function DealCard({ deal, isDragging }: Props) {
 				</div>
 			</div>
 			<div className="mt-8 flex items-center justify-between text-11">
-				<span className="font-medium text-[#9AA7C9]">{t("activity")}</span>
-				<span className="text-[#9aa7c9]">{relativeTime(last ?? deal.createdAt, locale, t("justNow"))}</span>
+				<span className="font-medium text-[#8C948B]">{t("activity")}</span>
+				<span className="text-[#8c948b]">{relativeTime(last ?? deal.createdAt, locale, t("justNow"))}</span>
 			</div>
 		</div>
 	);

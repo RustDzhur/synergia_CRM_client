@@ -84,26 +84,26 @@ export default function Delivery() {
 
 	return (
 		<div className="flex flex-col gap-16">
-			<h2 className="text-16 font-semibold text-[#edf2ff]">{t("deliveryTitle")}</h2>
+			<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("deliveryTitle")}</h2>
 
 			{/* Нова Пошта: маркировка, накладная, стоимость, статусы, возврат */}
 			<div className="fs-card p-16 md:p-20">
 				<div className="mb-12 flex flex-wrap items-center justify-between gap-10">
-					<p className="text-14 font-semibold text-[#edf2ff]">{t("deliveryNpTitle")}</p>
+					<p className="text-14 font-semibold text-[#f1f4ee]">{t("deliveryNpTitle")}</p>
 					{npConnected === false && (
 						<span className="flex items-center gap-8 text-12 text-[#F4A100]">
 							{t("deliveryNpNotConnected")}
-							<Link href={`/${locale}/crm/settings/integration`} className="text-[#7c93ff] hover:underline">{t("deliveryConnectLink")}</Link>
+							<Link href={`/${locale}/crm/settings/integration`} className="text-[#c6ff4d] hover:underline">{t("deliveryConnectLink")}</Link>
 						</span>
 					)}
 				</div>
 				{withWaybill.length === 0 ? (
-					<p className="text-12 text-[#9aa7c9]">{t("deliveryNpEmpty")}</p>
+					<p className="text-12 text-[#8c948b]">{t("deliveryNpEmpty")}</p>
 				) : (
 					<div className="overflow-x-auto">
 						<table className="w-full min-w-[760px] text-12">
 							<thead>
-								<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#9aa7c9]">
+								<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#8c948b]">
 									<th className="pb-8 font-medium">{t("deliveryColOrder")}</th>
 									<th className="pb-8 font-medium">ТТН</th>
 									<th className="pb-8 font-medium">{t("deliveryColRecipient")}</th>
@@ -115,9 +115,9 @@ export default function Delivery() {
 							<tbody>
 								{withWaybill.map((o) => (
 									<tr key={o.id} className="border-t border-inkLine text-[#cfd4cb]">
-										<td className="py-8 text-[#edf2ff]">{o.number}<span className="ml-6 text-11 text-[#9aa7c9]">{o.customerName}</span></td>
+										<td className="py-8 text-[#f1f4ee]">{o.number}<span className="ml-6 text-11 text-[#8c948b]">{o.customerName}</span></td>
 										<td className="py-8">{o.waybill?.number}</td>
-										<td className="py-8">{o.waybill?.recipient}<span className="ml-6 text-11 text-[#9aa7c9]">{addressOf(o)}</span></td>
+										<td className="py-8">{o.waybill?.recipient}<span className="ml-6 text-11 text-[#8c948b]">{addressOf(o)}</span></td>
 										<td className="py-8">{o.waybill?.status || "—"}</td>
 										<td className="py-8">{money(Number(o.waybill?.cost) || 0, "UAH", locale)}</td>
 										<td className="py-8">
@@ -149,27 +149,27 @@ export default function Delivery() {
 						</table>
 					</div>
 				)}
-				<p className="mt-10 text-11 text-[#9AA7C9]">{t("deliveryNpHint")}</p>
+				<p className="mt-10 text-11 text-[#8C948B]">{t("deliveryNpHint")}</p>
 			</div>
 
 			{/* Укрпошта: создание отправления, форма 100×100, статус, отмена */}
 			<div className="fs-card p-16 md:p-20">
 				<div className="mb-12 flex flex-wrap items-center justify-between gap-10">
-					<p className="text-14 font-semibold text-[#edf2ff]">{t("deliveryUpTitle")}</p>
+					<p className="text-14 font-semibold text-[#f1f4ee]">{t("deliveryUpTitle")}</p>
 					{!upState?.connected && (
 						<span className="flex items-center gap-8 text-12 text-[#F4A100]">
 							{t("deliveryUpNotConnected")}
-							<Link href={`/${locale}/crm/settings/integration`} className="text-[#7c93ff] hover:underline">{t("deliveryConnectLink")}</Link>
+							<Link href={`/${locale}/crm/settings/integration`} className="text-[#c6ff4d] hover:underline">{t("deliveryConnectLink")}</Link>
 						</span>
 					)}
 				</div>
 				{withUkrposhta.length === 0 ? (
-					<p className="text-12 text-[#9aa7c9]">{t("deliveryUpEmpty")}</p>
+					<p className="text-12 text-[#8c948b]">{t("deliveryUpEmpty")}</p>
 				) : (
 					<div className="overflow-x-auto">
 						<table className="w-full min-w-[640px] text-12">
 							<thead>
-								<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#9aa7c9]">
+								<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#8c948b]">
 									<th className="pb-8 font-medium">{t("deliveryColOrder")}</th>
 									<th className="pb-8 font-medium">ШКІ</th>
 									<th className="pb-8 font-medium">{t("deliveryColStatus")}</th>
@@ -179,7 +179,7 @@ export default function Delivery() {
 							<tbody>
 								{withUkrposhta.map((o) => (
 									<tr key={o.id} className="border-t border-inkLine text-[#cfd4cb]">
-										<td className="py-8 text-[#edf2ff]">{o.number}<span className="ml-6 text-11 text-[#9aa7c9]">{o.customerName}</span></td>
+										<td className="py-8 text-[#f1f4ee]">{o.number}<span className="ml-6 text-11 text-[#8c948b]">{o.customerName}</span></td>
 										<td className="py-8">{o.ukrposhta?.barcode}</td>
 										<td className="py-8">{o.ukrposhta?.status || "—"}</td>
 										<td className="py-8">
@@ -205,7 +205,7 @@ export default function Delivery() {
 						</table>
 					</div>
 				)}
-				<p className="mt-12 text-11 text-[#9AA7C9]">{t("deliveryUpHint")}</p>
+				<p className="mt-12 text-11 text-[#8C948B]">{t("deliveryUpHint")}</p>
 			</div>
 
 			<ConfirmDialog
@@ -251,28 +251,28 @@ function ReturnDialog({ order, onClose, onDone }: { order: OrderRow; onClose: ()
 	return (
 		<Modal open onClose={onClose} label={t("deliveryReturn")} className="w-full max-w-[480px]">
 			<div className="fs-popover flex flex-col gap-12 p-20">
-				<h2 className="text-15 font-semibold text-[#edf2ff]">{t("deliveryReturn")} · {order.waybill?.number}</h2>
+				<h2 className="text-15 font-semibold text-[#f1f4ee]">{t("deliveryReturn")} · {order.waybill?.number}</h2>
 				{!state ? (
-					<p className="text-13 text-[#9aa7c9]">…</p>
+					<p className="text-13 text-[#8c948b]">…</p>
 				) : !state.possible ? (
 					<p className="text-13 text-[#F4A100]">{state.reason || t("deliveryReturnNotPossible")}</p>
 				) : (
 					<>
 						<label className="block">
-							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("deliveryReturnType")}</span>
+							<span className="mb-6 block text-12 text-[#8c948b]">{t("deliveryReturnType")}</span>
 							<select value={type} onChange={(e) => setType(e.target.value === "Redelivery" ? "Redelivery" : "Return")} className="fs-field h-40 w-full px-12 text-13 outline-none">
 								<option value="Return">{t("deliveryReturnTypeReturn")}</option>
 								<option value="Redelivery">{t("deliveryReturnTypeRedirect")}</option>
 							</select>
 						</label>
 						<label className="block">
-							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("deliveryReturnReason")}</span>
+							<span className="mb-6 block text-12 text-[#8c948b]">{t("deliveryReturnReason")}</span>
 							<select value={reasonRef} onChange={(e) => setReasonRef(e.target.value)} className="fs-field h-40 w-full px-12 text-13 outline-none">
 								{state.reasons.map((r) => <option key={r.ref} value={r.ref}>{r.name}</option>)}
 							</select>
 						</label>
 						<label className="block">
-							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("deliveryReturnNote")}</span>
+							<span className="mb-6 block text-12 text-[#8c948b]">{t("deliveryReturnNote")}</span>
 							<input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} className="fs-field h-40 w-full px-12 text-13 outline-none" />
 						</label>
 					</>

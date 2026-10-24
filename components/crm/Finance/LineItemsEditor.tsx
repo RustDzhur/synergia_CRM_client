@@ -34,7 +34,7 @@ export default function LineItemsEditor({ items, onChange, products, currency }:
 
 	return (
 		<div>
-			<div className={`hidden gap-8 px-2 pb-6 text-11 text-[#9AA7C9] md:grid ${cols}`}>
+			<div className={`hidden gap-8 px-2 pb-6 text-11 text-[#8C948B] md:grid ${cols}`}>
 				<span>{t("itemDescription")}</span><span>{t("itemProduct")}</span><span>{t("itemQty")}</span>{uz && <span>{t("itemUnit")}</span>}<span>{t("itemPrice")}</span><span>{t("itemTax")}</span><span />
 			</div>
 			<div className="flex flex-col gap-8">
@@ -49,7 +49,7 @@ export default function LineItemsEditor({ items, onChange, products, currency }:
 						{uz && <input className={cell} value={it.unit ?? ""} onChange={(e) => set(i, { unit: e.target.value })} placeholder={t("itemUnit")} maxLength={16} />}
 						<input className={cell} type="number" min={0} step="0.01" value={it.unitPrice} onChange={(e) => set(i, { unitPrice: Number(e.target.value) })} />
 						<input className={cell} type="number" min={0} max={100} step="0.1" value={it.taxRate} onChange={(e) => set(i, { taxRate: Number(e.target.value) })} />
-						<button type="button" onClick={() => remove(i)} aria-label={t("itemRemove")} className="flex h-40 w-[32px] shrink-0 items-center justify-center text-[#9AA7C9] transition-colors hover:text-danger">
+						<button type="button" onClick={() => remove(i)} aria-label={t("itemRemove")} className="flex h-40 w-[32px] shrink-0 items-center justify-center text-[#8C948B] transition-colors hover:text-danger">
 							<TbTrash size={16} />
 						</button>
 					</div>
@@ -58,10 +58,10 @@ export default function LineItemsEditor({ items, onChange, products, currency }:
 			<button type="button" onClick={add} className="fs-link mt-8">
 				<TbPlus size={15} /> {t("itemAdd")}
 			</button>
-			<div className="mt-14 flex flex-col items-end gap-2 text-12 text-[#9aa7c9]">
+			<div className="mt-14 flex flex-col items-end gap-2 text-12 text-[#8c948b]">
 				<p>{t("net")}: {totals.net.toFixed(2)} {currency}</p>
 				<p>{t("taxTotal")}: {totals.tax.toFixed(2)} {currency}</p>
-				<p className="text-14 font-semibold text-[#edf2ff]">{t("gross")}: {totals.gross.toFixed(2)} {currency}</p>
+				<p className="text-14 font-semibold text-[#f1f4ee]">{t("gross")}: {totals.gross.toFixed(2)} {currency}</p>
 			</div>
 		</div>
 	);

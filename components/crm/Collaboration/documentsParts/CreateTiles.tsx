@@ -30,7 +30,7 @@ export default function CreateTiles({ tab, driveConnected, storageConfigured, fi
 						onClick={() => onCreate(kind)}
 						className={`fs-card flex aspect-square w-full flex-col items-center justify-center gap-10 transition-transform duration-200 hover:-translate-y-2 lg:max-h-[240px] ${driveConnected ? "" : "opacity-60"}`}>
 						<FileTypeIcon type={ICON_TYPE[kind]} size={56} />
-						<span className="text-12 font-semibold text-[#9aa7c9] md:text-13">{t(`kind_${kind}`)}</span>
+						<span className="text-12 font-semibold text-[#8c948b] md:text-13">{t(`kind_${kind}`)}</span>
 					</button>
 				</li>
 			))}
@@ -39,8 +39,8 @@ export default function CreateTiles({ tab, driveConnected, storageConfigured, fi
 					type="button"
 					onClick={onUpload}
 					className={`fs-card flex aspect-square w-full flex-col items-center justify-center gap-10 transition-transform duration-200 hover:-translate-y-2 lg:max-h-[240px] ${storageConfigured ? "" : "opacity-60"}`}>
-					<TbCloudUpload size={56} className="text-[#9aa7c9]" aria-hidden />
-					<span className="text-12 font-semibold text-[#9aa7c9] md:text-13">{t("uploadFile")}</span>
+					<TbCloudUpload size={56} className="text-[#8c948b]" aria-hidden />
+					<span className="text-12 font-semibold text-[#8c948b] md:text-13">{t("uploadFile")}</span>
 				</button>
 				<input ref={fileRef} type="file" multiple hidden onChange={(e) => onFiles(e.target.files)} aria-label={t("uploadFile")} />
 			</li>}

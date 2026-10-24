@@ -77,20 +77,20 @@ export default function NotificationCenter() {
 	const isEvent = banner.type === "event";
 	return (
 		<div role="alert" className={`fixed inset-x-0 top-0 z-[90] flex items-center justify-center gap-12 border-b px-16 py-10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] ${
-			isEvent ? "border-[rgba(124,147,255,0.35)] bg-[#101A0B]" : "border-[rgba(244,161,0,0.3)] bg-[#1A1509]"
+			isEvent ? "border-[rgba(198,255,77,0.35)] bg-[#101A0B]" : "border-[rgba(244,161,0,0.3)] bg-[#1A1509]"
 		}`}>
 			{isEvent
-				? <TbCalendarEvent size={24} className="shrink-0 animate-bounce text-[#7c93ff]" aria-hidden />
+				? <TbCalendarEvent size={24} className="shrink-0 animate-bounce text-[#c6ff4d]" aria-hidden />
 				: <MdAccessAlarm size={26} className="shrink-0 animate-bounce text-[#F4A100]" aria-hidden />}
 			{/* Длинный текст (адрес события, длинное имя, ссылка) переносится и внутри слова и не занимает
 			    весь экран: плашка показывает две строки, полный текст — в подсказке при наведении */}
 			<p
 				title={notifText(t, banner, tx)}
-				className={`min-w-0 line-clamp-2 [overflow-wrap:anywhere] text-16 font-medium ${isEvent ? "text-[#edf2ff]" : "text-[#F4A100]"}`}>
+				className={`min-w-0 line-clamp-2 [overflow-wrap:anywhere] text-16 font-medium ${isEvent ? "text-[#f1f4ee]" : "text-[#F4A100]"}`}>
 				{notifText(t, banner, tx)}
 			</p>
-			<Link href={`/${locale}${banner.link}`} onClick={() => { markRead([banner.id]); setBanner(null); }} className={`shrink-0 rounded-8 px-16 py-6 text-14 font-medium transition-opacity hover:opacity-80 ${isEvent ? "bg-[#7c93ff] text-[#0b1120]" : "bg-[#F4A100] text-[#1A1509]"}`}>{t("open")}</Link>
-			<button type="button" aria-label={t("dismiss")} onClick={() => { markRead([banner.id]); setBanner(null); }} className={`shrink-0 transition-opacity hover:opacity-[0.7] ${isEvent ? "text-[#7c93ff]" : "text-[#F4A100]"}`}><MdClose size={22} /></button>
+			<Link href={`/${locale}${banner.link}`} onClick={() => { markRead([banner.id]); setBanner(null); }} className={`shrink-0 rounded-8 px-16 py-6 text-14 font-medium transition-opacity hover:opacity-80 ${isEvent ? "bg-[#c6ff4d] text-[#0a0c0b]" : "bg-[#F4A100] text-[#1A1509]"}`}>{t("open")}</Link>
+			<button type="button" aria-label={t("dismiss")} onClick={() => { markRead([banner.id]); setBanner(null); }} className={`shrink-0 transition-opacity hover:opacity-[0.7] ${isEvent ? "text-[#c6ff4d]" : "text-[#F4A100]"}`}><MdClose size={22} /></button>
 		</div>
 	);
 }

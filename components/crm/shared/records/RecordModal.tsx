@@ -61,15 +61,15 @@ export default function RecordModal({ open, config, tab, record, preset, fieldOp
 	return (
 		<Modal open={open} onClose={onClose} label={name} className="w-full max-w-[560px]">
 			<form onSubmit={submit} className="fs-popover fs-scroll relative max-h-[90vh] overflow-y-auto p-20">
-				<button type="button" onClick={onClose} aria-label={tr("cancel")} className="absolute right-16 top-16 text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
+				<button type="button" onClick={onClose} aria-label={tr("cancel")} className="absolute right-16 top-16 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
 					<MdClose size={24} />
 				</button>
-				<h2 className="mb-20 pr-30 text-18 font-semibold text-[#edf2ff]">{record ? tr("edit", { name }) : tr("add", { name })}</h2>
+				<h2 className="mb-20 pr-30 text-18 font-semibold text-[#f1f4ee]">{record ? tr("edit", { name }) : tr("add", { name })}</h2>
 				<div className="grid grid-cols-1 gap-16 md:grid-cols-2">
 					{fields.map((f) =>
 						f.type === "select" ? (
 							<label key={f.key} className="block">
-								<span className="mb-6 block text-12 text-[#9aa7c9]">{t(`f_${f.key}`)}</span>
+								<span className="mb-6 block text-12 text-[#8c948b]">{t(`f_${f.key}`)}</span>
 								<select value={values[f.key] ?? ""} onChange={(e) => set(f.key, e.target.value)} className={`${fieldClass} cursor-pointer`}>
 									{optionsFor(f.key, f.options).map((o) => (
 										<option key={o.value} value={o.value}>{o.label}</option>

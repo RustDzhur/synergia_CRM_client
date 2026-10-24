@@ -23,7 +23,7 @@ export default function NameDialog({ mode, name, onName, busy, onClose, onSubmit
 	return (
 		<Modal open={mode !== null} onClose={onClose} label={t("document")} className="w-full max-w-[440px]">
 			<form onSubmit={onSubmit} className="fs-popover p-20">
-				<h2 className="mb-16 flex items-center gap-12 text-16 font-semibold text-[#edf2ff]">
+				<h2 className="mb-16 flex items-center gap-12 text-16 font-semibold text-[#f1f4ee]">
 					{mode?.kind === "doc" && <FileTypeIcon type={ICON_TYPE[mode.docKind]} size={20} withLabel={false} />}
 					{isFolder && <TbFolder size={20} className="text-[#FABF4D]" aria-hidden />}
 					{mode?.kind === "doc" ? t("newDocument") : mode?.kind === "folder-new" ? t("folderNew") : t("rename")}
@@ -37,7 +37,7 @@ export default function NameDialog({ mode, name, onName, busy, onClose, onSubmit
 					aria-label={t("fileName")}
 					className="fs-field h-40 w-full px-12 text-13 outline-none transition-colors"
 				/>
-				{mode?.kind === "doc" && <p className="mt-8 text-12 text-[#9aa7c9]">{t("docOpenNote")}</p>}
+				{mode?.kind === "doc" && <p className="mt-8 text-12 text-[#8c948b]">{t("docOpenNote")}</p>}
 				<div className="mt-20 flex justify-end gap-10">
 					<button type="button" onClick={onClose} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
 					<button type="submit" disabled={busy} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">

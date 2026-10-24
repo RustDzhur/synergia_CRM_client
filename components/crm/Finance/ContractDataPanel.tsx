@@ -67,15 +67,15 @@ export default function ContractDataPanel({ body, customFields, link, customerNa
 
 	return (
 		<div className="rounded-12 border border-inkLine p-12">
-			<span className="mb-2 block text-12 font-medium text-[#edf2ff]">{tr("dataTitle")}</span>
-			<p className="mb-8 text-11 text-[#9aa7c9]">{tr("dataHint")}</p>
+			<span className="mb-2 block text-12 font-medium text-[#f1f4ee]">{tr("dataTitle")}</span>
+			<p className="mb-8 text-11 text-[#8c948b]">{tr("dataHint")}</p>
 			<div className="grid grid-cols-1 gap-8 md:grid-cols-2">
 				{rows.map((r) => {
 					const v = current(r);
 					const empty = !v.trim();
 					return (
 						<label key={r.key} className="block">
-							<span className="mb-4 flex items-center justify-between gap-6 text-11 text-[#9aa7c9]">
+							<span className="mb-4 flex items-center justify-between gap-6 text-11 text-[#8c948b]">
 								<span className="truncate">{r.label}</span>
 								{empty && <span className="shrink-0 text-[#F4A100]">{tr("missing")}</span>}
 							</span>
@@ -91,7 +91,7 @@ export default function ContractDataPanel({ body, customFields, link, customerNa
 			</div>
 			{hasCustomer && (link.contact || link.company) && (
 				<label className="mt-10 flex cursor-pointer items-center gap-8 text-12 text-[#cfd4cb]">
-					<input type="checkbox" checked={saveToCard} onChange={(e) => onSaveToCard(e.target.checked)} className="accent-[#7C93FF]" />
+					<input type="checkbox" checked={saveToCard} onChange={(e) => onSaveToCard(e.target.checked)} className="accent-[#C6FF4D]" />
 					{tr("saveToCard")}
 				</label>
 			)}

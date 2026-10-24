@@ -57,8 +57,8 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
         return (
             <div className="bg-ink flex min-h-screen items-center justify-center p-24 text-center">
                 <div className="fs-card max-w-[420px] p-24">
-                    <h1 className="mb-10 text-18 font-semibold text-[#edf2ff]">Firmspace AI</h1>
-                    <p className="text-13 text-[#9aa7c9]">{locale === "de" ? "Dieses Konto wurde gesperrt. Bitte wenden Sie sich an den Support." : locale === "ua" ? "Цей акаунт заблоковано. Зверніться до підтримки." : "This account has been blocked. Please contact support."}</p>
+                    <h1 className="mb-10 text-18 font-semibold text-[#f1f4ee]">Firmspace AI</h1>
+                    <p className="text-13 text-[#8c948b]">{locale === "de" ? "Dieses Konto wurde gesperrt. Bitte wenden Sie sich an den Support." : locale === "ua" ? "Цей акаунт заблоковано. Зверніться до підтримки." : "This account has been blocked. Please contact support."}</p>
                 </div>
             </div>
         );

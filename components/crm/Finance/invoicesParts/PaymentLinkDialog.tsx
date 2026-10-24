@@ -66,16 +66,16 @@ export default function PaymentLinkDialog({ invoiceId, open, onClose, onCreated 
 	return (
 		<Modal open={open} onClose={onClose} label={t("payLinkTitle")} className="w-full max-w-[520px]">
 			<div className="fs-popover p-20">
-				<h2 className="mb-6 text-16 font-semibold text-[#edf2ff]">{t("payLinkTitle")}</h2>
-				<p className="mb-14 text-12 leading-[1.5] text-[#9aa7c9]">{t("payLinkHelp")}</p>
+				<h2 className="mb-6 text-16 font-semibold text-[#f1f4ee]">{t("payLinkTitle")}</h2>
+				<p className="mb-14 text-12 leading-[1.5] text-[#8c948b]">{t("payLinkHelp")}</p>
 
 				{!options ? (
-					<p className="text-13 text-[#9aa7c9]">…</p>
+					<p className="text-13 text-[#8c948b]">…</p>
 				) : options.providers.length === 0 ? (
 					<p className="rounded-10 border border-[rgba(244,161,0,0.3)] bg-[rgba(244,161,0,0.08)] p-12 text-12 text-[#F4A100]">{t("payLinkNoProvider")}</p>
 				) : (
 					<>
-						<p className="mb-6 text-12 text-[#9aa7c9]">{t("payLinkProvider")}</p>
+						<p className="mb-6 text-12 text-[#8c948b]">{t("payLinkProvider")}</p>
 						<div className="mb-14 flex flex-wrap gap-8">
 							{options.providers.map((p) => (
 								<button
@@ -94,13 +94,13 @@ export default function PaymentLinkDialog({ invoiceId, open, onClose, onCreated 
 				{url && (
 					<>
 						<div className="flex items-center gap-8 rounded-10 border border-inkLineSoft bg-[rgba(255,255,255,0.02)] p-10">
-							<span className="min-w-0 flex-1 truncate text-12 text-[#edf2ff]">{url}</span>
-							<button type="button" onClick={() => void copy()} title={t("payLinkCopy")} aria-label={t("payLinkCopy")} className="text-[#9aa7c9] transition-colors hover:text-[#7c93ff]"><TbCopy size={16} /></button>
-							<a href={url} target="_blank" rel="noopener noreferrer" title={t("openInGoogle")} className="text-[#9aa7c9] transition-colors hover:text-[#7c93ff]"><TbExternalLink size={16} /></a>
+							<span className="min-w-0 flex-1 truncate text-12 text-[#f1f4ee]">{url}</span>
+							<button type="button" onClick={() => void copy()} title={t("payLinkCopy")} aria-label={t("payLinkCopy")} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]"><TbCopy size={16} /></button>
+							<a href={url} target="_blank" rel="noopener noreferrer" title={t("openInGoogle")} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]"><TbExternalLink size={16} /></a>
 						</div>
 						{options && options.conversations.length > 0 && (
 							<>
-								<p className="mb-6 mt-14 text-12 text-[#9aa7c9]">{t("payLinkSend")}</p>
+								<p className="mb-6 mt-14 text-12 text-[#8c948b]">{t("payLinkSend")}</p>
 								<div className="flex flex-wrap gap-8">
 									{options.conversations.map((c) => (
 										<button key={c.id} type="button" onClick={() => void create(c.id)} disabled={busy} className="fs-btn fs-btn-ghost h-34 text-13 disabled:opacity-60">

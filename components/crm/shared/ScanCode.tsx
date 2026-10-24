@@ -115,8 +115,8 @@ export default function ScanCode({ onDetect, title }: { onDetect: (code: string)
 			</button>
 			<Modal open={open} onClose={() => setOpen(false)} label={t("scanTitle")} className="w-full max-w-[420px]">
 				<div className="fs-popover p-20">
-					<h2 className="mb-8 text-16 font-semibold text-[#edf2ff]">{t("scanTitle")}</h2>
-					<p className="mb-12 text-12 leading-[1.6] text-[#9aa7c9]">{t("scanHint")}</p>
+					<h2 className="mb-8 text-16 font-semibold text-[#f1f4ee]">{t("scanTitle")}</h2>
+					<p className="mb-12 text-12 leading-[1.6] text-[#8c948b]">{t("scanHint")}</p>
 					{/* Камера: наведите на штрихкод — код подставится сам */}
 					<div className="mb-12 overflow-hidden rounded-10 border border-inkLine bg-black/60">
 						<video ref={videoRef} muted playsInline className="h-[220px] w-full object-cover" />
@@ -125,7 +125,7 @@ export default function ScanCode({ onDetect, title }: { onDetect: (code: string)
 					{/* Ручной ввод: аппаратный сканер печатает код как клавиатура, ему достаточно этого поля */}
 					<form onSubmit={submitManual} className="flex items-end gap-8">
 						<label className="min-w-0 flex-1">
-							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("scanManual")}</span>
+							<span className="mb-6 block text-12 text-[#8c948b]">{t("scanManual")}</span>
 							<input autoFocus value={manual} onChange={(e) => setManual(e.target.value)} maxLength={64} className="fs-field h-40 w-full px-12 text-13 outline-none" placeholder="EAN-13 / SKU" />
 						</label>
 						<button type="submit" disabled={!manual.trim()} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{t("scanApply")}</button>

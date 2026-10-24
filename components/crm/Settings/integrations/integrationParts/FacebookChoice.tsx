@@ -6,7 +6,7 @@ export default function FacebookChoice({ options, onChoose }: { options: Array<{
 	const t = useTranslations("settings");
 	return (
 		<div className="flex flex-col gap-6">
-			<span className="text-12 text-[#9aa7c9]">{t("intFbChoose")}</span>
+			<span className="text-12 text-[#8c948b]">{t("intFbChoose")}</span>
 			{options.map((o) => (
 				<button key={o.id} type="button" onClick={() => onChoose(o.id)} className="fs-popover-row w-full rounded-8 px-10 py-8 text-left text-13">
 					{o.name}

@@ -18,7 +18,7 @@ import { trFor } from "./contractUi";
 export interface CustomField { key: string; label: string }
 const MIME = "application/x-contract-field";
 const ZWSP = "​";
-const GROUP_COLOR = ["#7C93FF", "#FFD166", "#FF6B6B", "#4ECDC4", "#A78BFA", "#F472B6", "#60A5FA", "#34D399", "#FB923C", "#2DD4BF", "#E879F9", "#94A3B8"];
+const GROUP_COLOR = ["#C6FF4D", "#FFD166", "#FF6B6B", "#4ECDC4", "#A78BFA", "#F472B6", "#60A5FA", "#34D399", "#FB923C", "#2DD4BF", "#E879F9", "#94A3B8"];
 const colorOf = (g: string) => GROUP_COLOR[Math.max(0, GROUP_ORDER.indexOf(g as never)) % GROUP_COLOR.length];
 
 const PAPER_CSS = `
@@ -268,7 +268,7 @@ export default function RichContractEditor({ value, onChange, country, customFie
 	}
 
 	// ── кнопки панели ─────────────────────────────────────────────────────────────────────────────────
-	const btn = (active: boolean) => `flex h-34 w-34 items-center justify-center rounded-8 transition-colors ${active ? "bg-[rgba(124,147,255,0.16)] text-[#7c93ff]" : "text-[#cfd4cb] hover:bg-[rgba(255,255,255,0.07)] hover:text-[#edf2ff]"}`;
+	const btn = (active: boolean) => `flex h-34 w-34 items-center justify-center rounded-8 transition-colors ${active ? "bg-[rgba(198,255,77,0.16)] text-[#c6ff4d]" : "text-[#cfd4cb] hover:bg-[rgba(255,255,255,0.07)] hover:text-[#f1f4ee]"}`;
 	const tool = (label: string, icon: React.ReactNode, onClick: () => void, active = false) => (
 		<button type="button" key={label} title={label} aria-label={label} aria-pressed={active} onMouseDown={(e) => e.preventDefault()} onClick={onClick} className={btn(active)}>{icon}</button>
 	);
@@ -394,13 +394,13 @@ function FieldStrip({ country, customFields, onInsert, lang }: { country: Countr
 			<div className="flex flex-wrap items-center gap-6">
 				<div className="fs-scroll flex min-w-0 flex-1 gap-4 overflow-x-auto pb-4" role="tablist">
 					{groups.map((g) => (
-						<button key={g.id} type="button" role="tab" aria-selected={active === g.id && !q} onClick={() => { setGroup(g.id); setQuery(""); }} className={`shrink-0 rounded-full px-10 py-4 text-12 transition-colors ${active === g.id && !q ? "bg-[rgba(124,147,255,0.16)] text-[#7c93ff]" : "text-[#9aa396] hover:bg-[rgba(255,255,255,0.06)] hover:text-[#edf2ff]"}`}>
+						<button key={g.id} type="button" role="tab" aria-selected={active === g.id && !q} onClick={() => { setGroup(g.id); setQuery(""); }} className={`shrink-0 rounded-full px-10 py-4 text-12 transition-colors ${active === g.id && !q ? "bg-[rgba(198,255,77,0.16)] text-[#c6ff4d]" : "text-[#9aa396] hover:bg-[rgba(255,255,255,0.06)] hover:text-[#f1f4ee]"}`}>
 							{g.label} <span className="opacity-60">{g.count}</span>
 						</button>
 					))}
 				</div>
 				<label className="relative">
-					<TbSearch size={14} className="pointer-events-none absolute left-8 top-1/2 -translate-y-1/2 text-[#9aa7c9]" aria-hidden />
+					<TbSearch size={14} className="pointer-events-none absolute left-8 top-1/2 -translate-y-1/2 text-[#8c948b]" aria-hidden />
 					<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr("search")} className="fs-field h-30 w-[190px] pl-26 pr-8 text-12 outline-none" />
 				</label>
 				<select value={allCountries ? "all" : "mine"} onChange={(e) => setAllCountries(e.target.value === "all")} className="fs-field h-30 px-8 text-12 outline-none" aria-label={tr("allCountries")}>
@@ -408,14 +408,14 @@ function FieldStrip({ country, customFields, onInsert, lang }: { country: Countr
 					<option value="all">{tr("allCountries")}</option>
 				</select>
 				<div className="flex rounded-8 border border-inkLine p-2">
-					<button type="button" title={tr("viewChips")} aria-label={tr("viewChips")} onClick={() => setView("chips")} className={`flex h-26 w-26 items-center justify-center rounded-6 ${view === "chips" ? "bg-[rgba(124,147,255,0.16)] text-[#7c93ff]" : "text-[#9aa396]"}`}><TbTags size={14} /></button>
-					<button type="button" title={tr("viewList")} aria-label={tr("viewList")} onClick={() => setView("list")} className={`flex h-26 w-26 items-center justify-center rounded-6 ${view === "list" ? "bg-[rgba(124,147,255,0.16)] text-[#7c93ff]" : "text-[#9aa396]"}`}><TbLayoutList size={14} /></button>
+					<button type="button" title={tr("viewChips")} aria-label={tr("viewChips")} onClick={() => setView("chips")} className={`flex h-26 w-26 items-center justify-center rounded-6 ${view === "chips" ? "bg-[rgba(198,255,77,0.16)] text-[#c6ff4d]" : "text-[#9aa396]"}`}><TbTags size={14} /></button>
+					<button type="button" title={tr("viewList")} aria-label={tr("viewList")} onClick={() => setView("list")} className={`flex h-26 w-26 items-center justify-center rounded-6 ${view === "list" ? "bg-[rgba(198,255,77,0.16)] text-[#c6ff4d]" : "text-[#9aa396]"}`}><TbLayoutList size={14} /></button>
 				</div>
 			</div>
-			<p className="mb-6 mt-6 text-11 text-[#9aa7c9]">{tr("dragHint")}</p>
+			<p className="mb-6 mt-6 text-11 text-[#8c948b]">{tr("dragHint")}</p>
 			<div className="fs-scroll max-h-[132px] overflow-y-auto">
 				{items.length === 0 ? (
-					<p className="py-6 text-12 text-[#9aa7c9]">{tr("nothingFound")}</p>
+					<p className="py-6 text-12 text-[#8c948b]">{tr("nothingFound")}</p>
 				) : view === "chips" ? (
 					<div className="flex flex-wrap gap-6">
 						{items.map((i) => (
@@ -430,7 +430,7 @@ function FieldStrip({ country, customFields, onInsert, lang }: { country: Countr
 							<li key={i.key}>
 								<button type="button" draggable onDragStart={chipDrag(i.key)} onClick={() => onInsert(i.key)} className="flex w-full cursor-grab items-center justify-between gap-8 rounded-8 px-8 py-5 text-left text-12 text-[#cfd4cb] hover:bg-[rgba(255,255,255,0.06)]">
 									<span className="flex min-w-0 items-center gap-6"><span className="h-8 w-8 shrink-0 rounded-50" style={{ background: i.color }} aria-hidden /><span className="truncate">{i.label}</span></span>
-									<span className="shrink-0 font-mono text-11 text-[#9aa7c9]">{`{{${i.key}}}`}</span>
+									<span className="shrink-0 font-mono text-11 text-[#8c948b]">{`{{${i.key}}}`}</span>
 								</button>
 							</li>
 						))}

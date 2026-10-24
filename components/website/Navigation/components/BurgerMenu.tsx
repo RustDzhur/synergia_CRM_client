@@ -39,7 +39,7 @@ export default function BurgerMenu() {
 					// три штриха 24×22, толщина 4px, светлые — шапка сайта тёмная
 					<span className="flex h-[22px] w-[24px] flex-col justify-between" aria-hidden="true">
 						{[0, 1, 2].map((i) => (
-							<span key={i} className="block h-[4px] rounded-[2px] bg-[#edf2ff]" />
+							<span key={i} className="block h-[4px] rounded-[2px] bg-[#f1f4ee]" />
 						))}
 					</span>
 				) : (

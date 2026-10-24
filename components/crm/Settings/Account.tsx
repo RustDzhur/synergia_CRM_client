@@ -19,7 +19,7 @@ type ProfileForm = Record<ProfileKey, string>;
 
 const EMPTY: ProfileForm = Object.fromEntries(PROFILE_KEYS.map((k) => [k, ""])) as ProfileForm;
 
-const SECTION_TITLE = "mb-10 text-15 font-semibold text-[#edf2ff]";
+const SECTION_TITLE = "mb-10 text-15 font-semibold text-[#f1f4ee]";
 const BUTTON = "fs-btn fs-btn-primary h-40 w-full text-13 disabled:opacity-60";
 
 // Settings → Account (/crm/settings). Сетка как в Figma:
@@ -111,13 +111,13 @@ export default function Account() {
 							initials={initials}
 							size={60}
 							className="flex text-18"
-							style={user?.avatarUrl ? undefined : { background: "rgba(124,147,255,0.14)", color: "#7c93ff" }}
+							style={user?.avatarUrl ? undefined : { background: "rgba(198,255,77,0.14)", color: "#c6ff4d" }}
 						/>
 						<button
 							type="button"
 							onClick={() => fileRef.current?.click()}
 							aria-label={t("uploadPhoto")}
-							className="absolute -bottom-2 -right-2 flex h-24 w-24 items-center justify-center rounded-50 border border-[rgba(124,147,255,0.35)] bg-[rgba(124,147,255,0.14)] text-[#7c93ff] transition-transform hover:scale-110">
+							className="absolute -bottom-2 -right-2 flex h-24 w-24 items-center justify-center rounded-50 border border-[rgba(198,255,77,0.35)] bg-[rgba(198,255,77,0.14)] text-[#c6ff4d] transition-transform hover:scale-110">
 							<TbCamera size={13} />
 						</button>
 						<input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
@@ -126,7 +126,7 @@ export default function Account() {
 					<div className="flex flex-col gap-15">
 						{field("firstname", t("firstName"))}
 						{field("lastname", t("lastName"))}
-						<FormField label={t("email")} value={user?.email ?? ""} readOnly title={t("emailLocked")} className="cursor-not-allowed text-[#9AA7C9]" />
+						<FormField label={t("email")} value={user?.email ?? ""} readOnly title={t("emailLocked")} className="cursor-not-allowed text-[#8C948B]" />
 						{field("phone", t("phone"), { type: "tel" })}
 						{field("role", t("role"))}
 						{field("department", t("department"))}

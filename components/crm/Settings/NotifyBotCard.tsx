@@ -74,8 +74,8 @@ export default function NotifyBotCard() {
 		<div className="fs-card mb-20 p-16">
 			<div className="flex flex-wrap items-start justify-between gap-12">
 				<div className="min-w-0">
-					<p className="text-14 font-medium text-[#edf2ff]">{t("notifyTitle")}</p>
-					<p className="mt-4 max-w-[720px] text-12 leading-[1.5] text-[#9aa7c9]">{t("notifyHelp")}</p>
+					<p className="text-14 font-medium text-[#f1f4ee]">{t("notifyTitle")}</p>
+					<p className="mt-4 max-w-[720px] text-12 leading-[1.5] text-[#8c948b]">{t("notifyHelp")}</p>
 				</div>
 				<div className="flex items-center gap-10">
 					<button type="button" onClick={test} disabled={busy || !chat} className="fs-btn fs-btn-ghost h-34 disabled:opacity-60">{t("notifyTest")}</button>
@@ -85,13 +85,13 @@ export default function NotifyBotCard() {
 			</div>
 			<div className="mt-12 flex flex-wrap items-end gap-12">
 				<label className="flex min-w-[240px] flex-1 flex-col gap-6">
-					<span className="text-11 text-[#9aa7c9]">{t("notifyToken")}</span>
+					<span className="text-11 text-[#8c948b]">{t("notifyToken")}</span>
 					<input value={token} onChange={(e) => setToken(e.target.value)} type="password" autoComplete="off" maxLength={120} placeholder={hasToken ? t("intKeepSecret") : "123456:ABC…"} className={input} />
 				</label>
 				<button type="button" onClick={findChat} disabled={busy} className="fs-btn fs-btn-ghost h-40 disabled:opacity-60">{t("notifyFind")}</button>
 				{chat && (
-					<span className="pb-10 text-12 text-[#9aa7c9]">
-						{t("notifyChat")}: <span className="text-[#edf2ff]">{name || chat}</span>
+					<span className="pb-10 text-12 text-[#8c948b]">
+						{t("notifyChat")}: <span className="text-[#f1f4ee]">{name || chat}</span>
 					</span>
 				)}
 			</div>

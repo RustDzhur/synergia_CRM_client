@@ -68,10 +68,10 @@ export default function HireDialog({ open, onClose }: { open: boolean; onClose: 
 			<div className="fs-popover fs-scroll max-h-[92vh] overflow-y-auto p-18 md:p-24">
 				<div className="mb-4 flex items-start justify-between gap-12">
 					<div>
-						<h2 className="text-18 font-semibold text-[#edf2ff]">{view === "custom" ? t("customTitle") : view === "voice" ? t("hireVoice") : t("hireTitle")}</h2>
-						<p className="mt-4 text-13 text-[#9aa7c9]">{view === "custom" ? t("customHint") : view === "voice" ? t("voiceHint") : t("hireHint")}</p>
+						<h2 className="text-18 font-semibold text-[#f1f4ee]">{view === "custom" ? t("customTitle") : view === "voice" ? t("hireVoice") : t("hireTitle")}</h2>
+						<p className="mt-4 text-13 text-[#8c948b]">{view === "custom" ? t("customHint") : view === "voice" ? t("voiceHint") : t("hireHint")}</p>
 					</div>
-					<button type="button" onClick={close} className="shrink-0 text-13 text-[#9aa7c9] hover:text-[#edf2ff]">{t("close")}</button>
+					<button type="button" onClick={close} className="shrink-0 text-13 text-[#8c948b] hover:text-[#f1f4ee]">{t("close")}</button>
 				</div>
 
 				{view === "custom" ? (
@@ -91,13 +91,13 @@ export default function HireDialog({ open, onClose }: { open: boolean; onClose: 
 							disabled={full || parsing}
 							onClick={() => (micState === "idle" ? void start(voiceText) : stop())}
 							aria-pressed={micState !== "idle"}
-							className={`fs-card flex w-full items-center justify-center gap-10 border-dashed p-14 text-14 font-medium transition-colors disabled:opacity-50 ${micState !== "idle" ? "border-[rgba(124,147,255,0.5)] bg-[rgba(124,147,255,0.08)] text-[#7c93ff]" : "text-[#cfd4cb] hover:text-[#7c93ff]"}`}>
+							className={`fs-card flex w-full items-center justify-center gap-10 border-dashed p-14 text-14 font-medium transition-colors disabled:opacity-50 ${micState !== "idle" ? "border-[rgba(198,255,77,0.5)] bg-[rgba(198,255,77,0.08)] text-[#c6ff4d]" : "text-[#cfd4cb] hover:text-[#c6ff4d]"}`}>
 							<TbMicrophone size={18} aria-hidden />
 							{micState === "idle" ? ta("mic") : ta("micStop")}
 						</button>
-						<p className="text-12 text-[#9aa7c9]">{micState === "listening" ? ta("micListening") : micState === "transcribing" ? ta("micTranscribing") : ""}</p>
+						<p className="text-12 text-[#8c948b]">{micState === "listening" ? ta("micListening") : micState === "transcribing" ? ta("micTranscribing") : ""}</p>
 						<div>
-							<label className="mb-6 block text-11 font-semibold uppercase tracking-[0.06em] text-[#9aa7c9]" htmlFor="rb-voice">{t("voiceText")}</label>
+							<label className="mb-6 block text-11 font-semibold uppercase tracking-[0.06em] text-[#8c948b]" htmlFor="rb-voice">{t("voiceText")}</label>
 							<textarea id="rb-voice" value={voiceText} onChange={(e) => setVoiceText(e.target.value)} rows={4} placeholder={t("voiceHint")} className="fs-field fs-scroll w-full p-12 text-13 outline-none" />
 						</div>
 						<div className="flex justify-end gap-10">
@@ -114,11 +114,11 @@ export default function HireDialog({ open, onClose }: { open: boolean; onClose: 
 									<li key={c.id} className="fs-card flex gap-12 p-14">
 										<RobotAvatar accent={c.accent} size={52} />
 										<div className="min-w-0 flex-1">
-											<p className="text-14 font-semibold text-[#edf2ff]">{label(c, "title")}</p>
-											<p className="mt-2 text-12 text-[#9aa7c9]">{label(c, "desc")}</p>
-											<div className="mt-8 flex flex-wrap gap-4">{c.skills.map((s) => <span key={s} className="rounded-[10px] border border-inkLine px-8 py-[2px] text-10 text-[#9aa7c9]">{t(`skill_${s}`)}</span>)}</div>
+											<p className="text-14 font-semibold text-[#f1f4ee]">{label(c, "title")}</p>
+											<p className="mt-2 text-12 text-[#8c948b]">{label(c, "desc")}</p>
+											<div className="mt-8 flex flex-wrap gap-4">{c.skills.map((s) => <span key={s} className="rounded-[10px] border border-inkLine px-8 py-[2px] text-10 text-[#8c948b]">{t(`skill_${s}`)}</span>)}</div>
 											<div className="mt-10 flex items-center justify-between gap-8">
-												<span className="text-11 text-[#9aa7c9]">{have > 0 ? t("alreadyHired", { n: have }) : ""}</span>
+												<span className="text-11 text-[#8c948b]">{have > 0 ? t("alreadyHired", { n: have }) : ""}</span>
 												<button type="button" disabled={full || busy !== null} onClick={() => void hireTemplate(c.id)} className="fs-btn fs-btn-ghost h-32 px-14 text-12 disabled:opacity-50">{busy === c.id ? "…" : t("hireNow")}</button>
 											</div>
 										</div>
@@ -127,8 +127,8 @@ export default function HireDialog({ open, onClose }: { open: boolean; onClose: 
 							})}
 						</ul>
 						<div className="mt-10 grid grid-cols-1 gap-10 md:grid-cols-2">
-							<button type="button" disabled={full} onClick={() => setView("voice")} className="fs-card flex w-full items-center justify-center gap-8 border-dashed p-14 text-13 font-medium text-[#cfd4cb] transition-colors hover:text-[#7c93ff] disabled:opacity-50"><TbMicrophone size={16} aria-hidden />{t("hireVoice")}</button>
-							<button type="button" disabled={full} onClick={() => setView("custom")} className="fs-card flex w-full items-center justify-center gap-8 border-dashed p-14 text-13 font-medium text-[#cfd4cb] transition-colors hover:text-[#7c93ff] disabled:opacity-50"><TbPlus size={16} aria-hidden />{t("customTitle")}</button>
+							<button type="button" disabled={full} onClick={() => setView("voice")} className="fs-card flex w-full items-center justify-center gap-8 border-dashed p-14 text-13 font-medium text-[#cfd4cb] transition-colors hover:text-[#c6ff4d] disabled:opacity-50"><TbMicrophone size={16} aria-hidden />{t("hireVoice")}</button>
+							<button type="button" disabled={full} onClick={() => setView("custom")} className="fs-card flex w-full items-center justify-center gap-8 border-dashed p-14 text-13 font-medium text-[#cfd4cb] transition-colors hover:text-[#c6ff4d] disabled:opacity-50"><TbPlus size={16} aria-hidden />{t("customTitle")}</button>
 						</div>
 					</>
 				)}

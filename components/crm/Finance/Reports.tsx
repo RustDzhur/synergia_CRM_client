@@ -31,19 +31,19 @@ function BwaView({ period, currency }: { period: PeriodKind; currency: string })
 
 	return (
 		<div className="flex flex-col gap-16">
-			<p className="text-12 text-[#9AA7C9]">{t("periodLabel")}: {report.from} – {report.to}</p>
+			<p className="text-12 text-[#8C948B]">{t("periodLabel")}: {report.from} – {report.to}</p>
 
 			{report.months.length === 0 ? (
-				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("empty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("empty")}</p>
 			) : (
 				<>
 					{/* Выручка и затраты по месяцам — те же столбики, что в обзоре раздела (простые div'ы, без библиотек) */}
 					<section className="fs-card p-16 md:p-20">
-						<h3 className="mb-14 text-14 font-semibold text-[#edf2ff]">{t("bwaChartTitle")}</h3>
+						<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("bwaChartTitle")}</h3>
 						<PairBars data={report.months.map((m) => ({ label: monthLabel(m.period, locale, false), a: m.revenue, b: m.costs, titleA: `${t("bwaRevenue")}: ${m.revenue}`, titleB: `${t("bwaCosts")}: ${m.costs}` }))} />
-						<div className="mt-10 flex gap-20 text-12 text-[#9aa7c9]">
-							<span className="flex items-center gap-6"><span className="h-[10px] w-[10px] rounded-[3px] bg-[#7c93ff]" />{t("bwaRevenue")}</span>
-							<span className="flex items-center gap-6"><span className="h-[10px] w-[10px] rounded-[3px] bg-[#9AA7C9]" />{t("bwaCosts")}</span>
+						<div className="mt-10 flex gap-20 text-12 text-[#8c948b]">
+							<span className="flex items-center gap-6"><span className="h-[10px] w-[10px] rounded-[3px] bg-[#c6ff4d]" />{t("bwaRevenue")}</span>
+							<span className="flex items-center gap-6"><span className="h-[10px] w-[10px] rounded-[3px] bg-[#8C948B]" />{t("bwaCosts")}</span>
 						</div>
 					</section>
 
@@ -63,16 +63,16 @@ function BwaView({ period, currency }: { period: PeriodKind; currency: string })
 										<td className="px-16 text-13">{monthLabel(m.period, locale)}</td>
 										<td className="px-10 text-right text-13">{fmt(m.revenue)}</td>
 										<td className="px-10 text-right text-13">{fmt(m.costs)}</td>
-										<td className="px-10 text-right text-13" style={{ color: m.profit >= 0 ? "#7c93ff" : "#eb5757" }}>{fmt(m.profit)}</td>
+										<td className="px-10 text-right text-13" style={{ color: m.profit >= 0 ? "#c6ff4d" : "#eb5757" }}>{fmt(m.profit)}</td>
 									</tr>
 								))}
 							</tbody>
 							<tfoot>
 								<tr>
-									<td className="border-t border-inkLine px-16 py-12 text-13 font-semibold text-[#c7d3f2]">{t("total")}</td>
-									<td className="border-t border-inkLine px-10 py-12 text-right text-13 font-semibold text-[#edf2ff]">{fmt(report.revenue)}</td>
-									<td className="border-t border-inkLine px-10 py-12 text-right text-13 font-semibold text-[#edf2ff]">{fmt(report.costs)}</td>
-									<td className="border-t border-inkLine px-10 py-12 text-right text-13 font-semibold" style={{ color: report.profit >= 0 ? "#7c93ff" : "#eb5757" }}>{fmt(report.profit)}</td>
+									<td className="border-t border-inkLine px-16 py-12 text-13 font-semibold text-[#e6eae2]">{t("total")}</td>
+									<td className="border-t border-inkLine px-10 py-12 text-right text-13 font-semibold text-[#f1f4ee]">{fmt(report.revenue)}</td>
+									<td className="border-t border-inkLine px-10 py-12 text-right text-13 font-semibold text-[#f1f4ee]">{fmt(report.costs)}</td>
+									<td className="border-t border-inkLine px-10 py-12 text-right text-13 font-semibold" style={{ color: report.profit >= 0 ? "#c6ff4d" : "#eb5757" }}>{fmt(report.profit)}</td>
 								</tr>
 							</tfoot>
 						</table>
@@ -81,17 +81,17 @@ function BwaView({ period, currency }: { period: PeriodKind; currency: string })
 			)}
 
 			<section className="fs-card p-16 md:p-20">
-				<h3 className="text-14 font-semibold text-[#edf2ff]">{t("bwaCostBreakdown")}</h3>
+				<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("bwaCostBreakdown")}</h3>
 				{report.costRows.length === 0 ? (
-					<p className="mt-10 text-13 text-[#9aa7c9]">{t("empty")}</p>
+					<p className="mt-10 text-13 text-[#8c948b]">{t("empty")}</p>
 				) : (
 					<ul className="mt-10 flex flex-col">
 						{report.costRows.map((c) => (
 							<li key={c.key} className="flex items-start justify-between gap-16 border-b border-inkLineSoft py-9 text-13 last:border-b-0">
 								<span className="min-w-0 text-[#cfd4cb]">{c.key}</span>
 								<span className="flex shrink-0 items-baseline gap-10">
-									<span className="text-12 text-[#9AA7C9]">{report.costs > 0 ? Math.round((c.amount / report.costs) * 100) : 0} %</span>
-									<span className="font-medium text-[#edf2ff]">{fmt(c.amount)}</span>
+									<span className="text-12 text-[#8C948B]">{report.costs > 0 ? Math.round((c.amount / report.costs) * 100) : 0} %</span>
+									<span className="font-medium text-[#f1f4ee]">{fmt(c.amount)}</span>
 								</span>
 							</li>
 						))}
@@ -112,7 +112,7 @@ function SusaView({ period, currency }: { period: PeriodKind; currency: string }
 
 	return (
 		<div className="flex flex-col gap-16">
-			<p className="text-12 text-[#9AA7C9]">{t("periodLabel")}: {report.from} – {report.to}</p>
+			<p className="text-12 text-[#8C948B]">{t("periodLabel")}: {report.from} – {report.to}</p>
 			<section className="fs-card overflow-x-auto">
 				<table className="fs-table min-w-[560px]">
 					<thead>
@@ -126,12 +126,12 @@ function SusaView({ period, currency }: { period: PeriodKind; currency: string }
 					</thead>
 					<tbody>
 						{report.rows.length === 0 ? (
-							<tr><td className="px-16 text-13 text-[#9aa7c9]" colSpan={5}>{t("empty")}</td></tr>
+							<tr><td className="px-16 text-13 text-[#8c948b]" colSpan={5}>{t("empty")}</td></tr>
 						) : (
 							report.rows.map((r) => (
 								<tr key={`${r.account}-${r.name}`}>
-									<td className="px-16 text-13 text-[#9aa7c9]">{r.account}</td>
-									<td className="px-10 text-13 font-medium text-[#edf2ff] fs-wrap">{r.name}</td>
+									<td className="px-16 text-13 text-[#8c948b]">{r.account}</td>
+									<td className="px-10 text-13 font-medium text-[#f1f4ee] fs-wrap">{r.name}</td>
 									<td className="px-10 text-right text-13">{fmt(r.debit)}</td>
 									<td className="px-10 text-right text-13">{fmt(r.credit)}</td>
 									<td className="px-10 text-right text-13">{fmt(r.balance)}</td>
@@ -141,9 +141,9 @@ function SusaView({ period, currency }: { period: PeriodKind; currency: string }
 					</tbody>
 					<tfoot>
 						<tr>
-							<td className="border-t border-inkLine px-16 py-12 text-13 font-semibold text-[#c7d3f2]" colSpan={2}>{t("total")}</td>
-							<td className="border-t border-inkLine px-10 py-12 text-right text-13 font-semibold text-[#edf2ff]">{fmt(report.debitTotal)}</td>
-							<td className="border-t border-inkLine px-10 py-12 text-right text-13 font-semibold text-[#edf2ff]">{fmt(report.creditTotal)}</td>
+							<td className="border-t border-inkLine px-16 py-12 text-13 font-semibold text-[#e6eae2]" colSpan={2}>{t("total")}</td>
+							<td className="border-t border-inkLine px-10 py-12 text-right text-13 font-semibold text-[#f1f4ee]">{fmt(report.debitTotal)}</td>
+							<td className="border-t border-inkLine px-10 py-12 text-right text-13 font-semibold text-[#f1f4ee]">{fmt(report.creditTotal)}</td>
 							<td className="border-t border-inkLine" />
 						</tr>
 					</tfoot>
@@ -162,7 +162,7 @@ export default function Reports({ kind }: { kind: "bwa" | "susa" }) {
 	return (
 		<div>
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-x-20 gap-y-10">
-				<h2 className="text-16 font-semibold text-[#edf2ff]">{kind === "bwa" ? t("bwaTitle") : t("susaTitle")}</h2>
+				<h2 className="text-16 font-semibold text-[#f1f4ee]">{kind === "bwa" ? t("bwaTitle") : t("susaTitle")}</h2>
 				<PeriodSwitch value={period} onChange={setPeriod} />
 			</div>
 			{kind === "bwa" ? <BwaView period={period} currency={currency} /> : <SusaView period={period} currency={currency} />}

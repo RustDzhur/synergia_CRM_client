@@ -40,7 +40,7 @@ export default function SuggestInput({ value, onChange, onPick, options, placeho
 				className={`${fieldClass} ${showSearchIcon ? "pr-36" : ""} ${className}`}
 				autoComplete="off"
 			/>
-			{showSearchIcon && <TbSearch size={16} className="pointer-events-none absolute right-11 top-[12px] text-[#9AA7C9]" />}
+			{showSearchIcon && <TbSearch size={16} className="pointer-events-none absolute right-11 top-[12px] text-[#8C948B]" />}
 			<Dropdown open={open && options.length > 0} className="left-0 right-0 top-full mt-6">
 				<ul className="fs-popover fs-scroll max-h-[240px] overflow-y-auto">
 					{options.slice(0, 6).map((o) => (
@@ -53,9 +53,9 @@ export default function SuggestInput({ value, onChange, onPick, options, placeho
 									setOpen(false);
 								}}
 								className="fs-popover-row block w-full px-12 py-8 text-left transition-colors duration-150">
-								<span className="block text-13 font-medium text-[#edf2ff]">{o.title}</span>
+								<span className="block text-13 font-medium text-[#f1f4ee]">{o.title}</span>
 								{o.lines?.filter(Boolean).map((line, i) => (
-									<span key={i} className="block text-12 text-[#9aa7c9]">{line}</span>
+									<span key={i} className="block text-12 text-[#8c948b]">{line}</span>
 								))}
 							</button>
 						</li>

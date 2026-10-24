@@ -43,7 +43,7 @@ export default function CurrentUser({ showAvatar = false }: Props) {
 	};
 
 	if (isLoading) {
-		return <Loader color="#7c93ff" width="50" height="10" radius="9" />;
+		return <Loader color="#c6ff4d" width="50" height="10" radius="9" />;
 	}
 
 	if (!user) return null;
@@ -66,12 +66,12 @@ export default function CurrentUser({ showAvatar = false }: Props) {
 					size={50}
 					className={`${showAvatar ? "flex" : "hidden mp:flex"} mr-10 text-16 shadow-circleShadow`}
 				/>
-				<p className="max-w-[100px] lg:max-w-[130px] truncate text-13 lg:text-14 font-medium text-[#edf2ff] whitespace-nowrap">
+				<p className="max-w-[100px] lg:max-w-[130px] truncate text-13 lg:text-14 font-medium text-[#f1f4ee] whitespace-nowrap">
 					{user.firstname} {user.lastname}
 				</p>
 				<TbChevronDown
 					size={16}
-					className={`ml-6 shrink-0 text-[#9aa7c9] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+					className={`ml-6 shrink-0 text-[#8c948b] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
 				/>
 			</button>
 
@@ -82,21 +82,21 @@ export default function CurrentUser({ showAvatar = false }: Props) {
 				}`}>
 				<div className="fs-popover overflow-hidden">
 					<button type="button" onClick={() => { closeMenu(); openProfile(); }} className={menuItem}>
-						<TbSettings size={17} className="shrink-0 text-[#9aa7c9]" />
+						<TbSettings size={17} className="shrink-0 text-[#8c948b]" />
 						{t("currentUser.settings")}
 					</button>
 					{user.isAdmin && (
 						<>
 							<div className="border-t border-inkLine" />
 							<Link href={`/${locale}/crm/admin`} onClick={closeMenu} className={menuItem}>
-								<TbShieldCog size={17} className="shrink-0 text-[#9aa7c9]" />
+								<TbShieldCog size={17} className="shrink-0 text-[#8c948b]" />
 								{t("adminCabinet")}
 							</Link>
 						</>
 					)}
 					<div className="border-t border-inkLine" />
 					<button type="button" onClick={handleLogout} className={menuItem}>
-						<TbLogout size={17} className="shrink-0 text-[#9aa7c9]" />
+						<TbLogout size={17} className="shrink-0 text-[#8c948b]" />
 						{t("currentUser.logout")}
 					</button>
 				</div>

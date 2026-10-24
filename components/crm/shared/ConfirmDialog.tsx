@@ -20,12 +20,12 @@ export default function ConfirmDialog({ open, title, text, onCancel, onConfirm, 
 		<Modal open={open} onClose={onCancel} label={title} zIndex={80} className="w-full max-w-[400px]">
 			<div className="fs-popover overflow-hidden">
 				<div className="flex items-center justify-between border-b border-inkLine px-16 py-12">
-					<h2 className="text-14 font-semibold text-[#edf2ff]">{title}</h2>
-					<button type="button" onClick={onCancel} aria-label={t("close")} className="text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
+					<h2 className="text-14 font-semibold text-[#f1f4ee]">{title}</h2>
+					<button type="button" onClick={onCancel} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
 						<TbX size={18} />
 					</button>
 				</div>
-				<p className="px-20 pb-20 pt-18 text-center text-13 text-[#9aa7c9]">{text}</p>
+				<p className="px-20 pb-20 pt-18 text-center text-13 text-[#8c948b]">{text}</p>
 				<div className="flex items-center justify-center gap-10 border-t border-inkLine px-16 py-12">
 					<button type="button" onClick={onCancel} className="fs-btn fs-btn-ghost h-36">
 						{t("cancel")}

@@ -54,7 +54,7 @@ export default function SwitchLanguage() {
 				/>
 				<TbChevronDown
 					size={15}
-					className={`text-[#9aa7c9] transition-transform duration-200 ${isOpenDropDown ? "rotate-180" : ""}`}
+					className={`text-[#8c948b] transition-transform duration-200 ${isOpenDropDown ? "rotate-180" : ""}`}
 				/>
 			</button>
 			<Dropdown open={isOpenDropDown} className="left-[-8px] top-full mt-[8px]">

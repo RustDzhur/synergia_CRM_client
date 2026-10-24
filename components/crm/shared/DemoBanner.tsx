@@ -17,10 +17,10 @@ export default function DemoBanner() {
 
 	const leave = (toSignup: boolean) => { logout(); window.location.assign(`/${locale}${toSignup ? "#choose-plan" : ""}`); };
 	return (
-		<div role="status" className="flex flex-wrap items-center justify-center gap-x-16 gap-y-6 border-b border-[rgba(124,147,255,0.35)] bg-[rgba(124,147,255,0.10)] px-16 py-8 text-center text-12 text-[#e6ecdf]">
-			<span><b className="font-semibold text-[#7c93ff]">{t("bannerTitle")}</b> {t("bannerText")}</span>
+		<div role="status" className="flex flex-wrap items-center justify-center gap-x-16 gap-y-6 border-b border-[rgba(198,255,77,0.35)] bg-[rgba(198,255,77,0.10)] px-16 py-8 text-center text-12 text-[#e6ecdf]">
+			<span><b className="font-semibold text-[#c6ff4d]">{t("bannerTitle")}</b> {t("bannerText")}</span>
 			<span className="flex gap-12">
-				<button type="button" onClick={() => leave(true)} className="font-semibold text-[#7c93ff] underline underline-offset-2 hover:opacity-80">{t("bannerRegister")}</button>
+				<button type="button" onClick={() => leave(true)} className="font-semibold text-[#c6ff4d] underline underline-offset-2 hover:opacity-80">{t("bannerRegister")}</button>
 				<button type="button" onClick={() => leave(false)} className="text-[#cfd4cb] underline underline-offset-2 hover:text-white">{t("bannerExit")}</button>
 			</span>
 		</div>

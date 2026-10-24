@@ -5,7 +5,7 @@ import Bot from "./Bot";
 
 // Рабочее место Айрис: светящаяся круглая платформа с кольцами, за спиной — изогнутый голографический экран с диаграммами,
 // впереди — низкая лента с потоком данных. Нажатие — к полю поручения; сюда же можно бросить карточку поручения.
-const LIME = "#7c93ff", TEAL = "#2DDEB6", R2 = Math.SQRT2;
+const LIME = "#c6ff4d", TEAL = "#2DDEB6", R2 = Math.SQRT2;
 
 export default function Hub({ boss, onFocus }: { boss: boolean; onFocus: () => void }) {
 	const [cx, cy] = pt(HUB.x, HUB.y, 0);
@@ -36,7 +36,7 @@ export default function Hub({ boss, onFocus }: { boss: boolean; onFocus: () => v
 			<path d={`M${cx - ell(1.75).rx} ${cy} L${cx - ell(1.75).rx} ${cy - platTop} A${ell(1.75).rx} ${ell(1.75).ry} 0 0 0 ${cx + ell(1.75).rx} ${cy - platTop} L${cx + ell(1.75).rx} ${cy} A${ell(1.75).rx} ${ell(1.75).ry} 0 0 1 ${cx - ell(1.75).rx} ${cy} Z`} fill="#222c26" />
 			<path d={`M${cx - ell(1.75).rx} ${cy - 6} A${ell(1.75).rx} ${ell(1.75).ry} 0 0 0 ${cx + ell(1.75).rx} ${cy - 6}`} fill="none" stroke={LIME} strokeWidth="1.4" strokeOpacity="0.85" filter="url(#f-glow)" />
 			<ellipse {...ell(1.75, platTop)} fill="#2d3a32" stroke={LIME} strokeWidth="2" filter="url(#f-glow)" />
-			<ellipse {...ell(1.2, platTop)} fill="rgba(124,147,255,0.2)" className={boss ? "sc-pulse" : undefined} />
+			<ellipse {...ell(1.2, platTop)} fill="rgba(198,255,77,0.2)" className={boss ? "sc-pulse" : undefined} />
 			<rect x={cx - ell(1.2).rx} y={cy - platTop - 130} width={ell(1.2).rx * 2} height="130" fill="url(#g-beam)" opacity="0.5" style={{ pointerEvents: "none" }} />
 			{/* Айрис */}
 			<g transform={`translate(${cx - 54} ${cy - platTop - 131}) scale(1.35)`}><Bot accent="lime" boss state={boss ? "working" : "idle"} /></g>

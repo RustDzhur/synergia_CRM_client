@@ -28,17 +28,17 @@ export default function PartnerLanding({ code }: { code: string }) {
 		} catch { /* приватный режим: код можно ввести позже в бухгалтерии */ }
 	}
 
-	if (info === undefined) return <main className="flex min-h-screen items-center justify-center bg-[#0a0a0a] text-13 text-[#9aa7c9]">…</main>;
+	if (info === undefined) return <main className="flex min-h-screen items-center justify-center bg-[#0a0a0a] text-13 text-[#8c948b]">…</main>;
 	if (info === null) return (
 		<main className="flex min-h-screen items-center justify-center bg-[#0a0a0a] px-20 text-center">
-			<div className="max-w-[420px]"><h1 className="text-18 font-semibold text-[#edf2ff]">{t("goneTitle")}</h1><p className="mt-10 text-13 text-[#9aa7c9]">{t("goneText")}</p></div>
+			<div className="max-w-[420px]"><h1 className="text-18 font-semibold text-[#f1f4ee]">{t("goneTitle")}</h1><p className="mt-10 text-13 text-[#8c948b]">{t("goneText")}</p></div>
 		</main>
 	);
 	return (
 		<main className="flex min-h-screen items-center justify-center bg-[#0a0a0a] px-20">
 			<div className="fs-card w-full max-w-[520px] p-24">
-				<h1 className="text-20 font-semibold text-[#edf2ff]">{t("landingTitle", { bank: info.name })}</h1>
-				<p className="mt-10 text-13 leading-[1.6] text-[#9aa7c9]">{t("landingText", { bank: info.name })}</p>
+				<h1 className="text-20 font-semibold text-[#f1f4ee]">{t("landingTitle", { bank: info.name })}</h1>
+				<p className="mt-10 text-13 leading-[1.6] text-[#8c948b]">{t("landingText", { bank: info.name })}</p>
 				<ul className="mt-14 list-disc pl-18 text-13 leading-[1.7] text-[#cfd4cb]">
 					<li>{t("landingPoint1", { bank: info.name })}</li>
 					<li>{t("landingPoint2")}</li>

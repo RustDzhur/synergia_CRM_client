@@ -26,7 +26,7 @@ export default function RecurringCard({ deal, editing, value, onChange, onToggle
 				{editing ? (
 					<>
 						<label className="block">
-							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("recurringDeal")}</span>
+							<span className="mb-6 block text-12 text-[#8c948b]">{t("recurringDeal")}</span>
 							<select value={value} onChange={(e) => onChange(e.target.value)} className={fieldClass}>
 								{Object.entries(labels).map(([key, label]) => (
 									<option key={key} value={key}>{label}</option>

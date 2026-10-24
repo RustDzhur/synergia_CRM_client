@@ -12,7 +12,7 @@ const PROVIDERS: Provider[] = [
 	{ id: "yahoo", label: "Yahoo", logo: YAHOO },
 	{ id: "icloud", label: "iCloud", logo: <SiIcloud size={42} color="#3D9EEE" /> },
 	{ id: "office365", label: "Office 365", logo: <SiMicrosoftoffice size={42} color="#D83B01" /> },
-	{ id: "imap", label: "IMAP", logo: <span className="font-serif text-14 tracking-[1px] text-[#9aa7c9]">IMAP</span> },
+	{ id: "imap", label: "IMAP", logo: <span className="font-serif text-14 tracking-[1px] text-[#8c948b]">IMAP</span> },
 ];
 
 // Плитки почтовых сервисов: выбор, куда подключать ящик
@@ -26,7 +26,7 @@ export default function ProviderGrid({ onPick }: { onPick: (id: MailProviderId) 
 						onClick={() => onPick(p.id)}
 						className="fs-card flex h-[124px] w-full flex-col items-center justify-center gap-12 transition-transform duration-200 hover:-translate-y-2 md:h-[92px] md:gap-6 lg:h-[112px] lg:gap-10">
 						<span className="flex h-[52px] items-center md:h-[36px] md:scale-[0.65] lg:h-[52px] lg:scale-90">{p.logo}</span>
-						<span className="text-13 text-[#9aa7c9] lg:text-14">{p.label}</span>
+						<span className="text-13 text-[#8c948b] lg:text-14">{p.label}</span>
 					</button>
 				</li>
 			))}

@@ -67,16 +67,16 @@ export default function AgentsCard() {
 
 	return (
 		<div className="fs-card mb-20 p-16">
-			<p className="text-14 font-medium text-[#edf2ff]">{t("agentsTitle")}</p>
-			<p className="mt-4 max-w-[720px] text-12 leading-[1.5] text-[#9aa7c9]">{t("agentsHelp")}</p>
+			<p className="text-14 font-medium text-[#f1f4ee]">{t("agentsTitle")}</p>
+			<p className="mt-4 max-w-[720px] text-12 leading-[1.5] text-[#8c948b]">{t("agentsHelp")}</p>
 
 			{agents.length > 0 && (
 				<ul className="mt-12 flex flex-col gap-8">
 					{agents.map((a) => (
 						<li key={a.id} className="flex flex-wrap items-center justify-between gap-10 rounded-10 border border-inkLine px-12 py-10">
 							<div className="min-w-0">
-								<p className="text-13 text-[#edf2ff]">{a.name} <span className="ml-6 text-11 text-[#7c93ff]">{a.scopes.map((s) => t(`agentScope_${s}`)).join(", ")}</span></p>
-								<p className="text-11 text-[#9aa7c9]">{t("agentsCreated")}: {a.createdAt.slice(0, 10)} · {t("agentsLastUsed")}: {a.lastUsedAt ? a.lastUsedAt.slice(0, 16).replace("T", " ") : "—"}</p>
+								<p className="text-13 text-[#f1f4ee]">{a.name} <span className="ml-6 text-11 text-[#c6ff4d]">{a.scopes.map((s) => t(`agentScope_${s}`)).join(", ")}</span></p>
+								<p className="text-11 text-[#8c948b]">{t("agentsCreated")}: {a.createdAt.slice(0, 10)} · {t("agentsLastUsed")}: {a.lastUsedAt ? a.lastUsedAt.slice(0, 16).replace("T", " ") : "—"}</p>
 							</div>
 							<div className="flex gap-8">
 								<button type="button" onClick={() => rotate(a)} className="fs-btn fs-btn-ghost h-30 px-12 text-12">{t("agentsRotate")}</button>
@@ -88,19 +88,19 @@ export default function AgentsCard() {
 			)}
 
 			{fresh && (
-				<div className="mt-12 rounded-10 border border-[rgba(124,147,255,0.4)] bg-[rgba(124,147,255,0.06)] p-12">
+				<div className="mt-12 rounded-10 border border-[rgba(198,255,77,0.4)] bg-[rgba(198,255,77,0.06)] p-12">
 					{fresh.delivered ? (
 						<>
-							<p className="text-12 text-[#edf2ff]">{t("agentsDelivered", { name: fresh.name })}</p>
-							<code className="mt-6 block break-all rounded-8 bg-[rgba(0,0,0,0.35)] p-8 text-12 text-[#7c93ff]">{fresh.file}</code>
+							<p className="text-12 text-[#f1f4ee]">{t("agentsDelivered", { name: fresh.name })}</p>
+							<code className="mt-6 block break-all rounded-8 bg-[rgba(0,0,0,0.35)] p-8 text-12 text-[#c6ff4d]">{fresh.file}</code>
 						</>
 					) : (
 						<>
-							<p className="text-12 text-[#edf2ff]">{t("agentsToken", { name: fresh.name })}</p>
-							<code className="mt-6 block break-all rounded-8 bg-[rgba(0,0,0,0.35)] p-8 text-12 text-[#7c93ff]">{fresh.token}</code>
+							<p className="text-12 text-[#f1f4ee]">{t("agentsToken", { name: fresh.name })}</p>
+							<code className="mt-6 block break-all rounded-8 bg-[rgba(0,0,0,0.35)] p-8 text-12 text-[#c6ff4d]">{fresh.token}</code>
 						</>
 					)}
-					<p className="mt-6 text-11 text-[#9aa7c9]">API: {api} · docs/AGENTS.md</p>
+					<p className="mt-6 text-11 text-[#8c948b]">API: {api} · docs/AGENTS.md</p>
 					<div className="mt-8 flex gap-8">
 						<button type="button" onClick={() => { void navigator.clipboard?.writeText(forAgent(fresh)); toast.success(t("agentsCopied")); }} className="fs-btn fs-btn-primary h-30 px-12 text-12">{t("agentsCopyForAgent")}</button>
 						{!fresh.delivered && <button type="button" onClick={() => { void navigator.clipboard?.writeText(fresh.token); toast.success(t("agentsCopied")); }} className="fs-btn fs-btn-ghost h-30 px-12 text-12">{t("agentsCopy")}</button>}
@@ -111,13 +111,13 @@ export default function AgentsCard() {
 
 			<div className="mt-12 flex flex-wrap items-end gap-12">
 				<label className="flex min-w-[220px] flex-1 flex-col gap-6">
-					<span className="text-11 text-[#9aa7c9]">{t("agentsName")}</span>
+					<span className="text-11 text-[#8c948b]">{t("agentsName")}</span>
 					<input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder={t("agentsNamePh")} className="fs-field h-40 w-full px-12 text-13 outline-none" />
 				</label>
 				<div className="flex flex-wrap items-center gap-12 pb-10">
 					{scopes.map((s) => (
 						<label key={s} className="flex cursor-pointer items-center gap-6 text-12 text-[#cfd4cb]">
-							<input type="checkbox" checked={picked.includes(s)} onChange={(e) => setPicked((p) => (e.target.checked ? [...p, s] : p.filter((x) => x !== s)))} className="h-14 w-14 accent-[#7c93ff]" />
+							<input type="checkbox" checked={picked.includes(s)} onChange={(e) => setPicked((p) => (e.target.checked ? [...p, s] : p.filter((x) => x !== s)))} className="h-14 w-14 accent-[#c6ff4d]" />
 							{t(`agentScope_${s}`)}
 						</label>
 					))}

@@ -31,24 +31,24 @@ export default function BossCard() {
 				<div className="flex items-center gap-14">
 					<RobotAvatar accent="lime" size={72} boss state={working ? "working" : "idle"} />
 					<div className="min-w-0">
-						<p className="text-16 font-semibold text-[#edf2ff]">{locale === "ua" ? "Айрис" : "Ayris"}</p>
-						<p className="text-12 text-[#9aa7c9]">{t("bossRole")}</p>
-						<p className="mt-4 text-11 font-medium" style={{ color: working ? "#7c93ff" : "#9aa7c9" }}>{working ? t("st_running") : t("st_idle")}</p>
+						<p className="text-16 font-semibold text-[#f1f4ee]">{locale === "ua" ? "Айрис" : "Ayris"}</p>
+						<p className="text-12 text-[#8c948b]">{t("bossRole")}</p>
+						<p className="mt-4 text-11 font-medium" style={{ color: working ? "#c6ff4d" : "#8c948b" }}>{working ? t("st_running") : t("st_idle")}</p>
 					</div>
 				</div>
 				<div className="min-w-0 flex-1">
-					<p className="mb-6 text-12 text-[#9aa7c9]">{t("bossHint")}</p>
+					<p className="mb-6 text-12 text-[#8c948b]">{t("bossHint")}</p>
 					{canEdit ? (
 						<div className="flex flex-col gap-8">
 							<textarea id="boss-input" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); } }} rows={2} maxLength={4000} disabled={!ai || robots.length === 0} placeholder={t("bossPlaceholder")} aria-label={tn("automation")} className="fs-field fs-scroll min-h-[56px] flex-1 resize-none p-10 text-13 outline-none disabled:opacity-60" />
 							<button type="button" onClick={() => void send()} disabled={busy || !text.trim() || !ai || robots.length === 0} className="fs-btn fs-btn-primary h-40 w-full shrink-0 px-18 disabled:opacity-50">{busy ? "…" : t("send")}</button>
 						</div>
-					) : <p className="text-12 text-[#9aa7c9]">{t("readOnly")}</p>}
+					) : <p className="text-12 text-[#8c948b]">{t("readOnly")}</p>}
 					{!ai && <p className="mt-8 text-12 text-[#F4A100]">{t("notConfigured")}</p>}
 				</div>
 			</div>
 			<div className="mt-14 flex flex-wrap gap-8 border-t border-inkLine pt-12">
-				<span className="fs-chip" style={{ color: n("work") ? "#7c93ff" : undefined }}>{t("statWorking", { n: n("work") })}</span>
+				<span className="fs-chip" style={{ color: n("work") ? "#c6ff4d" : undefined }}>{t("statWorking", { n: n("work") })}</span>
 				<span className="fs-chip" style={{ color: n("waiting") ? "#F4A100" : undefined }}>{t("statWaiting", { n: n("waiting") })}</span>
 				<span className="fs-chip">{t("statDone", { n: n("done") })}</span>
 			</div>

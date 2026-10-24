@@ -16,10 +16,10 @@ export default function SignupTabs({ active, onChange, label }: Props) {
 					key={key}
 					onClick={() => onChange(key)}
 					className={`${
-						active === key ? "bg-authBtn text-[#0A0A0A]" : "text-[#7c93ff]"
+						active === key ? "bg-authBtn text-[#0A0A0A]" : "text-[#c6ff4d]"
 					} border border-authTabBtn px-20 py-14 rounded-8 flex items-center`}>
 					<div className="mr-8">
-						<IconContext.Provider value={{ size: "22px", color: active === key ? "#0A0A0A" : "#7c93ff" }}>
+						<IconContext.Provider value={{ size: "22px", color: active === key ? "#0A0A0A" : "#c6ff4d" }}>
 							<Icon />
 						</IconContext.Provider>
 					</div>

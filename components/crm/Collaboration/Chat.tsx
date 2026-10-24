@@ -158,7 +158,7 @@ export default function Chat() {
 		useCallStore.getState().startCall(active.externalId);
 	}
 
-	const iconButton = "text-[#9aa7c9] transition-colors hover:text-[#7c93ff]";
+	const iconButton = "text-[#8c948b] transition-colors hover:text-[#c6ff4d]";
 
 	if (loaded && chats.length === 0) return <ChatEmpty />;
 
@@ -173,7 +173,7 @@ export default function Chat() {
 			<section
 				className={`${view === "chat" ? "flex" : "hidden"} min-w-0 flex-1 flex-col md:flex md:overflow-hidden md:fs-card lg:ml-20`}>
 				{!active ? (
-					<p className="m-auto p-30 text-13 text-[#9aa7c9]">{t("chatsEmpty")}</p>
+					<p className="m-auto p-30 text-13 text-[#8c948b]">{t("chatsEmpty")}</p>
 				) : (
 					<>
 						<header className="flex items-center justify-between gap-12 border-b border-inkLine px-16 py-12 md:px-20">
@@ -181,7 +181,7 @@ export default function Chat() {
 								<button type="button" onClick={() => setView("list")} aria-label={t("back")} className={`${iconButton} md:hidden`}>
 									<TbArrowLeft size={20} />
 								</button>
-								<h2 className="truncate text-14 font-semibold text-[#edf2ff]">{active.name}</h2>
+								<h2 className="truncate text-14 font-semibold text-[#f1f4ee]">{active.name}</h2>
 								<ChannelBadge channel={active.channel} size={18} />
 							</div>
 							<div ref={menuRef} className="relative flex items-center gap-16">
@@ -216,9 +216,9 @@ export default function Chat() {
 									const mine = m.direction === "out";
 									return (
 										<div key={m.id} className={`flex animate-fade-in flex-col ${mine ? "items-end" : "items-start"}`}>
-											<p className="mb-6 text-12 font-medium text-[#9aa7c9]">
+											<p className="mb-6 text-12 font-medium text-[#8c948b]">
 												{mine ? t("you") : active.name}{" "}
-												<span className="ml-6 text-11 font-normal text-[#9AA7C9]">{hhmm(new Date(m.at))}</span>
+												<span className="ml-6 text-11 font-normal text-[#8C948B]">{hhmm(new Date(m.at))}</span>
 											</p>
 											{m.attachment && (
 												<AttachmentView a={m.attachment} url={attachmentUrls[m.id]} mine={mine} />
@@ -226,7 +226,7 @@ export default function Chat() {
 											{m.text && (
 												<p
 													className={`max-w-[85%] whitespace-pre-wrap break-words rounded-14 px-16 py-10 text-13 md:text-13 ${
-														mine ? "bg-[rgba(124,147,255,0.14)] text-[#edf2ff]" : "bg-[rgba(255,255,255,0.05)] text-[#edf2ff]"
+														mine ? "bg-[rgba(198,255,77,0.14)] text-[#f1f4ee]" : "bg-[rgba(255,255,255,0.05)] text-[#f1f4ee]"
 													} ${m.attachment ? "mt-8" : ""}`}>
 													{m.text}
 												</p>
@@ -239,7 +239,7 @@ export default function Chat() {
 						</div>
 
 						{active.channel === "sip" ? (
-							<footer className="flex h-[56px] items-center border-t border-inkLine px-16 text-12 text-[#9aa7c9] md:px-20">{t("callsOnly")}</footer>
+							<footer className="flex h-[56px] items-center border-t border-inkLine px-16 text-12 text-[#8c948b] md:px-20">{t("callsOnly")}</footer>
 						) : (
 						<footer className="flex items-center gap-12 border-t border-inkLine px-16 md:px-20">
 							<input
@@ -249,7 +249,7 @@ export default function Chat() {
 								placeholder={t("writeMessage")}
 								aria-label={t("writeMessage")}
 								maxLength={2000}
-								className="h-[56px] w-full bg-transparent text-13 text-[#edf2ff] outline-none placeholder:text-[#9AA7C9]"
+								className="h-[56px] w-full bg-transparent text-13 text-[#f1f4ee] outline-none placeholder:text-[#8C948B]"
 							/>
 							{active && MEDIA_CHANNELS.includes(active.channel) && (
 								<>
@@ -260,7 +260,7 @@ export default function Chat() {
 										disabled={sending}
 										aria-label={recording ? t("stopRecording") : t("recordVoice")}
 										aria-pressed={recording}
-										className={`shrink-0 transition-colors ${recording ? "animate-pulse text-danger" : "text-[#9AA7C9] hover:text-[#7c93ff]"}`}>
+										className={`shrink-0 transition-colors ${recording ? "animate-pulse text-danger" : "text-[#8C948B] hover:text-[#c6ff4d]"}`}>
 										{recording ? <TbPlayerStop size={20} /> : <TbMicrophone size={20} />}
 									</button>
 									<input
@@ -275,7 +275,7 @@ export default function Chat() {
 										onClick={() => fileRef.current?.click()}
 										disabled={sending}
 										aria-label={t("attach")}
-										className="shrink-0 text-[#9AA7C9] transition-colors hover:text-[#7c93ff] disabled:opacity-50">
+										className="shrink-0 text-[#8C948B] transition-colors hover:text-[#c6ff4d] disabled:opacity-50">
 										<TbPaperclip size={20} />
 									</button>
 								</>

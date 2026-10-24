@@ -50,21 +50,21 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 	const removeRoutine = (id: string) => void update(robot.id, { routines: robot.routines.filter((r) => r.id !== id).map((r) => ({ id: r.id, text: r.text, kind: r.kind, time: r.time, ...(r.day !== undefined ? { day: r.day } : {}) })) as never });
 	const routineLabel = (r: Routine) => `${t(`k_${r.kind}`)}${r.kind === "weekly" ? ` · ${t(`wd${r.day ?? 1}`)}` : r.kind === "monthly" ? ` · ${r.day ?? 1}` : ""} · ${r.time}`;
 
-	const head = "mb-8 text-11 font-semibold uppercase tracking-[0.06em] text-[#9aa7c9]";
-	const seg = (on: boolean) => `flex-1 rounded-8 border px-10 py-8 text-12 font-medium transition-colors disabled:opacity-60 ${on ? "border-[#7c93ff] bg-[rgba(124,147,255,0.08)] text-[#edf2ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`;
+	const head = "mb-8 text-11 font-semibold uppercase tracking-[0.06em] text-[#8c948b]";
+	const seg = (on: boolean) => `flex-1 rounded-8 border px-10 py-8 text-12 font-medium transition-colors disabled:opacity-60 ${on ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.08)] text-[#f1f4ee]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`;
 
 	return (
 		<div className="fs-card p-16">
 			<div className="flex items-start gap-12">
 				<RobotAvatar accent={robot.accent} size={60} state={view.state} />
 				<div className="min-w-0 flex-1">
-					<p className="truncate text-16 font-semibold text-[#edf2ff]">{robot.name}</p>
-					<p className="truncate text-12 text-[#9aa7c9]">{title || "—"}</p>
-					<p className="mt-4 text-12 font-medium" style={{ color: view.state === "working" ? "#7c93ff" : view.state === "waiting" ? "#F4A100" : view.state === "failed" ? "#EB5757" : "#9aa7c9" }}>
+					<p className="truncate text-16 font-semibold text-[#f1f4ee]">{robot.name}</p>
+					<p className="truncate text-12 text-[#8c948b]">{title || "—"}</p>
+					<p className="mt-4 text-12 font-medium" style={{ color: view.state === "working" ? "#c6ff4d" : view.state === "waiting" ? "#F4A100" : view.state === "failed" ? "#EB5757" : "#8c948b" }}>
 						{view.state === "off" ? t("off") : view.state === "working" ? t("st_running") : view.state === "waiting" ? t("st_waiting") : view.state === "failed" ? t("st_failed") : t("st_idle")}
 					</p>
 				</div>
-				<button type="button" onClick={onClose} aria-label={t("close")} className="text-[#9aa7c9] hover:text-[#edf2ff]"><TbX size={18} /></button>
+				<button type="button" onClick={onClose} aria-label={t("close")} className="text-[#8c948b] hover:text-[#f1f4ee]"><TbX size={18} /></button>
 			</div>
 
 			{canEdit && (
@@ -79,18 +79,18 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 				<div className="mt-18">
 					<span className="fs-chip" style={{ color: platform?.errors.telegram ? "#2DDEB6" : "#F4A100" }}>{platform?.errors.telegram ? t("monTgOn") : t("monTgOff")}</span>
 					<p className={`${head} mt-14`}>{t("monErrTitle")}</p>
-					 {(platform?.errors.items ?? []).length === 0 ? <p className="text-12 text-[#9aa7c9]">{t("monErrNone")}</p> : (
-						<ul className="flex flex-col gap-6">{platform!.errors.items.slice(0, 6).map((e, i) => <li key={i} className="rounded-8 border border-inkLine px-10 py-8"><p className="text-12 text-[#edf2ff]">{e.title}{e.count > 1 ? ` ×${e.count}` : ""}</p><p className="mt-2 text-11 text-[#9aa7c9]">{clock(e.at)}</p></li>)}</ul>
+					 {(platform?.errors.items ?? []).length === 0 ? <p className="text-12 text-[#8c948b]">{t("monErrNone")}</p> : (
+						<ul className="flex flex-col gap-6">{platform!.errors.items.slice(0, 6).map((e, i) => <li key={i} className="rounded-8 border border-inkLine px-10 py-8"><p className="text-12 text-[#f1f4ee]">{e.title}{e.count > 1 ? ` ×${e.count}` : ""}</p><p className="mt-2 text-11 text-[#8c948b]">{clock(e.at)}</p></li>)}</ul>
 					)}
-					<p className="mt-12 text-11 text-[#9aa7c9]">{t("monErrHint")}</p>
+					<p className="mt-12 text-11 text-[#8c948b]">{t("monErrHint")}</p>
 				</div>
 			)}
 			{monitor && robot.template === "p_seo" && (
 				<div className="mt-18">
 					<p className={head}>{t("monSeoTitle")}</p>
-					<p className="text-13 font-medium" style={{ color: view.state === "working" ? "#7c93ff" : "#9aa7c9" }}>{view.state === "working" ? t("monSeoActive") : platform?.agents["seo-agent"] ? t("monSeoLast", { time: clock(platform.agents["seo-agent"]!.lastActivity) || "—" }) : t("monSeoNone")}</p>
+					<p className="text-13 font-medium" style={{ color: view.state === "working" ? "#c6ff4d" : "#8c948b" }}>{view.state === "working" ? t("monSeoActive") : platform?.agents["seo-agent"] ? t("monSeoLast", { time: clock(platform.agents["seo-agent"]!.lastActivity) || "—" }) : t("monSeoNone")}</p>
 					{view.monitor?.text && <p className="mt-6 rounded-8 border border-inkLine px-10 py-8 text-12 text-[#cfd4cb]">{view.monitor.text}</p>}
-					<p className="mt-12 text-11 text-[#9aa7c9]">{t("monSeoHint")}</p>
+					<p className="mt-12 text-11 text-[#8c948b]">{t("monSeoHint")}</p>
 				</div>
 			)}
 
@@ -103,7 +103,7 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 						<div className="mt-10">
 							<p className={head}>{t("tryTitle")}</p>
 							<div className="flex flex-col gap-6">
-								{quick.map((q) => <button key={q} type="button" disabled={busy || !ai} onClick={() => void send(q)} className="rounded-8 border border-inkLine px-10 py-7 text-left text-12 text-[#cfd4cb] transition-colors hover:border-[rgba(124,147,255,0.45)] hover:text-[#edf2ff] disabled:opacity-50">{q}</button>)}
+								{quick.map((q) => <button key={q} type="button" disabled={busy || !ai} onClick={() => void send(q)} className="rounded-8 border border-inkLine px-10 py-7 text-left text-12 text-[#cfd4cb] transition-colors hover:border-[rgba(198,255,77,0.45)] hover:text-[#f1f4ee] disabled:opacity-50">{q}</button>)}
 							</div>
 						</div>
 					)}
@@ -117,7 +117,7 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 					<button type="button" role="radio" aria-checked={robot.autonomy === "ask"} disabled={!canEdit} onClick={() => void update(robot.id, { autonomy: "ask" })} className={seg(robot.autonomy === "ask")}>{t("autonomyAsk")}</button>
 					<button type="button" role="radio" aria-checked={robot.autonomy === "auto"} disabled={!canEdit} onClick={() => void update(robot.id, { autonomy: "auto" })} className={seg(robot.autonomy === "auto")}>{t("autonomyAuto")}</button>
 				</div>
-				<p className="mt-6 text-11 text-[#9aa7c9]">{t("autonomyHint")}</p>
+				<p className="mt-6 text-11 text-[#8c948b]">{t("autonomyHint")}</p>
 			</div>
 
 			<div className="mt-18">
@@ -127,15 +127,15 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 
 			<div className="mt-18">
 				<div className="mb-8 flex items-center justify-between">
-					<p className="text-11 font-semibold uppercase tracking-[0.06em] text-[#9aa7c9]">{t("routinesTitle")}</p>
-					{canEdit && !adding && <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-4 text-12 text-[#7c93ff] hover:opacity-80"><TbPlus size={13} aria-hidden />{t("addRoutine")}</button>}
+					<p className="text-11 font-semibold uppercase tracking-[0.06em] text-[#8c948b]">{t("routinesTitle")}</p>
+					{canEdit && !adding && <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-4 text-12 text-[#c6ff4d] hover:opacity-80"><TbPlus size={13} aria-hidden />{t("addRoutine")}</button>}
 				</div>
-				{robot.routines.length === 0 && !adding && <p className="text-12 text-[#9aa7c9]">{t("routinesEmpty")}</p>}
+				{robot.routines.length === 0 && !adding && <p className="text-12 text-[#8c948b]">{t("routinesEmpty")}</p>}
 				<ul className="flex flex-col gap-6">
 					{robot.routines.map((r) => (
 						<li key={r.id} className="flex items-start gap-8 rounded-8 border border-inkLine px-10 py-8">
-							<div className="min-w-0 flex-1"><p className="text-12 text-[#edf2ff]">{r.text}</p><p className="mt-2 text-11 text-[#9aa7c9]">{routineLabel(r)}</p></div>
-							{canEdit && <button type="button" onClick={() => removeRoutine(r.id)} aria-label={t("dismiss")} className="text-[#9aa7c9] hover:text-[#EB5757]"><TbX size={14} /></button>}
+							<div className="min-w-0 flex-1"><p className="text-12 text-[#f1f4ee]">{r.text}</p><p className="mt-2 text-11 text-[#8c948b]">{routineLabel(r)}</p></div>
+							{canEdit && <button type="button" onClick={() => removeRoutine(r.id)} aria-label={t("dismiss")} className="text-[#8c948b] hover:text-[#EB5757]"><TbX size={14} /></button>}
 						</li>
 					))}
 				</ul>
@@ -146,7 +146,7 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 							<select value={rt.kind} onChange={(e) => setRt({ ...rt, kind: e.target.value as Routine["kind"] })} aria-label={t("routineKind")} className="fs-field h-34 px-8 text-12 outline-none">{KINDS.map((k) => <option key={k} value={k}>{t(`k_${k}`)}</option>)}</select>
 							{rt.kind === "weekly" && <select value={rt.day} onChange={(e) => setRt({ ...rt, day: Number(e.target.value) })} aria-label={t("routineDay")} className="fs-field h-34 px-8 text-12 outline-none">{[1, 2, 3, 4, 5, 6, 0].map((d) => <option key={d} value={d}>{t(`wd${d}`)}</option>)}</select>}
 							{rt.kind === "monthly" && <select value={rt.day} onChange={(e) => setRt({ ...rt, day: Number(e.target.value) })} aria-label={t("routineDay")} className="fs-field h-34 px-8 text-12 outline-none">{Array.from({ length: 28 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d}</option>)}</select>}
-							<span className="text-12 text-[#9aa7c9]">{t("routineTime")}</span>
+							<span className="text-12 text-[#8c948b]">{t("routineTime")}</span>
 							<input type="time" value={rt.time} onChange={(e) => setRt({ ...rt, time: e.target.value })} className="fs-field h-34 px-8 text-12 outline-none" />
 						</div>
 						<div className="flex justify-end gap-8">
@@ -159,14 +159,14 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 
 			<div className="mt-18">
 				<p className={head}>{t("history")}</p>
-				{mine.length === 0 ? <p className="text-12 text-[#9aa7c9]">{t("noHistory")}</p> : <ul className="flex flex-col gap-8">{mine.map((x) => <TaskItem key={x.id} task={x} compact />)}</ul>}
+				{mine.length === 0 ? <p className="text-12 text-[#8c948b]">{t("noHistory")}</p> : <ul className="flex flex-col gap-8">{mine.map((x) => <TaskItem key={x.id} task={x} compact />)}</ul>}
 			</div>
 
 			</>}
 
 			<Modal open={editing} onClose={() => setEditing(false)} label={t("edit")} align="top" className="w-full max-w-[640px]" flushOnMobile>
 				<div className="fs-popover fs-scroll max-h-[92vh] overflow-y-auto p-18 md:p-24">
-					<h2 className="mb-14 text-18 font-semibold text-[#edf2ff]">{t("edit")}</h2>
+					<h2 className="mb-14 text-18 font-semibold text-[#f1f4ee]">{t("edit")}</h2>
 					<RobotForm robot={robot} submitLabel={t("save")} onCancel={() => setEditing(false)} onSubmit={async (input) => { if (await update(robot.id, input)) setEditing(false); }} />
 				</div>
 			</Modal>

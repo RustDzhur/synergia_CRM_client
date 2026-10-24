@@ -20,8 +20,8 @@ export default function CallEntry({ m }: { m: MessageDTO }) {
 		label = done ? t("callLogOut", { duration: mmss(duration) }) : status === "no-answer" ? t("callLogNoAnswer") : status === "busy" ? t("callLogBusy") : t("callLogFailed");
 	}
 	return (
-		<div className="flex animate-fade-in items-center justify-center gap-8 text-12 text-[#9aa7c9]">
-			<Icon size={16} className={done ? "text-[#7c93ff]" : "text-danger"} />
+		<div className="flex animate-fade-in items-center justify-center gap-8 text-12 text-[#8c948b]">
+			<Icon size={16} className={done ? "text-[#c6ff4d]" : "text-danger"} />
 			<span>{label}</span>
 			<span>{hhmm(new Date(m.at))}</span>
 		</div>

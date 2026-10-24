@@ -35,14 +35,14 @@ export default function DayEvents({ selected }: Props) {
 	return (
 		<section className="fs-card p-16 md:p-20">
 			<div className="mb-14 flex items-center justify-between gap-12">
-				<h2 className="text-16 font-semibold text-[#edf2ff]">{t("eventsTitle")}</h2>
-				<Link href={`/${locale}/crm/collaboration/calendar`} className="text-12 text-[#9aa7c9] transition-colors hover:text-[#7c93ff]">
+				<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("eventsTitle")}</h2>
+				<Link href={`/${locale}/crm/collaboration/calendar`} className="text-12 text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
 					{t("openCalendar")}
 				</Link>
 			</div>
 
 			{visible.length === 0 ? (
-				<p className="rounded-14 border border-dashed border-[rgba(255,255,255,0.12)] p-20 text-center text-13 text-[#9aa7c9]">
+				<p className="rounded-14 border border-dashed border-[rgba(255,255,255,0.12)] p-20 text-center text-13 text-[#8c948b]">
 					{eventsLoading ? "…" : t("noEvents")}
 				</p>
 			) : (
@@ -56,10 +56,10 @@ export default function DayEvents({ selected }: Props) {
 								<span className="mt-3 h-10 w-10 shrink-0 rounded-50" style={{ background: e.color }} aria-hidden />
 								<span className="min-w-0 flex-1">
 									<span className="flex items-baseline gap-8">
-										<span className="shrink-0 text-12 font-medium text-[#7c93ff]">{e.startTime}</span>
-										<span className="min-w-0 truncate text-13 text-[#edf2ff]">{e.title}</span>
+										<span className="shrink-0 text-12 font-medium text-[#c6ff4d]">{e.startTime}</span>
+										<span className="min-w-0 truncate text-13 text-[#f1f4ee]">{e.title}</span>
 									</span>
-									{e.location && <span className="mt-2 block truncate text-12 text-[#9aa7c9]">{e.location}</span>}
+									{e.location && <span className="mt-2 block truncate text-12 text-[#8c948b]">{e.location}</span>}
 								</span>
 							</button>
 						</li>

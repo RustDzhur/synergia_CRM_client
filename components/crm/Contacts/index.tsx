@@ -34,10 +34,10 @@ export default function Contacts({ search }: { search: string }) {
             key: "name", header: t("name"), align: "left", width: "24%",
             render: (c) => (
                 <span className="flex items-center gap-12">
-                    <span className="flex h-32 w-32 shrink-0 items-center justify-center rounded-50 bg-[rgba(124,147,255,0.14)] text-12 font-semibold text-[#7c93ff]">
+                    <span className="flex h-32 w-32 shrink-0 items-center justify-center rounded-50 bg-[rgba(198,255,77,0.14)] text-12 font-semibold text-[#c6ff4d]">
                         {initials(c.name)}
                     </span>
-                    <span className="truncate text-14 font-medium text-[#edf2ff]">{c.name}</span>
+                    <span className="truncate text-14 font-medium text-[#f1f4ee]">{c.name}</span>
                 </span>
             ),
         },

@@ -49,7 +49,7 @@ function ActionCard({ message, action }: { message: AiMessage; action: AiAction 
 	const done = action.state === "done";
 
 	return (
-		<div className={`mt-10 rounded-12 border p-14 ${done ? "border-[rgba(124,147,255,0.28)] bg-[rgba(124,147,255,0.06)]" : action.state === "failed" ? "border-[rgba(235,87,87,0.30)] bg-[rgba(235,87,87,0.07)]" : "border-inkLine bg-[rgba(255,255,255,0.02)]"} ${action.state === "cancelled" ? "opacity-[0.6]" : ""}`}>
+		<div className={`mt-10 rounded-12 border p-14 ${done ? "border-[rgba(198,255,77,0.28)] bg-[rgba(198,255,77,0.06)]" : action.state === "failed" ? "border-[rgba(235,87,87,0.30)] bg-[rgba(235,87,87,0.07)]" : "border-inkLine bg-[rgba(255,255,255,0.02)]"} ${action.state === "cancelled" ? "opacity-[0.6]" : ""}`}>
 			<p className="flex items-center gap-8 text-16 font-medium text-[#334A74]">
 				<MdAutoAwesome size={18} className="shrink-0 text-primaryColor" aria-hidden />
 				{t(`act_${action.tool}`)}{action.target ? `: ${action.target}` : ""}
@@ -57,7 +57,7 @@ function ActionCard({ message, action }: { message: AiMessage; action: AiAction 
 			<dl className="mt-10 grid gap-x-12 gap-y-6 text-14 md:grid-cols-[auto_minmax(0,1fr)]">
 				{fields.map(([k, v]) => (
 					<React.Fragment key={k}>
-						<dt className="text-[#9aa7c9]">{t(`f_${k}`)}</dt>
+						<dt className="text-[#8c948b]">{t(`f_${k}`)}</dt>
 						<dd className="min-w-0 break-words text-[#cfd4cb]">
 							{editable.includes(k) && action.state === "pending" ? (
 								k === "body" ? (
@@ -80,7 +80,7 @@ function ActionCard({ message, action }: { message: AiMessage; action: AiAction 
 					<button type="button" disabled={action.state === "running"} onClick={() => cancel(message.id, action.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]">{t("cancel")}</button>
 				</div>
 			) : (
-				<p className={`mt-12 flex flex-wrap items-center gap-8 text-14 ${done ? "text-[#0A8A2E]" : action.state === "failed" ? "text-danger" : "text-[#9aa7c9]"}`}>
+				<p className={`mt-12 flex flex-wrap items-center gap-8 text-14 ${done ? "text-[#0A8A2E]" : action.state === "failed" ? "text-danger" : "text-[#8c948b]"}`}>
 					{done && <MdCheckCircle size={18} aria-hidden />}
 					{action.state === "failed" && <MdErrorOutline size={18} aria-hidden />}
 					{done ? t(`done_${action.tool}`, action.params ?? {}) : action.state === "failed" ? action.message : t("cancelled")}
@@ -95,13 +95,13 @@ function ActionCard({ message, action }: { message: AiMessage; action: AiAction 
 
 function Bubble({ m, ttsOn, speakingId, onSpeak, onStopSpeak }: { m: AiMessage; ttsOn: boolean; speakingId: string | null; onSpeak: (id: string, text: string) => void; onStopSpeak: () => void }) {
 	const t = useTranslations("ai");
-	if (m.role === "user") return <div className="ml-auto max-w-[85%] whitespace-pre-wrap break-words rounded-14 bg-[rgba(124,147,255,0.14)] px-14 py-10 text-13 text-[#edf2ff]">{m.text}</div>;
+	if (m.role === "user") return <div className="ml-auto max-w-[85%] whitespace-pre-wrap break-words rounded-14 bg-[rgba(198,255,77,0.14)] px-14 py-10 text-13 text-[#f1f4ee]">{m.text}</div>;
 	const speaking = speakingId === m.id;
 	return (
 		<div className="max-w-[95%] break-words text-13 text-[#cfd4cb]">
 			{!!m.steps?.length && (
 				<p className="mb-6 flex flex-wrap gap-6">
-					{m.steps.map((s) => <span key={s} className="flex items-center gap-[4px] rounded-8 border border-inkLine px-10 py-[2px] text-11 text-[#9aa7c9]"><MdSearch size={12} aria-hidden />{t(`step_${s}`)}</span>)}
+					{m.steps.map((s) => <span key={s} className="flex items-center gap-[4px] rounded-8 border border-inkLine px-10 py-[2px] text-11 text-[#8c948b]"><MdSearch size={12} aria-hidden />{t(`step_${s}`)}</span>)}
 				</p>
 			)}
 			{m.error ? <p className="flex items-start gap-8 text-danger"><MdErrorOutline size={20} className="mt-[2px] shrink-0" aria-hidden />{m.text}</p> : <Markdown text={m.text} />}
@@ -112,7 +112,7 @@ function Bubble({ m, ttsOn, speakingId, onSpeak, onStopSpeak }: { m: AiMessage; 
 					onClick={() => (speaking ? onStopSpeak() : onSpeak(m.id, m.text))}
 					aria-label={speaking ? t("stopSpeak") : t("speak")}
 					title={speaking ? t("stopSpeak") : t("speak")}
-					className={`mt-6 flex items-center gap-6 text-11 transition-colors ${speaking ? "text-[#7c93ff]" : "text-[#9aa7c9] hover:text-[#edf2ff]"}`}>
+					className={`mt-6 flex items-center gap-6 text-11 transition-colors ${speaking ? "text-[#c6ff4d]" : "text-[#8c948b] hover:text-[#f1f4ee]"}`}>
 					{speaking ? <TbPlayerStop size={13} aria-hidden /> : <TbVolume size={13} aria-hidden />}
 					{speaking ? t("stopSpeak") : t("speak")}
 				</button>
@@ -354,7 +354,7 @@ export default function AiAssistant() {
 			>
 				<VoiceOrb size={38} state={ORB_BY_PHASE[agent.phase]} />
 				{/* зелёная точка — микрофон включён, Айрис слушает */}
-				{agent.enabled && <span aria-hidden className="absolute bottom-0 right-0 h-10 w-10 rounded-50 border-2 border-[#0b1120] bg-[#7c93ff]" />}
+				{agent.enabled && <span aria-hidden className="absolute bottom-0 right-0 h-10 w-10 rounded-50 border-2 border-[#0a0c0b] bg-[#c6ff4d]" />}
 			</button>,
 			orbSlot
 		)}
@@ -363,9 +363,9 @@ export default function AiAssistant() {
 		<Modal open={!!pdfView} onClose={closePdf} align="top" label={pdfView?.title ?? "PDF"} zIndex={95} className="mt-[3vh] w-full max-w-[960px]">
 			<div className="fs-popover flex h-[92vh] flex-col overflow-hidden">
 				<header className="flex items-center gap-12 border-b border-inkLine px-16 py-10">
-					<h2 className="min-w-0 flex-1 truncate text-15 font-medium text-[#edf2ff]">{pdfView?.title}</h2>
+					<h2 className="min-w-0 flex-1 truncate text-15 font-medium text-[#f1f4ee]">{pdfView?.title}</h2>
 					{pdfView && <a href={pdfView.url} download={`${pdfView.title}.pdf`} className="fs-btn fs-btn-ghost h-30 px-12 text-12">{t("pdfDownload")}</a>}
-					<button type="button" onClick={closePdf} aria-label={t("close")} className="text-[#9aa7c9] transition-colors hover:text-[#edf2ff]"><MdClose size={18} /></button>
+					<button type="button" onClick={closePdf} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><MdClose size={18} /></button>
 				</header>
 				{pdfView && <iframe src={pdfView.url} title={pdfView.title} className="min-h-0 flex-1 bg-white" />}
 			</div>
@@ -375,7 +375,7 @@ export default function AiAssistant() {
 				<header className="flex items-center gap-10 border-b border-inkLine px-16 py-12">
 					<MdAutoAwesome size={22} className="text-primaryColor" aria-hidden />
 					<h2 className="text-18 font-medium text-[#334A74]">{t("title")}</h2>
-					{status?.configured && <span className="ml-auto hidden text-11 text-[#9aa7c9] md:inline">{t("remaining", { n: status.remaining })}</span>}
+					{status?.configured && <span className="ml-auto hidden text-11 text-[#8c948b] md:inline">{t("remaining", { n: status.remaining })}</span>}
 					{/* Голосовое управление: слушает на любой странице, имя «Айрис» → команда → ответ вслух */}
 					{agent.supported && !blocked && (
 						<button
@@ -384,7 +384,7 @@ export default function AiAssistant() {
 							aria-pressed={agent.enabled}
 							aria-label={agent.enabled ? t("agentOn") : t("agentOff")}
 							title={agent.enabled ? t("agentOn") : t("agentOff")}
-							className={`${status?.configured ? "" : "ml-auto"} flex h-30 items-center gap-6 rounded-8 border px-10 text-11 transition-colors ${agent.enabled ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)] text-[#7c93ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`}>
+							className={`${status?.configured ? "" : "ml-auto"} flex h-30 items-center gap-6 rounded-8 border px-10 text-11 transition-colors ${agent.enabled ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
 							<MdGraphicEq size={15} aria-hidden />
 							<span className="max-md:hidden">{t("agentTitle")}</span>
 						</button>
@@ -396,7 +396,7 @@ export default function AiAssistant() {
 							onClick={() => agent.setAutoApprove(!agent.autoApprove)}
 							aria-pressed={agent.autoApprove}
 							title={t("agentAutoHint")}
-							className={`flex h-30 items-center gap-6 rounded-8 border px-10 text-11 transition-colors ${agent.autoApprove ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)] text-[#7c93ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`}>
+							className={`flex h-30 items-center gap-6 rounded-8 border px-10 text-11 transition-colors ${agent.autoApprove ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
 							<span>{t("agentAuto")}</span>
 						</button>
 					)}
@@ -408,24 +408,24 @@ export default function AiAssistant() {
 							aria-pressed={autoSpeak}
 							aria-label={t("autoSpeak")}
 							title={t("autoSpeak")}
-							className={`${status?.configured || (voice.tts && voice.dictation) ? "" : "ml-auto"} flex h-30 items-center gap-6 rounded-8 border px-10 text-11 transition-colors ${autoSpeak ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)] text-[#7c93ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`}>
+							className={`${status?.configured || (voice.tts && voice.dictation) ? "" : "ml-auto"} flex h-30 items-center gap-6 rounded-8 border px-10 text-11 transition-colors ${autoSpeak ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
 							{autoSpeak ? <TbVolume size={14} aria-hidden /> : <TbVolumeOff size={14} aria-hidden />}
 							<span className="max-md:hidden">{t("autoSpeak")}</span>
 						</button>
 					)}
-					<button type="button" onClick={reset} disabled={empty} className={`${status?.configured || (voice.tts && !blocked) ? "max-md:ml-auto" : "ml-auto"} whitespace-nowrap text-12 text-[#9aa7c9] transition-colors hover:text-[#7c93ff] disabled:opacity-[0.4]`}>{t("newChat")}</button>
-					<button type="button" onClick={close} aria-label={t("close")} className="text-[#9aa7c9] transition-colors hover:text-[#edf2ff]"><MdClose size={18} /></button>
+					<button type="button" onClick={reset} disabled={empty} className={`${status?.configured || (voice.tts && !blocked) ? "max-md:ml-auto" : "ml-auto"} whitespace-nowrap text-12 text-[#8c948b] transition-colors hover:text-[#c6ff4d] disabled:opacity-[0.4]`}>{t("newChat")}</button>
+					<button type="button" onClick={close} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><MdClose size={18} /></button>
 				</header>
 
 				{/* Голосовое управление включено: коротко показываем, что Айрис слышит и делает */}
 				{agent.enabled && !blocked && (
-					<div className="flex items-center gap-12 border-b border-inkLine bg-[rgba(124,147,255,0.05)] px-16 py-10">
+					<div className="flex items-center gap-12 border-b border-inkLine bg-[rgba(198,255,77,0.05)] px-16 py-10">
 						<button type="button" onClick={() => stopSpeech()} aria-label={t("stopSpeak")} title={t("stopSpeak")} className="relative shrink-0 rounded-full">
 							<VoiceOrb size={36} state={ORB_BY_PHASE[agent.phase]} />
 						</button>
 						<div className="min-w-0 flex-1">
-							<p className="text-13 text-[#edf2ff]">{agent.phase === "sleeping" ? t("agentSleeping") : t(`voice_${agent.phase === "off" ? "listening" : agent.phase}`)}</p>
-							<p className="truncate text-12 text-[#9aa7c9]">{agent.caption || (agent.pending.length ? t("agentSay") : "\u00A0")}</p>
+							<p className="text-13 text-[#f1f4ee]">{agent.phase === "sleeping" ? t("agentSleeping") : t(`voice_${agent.phase === "off" ? "listening" : agent.phase}`)}</p>
+							<p className="truncate text-12 text-[#8c948b]">{agent.caption || (agent.pending.length ? t("agentSay") : "\u00A0")}</p>
 						</div>
 						<button type="button" onClick={() => agent.setEnabled(false, false)} className="fs-link shrink-0 text-12">{t("voiceExit")}</button>
 					</div>
@@ -433,23 +433,23 @@ export default function AiAssistant() {
 
 				<div className="min-h-[160px] flex-1 overflow-y-auto px-20 py-16">
 					{blocked ? (
-						<p className="fs-card p-18 text-13 text-[#9aa7c9]">{t("notConfigured")}</p>
+						<p className="fs-card p-18 text-13 text-[#8c948b]">{t("notConfigured")}</p>
 					) : empty ? (
 						<div>
 							<p className="mb-12 text-13 text-[#cfd4cb]">{t("intro")}</p>
-							{status && !status.canWrite && <p className="mb-12 text-12 text-[#9aa7c9]">{t("readOnly")}</p>}
+							{status && !status.canWrite && <p className="mb-12 text-12 text-[#8c948b]">{t("readOnly")}</p>}
 							<ul className="flex flex-col gap-8">
 								{suggestions.map((s) => (
 									<li key={s.key}>
-										<button type="button" onClick={() => pick(t(s.key), s.send)} className="w-full rounded-10 border border-inkLine px-14 py-10 text-left text-13 text-[#cfd4cb] transition-colors hover:border-[rgba(124,147,255,0.5)] hover:bg-[rgba(124,147,255,0.06)]">{t(s.key)}</button>
+										<button type="button" onClick={() => pick(t(s.key), s.send)} className="w-full rounded-10 border border-inkLine px-14 py-10 text-left text-13 text-[#cfd4cb] transition-colors hover:border-[rgba(198,255,77,0.5)] hover:bg-[rgba(198,255,77,0.06)]">{t(s.key)}</button>
 									</li>
 								))}
 							</ul>
 							{recent.length > 0 && (
 								<>
-									<p className="fs-eyebrow mb-6 mt-20 text-[#9AA7C9]">{t("recent")}</p>
+									<p className="fs-eyebrow mb-6 mt-20 text-[#8C948B]">{t("recent")}</p>
 									<ul className="flex flex-col gap-[4px]">
-										{recent.map((r) => <li key={r}><button type="button" onClick={() => pick(r, false)} className="w-full truncate text-left text-12 text-[#9aa7c9] transition-colors hover:text-[#7c93ff]">↺ {r}</button></li>)}
+										{recent.map((r) => <li key={r}><button type="button" onClick={() => pick(r, false)} className="w-full truncate text-left text-12 text-[#8c948b] transition-colors hover:text-[#c6ff4d]">↺ {r}</button></li>)}
 									</ul>
 								</>
 							)}
@@ -457,7 +457,7 @@ export default function AiAssistant() {
 					) : (
 						<div className="flex flex-col gap-16">
 							{messages.map((m) => <Bubble key={m.id} m={m} ttsOn={voice.tts} speakingId={speakingId} onSpeak={speak} onStopSpeak={stopSpeak} />)}
-							{busy && <p className="animate-pulse text-12 text-[#9aa7c9]">{t("thinking")}</p>}
+							{busy && <p className="animate-pulse text-12 text-[#8c948b]">{t("thinking")}</p>}
 							<div ref={endRef} />
 						</div>
 					)}

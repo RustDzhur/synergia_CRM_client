@@ -56,7 +56,7 @@ export default function AddDealForm({ onSubmit, onCancel, autoFocus }: Props) {
 		setForm(EMPTY);
 	}
 
-	const label = "mb-6 block text-12 text-[#9aa7c9]";
+	const label = "mb-6 block text-12 text-[#8c948b]";
 
 	return (
 		<form

@@ -230,8 +230,8 @@ const ALL_TABS: Tab[] = Array.from(new Set((Object.keys(NAV_BY_MARKET) as Market
 
 // Строка меню в колонке — как пункт сайдбара: 40px, скругление 10px, активный обведён салатовой рамкой на лёгкой подсветке.
 const ROW = "flex h-40 w-full items-center gap-12 rounded-10 border border-transparent px-12 text-left text-13 font-medium transition-[background-color,border-color,color] duration-150";
-const ROW_ACTIVE = "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)] text-[#edf2ff]";
-const ROW_IDLE = "text-[#cfd4cb] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#c7d3f2]";
+const ROW_ACTIVE = "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#f1f4ee]";
+const ROW_IDLE = "text-[#cfd4cb] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#e6eae2]";
 
 export default function Finance() {
 	const t = useTranslations("finance");
@@ -399,7 +399,7 @@ export default function Finance() {
 								aria-current={tab === node.key ? "page" : undefined}
 								onClick={() => select(node.key)}
 								className={`${ROW} ${tab === node.key ? ROW_ACTIVE : ROW_IDLE}`}>
-								<node.icon size={17} className={`shrink-0 ${tab === node.key ? "text-[#7c93ff]" : "text-[#9aa7c9]"}`} />
+								<node.icon size={17} className={`shrink-0 ${tab === node.key ? "text-[#c6ff4d]" : "text-[#8c948b]"}`} />
 								{tabLabel(node.key)}
 							</button>
 						) : (
@@ -413,7 +413,7 @@ export default function Finance() {
 												aria-current={tab === leaf.key ? "page" : undefined}
 												onClick={() => select(leaf.key)}
 												className={`${ROW} ${tab === leaf.key ? ROW_ACTIVE : ROW_IDLE}`}>
-												<leaf.icon size={17} className={`shrink-0 ${tab === leaf.key ? "text-[#7c93ff]" : "text-[#9aa7c9]"}`} />
+												<leaf.icon size={17} className={`shrink-0 ${tab === leaf.key ? "text-[#c6ff4d]" : "text-[#8c948b]"}`} />
 												{tabLabel(leaf.key)}
 											</button>
 										</li>

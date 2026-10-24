@@ -47,14 +47,14 @@ export default function TaskModal({ open, task, onClose }: Props) {
 	return (
 		<Modal open={open} onClose={onClose} label={task ? t("editTask") : t("newTask")} className="w-full max-w-[560px]">
 			<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-24">
-				<button type="button" onClick={onClose} aria-label={t("cancel")} className="absolute right-16 top-16 text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
+				<button type="button" onClick={onClose} aria-label={t("cancel")} className="absolute right-16 top-16 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
 					<TbX size={20} />
 				</button>
-				<h2 className="mb-20 text-16 font-semibold text-[#edf2ff]">{task ? t("editTask") : t("newTask")}</h2>
+				<h2 className="mb-20 text-16 font-semibold text-[#f1f4ee]">{task ? t("editTask") : t("newTask")}</h2>
 				<div className="flex flex-col gap-16">
 					<FormField label={t("title")} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} maxLength={200} autoFocus />
 					<label className="block">
-						<span className="mb-6 block text-12 text-[#9aa7c9]">{t("description")}</span>
+						<span className="mb-6 block text-12 text-[#8c948b]">{t("description")}</span>
 						<textarea
 							value={form.description}
 							onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -68,7 +68,7 @@ export default function TaskModal({ open, task, onClose }: Props) {
 					{/* Новая задача сразу активна; отметить выполненной можно здесь или кружком в списке */}
 					{task && (
 						<label className="flex cursor-pointer items-center gap-10 text-13 text-[#cfd4cb]">
-							<input type="checkbox" checked={form.completed} onChange={(e) => setForm({ ...form, completed: e.target.checked })} className="h-[16px] w-[16px] accent-[#7c93ff]" />
+							<input type="checkbox" checked={form.completed} onChange={(e) => setForm({ ...form, completed: e.target.checked })} className="h-[16px] w-[16px] accent-[#c6ff4d]" />
 							{t("markDone")}
 						</label>
 					)}

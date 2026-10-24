@@ -108,7 +108,7 @@ export default function Pos() {
 		<div className="flex flex-col gap-16">
 			{/* Как это работает и что настроено: продажа — оплаченный счёт, чек ПРРО обязателен на
 			    готівку и картку; без подключённого Checkbox чек не пробьётся, и это видно сразу */}
-			<div className="rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-12 text-12 text-[#9aa7c9]">
+			<div className="rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-12 text-12 text-[#8c948b]">
 				{t("posHowto")}
 				{fiscal && (
 					<span className="mt-6 block">
@@ -118,7 +118,7 @@ export default function Pos() {
 						{!fiscal.connected && (
 							<>
 								{t("posNoFiscal")}{" "}
-								<Link href={`/${locale}/crm/settings/integration`} className="text-[#7c93ff] hover:underline">{t("posFiscalLink")}</Link>
+								<Link href={`/${locale}/crm/settings/integration`} className="text-[#c6ff4d] hover:underline">{t("posFiscalLink")}</Link>
 							</>
 						)}
 					</span>
@@ -127,11 +127,11 @@ export default function Pos() {
 
 			{/* Последний чек: номер и фискальный код — их называют покупателю */}
 			{lastSale && (
-				<div className="rounded-10 border border-[rgba(124,147,255,0.35)] bg-[rgba(124,147,255,0.08)] p-12 text-12 text-[#cfd4cb]">
+				<div className="rounded-10 border border-[rgba(198,255,77,0.35)] bg-[rgba(198,255,77,0.08)] p-12 text-12 text-[#cfd4cb]">
 					{t("posLastSale", { number: lastSale.number })}
 					{lastSale.fiscalCode ? ` · ${t("fiscalChip")}: ${lastSale.fiscalCode}` : lastSale.fiscalError ? ` · ${t("fiscalError")}: ${lastSale.fiscalError}` : ""}
 					{lastSale.fiscalUrl && (
-						<a href={lastSale.fiscalUrl} target="_blank" rel="noreferrer" className="ml-8 text-[#7c93ff] hover:underline">{t("posOpenReceipt")}</a>
+						<a href={lastSale.fiscalUrl} target="_blank" rel="noreferrer" className="ml-8 text-[#c6ff4d] hover:underline">{t("posOpenReceipt")}</a>
 					)}
 				</div>
 			)}
@@ -139,7 +139,7 @@ export default function Pos() {
 			<div className="grid grid-cols-1 gap-16 xl:grid-cols-2">
 				{/* Товар: поиск по штрихкоду и названию */}
 				<section className="fs-card p-16 md:p-20">
-					<h3 className="mb-10 text-14 font-semibold text-[#edf2ff]">{t("posSearch")}</h3>
+					<h3 className="mb-10 text-14 font-semibold text-[#f1f4ee]">{t("posSearch")}</h3>
 					<div className="flex gap-8">
 						<input value={query} onChange={(e) => onQueryChange(e.target.value)} placeholder={t("posSearchPlaceholder")} autoFocus className={field} />
 						{/* Сканер: камера телефона или «пистолет» — точный код добавляет товар сразу */}
@@ -150,33 +150,33 @@ export default function Pos() {
 							{found.map((p) => (
 								<li key={p.id}>
 									<button type="button" onClick={() => addToCart(p)} className="flex w-full items-center justify-between gap-10 rounded-10 px-10 py-8 text-left text-13 transition-colors hover:bg-[rgba(255,255,255,0.04)]">
-										<span className="text-[#edf2ff]">{p.name}<span className="ml-6 text-11 text-[#9aa7c9]">{p.sku} · {p.stockQty} {p.unit}</span></span>
+										<span className="text-[#f1f4ee]">{p.name}<span className="ml-6 text-11 text-[#8c948b]">{p.sku} · {p.stockQty} {p.unit}</span></span>
 										<span className="text-[#cfd4cb]">{money(p.price, "UAH", locale)}</span>
 									</button>
 								</li>
 							))}
 						</ul>
 					)}
-					{products.length === 0 && <p className="mt-8 text-12 text-[#9aa7c9]">{t("posNoGoods")}</p>}
+					{products.length === 0 && <p className="mt-8 text-12 text-[#8c948b]">{t("posNoGoods")}</p>}
 				</section>
 
 				{/* Чек: строки, скидка, оплата */}
 				<section className="fs-card p-16 md:p-20">
-					<h3 className="mb-10 text-14 font-semibold text-[#edf2ff]">{t("posCart")}</h3>
+					<h3 className="mb-10 text-14 font-semibold text-[#f1f4ee]">{t("posCart")}</h3>
 					{cart.length === 0 ? (
-						<p className="text-12 text-[#9aa7c9]">{t("posEmpty")}</p>
+						<p className="text-12 text-[#8c948b]">{t("posEmpty")}</p>
 					) : (
 						<ul className="flex flex-col gap-8">
 							{cart.map((l) => (
 								<li key={l.product} className="flex items-center gap-10 border-t border-inkLine pt-8 text-13">
-									<span className="min-w-0 flex-1 truncate text-[#edf2ff]">{l.name}</span>
+									<span className="min-w-0 flex-1 truncate text-[#f1f4ee]">{l.name}</span>
 									<input
 										value={String(l.qty)}
 										onChange={(e) => setCart(cart.map((x) => (x.product === l.product ? { ...x, qty: Math.max(0.001, Number(e.target.value.replace(/[^\d.]/g, "")) || 1) } : x)))}
 										className="fs-field h-30 w-64 px-8 text-12 outline-none"
 									/>
 									<span className="w-[90px] text-right text-[#cfd4cb]">{money(l.qty * l.price, "UAH", locale)}</span>
-									<button type="button" onClick={() => setCart(cart.filter((x) => x.product !== l.product))} aria-label={t("delete")} className="text-[#9aa7c9] transition-colors hover:text-danger">
+									<button type="button" onClick={() => setCart(cart.filter((x) => x.product !== l.product))} aria-label={t("delete")} className="text-[#8c948b] transition-colors hover:text-danger">
 										<TbTrash size={14} />
 									</button>
 								</li>
@@ -184,12 +184,12 @@ export default function Pos() {
 						</ul>
 					)}
 					<div className="mt-12 flex items-center gap-10">
-						<label className="flex items-center gap-8 text-12 text-[#9aa7c9]">
+						<label className="flex items-center gap-8 text-12 text-[#8c948b]">
 							{t("posDiscount")}
 							<input value={discount} onChange={(e) => setDiscount(e.target.value.replace(/[^\d]/g, ""))} className="fs-field h-34 w-64 px-8 text-12 outline-none" />
 							%
 						</label>
-						<span className="ml-auto text-15 font-semibold text-[#7c93ff]">{money(total, "UAH", locale)}</span>
+						<span className="ml-auto text-15 font-semibold text-[#c6ff4d]">{money(total, "UAH", locale)}</span>
 					</div>
 					<div className="mt-12 flex flex-wrap gap-10">
 						<button type="button" disabled={busy || !cart.length} onClick={() => void sell("cash")} className="fs-btn fs-btn-ghost h-40 flex-1 justify-center disabled:opacity-50">
@@ -204,18 +204,18 @@ export default function Pos() {
 
 			{/* Возвраты: по чеку из списка последних продаж */}
 			<section className="fs-card p-16 md:p-20">
-				<h3 className="mb-10 text-14 font-semibold text-[#edf2ff]">{t("posRecent")}</h3>
+				<h3 className="mb-10 text-14 font-semibold text-[#f1f4ee]">{t("posRecent")}</h3>
 				{recent.length === 0 ? (
-					<p className="text-12 text-[#9aa7c9]">{t("posNoSales")}</p>
+					<p className="text-12 text-[#8c948b]">{t("posNoSales")}</p>
 				) : (
 					<ul className="flex flex-col gap-6">
 						{recent.map((s) => (
 							<li key={s.id} className="flex flex-wrap items-center justify-between gap-10 border-t border-inkLine pt-6 text-12">
-								<span className="text-[#edf2ff]">{s.number}<span className="ml-6 text-11 text-[#9aa7c9]">{new Date(s.at).toLocaleString()} · {s.payType === "cash" ? t("fiscalCash") : t("fiscalCard")}</span></span>
+								<span className="text-[#f1f4ee]">{s.number}<span className="ml-6 text-11 text-[#8c948b]">{new Date(s.at).toLocaleString()} · {s.payType === "cash" ? t("fiscalCash") : t("fiscalCard")}</span></span>
 								{/* Возвращённый чек остаётся в списке с отметкой — по нему видно, что товар вернули */}
 								{s.returnedBy && <span className="fs-chip h-22 border-[rgba(235,87,87,0.35)] px-8 text-10 text-[#EB5757]">{t("fiscalReturnedChip", { number: s.returnedBy })}</span>}
 								<span className="text-[#cfd4cb]">{money(s.total, s.currency, locale)}</span>
-								<span className="text-11 text-[#9aa7c9]">{s.fiscalCode ? `${t("fiscalChip")} ${s.fiscalCode}` : ""}</span>
+								<span className="text-11 text-[#8c948b]">{s.fiscalCode ? `${t("fiscalChip")} ${s.fiscalCode}` : ""}</span>
 								{!s.returnedBy ? (
 									<button type="button" disabled={busy} onClick={() => setReturnFor(s)} className="fs-btn fs-btn-ghost h-28 disabled:opacity-50">
 										<TbArrowBackUp size={12} /> {t("posReturn")}
@@ -238,7 +238,7 @@ export default function Pos() {
 				confirmLabel={t("posReturn")}
 			/>
 
-			<p className="flex items-center gap-8 text-11 text-[#9AA7C9]">
+			<p className="flex items-center gap-8 text-11 text-[#8C948B]">
 				<TbReceipt size={13} /> {t("posHint")}
 			</p>
 		</div>

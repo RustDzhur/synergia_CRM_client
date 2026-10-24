@@ -125,7 +125,7 @@ export default function DealsChart({ deals, stages }: Props) {
 	return (
 		<section className="fs-card p-16 md:p-20">
 			<header className="flex items-center justify-between gap-12">
-				<h2 className="shrink-0 text-14 font-semibold text-[#edf2ff]">{t("dealsTitle")}</h2>
+				<h2 className="shrink-0 text-14 font-semibold text-[#f1f4ee]">{t("dealsTitle")}</h2>
 				<PeriodSelect<Period>
 					value={period}
 					onChange={setPeriod}
@@ -137,36 +137,36 @@ export default function DealsChart({ deals, stages }: Props) {
 				/>
 			</header>
 
-			<p className="mt-14 flex items-center gap-8 text-12 text-[#9aa7c9]">
+			<p className="mt-14 flex items-center gap-8 text-12 text-[#8c948b]">
 				{t("closedDeals")}
 				<span className="inline-block h-[10px] w-[10px] rounded-50 border-2 border-primaryColor" />
 				<span className="ml-8">{t("newDeals")}</span>
-				<span className="inline-block h-[10px] w-[10px] rounded-50 border-2 border-[#9AA7C9]" />
+				<span className="inline-block h-[10px] w-[10px] rounded-50 border-2 border-[#8C948B]" />
 			</p>
 
 			<div ref={wrap} className="mt-8 w-full">
 			<svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="block max-w-full" role="img" aria-label={t("closedDeals")} onMouseLeave={() => setHover(null)}>
 				<defs>
 					<linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-						<stop offset="0%" stopColor="#7C93FF" stopOpacity="0.35" />
-						<stop offset="100%" stopColor="#7C93FF" stopOpacity="0" />
+						<stop offset="0%" stopColor="#C6FF4D" stopOpacity="0.35" />
+						<stop offset="100%" stopColor="#C6FF4D" stopOpacity="0" />
 					</linearGradient>
 				</defs>
 
 				{Array.from({ length: 5 }, (_, i) => i * step).map((tick) => (
 					<g key={tick}>
 						<line x1={M.left - 4} x2={W - M.right} y1={y(tick)} y2={y(tick)} stroke="#FFFFFF" strokeOpacity="0.10" strokeDasharray="6 6" strokeWidth="1" />
-						<text x={M.left - 12} y={y(tick) + 5} textAnchor="end" fontSize="13" fill="#9AA7C9">{tick}</text>
+						<text x={M.left - 12} y={y(tick) + 5} textAnchor="end" fontSize="13" fill="#8C948B">{tick}</text>
 					</g>
 				))}
 
 				{area && <path d={area} fill={`url(#${gradientId})`} />}
-				{madeLine && max > 0 && <path d={madeLine} fill="none" stroke="#9AA7C9" strokeWidth="2" strokeDasharray="5 4" />}
-				{line && max > 0 && <path d={line} fill="none" stroke="#7C93FF" strokeWidth="2" />}
+				{madeLine && max > 0 && <path d={madeLine} fill="none" stroke="#8C948B" strokeWidth="2" strokeDasharray="5 4" />}
+				{line && max > 0 && <path d={line} fill="none" stroke="#C6FF4D" strokeWidth="2" />}
 
 				{tickIdx.map((i) => (
 					// крайние подписи выравниваем внутрь графика, иначе последняя обрезается по краю
-					<text key={i} x={x(i)} y={H - 8} textAnchor={i === 0 ? "start" : i === values.length - 1 ? "end" : "middle"} fontSize="12" fill="#9AA7C9">{labels[i]}</text>
+					<text key={i} x={x(i)} y={H - 8} textAnchor={i === 0 ? "start" : i === values.length - 1 ? "end" : "middle"} fontSize="12" fill="#8C948B">{labels[i]}</text>
 				))}
 
 				{/* невидимые колонки для наведения: показывают значение точки под курсором */}
@@ -186,15 +186,15 @@ export default function DealsChart({ deals, stages }: Props) {
 
 				{shown >= 0 && max > 0 && (
 					<g pointerEvents="none">
-						<circle cx={x(shown)} cy={y(values[shown])} r="4" fill="#0A0C0B" stroke="#7C93FF" strokeWidth="2" />
-						<text x={Math.min(Math.max(x(shown), M.left + 20), W - M.right - 20)} y={y(values[shown]) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fill="#EDF2FF">
+						<circle cx={x(shown)} cy={y(values[shown])} r="4" fill="#0A0C0B" stroke="#C6FF4D" strokeWidth="2" />
+						<text x={Math.min(Math.max(x(shown), M.left + 20), W - M.right - 20)} y={y(values[shown]) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fill="#F1F4EE">
 							{values[shown]}
 						</text>
 					</g>
 				)}
 			</svg>
 			</div>
-			{max === 0 && <p className="text-center text-12 text-[#9aa7c9]">{t("noData")}</p>}
+			{max === 0 && <p className="text-center text-12 text-[#8c948b]">{t("noData")}</p>}
 		</section>
 	);
 }

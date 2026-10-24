@@ -85,7 +85,7 @@ export default function Feed() {
 	return (
 		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
 			<div className="mb-20 flex flex-col gap-16 md:flex-row md:items-center md:justify-between">
-				<h1 className="text-20 font-semibold tracking-[-0.4px] text-[#edf2ff] md:text-24">{t("feedTitle")}</h1>
+				<h1 className="text-20 font-semibold tracking-[-0.4px] text-[#f1f4ee] md:text-24">{t("feedTitle")}</h1>
 				<SearchBox value={query} onChange={setQuery} placeholder={t("filterSearch")} className="w-full md:w-[250px] lg:w-[350px]" />
 			</div>
 			<form onSubmit={submitPost} className="fs-card mb-20 flex flex-col gap-10 p-16 md:p-18">
@@ -103,14 +103,14 @@ export default function Feed() {
 					/>
 				</div>
 				<div className="flex flex-wrap items-center gap-10">
-					<label className="fs-field flex h-34 items-center gap-8 px-12 text-12 text-[#9aa7c9] transition-colors">
+					<label className="fs-field flex h-34 items-center gap-8 px-12 text-12 text-[#8c948b] transition-colors">
 						<TbCalendarEvent size={15} aria-hidden />
 						<input
 							type="datetime-local"
 							value={dueAt}
 							onChange={(e) => setDueAt(e.target.value)}
 							aria-label={t("dueDate")}
-							className="bg-transparent text-12 text-[#edf2ff] outline-none"
+							className="bg-transparent text-12 text-[#f1f4ee] outline-none"
 						/>
 					</label>
 					<AudiencePicker ids={audienceIds} onChange={setAudienceIds} />
@@ -119,12 +119,12 @@ export default function Feed() {
 						type="button"
 						aria-pressed={asNews}
 						onClick={() => setAsNews((v) => !v)}
-						className={`flex h-34 items-center gap-8 rounded-10 border px-12 text-12 transition-colors ${asNews ? "border-inkAccentLine text-[#7c93ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`}>
+						className={`flex h-34 items-center gap-8 rounded-10 border px-12 text-12 transition-colors ${asNews ? "border-inkAccentLine text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
 						<TbNews size={15} aria-hidden />
 						{t("news")}
 					</button>
 					{audienceIds.length > 0 && (
-						<button type="button" onClick={() => setAudienceIds([])} aria-label={t("everyone")} className="flex h-34 items-center gap-6 rounded-10 border border-inkLine px-12 text-12 text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
+						<button type="button" onClick={() => setAudienceIds([])} aria-label={t("everyone")} className="flex h-34 items-center gap-6 rounded-10 border border-inkLine px-12 text-12 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
 							<TbX size={14} aria-hidden />
 							{t("everyone")}
 						</button>
@@ -140,7 +140,7 @@ export default function Feed() {
 				{chip("task", t("task"))}
 			</div>
 			{!loaded ? null : visible.length === 0 ? (
-				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("feedEmpty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("feedEmpty")}</p>
 			) : (
 				<div className="flex flex-col gap-16">
 					{visible.map((p) => <Post key={p.id} post={p} meName={meName} meAvatar={meAvatar} />)}

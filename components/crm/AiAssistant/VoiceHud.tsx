@@ -52,27 +52,27 @@ export default function VoiceHud({ agent, onOpenChat }: { agent: Agent; onOpenCh
 						<VoiceOrb size={44} state={ORB_BY_PHASE[phase]} />
 					</button>
 					<div className="min-w-0 flex-1">
-						<p className="text-13 text-[#edf2ff]">{status}</p>
-						<p className="truncate text-12 text-[#9aa7c9]">
+						<p className="text-13 text-[#f1f4ee]">{status}</p>
+						<p className="truncate text-12 text-[#8c948b]">
 							{agent.caption || (pending.length ? t("agentSay") : phase === "sleeping" ? t("agentTry") : " ")}
 						</p>
 					</div>
-					<button type="button" onClick={() => setSettings((v) => !v)} aria-pressed={settings} aria-label={t("agentSettings")} title={t("agentSettings")} className="flex h-30 w-30 items-center justify-center rounded-8 text-[#9aa7c9] transition-colors hover:text-[#edf2ff]"><TbSettings size={16} aria-hidden /></button>
-					<button type="button" onClick={onOpenChat} aria-label={t("agentChat")} title={t("agentChat")} className="flex h-30 w-30 items-center justify-center rounded-8 text-[#9aa7c9] transition-colors hover:text-[#edf2ff]"><TbMessageCircle size={16} aria-hidden /></button>
-					<button type="button" onClick={() => agent.setEnabled(false, false)} aria-label={t("agentOffBtn")} title={t("agentOffBtn")} className="flex h-30 w-30 items-center justify-center rounded-8 text-[#9aa7c9] transition-colors hover:text-danger"><TbPower size={16} aria-hidden /></button>
+					<button type="button" onClick={() => setSettings((v) => !v)} aria-pressed={settings} aria-label={t("agentSettings")} title={t("agentSettings")} className="flex h-30 w-30 items-center justify-center rounded-8 text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><TbSettings size={16} aria-hidden /></button>
+					<button type="button" onClick={onOpenChat} aria-label={t("agentChat")} title={t("agentChat")} className="flex h-30 w-30 items-center justify-center rounded-8 text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><TbMessageCircle size={16} aria-hidden /></button>
+					<button type="button" onClick={() => agent.setEnabled(false, false)} aria-label={t("agentOffBtn")} title={t("agentOffBtn")} className="flex h-30 w-30 items-center justify-center rounded-8 text-[#8c948b] transition-colors hover:text-danger"><TbPower size={16} aria-hidden /></button>
 				</div>
 
 				{agent.audioBlocked && <p className="mt-8 text-12 text-[#f4a100]">{t("agentUnlock")}</p>}
-				{agent.diag && <p className="mt-8 break-words text-11 text-[#9aa7c9]" aria-live="off">🎙 {agent.diag}</p>}
+				{agent.diag && <p className="mt-8 break-words text-11 text-[#8c948b]" aria-live="off">🎙 {agent.diag}</p>}
 				{reply && <p className="mt-10 max-h-[4.6em] overflow-hidden text-13 text-[#cfd4cb]">{reply}</p>}
 
 				{pending.map((a) => (
 					<div key={a.id} className="mt-10 rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] p-10">
-						<p className="text-13 font-medium text-[#edf2ff]">{t(`act_${a.tool}`)}{a.target ? `: ${a.target}` : ""}</p>
+						<p className="text-13 font-medium text-[#f1f4ee]">{t(`act_${a.tool}`)}{a.target ? `: ${a.target}` : ""}</p>
 						<dl className="mt-6 grid gap-x-10 gap-y-[2px] text-12 grid-cols-[auto_minmax(0,1fr)]">
 							{Object.entries(a.args).filter(([k, v]) => k !== "id" && k !== "ids" && !k.endsWith("_id") && v !== "" && v !== undefined).map(([k, v]) => (
 								<React.Fragment key={k}>
-									<dt className="text-[#9aa7c9]">{t(`f_${k}`)}</dt>
+									<dt className="text-[#8c948b]">{t(`f_${k}`)}</dt>
 									<dd className="min-w-0 break-words text-[#cfd4cb]">{formatActionValue(v)}</dd>
 								</React.Fragment>
 							))}
@@ -85,7 +85,7 @@ export default function VoiceHud({ agent, onOpenChat }: { agent: Agent; onOpenCh
 				))}
 
 				{results.map((a) => (
-					<p key={a.id} className={`mt-10 flex flex-wrap items-center gap-8 text-13 ${a.state === "done" ? "text-[#7c93ff]" : "text-danger"}`}>
+					<p key={a.id} className={`mt-10 flex flex-wrap items-center gap-8 text-13 ${a.state === "done" ? "text-[#c6ff4d]" : "text-danger"}`}>
 						{a.state === "done" ? <MdCheckCircle size={16} aria-hidden /> : <MdErrorOutline size={16} aria-hidden />}
 						{a.state === "done" ? t(`done_${a.tool}`, a.params ?? {}) : a.message}
 						{a.state === "done" && a.link && <button type="button" onClick={() => { hide(); router.push(`/${locale}${a.link}`); }} className="font-medium text-primaryColor hover:underline">{t("open")}</button>}
@@ -116,12 +116,12 @@ export default function VoiceHud({ agent, onOpenChat }: { agent: Agent; onOpenCh
 							</select>
 						</label>
 						<label className="flex items-center justify-between gap-12">
-							<span>{t("agentAuto")}<span className="mt-[2px] block text-11 text-[#9aa7c9]">{t("agentAutoHint")}</span></span>
-							<input type="checkbox" checked={agent.autoApprove} onChange={(e) => agent.setAutoApprove(e.target.checked)} className="h-16 w-16 shrink-0 accent-[#7c93ff]" />
+							<span>{t("agentAuto")}<span className="mt-[2px] block text-11 text-[#8c948b]">{t("agentAutoHint")}</span></span>
+							<input type="checkbox" checked={agent.autoApprove} onChange={(e) => agent.setAutoApprove(e.target.checked)} className="h-16 w-16 shrink-0 accent-[#c6ff4d]" />
 						</label>
 						<label className="flex items-center justify-between gap-12">
 							<span>{t("agentWakeOnly")}</span>
-							<input type="checkbox" checked={agent.requireWake} onChange={(e) => agent.setRequireWake(e.target.checked)} className="h-16 w-16 accent-[#7c93ff]" />
+							<input type="checkbox" checked={agent.requireWake} onChange={(e) => agent.setRequireWake(e.target.checked)} className="h-16 w-16 accent-[#c6ff4d]" />
 						</label>
 					</div>
 				)}

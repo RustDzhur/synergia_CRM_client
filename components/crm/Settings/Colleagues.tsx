@@ -115,7 +115,7 @@ export default function Colleagues() {
 							</thead>
 							<tbody>
 								{items.map((e) => (
-									<tr key={e._id} className={`h-[64px] animate-fade-in transition-colors duration-150 ${selected.includes(e._id) ? "bg-[rgba(124,147,255,0.06)]" : ""}`}>
+									<tr key={e._id} className={`h-[64px] animate-fade-in transition-colors duration-150 ${selected.includes(e._id) ? "bg-[rgba(198,255,77,0.06)]" : ""}`}>
 										<td className="pl-16">
 											<Checkbox checked={selected.includes(e._id)} onChange={() => toggle(e._id)} label={t("selectRow")} />
 										</td>
@@ -126,18 +126,18 @@ export default function Colleagues() {
 													initials={initials(e)}
 													size={32}
 													className="flex text-12"
-													style={e.avatarUrl ? undefined : { background: "rgba(124,147,255,0.14)", color: "#7c93ff" }}
+													style={e.avatarUrl ? undefined : { background: "rgba(198,255,77,0.14)", color: "#c6ff4d" }}
 												/>
 												<div className="min-w-0">
-													<p className="truncate text-13 font-medium text-[#edf2ff]">{e.firstname} {e.lastname}</p>
-													<p className="truncate text-12 text-[#9aa7c9]">{e.position}</p>
+													<p className="truncate text-13 font-medium text-[#f1f4ee]">{e.firstname} {e.lastname}</p>
+													<p className="truncate text-12 text-[#8c948b]">{e.position}</p>
 												</div>
 												<span className="flex shrink-0 items-center gap-8">
 													<span title={t("active")} className="h-8 w-8 rounded-50 bg-[#2DDEB6]" />
-													<button type="button" onClick={() => setToDelete([e])} aria-label={t("remove")} className="text-[#9AA7C9] transition-colors hover:text-danger">
+													<button type="button" onClick={() => setToDelete([e])} aria-label={t("remove")} className="text-[#8C948B] transition-colors hover:text-danger">
 														<TbX size={16} />
 													</button>
-													<button type="button" onClick={() => { setEditing(e); setModalOpen(true); }} aria-label={t("edit")} className="text-[#9AA7C9] transition-colors hover:text-[#7c93ff]">
+													<button type="button" onClick={() => { setEditing(e); setModalOpen(true); }} aria-label={t("edit")} className="text-[#8C948B] transition-colors hover:text-[#c6ff4d]">
 														<TbPencil size={16} />
 													</button>
 												</span>
@@ -151,8 +151,8 @@ export default function Colleagues() {
 								))}
 							</tbody>
 						</table>
-						{!isLoading && items.length === 0 && <p className="py-40 text-center text-13 text-[#9aa7c9]">{t("empty")}</p>}
-						{isLoading && items.length === 0 && <p className="py-40 text-center text-13 text-[#9aa7c9]">{t("loading")}</p>}
+						{!isLoading && items.length === 0 && <p className="py-40 text-center text-13 text-[#8c948b]">{t("empty")}</p>}
+						{isLoading && items.length === 0 && <p className="py-40 text-center text-13 text-[#8c948b]">{t("loading")}</p>}
 					</div>
 				</section>
 			</div>
