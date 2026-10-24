@@ -53,7 +53,7 @@ export default function AudiencePicker({ ids, onChange }: { ids: string[]; onCha
 				type="button"
 				aria-expanded={open}
 				onClick={() => setOpen((v) => !v)}
-				className={`flex h-34 items-center gap-8 rounded-10 border px-12 text-12 transition-colors ${ids.length ? "border-inkAccentLine text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+				className={`flex h-34 items-center gap-8 rounded-10 border px-12 text-12 transition-colors ${ids.length ? "border-inkAccentLine text-[#7c93ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`}>
 				{ids.length === 1 ? <TbUser size={16} aria-hidden /> : <TbUsers size={16} aria-hidden />}
 				{ids.length ? `${t("toWhom")} ${ids.length}` : t("pickRecipients")}
 			</button>
@@ -62,21 +62,21 @@ export default function AudiencePicker({ ids, onChange }: { ids: string[]; onCha
 					<button
 						type="button"
 						onClick={() => { onChange([]); close(); }}
-						className={`fs-popover-row block w-full rounded-8 px-12 py-8 text-left text-13 transition-colors ${ids.length ? "" : "font-medium !text-[#c6ff4d]"}`}>
+						className={`fs-popover-row block w-full rounded-8 px-12 py-8 text-left text-13 transition-colors ${ids.length ? "" : "font-medium !text-[#7c93ff]"}`}>
 						{t("everyone")}
 					</button>
 					{members.map((m) => (
 						<label key={m.userId} className="fs-popover-row flex cursor-pointer items-center gap-10 rounded-8 px-12 py-8 text-13 transition-colors">
-							<input type="checkbox" checked={ids.includes(m.userId)} onChange={() => toggle(m.userId)} className="h-[15px] w-[15px] accent-[#c6ff4d]" />
+							<input type="checkbox" checked={ids.includes(m.userId)} onChange={() => toggle(m.userId)} className="h-[15px] w-[15px] accent-[#7c93ff]" />
 							<span className="min-w-0 flex-1">
 								<span className="block truncate">{m.name}</span>
 								{/* У сотрудника из справочника может не быть аккаунта: он попадёт в адресаты записи,
 								    но уведомление ему прийти не может — честнее сказать это сразу */}
-								{m.source === "employee" && <span className="block truncate text-11 text-[#8C948B]">{t("employeeNoAccount")}</span>}
+								{m.source === "employee" && <span className="block truncate text-11 text-[#9AA7C9]">{t("employeeNoAccount")}</span>}
 							</span>
 						</label>
 					))}
-					{loaded && members.length === 0 && <p className="px-12 py-8 text-12 text-[#8C948B]">{t("noColleagues")}</p>}
+					{loaded && members.length === 0 && <p className="px-12 py-8 text-12 text-[#9AA7C9]">{t("noColleagues")}</p>}
 				</div>
 			</Dropdown>
 		</div>

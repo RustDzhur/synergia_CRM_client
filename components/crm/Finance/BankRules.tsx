@@ -54,18 +54,18 @@ export default function BankRules({ canEdit }: { canEdit: boolean }) {
 	return (
 		<section className="fs-card mt-16 p-18">
 			<div className="flex flex-wrap items-center gap-12">
-				<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("rulesTitle")}</h3>
+				<h3 className="text-14 font-semibold text-[#edf2ff]">{t("rulesTitle")}</h3>
 				<button type="button" disabled={busy} onClick={() => void syncBanks()} className="fs-btn fs-btn-ghost ml-auto h-34 text-12 disabled:opacity-50">{t("bankSyncAll")}</button>
 			</div>
-			<p className="mt-6 max-w-[640px] text-12 leading-[1.5] text-[#8c948b]">{t("rulesHint")}</p>
+			<p className="mt-6 max-w-[640px] text-12 leading-[1.5] text-[#9aa7c9]">{t("rulesHint")}</p>
 			<ul className="mt-12 flex flex-col gap-6">
-				{rules.length === 0 && <li className="text-12 text-[#8c948b]">{t("rulesEmpty")}</li>}
+				{rules.length === 0 && <li className="text-12 text-[#9aa7c9]">{t("rulesEmpty")}</li>}
 				{rules.map((r) => (
-					<li key={r.id} className="flex flex-wrap items-center gap-x-12 gap-y-4 text-13 text-[#f1f4ee]">
-						<span className="text-[#8c948b]">{t(`rulesField_${r.field}` as never)}</span>
+					<li key={r.id} className="flex flex-wrap items-center gap-x-12 gap-y-4 text-13 text-[#edf2ff]">
+						<span className="text-[#9aa7c9]">{t(`rulesField_${r.field}` as never)}</span>
 						<span>“{r.pattern}” →</span>
 						<span className="fs-chip h-22 px-8 text-11">{r.category}</span>
-						<span className="text-12 text-[#8c948b]">{t("rulesHits", { n: r.hits })} · {r.createdByName}</span>
+						<span className="text-12 text-[#9aa7c9]">{t("rulesHits", { n: r.hits })} · {r.createdByName}</span>
 						{canEdit && <button type="button" className="ml-auto text-12 text-[#ff9f9f] hover:underline" onClick={() => void apiCall(`/api/review/rules/${r.id}`, "DELETE").then((x) => { if (!x.ok) toast.error(x.message); else void load(); })}>{t("cancel")}</button>}
 					</li>
 				))}
@@ -84,15 +84,15 @@ export default function BankRules({ canEdit }: { canEdit: boolean }) {
 			{canEdit && (
 				<div className="mt-16 border-t border-inkLineSoft pt-12">
 					<div className="flex flex-wrap items-center gap-10">
-						<h4 className="text-13 font-semibold text-[#f1f4ee]">{t("batchTitle")}</h4>
+						<h4 className="text-13 font-semibold text-[#edf2ff]">{t("batchTitle")}</h4>
 						<button type="button" disabled={busy || rules.length === 0} onClick={() => void batch("propose")} className="fs-btn fs-btn-ghost h-34 text-12 disabled:opacity-50">{t("batchPropose")}</button>
 					</div>
-					<p className="mt-4 text-11 text-[#8c948b]">{t("batchHint")}</p>
+					<p className="mt-4 text-11 text-[#9aa7c9]">{t("batchHint")}</p>
 					<ul className="mt-8 flex flex-col gap-6">
 						{batches.slice(0, 5).map((b) => (
 							<li key={b.id} className="flex flex-wrap items-center gap-x-12 text-12 text-[#cfd4cb]">
-								<span>{t(`batchStatus_${b.status}` as never)}</span><span>{t("batchCount", { n: b.count })}{b.skipped ? ` · ${t("batchSkipped", { n: b.skipped })}` : ""}</span><span className="text-[#8c948b]">{b.createdByName}</span>
-								{b.status === "proposed" && <><button type="button" className="text-[#c6ff4d] hover:underline" onClick={() => void batch("apply", b.id)}>{t("batchApply")}</button><button type="button" className="text-[#ff9f9f] hover:underline" onClick={() => void batch("dismiss", b.id)}>{t("batchDismiss")}</button></>}
+								<span>{t(`batchStatus_${b.status}` as never)}</span><span>{t("batchCount", { n: b.count })}{b.skipped ? ` · ${t("batchSkipped", { n: b.skipped })}` : ""}</span><span className="text-[#9aa7c9]">{b.createdByName}</span>
+								{b.status === "proposed" && <><button type="button" className="text-[#7c93ff] hover:underline" onClick={() => void batch("apply", b.id)}>{t("batchApply")}</button><button type="button" className="text-[#ff9f9f] hover:underline" onClick={() => void batch("dismiss", b.id)}>{t("batchDismiss")}</button></>}
 								{b.status === "applied" && <button type="button" className="text-[#F4A100] hover:underline" onClick={() => void batch("rollback", b.id)}>{t("batchRollback")}</button>}
 							</li>
 						))}

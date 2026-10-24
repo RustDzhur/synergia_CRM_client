@@ -29,15 +29,15 @@ export default function SpendChart({ days, currency, label }: { days: AdsDay[]; 
 				return (
 					<g key={d.date} onMouseEnter={() => setHover(i)}>
 						<rect x={M.left + i * slot} y={M.top} width={slot} height={plotH} fill="transparent" />
-						<rect x={M.left + i * slot + (slot - bar) / 2} y={H - M.bottom - h} width={bar} height={Math.max(h, d.spend > 0 ? 2 : 0)} rx="2" fill={i === shown ? "#c6ff4d" : "rgba(198,255,77,0.45)"} />
+						<rect x={M.left + i * slot + (slot - bar) / 2} y={H - M.bottom - h} width={bar} height={Math.max(h, d.spend > 0 ? 2 : 0)} rx="2" fill={i === shown ? "#7c93ff" : "rgba(124,147,255,0.45)"} />
 					</g>
 				);
 			})}
 			{ticks.map((i) => days[i] && (
-				<text key={i} x={M.left + i * slot + slot / 2} y={H - 8} textAnchor={i === 0 ? "start" : i === days.length - 1 && days.length > 1 ? "end" : "middle"} fontSize="13" fill="#8c948b">{dayLabel(days[i].date)}</text>
+				<text key={i} x={M.left + i * slot + slot / 2} y={H - 8} textAnchor={i === 0 ? "start" : i === days.length - 1 && days.length > 1 ? "end" : "middle"} fontSize="13" fill="#9aa7c9">{dayLabel(days[i].date)}</text>
 			))}
 			{shown >= 0 && days[shown] && max > 0 && (
-				<text x={Math.min(Math.max(M.left + shown * slot + slot / 2, 60), W - 60)} y={12} textAnchor="middle" fontSize="13" fontWeight="600" fill="#f1f4ee" pointerEvents="none">
+				<text x={Math.min(Math.max(M.left + shown * slot + slot / 2, 60), W - 60)} y={12} textAnchor="middle" fontSize="13" fontWeight="600" fill="#edf2ff" pointerEvents="none">
 					{dayLabel(days[shown].date)} · {money(days[shown].spend, currency, locale)} · {count(days[shown].clicks, locale)} ↗
 				</text>
 			)}

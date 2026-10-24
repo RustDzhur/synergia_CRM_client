@@ -419,7 +419,7 @@ export default function Documents() {
 							onFilter={(key, value) => setFilters((f) => ({ ...f, [key]: value }))}
 							className="w-full shrink-0 sm:w-[280px] lg:w-[340px]"
 						/>
-						<button type="button" onClick={() => load(true)} aria-label={t("refresh")} title={t("refresh")} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
+						<button type="button" onClick={() => load(true)} aria-label={t("refresh")} title={t("refresh")} className="text-[#9aa7c9] transition-colors hover:text-[#7c93ff]">
 							<TbRefresh size={18} className={loading ? "animate-spin" : ""} />
 						</button>
 						<button type="button" onClick={() => { setName(""); setNameMode({ kind: "folder-new" }); }} className="fs-btn fs-btn-ghost h-40">
@@ -478,11 +478,11 @@ export default function Documents() {
 			<OnedrivePicker open={pickerOpen} onClose={() => setPickerOpen(false)} onImported={() => void load()} />
 
 			<nav aria-label={t("breadcrumbs")} className="mt-16 flex flex-wrap items-center gap-x-8 gap-y-2 text-13">
-				<button type="button" onClick={() => setCurrent(null)} className={current === null ? "font-medium text-[#f1f4ee]" : "text-[#c6ff4d] hover:underline"}>{t("rootFolder")}</button>
+				<button type="button" onClick={() => setCurrent(null)} className={current === null ? "font-medium text-[#edf2ff]" : "text-[#7c93ff] hover:underline"}>{t("rootFolder")}</button>
 				{path.map((f, i) => (
 					<React.Fragment key={f.id}>
-						<span className="text-[#8C948B]" aria-hidden>/</span>
-						<button type="button" onClick={() => setCurrent(f.id)} className={i === path.length - 1 ? "font-medium text-[#f1f4ee]" : "text-[#c6ff4d] hover:underline"}>{f.name}</button>
+						<span className="text-[#9AA7C9]" aria-hidden>/</span>
+						<button type="button" onClick={() => setCurrent(f.id)} className={i === path.length - 1 ? "font-medium text-[#edf2ff]" : "text-[#7c93ff] hover:underline"}>{f.name}</button>
 					</React.Fragment>
 				))}
 			</nav>

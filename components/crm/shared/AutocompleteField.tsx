@@ -86,7 +86,7 @@ export default function AutocompleteField({
 	return (
 		<div className={className} ref={boxRef}>
 			<label className="relative block">
-				<span className="mb-6 block text-12 text-[#8c948b]">{label}{required ? " *" : ""}</span>
+				<span className="mb-6 block text-12 text-[#9aa7c9]">{label}{required ? " *" : ""}</span>
 				<div className="relative">
 					<input
 						value={value}
@@ -95,15 +95,15 @@ export default function AutocompleteField({
 						placeholder={placeholder}
 						className="fs-field h-40 w-full px-12 pr-32 text-13 outline-none"
 					/>
-					{busy && <TbLoader2 size={14} className="absolute right-10 top-13 animate-spin text-[#8c948b]" />}
+					{busy && <TbLoader2 size={14} className="absolute right-10 top-13 animate-spin text-[#9aa7c9]" />}
 				</div>
 				{open && hits.length > 0 && (
 					<ul className="absolute z-40 mt-4 max-h-[220px] w-full overflow-y-auto rounded-10 border border-[rgba(255,255,255,0.14)] bg-[#131715] shadow-lg">
 						{hits.map((h) => (
 							<li key={h.id}>
-								<button type="button" onClick={() => pick(h)} className="w-full px-12 py-9 text-left transition-colors hover:bg-[rgba(198,255,77,0.08)]">
-									<span className="block text-13 text-[#f1f4ee]">{h.label}</span>
-									{h.detail && <span className="mt-2 block text-11 text-[#8c948b]">{h.detail}</span>}
+								<button type="button" onClick={() => pick(h)} className="w-full px-12 py-9 text-left transition-colors hover:bg-[rgba(124,147,255,0.08)]">
+									<span className="block text-13 text-[#edf2ff]">{h.label}</span>
+									{h.detail && <span className="mt-2 block text-11 text-[#9aa7c9]">{h.detail}</span>}
 								</button>
 							</li>
 						))}
@@ -112,7 +112,7 @@ export default function AutocompleteField({
 			</label>
 			{/* Причина отсутствия подсказок и предупреждение о демо-данных — словами, не цветом */}
 			{note && (
-				<p className="mt-[4px] text-11 text-[#8C948B]">
+				<p className="mt-[4px] text-11 text-[#9AA7C9]">
 					{t(`lookup_${note.code}`)}{note.detail ? ` · ${note.detail}` : ""}
 				</p>
 			)}

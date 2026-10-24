@@ -5,7 +5,7 @@
 Подпись над головой робота — последняя строка журнала агента (log.md / loop.log); похожее на ключи вырезается и на сервере, и на сайте.
 Секрет берётся из CRON_SECRET в deploy/.env (как у errorwatch.py); адрес — SITE_URL или http://127.0.0.1:3210. Проверка без отправки: DRY=1 python3 agentwatch.py
 """
-import datetime, json, os, re, subprocess, sys, urllib.request
+import datetime, json, os, re, subprocess, sys, time, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SITE = os.environ.get("SITE_URL", "http://127.0.0.1:3210")
@@ -38,12 +38,17 @@ def post(payload, key):
         return True
     req = urllib.request.Request(SITE + "/api/office/heartbeat", data=json.dumps(payload).encode(), method="POST",
                                  headers={"Content-Type": "application/json", "Authorization": "Bearer " + key})
-    try:
-        urllib.request.urlopen(req, timeout=20).read()
-        return True
-    except Exception as e:
-        print("post failed:", e, file=sys.stderr)
-        return False
+    # CRM пересобирается автодеплоем (несколько секунд в минуту выкладки): одна повторная попытка
+    # с паузой убирает «connection refused/reset» из журнала, не теряя сигнала.
+    for attempt in range(2):
+        try:
+            urllib.request.urlopen(req, timeout=20).read()
+            return True
+        except Exception as e:
+            if attempt == 1:
+                print("post failed:", e, file=sys.stderr)
+                return False
+            time.sleep(2)
 
 
 def main():

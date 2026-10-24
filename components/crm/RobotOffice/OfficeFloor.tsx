@@ -14,7 +14,7 @@ const ZONE_ICON: Record<string, IconType> = { sales: TbBriefcase, finance: TbRec
 const MAX_FILE = 40 * 1024;
 const TEXT_FILE = /\.(txt|csv|tsv|md|json|xml|log)$/i;
 
-const STATE_COLOR: Record<RobotView["state"], string> = { idle: "#8c948b", working: "#c6ff4d", waiting: "#F4A100", failed: "#EB5757", off: "#8c948b" };
+const STATE_COLOR: Record<RobotView["state"], string> = { idle: "#9aa7c9", working: "#7c93ff", waiting: "#F4A100", failed: "#EB5757", off: "#9aa7c9" };
 
 // Один робот на «этаже»: фигурка, имя, должность и короткий статус. Нажатие выбирает, перетаскивание переносит в другую комнату,
 // на него можно бросить поручение с доски или текстовый файл — робот начнёт работу.
@@ -43,15 +43,15 @@ function RobotTile({ robot, view, selected, onSelect }: { robot: Robot; view: Ro
 			onPointerDown={canEdit ? (e) => drag.start(e, { kind: "robot", id: robot.id, label: robot.name }) : undefined}
 			onDragOver={(e) => { if (canEdit && ai && e.dataTransfer.types.includes("Files")) e.preventDefault(); }}
 			onDrop={(e) => { const f = e.dataTransfer.files?.[0]; if (f && canEdit && ai) { e.preventDefault(); void onFile(f); } }}
-			className={`relative flex w-[104px] cursor-pointer select-none touch-pan-y flex-col items-center rounded-[12px] border px-6 py-10 text-center outline-none transition-colors focus-visible:border-[#c6ff4d] ${selected ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.05)]" : over ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.10)]" : "border-transparent hover:bg-[rgba(255,255,255,0.04)]"}`}>
+			className={`relative flex w-[104px] cursor-pointer select-none touch-pan-y flex-col items-center rounded-[12px] border px-6 py-10 text-center outline-none transition-colors focus-visible:border-[#7c93ff] ${selected ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.05)]" : over ? "border-[#7c93ff] bg-[rgba(124,147,255,0.10)]" : "border-transparent hover:bg-[rgba(255,255,255,0.04)]"}`}>
 			<div className="relative">
 				<RobotAvatar accent={robot.accent} size={54} state={view.state} />
 				{(view.waiting > 0 || view.queued > 0) && (
-					<span className="absolute -right-6 -top-2 flex h-[18px] min-w-[18px] items-center justify-center rounded-[9px] px-4 text-10 font-bold text-[#0a0c0b]" style={{ background: view.waiting > 0 ? "#F4A100" : "#c6ff4d" }}>{view.waiting > 0 ? view.waiting : view.queued}</span>
+					<span className="absolute -right-6 -top-2 flex h-[18px] min-w-[18px] items-center justify-center rounded-[9px] px-4 text-10 font-bold text-[#0b1120]" style={{ background: view.waiting > 0 ? "#F4A100" : "#7c93ff" }}>{view.waiting > 0 ? view.waiting : view.queued}</span>
 				)}
 			</div>
-			<p className="mt-6 w-full truncate text-13 font-semibold text-[#f1f4ee]">{robot.name}</p>
-			<p className="line-clamp-2 w-full break-words text-11 leading-[1.25] text-[#8c948b]">{titleOf(t, robot) || "—"}</p>
+			<p className="mt-6 w-full truncate text-13 font-semibold text-[#edf2ff]">{robot.name}</p>
+			<p className="line-clamp-2 w-full break-words text-11 leading-[1.25] text-[#9aa7c9]">{titleOf(t, robot) || "—"}</p>
 			<p className="mt-4 w-full truncate text-11 font-medium" style={{ color: STATE_COLOR[view.state] }}>{status}</p>
 		</div>
 	);
@@ -72,11 +72,11 @@ export default function OfficeFloor({ onSelect }: { onSelect: (id: string) => vo
 				const overZone = drag.payload?.kind === "robot" && drag.over?.type === "zone" && drag.over.id === z;
 				return (
 					<section key={z} data-drop-zone={z} aria-label={zoneName(z)}
-						className={`fs-card p-12 transition-colors ${overZone ? "!border-[rgba(198,255,77,0.6)] bg-[rgba(198,255,77,0.04)]" : ""} ${here.length === 0 ? "min-h-[92px]" : ""}`}>
+						className={`fs-card p-12 transition-colors ${overZone ? "!border-[rgba(124,147,255,0.6)] bg-[rgba(124,147,255,0.04)]" : ""} ${here.length === 0 ? "min-h-[92px]" : ""}`}>
 						<header className="mb-6 flex items-center gap-8 px-4 text-12 font-semibold text-[#cfd4cb]">
-							<Icon size={15} className="text-[#8c948b]" aria-hidden />
+							<Icon size={15} className="text-[#9aa7c9]" aria-hidden />
 							{zoneName(z)}
-							<span className="ml-auto text-11 font-normal text-[#8c948b]">{here.length}</span>
+							<span className="ml-auto text-11 font-normal text-[#9aa7c9]">{here.length}</span>
 						</header>
 						{here.length === 0 ? <p className="px-4 text-12 text-[#6b736a]">{t("emptyZone")}</p> : (
 							<div className="flex flex-wrap gap-4">

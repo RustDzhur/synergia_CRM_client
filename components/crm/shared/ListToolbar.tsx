@@ -27,7 +27,7 @@ export default function ListToolbar({ editLabel, addLabel, selectedCount, onEdit
 				type="button"
 				onClick={onEdit}
 				disabled={selectedCount !== 1}
-				className="text-13 font-semibold text-[#8c948b] transition-colors enabled:hover:text-[#f1f4ee] disabled:cursor-not-allowed disabled:opacity-50">
+				className="text-13 font-semibold text-[#9aa7c9] transition-colors enabled:hover:text-[#edf2ff] disabled:cursor-not-allowed disabled:opacity-50">
 				{editLabel}
 			</button>
 			<button type="button" onClick={onAdd} className="fs-btn fs-btn-primary h-40">

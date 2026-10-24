@@ -110,6 +110,11 @@ fi
 if [ -f deploy/errorwatch.py ] && ! crontab -l 2>/dev/null | grep -q errorwatch.py; then
     ( crontab -l 2>/dev/null; echo "*/5 * * * * flock -n /tmp/errorwatch.lock /usr/bin/python3 $REPO_DIR/deploy/errorwatch.py >> $HOME_DIR/errorwatch.log 2>&1" ) | crontab - || log "errorwatch: не удалось добавить в crontab"
 fi
+# Синхронизация блога CRM → новый сайт: раз в 30 минут статьи и картинки выкладываются в ~/firmspace-website
+# (сайт пересобирается внутри скрипта, только если что-то изменилось). Строка ставится один раз.
+if [ -f deploy/vps/sync-blog.sh ] && ! crontab -l 2>/dev/null | grep -q sync-blog.sh; then
+    ( crontab -l 2>/dev/null; echo "*/30 * * * * flock -n /tmp/sync-blog.lock /bin/bash $REPO_DIR/deploy/vps/sync-blog.sh >> $HOME_DIR/sync-blog.log 2>&1" ) | crontab - || log "sync-blog: не удалось добавить в crontab"
+fi
 if [ -f deploy/docker-compose.tts.yml ]; then
     docker compose -p tts -f deploy/docker-compose.tts.yml up -d >> "$LOG" 2>&1 || log "tts: контейнер озвучки не запустился (Айрис говорит голосом браузера)"
 fi

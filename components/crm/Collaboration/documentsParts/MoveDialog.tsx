@@ -19,8 +19,8 @@ export default function MoveDialog({ target, options, value, onValue, busy, onCl
 	return (
 		<Modal open={target !== null} onClose={onClose} label={t("moveTo")} className="w-full max-w-[440px]">
 			<form onSubmit={onSubmit} className="fs-popover p-20">
-				<h2 className="mb-6 text-16 font-semibold text-[#f1f4ee]">{t("moveTo")}</h2>
-				<p className="mb-12 truncate text-12 text-[#8c948b]">{target?.type === "folder" ? target.folder.name : target?.doc.name}</p>
+				<h2 className="mb-6 text-16 font-semibold text-[#edf2ff]">{t("moveTo")}</h2>
+				<p className="mb-12 truncate text-12 text-[#9aa7c9]">{target?.type === "folder" ? target.folder.name : target?.doc.name}</p>
 				<select value={value} onChange={(e) => onValue(e.target.value)} aria-label={t("moveTo")} className="fs-field h-40 w-full px-12 text-13 outline-none">
 					{options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
 				</select>

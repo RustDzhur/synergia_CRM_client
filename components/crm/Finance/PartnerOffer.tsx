@@ -50,19 +50,19 @@ export default function PartnerOffer({ onConnect }: { onConnect?: (provider: str
 	return (
 		<section className="fs-card mb-16 p-16">
 			{refs.map((r) => (
-				<div key={r.id} className="mb-10 flex flex-wrap items-center gap-x-12 gap-y-6 text-13 text-[#f1f4ee]">
+				<div key={r.id} className="mb-10 flex flex-wrap items-center gap-x-12 gap-y-6 text-13 text-[#edf2ff]">
 					<span>{t("cameFrom", { bank: r.partner })}</span>
 					{r.bankProvider && onConnect && <button type="button" className="fs-btn fs-btn-primary h-34 text-12" onClick={() => onConnect(r.bankProvider)}>{t("connectFirst", { bank: r.partner })}</button>}
-					<label className="flex items-center gap-6 text-12 text-[#8c948b]"><input type="checkbox" checked={r.shareVolume} onChange={() => void toggleShare(r)} />{t("shareVolumeShort")}</label>
+					<label className="flex items-center gap-6 text-12 text-[#9aa7c9]"><input type="checkbox" checked={r.shareVolume} onChange={() => void toggleShare(r)} />{t("shareVolumeShort")}</label>
 				</div>
 			))}
 			<div className="flex flex-wrap items-center gap-12">
-				<span className="text-13 font-medium text-[#f1f4ee]">{t("offerTitle")}</span>
+				<span className="text-13 font-medium text-[#edf2ff]">{t("offerTitle")}</span>
 				<button type="button" className="fs-btn fs-btn-ghost h-34 text-12" onClick={() => setOpen(!open)}>{t("offerBtn")}</button>
 			</div>
 			{open && (
 				<div className="mt-12 flex flex-col gap-10">
-					<p className="text-12 leading-[1.5] text-[#8c948b]">{t("offerHint")}</p>
+					<p className="text-12 leading-[1.5] text-[#9aa7c9]">{t("offerHint")}</p>
 					<select className="fs-field h-38 px-10 text-13" value={bank} onChange={(e) => setBank(e.target.value)}>{offers.banks.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
 					<div className="flex flex-wrap gap-14">
 						{offers.fields.map((f) => (
@@ -75,7 +75,7 @@ export default function PartnerOffer({ onConnect }: { onConnect?: (provider: str
 			{active.length > 0 && (
 				<ul className="mt-12 flex flex-col gap-6">
 					{active.map((l) => (
-						<li key={l.id} className="flex flex-wrap items-center gap-x-12 text-12 text-[#8c948b]">
+						<li key={l.id} className="flex flex-wrap items-center gap-x-12 text-12 text-[#9aa7c9]">
 							<span>{t("offerActive", { bank: l.bank, date: new Date(l.expiresAt).toLocaleDateString() })}</span>
 							<button type="button" className="text-[#ff9f9f] hover:underline" onClick={() => void revoke(l.id)}>{t("offerRevoke")}</button>
 						</li>

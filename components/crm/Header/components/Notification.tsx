@@ -48,12 +48,12 @@ export default function Notification({ align = "down" }: { align?: "down" | "up"
 		const Icon = ICON[n.type] ?? TbBell;
 		const body = (
 			<>
-				<Icon size={18} className={`mt-2 shrink-0 ${n.type === "deadline" ? "text-[#F4A100]" : "text-[#c6ff4d]"}`} />
+				<Icon size={18} className={`mt-2 shrink-0 ${n.type === "deadline" ? "text-[#F4A100]" : "text-[#7c93ff]"}`} />
 				<span className="min-w-0 flex-1">
-					<span className={`block text-13 [overflow-wrap:anywhere] ${n.read ? "text-[#8c948b]" : "font-medium text-[#f1f4ee]"}`}>{notifText(t, n, tx)}</span>
-					<span className="block text-11 text-[#8C948B]">{ago(n.at)}</span>
+					<span className={`block text-13 [overflow-wrap:anywhere] ${n.read ? "text-[#9aa7c9]" : "font-medium text-[#edf2ff]"}`}>{notifText(t, n, tx)}</span>
+					<span className="block text-11 text-[#9AA7C9]">{ago(n.at)}</span>
 				</span>
-				{!n.read && <span className="mt-6 h-6 w-6 shrink-0 rounded-50 bg-[#c6ff4d]" aria-hidden />}
+				{!n.read && <span className="mt-6 h-6 w-6 shrink-0 rounded-50 bg-[#7c93ff]" aria-hidden />}
 			</>
 		);
 		const cls = "fs-popover-row flex w-full items-start gap-10 px-14 py-10 text-left transition-colors";
@@ -72,9 +72,9 @@ export default function Notification({ align = "down" }: { align?: "down" | "up"
 				aria-expanded={open}
 				onClick={() => setOpen((v) => !v)}
 				className="relative flex h-34 w-34 items-center justify-center rounded-9 transition-colors hover:bg-[rgba(255,255,255,0.06)]">
-				<TbBell size={19} className={unread > 0 ? "text-[#c6ff4d]" : "text-[#8c948b]"} />
+				<TbBell size={19} className={unread > 0 ? "text-[#7c93ff]" : "text-[#9aa7c9]"} />
 				{unread > 0 && (
-					<span className="absolute -right-3 -top-3 flex h-16 min-w-16 items-center justify-center rounded-50 bg-[#c6ff4d] px-4 text-10 font-bold leading-none text-[#0a0c0b]">
+					<span className="absolute -right-3 -top-3 flex h-16 min-w-16 items-center justify-center rounded-50 bg-[#7c93ff] px-4 text-10 font-bold leading-none text-[#0b1120]">
 						{unread > 99 ? "99+" : unread}
 					</span>
 				)}
@@ -84,12 +84,12 @@ export default function Notification({ align = "down" }: { align?: "down" | "up"
 				className={`right-0 z-[60] w-340 max-w-[calc(100vw-32px)] ${align === "up" ? "bottom-full mb-12 origin-bottom" : "top-full mt-12"}`}>
 				<div className="fs-popover overflow-hidden">
 					<div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.07)] px-14 py-10">
-						<span className="text-14 font-semibold text-[#f1f4ee]">{t("title")}</span>
-						{unread > 0 && <button type="button" onClick={onMarkAll} className="text-12 text-[#c6ff4d] hover:underline">{t("markAll")}</button>}
+						<span className="text-14 font-semibold text-[#edf2ff]">{t("title")}</span>
+						{unread > 0 && <button type="button" onClick={onMarkAll} className="text-12 text-[#7c93ff] hover:underline">{t("markAll")}</button>}
 					</div>
 					{/* никогда не просит больше половины высоты экрана — на невысоких телефонах список остаётся виден целиком со своим скроллом */}
 					<div className="fs-scroll max-h-[420px] overflow-y-auto [max-height:min(420px,55vh)]">
-						{items.length === 0 ? <p className="px-14 py-24 text-center text-13 text-[#8c948b]">{t("empty")}</p> : items.map(row)}
+						{items.length === 0 ? <p className="px-14 py-24 text-center text-13 text-[#9aa7c9]">{t("empty")}</p> : items.map(row)}
 					</div>
 				</div>
 			</Dropdown>

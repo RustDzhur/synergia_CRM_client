@@ -16,7 +16,7 @@ export default function DealsList({ deals, stages, onOpen }: Props) {
 	const t = useTranslations("crm");
 	const locale = useLocale();
 
-	if (deals.length === 0) return <p className="py-40 text-center text-13 text-[#8c948b]">{t("noDeals")}</p>;
+	if (deals.length === 0) return <p className="py-40 text-center text-13 text-[#9aa7c9]">{t("noDeals")}</p>;
 
 	return (
 		<div className="fs-card fs-scroll overflow-x-auto">
@@ -40,9 +40,9 @@ export default function DealsList({ deals, stages, onOpen }: Props) {
 								key={deal._id}
 								onClick={() => onOpen(deal._id)}
 								className="cursor-pointer">
-								<td className="font-medium text-[#f1f4ee] fs-wrap">{deal.clientName}</td>
-								<td className="text-[#8c948b] fs-wrap">{deal.contactName}</td>
-								<td className="text-[#8c948b] fs-wrap">{deal.companyName}</td>
+								<td className="font-medium text-[#edf2ff] fs-wrap">{deal.clientName}</td>
+								<td className="text-[#9aa7c9] fs-wrap">{deal.contactName}</td>
+								<td className="text-[#9aa7c9] fs-wrap">{deal.companyName}</td>
 								<td>
 									{stage && (
 										<span
@@ -52,8 +52,8 @@ export default function DealsList({ deals, stages, onOpen }: Props) {
 										</span>
 									)}
 								</td>
-								<td className="text-[#8c948b]">{formatDate(deal.startDate)}</td>
-								<td className="text-[#8C948B]">
+								<td className="text-[#9aa7c9]">{formatDate(deal.startDate)}</td>
+								<td className="text-[#9AA7C9]">
 									{relativeTime(deal.updatedAt ?? deal.createdAt, locale, t("justNow"))}
 								</td>
 							</tr>

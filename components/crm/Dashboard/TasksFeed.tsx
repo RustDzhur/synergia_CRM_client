@@ -29,15 +29,15 @@ export default function TasksFeed({ tasks, selected, isLoading }: Props) {
 	return (
 		<section>
 			<div className="mb-14 flex flex-wrap items-center justify-between gap-16">
-				<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("tasksTitle")}</h2>
+				<h2 className="text-16 font-semibold text-[#edf2ff]">{t("tasksTitle")}</h2>
 				<SearchBox value={query} onChange={setQuery} placeholder={t("filterSearch")} className="w-full sm:w-300" />
 			</div>
 
 			{visible.length === 0 ? (
 				<div className="rounded-14 border border-dashed border-[rgba(255,255,255,0.12)] p-30 text-center">
-					<p className="text-13 text-[#8c948b]">{isLoading ? "…" : t("noTasks")}</p>
+					<p className="text-13 text-[#9aa7c9]">{isLoading ? "…" : t("noTasks")}</p>
 					{!isLoading && (
-						<Link href={`/${locale}/crm/tasks`} className="mt-8 inline-block text-13 font-medium text-[#c6ff4d] hover:underline">
+						<Link href={`/${locale}/crm/tasks`} className="mt-8 inline-block text-13 font-medium text-[#7c93ff] hover:underline">
 							{t("createTaskHint")}
 						</Link>
 					)}

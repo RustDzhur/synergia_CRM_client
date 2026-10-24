@@ -99,7 +99,7 @@ export default function Expenses() {
 				</button>
 			</div>
 			{expenses.length === 0 ? (
-				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("empty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("empty")}</p>
 			) : (
 				<div className="fs-card overflow-x-auto">
 					<table className="fs-table min-w-[560px] text-left">
@@ -107,11 +107,11 @@ export default function Expenses() {
 						<tbody>
 							{expenses.map((ex) => (
 								<tr key={ex.id}>
-									<td className="px-16 text-13 text-[#8c948b]">{ex.date}</td>
-									<td className="px-10 text-13 font-medium text-[#f1f4ee] fs-wrap">{ex.vendor}</td>
-									<td className="px-10 text-13 text-[#8c948b] fs-wrap">{ex.category || "—"}</td>
+									<td className="px-16 text-13 text-[#9aa7c9]">{ex.date}</td>
+									<td className="px-10 text-13 font-medium text-[#edf2ff] fs-wrap">{ex.vendor}</td>
+									<td className="px-10 text-13 text-[#9aa7c9] fs-wrap">{ex.category || "—"}</td>
 									<td className="px-10 text-right text-13">{money(ex.amount, ex.currency || settings?.currency || "EUR", locale)}</td>
-									<td className="px-10 text-right"><button type="button" onClick={() => setToDelete(ex.id)} aria-label={t("delete")} className="text-[#8C948B] transition-colors hover:text-danger"><TbTrash size={16} /></button></td>
+									<td className="px-10 text-right"><button type="button" onClick={() => setToDelete(ex.id)} aria-label={t("delete")} className="text-[#9AA7C9] transition-colors hover:text-danger"><TbTrash size={16} /></button></td>
 								</tr>
 							))}
 						</tbody>
@@ -121,13 +121,13 @@ export default function Expenses() {
 
 			<Modal open={open} onClose={() => setOpen(false)} label={t("newExpense")} className="w-full max-w-[440px]">
 				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
-					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("newExpense")}</h2>
-					{form.receipt && <p className="mb-14 rounded-10 border border-[rgba(198,255,77,0.22)] bg-[rgba(198,255,77,0.06)] px-12 py-8 text-12 text-[#cfd4cb]">{t("scannedFromReceipt")}</p>}
+					<h2 className="mb-14 text-16 font-semibold text-[#edf2ff]">{t("newExpense")}</h2>
+					{form.receipt && <p className="mb-14 rounded-10 border border-[rgba(124,147,255,0.22)] bg-[rgba(124,147,255,0.06)] px-12 py-8 text-12 text-[#cfd4cb]">{t("scannedFromReceipt")}</p>}
 					<div className="flex flex-col gap-12">
 						<FormField label={t("colVendor")} value={form.vendor} onChange={(e) => setForm({ ...form, vendor: e.target.value })} maxLength={200} autoFocus />
 						{/* Категория: подсказки из справочника фирмы, свою можно вписать и сразу добавить в список */}
 						<div>
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("colCategory")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("colCategory")}</span>
 							<SuggestInput
 								value={form.category}
 								onChange={(v) => setForm({ ...form, category: v })}

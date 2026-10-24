@@ -54,11 +54,11 @@ export default function EsfJournal() {
 	return (
 		<div>
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-x-20 gap-y-10">
-				<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("esfTitle")}</h2>
+				<h2 className="text-16 font-semibold text-[#edf2ff]">{t("esfTitle")}</h2>
 				<PeriodSwitch value={period} onChange={setPeriod} />
 			</div>
 			<div className="mb-14 flex items-start gap-10 rounded-10 border border-inkLine bg-[rgba(255,255,255,0.03)] p-12">
-				<TbInfoCircle size={16} className="mt-[2px] shrink-0 text-[#8c948b]" aria-hidden />
+				<TbInfoCircle size={16} className="mt-[2px] shrink-0 text-[#9aa7c9]" aria-hidden />
 				<p className="text-12 leading-[1.5] text-[#cfd4cb]">{t("esfNotEsf")}</p>
 			</div>
 			<div role="tablist" className="mb-14 flex items-center gap-8">
@@ -72,7 +72,7 @@ export default function EsfJournal() {
 
 			{loading ? <ReportLoading /> : failed ? <ReportFailed /> : kind === "issued" && issued ? (
 				<>
-					<div className="mb-12 flex flex-wrap gap-x-20 gap-y-6 text-12 text-[#8c948b]">
+					<div className="mb-12 flex flex-wrap gap-x-20 gap-y-6 text-12 text-[#9aa7c9]">
 						<span>{t("esfTotals", { net: fmt(issued.totals.net), tax: fmt(issued.totals.tax), gross: fmt(issued.totals.gross) })}</span>
 						{issued.notReady > 0 && <span className="text-[#F4A100]">{t("esfNotReady", { n: issued.notReady })}</span>}
 						{issued.notSent > 0 && <span>{t("esfNotSent", { n: issued.notSent })}</span>}
@@ -84,7 +84,7 @@ export default function EsfJournal() {
 								<th className="px-10">STIR</th><th className="px-10 text-right">{t("colNet")}</th><th className="px-10 text-right">{t("taxTotal")}</th><th className="px-10 text-right">{t("gross")}</th><th className="px-10">{t("esfColStatus")}</th>
 							</tr></thead>
 							<tbody>
-								{issued.rows.length === 0 ? <tr><td colSpan={8} className="px-16 text-13 text-[#8c948b]">{t("empty")}</td></tr> : issued.rows.map((r) => (
+								{issued.rows.length === 0 ? <tr><td colSpan={8} className="px-16 text-13 text-[#9aa7c9]">{t("empty")}</td></tr> : issued.rows.map((r) => (
 									<tr key={r.id} className="cursor-pointer" onClick={() => setEdit(r)}>
 										<td className="px-16 text-13 font-medium">{r.number}</td>
 										<td className="px-10 text-13">{r.date}</td>
@@ -105,7 +105,7 @@ export default function EsfJournal() {
 				</>
 			) : kind === "received" && received ? (
 				<>
-					<div className="mb-12 flex flex-wrap gap-x-20 gap-y-6 text-12 text-[#8c948b]">
+					<div className="mb-12 flex flex-wrap gap-x-20 gap-y-6 text-12 text-[#9aa7c9]">
 						<span>{t("esfReceivedTotals", { net: money(received.totals.net, currency, locale), vat: money(received.totals.vat, currency, locale) })}</span>
 						{received.totals.withoutEsfVat > 0 && <span className="text-[#F4A100]">{t("esfNoEsfVat", { vat: money(received.totals.withoutEsfVat, currency, locale) })}</span>}
 					</div>
@@ -116,7 +116,7 @@ export default function EsfJournal() {
 								<th className="px-10 text-right">{t("colNet")}</th><th className="px-10 text-right">{t("taxTotal")}</th>
 							</tr></thead>
 							<tbody>
-								{received.rows.length === 0 ? <tr><td colSpan={6} className="px-16 text-13 text-[#8c948b]">{t("empty")}</td></tr> : received.rows.map((r) => (
+								{received.rows.length === 0 ? <tr><td colSpan={6} className="px-16 text-13 text-[#9aa7c9]">{t("empty")}</td></tr> : received.rows.map((r) => (
 									<tr key={r.id} className="cursor-pointer" onClick={() => setEditRecv(r)}>
 										<td className="px-16 text-13">{r.date}</td>
 										<td className="px-10 text-13">{r.vendor}</td>
@@ -155,7 +155,7 @@ function IssuedDialog({ row, onClose, onSaved }: { row: EsfRow; onClose: () => v
 	return (
 		<Modal open onClose={onClose} label={t("esfDialogTitle", { number: row.number })} className="w-full max-w-[560px]">
 			<div className="fs-popover max-h-[90vh] overflow-y-auto p-18 md:p-24">
-				<h3 className="text-16 font-semibold text-[#f1f4ee]">{t("esfDialogTitle", { number: row.number })}</h3>
+				<h3 className="text-16 font-semibold text-[#edf2ff]">{t("esfDialogTitle", { number: row.number })}</h3>
 				{row.issues.length > 0 ? (
 					<ul className="mt-12 flex flex-col gap-6">
 						{row.issues.map((i, k) => (
@@ -164,21 +164,21 @@ function IssuedDialog({ row, onClose, onSaved }: { row: EsfRow; onClose: () => v
 							</li>
 						))}
 					</ul>
-				) : <p className="mt-12 text-12 text-[#c6ff4d]">{t("esfComplete")}</p>}
+				) : <p className="mt-12 text-12 text-[#7c93ff]">{t("esfComplete")}</p>}
 				<div className="mt-16 grid grid-cols-1 gap-12 md:grid-cols-2">
-					<label className="text-12 text-[#8c948b]">{t("esfColStatus")}
+					<label className="text-12 text-[#9aa7c9]">{t("esfColStatus")}
 						<select className="fs-field mt-6 h-40 w-full px-12 text-13 outline-none" value={status} onChange={(e) => setStatus(e.target.value as EsfStatus)}>
 							{STATUSES.map((s) => <option key={s} value={s}>{t(`esfStatus_${s}`)}</option>)}
 						</select>
 					</label>
-					<label className="text-12 text-[#8c948b]">{t("esfColNumber")}
+					<label className="text-12 text-[#9aa7c9]">{t("esfColNumber")}
 						<input className="fs-field mt-6 h-40 w-full px-12 text-13 outline-none" value={number} onChange={(e) => setNumber(e.target.value)} maxLength={60} />
 					</label>
-					<label className="text-12 text-[#8c948b] md:col-span-2">{t("uzEsfOperator")}
+					<label className="text-12 text-[#9aa7c9] md:col-span-2">{t("uzEsfOperator")}
 						<input className="fs-field mt-6 h-40 w-full px-12 text-13 outline-none" value={operator} onChange={(e) => setOperator(e.target.value)} maxLength={60} />
 					</label>
 				</div>
-				<p className="mt-10 text-11 text-[#8C948B]">{t("esfMarkHint")}</p>
+				<p className="mt-10 text-11 text-[#9AA7C9]">{t("esfMarkHint")}</p>
 				<div className="mt-16 flex justify-end gap-10">
 					<button type="button" onClick={onClose} className="fs-btn fs-btn-ghost h-38">{t("cancel")}</button>
 					<button type="button" disabled={busy} onClick={() => void save()} className="fs-btn fs-btn-primary h-38 disabled:opacity-50">{t("save")}</button>
@@ -205,12 +205,12 @@ function ReceivedDialog({ row, onClose, onSaved }: { row: ReceivedRow; onClose: 
 	return (
 		<Modal open onClose={onClose} label={t("esfReceivedDialog", { vendor: row.vendor })} className="w-full max-w-[520px]">
 			<div className="fs-popover p-18 md:p-24">
-				<h3 className="text-16 font-semibold text-[#f1f4ee]">{t("esfReceivedDialog", { vendor: row.vendor })}</h3>
-				<p className="mt-6 text-12 text-[#8c948b]">{t("esfReceivedHint")}</p>
+				<h3 className="text-16 font-semibold text-[#edf2ff]">{t("esfReceivedDialog", { vendor: row.vendor })}</h3>
+				<p className="mt-6 text-12 text-[#9aa7c9]">{t("esfReceivedHint")}</p>
 				<div className="mt-14 grid grid-cols-1 gap-12 md:grid-cols-2">
-					<label className="text-12 text-[#8c948b]">{t("esfColNumber")}<input className="fs-field mt-6 h-40 w-full px-12 text-13 outline-none" value={number} onChange={(e) => setNumber(e.target.value)} maxLength={60} /></label>
-					<label className="text-12 text-[#8c948b]">{t("colDate")}<input type="date" className="fs-field mt-6 h-40 w-full px-12 text-13 outline-none" value={date} onChange={(e) => setDate(e.target.value)} /></label>
-					<label className="text-12 text-[#8c948b] md:col-span-2">STIR<input className="fs-field mt-6 h-40 w-full px-12 text-13 outline-none" value={inn} onChange={(e) => setInn(e.target.value)} maxLength={20} /></label>
+					<label className="text-12 text-[#9aa7c9]">{t("esfColNumber")}<input className="fs-field mt-6 h-40 w-full px-12 text-13 outline-none" value={number} onChange={(e) => setNumber(e.target.value)} maxLength={60} /></label>
+					<label className="text-12 text-[#9aa7c9]">{t("colDate")}<input type="date" className="fs-field mt-6 h-40 w-full px-12 text-13 outline-none" value={date} onChange={(e) => setDate(e.target.value)} /></label>
+					<label className="text-12 text-[#9aa7c9] md:col-span-2">STIR<input className="fs-field mt-6 h-40 w-full px-12 text-13 outline-none" value={inn} onChange={(e) => setInn(e.target.value)} maxLength={20} /></label>
 				</div>
 				<div className="mt-16 flex justify-end gap-10">
 					<button type="button" onClick={onClose} className="fs-btn fs-btn-ghost h-38">{t("cancel")}</button>

@@ -44,10 +44,10 @@ export default async function Blog({ params }: { params: { locale: string } }) {
 									<Image src={blogImage(post.image)} alt="" width={400} height={276} className="h-[210px] w-full object-cover lg:h-[276px]" unoptimized={post.image.startsWith("http")} />
 								</Link>
 								<div className="flex flex-1 flex-col px-20 pb-24 pt-20">
-									<h2 className="mb-12 text-18 lg:text-20 font-medium tracking-[0.4px] text-[#f1f4ee]">{blogText(post.title, locale)}</h2>
-									<p className="text-14 lg:text-16 leading-[1.7] tracking-[0.3px] text-[#8c948b]">{blogText(post.excerpt, locale)}</p>
+									<h2 className="mb-12 text-18 lg:text-20 font-medium tracking-[0.4px] text-[#edf2ff]">{blogText(post.title, locale)}</h2>
+									<p className="text-14 lg:text-16 leading-[1.7] tracking-[0.3px] text-[#9aa7c9]">{blogText(post.excerpt, locale)}</p>
 								</div>
-								<Link href={sitePath(locale, `/blog/${post.slug}`)} className="border-t border-[rgba(255,255,255,0.10)] px-20 py-16 text-16 font-medium text-[#8c948b] transition-colors group-hover:text-authBtn">
+								<Link href={sitePath(locale, `/blog/${post.slug}`)} className="border-t border-[rgba(255,255,255,0.10)] px-20 py-16 text-16 font-medium text-[#9aa7c9] transition-colors group-hover:text-authBtn">
 									{tx(BLOG.readMore, locale)}
 								</Link>
 								<span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px] bg-transparent transition-colors duration-200 group-hover:bg-authBtn" />

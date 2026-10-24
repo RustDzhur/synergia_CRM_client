@@ -98,7 +98,7 @@ export default function SyncPanel() {
             <button
                 type="button"
                 onClick={() => setOpen(true)}
-                className={`fs-btn fs-btn-ghost h-34 ${src("google")?.connected || src("icloud")?.connected ? "border-inkAccentLine text-[#c6ff4d]" : ""}`}>
+                className={`fs-btn fs-btn-ghost h-34 ${src("google")?.connected || src("icloud")?.connected ? "border-inkAccentLine text-[#7c93ff]" : ""}`}>
                 <TbCalendarShare size={15} />
                 {t("calButton")}
             </button>
@@ -106,19 +106,19 @@ export default function SyncPanel() {
             <Modal open={open} onClose={() => setOpen(false)} label={t("calTitle")} className="w-full max-w-[520px]">
                 <div className="fs-popover fs-scroll max-h-[85vh] overflow-y-auto p-20">
                     <header className="mb-16 flex items-center justify-between gap-12">
-                        <h2 className="text-16 font-semibold text-[#f1f4ee]">{t("calTitle")}</h2>
-                        <button type="button" onClick={() => setOpen(false)} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+                        <h2 className="text-16 font-semibold text-[#edf2ff]">{t("calTitle")}</h2>
+                        <button type="button" onClick={() => setOpen(false)} aria-label={t("close")} className="text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
                             <TbX size={18} />
                         </button>
                     </header>
-                    <p className="mb-16 text-12 text-[#8c948b]">{t("calHint")}</p>
+                    <p className="mb-16 text-12 text-[#9aa7c9]">{t("calHint")}</p>
 
                     {/* Google */}
                     <section className="fs-card mb-12 p-14">
                         <div className="flex items-center justify-between gap-12">
-                            <span className="text-14 font-medium text-[#f1f4ee]">Google Calendar</span>
+                            <span className="text-14 font-medium text-[#edf2ff]">Google Calendar</span>
                             {src("google")?.connected ? (
-                                <span className="fs-chip h-22 px-8 text-10 text-[#c6ff4d]">{src("google")?.email || t("calConnectedShort")}</span>
+                                <span className="fs-chip h-22 px-8 text-10 text-[#7c93ff]">{src("google")?.email || t("calConnectedShort")}</span>
                             ) : (
                                 <button type="button" disabled={busy === "google" || src("google")?.available === false} onClick={connectGoogle} className="fs-btn fs-btn-primary h-34 disabled:opacity-[0.5]">
                                     {t("calConnect")}
@@ -133,7 +133,7 @@ export default function SyncPanel() {
                         {src("google")?.connected && !src("google")?.write && (
                             <p className="mt-8 flex flex-wrap items-center gap-x-8 text-12 text-[#F4A100]">
                                 {t("calReadOnly")}
-                                <button type="button" onClick={connectGoogle} className="text-12 text-[#c6ff4d] transition-opacity hover:opacity-80">
+                                <button type="button" onClick={connectGoogle} className="text-12 text-[#7c93ff] transition-opacity hover:opacity-80">
                                     {t("calReconnect")}
                                 </button>
                             </p>
@@ -143,25 +143,25 @@ export default function SyncPanel() {
                                 <ul className="mt-10 flex flex-col gap-2">
                                     {(src("google")?.calendars ?? []).map((c) => (
                                         <li key={c.id} className={row}>
-                                            <input type="checkbox" checked={c.enabled} onChange={(e) => toggleCalendar("google", c.id, e.target.checked)} className="h-[15px] w-[15px] accent-[#c6ff4d]" />
+                                            <input type="checkbox" checked={c.enabled} onChange={(e) => toggleCalendar("google", c.id, e.target.checked)} className="h-[15px] w-[15px] accent-[#7c93ff]" />
                                             <span className="truncate">{c.name}</span>
                                         </li>
                                     ))}
                                     {(src("google")?.calendars ?? []).length === 0 && (
                                         <li>
-                                            <button type="button" onClick={async () => { await act("refresh-google-calendars", {}, "refresh"); load(); }} className="text-12 text-[#c6ff4d]">
+                                            <button type="button" onClick={async () => { await act("refresh-google-calendars", {}, "refresh"); load(); }} className="text-12 text-[#7c93ff]">
                                                 {t("calLoadList")}
                                             </button>
                                         </li>
                                     )}
                                 </ul>
                                 {/* Куда записывать события, созданные в CRM: по умолчанию основной календарь */}
-                                <label className="relative mt-12 flex items-center gap-8 text-12 text-[#8c948b]">
+                                <label className="relative mt-12 flex items-center gap-8 text-12 text-[#9aa7c9]">
                                     {t("calTarget")}:
                                     <select
                                         value={src("google")?.target ?? ""}
                                         onChange={async (e) => { await act("target", { id: e.target.value }, "target"); load(); }}
-                                        className="min-w-0 cursor-pointer appearance-none truncate bg-transparent pr-24 text-12 text-[#f1f4ee] outline-none focus:text-[#c6ff4d]">
+                                        className="min-w-0 cursor-pointer appearance-none truncate bg-transparent pr-24 text-12 text-[#edf2ff] outline-none focus:text-[#7c93ff]">
                                         <option value="">{t("calTargetPrimary")}</option>
                                         {(src("google")?.calendars ?? []).map((c) => (
                                             <option key={c.id} value={c.id}>{c.name}</option>
@@ -173,7 +173,7 @@ export default function SyncPanel() {
                                     <button type="button" onClick={syncNow} disabled={busy === "sync"} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]">
                                         <TbRefresh size={14} className={busy === "sync" ? "animate-spin" : ""} /> {t("calSyncNow")}
                                     </button>
-                                    <button type="button" onClick={async () => { await act("disconnect"); load(); }} className="text-12 text-[#8C948B] transition-colors hover:text-danger">
+                                    <button type="button" onClick={async () => { await act("disconnect"); load(); }} className="text-12 text-[#9AA7C9] transition-colors hover:text-danger">
                                         {t("calDisconnect")}
                                     </button>
                                 </div>
@@ -184,15 +184,15 @@ export default function SyncPanel() {
                     {/* iCloud */}
                     <section className="fs-card p-14">
                         <div className="flex items-center justify-between gap-12">
-                            <span className="text-14 font-medium text-[#f1f4ee]">iCloud Kalender</span>
-                            {src("icloud")?.connected && <span className="fs-chip h-22 px-8 text-10 text-[#c6ff4d]">{src("icloud")?.appleId}</span>}
+                            <span className="text-14 font-medium text-[#edf2ff]">iCloud Kalender</span>
+                            {src("icloud")?.connected && <span className="fs-chip h-22 px-8 text-10 text-[#7c93ff]">{src("icloud")?.appleId}</span>}
                         </div>
                         {src("icloud")?.error && <p className="mt-8 text-12 text-[#F4A100]">{src("icloud")?.error}</p>}
 
                         {!src("icloud")?.connected ? (
                             <form onSubmit={connectIcloud} className="mt-10 flex flex-col gap-8">
                                 {/* Apple не даёт OAuth для календарей: нужен пароль приложения, созданный в учётной записи Apple */}
-                                <p className="text-11 text-[#8C948B]">{t("calAppleHint")}</p>
+                                <p className="text-11 text-[#9AA7C9]">{t("calAppleHint")}</p>
                                 <input value={appleId} onChange={(e) => setAppleId(e.target.value)} placeholder={t("calAppleId")} className="fs-field h-38 w-full px-12 text-13 outline-none" required />
                                 <input value={applePass} onChange={(e) => setApplePass(e.target.value)} placeholder={t("calApplePass")} type="password" className="fs-field h-38 w-full px-12 text-13 outline-none" required />
                                 <button type="submit" disabled={busy === "icloud"} className="fs-btn fs-btn-primary h-38 self-start disabled:opacity-[0.5]">
@@ -204,7 +204,7 @@ export default function SyncPanel() {
                                 <ul className="mt-10 flex flex-col gap-2">
                                     {(src("icloud")?.calendars ?? []).map((c) => (
                                         <li key={c.id} className={row}>
-                                            <input type="checkbox" checked={c.enabled} onChange={(e) => toggleCalendar("icloud", c.id, e.target.checked)} className="h-[15px] w-[15px] accent-[#c6ff4d]" />
+                                            <input type="checkbox" checked={c.enabled} onChange={(e) => toggleCalendar("icloud", c.id, e.target.checked)} className="h-[15px] w-[15px] accent-[#7c93ff]" />
                                             <span className="truncate">{c.name}</span>
                                         </li>
                                     ))}
@@ -213,7 +213,7 @@ export default function SyncPanel() {
                                     <button type="button" onClick={syncNow} disabled={busy === "sync"} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]">
                                         <TbRefresh size={14} className={busy === "sync" ? "animate-spin" : ""} /> {t("calSyncNow")}
                                     </button>
-                                    <button type="button" onClick={async () => { await act("icloud-disconnect"); load(); }} className="text-12 text-[#8C948B] transition-colors hover:text-danger">
+                                    <button type="button" onClick={async () => { await act("icloud-disconnect"); load(); }} className="text-12 text-[#9AA7C9] transition-colors hover:text-danger">
                                         {t("calDisconnect")}
                                     </button>
                                 </div>

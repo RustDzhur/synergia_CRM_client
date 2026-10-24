@@ -34,7 +34,7 @@ export default function DiscoverCrm() {
 	const screens: FrameScreen[] = ["overview", "crm", "chat", "finance"];
 
 	return (
-		<div className="text-[#f1f4ee]">
+		<div className="text-[#edf2ff]">
 			<h2 className="text-24 lg:text-36 font-medium leading-[1.4] tracking-[0.48px] lg:tracking-[1px] sm:mb-20 lg:mb-[50px]">
 				{t("title")}
 			</h2>

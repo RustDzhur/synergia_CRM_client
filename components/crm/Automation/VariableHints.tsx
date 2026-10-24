@@ -55,16 +55,16 @@ export default function VariableHints() {
 	return (
 		<div className="rounded-10 border border-inkLine bg-[rgba(255,255,255,0.03)] p-12">
 			<p className="text-12 font-medium text-[#cfd4cb]">{t("r_variables")}</p>
-			<p className="mt-4 text-11 text-[#8C948B]">{t("vh_note")}</p>
+			<p className="mt-4 text-11 text-[#9AA7C9]">{t("vh_note")}</p>
 			<div className="mt-10 flex flex-col gap-10">
 				{GROUPS.map((g) => (
 					<div key={g.group}>
-						<p className="mb-4 text-11 font-semibold text-[#8c948b]">{t(g.group)}</p>
+						<p className="mb-4 text-11 font-semibold text-[#9aa7c9]">{t(g.group)}</p>
 						<ul className="flex flex-col gap-4">
 							{g.rows.map((r) => (
 								<li key={r.token} className="flex items-center justify-between gap-10">
-									<span className="min-w-0 text-11 text-[#8C948B]">{t(r.label)}</span>
-									<button type="button" onClick={() => void copy(r.token)} aria-label={`${t("copy")}: ${r.token}`} className="fs-chip h-22 shrink-0 gap-6 px-8 text-11 transition-colors hover:border-[rgba(198,255,77,0.35)] hover:text-[#c6ff4d]" style={MONO}>
+									<span className="min-w-0 text-11 text-[#9AA7C9]">{t(r.label)}</span>
+									<button type="button" onClick={() => void copy(r.token)} aria-label={`${t("copy")}: ${r.token}`} className="fs-chip h-22 shrink-0 gap-6 px-8 text-11 transition-colors hover:border-[rgba(124,147,255,0.35)] hover:text-[#7c93ff]" style={MONO}>
 										{r.token}
 									</button>
 								</li>

@@ -21,7 +21,7 @@ const ROW =
 	"flex items-center w-full h-40 rounded-10 border border-transparent text-left transition-[background-color,border-color,color] duration-150";
 const ROW_FULL = `${ROW} gap-12 px-12`;
 const ROW_ICON = `${ROW} justify-center`;
-const ACTIVE = "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)]";
+const ACTIVE = "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)]";
 
 // Подраздел (Feed, Kalender, …) — та же строка, но с отступом под иконку родителя.
 const SUB_ROW = `${ROW} h-34 pl-42 pr-12 text-13`;
@@ -64,7 +64,7 @@ export default function Layout() {
 		const active = isActivePath(path, child.href);
 		return (
 			<li key={child.key}>
-				<Link href={`/${locale}${child.href}`} className={`${SUB_ROW} ${active ? "text-[#c6ff4d]" : "text-[#8c948b] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#e6eae2]"}`}>
+				<Link href={`/${locale}${child.href}`} className={`${SUB_ROW} ${active ? "text-[#7c93ff]" : "text-[#9aa7c9] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#c7d3f2]"}`}>
 					{t(child.key)}
 				</Link>
 			</li>
@@ -87,8 +87,8 @@ export default function Layout() {
 					className="flex min-w-0 items-center gap-10">
 					<BrandMark />
 					{menu && (
-						<span className="truncate text-15 font-semibold tracking-[-0.2px] text-[#f1f4ee]">
-							Firmspace <span className="text-[#c6ff4d]">AI</span>
+						<span className="truncate text-15 font-semibold tracking-[-0.2px] text-[#edf2ff]">
+							Firmspace <span className="text-[#7c93ff]">AI</span>
 						</span>
 					)}
 				</Link>
@@ -97,7 +97,7 @@ export default function Layout() {
 						type="button"
 						aria-label="Toggle menu"
 						onClick={toggleMenu}
-						className="ml-auto flex h-28 w-28 shrink-0 items-center justify-center rounded-7 text-[#8c948b] transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-[#f1f4ee]">
+						className="ml-auto flex h-28 w-28 shrink-0 items-center justify-center rounded-7 text-[#9aa7c9] transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-[#edf2ff]">
 						<TbLayoutSidebarLeftCollapse size={18} />
 					</button>
 				)}
@@ -109,7 +109,7 @@ export default function Layout() {
 					type="button"
 					aria-label="Toggle menu"
 					onClick={toggleMenu}
-					className="mx-auto mb-6 flex h-28 w-28 shrink-0 items-center justify-center rounded-7 text-[#8c948b] transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-[#f1f4ee]">
+					className="mx-auto mb-6 flex h-28 w-28 shrink-0 items-center justify-center rounded-7 text-[#9aa7c9] transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-[#edf2ff]">
 					<TbLayoutSidebarLeftCollapse size={18} className="rotate-180" />
 				</button>
 			)}
@@ -133,7 +133,7 @@ export default function Layout() {
 								const iconEl = (
 									<Icon
 										size={17}
-										className={`shrink-0 transition-colors duration-150 ${active ? "text-[#c6ff4d]" : "text-[#8c948b] group-hover/item:text-[#e6eae2]"}`}
+										className={`shrink-0 transition-colors duration-150 ${active ? "text-[#7c93ff]" : "text-[#9aa7c9] group-hover/item:text-[#c7d3f2]"}`}
 									/>
 								);
 
@@ -153,11 +153,11 @@ export default function Layout() {
 															: "text-[#cfd4cb] hover:bg-[rgba(255,255,255,0.04)]"
 													}`}>
 													{iconEl}
-													<span className={`min-w-0 flex-1 truncate text-13 font-medium ${active ? "text-[#f1f4ee]" : ""}`}>{t(item.key)}</span>
-													{dot && <span className="h-5 w-5 shrink-0 rounded-50 bg-[#c6ff4d]" aria-hidden />}
+													<span className={`min-w-0 flex-1 truncate text-13 font-medium ${active ? "text-[#edf2ff]" : ""}`}>{t(item.key)}</span>
+													{dot && <span className="h-5 w-5 shrink-0 rounded-50 bg-[#7c93ff]" aria-hidden />}
 													<TbChevronDown
 														size={15}
-														className={`shrink-0 text-[#8c948b] transition-transform duration-200 ${collabOpen ? "rotate-180" : ""}`}
+														className={`shrink-0 text-[#9aa7c9] transition-transform duration-200 ${collabOpen ? "rotate-180" : ""}`}
 													/>
 												</button>
 											) : (
@@ -186,8 +186,8 @@ export default function Layout() {
 											{iconEl}
 											{menu && (
 												<>
-													<span className={`min-w-0 flex-1 truncate text-13 font-medium ${active ? "text-[#f1f4ee]" : "text-[#cfd4cb]"}`}>{t(item.key)}</span>
-													{dot && <span className="h-5 w-5 shrink-0 rounded-50 bg-[#c6ff4d]" aria-hidden />}
+													<span className={`min-w-0 flex-1 truncate text-13 font-medium ${active ? "text-[#edf2ff]" : "text-[#cfd4cb]"}`}>{t(item.key)}</span>
+													{dot && <span className="h-5 w-5 shrink-0 rounded-50 bg-[#7c93ff]" aria-hidden />}
 												</>
 											)}
 										</Link>
@@ -207,8 +207,8 @@ export default function Layout() {
 							<TbShieldLock size={16} />
 						</span>
 						<span className="min-w-0 flex-1">
-							<span className="block truncate text-12 font-semibold text-[#e6eae2]">{tn("protectedArea")}</span>
-							<span className="mt-2 block truncate text-10 text-[#8C948B]">{tn("protectedAreaHint")}</span>
+							<span className="block truncate text-12 font-semibold text-[#c7d3f2]">{tn("protectedArea")}</span>
+							<span className="mt-2 block truncate text-10 text-[#9AA7C9]">{tn("protectedAreaHint")}</span>
 						</span>
 					</div>
 				) : (

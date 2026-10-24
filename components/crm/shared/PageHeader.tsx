@@ -39,8 +39,8 @@ export default function PageHeader({ title, subtitle, eyebrow, right, children }
 			<div className="flex flex-wrap items-start justify-between gap-x-20 gap-y-12">
 				<div className="min-w-0">
 					<p className="fs-eyebrow fs-eyebrow-dot">{eyebrow ?? (item ? tn(`groups.${item.group}`) : "")}</p>
-					<h1 className="mt-12 text-28 font-semibold leading-[1.1] tracking-[-0.6px] text-[#f1f4ee] md:text-38">{heading}</h1>
-					{hint && <p className="mt-8 text-14 text-[#8c948b]">{hint}</p>}
+					<h1 className="mt-12 text-28 font-semibold leading-[1.1] tracking-[-0.6px] text-[#edf2ff] md:text-38">{heading}</h1>
+					{hint && <p className="mt-8 text-14 text-[#9aa7c9]">{hint}</p>}
 				</div>
 				{right && <div className="flex shrink-0 items-center gap-10 pt-2">{right}</div>}
 			</div>

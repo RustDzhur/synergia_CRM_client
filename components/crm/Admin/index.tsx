@@ -65,13 +65,13 @@ export default function AdminPanel() {
 		load();
 	}
 
-	if (denied) return <p className="px-16 py-20 text-13 text-[#8c948b] md:px-24 md:py-24 lg:px-32">{t("denied")}</p>;
+	if (denied) return <p className="px-16 py-20 text-13 text-[#9aa7c9] md:px-24 md:py-24 lg:px-32">{t("denied")}</p>;
 	const openOrders = orders.filter((o) => o.status === "new" || o.status === "claimed");
 
 	return (
 		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
 			<PageHeader />
-			<h1 className="mb-16 text-20 font-semibold text-[#f1f4ee]">{t("title")}</h1>
+			<h1 className="mb-16 text-20 font-semibold text-[#edf2ff]">{t("title")}</h1>
 			<ServerCard />
 			<SystemCheckCard />
 			<PayRequisitesCard />

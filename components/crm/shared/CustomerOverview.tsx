@@ -36,7 +36,7 @@ export default function CustomerOverview({ url, withDeals = true }: { url: strin
 		return () => window.removeEventListener("crm:changed", onChange);
 	}, [load]);
 
-	if (!data) return <div className="fs-card mb-20 p-16 text-12 text-[#8c948b] md:p-20">{t("loading")}</div>;
+	if (!data) return <div className="fs-card mb-20 p-16 text-12 text-[#9aa7c9] md:p-20">{t("loading")}</div>;
 
 	const open = data.invoices.filter((i) => i.due > 0);
 	const openTasks = data.tasks.filter((x) => !x.completed);
@@ -46,7 +46,7 @@ export default function CustomerOverview({ url, withDeals = true }: { url: strin
 	const block = (title: string, rows: React.ReactNode[], key: string) =>
 		rows.length ? (
 			<div key={key} className="mt-16">
-				<p className="mb-6 text-12 font-medium uppercase tracking-wide text-[#8c948b]">{title}</p>
+				<p className="mb-6 text-12 font-medium uppercase tracking-wide text-[#9aa7c9]">{title}</p>
 				<ul className="flex flex-col">{rows}</ul>
 			</div>
 		) : null;
@@ -54,15 +54,15 @@ export default function CustomerOverview({ url, withDeals = true }: { url: strin
 
 	return (
 		<div className="fs-card mb-20 p-16 md:p-20">
-			<p className="mb-10 text-13 font-medium text-[#f1f4ee]">{t("title")}</p>
-			{nothing && <p className="text-12 text-[#8c948b]">{t("empty")}</p>}
+			<p className="mb-10 text-13 font-medium text-[#edf2ff]">{t("title")}</p>
+			{nothing && <p className="text-12 text-[#9aa7c9]">{t("empty")}</p>}
 
 			{data.summary.map((s) => (
 				<dl key={s.currency} className="mb-8 grid grid-cols-2 gap-x-16 gap-y-8 sm:grid-cols-5">
 					{([["invoiced", s.invoiced], ["paid", s.paid], ["outstanding", s.outstanding], ["expenses", s.expenses], ["margin", s.margin]] as const).map(([k, v]) => (
 						<div key={k}>
-							<dt className="text-11 text-[#8c948b]">{t(k)}</dt>
-							<dd className={`text-14 ${k === "outstanding" && v > 0 ? "text-[#F4A100]" : k === "margin" && v < 0 ? "text-[#ff7a70]" : "text-[#f1f4ee]"}`}>{money(v, s.currency, locale)}</dd>
+							<dt className="text-11 text-[#9aa7c9]">{t(k)}</dt>
+							<dd className={`text-14 ${k === "outstanding" && v > 0 ? "text-[#F4A100]" : k === "margin" && v < 0 ? "text-[#ff7a70]" : "text-[#edf2ff]"}`}>{money(v, s.currency, locale)}</dd>
 						</div>
 					))}
 				</dl>
@@ -70,42 +70,42 @@ export default function CustomerOverview({ url, withDeals = true }: { url: strin
 
 			{block(t("openInvoices"), open.map((i) => (
 				<li key={i.id} className={row}>
-					<span className="text-[#f1f4ee]">{i.number}</span>
+					<span className="text-[#edf2ff]">{i.number}</span>
 					{i.overdue && <span className="fs-chip h-20 px-8 text-10 text-[#ff7a70]">{t("overdue")}</span>}
-					{i.dueDate && <span className="text-[#8c948b]">{t("dueOn", { date: day(i.dueDate) })}</span>}
+					{i.dueDate && <span className="text-[#9aa7c9]">{t("dueOn", { date: day(i.dueDate) })}</span>}
 					<span className="ml-auto text-[#cfd4cb]">{money(i.due, i.currency, locale)}</span>
 				</li>
 			)), "inv")}
 
 			{block(t("payments"), data.payments.slice(0, 8).map((p) => (
 				<li key={p.id} className={row}>
-					<span className="text-[#f1f4ee]">{p.number || "—"}</span>
-					<span className="text-[#8c948b]">{day(p.at)}</span>
-					<span className="text-[#8c948b]">{p.via || t(`source_${p.source}`)}</span>
-					<span className={`ml-auto ${p.amount < 0 ? "text-[#ff7a70]" : "text-[#c6ff4d]"}`}>{money(p.amount, p.currency, locale)}</span>
+					<span className="text-[#edf2ff]">{p.number || "—"}</span>
+					<span className="text-[#9aa7c9]">{day(p.at)}</span>
+					<span className="text-[#9aa7c9]">{p.via || t(`source_${p.source}`)}</span>
+					<span className={`ml-auto ${p.amount < 0 ? "text-[#ff7a70]" : "text-[#7c93ff]"}`}>{money(p.amount, p.currency, locale)}</span>
 				</li>
 			)), "pay")}
 
 			{block(t("tasks"), openTasks.slice(0, 8).map((x) => (
 				<li key={x.id} className={row}>
-					<Link href={`/${locale}/crm/tasks`} className="text-[#f1f4ee] hover:underline">{x.title}</Link>
-					{x.deadline && <span className="text-[#8c948b]">{day(x.deadline)}</span>}
-					{x.responsible && <span className="ml-auto text-[#8c948b]">{x.responsible}</span>}
+					<Link href={`/${locale}/crm/tasks`} className="text-[#edf2ff] hover:underline">{x.title}</Link>
+					{x.deadline && <span className="text-[#9aa7c9]">{day(x.deadline)}</span>}
+					{x.responsible && <span className="ml-auto text-[#9aa7c9]">{x.responsible}</span>}
 				</li>
 			)), "tasks")}
 
 			{withDeals && block(t("deals"), data.deals.slice(0, 8).map((d) => (
 				<li key={d.id} className={row}>
-					<span className="text-[#f1f4ee]">{d.name}</span>
-					<span className="text-[#8c948b]">{d.stageName}</span>
-					{d.won && <span className="fs-chip h-20 px-8 text-10 text-[#c6ff4d]">{t("won")}</span>}
+					<span className="text-[#edf2ff]">{d.name}</span>
+					<span className="text-[#9aa7c9]">{d.stageName}</span>
+					{d.won && <span className="fs-chip h-20 px-8 text-10 text-[#7c93ff]">{t("won")}</span>}
 				</li>
 			)), "deals")}
 
 			{block(t("expensesList"), data.expenses.slice(0, 8).map((e) => (
 				<li key={e.id} className={row}>
-					<span className="text-[#f1f4ee]">{e.vendor}</span>
-					<span className="text-[#8c948b]">{day(e.date)}</span>
+					<span className="text-[#edf2ff]">{e.vendor}</span>
+					<span className="text-[#9aa7c9]">{day(e.date)}</span>
 					<span className="ml-auto text-[#cfd4cb]">{money(e.amount, e.currency, locale)}</span>
 				</li>
 			)), "exp")}

@@ -24,8 +24,8 @@ export default function CloudBanner({ provider, cloud, busy, docs, onConnect, on
 		return (
 			<div className="fs-card mb-16 flex flex-col gap-12 p-16 md:flex-row md:items-center md:justify-between">
 				<div>
-					<p className="text-14 font-medium text-[#f1f4ee]">{t(`${key}ConnectTitle`)}</p>
-					<p className="mt-2 text-12 text-[#8c948b]">{cloud.configured ? t(`${key}ConnectText`) : t("cloudNotConfigured", { name })}</p>
+					<p className="text-14 font-medium text-[#edf2ff]">{t(`${key}ConnectTitle`)}</p>
+					<p className="mt-2 text-12 text-[#9aa7c9]">{cloud.configured ? t(`${key}ConnectText`) : t("cloudNotConfigured", { name })}</p>
 					{/* Файлы не удаляются при отключении: ссылки на них остаются в списке, и открыть их
 					    сможет только тот аккаунт, под которым они созданы (или тот, с кем поделились) */}
 					{docs > 0 && <p className="mt-6 text-12 text-[#F4A100]">{t(`${key}KeepNote`, { count: docs })}</p>}
@@ -35,7 +35,7 @@ export default function CloudBanner({ provider, cloud, busy, docs, onConnect, on
 		);
 	}
 	return (
-		<div className="mb-16 flex flex-wrap items-center gap-x-12 gap-y-8 text-12 text-[#8c948b]">
+		<div className="mb-16 flex flex-wrap items-center gap-x-12 gap-y-8 text-12 text-[#9aa7c9]">
 			<span>{t("cloudConnectedAs", { name, email: cloud.email || name })}</span>
 			<button type="button" onClick={onImport} disabled={busy} className="fs-btn fs-btn-ghost h-30 disabled:opacity-60">
 				{busy ? t(`${key}ImportRunning`) : t(`${key}ImportButton`)}

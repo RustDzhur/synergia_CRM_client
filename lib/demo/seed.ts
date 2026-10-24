@@ -122,7 +122,7 @@ export async function seedDemoOrg(org: string, ownerName: string, locale: "ua" |
     }
     const EVENTS: [string, number, string, string][] = [["Team-Meeting", 0, "09:30", "10:00"], ["Kundentermin Nordlicht AG", 1, "14:00", "15:00"], ["Lieferantengespräch", 2, "11:00", "11:45"], ["Produktdemo für Berger", 3, "10:00", "11:00"], ["Quartalsplanung", 6, "13:00", "15:00"], ["Messe-Briefing", 8, "16:00", "16:30"]];
     for (const [title, plus, start, end] of EVENTS) {
-        await prisma.event.create({ data: { org, title, date: ymd(addDays(today, plus)), startTime: start, endDate: ymd(addDays(today, plus)), endTime: end, color: "#c6ff4d", createdByName: ownerName, calendar: "my" } });
+        await prisma.event.create({ data: { org, title, date: ymd(addDays(today, plus)), startTime: start, endDate: ymd(addDays(today, plus)), endTime: end, color: "#7c93ff", createdByName: ownerName, calendar: "my" } });
     }
 
     // ── склад: два склада, товары, движения ──

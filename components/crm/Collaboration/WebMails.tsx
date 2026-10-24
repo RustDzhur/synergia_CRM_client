@@ -198,14 +198,14 @@ export default function WebMails() {
 		return (
 			<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
 				{adding && (
-					<button type="button" onClick={() => setAdding(false)} className="mb-16 text-12 text-[#c6ff4d] transition-opacity hover:opacity-80">← {t("back")}</button>
+					<button type="button" onClick={() => setAdding(false)} className="mb-16 text-12 text-[#7c93ff] transition-opacity hover:opacity-80">← {t("back")}</button>
 				)}
 				<ProviderGrid onPick={setConnectFor} />
 				<MailConnectDialog provider={connectFor} oauth={oauth} onClose={() => setConnectFor(null)} onConnected={connected} />
 			</div>
 		);
 	}
-	if (!loaded || !active) return <div className="p-30 text-center text-13 text-[#8c948b]">…</div>;
+	if (!loaded || !active) return <div className="p-30 text-center text-13 text-[#9aa7c9]">…</div>;
 
 	// ── почтовый ящик ────────────────────────────────────────────────
 	const barButton = "text-13 font-semibold transition-opacity hover:opacity-80";
@@ -215,24 +215,24 @@ export default function WebMails() {
 				<FolderNav view={view} unreadInbox={unreadInbox} onChange={(v) => { setView(v); setSelected([]); }} />
 
 				<section className="min-w-0 flex-1">
-					<div className="mb-16 flex flex-wrap items-center gap-x-12 gap-y-6 text-12 text-[#8c948b]">
+					<div className="mb-16 flex flex-wrap items-center gap-x-12 gap-y-6 text-12 text-[#9aa7c9]">
 						{t("mailAccount")}:
 						{accounts.length > 1 ? (
 							<select value={active.id} onChange={(e) => { setActiveId(e.target.value); setSelected([]); }} aria-label={t("mailAccount")} className="fs-field h-34 max-w-[240px] px-10 text-12 font-medium">
 								{accounts.map((a) => <option key={a.id} value={a.id}>{a.email}</option>)}
 							</select>
 						) : (
-							<span className="font-medium text-[#f1f4ee]">{active.email} <span className="font-normal text-[#8C948B]">({LABELS[active.provider]})</span></span>
+							<span className="font-medium text-[#edf2ff]">{active.email} <span className="font-normal text-[#9AA7C9]">({LABELS[active.provider]})</span></span>
 						)}
-						<button type="button" onClick={() => sync(true)} disabled={syncing} aria-label={t("mailRefresh")} title={t("mailRefresh")} className="flex items-center text-[#c6ff4d] transition-opacity hover:opacity-80 disabled:opacity-60">
+						<button type="button" onClick={() => sync(true)} disabled={syncing} aria-label={t("mailRefresh")} title={t("mailRefresh")} className="flex items-center text-[#7c93ff] transition-opacity hover:opacity-80 disabled:opacity-60">
 							<TbRefresh size={17} className={syncing ? "animate-spin" : ""} />
 						</button>
-						<button type="button" onClick={() => setAdding(true)} className="text-[#c6ff4d] transition-opacity hover:opacity-80">{t("mailAddAccount")}</button>
-						<button type="button" onClick={() => setConfirmDisconnect(true)} className="flex items-center gap-2 text-[#c6ff4d] transition-opacity hover:opacity-80">
+						<button type="button" onClick={() => setAdding(true)} className="text-[#7c93ff] transition-opacity hover:opacity-80">{t("mailAddAccount")}</button>
+						<button type="button" onClick={() => setConfirmDisconnect(true)} className="flex items-center gap-2 text-[#7c93ff] transition-opacity hover:opacity-80">
 							<TbX size={14} /> {t("mailDisconnect")}
 						</button>
 						<label className="flex cursor-pointer items-center gap-6" title={t("mailAutoLeadsHint")}>
-							<input type="checkbox" checked={active.autoLeads} onChange={(e) => toggleAutoLeads(e.target.checked)} className="h-[15px] w-[15px] cursor-pointer accent-[#c6ff4d]" />
+							<input type="checkbox" checked={active.autoLeads} onChange={(e) => toggleAutoLeads(e.target.checked)} className="h-[15px] w-[15px] cursor-pointer accent-[#7c93ff]" />
 							{t("mailAutoLeads")}
 						</label>
 					</div>
@@ -248,8 +248,8 @@ export default function WebMails() {
 						<div className="flex items-center gap-16">
 							{selected.length > 0 && (
 								<>
-									<button type="button" onClick={() => { patch(selected, { starred: true }); setSelected([]); }} className={`${barButton} text-[#8c948b]`}>{t("markStar")}</button>
-									<button type="button" onClick={() => { patch(selected, { snoozed: view !== "snoozed" }); setSelected([]); }} className={`${barButton} text-[#8c948b]`}>
+									<button type="button" onClick={() => { patch(selected, { starred: true }); setSelected([]); }} className={`${barButton} text-[#9aa7c9]`}>{t("markStar")}</button>
+									<button type="button" onClick={() => { patch(selected, { snoozed: view !== "snoozed" }); setSelected([]); }} className={`${barButton} text-[#9aa7c9]`}>
 										{view === "snoozed" ? t("unsnooze") : t("snooze")}
 									</button>
 									<button type="button" onClick={() => setConfirmDelete(true)} className={`${barButton} text-danger`}>{t("delete")} ({selected.length})</button>

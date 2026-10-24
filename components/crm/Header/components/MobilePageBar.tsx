@@ -19,9 +19,9 @@ export default function MobilePageBar() {
 	const Icon = item.icon;
 	const content = (
 		<>
-			<Icon size={17} color="#c6ff4d" className="mr-10" />
-			<p className="text-14 font-medium text-[#f1f4ee]">{t(item.key)}</p>
-			{item.children && <MdKeyboardArrowDown size={18} color="#8c948b" className="ml-10" />}
+			<Icon size={17} color="#7c93ff" className="mr-10" />
+			<p className="text-14 font-medium text-[#edf2ff]">{t(item.key)}</p>
+			{item.children && <MdKeyboardArrowDown size={18} color="#9aa7c9" className="ml-10" />}
 		</>
 	);
 	const bar = "md:hidden flex items-center justify-center h-46 w-full border-b border-inkLine bg-inkDeep";

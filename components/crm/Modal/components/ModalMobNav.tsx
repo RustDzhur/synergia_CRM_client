@@ -26,11 +26,11 @@ export default function ModalMobNav() {
 			{items.map((item) => {
 				const active = isActivePath(path, item.href);
 				const Icon = item.icon;
-				const color = active ? "text-[#f1f4ee]" : "text-[#cfd4cb]";
-				const rowClass = `${ROW} ${active ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)]" : "hover:bg-[rgba(255,255,255,0.04)]"}`;
+				const color = active ? "text-[#edf2ff]" : "text-[#cfd4cb]";
+				const rowClass = `${ROW} ${active ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)]" : "hover:bg-[rgba(255,255,255,0.04)]"}`;
 				const content = (
 					<>
-						<Icon size={18} className={`shrink-0 ${active ? "text-[#c6ff4d]" : "text-[#8c948b]"}`} />
+						<Icon size={18} className={`shrink-0 ${active ? "text-[#7c93ff]" : "text-[#9aa7c9]"}`} />
 						<span className={`ml-10 text-15 font-medium ${color}`}>{t(item.key)}</span>
 					</>
 				);
@@ -59,7 +59,7 @@ export default function ModalMobNav() {
 												href={`/${locale}${child.href}`}
 												onClick={toggleMobileMenu}
 												className={`${ROW} h-38 pl-42 text-13 font-medium ${
-													isActivePath(path, child.href) ? "text-[#c6ff4d]" : "text-[#8c948b]"
+													isActivePath(path, child.href) ? "text-[#7c93ff]" : "text-[#9aa7c9]"
 												}`}>
 												{t(child.key)}
 											</Link>

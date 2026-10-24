@@ -16,8 +16,8 @@ export type ReportKind = "vat" | "eur" | "bwa" | "susa" | "vat-register" | "inco
 export function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
 	return (
 		<div className="fs-card p-16">
-			<p className="text-12 text-[#8c948b]">{label}</p>
-			<p className="mt-6 text-20 font-semibold" style={{ color: color ?? "#f1f4ee" }}>{value}</p>
+			<p className="text-12 text-[#9aa7c9]">{label}</p>
+			<p className="mt-6 text-20 font-semibold" style={{ color: color ?? "#edf2ff" }}>{value}</p>
 		</div>
 	);
 }
@@ -69,7 +69,7 @@ export function useReport<T>(kind: ReportKind, period: PeriodKind) {
 
 export function ReportLoading() {
 	const t = useTranslations("finance");
-	return <p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("loading")}</p>;
+	return <p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("loading")}</p>;
 }
 
 export function ReportFailed() {
@@ -115,7 +115,7 @@ export function AiAnalysis({ kind, period }: { kind: ReportKind; period: PeriodK
 					<p className="mt-10 whitespace-pre-wrap text-13 leading-[1.6] text-[#cfd4cb]">{text}</p>
 				</div>
 			)}
-			{notice && <p className="mt-10 text-12 leading-[1.5] text-[#8C948B]">{notice}</p>}
+			{notice && <p className="mt-10 text-12 leading-[1.5] text-[#9AA7C9]">{notice}</p>}
 		</div>
 	);
 }
@@ -125,7 +125,7 @@ export function AiAnalysis({ kind, period }: { kind: ReportKind; period: PeriodK
 export function ReportDisclaimer({ className = "" }: { className?: string }) {
 	const t = useTranslations("finance");
 	return (
-		<p className={`flex items-start gap-8 text-12 leading-[1.5] text-[#8C948B] ${className}`}>
+		<p className={`flex items-start gap-8 text-12 leading-[1.5] text-[#9AA7C9] ${className}`}>
 			<TbAlertTriangle size={14} className="mt-[2px] shrink-0 text-[#F4A100]" aria-hidden />
 			<span>{t("reportDisclaimer")}</span>
 		</p>

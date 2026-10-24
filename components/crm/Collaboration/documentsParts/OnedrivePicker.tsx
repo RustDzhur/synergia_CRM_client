@@ -82,20 +82,20 @@ export default function OnedrivePicker({ open, onClose, onImported }: { open: bo
 		<Modal open={open} onClose={onClose} label={t("onedrivePickerTitle")} align="top" className="w-full max-w-[640px]">
 			<div className="fs-popover flex max-h-[calc(100dvh-32px)] flex-col p-20">
 				<div className="mb-12 flex items-center justify-between gap-12">
-					<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("onedrivePickerTitle")}</h2>
-					<button type="button" onClick={() => void load(folderId)} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]" aria-label={t("refresh")}>
+					<h2 className="text-16 font-semibold text-[#edf2ff]">{t("onedrivePickerTitle")}</h2>
+					<button type="button" onClick={() => void load(folderId)} className="text-[#9aa7c9] transition-colors hover:text-[#7c93ff]" aria-label={t("refresh")}>
 						<TbRefresh size={17} />
 					</button>
 				</div>
 
 				<nav className="mb-10 flex flex-wrap items-center gap-x-6 gap-y-2 text-12" aria-label={t("breadcrumbs")}>
-					<button type="button" onClick={() => goTo(0)} className={stack.length ? "text-[#c6ff4d] hover:underline" : "font-medium text-[#f1f4ee]"}>
+					<button type="button" onClick={() => goTo(0)} className={stack.length ? "text-[#7c93ff] hover:underline" : "font-medium text-[#edf2ff]"}>
 						{t("onedriveRoot")}
 					</button>
 					{stack.map((f, i) => (
 						<span key={f.id} className="flex items-center gap-6">
-							<TbChevronRight size={13} className="text-[#8C948B]" aria-hidden />
-							<button type="button" onClick={() => goTo(i + 1)} className={i === stack.length - 1 ? "font-medium text-[#f1f4ee]" : "text-[#c6ff4d] hover:underline"}>
+							<TbChevronRight size={13} className="text-[#9AA7C9]" aria-hidden />
+							<button type="button" onClick={() => goTo(i + 1)} className={i === stack.length - 1 ? "font-medium text-[#edf2ff]" : "text-[#7c93ff] hover:underline"}>
 								{f.name}
 							</button>
 						</span>
@@ -104,24 +104,24 @@ export default function OnedrivePicker({ open, onClose, onImported }: { open: bo
 
 				<div className="fs-scroll min-h-0 flex-1 overflow-y-auto rounded-10 border border-inkLineSoft">
 					{entries === null ? (
-						<p className="p-16 text-13 text-[#8c948b]">…</p>
+						<p className="p-16 text-13 text-[#9aa7c9]">…</p>
 					) : entries.length === 0 ? (
-						<p className="p-16 text-13 text-[#8c948b]">{t("onedriveEmpty")}</p>
+						<p className="p-16 text-13 text-[#9aa7c9]">{t("onedriveEmpty")}</p>
 					) : (
 						<ul>
 							{entries.map((e) => (
 								<li key={e.id} className="border-b border-inkLineSoft last:border-0">
 									{e.folder ? (
-										<button type="button" onClick={() => enter(e)} className="flex w-full items-center gap-10 px-12 py-10 text-left text-13 text-[#f1f4ee] transition-colors hover:bg-[rgba(255,255,255,0.03)]">
-											<TbFolder size={17} className="shrink-0 text-[#c6ff4d]" />
+										<button type="button" onClick={() => enter(e)} className="flex w-full items-center gap-10 px-12 py-10 text-left text-13 text-[#edf2ff] transition-colors hover:bg-[rgba(255,255,255,0.03)]">
+											<TbFolder size={17} className="shrink-0 text-[#7c93ff]" />
 											<span className="truncate">{e.name}</span>
 										</button>
 									) : (
-										<label className="flex cursor-pointer items-center gap-10 px-12 py-10 text-13 text-[#f1f4ee] transition-colors hover:bg-[rgba(255,255,255,0.03)]">
-											<input type="checkbox" checked={checked.has(e.id)} onChange={() => toggle(e.id)} className="h-[15px] w-[15px] shrink-0 cursor-pointer accent-[#c6ff4d]" />
-											<TbFile size={17} className="shrink-0 text-[#8c948b]" />
+										<label className="flex cursor-pointer items-center gap-10 px-12 py-10 text-13 text-[#edf2ff] transition-colors hover:bg-[rgba(255,255,255,0.03)]">
+											<input type="checkbox" checked={checked.has(e.id)} onChange={() => toggle(e.id)} className="h-[15px] w-[15px] shrink-0 cursor-pointer accent-[#7c93ff]" />
+											<TbFile size={17} className="shrink-0 text-[#9aa7c9]" />
 											<span className="min-w-0 flex-1 truncate">{e.name}</span>
-											{e.size > 0 && <span className="shrink-0 text-12 text-[#8c948b]">{Math.max(1, Math.round(e.size / 1024))} {t("kb")}</span>}
+											{e.size > 0 && <span className="shrink-0 text-12 text-[#9aa7c9]">{Math.max(1, Math.round(e.size / 1024))} {t("kb")}</span>}
 										</label>
 									)}
 								</li>
@@ -131,7 +131,7 @@ export default function OnedrivePicker({ open, onClose, onImported }: { open: bo
 				</div>
 
 				<div className="mt-14 flex items-center justify-end gap-12">
-					<button type="button" onClick={onClose} className="px-12 py-8 text-12 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">{t("cancel")}</button>
+					<button type="button" onClick={onClose} className="px-12 py-8 text-12 text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">{t("cancel")}</button>
 					<button type="button" onClick={submit} disabled={busy || !checked.size} className="fs-btn fs-btn-primary h-34 disabled:opacity-60">
 						{busy ? t("onedriveImportRunning") : t("onedriveImportSelected", { count: checked.size })}
 					</button>

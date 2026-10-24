@@ -84,7 +84,7 @@ export const tone = (base: string): Tone => ({ top: mix(base, "#ffffff", 0.14), 
 
 export const C = {
     floor: "#252e28", floorAlt: "#262f29", grid: "rgba(255,255,255,0.055)", carpet: "#2c372f", corridor: "#171d19",
-    wallL: "#36423b", wallR: "#27302b", wallTop: "#46544b", lime: "#c6ff4d", teal: "#2DDEB6", amber: "#F4A100", red: "#EB5757",
+    wallL: "#36423b", wallR: "#27302b", wallTop: "#46544b", lime: "#7c93ff", teal: "#2DDEB6", amber: "#F4A100", red: "#EB5757",
     desk: tone("#4c5a52"), deskTop: tone("#667a6e"), dark: tone("#1e2521"), metal: tone("#76837a"), paper: tone("#eef2ea"), box: tone("#4d6054"), shelf: tone("#46544b"),
     screen: "#06140c", plant: "#2f7d4f", pot: tone("#39433d"),
 };

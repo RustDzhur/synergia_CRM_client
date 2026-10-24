@@ -73,13 +73,13 @@ export default function MailConnectDialog({ provider, oauth, onClose, onConnecte
 		<Modal open={provider !== null} onClose={onClose} label={LABEL[shown]} className="w-full max-w-[520px]">
 			<div className="fs-popover fs-scroll max-h-[calc(100vh-32px)] overflow-y-auto">
 				<div className="flex items-center justify-between border-b border-inkLine px-20 py-14">
-					<h2 className="text-14 font-semibold text-[#f1f4ee]">{LABEL[shown]}</h2>
-					<button type="button" onClick={onClose} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><TbX size={18} /></button>
+					<h2 className="text-14 font-semibold text-[#edf2ff]">{LABEL[shown]}</h2>
+					<button type="button" onClick={onClose} aria-label={t("close")} className="text-[#9aa7c9] transition-colors hover:text-[#edf2ff]"><TbX size={18} /></button>
 				</div>
 				<div className="flex flex-col gap-16 p-20 md:p-24">
-					<p className="text-13 text-[#8c948b]">{t(`mailHelp_${shown}`)}</p>
+					<p className="text-13 text-[#9aa7c9]">{t(`mailHelp_${shown}`)}</p>
 					{APP_PASSWORD_URL[shown] && (
-						<a href={APP_PASSWORD_URL[shown]} target="_blank" rel="noopener noreferrer" className="-mt-8 text-13 text-[#c6ff4d] underline underline-offset-2 transition-opacity hover:opacity-80">
+						<a href={APP_PASSWORD_URL[shown]} target="_blank" rel="noopener noreferrer" className="-mt-8 text-13 text-[#7c93ff] underline underline-offset-2 transition-opacity hover:opacity-80">
 							{t("mailCreateAppPassword")}
 						</a>
 					)}
@@ -90,7 +90,7 @@ export default function MailConnectDialog({ provider, oauth, onClose, onConnecte
 								{vendor === "google" ? t("mailSignInGoogle") : t("mailSignInMicrosoft")}
 							</button>
 							{!showPassword && (
-								<button type="button" onClick={() => setShowPassword(true)} className="text-center text-13 text-[#c6ff4d] transition-opacity hover:opacity-80">
+								<button type="button" onClick={() => setShowPassword(true)} className="text-center text-13 text-[#7c93ff] transition-opacity hover:opacity-80">
 									{t("mailUsePassword")}
 								</button>
 							)}

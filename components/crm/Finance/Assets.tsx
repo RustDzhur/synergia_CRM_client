@@ -160,29 +160,29 @@ export default function Assets() {
 	return (
 		<div>
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-x-20 gap-y-10">
-				<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("assetsTitle")}</h2>
+				<h2 className="text-16 font-semibold text-[#edf2ff]">{t("assetsTitle")}</h2>
 				<PeriodSwitch value={period} onChange={setPeriod} />
 			</div>
-			<p className="mb-16 text-12 leading-[1.5] text-[#8c948b]">{t("assetsHint")}</p>
+			<p className="mb-16 text-12 leading-[1.5] text-[#9aa7c9]">{t("assetsHint")}</p>
 
 			{data.summary && (
 				<div className="mb-16 grid grid-cols-2 gap-12 md:grid-cols-4">
 					<Stat label={t("assetsTotalCost")} value={money(data.summary.totalCost, currency, locale)} />
 					<Stat label={t("assetsPeriodDepreciation")} value={money(data.summary.depreciation, currency, locale)} color={data.summary.depreciation > 0 ? "#F4A100" : undefined} />
 					<Stat label={t("assetsDepreciationToDate")} value={money(data.summary.depreciationToDate, currency, locale)} />
-					<Stat label={t("assetsBookValue")} value={money(data.summary.bookValue, currency, locale)} color="#c6ff4d" />
+					<Stat label={t("assetsBookValue")} value={money(data.summary.bookValue, currency, locale)} color="#7c93ff" />
 				</div>
 			)}
 
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-x-20 gap-y-10">
-				<span className="text-12 text-[#8C948B]">{t("periodLabel")}: {range.from} – {range.to}</span>
+				<span className="text-12 text-[#9AA7C9]">{t("periodLabel")}: {range.from} – {range.to}</span>
 				<button type="button" onClick={openNew} className="fs-btn fs-btn-primary h-40">
 					<TbPlus size={16} /> {t("assetNew")}
 				</button>
 			</div>
 
 			{data.assets.length === 0 ? (
-				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("assetsEmpty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("assetsEmpty")}</p>
 			) : (
 				<section className="fs-card overflow-x-auto">
 					<table className="fs-table min-w-[980px]">
@@ -201,7 +201,7 @@ export default function Assets() {
 						<tbody>
 							{data.assets.map((a) => (
 								<tr key={a.id}>
-									<td className="px-16 text-13 font-medium text-[#f1f4ee]">
+									<td className="px-16 text-13 font-medium text-[#edf2ff]">
 										<div>{a.name}</div>
 										{/* выбытие видно прямо в строке: из месяца Abgang средство больше не списывается */}
 										{a.disposalDate && (
@@ -210,11 +210,11 @@ export default function Assets() {
 											</span>
 										)}
 									</td>
-									<td className="px-10 text-13 text-[#8c948b] fs-wrap">{a.category || "—"}</td>
-									<td className="px-10 text-13 text-[#8c948b]">{a.acquiredDate}</td>
+									<td className="px-10 text-13 text-[#9aa7c9] fs-wrap">{a.category || "—"}</td>
+									<td className="px-10 text-13 text-[#9aa7c9]">{a.acquiredDate}</td>
 									<td className="px-10 text-right text-13">{money(a.cost, a.currency, locale)}</td>
 									{/* срок в годах — единица измерения в заголовке колонки, в ячейке только число */}
-									<td className="px-10 text-right text-13 text-[#8c948b]">{a.usefulLifeYears}</td>
+									<td className="px-10 text-right text-13 text-[#9aa7c9]">{a.usefulLifeYears}</td>
 									<td className="px-10 text-right text-13">{(a.periodDepreciation ?? 0) !== 0 ? money(a.periodDepreciation ?? 0, a.currency, locale) : "—"}</td>
 									<td className="px-10 text-right text-13 font-medium">{money(a.bookValue, a.currency, locale)}</td>
 									<td className="px-10 text-right">
@@ -226,10 +226,10 @@ export default function Assets() {
 												type="button"
 												onClick={() => { setNotice(""); setDispose({ asset: a, date: a.disposalDate || today() }); setDisposeOpen(true); }}
 												aria-label={t("assetDispose")}
-												className="text-[#8C948B] transition-colors hover:text-[#F4A100]">
+												className="text-[#9AA7C9] transition-colors hover:text-[#F4A100]">
 												<TbCalendarOff size={16} />
 											</button>
-											<button type="button" onClick={() => setToDelete(a)} aria-label={t("delete")} className="text-[#8C948B] transition-colors hover:text-danger">
+											<button type="button" onClick={() => setToDelete(a)} aria-label={t("delete")} className="text-[#9AA7C9] transition-colors hover:text-danger">
 												<TbTrash size={16} />
 											</button>
 										</div>
@@ -244,7 +244,7 @@ export default function Assets() {
 			{/* Постановка на учёт: заполняются только те поля, что и в модели (models/Asset.ts) */}
 			<Modal open={formOpen} onClose={() => setFormOpen(false)} label={t("assetNew")} className="w-full max-w-[480px]">
 				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
-					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("assetNew")}</h2>
+					<h2 className="mb-14 text-16 font-semibold text-[#edf2ff]">{t("assetNew")}</h2>
 					<div className="flex flex-col gap-12">
 						<FormField label={t("assetName")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={200} autoFocus />
 						<div className="grid grid-cols-2 gap-12">
@@ -255,14 +255,14 @@ export default function Assets() {
 							<FormField label={t("colCost")} type="number" step="0.01" min="0" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} />
 							<FormField label={t("colUsefulLife")} type="number" min="1" max="100" value={form.usefulLifeYears} onChange={(e) => setForm({ ...form, usefulLifeYears: e.target.value })} />
 						</div>
-						<p className="text-11 leading-[1.5] text-[#8C948B]">{t("assetCostHint")}</p>
+						<p className="text-11 leading-[1.5] text-[#9AA7C9]">{t("assetCostHint")}</p>
 						<FormField label={t("assetResidualValue")} type="number" step="0.01" min="0" value={form.residualValue} onChange={(e) => setForm({ ...form, residualValue: e.target.value })} />
 						<label className="block">
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("notes")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("notes")}</span>
 							<textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} maxLength={1000} rows={3} className="fs-field fs-scroll w-full resize-none p-10 text-13 outline-none" />
 						</label>
 					</div>
-					<p className="mt-14 text-11 leading-[1.5] text-[#8C948B]">{t("assetLinearHint")}</p>
+					<p className="mt-14 text-11 leading-[1.5] text-[#9AA7C9]">{t("assetLinearHint")}</p>
 					{notice && <p className="mt-10 text-12 leading-[1.5] text-[#F4A100]">{notice}</p>}
 					<div className="mt-20 flex justify-end gap-10">
 						<button type="button" onClick={() => setFormOpen(false)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>
@@ -275,38 +275,38 @@ export default function Assets() {
 			<Modal open={scheduleOpen} onClose={() => setScheduleOpen(false)} label={t("assetScheduleTitle")} align="top" className="w-full max-w-[520px]">
 				{schedule && (
 					<div className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
-						<h2 className="text-16 font-semibold text-[#f1f4ee]">{schedule.name}</h2>
-						<p className="mt-6 text-12 leading-[1.5] text-[#8c948b]">{t("assetScheduleHint")}</p>
+						<h2 className="text-16 font-semibold text-[#edf2ff]">{schedule.name}</h2>
+						<p className="mt-6 text-12 leading-[1.5] text-[#9aa7c9]">{t("assetScheduleHint")}</p>
 
 						<div className="mt-12 flex flex-col">
 							<div className="flex items-center justify-between gap-16 border-b border-inkLineSoft py-9 text-13">
-								<span className="text-[#8c948b]">{t("colAcquired")}</span>
-								<span className="font-medium text-[#f1f4ee]">{schedule.acquiredDate}</span>
+								<span className="text-[#9aa7c9]">{t("colAcquired")}</span>
+								<span className="font-medium text-[#edf2ff]">{schedule.acquiredDate}</span>
 							</div>
 							<div className="flex items-center justify-between gap-16 border-b border-inkLineSoft py-9 text-13">
-								<span className="text-[#8c948b]">{t("colCost")}</span>
-								<span className="font-medium text-[#f1f4ee]">{money(schedule.cost, schedule.currency, locale)}</span>
+								<span className="text-[#9aa7c9]">{t("colCost")}</span>
+								<span className="font-medium text-[#edf2ff]">{money(schedule.cost, schedule.currency, locale)}</span>
 							</div>
 							<div className="flex items-center justify-between gap-16 border-b border-inkLineSoft py-9 text-13">
-								<span className="text-[#8c948b]">{t("colUsefulLife")}</span>
-								<span className="font-medium text-[#f1f4ee]">{schedule.usefulLifeYears}</span>
+								<span className="text-[#9aa7c9]">{t("colUsefulLife")}</span>
+								<span className="font-medium text-[#edf2ff]">{schedule.usefulLifeYears}</span>
 							</div>
 							{schedule.residualValue > 0 && (
 								<div className="flex items-center justify-between gap-16 border-b border-inkLineSoft py-9 text-13">
-									<span className="text-[#8c948b]">{t("assetResidualValue")}</span>
-									<span className="font-medium text-[#f1f4ee]">{money(schedule.residualValue, schedule.currency, locale)}</span>
+									<span className="text-[#9aa7c9]">{t("assetResidualValue")}</span>
+									<span className="font-medium text-[#edf2ff]">{money(schedule.residualValue, schedule.currency, locale)}</span>
 								</div>
 							)}
 						</div>
 
 						{schedule.disposalDate && (
-							<p className="mt-12 rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] px-12 py-8 text-12 leading-[1.5] text-[#e6eae2]">
+							<p className="mt-12 rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] px-12 py-8 text-12 leading-[1.5] text-[#c7d3f2]">
 								{t("assetScheduleDisposed", { date: schedule.disposalDate })}
 							</p>
 						)}
 
 						{scheduleRows.length === 0 ? (
-							<p className="mt-14 text-13 text-[#8c948b]">{t("empty")}</p>
+							<p className="mt-14 text-13 text-[#9aa7c9]">{t("empty")}</p>
 						) : (
 							<>
 								<table className="fs-table mt-14">
@@ -328,8 +328,8 @@ export default function Assets() {
 									</tbody>
 								</table>
 								<div className="flex items-center justify-between gap-16 border-t border-inkLine pt-10 text-13">
-									<span className="font-semibold text-[#e6eae2]">{t("total")}</span>
-									<span className="font-semibold text-[#f1f4ee]">{money(scheduleTotal, schedule.currency, locale)}</span>
+									<span className="font-semibold text-[#c7d3f2]">{t("total")}</span>
+									<span className="font-semibold text-[#edf2ff]">{money(scheduleTotal, schedule.currency, locale)}</span>
 								</div>
 							</>
 						)}
@@ -345,10 +345,10 @@ export default function Assets() {
 			<Modal open={disposeOpen} onClose={() => setDisposeOpen(false)} label={t("assetDisposeTitle")} className="w-full max-w-[420px]">
 				{dispose && (
 					<form onSubmit={(e) => { e.preventDefault(); saveDisposal(dispose.date); }} className="fs-popover p-20 md:p-24">
-						<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("assetDisposeTitle")}</h2>
-						<p className="mb-14 mt-6 text-12 leading-[1.5] text-[#8c948b]">{dispose.asset.name}</p>
+						<h2 className="text-16 font-semibold text-[#edf2ff]">{t("assetDisposeTitle")}</h2>
+						<p className="mb-14 mt-6 text-12 leading-[1.5] text-[#9aa7c9]">{dispose.asset.name}</p>
 						<FormField label={t("assetDisposalDate")} type="date" value={dispose.date} onChange={(e) => setDispose({ ...dispose, date: e.target.value })} autoFocus />
-						<p className="mt-10 text-11 leading-[1.5] text-[#8C948B]">{t("assetDisposalHint")}</p>
+						<p className="mt-10 text-11 leading-[1.5] text-[#9AA7C9]">{t("assetDisposalHint")}</p>
 						{notice && <p className="mt-10 text-12 leading-[1.5] text-[#F4A100]">{notice}</p>}
 						<div className="mt-20 flex items-center justify-between gap-10">
 							{dispose.asset.disposalDate

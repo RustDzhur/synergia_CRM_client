@@ -45,14 +45,14 @@ export default function ExpenseCategoriesCard() {
 
 	return (
 		<div className="mb-16 fs-card p-16 md:p-20">
-			<h3 className="mb-8 text-14 font-semibold text-[#f1f4ee]">{t("catSection")}</h3>
-			<p className="mb-14 text-12 leading-[1.5] text-[#8c948b]">{t("catSectionHint")}</p>
-			{list.length === 0 && <p className="mb-10 text-12 text-[#8C948B]">{t("catEmpty")}</p>}
+			<h3 className="mb-8 text-14 font-semibold text-[#edf2ff]">{t("catSection")}</h3>
+			<p className="mb-14 text-12 leading-[1.5] text-[#9aa7c9]">{t("catSectionHint")}</p>
+			{list.length === 0 && <p className="mb-10 text-12 text-[#9AA7C9]">{t("catEmpty")}</p>}
 			<div className="mb-12 flex flex-wrap gap-8">
 				{list.map((c) => (
 					<span key={c} className="flex items-center gap-6 rounded-10 border border-inkLine bg-[rgba(255,255,255,0.03)] px-10 py-6 text-12 text-[#cfd4cb]">
 						{c}
-						<button type="button" onClick={() => setList(list.filter((x) => x !== c))} aria-label={t("catRemove")} className="text-[#8C948B] transition-colors hover:text-danger">
+						<button type="button" onClick={() => setList(list.filter((x) => x !== c))} aria-label={t("catRemove")} className="text-[#9AA7C9] transition-colors hover:text-danger">
 							<TbX size={13} />
 						</button>
 					</span>

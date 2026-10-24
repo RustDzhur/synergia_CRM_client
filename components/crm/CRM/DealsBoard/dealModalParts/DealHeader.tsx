@@ -35,12 +35,12 @@ export default function DealHeader({ name, editing, draft, onDraft, onEdit, onSa
 					/>
 				) : (
 					<>
-						<h2 className="truncate text-18 font-semibold text-[#f1f4ee] md:text-20">{name}</h2>
+						<h2 className="truncate text-18 font-semibold text-[#edf2ff] md:text-20">{name}</h2>
 						<button
 							type="button"
 							aria-label={t("edit")}
 							onClick={onEdit}
-							className="shrink-0 text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
+							className="shrink-0 text-[#9aa7c9] transition-colors hover:text-[#7c93ff]">
 							<TbPencil size={18} />
 						</button>
 					</>
@@ -48,7 +48,7 @@ export default function DealHeader({ name, editing, draft, onDraft, onEdit, onSa
 			</div>
 			<div className="flex shrink-0 items-center gap-16">
 				<AiSummaryButton kind="deal" name={name} />
-				<button type="button" onClick={onClose} aria-label={t("close")} className="shrink-0 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+				<button type="button" onClick={onClose} aria-label={t("close")} className="shrink-0 text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
 					<TbX size={24} />
 				</button>
 			</div>

@@ -7,15 +7,15 @@ export default function BrandMark({ size = 28 }: { size?: number }) {
 	return (
 		<span
 			style={{ width: size, height: size, borderRadius: radius }}
-			className="flex shrink-0 items-center justify-center bg-[#c6ff4d]">
+			className="flex shrink-0 items-center justify-center bg-[#7c93ff]">
 			<svg width={size * 0.57} height={size * 0.57} viewBox="0 0 16 16" fill="none" aria-hidden>
 				<path
 					d="M8 .6c.35 3.2 1.6 4.45 4.8 4.8-3.2.35-4.45 1.6-4.8 4.8-.35-3.2-1.6-4.45-4.8-4.8C6.4 5.05 7.65 3.8 8 .6Z"
-					fill="#0a0c0b"
+					fill="#0b1120"
 				/>
 				<path
 					d="M11.9 9.6c.18 1.62.81 2.25 2.43 2.43-1.62.18-2.25.81-2.43 2.43-.18-1.62-.81-2.25-2.43-2.43 1.62-.18 2.25-.81 2.43-2.43Z"
-					fill="#0a0c0b"
+					fill="#0b1120"
 				/>
 			</svg>
 		</span>

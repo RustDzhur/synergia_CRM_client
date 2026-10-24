@@ -42,8 +42,8 @@ export default function ActivityWizard({ open, onClose, initial, edit = false }:
 	return (
 		<Modal open={open} onClose={onClose} label={t("actTitle")} className="w-full max-w-[520px]">
 			<div className="fs-popover flex flex-col gap-12 p-20">
-				<h2 className="text-15 font-semibold text-[#f1f4ee]">{t("actTitle")}</h2>
-				<p className="text-12 leading-[1.6] text-[#8c948b]">{t("actHint")}</p>
+				<h2 className="text-15 font-semibold text-[#edf2ff]">{t("actTitle")}</h2>
+				<p className="text-12 leading-[1.6] text-[#9aa7c9]">{t("actHint")}</p>
 				<div className="flex flex-col gap-8">
 					{ACTIVITIES.map((a) => (
 						<label key={a} className="flex items-center gap-10 text-13 text-[#cfd4cb]">
@@ -51,9 +51,9 @@ export default function ActivityWizard({ open, onClose, initial, edit = false }:
 								type="checkbox"
 								checked={picked.includes(a)}
 								onChange={(e) => setPicked(e.target.checked ? [...picked, a] : picked.filter((x) => x !== a))}
-								className="h-16 w-16 accent-[#c6ff4d]"
+								className="h-16 w-16 accent-[#7c93ff]"
 							/>
-							<span>{t(`act_${a}`)}<span className="ml-8 text-11 text-[#8c948b]">{t(`actHint_${a}`)}</span></span>
+							<span>{t(`act_${a}`)}<span className="ml-8 text-11 text-[#9aa7c9]">{t(`actHint_${a}`)}</span></span>
 						</label>
 					))}
 				</div>

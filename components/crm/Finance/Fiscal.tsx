@@ -94,14 +94,14 @@ export default function Fiscal() {
 
 	const fmt = (iso: string) => (iso ? new Date(iso).toLocaleString(locale === "ua" ? "uk-UA" : locale === "de" ? "de-DE" : "en-GB") : "");
 
-	if (!state) return <p className="text-13 text-[#8c948b]">{t("loading")}</p>;
+	if (!state) return <p className="text-13 text-[#9aa7c9]">{t("loading")}</p>;
 
 	if (!state.connected) {
 		return (
 			<div className="fs-card max-w-[640px] p-16 md:p-20">
-				<h2 className="text-15 font-semibold text-[#f1f4ee]">{t("fiscalTitle")}</h2>
-				<p className="mt-8 text-13 leading-[1.6] text-[#8c948b]">{t("fiscalNotConnected")}</p>
-				<p className="mt-6 text-12 text-[#8C948B]">{t("fiscalConnectHint")}</p>
+				<h2 className="text-15 font-semibold text-[#edf2ff]">{t("fiscalTitle")}</h2>
+				<p className="mt-8 text-13 leading-[1.6] text-[#9aa7c9]">{t("fiscalNotConnected")}</p>
+				<p className="mt-6 text-12 text-[#9AA7C9]">{t("fiscalConnectHint")}</p>
 			</div>
 		);
 	}
@@ -109,14 +109,14 @@ export default function Fiscal() {
 	return (
 		<div className="flex flex-col gap-16">
 			<div className="flex flex-wrap items-center justify-between gap-10">
-				<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("fiscalTitle")}</h2>
+				<h2 className="text-16 font-semibold text-[#edf2ff]">{t("fiscalTitle")}</h2>
 				<div className="flex items-center gap-10">
 					{state.auto ? (
-						<span className="inline-flex items-center gap-6 rounded-8 border border-[rgba(198,255,77,0.35)] bg-[rgba(198,255,77,0.10)] px-10 py-5 text-12 text-[#c6ff4d]">
+						<span className="inline-flex items-center gap-6 rounded-8 border border-[rgba(124,147,255,0.35)] bg-[rgba(124,147,255,0.10)] px-10 py-5 text-12 text-[#7c93ff]">
 							<TbCheck size={13} /> {t("fiscalAutoOn")}
 						</span>
 					) : (
-						<span className="rounded-8 border border-inkLine px-10 py-5 text-12 text-[#8C948B]">{t("fiscalAutoOff")}</span>
+						<span className="rounded-8 border border-inkLine px-10 py-5 text-12 text-[#9AA7C9]">{t("fiscalAutoOff")}</span>
 					)}
 				</div>
 			</div>
@@ -125,8 +125,8 @@ export default function Fiscal() {
 			<div className="fs-card p-16 md:p-20">
 				<div className="flex flex-wrap items-center justify-between gap-10">
 					<div>
-						<p className="text-13 font-medium text-[#f1f4ee]">{state.shift.open ? t("fiscalShiftOpen", { id: state.shift.open.id.slice(0, 8) }) : t("fiscalShiftClosedState")}</p>
-						<p className="mt-4 text-12 text-[#8c948b]">{t("fiscalShiftHint")}</p>
+						<p className="text-13 font-medium text-[#edf2ff]">{state.shift.open ? t("fiscalShiftOpen", { id: state.shift.open.id.slice(0, 8) }) : t("fiscalShiftClosedState")}</p>
+						<p className="mt-4 text-12 text-[#9aa7c9]">{t("fiscalShiftHint")}</p>
 					</div>
 					<div className="flex gap-10">
 						{!state.shift.open && (
@@ -145,7 +145,7 @@ export default function Fiscal() {
 					<div className="mt-14 overflow-x-auto">
 						<table className="w-full min-w-[420px] text-12">
 							<thead>
-								<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#8c948b]">
+								<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#9aa7c9]">
 									<th className="pb-6 font-medium">{t("fiscalShiftClosedAt")}</th>
 									<th className="pb-6 font-medium">{t("fiscalReceiptsCount")}</th>
 									<th className="pb-6 text-right font-medium">{t("fiscalTurnover")}</th>
@@ -167,13 +167,13 @@ export default function Fiscal() {
 
 			{/* Чеки: продажи, возвраты и ошибки — одной лентой */}
 			<div className="fs-card overflow-x-auto p-16 md:p-20">
-				<p className="mb-12 text-13 font-medium text-[#f1f4ee]">{t("fiscalReceipts")}</p>
+				<p className="mb-12 text-13 font-medium text-[#edf2ff]">{t("fiscalReceipts")}</p>
 				{state.receipts.length === 0 ? (
-					<p className="text-12 text-[#8c948b]">{t("fiscalEmpty")}</p>
+					<p className="text-12 text-[#9aa7c9]">{t("fiscalEmpty")}</p>
 				) : (
 					<table className="w-full min-w-[720px] text-12">
 						<thead>
-							<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#8c948b]">
+							<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#9aa7c9]">
 								<th className="pb-8 font-medium">{t("fiscalColInvoice")}</th>
 								<th className="pb-8 font-medium">{t("fiscalColAmount")}</th>
 								<th className="pb-8 font-medium">{t("fiscalColPayType")}</th>
@@ -186,8 +186,8 @@ export default function Fiscal() {
 							{state.receipts.map((row) => (
 								<tr key={row.id} className="border-t border-inkLine align-top text-[#cfd4cb]">
 									<td className="py-8">
-										<span className="text-[#f1f4ee]">{row.number}</span>
-										<span className="ml-6 text-11 text-[#8c948b]">{row.kind === "credit_note" ? t("creditNote") : row.customerName}</span>
+										<span className="text-[#edf2ff]">{row.number}</span>
+										<span className="ml-6 text-11 text-[#9aa7c9]">{row.kind === "credit_note" ? t("creditNote") : row.customerName}</span>
 									</td>
 									<td className="py-8">{money(row.paidAmount, row.currency, locale)}</td>
 									<td className="py-8">{row.fiscalPayType === "CASH" ? t("fiscalCash") : row.fiscalPayType === "CARD" ? t("fiscalCard") : "—"}</td>
@@ -195,13 +195,13 @@ export default function Fiscal() {
 										{row.fiscalCode ? (
 											row.fiscalUrl ? (
 												// Ссылка Checkbox: чек открывается на сайте налоговой — оттуда его скачивают и печатают
-												<a href={row.fiscalUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-4 text-[#c6ff4d] hover:underline" title={t("fiscalOpenHint")}>
+												<a href={row.fiscalUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-4 text-[#7c93ff] hover:underline" title={t("fiscalOpenHint")}>
 													{row.fiscalCode} <TbExternalLink size={12} />
 												</a>
 											) : (
 												<span className="inline-flex flex-wrap items-center gap-6 text-[#cfd4cb]">
 													{row.fiscalCode}
-													<button type="button" disabled={busy !== ""} onClick={() => void fetchLink(row, "sale")} className="text-11 text-[#c6ff4d] hover:underline disabled:opacity-50">
+													<button type="button" disabled={busy !== ""} onClick={() => void fetchLink(row, "sale")} className="text-11 text-[#7c93ff] hover:underline disabled:opacity-50">
 														{t("fiscalReceiptLink")}
 													</button>
 												</span>
@@ -209,7 +209,7 @@ export default function Fiscal() {
 										) : row.fiscalError ? (
 											<span className="inline-flex items-center gap-4 text-[#F4A100]"><TbAlertTriangle size={12} /> {row.fiscalError}</span>
 										) : (
-											<span className="text-[#8C948B]">{row.needed ? t("fiscalNeeded") : t("fiscalOptional")}</span>
+											<span className="text-[#9AA7C9]">{row.needed ? t("fiscalNeeded") : t("fiscalOptional")}</span>
 										)}
 										{/* Проданный чек с возвратом: отметка, чтобы в списке было видно, что товар вернули */}
 										{row.returnedBy && row.kind === "invoice" && (
@@ -224,7 +224,7 @@ export default function Fiscal() {
 												) : (
 													<span className="inline-flex flex-wrap items-center gap-6">
 														{t("fiscalReturnChip", { code: row.fiscalReturnCode })}
-														<button type="button" disabled={busy !== ""} onClick={() => void fetchLink(row, "return")} className="text-[#c6ff4d] hover:underline disabled:opacity-50">
+														<button type="button" disabled={busy !== ""} onClick={() => void fetchLink(row, "return")} className="text-[#7c93ff] hover:underline disabled:opacity-50">
 															{t("fiscalReceiptLink")}
 														</button>
 													</span>
@@ -233,7 +233,7 @@ export default function Fiscal() {
 										)}
 										{row.fiscalReturnError && <p className="mt-4 text-11 text-[#F4A100]">{row.fiscalReturnError}</p>}
 									</td>
-									<td className="py-8 text-[#8c948b]">{fmt(row.fiscalAt || row.fiscalReturnAt)}</td>
+									<td className="py-8 text-[#9aa7c9]">{fmt(row.fiscalAt || row.fiscalReturnAt)}</td>
 									<td className="py-8 text-right">
 										{!row.fiscalCode && (
 											<div className="flex items-center justify-end gap-8">
@@ -260,7 +260,7 @@ export default function Fiscal() {
 						</tbody>
 					</table>
 				)}
-				<p className="mt-12 text-11 text-[#8C948B]">{t("fiscalRuleHint")}</p>
+				<p className="mt-12 text-11 text-[#9AA7C9]">{t("fiscalRuleHint")}</p>
 			</div>
 
 			<ConfirmDialog

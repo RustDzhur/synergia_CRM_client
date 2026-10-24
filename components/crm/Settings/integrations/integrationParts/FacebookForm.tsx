@@ -21,8 +21,8 @@ export default function FacebookForm({ channel, siteApp, origin, appId, appSecre
 	const t = useTranslations("settings");
 	return (
 		<div className="flex flex-col gap-10 rounded-12 border border-inkLine bg-[rgba(255,255,255,0.02)] p-14">
-			<span className="text-13 font-medium text-[#f1f4ee]">{t("intFbTitle")}</span>
-			<p className="text-11 text-[#8c948b]">{siteApp ? t("intFbSiteApp") : t("intFbHint")}</p>
+			<span className="text-13 font-medium text-[#edf2ff]">{t("intFbTitle")}</span>
+			<p className="text-11 text-[#9aa7c9]">{siteApp ? t("intFbSiteApp") : t("intFbHint")}</p>
 			{/* Приложение Meta настроено на сайте (те же переменные, что у рекламных кабинетов) —
 			    ключи не спрашиваем, иначе их пришлось бы искать в кабинете Meta без нужды */}
 			{!siteApp && <FormField label={t("intfAppId")} value={appId} onChange={(e) => onAppId(e.target.value)} autoComplete="off" placeholder="1098409499579046" maxLength={40} />}

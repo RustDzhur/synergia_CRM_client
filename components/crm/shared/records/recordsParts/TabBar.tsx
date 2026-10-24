@@ -48,7 +48,7 @@ export default function TabBar({ tabs, active, onChange, label }: Props) {
 					type="button"
 					aria-label={tr("scrollTabs")}
 					onClick={() => barRef.current?.scrollBy({ left: 160, behavior: "smooth" })}
-					className="absolute right-0 top-1/2 hidden h-34 w-34 -translate-y-1/2 items-center justify-center rounded-50 bg-[rgba(255,255,255,0.06)] text-[#8c948b] transition-colors hover:text-[#f1f4ee] md:flex">
+					className="absolute right-0 top-1/2 hidden h-34 w-34 -translate-y-1/2 items-center justify-center rounded-50 bg-[rgba(255,255,255,0.06)] text-[#9aa7c9] transition-colors hover:text-[#edf2ff] md:flex">
 					<MdChevronRight size={20} />
 				</button>
 			)}

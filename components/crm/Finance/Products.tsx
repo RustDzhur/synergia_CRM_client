@@ -106,7 +106,7 @@ export default function Products({ preset }: { preset?: { view?: "products" | "s
 						key={v}
 						type="button"
 						onClick={() => setView(v)}
-						className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${view === v ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#f1f4ee]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+						className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${view === v ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)] text-[#edf2ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`}>
 						{t(`stockTab_${v}`)}
 					</button>
 				))}
@@ -146,7 +146,7 @@ export default function Products({ preset }: { preset?: { view?: "products" | "s
 				</div>
 			</div>
 			{visible.length === 0 ? (
-				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("empty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("empty")}</p>
 			) : (
 				<div className="fs-card overflow-x-auto">
 					<table className="fs-table min-w-[640px] text-left">
@@ -154,7 +154,7 @@ export default function Products({ preset }: { preset?: { view?: "products" | "s
 						<tbody>
 							{visible.map((p) => (
 								<tr key={p.id} className="cursor-pointer" onClick={() => openEdit(p.id)}>
-									<td className="px-16 text-13 font-medium text-[#f1f4ee]">
+									<td className="px-16 text-13 font-medium text-[#edf2ff]">
 										<span className="flex items-center gap-10">
 											{/* Картинка товара из ссылки в карточке: маленькая, с заглушкой, если ссылки нет */}
 											{p.image ? (
@@ -165,18 +165,18 @@ export default function Products({ preset }: { preset?: { view?: "products" | "s
 											<span className="min-w-0">{p.name}</span>
 										</span>
 									</td>
-									<td className="px-10 text-13 text-[#8c948b]">{p.sku}{p.barcode ? <span className="ml-6 text-11 text-[#8C948B]">{p.barcode}</span> : null}</td>
-									<td className="px-10 text-13 text-[#8c948b]">{t(p.type === "good" ? "typeGood" : "typeService")}</td>
+									<td className="px-10 text-13 text-[#9aa7c9]">{p.sku}{p.barcode ? <span className="ml-6 text-11 text-[#9AA7C9]">{p.barcode}</span> : null}</td>
+									<td className="px-10 text-13 text-[#9aa7c9]">{t(p.type === "good" ? "typeGood" : "typeService")}</td>
 									<td className="px-10 text-right text-13">{money(p.salePrice, settings?.currency ?? "EUR", locale)}</td>
 									<td className="px-10 text-right text-13">
 										{p.type === "good" ? (
-											<span className={`inline-flex items-center gap-[4px] ${p.stockQty <= p.reorderLevel ? "text-danger" : "text-[#f1f4ee]"}`}>
+											<span className={`inline-flex items-center gap-[4px] ${p.stockQty <= p.reorderLevel ? "text-danger" : "text-[#edf2ff]"}`}>
 												{p.stockQty <= p.reorderLevel && <TbAlertTriangle size={14} />} {p.stockQty} {p.unit}
 											</span>
 										) : "—"}
 									</td>
 									<td className="px-10 text-right">
-										<button type="button" onClick={(e) => { e.stopPropagation(); setToDelete(p.id); }} aria-label={t("delete")} className="text-[#8C948B] transition-colors hover:text-danger"><TbTrash size={16} /></button>
+										<button type="button" onClick={(e) => { e.stopPropagation(); setToDelete(p.id); }} aria-label={t("delete")} className="text-[#9AA7C9] transition-colors hover:text-danger"><TbTrash size={16} /></button>
 									</td>
 								</tr>
 							))}
@@ -190,22 +190,22 @@ export default function Products({ preset }: { preset?: { view?: "products" | "s
 
 			<Modal open={open} onClose={() => setOpen(false)} label={editId ? t("editProduct") : t("newProduct")} className="w-full max-w-[480px]">
 				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
-					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{editId ? t("editProduct") : t("newProduct")}</h2>
+					<h2 className="mb-14 text-16 font-semibold text-[#edf2ff]">{editId ? t("editProduct") : t("newProduct")}</h2>
 					<div className="flex flex-col gap-12">
 						<FormField label={t("itemDescription")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={200} autoFocus />
 						{/* Артикул — внутренний код товара, штрихкод — номер с этикетки: сканер вводит его как текст */}
 						<div className="grid grid-cols-2 gap-12">
 							<div>
 								<FormField label={t("productSku")} value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} maxLength={60} />
-								<span className="mt-[4px] block text-11 text-[#8C948B]">{t("productSkuHint")}</span>
+								<span className="mt-[4px] block text-11 text-[#9AA7C9]">{t("productSkuHint")}</span>
 							</div>
 							<div>
 								<FormField label={t("productBarcode")} value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} maxLength={40} placeholder="4820000000000" />
-								<span className="mt-[4px] block text-11 text-[#8C948B]">{t("productBarcodeHint")}</span>
+								<span className="mt-[4px] block text-11 text-[#9AA7C9]">{t("productBarcodeHint")}</span>
 							</div>
 						</div>
 						<label className="block">
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("colType")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("colType")}</span>
 							<select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as "good" | "service" })} className="fs-field h-40 w-full px-12 text-13 outline-none">
 								<option value="service">{t("typeService")}</option>
 								<option value="good">{t("typeGood")}</option>
@@ -225,7 +225,7 @@ export default function Products({ preset }: { preset?: { view?: "products" | "s
 								<FormField label={t("reorderLevel")} type="number" value={form.reorderLevel} onChange={(e) => setForm({ ...form, reorderLevel: e.target.value })} />
 							</div>
 						)}
-						{form.type === "good" && editId && <p className="text-11 text-[#8C948B]">{t("stockHint")}</p>}
+						{form.type === "good" && editId && <p className="text-11 text-[#9AA7C9]">{t("stockHint")}</p>}
 						<FormField label={t("productImage")} value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} maxLength={500} placeholder="https://…" />
 						{/* ВЭД (ТЗ §12): код УКТ ЗЕД/HS, вес единицы и страна происхождения — для пакувального листа */}
 						<div className="grid grid-cols-3 gap-12">
@@ -235,14 +235,14 @@ export default function Products({ preset }: { preset?: { view?: "products" | "s
 						</div>
 						{/* Прайс: типы цен и ступени по количеству (ТЗ §12, «Опт») */}
 						<div>
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("productPrices")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("productPrices")}</span>
 							<div className="flex flex-col gap-8">
 								{form.prices.map((row, i) => (
 									<div key={i} className="grid grid-cols-[1fr_90px_90px_32px] items-center gap-8">
 										<input value={row.type} onChange={(e) => setForm({ ...form, prices: form.prices.map((x, j) => (j === i ? { ...x, type: e.target.value } : x)) })} placeholder={t("priceTypePlaceholder")} className="fs-field h-34 w-full px-10 text-12 outline-none" />
 										<input value={row.price} onChange={(e) => setForm({ ...form, prices: form.prices.map((x, j) => (j === i ? { ...x, price: e.target.value.replace(/[^\d.]/g, "") } : x)) })} placeholder={t("colPrice")} className="fs-field h-34 w-full px-10 text-12 outline-none" />
 										<input value={row.minQty} onChange={(e) => setForm({ ...form, prices: form.prices.map((x, j) => (j === i ? { ...x, minQty: e.target.value.replace(/[^\d]/g, "") } : x)) })} placeholder={t("priceFromQty")} className="fs-field h-34 w-full px-10 text-12 outline-none" />
-										<button type="button" onClick={() => setForm({ ...form, prices: form.prices.filter((_, j) => j !== i) })} aria-label={t("delete")} className="text-[#8c948b] transition-colors hover:text-danger">
+										<button type="button" onClick={() => setForm({ ...form, prices: form.prices.filter((_, j) => j !== i) })} aria-label={t("delete")} className="text-[#9aa7c9] transition-colors hover:text-danger">
 											<TbTrash size={14} />
 										</button>
 									</div>

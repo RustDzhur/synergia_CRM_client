@@ -28,7 +28,7 @@ export function Shadow({ x, y, w, d, o = 0.5 }: { x: number; y: number; w: numbe
 }
 
 /** Кресло у стола: сиденье, спинка, стойка; акцентная кромка цвета робота. */
-export function Chair({ x, y, accent = "#c6ff4d" }: { x: number; y: number; accent?: string }) {
+export function Chair({ x, y, accent = "#7c93ff" }: { x: number; y: number; accent?: string }) {
 	return (
 		<g>
 			<Shadow x={x - 0.1} y={y - 0.1} w={0.7} d={0.7} o={0.4} />
@@ -84,8 +84,8 @@ export function RoomSign({ x, y, label, count, active }: { x: number; y: number;
 	const w = Math.max(70, text.length * 7 + 22);
 	return (
 		<g transform={`translate(${sx.toFixed(1)} ${(sy - 62).toFixed(1)})`} style={{ pointerEvents: "none" }}>
-			<rect x={-w / 2} y={-11} width={w} height={22} rx={11} fill="#0d110f" stroke={active ? "#c6ff4d" : "rgba(198,255,77,0.45)"} strokeWidth="1" />
-			<circle cx={-w / 2 + 11} cy={0} r={3} fill={active ? "#c6ff4d" : "rgba(198,255,77,0.55)"} />
+			<rect x={-w / 2} y={-11} width={w} height={22} rx={11} fill="#0d110f" stroke={active ? "#7c93ff" : "rgba(124,147,255,0.45)"} strokeWidth="1" />
+			<circle cx={-w / 2 + 11} cy={0} r={3} fill={active ? "#7c93ff" : "rgba(124,147,255,0.55)"} />
 			<text x={-w / 2 + 20} y={4} fontSize="11.5" fontWeight="600" fill="#e6ecdf" letterSpacing="0.3">{text}</text>
 		</g>
 	);

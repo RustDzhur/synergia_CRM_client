@@ -5,7 +5,7 @@ import { IsoBox, Papers, Plane, Shadow } from "./prims";
 // Рабочие места по ролям. Стол занимает 2×1 клетки с левым верхним углом (x, y); работающий (on) — экран ярче, бумаги и детали движутся.
 // Экраны рисуются плоскостью на лицевой грани монитора: внутри — обычные SVG-прямоугольники в пикселях (ширина w·32 − 4, высота 17).
 
-const LIME = "#c6ff4d", TEAL = "#2DDEB6", AMBER = "#F4A100", RED = "#EB5757", GRAY = "rgba(255,255,255,0.28)", DIM = "rgba(255,255,255,0.14)";
+const LIME = "#7c93ff", TEAL = "#2DDEB6", AMBER = "#F4A100", RED = "#EB5757", GRAY = "rgba(255,255,255,0.28)", DIM = "rgba(255,255,255,0.14)";
 const GREEN_TOP = 16.5; // высота столешницы
 
 function Desk({ x, y, w = 2, h = 14 }: { x: number; y: number; w?: number; h?: number }) {
@@ -14,10 +14,10 @@ function Desk({ x, y, w = 2, h = 14 }: { x: number; y: number; w?: number; h?: n
 	return (
 		<g>
 			<Shadow x={x} y={y} w={w} d={1} o={0.42} />
-			<polygon points={[P(x + 0.1, y + 0.1, 0), P(x + w - 0.1, y + 0.1, 0), P(x + w - 0.1, y + 0.9, 0), P(x + 0.1, y + 0.9, 0)].join(" ")} fill="rgba(198,255,77,0.10)" filter="url(#f-soft)" />
+			<polygon points={[P(x + 0.1, y + 0.1, 0), P(x + w - 0.1, y + 0.1, 0), P(x + w - 0.1, y + 0.9, 0), P(x + 0.1, y + 0.9, 0)].join(" ")} fill="rgba(124,147,255,0.10)" filter="url(#f-soft)" />
 			{legs.map(([dx, dy], i) => <IsoBox key={i} x={x + dx} y={y + dy} w={0.09} d={0.09} h={h} c={C.metal} flat />)}
 			<IsoBox x={x} y={y} z={h - 1} w={w} d={0.1} h={1} c={C.dark} flat />
-			<IsoBox x={x - 0.03} y={y - 0.03} z={h} w={w + 0.06} d={1.06} h={2.5} c={C.deskTop} edge="rgba(198,255,77,0.6)" />
+			<IsoBox x={x - 0.03} y={y - 0.03} z={h} w={w + 0.06} d={1.06} h={2.5} c={C.deskTop} edge="rgba(124,147,255,0.6)" />
 		</g>
 	);
 }
@@ -28,9 +28,9 @@ function Monitor({ x, y, z = GREEN_TOP, w = 1.3, on, screen }: { x: number; y: n
 	const sw = w * 32 - 4;
 	return (
 		<g>
-			{on && <Plane x={x} y={y + 0.1} z={z + 24}><rect x="-2" y="-2" width={sw + 8} height="22" rx="6" fill="#c6ff4d" opacity="0.38" filter="url(#f-bloom)" /></Plane>}
+			{on && <Plane x={x} y={y + 0.1} z={z + 24}><rect x="-2" y="-2" width={sw + 8} height="22" rx="6" fill="#7c93ff" opacity="0.38" filter="url(#f-bloom)" /></Plane>}
 			<IsoBox x={x + w / 2 - 0.14} y={y + 0.04} z={z} w={0.28} d={0.22} h={3} c={C.dark} />
-			<IsoBox x={x + w / 2 - 0.3} y={y + 0.5} z={z} w={0.6} d={0.24} h={0.7} c={C.dark} edge={on ? "rgba(198,255,77,0.7)" : undefined} flat />
+			<IsoBox x={x + w / 2 - 0.3} y={y + 0.5} z={z} w={0.6} d={0.24} h={0.7} c={C.dark} edge={on ? "rgba(124,147,255,0.7)" : undefined} flat />
 			<IsoBox x={x} y={y} z={z + 3} w={w} d={0.1} h={21} c={C.dark} />
 			<Plane x={x} y={y + 0.1} z={z + 24}>
 				<rect x="2" y="2" width={sw} height="17" rx="1" fill={C.screen} />
@@ -115,7 +115,7 @@ function Gear({ on, r = 6.5 }: { on: boolean; r?: number }) {
 
 const Mug = ({ x, y, z = GREEN_TOP }: { x: number; y: number; z?: number }) => <IsoBox x={x} y={y} z={z} w={0.17} d={0.17} h={3.4} c={tone("#e8ede4")} />;
 const Box = ({ x, y, z = 0, w = 0.6, d = 0.6, h = 7, tape = true }: { x: number; y: number; z?: number; w?: number; d?: number; h?: number; tape?: boolean }) => (
-	<g><IsoBox x={x} y={y} z={z} w={w} d={d} h={h} c={C.box} />{tape && <IsoBox x={x + w * 0.4} y={y - 0.002} z={z + h} w={w * 0.2} d={d + 0.004} h={0.4} c={tone("#c6ff4d")} />}</g>
+	<g><IsoBox x={x} y={y} z={z} w={w} d={d} h={h} c={C.box} />{tape && <IsoBox x={x + w * 0.4} y={y - 0.002} z={z + h} w={w * 0.2} d={d + 0.004} h={0.4} c={tone("#7c93ff")} />}</g>
 );
 
 export type StationKind = "errors" | "seo" | "blogwriter" | "accounting" | "sales" | "dunning" | "controlling" | "warehouse" | "purchasing" | "production" | "tasks" | "mail" | "hr" | "marketing" | "support" | "orders" | "generic";
@@ -139,7 +139,7 @@ export function Station({ kind, x, y, on }: { kind: StationKind; x: number; y: n
 				<g>
 					<Desk x={x} y={y} /><Papers x={x + 0.05} y={y + 0.45} z={z} n={4} /><Papers x={x + 1.45} y={y + 0.5} z={z} n={2} />
 					<Monitor x={x + 0.5} y={y + 0.12} on={on} screen={sheet} />
-					<IsoBox x={x + 1.1} y={y + 0.62} z={z} w={0.3} d={0.36} h={2} c={C.dark} edge="rgba(198,255,77,0.5)" />
+					<IsoBox x={x + 1.1} y={y + 0.62} z={z} w={0.3} d={0.36} h={2} c={C.dark} edge="rgba(124,147,255,0.5)" />
 					{on && <g className="sc-shuffle"><IsoBox x={x + 0.78} y={y + 0.6} z={z + 4} w={0.5} d={0.66} h={0.9} c={C.paper} /></g>}
 				</g>
 			);
@@ -171,7 +171,7 @@ export function Station({ kind, x, y, on }: { kind: StationKind; x: number; y: n
 			return (
 				<g>
 					<Desk x={x} y={y} /><Monitor x={x + 0.4} y={y + 0.12} on={on} screen={kanban} /><Mug x={x + 0.12} y={y + 0.62} />
-					<IsoBox x={x + 1.55} y={y + 0.5} z={z} w={0.32} d={0.42} h={2.6} c={C.dark} /><IsoBox x={x + 1.57} y={y + 0.52} z={z + 2.6} w={0.28} d={0.1} h={1.4} c={tone("#c6ff4d")} />
+					<IsoBox x={x + 1.55} y={y + 0.5} z={z} w={0.32} d={0.42} h={2.6} c={C.dark} /><IsoBox x={x + 1.57} y={y + 0.52} z={z + 2.6} w={0.28} d={0.1} h={1.4} c={tone("#7c93ff")} />
 				</g>
 			);
 		case "orders":
@@ -199,12 +199,12 @@ export function Station({ kind, x, y, on }: { kind: StationKind; x: number; y: n
 		case "warehouse":
 			return (
 				<g>
-					{[0, 12, 24].map((zz) => <IsoBox key={zz} x={x} y={y} z={zz + 2} w={2.1} d={0.85} h={1.3} c={C.shelf} edge="rgba(198,255,77,0.28)" />)}
+					{[0, 12, 24].map((zz) => <IsoBox key={zz} x={x} y={y} z={zz + 2} w={2.1} d={0.85} h={1.3} c={C.shelf} edge="rgba(124,147,255,0.28)" />)}
 					{[[0, 0], [2.02, 0], [0, 0.77], [2.02, 0.77]].map(([dx, dy], i) => <IsoBox key={i} x={x + dx} y={y + dy} w={0.08} d={0.08} h={39} c={C.metal} />)}
 					<Box x={x + 0.15} y={y + 0.12} z={3.3} w={0.55} d={0.6} h={8} /><Box x={x + 0.85} y={y + 0.15} z={3.3} w={0.5} d={0.55} h={6} /><Box x={x + 1.45} y={y + 0.1} z={3.3} w={0.5} d={0.62} h={8.5} />
 					<Box x={x + 0.2} y={y + 0.14} z={15.3} w={0.5} d={0.58} h={7} /><Box x={x + 1.0} y={y + 0.12} z={15.3} w={0.8} d={0.6} h={6} tape={false} />
 					<Box x={x + 0.5} y={y + 0.15} z={27.3} w={0.45} d={0.5} h={6} /><Box x={x + 1.2} y={y + 0.12} z={27.3} w={0.55} d={0.6} h={5} />
-					{on && <g className="sc-pulse"><IsoBox x={x + 0.9} y={y + 0.9} z={2.4} w={0.2} d={0.1} h={0.6} c={tone("#c6ff4d")} /></g>}
+					{on && <g className="sc-pulse"><IsoBox x={x + 0.9} y={y + 0.9} z={2.4} w={0.2} d={0.1} h={0.6} c={tone("#7c93ff")} /></g>}
 				</g>
 			);
 		case "purchasing":
@@ -219,7 +219,7 @@ export function Station({ kind, x, y, on }: { kind: StationKind; x: number; y: n
 			return (
 				<g>
 					<Desk x={x} y={y} h={15} />
-					<IsoBox x={x + 0.2} y={y + 0.12} z={17.5} w={1.0} d={0.75} h={12} c={C.dark} edge="rgba(198,255,77,0.6)" />
+					<IsoBox x={x + 0.2} y={y + 0.12} z={17.5} w={1.0} d={0.75} h={12} c={C.dark} edge="rgba(124,147,255,0.6)" />
 					<Plane x={x + 0.2} y={y + 0.87} z={29.5}><rect x="2" y="2" width="28" height="9" rx="1" fill={C.screen} /><g transform="translate(9 6.5) scale(0.62)"><Gear on={on} /></g><rect x="17" y="4" width="11" height="1.6" fill={GRAY} /><rect x="17" y="7" width="7" height="1.6" fill={on ? LIME : DIM} /></Plane>
 					<IsoBox x={x + 1.35} y={y + 0.3} z={17.5} w={0.35} d={0.35} h={5} c={C.metal} /><IsoBox x={x + 1.52} y={y + 0.58} z={17.5} w={0.3} d={0.3} h={2.5} c={C.metal} />
 				</g>
@@ -251,14 +251,14 @@ export function Station({ kind, x, y, on }: { kind: StationKind; x: number; y: n
 			return (
 				<g>
 					<Desk x={x} y={y} /><Monitor x={x + 0.4} y={y + 0.12} on={on} screen={growth} />
-					<IsoBox x={x + 1.62} y={y + 0.5} z={z} w={0.3} d={0.4} h={2.2} c={C.paper} edge="rgba(198,255,77,0.5)" />
+					<IsoBox x={x + 1.62} y={y + 0.5} z={z} w={0.3} d={0.4} h={2.2} c={C.paper} edge="rgba(124,147,255,0.5)" />
 				</g>
 			);
 		case "support":
 			return (
 				<g>
 					<Desk x={x} y={y} /><Monitor x={x + 0.4} y={y + 0.12} on={on} screen={chat} />
-					<IsoBox x={x + 1.55} y={y + 0.55} z={z} w={0.34} d={0.34} h={1.6} c={C.dark} edge="rgba(198,255,77,0.7)" /><IsoBox x={x + 1.6} y={y + 0.6} z={z + 1.6} w={0.24} d={0.06} h={2.6} c={C.dark} />
+					<IsoBox x={x + 1.55} y={y + 0.55} z={z} w={0.34} d={0.34} h={1.6} c={C.dark} edge="rgba(124,147,255,0.7)" /><IsoBox x={x + 1.6} y={y + 0.6} z={z + 1.6} w={0.24} d={0.06} h={2.6} c={C.dark} />
 					<Mug x={x + 0.12} y={y + 0.62} />
 				</g>
 			);

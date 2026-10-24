@@ -11,24 +11,24 @@ export default function Careers() {
 	const locale = useLocale();
 	return (
 		<PageShell title={tx(CAREERS.title, locale)} intro={tx(CAREERS.intro, locale)}>
-			<h2 className="mb-16 text-24 font-medium text-[#f1f4ee]">{tx(CAREERS.perksTitle, locale)}</h2>
+			<h2 className="mb-16 text-24 font-medium text-[#edf2ff]">{tx(CAREERS.perksTitle, locale)}</h2>
 			<ul className="mb-[50px] grid gap-12 md:grid-cols-2">
 				{CAREERS.perks.map((p, i) => (
-					<li key={i} className="flex items-center gap-10 text-16 lg:text-18 tracking-[0.4px] text-[#f1f4ee]">
-						<AiFillCheckCircle size={22} className="shrink-0 text-[#f1f4ee]" />
+					<li key={i} className="flex items-center gap-10 text-16 lg:text-18 tracking-[0.4px] text-[#edf2ff]">
+						<AiFillCheckCircle size={22} className="shrink-0 text-[#edf2ff]" />
 						{tx(p, locale)}
 					</li>
 				))}
 			</ul>
-			<h2 className="mb-16 text-24 font-medium text-[#f1f4ee]">{tx(CAREERS.openTitle, locale)}</h2>
+			<h2 className="mb-16 text-24 font-medium text-[#edf2ff]">{tx(CAREERS.openTitle, locale)}</h2>
 			<ul className="space-y-12">
 				{CAREERS.positions.map((p, i) => (
 					<li key={i} className="flex flex-col gap-12 rounded-16 border border-[rgba(255,255,255,0.10)] bg-[rgba(255,255,255,0.03)] p-20 md:flex-row md:items-center md:justify-between">
 						<div className="flex items-center gap-12">
 							<MdWorkOutline size={26} className="shrink-0 text-authBtn" />
 							<div>
-								<p className="text-18 font-medium tracking-[0.4px] text-[#f1f4ee]">{tx(p.title, locale)}</p>
-								<p className="text-14 text-[#8c948b]">{tx(p.meta, locale)}</p>
+								<p className="text-18 font-medium tracking-[0.4px] text-[#edf2ff]">{tx(p.title, locale)}</p>
+								<p className="text-14 text-[#9aa7c9]">{tx(p.meta, locale)}</p>
 							</div>
 						</div>
 						<a href={`/${locale}/contacts`} className="self-start rounded-4 bg-authBtn px-24 py-10 text-16 font-medium text-[#0A0A0A] transition-opacity hover:opacity-80 md:self-auto">

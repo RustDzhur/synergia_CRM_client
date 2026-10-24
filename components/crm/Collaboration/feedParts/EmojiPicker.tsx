@@ -27,7 +27,7 @@ export default function EmojiPicker({ onPick }: { onPick: (emoji: string) => voi
 				aria-expanded={open}
 				aria-label={t("emoji")}
 				onClick={() => setOpen((v) => !v)}
-				className={`flex h-34 items-center gap-8 rounded-10 border px-12 text-12 transition-colors ${open ? "border-inkAccentLine text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+				className={`flex h-34 items-center gap-8 rounded-10 border px-12 text-12 transition-colors ${open ? "border-inkAccentLine text-[#7c93ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`}>
 				<TbMoodSmile size={15} aria-hidden />
 				{t("emoji")}
 			</button>
@@ -35,7 +35,7 @@ export default function EmojiPicker({ onPick }: { onPick: (emoji: string) => voi
 				<div className="fs-popover fs-scroll max-h-[240px] overflow-y-auto p-10">
 					{EMOJI_GROUPS.map((group) => (
 						<div key={group.key} className="mb-8 last:mb-0">
-							<p className="mb-4 px-4 text-10 uppercase tracking-[0.12em] text-[#8C948B]">{t(`emoji_${group.key}`)}</p>
+							<p className="mb-4 px-4 text-10 uppercase tracking-[0.12em] text-[#9AA7C9]">{t(`emoji_${group.key}`)}</p>
 							<div className="flex flex-wrap gap-2">
 								{group.items.map((emoji) => (
 									<button

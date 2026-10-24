@@ -38,7 +38,7 @@ function Rows({ accent, rows = 3 }: { accent: string; rows?: number }) {
 
 function Qr({ accent, size = 14 }: { accent: string; size?: number }) {
 	return (
-		<div className="grid grid-cols-4 grid-rows-4 gap-[1px] rounded-[1px] bg-[#f1f4ee] p-[2px]" style={{ width: size, height: size, border: `0.5px solid ${accent}33` }}>
+		<div className="grid grid-cols-4 grid-rows-4 gap-[1px] rounded-[1px] bg-[#edf2ff] p-[2px]" style={{ width: size, height: size, border: `0.5px solid ${accent}33` }}>
 			{[1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1].map((on, i) => (
 				<div key={i} style={{ background: on ? accent : "transparent", opacity: on ? 0.75 : 0 }} />
 			))}
@@ -49,7 +49,7 @@ function Qr({ accent, size = 14 }: { accent: string; size?: number }) {
 // Схема документа для каждого варианта расположения блоков
 function Preview({ t }: { t: TemplateDef }) {
 	const { accent, tint, variant } = t;
-	const paper = "relative flex h-[86px] w-full flex-col overflow-hidden bg-[#f1f4ee]";
+	const paper = "relative flex h-[86px] w-full flex-col overflow-hidden bg-[#edf2ff]";
 	const pad = "px-[8px] py-[6px]";
 
 	if (variant === "sidebar") {
@@ -124,7 +124,7 @@ function Preview({ t }: { t: TemplateDef }) {
 	}
 	if (variant === "compact") {
 		return (
-			<div className="relative flex h-[86px] w-full flex-col gap-[4px] overflow-hidden bg-[#f1f4ee] px-[8px] py-[6px]">
+			<div className="relative flex h-[86px] w-full flex-col gap-[4px] overflow-hidden bg-[#edf2ff] px-[8px] py-[6px]">
 				<div className="flex items-start justify-between">
 					<Bar w="52%" color={accent} h={4} />
 					<Lines n={2} w="34px" />
@@ -157,7 +157,7 @@ function Preview({ t }: { t: TemplateDef }) {
 			</div>
 		);
 		return (
-			<div className="relative flex h-[86px] w-full flex-col gap-[5px] overflow-hidden bg-[#f1f4ee] px-[8px] py-[6px]">
+			<div className="relative flex h-[86px] w-full flex-col gap-[5px] overflow-hidden bg-[#edf2ff] px-[8px] py-[6px]">
 				<div className="flex items-start justify-between">
 					<Bar w="30%" color="#999999" h={3} />
 					<Bar w="34%" color={accent} h={6} />
@@ -170,7 +170,7 @@ function Preview({ t }: { t: TemplateDef }) {
 	}
 	if (variant === "plain") {
 		return (
-			<div className="relative flex h-[86px] w-full flex-col gap-[6px] overflow-hidden bg-[#f1f4ee] px-[12px] py-[9px]">
+			<div className="relative flex h-[86px] w-full flex-col gap-[6px] overflow-hidden bg-[#edf2ff] px-[12px] py-[9px]">
 				<Lines n={1} w="52%" />
 				<Bar w="26%" color={accent} h={3} />
 				<Bar w="42%" color="#C9C9C9" h={5} />

@@ -108,9 +108,9 @@ export default function Projects({ onOpenTask }: { onOpenTask: (task: Task) => v
 	}
 
 	const field = "fs-field h-40 w-full px-12 text-13 outline-none";
-	const label = "mb-6 block text-12 text-[#8c948b]";
+	const label = "mb-6 block text-12 text-[#9aa7c9]";
 	const chipTone: Record<Project["status"], string> = {
-		planned: "text-[#8C948B]", active: "text-[#c6ff4d]", paused: "text-[#F4A100]", done: "text-[#2DDEB6]",
+		planned: "text-[#9AA7C9]", active: "text-[#7c93ff]", paused: "text-[#F4A100]", done: "text-[#2DDEB6]",
 	};
 
 	return (
@@ -120,7 +120,7 @@ export default function Projects({ onOpenTask }: { onOpenTask: (task: Task) => v
 					type="button"
 					aria-pressed={showArchived}
 					onClick={() => setShowArchived((v) => !v)}
-					className={`fs-btn fs-btn-ghost h-34 ${showArchived ? "border-inkAccentLine text-[#c6ff4d]" : ""}`}>
+					className={`fs-btn fs-btn-ghost h-34 ${showArchived ? "border-inkAccentLine text-[#7c93ff]" : ""}`}>
 					<TbArchive size={15} /> {t("projectArchived")}
 				</button>
 				<button type="button" onClick={() => { setNotice(""); setForm({ ...EMPTY }); }} className="fs-btn fs-btn-primary h-40">
@@ -128,12 +128,12 @@ export default function Projects({ onOpenTask }: { onOpenTask: (task: Task) => v
 				</button>
 			</div>
 
-			{notice && <p className="text-12 text-[#8C948B]">{notice}</p>}
+			{notice && <p className="text-12 text-[#9AA7C9]">{notice}</p>}
 
 			{loading ? (
-				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">…</p>
+				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">…</p>
 			) : items.length === 0 ? (
-				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{showArchived ? t("projectNoArchived") : t("projectEmpty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{showArchived ? t("projectNoArchived") : t("projectEmpty")}</p>
 			) : (
 				<div className="grid gap-16 md:grid-cols-2 lg:grid-cols-3">
 					{items.map((project) => {
@@ -144,23 +144,23 @@ export default function Projects({ onOpenTask }: { onOpenTask: (task: Task) => v
 								<header className="flex items-start gap-10">
 									<span className="mt-2 h-10 w-10 shrink-0 rounded-50" style={{ background: project.color }} aria-hidden />
 									<button type="button" onClick={() => setOpenId(project.id)} className="min-w-0 flex-1 text-left">
-										<span className="block truncate text-15 font-semibold text-[#f1f4ee]">{project.name}</span>
+										<span className="block truncate text-15 font-semibold text-[#edf2ff]">{project.name}</span>
 										<span className={`mt-2 block text-11 ${chipTone[project.status]}`}>{t(`projectStatus_${project.status}`)}</span>
 									</button>
-									<button type="button" aria-label={t("projectEdit")} onClick={() => { setNotice(""); setForm({ ...project }); }} className="shrink-0 text-[#8C948B] transition-colors hover:text-[#f1f4ee]">
+									<button type="button" aria-label={t("projectEdit")} onClick={() => { setNotice(""); setForm({ ...project }); }} className="shrink-0 text-[#9AA7C9] transition-colors hover:text-[#edf2ff]">
 										<TbPencil size={16} />
 									</button>
 								</header>
 
-								{project.description && <p className="mt-10 line-clamp-2 text-12 text-[#8c948b]">{project.description}</p>}
+								{project.description && <p className="mt-10 line-clamp-2 text-12 text-[#9aa7c9]">{project.description}</p>}
 
 								<dl className="mt-12 flex flex-col gap-4 text-12">
 									{project.responsible && (
-										<div className="flex justify-between gap-10"><dt className="text-[#8C948B]">{t("filterResponsible")}</dt><dd className="truncate text-[#cfd4cb]">{project.responsible}</dd></div>
+										<div className="flex justify-between gap-10"><dt className="text-[#9AA7C9]">{t("filterResponsible")}</dt><dd className="truncate text-[#cfd4cb]">{project.responsible}</dd></div>
 									)}
 									{(project.startDate || project.endDate) && (
 										<div className="flex justify-between gap-10">
-											<dt className="text-[#8C948B]">{t("projectPeriod")}</dt>
+											<dt className="text-[#9AA7C9]">{t("projectPeriod")}</dt>
 											<dd className="text-[#cfd4cb]">
 												{project.startDate ? new Date(project.startDate).toLocaleDateString(tag, { day: "numeric", month: "short" }) : "—"}
 												{" — "}
@@ -171,7 +171,7 @@ export default function Projects({ onOpenTask }: { onOpenTask: (task: Task) => v
 								</dl>
 
 								<div className="mt-14">
-									<div className="mb-6 flex items-center justify-between text-11 text-[#8C948B]">
+									<div className="mb-6 flex items-center justify-between text-11 text-[#9AA7C9]">
 										<span>{t("projectProgress")}</span>
 										<span>{p.total ? `${p.done}/${p.total} · ${percent}%` : t("projectNoTasks")}</span>
 									</div>
@@ -181,10 +181,10 @@ export default function Projects({ onOpenTask }: { onOpenTask: (task: Task) => v
 								</div>
 
 								<div className="mt-14 flex items-center gap-12 border-t border-inkLine pt-12 text-12">
-									<button type="button" onClick={() => toggleArchive(project)} className="text-[#8C948B] transition-colors hover:text-[#f1f4ee]">
+									<button type="button" onClick={() => toggleArchive(project)} className="text-[#9AA7C9] transition-colors hover:text-[#edf2ff]">
 										{project.archived ? t("projectUnarchive") : t("projectArchive")}
 									</button>
-									<button type="button" onClick={() => setToDelete(project)} className="ml-auto flex items-center gap-6 text-[#8C948B] transition-colors hover:text-danger">
+									<button type="button" onClick={() => setToDelete(project)} className="ml-auto flex items-center gap-6 text-[#9AA7C9] transition-colors hover:text-danger">
 										<TbTrash size={14} /> {t("delete")}
 									</button>
 								</div>
@@ -198,20 +198,20 @@ export default function Projects({ onOpenTask }: { onOpenTask: (task: Task) => v
 			{openProject && (
 				<section className="fs-card p-16">
 					<header className="mb-12 flex items-center justify-between gap-12">
-						<h3 className="text-14 font-semibold text-[#f1f4ee]">{openProject.name}</h3>
-						<button type="button" onClick={() => setOpenId("")} className="text-12 text-[#8C948B] transition-colors hover:text-[#f1f4ee]">{t("projectClose")}</button>
+						<h3 className="text-14 font-semibold text-[#edf2ff]">{openProject.name}</h3>
+						<button type="button" onClick={() => setOpenId("")} className="text-12 text-[#9AA7C9] transition-colors hover:text-[#edf2ff]">{t("projectClose")}</button>
 					</header>
 					{openTasks.length === 0 ? (
-						<p className="text-13 text-[#8c948b]">{t("projectNoTasks")}</p>
+						<p className="text-13 text-[#9aa7c9]">{t("projectNoTasks")}</p>
 					) : (
 						<ul className="flex flex-col gap-4">
 							{openTasks.map((task) => (
 								<li key={task._id}>
 									<button type="button" onClick={() => onOpenTask(task)} className="flex w-full items-center gap-10 rounded-8 px-8 py-6 text-left transition-colors hover:bg-[rgba(255,255,255,0.04)]">
 										<span className={`h-8 w-8 shrink-0 rounded-50 ${task.completed ? "bg-[#2DDEB6]" : "bg-[#F4A100]"}`} aria-hidden />
-										<span className={`min-w-0 flex-1 truncate text-13 ${task.completed ? "text-[#8C948B] line-through" : "text-[#f1f4ee]"}`}>{task.title}</span>
+										<span className={`min-w-0 flex-1 truncate text-13 ${task.completed ? "text-[#9AA7C9] line-through" : "text-[#edf2ff]"}`}>{task.title}</span>
 										{task.deadline && (
-											<span className="shrink-0 text-11 text-[#8C948B]">
+											<span className="shrink-0 text-11 text-[#9AA7C9]">
 												{new Date(task.deadline).toLocaleDateString(tag, { day: "numeric", month: "short" })}
 											</span>
 										)}
@@ -226,7 +226,7 @@ export default function Projects({ onOpenTask }: { onOpenTask: (task: Task) => v
 			<Modal open={form !== null} onClose={() => setForm(null)} label={t("projectNew")} className="w-full max-w-[520px]">
 				{form && (
 					<form onSubmit={save} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20">
-						<h2 className="mb-16 text-16 font-semibold text-[#f1f4ee]">{form.id ? t("projectEdit") : t("projectNew")}</h2>
+						<h2 className="mb-16 text-16 font-semibold text-[#edf2ff]">{form.id ? t("projectEdit") : t("projectNew")}</h2>
 						<div className="flex flex-col gap-12">
 							<label>
 								<span className={label}>{t("projectName")}</span>
@@ -266,7 +266,7 @@ export default function Projects({ onOpenTask }: { onOpenTask: (task: Task) => v
 											aria-label={с}
 											aria-pressed={form.color === с}
 											onClick={() => setForm({ ...form, color: с })}
-											className={`h-26 w-26 rounded-50 border-2 transition-transform ${form.color === с ? "border-[#f1f4ee] scale-110" : "border-transparent"}`}
+											className={`h-26 w-26 rounded-50 border-2 transition-transform ${form.color === с ? "border-[#edf2ff] scale-110" : "border-transparent"}`}
 											style={{ background: с }}
 										/>
 									))}

@@ -21,8 +21,8 @@ export default function UzProfileCard({ value, onChange }: { value: UzProfile; o
 	}, []);
 
 	const set = (patch: Partial<UzProfile>) => onChange({ ...value, ...patch });
-	const label = "mb-6 block text-12 text-[#8c948b]";
-	const hint = "mt-[4px] block text-11 text-[#8C948B]";
+	const label = "mb-6 block text-12 text-[#9aa7c9]";
+	const hint = "mt-[4px] block text-11 text-[#9AA7C9]";
 	const err = "mt-[4px] block text-11 text-[#ff9f9f]";
 	const error = (k: keyof UzProfile) => { const code = uzFieldError(k, value[k]); return code ? t(`uzErr_${code}` as never) : ""; };
 	const text = (k: keyof UzProfile, labelKey: string, opts: { maxLength?: number; hint?: string; placeholder?: string } = {}) => (
@@ -35,8 +35,8 @@ export default function UzProfileCard({ value, onChange }: { value: UzProfile; o
 
 	return (
 		<div className="mb-16 fs-card p-16 md:p-20">
-			<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("uzSection")}</h3>
-			<p className="mt-6 text-12 text-[#8c948b]">{t("uzSectionHint")}</p>
+			<h3 className="text-14 font-semibold text-[#edf2ff]">{t("uzSection")}</h3>
+			<p className="mt-6 text-12 text-[#9aa7c9]">{t("uzSectionHint")}</p>
 			<div className="mt-14 grid grid-cols-1 gap-12 md:grid-cols-2">
 				{text("inn", "uzInn", { maxLength: 20, hint: t("uzInnHint") })}
 				{text("pinfl", "uzPinfl", { maxLength: 20 })}
@@ -61,25 +61,25 @@ export default function UzProfileCard({ value, onChange }: { value: UzProfile; o
 				</div>
 			</div>
 			<label className="mt-14 flex items-center gap-10 text-13 text-[#cfd4cb]">
-				<input type="checkbox" checked={value.vatPayer} onChange={(e) => set({ vatPayer: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
+				<input type="checkbox" checked={value.vatPayer} onChange={(e) => set({ vatPayer: e.target.checked })} className="h-16 w-16 accent-[#7c93ff]" />
 				{t("uzVatPayer")}
 			</label>
-			<p className="mt-[4px] pl-[26px] text-11 text-[#8C948B]">{t("uzVatPayerHint")}</p>
+			<p className="mt-[4px] pl-[26px] text-11 text-[#9AA7C9]">{t("uzVatPayerHint")}</p>
 
 			{rules.length > 0 && (
 				<div className="mt-18 border-t border-inkLine pt-14">
-					<h4 className="text-13 font-semibold text-[#f1f4ee]">{t("uzRulesTitle")}</h4>
-					<p className="mt-4 text-11 text-[#8C948B]">{t("uzRulesHint")}</p>
+					<h4 className="text-13 font-semibold text-[#edf2ff]">{t("uzRulesTitle")}</h4>
+					<p className="mt-4 text-11 text-[#9AA7C9]">{t("uzRulesHint")}</p>
 					<ul className="mt-10 flex flex-col gap-8">
 						{rules.map((r) => (
 							<li key={`${r.code}-${r.validFrom}`} className="rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] px-12 py-9 text-12">
 								<div className="flex flex-wrap items-baseline justify-between gap-x-12 gap-y-4">
-									<span className="font-medium text-[#e6eae2]">{title(r)}{r.rate != null ? ` — ${r.rate} %` : ""}</span>
-									<span className="text-11 text-[#8C948B]">{t("uzRuleFrom", { date: r.validFrom })}{r.validTo ? ` · ${t("uzRuleTo", { date: r.validTo })}` : ""}</span>
+									<span className="font-medium text-[#c7d3f2]">{title(r)}{r.rate != null ? ` — ${r.rate} %` : ""}</span>
+									<span className="text-11 text-[#9AA7C9]">{t("uzRuleFrom", { date: r.validFrom })}{r.validTo ? ` · ${t("uzRuleTo", { date: r.validTo })}` : ""}</span>
 								</div>
 								<div className="mt-4 flex flex-wrap items-center justify-between gap-x-12 gap-y-4 text-11">
-									<a href={r.sourceUrl} target="_blank" rel="noreferrer" className="text-[#8c948b] underline-offset-2 hover:underline">{t("uzRuleSource")}: {r.source}</a>
-									<span className={r.verifiedBy ? "text-[#c6ff4d]" : "text-[#F4A100]"}>{r.verifiedBy ? t("uzRuleVerified", { by: r.verifiedBy }) : t("uzRuleUnverified")}</span>
+									<a href={r.sourceUrl} target="_blank" rel="noreferrer" className="text-[#9aa7c9] underline-offset-2 hover:underline">{t("uzRuleSource")}: {r.source}</a>
+									<span className={r.verifiedBy ? "text-[#7c93ff]" : "text-[#F4A100]"}>{r.verifiedBy ? t("uzRuleVerified", { by: r.verifiedBy }) : t("uzRuleUnverified")}</span>
 								</div>
 							</li>
 						))}

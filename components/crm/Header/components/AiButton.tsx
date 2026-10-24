@@ -14,7 +14,7 @@ export default function AiButton() {
 			onClick={() => show()}
 			aria-label={t("title")}
 			title={`${t("title")} (Ctrl/⌘ K)`}
-			className="flex h-34 w-34 items-center justify-center rounded-9 text-[#c6ff4d] transition-colors hover:bg-[rgba(198,255,77,0.12)]">
+			className="flex h-34 w-34 items-center justify-center rounded-9 text-[#7c93ff] transition-colors hover:bg-[rgba(124,147,255,0.12)]">
 			<TbSparkles size={19} />
 		</button>
 	);

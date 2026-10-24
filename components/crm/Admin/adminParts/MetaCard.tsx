@@ -39,7 +39,7 @@ export default function MetaCard() {
 	return (
 		<div className="fs-card mb-24 p-16">
 			<div className="flex flex-wrap items-center justify-between gap-12">
-				<div><p className="text-14 font-medium text-[#f1f4ee]">{t("metaTitle")}</p><p className="text-12 text-[#8c948b]">{t("metaHelp")}</p></div>
+				<div><p className="text-14 font-medium text-[#edf2ff]">{t("metaTitle")}</p><p className="text-12 text-[#9aa7c9]">{t("metaHelp")}</p></div>
 				{metaFromEnv ? (
 					<span className="fs-chip h-24 px-10 text-10">{t("metaFromEnv")}</span>
 				) : (
@@ -49,20 +49,20 @@ export default function MetaCard() {
 			{!metaFromEnv && (
 				<div className="mt-12 flex flex-wrap items-end gap-12">
 					<label className="flex flex-col gap-6">
-						<span className="text-11 text-[#8c948b]">{t("metaAppId")}</span>
+						<span className="text-11 text-[#9aa7c9]">{t("metaAppId")}</span>
 						<input value={metaId} onChange={(e) => setMetaId(e.target.value)} placeholder="1098409499579046" maxLength={40} className={inputClass} />
 					</label>
 					<label className="flex flex-col gap-6">
-						<span className="text-11 text-[#8c948b]">{t("metaConfigId")}</span>
+						<span className="text-11 text-[#9aa7c9]">{t("metaConfigId")}</span>
 						<input value={metaConfigId} onChange={(e) => setMetaConfigId(e.target.value)} placeholder="1234567890123456" maxLength={40} className={inputClass} />
 					</label>
 					<label className="flex flex-col gap-6">
-						<span className="text-11 text-[#8c948b]">{t("metaSecret")}</span>
+						<span className="text-11 text-[#9aa7c9]">{t("metaSecret")}</span>
 						<input value={metaSecret} onChange={(e) => setMetaSecret(e.target.value)} type="password" autoComplete="off" maxLength={80} placeholder={metaHasSecret ? t("metaKeepSecret") : ""} className={inputClass} />
 					</label>
 				</div>
 			)}
-			{metaFromEnv && <p className="mt-8 text-11 text-[#8c948b]">{t("metaFromEnvHelp")}</p>}
+			{metaFromEnv && <p className="mt-8 text-11 text-[#9aa7c9]">{t("metaFromEnvHelp")}</p>}
 		</div>
 	);
 }

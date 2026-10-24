@@ -30,16 +30,16 @@ export default function WeekProgress({ tasks, selected, onSelect }: Props) {
 
 	return (
 		<section className="fs-card p-16 md:p-20">
-			<div className="flex flex-wrap items-center justify-between gap-12 text-13 text-[#8c948b]">
+			<div className="flex flex-wrap items-center justify-between gap-12 text-13 text-[#9aa7c9]">
 				<p>
 					{t.rich("progress", {
 						done,
 						total,
-						b: (chunks) => <span className="font-medium text-[#c6ff4d]">{chunks}</span>,
+						b: (chunks) => <span className="font-medium text-[#7c93ff]">{chunks}</span>,
 					})}
 				</p>
 				<div className="flex items-center gap-8">
-					<span className="font-medium text-[#c6ff4d]">{t("date")}</span>
+					<span className="font-medium text-[#7c93ff]">{t("date")}</span>
 					<span className="text-[#cfd4cb]">
 						{day.toLocaleDateString(tag, { day: "numeric", month: "long", year: "numeric" })}
 					</span>
@@ -47,7 +47,7 @@ export default function WeekProgress({ tasks, selected, onSelect }: Props) {
 						type="button"
 						aria-label={t("pickDate")}
 						onClick={() => dateInput.current?.showPicker?.()}
-						className="relative text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
+						className="relative text-[#9aa7c9] transition-colors hover:text-[#7c93ff]">
 						<TbCalendarEvent size={17} />
 						<input
 							ref={dateInput}
@@ -67,11 +67,11 @@ export default function WeekProgress({ tasks, selected, onSelect }: Props) {
 				aria-valuenow={percent}
 				aria-valuemin={0}
 				aria-valuemax={100}>
-				<div className="h-full rounded-50 bg-[#c6ff4d] transition-[width] duration-500 ease-out" style={{ width: `${percent}%` }} />
+				<div className="h-full rounded-50 bg-[#7c93ff] transition-[width] duration-500 ease-out" style={{ width: `${percent}%` }} />
 			</div>
 
-			<p className="mt-18 text-13 text-[#8c948b]">
-				<span className="font-medium capitalize text-[#c6ff4d]">{month}</span>, {day.getFullYear()}
+			<p className="mt-18 text-13 text-[#9aa7c9]">
+				<span className="font-medium capitalize text-[#7c93ff]">{month}</span>, {day.getFullYear()}
 			</p>
 
 			{/* Полоска недели: выбранный день залит акцентом, остальные — контурные плитки */}
@@ -87,8 +87,8 @@ export default function WeekProgress({ tasks, selected, onSelect }: Props) {
 							onClick={() => onSelect(key)}
 							className={`flex h-64 min-w-56 flex-1 flex-col items-center justify-center gap-2 rounded-12 border text-14 font-medium leading-tight transition-colors duration-200 ${
 								active
-									? "border-[#c6ff4d] bg-[#c6ff4d] text-[#0a0c0b]"
-									: "border-inkLine bg-[rgba(255,255,255,0.02)] text-[#8c948b] hover:border-[rgba(255,255,255,0.18)] hover:text-[#f1f4ee]"
+									? "border-[#7c93ff] bg-[#7c93ff] text-[#0b1120]"
+									: "border-inkLine bg-[rgba(255,255,255,0.02)] text-[#9aa7c9] hover:border-[rgba(255,255,255,0.18)] hover:text-[#edf2ff]"
 							}`}>
 							<span className="capitalize text-11">{d.toLocaleDateString(tag, { weekday: "short" })}</span>
 							<span className="text-18">{d.getDate()}</span>

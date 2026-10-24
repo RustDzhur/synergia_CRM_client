@@ -34,8 +34,8 @@ export default function TaskItem({ task, compact = false }: { task: OfficeTask; 
 					{Icon ? <Icon size={15} className={task.status === "running" ? "animate-spin" : ""} aria-hidden /> : <span className="h-[8px] w-[8px] rounded-full" style={{ background: color }} />}
 				</span>
 				<span className="min-w-0 flex-1">
-					<span className="flex items-center gap-8 text-12 text-[#8c948b]">
-						<span className="font-semibold text-[#f1f4ee]">{task.robotName}</span>
+					<span className="flex items-center gap-8 text-12 text-[#9aa7c9]">
+						<span className="font-semibold text-[#edf2ff]">{task.robotName}</span>
 						{task.source === "iris" && <span>· {t("sourceIris")}</span>}
 						{task.source === "routine" && <span>· {t("sourceRoutine")}</span>}
 						<span className="ml-auto shrink-0">{time}</span>
@@ -43,25 +43,25 @@ export default function TaskItem({ task, compact = false }: { task: OfficeTask; 
 					<span className="mt-[3px] line-clamp-2 block text-13 text-[#cfd4cb]">{task.text}</span>
 					<span className="mt-[4px] block text-11 font-medium" style={{ color }}>{t(`st_${task.status}`)}</span>
 				</span>
-				<TbChevronDown size={14} className={`mt-[3px] shrink-0 text-[#8c948b] transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+				<TbChevronDown size={14} className={`mt-[3px] shrink-0 text-[#9aa7c9] transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
 			</button>
 
 			{open && (
 				<div className="mt-10 border-t border-inkLine pt-10 text-12">
 					{task.error && <p className="mb-8 text-[#EB5757]">{task.error}</p>}
-					{task.reply ? <p className="whitespace-pre-wrap text-[#cfd4cb]">{task.reply}</p> : !task.error && task.status !== "running" && task.status !== "queued" && <p className="text-[#8c948b]">{t("noReply")}</p>}
+					{task.reply ? <p className="whitespace-pre-wrap text-[#cfd4cb]">{task.reply}</p> : !task.error && task.status !== "running" && task.status !== "queued" && <p className="text-[#9aa7c9]">{t("noReply")}</p>}
 
 					{task.pending.length > 0 && (
 						<div className="mt-10">
 							<p className="mb-6 font-medium text-[#F4A100]">{t("proposed")}</p>
 							<ul className="flex flex-col gap-4">
-								{task.pending.map((a) => <li key={a.id} className="rounded-8 bg-[rgba(244,161,0,0.08)] px-10 py-6 text-[#f1f4ee]">{label(a)}</li>)}
+								{task.pending.map((a) => <li key={a.id} className="rounded-8 bg-[rgba(244,161,0,0.08)] px-10 py-6 text-[#edf2ff]">{label(a)}</li>)}
 							</ul>
 						</div>
 					)}
 					{task.executed.length > 0 && (
 						<div className="mt-10">
-							<p className="mb-6 font-medium text-[#8c948b]">{t("didIt")}</p>
+							<p className="mb-6 font-medium text-[#9aa7c9]">{t("didIt")}</p>
 							<ul className="flex flex-col gap-4">
 								{task.executed.map((a) => <li key={a.id} className={`rounded-8 px-10 py-6 ${a.state === "failed" ? "bg-[rgba(235,87,87,0.10)] text-[#EB5757]" : "bg-[rgba(45,222,182,0.08)] text-[#cfd4cb]"}`}>{a.state === "failed" ? `${label(a)} — ${a.message ?? ""}` : label(a)}</li>)}
 							</ul>

@@ -73,22 +73,22 @@ export default function SendDialog({ open, onClose, onSubmit }: {
 	return (
 		<Modal open={open} onClose={onClose} label={t("sendTitle")} className="w-full max-w-[520px]">
 			<form onSubmit={submit} className="fs-popover p-20 md:p-24">
-				<h2 className="mb-8 text-16 font-semibold text-[#f1f4ee]">{t("sendTitle")}</h2>
+				<h2 className="mb-8 text-16 font-semibold text-[#edf2ff]">{t("sendTitle")}</h2>
 				{/** Подсказка объясняет обе возможности: адрес можно ввести, а можно оставить пустым */}
-				<p className="mb-16 text-12 leading-[1.6] text-[#8c948b]">{t("sendHint")}</p>
+				<p className="mb-16 text-12 leading-[1.6] text-[#9aa7c9]">{t("sendHint")}</p>
 				<div className="flex flex-col gap-12">
 					<FormField label={t("email")} type="email" value={to} onChange={(e) => setTo(e.target.value)} maxLength={200} autoFocus placeholder={t("sendToPlaceholder")} />
 					{accounts === null ? (
-						<p className="text-12 text-[#8c948b]">{t("loading")}</p>
+						<p className="text-12 text-[#9aa7c9]">{t("loading")}</p>
 					) : accounts.length === 0 ? (
 						<p className="text-12 text-[#F4A100]">{t("sendNoMailbox")}</p>
 					) : (
 						<label className="block">
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("sendFrom")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("sendFrom")}</span>
 							<select value={accountId} onChange={(e) => { setAccountId(e.target.value); try { localStorage.setItem(ACCOUNT_KEY, e.target.value); } catch { /* приватный режим */ } }} className="fs-field h-40 w-full px-12 text-13 outline-none">
 								{accounts.map((a) => <option key={a.id} value={a.id}>{a.email || a.name}{a.status !== "connected" || a.canSend === false ? ` · ${t("sendAccountError")}` : ""}</option>)}
 							</select>
-							{current && <span className="mt-[4px] block text-11 text-[#8C948B]">{t("sendFromHint", { email: current.email || current.name })}</span>}
+							{current && <span className="mt-[4px] block text-11 text-[#9AA7C9]">{t("sendFromHint", { email: current.email || current.name })}</span>}
 						</label>
 					)}
 				</div>

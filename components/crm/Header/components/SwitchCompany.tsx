@@ -38,7 +38,7 @@ export default function SwitchCompany() {
 		<div ref={rootRef} className="w-full">
 			{/* единый тёмный бокс: слева метка «Switch», справа название фирмы; обе половины открывают список */}
 			<div className="fs-field relative flex h-46 w-full items-center rounded-10">
-				<button type="button" onClick={() => setOpen(!open)} className="h-full shrink-0 cursor-pointer rounded-l-10 px-14 text-12 font-medium text-[#c6ff4d] whitespace-nowrap transition-colors hover:bg-[rgba(255,255,255,0.05)]">
+				<button type="button" onClick={() => setOpen(!open)} className="h-full shrink-0 cursor-pointer rounded-l-10 px-14 text-12 font-medium text-[#7c93ff] whitespace-nowrap transition-colors hover:bg-[rgba(255,255,255,0.05)]">
 					{t("switch")}
 				</button>
 				<span className="h-20 w-px shrink-0 bg-[rgba(255,255,255,0.09)]" aria-hidden />
@@ -48,8 +48,8 @@ export default function SwitchCompany() {
 						aria-expanded={open}
 						onClick={() => setOpen(!open)}
 						className="flex items-center justify-between w-full h-46 px-14 cursor-pointer rounded-r-10 transition-colors hover:bg-[rgba(255,255,255,0.05)]">
-						<p className="min-w-0 flex-1 font-medium text-13 text-[#f1f4ee] truncate">{active ? active.name : t("company")}</p>
-						<TbChevronDown size={16} className={`ml-10 shrink-0 text-[#8c948b] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+						<p className="min-w-0 flex-1 font-medium text-13 text-[#edf2ff] truncate">{active ? active.name : t("company")}</p>
+						<TbChevronDown size={16} className={`ml-10 shrink-0 text-[#9aa7c9] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
 					</button>
 				</div>
 				<Dropdown open={open} className="left-0 right-0 top-full mt-6">
@@ -58,16 +58,16 @@ export default function SwitchCompany() {
 							{orgs.map((o) => (
 								<li key={o.id}>
 									<button type="button" onClick={() => (o.id === activeId ? setOpen(false) : switchOrg(o.id))} className={`${row} ${o.id === activeId ? "bg-[rgba(255,255,255,0.05)]" : ""}`}>
-										<span className="min-w-0 flex-1 truncate text-[#f1f4ee]">{o.name}</span>
-										<span className="ml-10 shrink-0 text-11 font-normal text-[#8C948B]">{t(`role_${o.role}`)}</span>
+										<span className="min-w-0 flex-1 truncate text-[#edf2ff]">{o.name}</span>
+										<span className="ml-10 shrink-0 text-11 font-normal text-[#9AA7C9]">{t(`role_${o.role}`)}</span>
 									</button>
 								</li>
 							))}
 						</ul>
 						{mode === "none" ? (
 							<>
-								<button type="button" onClick={() => { setName(""); setMode("new"); }} className={`${row} border-t border-inkLine text-[#c6ff4d]`}><TbPlus size={14} className="shrink-0" /> {t("newFirm")}</button>
-								{canRename && <button type="button" onClick={() => { setName(active?.name ?? ""); setMode("rename"); }} className={`${row} border-t border-inkLine text-[#8c948b]`}>{t("renameFirm")}</button>}
+								<button type="button" onClick={() => { setName(""); setMode("new"); }} className={`${row} border-t border-inkLine text-[#7c93ff]`}><TbPlus size={14} className="shrink-0" /> {t("newFirm")}</button>
+								{canRename && <button type="button" onClick={() => { setName(active?.name ?? ""); setMode("rename"); }} className={`${row} border-t border-inkLine text-[#9aa7c9]`}>{t("renameFirm")}</button>}
 							</>
 						) : (
 							<form onSubmit={submit} className="flex items-center gap-8 border-t border-inkLine p-10">

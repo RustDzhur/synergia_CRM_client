@@ -68,23 +68,23 @@ export default function RecurringInvoices() {
 				</button>
 			</div>
 			{recurringInvoices.length === 0 ? (
-				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("recurringEmpty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("recurringEmpty")}</p>
 			) : (
 				<ul className="flex flex-col gap-10">
 					{recurringInvoices.map((r) => (
 						<li key={r.id} className="fs-card p-14 md:p-18">
 							<div className="flex flex-wrap items-start justify-between gap-12">
 								<div className="min-w-0">
-									<p className="flex flex-wrap items-center gap-8 text-14 font-semibold text-[#f1f4ee]">
+									<p className="flex flex-wrap items-center gap-8 text-14 font-semibold text-[#edf2ff]">
 										{r.customerName}
-										<span className={`fs-chip h-22 px-8 text-10 ${r.active ? "border-[rgba(198,255,77,0.35)] text-[#c6ff4d]" : ""}`}>{r.active ? t("recurringActive") : t("recurringPaused")}</span>
+										<span className={`fs-chip h-22 px-8 text-10 ${r.active ? "border-[rgba(124,147,255,0.35)] text-[#7c93ff]" : ""}`}>{r.active ? t("recurringActive") : t("recurringPaused")}</span>
 									</p>
-									<p className="mt-[4px] text-12 text-[#8c948b]">
+									<p className="mt-[4px] text-12 text-[#9aa7c9]">
 										{t(r.interval === "monthly" ? "recurringMonthly" : "recurringYearly")} · {t("recurringNextRun")}: {r.nextRunDate}
 										{r.autoSend ? ` · ${t("recurringAutoSend")}` : ""}
 									</p>
 								</div>
-								<p className="text-15 font-semibold text-[#f1f4ee]">{money(r.totals.gross, r.currency, locale)}</p>
+								<p className="text-15 font-semibold text-[#edf2ff]">{money(r.totals.gross, r.currency, locale)}</p>
 							</div>
 							<div className="mt-12 flex flex-wrap items-center gap-8">
 								<button type="button" disabled={busy === r.id} onClick={() => toggleActive(r.id, !r.active)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]">
@@ -101,14 +101,14 @@ export default function RecurringInvoices() {
 
 			<Modal open={open} onClose={() => setOpen(false)} label={t("newRecurringInvoice")} className="w-full max-w-[640px]">
 				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
-					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("newRecurringInvoice")}</h2>
+					<h2 className="mb-14 text-16 font-semibold text-[#edf2ff]">{t("newRecurringInvoice")}</h2>
 					<div className="mb-16">
 						<FormField label={t("customer")} value={customerName} onChange={(e) => setCustomerName(e.target.value)} maxLength={200} autoFocus />
 					</div>
 					<LineItemsEditor items={items} onChange={setItems} products={products.filter((p) => !p.archived)} currency={settings?.currency ?? "EUR"} />
 					<div className="mt-16 grid grid-cols-2 gap-12">
 						<label>
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("recurringInterval")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("recurringInterval")}</span>
 							<select value={interval} onChange={(e) => setInterval(e.target.value as "monthly" | "yearly")} className="fs-field h-40 w-full px-12 text-13 outline-none">
 								<option value="monthly">{t("recurringMonthly")}</option>
 								<option value="yearly">{t("recurringYearly")}</option>
@@ -117,7 +117,7 @@ export default function RecurringInvoices() {
 						<FormField label={t("recurringDayOfMonth")} type="number" min={1} max={28} value={dayOfMonth} onChange={(e) => setDayOfMonth(e.target.value)} />
 						<FormField label={t("recurringNextRun")} type="date" value={nextRunDate} onChange={(e) => setNextRunDate(e.target.value)} />
 						<label className="mt-24 flex items-center gap-10 text-13 text-[#cfd4cb]">
-							<input type="checkbox" checked={autoSend} onChange={(e) => setAutoSend(e.target.checked)} className="h-16 w-16 accent-[#c6ff4d]" />
+							<input type="checkbox" checked={autoSend} onChange={(e) => setAutoSend(e.target.checked)} className="h-16 w-16 accent-[#7c93ff]" />
 							{t("recurringAutoSend")}
 						</label>
 					</div>

@@ -40,7 +40,7 @@ function Actor({ robot, view, fresh, lane, selected, register, onSelect, onFile 
 		return () => register(robot.id, null);
 	}, [robot.id, register]);
 	const over = drag.over?.type === "robot" && drag.over.id === robot.id;
-	const color = view.state === "working" ? "#c6ff4d" : view.state === "waiting" ? "#F4A100" : view.state === "failed" ? "#EB5757" : "#8c948b";
+	const color = view.state === "working" ? "#7c93ff" : view.state === "waiting" ? "#F4A100" : view.state === "failed" ? "#EB5757" : "#9aa7c9";
 	const icon = view.monitor?.kind === "errors" ? (view.state === "working" ? "!" : "") : view.state === "working" ? "gear" : view.state === "waiting" ? "!" : view.state === "failed" ? "×" : fresh ? "ok" : "";
 	const iconColor = icon === "ok" ? "#2DDEB6" : view.monitor?.kind === "errors" ? "#EB5757" : color;
 	const name = robot.name.length > 9 ? `${robot.name.slice(0, 8)}…` : robot.name;
@@ -60,7 +60,7 @@ function Actor({ robot, view, fresh, lane, selected, register, onSelect, onFile 
 			onPointerDown={canEdit ? (e) => drag.start(e, { kind: "robot", id: robot.id, label: robot.name }) : undefined}
 			onDragOver={(e) => { if (canEdit && ai && e.dataTransfer.types.includes("Files")) e.preventDefault(); }}
 			onDrop={(e) => { const f = e.dataTransfer.files?.[0]; if (f && canEdit && ai) { e.preventDefault(); onFile(f); } }}>
-			{(selected || over) && <ellipse cx="0" cy="2" rx="26" ry="11.5" fill="rgba(198,255,77,0.14)" stroke="#c6ff4d" strokeWidth="2" filter="url(#f-glow)" className={selected ? undefined : "sc-pulse"} />}
+			{(selected || over) && <ellipse cx="0" cy="2" rx="26" ry="11.5" fill="rgba(124,147,255,0.14)" stroke="#7c93ff" strokeWidth="2" filter="url(#f-glow)" className={selected ? undefined : "sc-pulse"} />}
 			<rect x="-24" y={-92 * S} width="48" height={92 * S + 10} fill="transparent" />
 			<g ref={poseRef} data-pose="stand" data-face="front" data-flip="0" data-work="0" style={{ pointerEvents: "none" }}>
 				<g transform={`translate(${-40 * S} ${-97 * S}) scale(${S})`}><Bot accent={robot.accent} state={view.state} /></g>
@@ -68,8 +68,8 @@ function Actor({ robot, view, fresh, lane, selected, register, onSelect, onFile 
 			{bubble && (
 				<g transform={`translate(0 ${-98 * S - 12 - lane * 21})`} style={{ pointerEvents: "none" }}>
 					<g className="sc-float">
-						<rect x={-bw / 2} y="-9" width={bw} height="17" rx="8.5" fill="rgba(10,14,12,0.92)" stroke="#c6ff4d" strokeOpacity="0.8" filter="url(#f-glow)" />
-						<path d="M-3 8 L0 12 L3 8 Z" fill="rgba(10,14,12,0.92)" stroke="#c6ff4d" strokeOpacity="0.8" />
+						<rect x={-bw / 2} y="-9" width={bw} height="17" rx="8.5" fill="rgba(10,14,12,0.92)" stroke="#7c93ff" strokeOpacity="0.8" filter="url(#f-glow)" />
+						<path d="M-3 8 L0 12 L3 8 Z" fill="rgba(10,14,12,0.92)" stroke="#7c93ff" strokeOpacity="0.8" />
 						<text x="0" y="3.2" textAnchor="middle" fontSize="9" fontWeight="600" fill="#e6f5c8">{bubble}</text>
 					</g>
 				</g>
@@ -83,7 +83,7 @@ function Actor({ robot, view, fresh, lane, selected, register, onSelect, onFile 
 				</g>
 			)}
 			<g transform="translate(0 15)" style={{ pointerEvents: "none" }}>
-				<rect x={-pillW / 2} y="-7" width={pillW} height="14" rx="7" fill="rgba(10,14,12,0.82)" stroke={selected ? "#c6ff4d" : "rgba(255,255,255,0.14)"} />
+				<rect x={-pillW / 2} y="-7" width={pillW} height="14" rx="7" fill="rgba(10,14,12,0.82)" stroke={selected ? "#7c93ff" : "rgba(255,255,255,0.14)"} />
 				<circle cx={-pillW / 2 + 8} cy="0" r="2.3" fill={robot.enabled ? color : "#6b736a"} />
 				{telegram && <g transform={`translate(${pillW / 2 + 9} 0)`}><circle r="7.5" fill="#0b0f0d" stroke="#2DDEB6" strokeWidth="1.2" filter="url(#f-glow)" /><polygon points="-4.2,0.2 4,-3.6 2.2,4 -0.2,1.6 -1.6,3.4 -1.8,0.9" fill="#2DDEB6" /></g>}
 				<text x={-pillW / 2 + 14} y="3.3" fontSize="9" fontWeight="600" fill="#e6ecdf">{name}</text>
@@ -291,7 +291,7 @@ export default function OfficeScene({ onSelect, onBoss }: { onSelect: (id: strin
 			</div>
 			<div className="absolute bottom-12 left-12 flex items-center gap-4 rounded-10 border border-inkLine bg-[rgba(13,17,15,0.85)] p-4 backdrop-blur">
 				<button type="button" aria-label="−" onClick={() => zoomAt(zoomRef.current / 1.25)} className="flex h-30 w-30 items-center justify-center rounded-8 text-[#cfd4cb] hover:bg-[rgba(255,255,255,0.06)]"><TbMinus size={16} /></button>
-				<span className="w-36 text-center text-11 text-[#8c948b]">{Math.round(zoom * 100)}%</span>
+				<span className="w-36 text-center text-11 text-[#9aa7c9]">{Math.round(zoom * 100)}%</span>
 				<button type="button" aria-label="+" onClick={() => zoomAt(zoomRef.current * 1.25)} className="flex h-30 w-30 items-center justify-center rounded-8 text-[#cfd4cb] hover:bg-[rgba(255,255,255,0.06)]"><TbPlus size={16} /></button>
 			</div>
 		</div>

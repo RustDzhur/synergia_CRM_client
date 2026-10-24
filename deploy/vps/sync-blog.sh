@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Синхронизация статей блога из CRM в новый сайт (firmspace-website).
+# Работает на хосте сервера: статьи берёт из контейнера CRM (docker exec → scripts/sync-blog.mjs, NDJSON в stdout),
+# раскладывает content/blog/<slug>.json по схеме сайта и картинки в public/images/blog/<slug>.jpg.
+# Идемпотентно и безопасно: существующие файлы НЕ удаляются, пишутся только изменённые; картинки докачиваются,
+# только если файла ещё нет. Сайт пересобирается, только если что-то изменилось.
+# Cron: */30 * * * * flock -n /tmp/sync-blog.lock /home/server/crm-duplicate/deploy/vps/sync-blog.sh >> /home/server/sync-blog.log 2>&1
+set -uo pipefail
+
+SITE="${FIRMSPACE_WEBSITE_DIR:-/home/server/firmspace-website}"
+BLOG="$SITE/content/blog"
+IMG="$SITE/public/images/blog"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+
+if ! docker exec firmspace-crm node scripts/sync-blog.mjs > "$TMP/posts.ndjson"; then
+    echo "$(date -Is) sync-blog: CRM-контейнер не ответил (идёт выкладка?) — пропускаем" >&2
+    exit 0
+fi
+
+# Python раскладывает файлы и картинки; печатает число изменений (на stdout), детали — в stderr
+CHANGED="$(python3 - "$TMP" "$BLOG" "$IMG" <<'PY'
+import json, os, subprocess, sys, urllib.request
+tmp, blog_dir, img_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+os.makedirs(blog_dir, exist_ok=True)
+os.makedirs(img_dir, exist_ok=True)
+changed = written = images = missing = 0
+for line in open(os.path.join(tmp, "posts.ndjson"), encoding="utf-8"):
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        item = json.loads(line)
+    except ValueError:
+        continue
+    slug, data, src = item.get("slug", ""), item.get("data"), item.get("src", "")
+    if not slug or not isinstance(data, dict):
+        continue
+    path = os.path.join(blog_dir, slug + ".json")
+    text = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
+    old = open(path, encoding="utf-8").read() if os.path.exists(path) else None
+    if old != text:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+        written += 1
+        changed += 1
+    target = os.path.join(img_dir, slug + ".jpg")
+    if os.path.exists(target):
+        continue
+    made = False
+    if src.startswith("/images/blog/"):
+        name = os.path.basename(src) or ""
+        if name:
+            r = subprocess.run(["docker", "cp", f"firmspace-crm:/app/public/images/blog/{name}", target], capture_output=True)
+            made = r.returncode == 0
+    elif src.startswith("http://") or src.startswith("https://"):
+        try:
+            urllib.request.urlretrieve(src, target)
+            made = True
+        except Exception:
+            made = False
+    if made:
+        images += 1
+        changed += 1
+    else:
+        missing += 1
+print(changed)
+print(f"written={written} images={images} missing_src={missing}", file=sys.stderr)
+PY
+)"
+
+echo "$(date -Is) sync-blog: изменено файлов: ${CHANGED:-?}"
+if [ "${CHANGED:-0}" -gt 0 ] 2>/dev/null; then
+    echo "sync-blog: пересобираю сайт (content/ попадает в образ на сборке)"
+    (cd "$SITE/deploy" && docker compose build web && docker compose up -d web)
+fi

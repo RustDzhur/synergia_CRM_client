@@ -24,16 +24,16 @@ const config: Config = {
 			whatIsCrmActive: "#0A0A0A",
 			whatIsCrm: "#E6E6E6",
 			// CTA-кнопки лендинга: раньше розовый #FF008A — теперь салатовый акцент (см. accentGreen)
-			joinUsPink: "#C6FF4D",
+			joinUsPink: "#7C93FF",
 			joinUsGrey: "#0A0A0A",
 			discover: "#0A0A0A",
 			advantages: "#0A0A0A",
 			transparent: "transparent",
 			// бренд-зелёный: используется как bg-primaryColor вместе с text-white почти везде в CRM —
 			// поэтому это не самый яркий салатовый (тот см. accentGreen), а более тёмный, чтобы белый текст оставался читаемым
-			primaryColor: "#5FBF3C",
+			primaryColor: "#4A5EF0",
 			// яркий салатовый акцент — только там, где текст на нём подбирается заново (тёмный): пилюли, бейджи, CTA
-			accentGreen: "#C6FF4D",
+			accentGreen: "#7C93FF",
 			secondaryColor: "#F5F7FC",
 			black: "#4D4D4D",
 			gray: "#EBEEF8",
@@ -42,12 +42,12 @@ const config: Config = {
 			modalBG: "rgba(217, 217, 217, 0.80)",
 			menu: "#cccccc",
 			activeMenu: "#313D45",
-			authBtn: "#C6FF4D",
+			authBtn: "#7C93FF",
 			tabChoosePlan: "#4A5FBF", // было #768FE5 — белый текст на нём давал 3.07:1
 			textChoosePlan: "#313D45",
 			cardPlanColor: "#F2F2F2",
 			basicPlan: "#313D45",
-			contactUs: "#C6FF4D",
+			contactUs: "#7C93FF",
 			testimonials: "#0A0A0A",
 			footer: "#0A0A0A",
 			// добавил под реальный дизайн CRM:
@@ -58,17 +58,17 @@ const config: Config = {
 			// три уровня фона: страница -> боковая панель (чуть темнее) -> всплывающие слои (чуть светлее)
 			// фон на несколько оттенков светлее прежнего почти-чёрного: на абсолютно чёрном
 			// глаз не различает границы карточек и строк таблиц
-			ink: "#131715",
-			inkDeep: "#101412",
-			inkPanel: "#191E1B",
+			ink: "#0B1120",
+			inkDeep: "#0A0F1C",
+			inkPanel: "#121C34",
 			// текст: основной / вторичный / подписи и метки разделов
-			inkText: "#F1F4EE",
-			inkTextMid: "#A3ABA0",
+			inkText: "#EDF2FF",
+			inkTextMid: "#9AA7C9",
 			// приглушённый текст поднят вслед за фоном: на прежнем #5E665D подписи давали 3.3:1
-			inkTextLo: "#8C948B",
+			inkTextLo: "#7E8ABD",
 			// салатовая рамка активного пункта меню и его подсветка
-			inkAccentLine: "rgba(198, 255, 77, 0.55)",
-			inkAccentSoft: "rgba(198, 255, 77, 0.10)",
+			inkAccentLine: "rgba(124, 147, 255, 0.55)",
+			inkAccentSoft: "rgba(124, 147, 255, 0.12)",
 			// рамка карточек и подсветка при наведении
 			inkLine: "rgba(255, 255, 255, 0.07)",
 			inkLineSoft: "rgba(255, 255, 255, 0.045)",
@@ -260,7 +260,7 @@ const config: Config = {
 			activeLink: "#313D45",
 			authFormsFocus: "#5EA8F5",
 			authFormsUnFocus: "#cccccc",
-			authBtn: "#C6FF4D",
+			authBtn: "#7C93FF",
 			authTabBtn: "#C6FF4D",
 			cardPlan: "#4A5FBF",
 			testimonials: "#C6FF4D",
@@ -268,12 +268,12 @@ const config: Config = {
 			DEFAULT: "currentColor",
 			transparent: "transparent",
 			// цвета, которые уже используются в разметке кабинета
-			accentGreen: "#C6FF4D",
-			primaryColor: "#5FBF3C",
+			accentGreen: "#7C93FF",
+			primaryColor: "#4A5EF0",
 			danger: "#EB5757",
 			inkLine: "rgba(255, 255, 255, 0.07)",
 			inkLineSoft: "rgba(255, 255, 255, 0.045)",
-			inkAccentLine: "rgba(198, 255, 77, 0.55)",
+			inkAccentLine: "rgba(124, 147, 255, 0.55)",
 		},
 		backgroundImage: {
 			"gradient-background":

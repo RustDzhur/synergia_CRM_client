@@ -81,14 +81,14 @@ export default function Team() {
 				<SettingsTabs className="shrink-0 md:self-start" />
 				<div className="min-w-0 flex-1">
 					{denied ? (
-						<p className="fs-card p-20 text-13 text-[#8c948b]">{t("teamNoAccess")}</p>
+						<p className="fs-card p-20 text-13 text-[#9aa7c9]">{t("teamNoAccess")}</p>
 					) : (
 						<>
-							<h2 className="mb-6 text-16 font-semibold text-[#f1f4ee]">{org?.name}</h2>
-							<p className="mb-20 text-13 text-[#8c948b]">{t("teamHelp")}</p>
+							<h2 className="mb-6 text-16 font-semibold text-[#edf2ff]">{org?.name}</h2>
+							<p className="mb-20 text-13 text-[#9aa7c9]">{t("teamHelp")}</p>
 
 							<form onSubmit={invite} className="fs-card mb-24 p-20">
-								<h3 className="mb-12 text-14 font-semibold text-[#f1f4ee]">{t("teamAdd")}</h3>
+								<h3 className="mb-12 text-14 font-semibold text-[#edf2ff]">{t("teamAdd")}</h3>
 								<div className="flex flex-col gap-12 md:flex-row">
 									<input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="colleague@example.com" aria-label="Email" className={`${select} min-w-0 flex-1`} />
 									<select value={role} onChange={(e) => setRole(e.target.value as Role)} aria-label={t("teamRole")} className={select}>
@@ -98,18 +98,18 @@ export default function Team() {
 								</div>
 								{role !== "admin" && (
 									<fieldset className="mt-12">
-										<legend className="mb-6 text-12 text-[#8c948b]">{t("teamModulesHint")}</legend>
+										<legend className="mb-6 text-12 text-[#9aa7c9]">{t("teamModulesHint")}</legend>
 										<div className="flex flex-wrap gap-x-16 gap-y-6">
 											{GRANTABLE.map((mod) => (
 												<label key={mod} className="flex cursor-pointer items-center gap-6 text-12 text-[#cfd4cb]">
-													<input type="checkbox" checked={custom.includes(mod)} onChange={() => setCustom(custom.includes(mod) ? custom.filter((x) => x !== mod) : [...custom, mod])} className="accent-[#c6ff4d]" />
+													<input type="checkbox" checked={custom.includes(mod)} onChange={() => setCustom(custom.includes(mod) ? custom.filter((x) => x !== mod) : [...custom, mod])} className="accent-[#7c93ff]" />
 													{t(`module_${mod}`)}
 												</label>
 											))}
 										</div>
 									</fieldset>
 								)}
-								<p className="mt-10 text-11 text-[#8C948B]">{t("teamInviteNote")}</p>
+								<p className="mt-10 text-11 text-[#9AA7C9]">{t("teamInviteNote")}</p>
 							</form>
 
 							<ul className="flex flex-col gap-10">
@@ -117,16 +117,16 @@ export default function Team() {
 									<li key={m.userId} className="fs-card p-16">
 										<div className="flex flex-wrap items-center gap-x-16 gap-y-8">
 											<div className="min-w-0 flex-1">
-												<p className="truncate text-13 font-medium text-[#f1f4ee]">{m.name} {m.you && <span className="text-11 font-normal text-[#8C948B]">({t("teamYou")})</span>}</p>
-												<p className="truncate text-12 text-[#8c948b]">{m.email}</p>
+												<p className="truncate text-13 font-medium text-[#edf2ff]">{m.name} {m.you && <span className="text-11 font-normal text-[#9AA7C9]">({t("teamYou")})</span>}</p>
+												<p className="truncate text-12 text-[#9aa7c9]">{m.email}</p>
 											</div>
 											{m.role === "owner" ? (
-												<span className="fs-chip h-24 border-[rgba(198,255,77,0.35)] text-10 text-[#c6ff4d]">{t("role_owner")}</span>
+												<span className="fs-chip h-24 border-[rgba(124,147,255,0.35)] text-10 text-[#7c93ff]">{t("role_owner")}</span>
 											) : isPracticeRole(m.role) ? (
 												<>
 													{/* доступ специалиста — это связь с практикой: роль и разделы правятся там, убрать можно только целиком */}
 													<span className="fs-chip h-24 text-10 text-[#cfd4cb]">{t(`role_${m.role}`)}</span>
-													<button type="button" onClick={() => setRemove(m)} aria-label={t("teamRemove")} title={t("teamRemove")} className="text-[#8C948B] transition-colors hover:text-danger"><TbX size={18} /></button>
+													<button type="button" onClick={() => setRemove(m)} aria-label={t("teamRemove")} title={t("teamRemove")} className="text-[#9AA7C9] transition-colors hover:text-danger"><TbX size={18} /></button>
 												</>
 											) : (
 												<>
@@ -134,7 +134,7 @@ export default function Team() {
 														{ASSIGNABLE_ROLES.filter((r) => r !== "admin" || canAdmin || m.role === "admin").map((r) => <option key={r} value={r}>{t(`role_${r}`)}</option>)}
 													</select>
 													{!(m.role === "admin" && !canAdmin) && (
-														<button type="button" onClick={() => setRemove(m)} aria-label={t("teamRemove")} title={t("teamRemove")} className="text-[#8C948B] transition-colors hover:text-danger"><TbX size={18} /></button>
+														<button type="button" onClick={() => setRemove(m)} aria-label={t("teamRemove")} title={t("teamRemove")} className="text-[#9AA7C9] transition-colors hover:text-danger"><TbX size={18} /></button>
 													)}
 												</>
 											)}
@@ -143,12 +143,12 @@ export default function Team() {
 											<div className="mt-10 flex flex-wrap items-center gap-x-16 gap-y-6">
 												{GRANTABLE.map((mod) => (
 													<label key={mod} className="flex cursor-pointer items-center gap-6 text-12 text-[#cfd4cb]">
-														<input type="checkbox" checked={m.effective.includes(mod)} onChange={() => toggleModule(m, mod)} className="accent-[#c6ff4d]" />
+														<input type="checkbox" checked={m.effective.includes(mod)} onChange={() => toggleModule(m, mod)} className="accent-[#7c93ff]" />
 														{t(`module_${mod}`)}
 													</label>
 												))}
 												{m.modules.length > 0 && (
-													<button type="button" onClick={() => change(m, { modules: [] })} className="text-12 text-[#c6ff4d] hover:underline">{t("teamResetModules")}</button>
+													<button type="button" onClick={() => change(m, { modules: [] })} className="text-12 text-[#7c93ff] hover:underline">{t("teamResetModules")}</button>
 												)}
 											</div>
 										)}
@@ -158,13 +158,13 @@ export default function Team() {
 
 							{invites.length > 0 && (
 								<div className="mt-24">
-									<h3 className="mb-8 text-13 font-medium text-[#8c948b]">{t("teamPending")}</h3>
+									<h3 className="mb-8 text-13 font-medium text-[#9aa7c9]">{t("teamPending")}</h3>
 									<ul className="flex flex-col gap-8">
 										{invites.map((i) => (
 											<li key={i.id} className="flex items-center gap-12 rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] px-16 py-10 text-12 text-[#cfd4cb]">
 												<span className="min-w-0 flex-1 truncate">{i.email}</span>
-												<span className="text-[#8c948b]">{t(`role_${i.role}`)}</span>
-												<button type="button" aria-label={t("teamRemove")} onClick={async () => { await apiCall(`/api/orgs/invitations/${i.id}`, "DELETE"); load(); }} className="text-[#8C948B] hover:text-danger"><TbX size={16} /></button>
+												<span className="text-[#9aa7c9]">{t(`role_${i.role}`)}</span>
+												<button type="button" aria-label={t("teamRemove")} onClick={async () => { await apiCall(`/api/orgs/invitations/${i.id}`, "DELETE"); load(); }} className="text-[#9AA7C9] hover:text-danger"><TbX size={16} /></button>
 											</li>
 										))}
 									</ul>

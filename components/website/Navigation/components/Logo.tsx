@@ -18,9 +18,9 @@ export default function Logo({ light = false }: { light?: boolean }) {
 			<BrandMark size={30} />
 			<span
 				className={`text-17 font-semibold leading-normal tracking-[-0.2px] lg:text-18 ${
-					light ? "text-white" : "text-[#f1f4ee]"
+					light ? "text-white" : "text-[#edf2ff]"
 				}`}>
-				Firmspace <span className="text-[#c6ff4d]">AI</span>
+				Firmspace <span className="text-[#7c93ff]">AI</span>
 			</span>
 		</Link>
 	);

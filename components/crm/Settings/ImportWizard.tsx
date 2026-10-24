@@ -136,15 +136,15 @@ export default function ImportWizard({ kind: initialKind, embedded = false }: { 
 				<div className="flex min-w-0 flex-1 flex-col gap-16">
 					{/* Шаг 1–2: файл и вид данных */}
 					<section className={card}>
-						<h2 className="mb-8 text-15 font-semibold text-[#f1f4ee]">{t("importTitle")}</h2>
-						<p className="mb-14 text-12 leading-[1.6] text-[#8c948b]">{t("importHint")}</p>
+						<h2 className="mb-8 text-15 font-semibold text-[#edf2ff]">{t("importTitle")}</h2>
+						<p className="mb-14 text-12 leading-[1.6] text-[#9aa7c9]">{t("importHint")}</p>
 						<div className="mb-14 flex flex-wrap gap-8">
 							{kinds.map((k) => (
 								<button
 									key={k.kind}
 									type="button"
 									onClick={() => { setKind(k.kind); setPreview(null); setReport(null); }}
-									className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${kind === k.kind ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#f1f4ee]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+									className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${kind === k.kind ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)] text-[#edf2ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`}>
 									{k.label}
 								</button>
 							))}
@@ -155,7 +155,7 @@ export default function ImportWizard({ kind: initialKind, embedded = false }: { 
 								{t("importChooseFile")}
 								<input type="file" accept=".csv,.txt,.tsv" onChange={pickFile} className="hidden" />
 							</label>
-							{fileName && <span className="text-12 text-[#8c948b]">{fileName}</span>}
+							{fileName && <span className="text-12 text-[#9aa7c9]">{fileName}</span>}
 							{/* Прикладной файл: скачать, заполнить своими данными и загрузить сюда же */}
 							{SAMPLE_FILES[kind] && (
 								<a href={SAMPLE_FILES[kind].file} download className="fs-link text-12">{t("importSample", { file: SAMPLE_FILES[kind].label })}</a>
@@ -178,7 +178,7 @@ export default function ImportWizard({ kind: initialKind, embedded = false }: { 
 						</div>
 						{!fileName && (
 							<label className="mt-12 block">
-								<span className="mb-6 block text-12 text-[#8c948b]">{t("importPaste")}</span>
+								<span className="mb-6 block text-12 text-[#9aa7c9]">{t("importPaste")}</span>
 								<textarea
 									value={text}
 									onChange={(e) => { setText(e.target.value); setPreview(null); }}
@@ -196,11 +196,11 @@ export default function ImportWizard({ kind: initialKind, embedded = false }: { 
 					{/* Шаг 3: сопоставление колонок и предпросмотр с ошибками */}
 					{preview && def && (
 						<section className={card}>
-							<h3 className="mb-10 text-14 font-semibold text-[#f1f4ee]">{t("importMappingTitle")}</h3>
+							<h3 className="mb-10 text-14 font-semibold text-[#edf2ff]">{t("importMappingTitle")}</h3>
 							<div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
 								{preview.columns.map((col) => (
 									<label key={col} className="block">
-										<span className={`mb-4 block text-11 ${mapping[col] ? "text-[#8c948b]" : "text-[#F4A100]"}`}>{col || "—"}</span>
+										<span className={`mb-4 block text-11 ${mapping[col] ? "text-[#9aa7c9]" : "text-[#F4A100]"}`}>{col || "—"}</span>
 										<select value={mapping[col] ?? ""} onChange={(e) => setMapping({ ...mapping, [col]: e.target.value })} className={field}>
 											<option value="">{t("importSkipColumn")}</option>
 											{def.fields.map((f) => <option key={f.key} value={f.key}>{f.label}{f.required ? " *" : ""}</option>)}
@@ -215,7 +215,7 @@ export default function ImportWizard({ kind: initialKind, embedded = false }: { 
 								</p>
 							)}
 							{preview.unknownColumns.length > 0 && (
-								<p className="mt-6 text-11 text-[#8C948B]">{t("importUnknownColumns", { count: preview.unknownColumns.length })}</p>
+								<p className="mt-6 text-11 text-[#9AA7C9]">{t("importUnknownColumns", { count: preview.unknownColumns.length })}</p>
 							)}
 
 							<div className="mt-14 flex flex-wrap items-center gap-14">
@@ -238,7 +238,7 @@ export default function ImportWizard({ kind: initialKind, embedded = false }: { 
 							<div className="mt-12 overflow-x-auto">
 								<table className="w-full min-w-[560px] text-12">
 									<thead>
-										<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#8c948b]">
+										<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#9aa7c9]">
 											<th className="pb-6 font-medium">#</th>
 											<th className="pb-6 font-medium">{t("importColValues")}</th>
 											<th className="pb-6 font-medium">{t("importColErrors")}</th>
@@ -247,14 +247,14 @@ export default function ImportWizard({ kind: initialKind, embedded = false }: { 
 									<tbody>
 										{preview.rows.slice(0, 30).map((r) => (
 											<tr key={r.line} className={`border-t border-inkLine ${r.empty ? "opacity-50" : ""}`}>
-												<td className="py-6 pr-8 text-[#8c948b]">{r.empty ? "—" : r.line}</td>
+												<td className="py-6 pr-8 text-[#9aa7c9]">{r.empty ? "—" : r.line}</td>
 												<td className="py-6 pr-8 text-[#cfd4cb]">{Object.values(r.values).filter(Boolean).slice(0, 4).join(" · ")}</td>
 												<td className="py-6 text-[#F4A100]">{r.errors.map((e) => `${e.field}:${e.code}`).join(", ")}</td>
 											</tr>
 										))}
 									</tbody>
 								</table>
-								{preview.truncated && <p className="mt-6 text-11 text-[#8C948B]">{t("importTruncated")}</p>}
+								{preview.truncated && <p className="mt-6 text-11 text-[#9AA7C9]">{t("importTruncated")}</p>}
 							</div>
 						</section>
 					)}
@@ -262,7 +262,7 @@ export default function ImportWizard({ kind: initialKind, embedded = false }: { 
 					{/* Отчёт последнего импорта */}
 					{report && (
 						<section className={card}>
-							<h3 className="mb-8 text-14 font-semibold text-[#f1f4ee]">{t("importReportTitle")}</h3>
+							<h3 className="mb-8 text-14 font-semibold text-[#edf2ff]">{t("importReportTitle")}</h3>
 							<p className="text-13 text-[#cfd4cb]">
 								{t("importReportLine", { created: report.created, updated: report.updated, skipped: report.skipped, failed: report.failed })}
 							</p>
@@ -271,19 +271,19 @@ export default function ImportWizard({ kind: initialKind, embedded = false }: { 
 
 					{/* История пакетов: видно, что приехало файлом, и можно откатить */}
 					<section className={card}>
-						<h3 className="mb-10 text-14 font-semibold text-[#f1f4ee]">{t("importHistory")}</h3>
+						<h3 className="mb-10 text-14 font-semibold text-[#edf2ff]">{t("importHistory")}</h3>
 						{batches.length === 0 ? (
-							<p className="text-12 text-[#8c948b]">{t("importNoBatches")}</p>
+							<p className="text-12 text-[#9aa7c9]">{t("importNoBatches")}</p>
 						) : (
 							<ul className="flex flex-col gap-8">
 								{batches.map((b) => (
 									<li key={b.id} className="flex flex-wrap items-center justify-between gap-10 border-t border-inkLine pt-8 text-12">
 										<span className="text-[#cfd4cb]">
-											<b className="text-[#f1f4ee]">{b.fileName || b.kind}</b> · {new Date(b.at).toLocaleString()} · {b.by || "—"}
+											<b className="text-[#edf2ff]">{b.fileName || b.kind}</b> · {new Date(b.at).toLocaleString()} · {b.by || "—"}
 										</span>
-										<span className="text-[#8c948b]">{t("importBatchLine", { created: b.summary.created, updated: b.summary.updated, failed: b.summary.failed })}</span>
+										<span className="text-[#9aa7c9]">{t("importBatchLine", { created: b.summary.created, updated: b.summary.updated, failed: b.summary.failed })}</span>
 										{b.rolledBackAt ? (
-											<span className="text-[#8C948B]">{t("importRolledBackAt", { at: new Date(b.rolledBackAt).toLocaleString() })}</span>
+											<span className="text-[#9AA7C9]">{t("importRolledBackAt", { at: new Date(b.rolledBackAt).toLocaleString() })}</span>
 										) : (
 											<button type="button" disabled={busy} onClick={() => void rollback(b.id)} className="fs-btn fs-btn-ghost h-30 disabled:opacity-50">
 												<TbArrowBackUp size={13} /> {t("importRollback")}
@@ -302,8 +302,8 @@ export default function ImportWizard({ kind: initialKind, embedded = false }: { 
 
 					{/* Экспорт: те же списки файлом — CSV, JSON, а каталог ещё и прайсом YML для площадок */}
 					<section className={card}>
-						<h3 className="mb-8 text-14 font-semibold text-[#f1f4ee]">{t("exportTitle")}</h3>
-						<p className="mb-12 text-12 text-[#8c948b]">{t("exportHint")}</p>
+						<h3 className="mb-8 text-14 font-semibold text-[#edf2ff]">{t("exportTitle")}</h3>
+						<p className="mb-12 text-12 text-[#9aa7c9]">{t("exportHint")}</p>
 						<div className="flex flex-wrap gap-8">
 							{["products", "contacts", "companies", "invoices", "orders", "quotes", "expenses"].map((k) => (
 								<button key={k} type="button" onClick={() => void downloadAuthed(`/api/export?kind=${k}&format=csv`, `${k}.csv`, t("importFailed"))} className="fs-btn fs-btn-ghost h-32 text-12">

@@ -54,10 +54,10 @@ export default function DocumentTemplateButton({ kind, id, number, template, onS
 
 			<Modal open={open} onClose={() => setOpen(false)} label={t("templateTitle")} className="w-full max-w-[860px]">
 				<div className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
-					<h2 className="mb-6 text-16 font-semibold text-[#f1f4ee]">{t("templateTitle")}</h2>
-					<p className="mb-16 text-12 text-[#8c948b]">{t("templateHint", { number })}</p>
+					<h2 className="mb-6 text-16 font-semibold text-[#edf2ff]">{t("templateTitle")}</h2>
+					<p className="mb-16 text-12 text-[#9aa7c9]">{t("templateHint", { number })}</p>
 					<TemplatePicker value={picked} onChange={setPicked} inherit={settingsTemplate} />
-					<p className="mt-12 text-11 text-[#8C948B]">{t("templateInherit", { name: picked ? t(`tpl_${picked}`) : t("templateFromSettings") })}</p>
+					<p className="mt-12 text-11 text-[#9AA7C9]">{t("templateInherit", { name: picked ? t(`tpl_${picked}`) : t("templateFromSettings") })}</p>
 					<div className="mt-20 flex flex-wrap justify-end gap-10">
 						<button type="button" onClick={() => setPicked("")} className="fs-btn fs-btn-ghost mr-auto h-40">{t("templateReset")}</button>
 						<button type="button" disabled={busy} onClick={preview} className="fs-btn fs-btn-ghost h-40 disabled:opacity-60">

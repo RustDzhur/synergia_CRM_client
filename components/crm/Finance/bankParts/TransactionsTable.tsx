@@ -33,15 +33,15 @@ export default function TransactionsTable({ rows, linkedLabel, onMatch, onUnlink
 				<tbody>
 					{rows.map((tx) => (
 						<tr key={tx.id}>
-							<td className="px-16 text-13 text-[#8c948b]">{tx.date}</td>
-							<td className="px-10 text-13 font-medium text-[#f1f4ee]">{tx.counterparty || "—"}</td>
-							<td className="px-10 text-13 text-[#8c948b]">
+							<td className="px-16 text-13 text-[#9aa7c9]">{tx.date}</td>
+							<td className="px-10 text-13 font-medium text-[#edf2ff]">{tx.counterparty || "—"}</td>
+							<td className="px-10 text-13 text-[#9aa7c9]">
 								<span className="block max-w-[280px] truncate" title={tx.reference}>{tx.reference || "—"}</span>
 							</td>
 							<td className="px-10 text-right text-13 font-medium" style={{ color: amountColor(tx.amount) }}>{money(tx.amount, tx.currency, locale)}</td>
 							<td className="px-10">
 								{tx.matchType ? (
-									<span className="fs-chip border-[rgba(198,255,77,0.35)] text-[#c6ff4d]">
+									<span className="fs-chip border-[rgba(124,147,255,0.35)] text-[#7c93ff]">
 										<TbReceipt size={14} aria-hidden />
 										<span className="block max-w-[220px] truncate">{linkedLabel(tx)}</span>
 									</span>
@@ -60,7 +60,7 @@ export default function TransactionsTable({ rows, linkedLabel, onMatch, onUnlink
 											<TbLink size={15} aria-hidden /> {t("bankMatch")}
 										</button>
 									)}
-									<button type="button" onClick={() => onDelete(tx)} aria-label={t("delete")} className="text-[#8C948B] transition-colors hover:text-danger">
+									<button type="button" onClick={() => onDelete(tx)} aria-label={t("delete")} className="text-[#9AA7C9] transition-colors hover:text-danger">
 										<TbTrash size={16} />
 									</button>
 								</div>

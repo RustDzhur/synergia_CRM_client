@@ -22,7 +22,7 @@ export default function ColorPickerModal({ open, value, onChange, onClose }: Pro
 		<Modal open={open} onClose={onClose} label={t("chooseColor")} zIndex={80} className="w-full max-w-[480px]">
 			<div className="fs-popover p-20">
 				<div className="flex justify-end">
-					<button type="button" onClick={onClose} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+					<button type="button" onClick={onClose} aria-label={t("close")} className="text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
 						<MdClose size={28} />
 					</button>
 				</div>
@@ -35,7 +35,7 @@ export default function ColorPickerModal({ open, value, onChange, onClose }: Pro
 							onClick={() => onChange(color)}
 							style={{ backgroundColor: color }}
 							className={`h-20 w-20 rounded-4 border transition-transform duration-150 hover:scale-125 ${
-								current === color ? "border-[#c6ff4d] ring-2 ring-[rgba(198,255,77,0.35)]" : "border-inkLine"
+								current === color ? "border-[#7c93ff] ring-2 ring-[rgba(124,147,255,0.35)]" : "border-inkLine"
 							}`}
 						/>
 					))}

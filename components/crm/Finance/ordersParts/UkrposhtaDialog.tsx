@@ -65,28 +65,28 @@ export default function UkrposhtaDialog({ orderId, onClose, onDone }: { orderId:
 	return (
 		<Modal open onClose={onClose} label={t("upCreate")} className="w-full max-w-[520px]">
 			<div className="fs-popover flex max-h-[calc(100dvh-32px)] flex-col gap-12 p-20">
-				<h2 className="text-15 font-semibold text-[#f1f4ee]">{t("upCreate")}</h2>
+				<h2 className="text-15 font-semibold text-[#edf2ff]">{t("upCreate")}</h2>
 				{error && <p className="rounded-10 bg-[rgba(244,161,0,0.10)] p-12 text-12 text-[#F4A100]">{error}</p>}
 				{state && !error && (
 					<>
 						<label className="block">
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("upSenderAddress")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("upSenderAddress")}</span>
 							<select value={senderUuid} onChange={(e) => setSenderUuid(e.target.value)} className="fs-field h-40 w-full px-12 text-13 outline-none">
 								{state.addresses.map((a) => <option key={a.id} value={a.id}>{a.name}{a.postcode ? ` · ${a.postcode}` : ""}</option>)}
 							</select>
 						</label>
 						<label className="block">
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("upPostOffice")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("upPostOffice")}</span>
 							<input value={office ? `${office.name}${office.postcode ? ` · ${office.postcode}` : ""}` : officeQuery} onChange={(e) => { setOffice(null); setOfficeQuery(e.target.value); }} placeholder={t("upSearchOffice")} className="fs-field h-40 w-full px-12 text-13 outline-none" />
 						</label>
 						{!office && offices && (
 							<ul className="max-h-[180px] overflow-y-auto rounded-10 border border-inkLineSoft">
 								{offices.length === 0 ? (
-									<li className="px-12 py-10 text-13 text-[#8c948b]">{t("upNoOffices")}</li>
+									<li className="px-12 py-10 text-13 text-[#9aa7c9]">{t("upNoOffices")}</li>
 								) : offices.map((p) => (
 									<li key={p.id}>
-										<button type="button" onClick={() => setOffice(p)} className="w-full px-12 py-9 text-left text-13 text-[#f1f4ee] transition-colors hover:bg-[rgba(255,255,255,0.04)]">
-											{p.name}{p.postcode ? <span className="text-[#8c948b]"> · {p.postcode}</span> : null}
+										<button type="button" onClick={() => setOffice(p)} className="w-full px-12 py-9 text-left text-13 text-[#edf2ff] transition-colors hover:bg-[rgba(255,255,255,0.04)]">
+											{p.name}{p.postcode ? <span className="text-[#9aa7c9]"> · {p.postcode}</span> : null}
 										</button>
 									</li>
 								))}
@@ -96,7 +96,7 @@ export default function UkrposhtaDialog({ orderId, onClose, onDone }: { orderId:
 							<FormField label={t("npWeight")} value={weight} onChange={(e) => setWeight(e.target.value.replace(/[^\d.]/g, ""))} maxLength={6} />
 							<FormField label={t("npCod")} value={cod} onChange={(e) => setCod(e.target.value.replace(/[^\d]/g, ""))} maxLength={10} />
 						</div>
-						<p className="text-11 text-[#8C948B]">{t("upEcomHint")}</p>
+						<p className="text-11 text-[#9AA7C9]">{t("upEcomHint")}</p>
 					</>
 				)}
 				<div className="mt-4 flex justify-end gap-10">

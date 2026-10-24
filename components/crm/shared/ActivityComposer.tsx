@@ -58,7 +58,7 @@ export default function ActivityComposer({ tabs, onSubmit, submitLabel }: Props)
 		requestAnimationFrame(() => el?.focus());
 	}
 
-	const toolbarButton = "flex items-center gap-4 text-12 text-[#8c948b]";
+	const toolbarButton = "flex items-center gap-4 text-12 text-[#9aa7c9]";
 	const disabledTip = t("soon");
 
 	return (
@@ -72,11 +72,11 @@ export default function ActivityComposer({ tabs, onSubmit, submitLabel }: Props)
 						aria-selected={x.key === active}
 						onClick={() => setActive(x.key)}
 						className={`relative shrink-0 px-16 py-10 text-13 font-medium transition-colors duration-200 ${
-							x.key === active ? "text-[#c6ff4d]" : "text-[#8c948b] hover:text-[#f1f4ee]"
+							x.key === active ? "text-[#7c93ff]" : "text-[#9aa7c9] hover:text-[#edf2ff]"
 						}`}>
 						{x.label}
 						<span
-							className={`absolute inset-x-0 bottom-[-1px] h-[2px] bg-[#c6ff4d] transition-transform duration-200 ${
+							className={`absolute inset-x-0 bottom-[-1px] h-[2px] bg-[#7c93ff] transition-transform duration-200 ${
 								x.key === active ? "scale-x-100" : "scale-x-0"
 							}`}
 						/>
@@ -104,7 +104,7 @@ export default function ActivityComposer({ tabs, onSubmit, submitLabel }: Props)
 										className="fs-field h-34 px-10 text-12 outline-none"
 									/>
 								)}
-								<button type="button" onClick={() => setText("")} className="px-12 py-8 text-12 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+								<button type="button" onClick={() => setText("")} className="px-12 py-8 text-12 text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
 									{t("cancel")}
 								</button>
 								<button
@@ -125,13 +125,13 @@ export default function ActivityComposer({ tabs, onSubmit, submitLabel }: Props)
 							onChange={(e) => setText(e.target.value)}
 							placeholder={tab.placeholder}
 							rows={5}
-							className="w-full resize-none bg-transparent text-13 text-[#f1f4ee] outline-none placeholder:text-[#8C948B]"
+							className="w-full resize-none bg-transparent text-13 text-[#edf2ff] outline-none placeholder:text-[#9AA7C9]"
 						/>
 						{tab.note && (
 							// Почему канал недоступен или что нужно подключить — до нажатия «Send», а не после
 							<p className="mt-10 text-12 leading-[1.5] text-[#F4A100]">{tab.note}</p>
 						)}
-						{tab.hint && !tab.note && <p className="mt-10 text-12 leading-[1.5] text-[#8c948b]">{tab.hint}</p>}
+						{tab.hint && !tab.note && <p className="mt-10 text-12 leading-[1.5] text-[#9aa7c9]">{tab.hint}</p>}
 						<div className="mt-10 flex flex-wrap items-center justify-between gap-12">
 							<div className="flex flex-wrap items-center gap-16">
 								<button type="button" disabled title={disabledTip} className={`${toolbarButton} cursor-not-allowed opacity-60`}>
@@ -148,7 +148,7 @@ export default function ActivityComposer({ tabs, onSubmit, submitLabel }: Props)
 								</button>
 							</div>
 							<div className="flex items-center gap-16">
-								<button type="button" onClick={() => setText("")} className="text-12 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+								<button type="button" onClick={() => setText("")} className="text-12 text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
 									{t("cancel")}
 								</button>
 								<button

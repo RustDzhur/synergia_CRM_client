@@ -74,13 +74,13 @@ export default function BankConnectDialog({ open, onClose, onLinked }: { open: b
 		setConnected(null);
 	}
 
-	const label = "mb-6 block text-12 text-[#8c948b]";
+	const label = "mb-6 block text-12 text-[#9aa7c9]";
 	const tab = (id: Provider, caption: string) => (
 		<button
 			key={id}
 			type="button"
 			onClick={() => { setProvider(id); setNotice(""); }}
-			className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${provider === id ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#f1f4ee]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+			className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${provider === id ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)] text-[#edf2ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`}>
 			{caption}
 		</button>
 	);
@@ -88,7 +88,7 @@ export default function BankConnectDialog({ open, onClose, onLinked }: { open: b
 	return (
 		<Modal open={open} onClose={close} label={t("bankConnect")} className="w-full max-w-[560px]">
 			<div className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
-				<h2 className="mb-12 text-16 font-semibold text-[#f1f4ee]">{t("bankConnect")}</h2>
+				<h2 className="mb-12 text-16 font-semibold text-[#edf2ff]">{t("bankConnect")}</h2>
 				<div className="mb-14 flex flex-wrap gap-8">
 					{tab("monobank", "monobank")}
 					{tab("privatbank", t("pbTab"))}
@@ -96,7 +96,7 @@ export default function BankConnectDialog({ open, onClose, onLinked }: { open: b
 
 				{provider === "monobank" && (
 					<>
-						<p className="mb-14 text-12 leading-[1.6] text-[#8c948b]">{t("mbHint")}</p>
+						<p className="mb-14 text-12 leading-[1.6] text-[#9aa7c9]">{t("mbHint")}</p>
 						<label className="block">
 							<span className={label}>{t("mbToken")}</span>
 							<input
@@ -124,12 +124,12 @@ export default function BankConnectDialog({ open, onClose, onLinked }: { open: b
 									<ul className="flex flex-col gap-8">
 										{connected.accounts.map((a) => (
 											<li key={a.id} className="flex flex-wrap items-center justify-between gap-10 rounded-10 border border-inkLine px-12 py-10">
-												<span className="min-w-0 text-13 text-[#f1f4ee]">
+												<span className="min-w-0 text-13 text-[#edf2ff]">
 													{a.name}
-													{a.ibanTail && <span className="ml-8 text-11 text-[#8C948B]">…{a.ibanTail}</span>}
+													{a.ibanTail && <span className="ml-8 text-11 text-[#9AA7C9]">…{a.ibanTail}</span>}
 												</span>
 												<span className="flex items-center gap-10">
-													<span className="text-12 text-[#8c948b]">{money(a.balance, a.currency || "UAH", "uk")}</span>
+													<span className="text-12 text-[#9aa7c9]">{money(a.balance, a.currency || "UAH", "uk")}</span>
 													<button type="button" disabled={busy} onClick={() => void link(a.id)} className="fs-btn fs-btn-ghost h-32 text-12 disabled:opacity-[0.5]">
 														{t("mbAdd")}
 													</button>
@@ -145,7 +145,7 @@ export default function BankConnectDialog({ open, onClose, onLinked }: { open: b
 
 				{provider === "privatbank" && (
 					<>
-						<p className="mb-14 text-12 leading-[1.6] text-[#8c948b]">{t("pbHint")}</p>
+						<p className="mb-14 text-12 leading-[1.6] text-[#9aa7c9]">{t("pbHint")}</p>
 						<div className="flex flex-col gap-12">
 							<label className="block">
 								<span className={label}>{t("pbId")}</span>
@@ -168,7 +168,7 @@ export default function BankConnectDialog({ open, onClose, onLinked }: { open: b
 							<button type="button" disabled={busy || !pb.id.trim() || !pb.token.trim() || !/^UA\d{27}$/.test(pb.iban)} onClick={() => void linkPrivat()} className="fs-btn fs-btn-primary h-38 disabled:opacity-[0.5]">
 								{busy ? t("pbChecking") : t("pbConnect")}
 							</button>
-							<span className="text-11 text-[#8C948B]">{t("pbWhere")}</span>
+							<span className="text-11 text-[#9AA7C9]">{t("pbWhere")}</span>
 						</div>
 					</>
 				)}

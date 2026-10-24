@@ -50,24 +50,24 @@ export default function LandingFormsDialog({ open, onClose }: { open: boolean; o
 	return (
 		<Modal open={open} onClose={onClose} label={t("intLandingForms")} className="w-full max-w-[560px]">
 			<div className="fs-popover fs-scroll max-h-[calc(100vh-32px)] overflow-y-auto">
-				<div className="flex items-center justify-between border-b border-inkLine bg-[rgba(198,255,77,0.06)] px-20 py-12">
-					<h2 className="text-15 font-semibold text-[#f1f4ee]">{t("intLandingForms")}</h2>
-					<button type="button" onClick={onClose} aria-label={t("intClose")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+				<div className="flex items-center justify-between border-b border-inkLine bg-[rgba(124,147,255,0.06)] px-20 py-12">
+					<h2 className="text-15 font-semibold text-[#edf2ff]">{t("intLandingForms")}</h2>
+					<button type="button" onClick={onClose} aria-label={t("intClose")} className="text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
 						<TbX size={18} />
 					</button>
 				</div>
 
 				<div className="flex flex-col gap-14 p-20">
-					<p className="text-12 leading-[1.5] text-[#8c948b]">{t("intLandingHint")}</p>
+					<p className="text-12 leading-[1.5] text-[#9aa7c9]">{t("intLandingHint")}</p>
 
-					{forms.length === 0 && <p className="text-12 text-[#8c948b]">{t("intLandingEmpty")}</p>}
+					{forms.length === 0 && <p className="text-12 text-[#9aa7c9]">{t("intLandingEmpty")}</p>}
 
 					{forms.map((item) => {
 						const token = item.webhookUrl.split("/").pop() ?? "";
 						return (
 							<div key={item.id} className="flex flex-col gap-10 rounded-10 border border-inkLine p-12">
 								<div className="flex items-center justify-between gap-8">
-									<span className="min-w-0 truncate text-13 font-medium text-[#f1f4ee]">{String(item.config.site ?? "")}</span>
+									<span className="min-w-0 truncate text-13 font-medium text-[#edf2ff]">{String(item.config.site ?? "")}</span>
 									<button
 										type="button"
 										disabled={busyId !== null}
@@ -84,7 +84,7 @@ export default function LandingFormsDialog({ open, onClose }: { open: boolean; o
 
 					<form onSubmit={create} className="flex items-end gap-8">
 						<label className="block min-w-0 flex-1">
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("intLandingSite")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("intLandingSite")}</span>
 							<input
 								value={site}
 								onChange={(e) => setSite(e.target.value)}

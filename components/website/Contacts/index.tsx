@@ -4,7 +4,7 @@ import { useLocale } from "next-intl";
 import { tx } from "@/content/i18n";
 import { CONTACT } from "@/content/sitePages";
 
-const field = "block w-full rounded-4 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] px-12 text-16 text-[#f1f4ee] outline-none placeholder:text-[#8c948b] transition-colors focus:border-[rgba(198,255,77,0.55)]";
+const field = "block w-full rounded-4 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] px-12 text-16 text-[#edf2ff] outline-none placeholder:text-[#9aa7c9] transition-colors focus:border-[rgba(124,147,255,0.55)]";
 
 // Contact: слева карточка с акцентным кругом и реквизитами, справа форма. Обращение уходит на /api/contact.
 // Круг раньше был розовым (#E91E9B) — на тёмном сайте это единственное яркое пятно не из палитры,
@@ -32,7 +32,7 @@ export default function ContactsPage() {
 	return (
 		<div className="sm:max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg m-auto sm:px-12 md:px-20 lg:px-100 sm:pb-50 lg:pb-[100px]">
 			<div className="flex flex-col gap-30 md:flex-row md:gap-[40px] lg:gap-[40px]">
-				<div className="relative overflow-hidden rounded-16 border border-[rgba(255,255,255,0.10)] bg-[rgba(255,255,255,0.03)] px-24 pt-24 pb-[220px] text-center text-[#f1f4ee] md:w-[45%] lg:w-[504px] lg:min-h-[605px] lg:shrink-0">
+				<div className="relative overflow-hidden rounded-16 border border-[rgba(255,255,255,0.10)] bg-[rgba(255,255,255,0.03)] px-24 pt-24 pb-[220px] text-center text-[#edf2ff] md:w-[45%] lg:w-[504px] lg:min-h-[605px] lg:shrink-0">
 					<h1 className="text-32 lg:text-36 font-medium tracking-[1px] leading-[1.3]">{tx(CONTACT.title, locale)}</h1>
 					<p className="mt-8 text-16 lg:text-20 font-medium tracking-[0.4px]">{tx(CONTACT.subtitle, locale)}</p>
 					<ul className="relative z-10 mt-30 space-y-16 text-left text-16 tracking-[0.3px]">
@@ -43,31 +43,31 @@ export default function ContactsPage() {
 							</li>
 						))}
 					</ul>
-					<div className="absolute -bottom-[10px] -right-[10px] h-[300px] w-[300px] rounded-[50%] bg-[rgba(198,255,77,0.10)] lg:h-[360px] lg:w-[360px] lg:-bottom-[40px] lg:-right-[30px]" aria-hidden />
+					<div className="absolute -bottom-[10px] -right-[10px] h-[300px] w-[300px] rounded-[50%] bg-[rgba(124,147,255,0.10)] lg:h-[360px] lg:w-[360px] lg:-bottom-[40px] lg:-right-[30px]" aria-hidden />
 				</div>
 
 				<form onSubmit={submit} className="flex-1 lg:max-w-[400px]">
 					<label className="mb-16 block">
-						<span className="mb-8 block text-16 lg:text-18 font-medium text-[#f1f4ee]">{tx(CONTACT.name, locale)}</span>
+						<span className="mb-8 block text-16 lg:text-18 font-medium text-[#edf2ff]">{tx(CONTACT.name, locale)}</span>
 						<input value={values.name} onChange={set("name")} placeholder={tx(CONTACT.namePh, locale)} maxLength={100} required className={`${field} h-[47px]`} />
 					</label>
 					<label className="mb-16 block">
-						<span className="mb-8 block text-16 lg:text-18 font-medium text-[#f1f4ee]">{tx(CONTACT.email, locale)}</span>
+						<span className="mb-8 block text-16 lg:text-18 font-medium text-[#edf2ff]">{tx(CONTACT.email, locale)}</span>
 						<input type="email" value={values.email} onChange={set("email")} placeholder={tx(CONTACT.emailPh, locale)} maxLength={200} required className={`${field} h-[47px]`} />
 					</label>
 					<label className="mb-16 block">
-						<span className="mb-8 block text-16 lg:text-18 font-medium text-[#f1f4ee]">{tx(CONTACT.phone, locale)}</span>
+						<span className="mb-8 block text-16 lg:text-18 font-medium text-[#edf2ff]">{tx(CONTACT.phone, locale)}</span>
 						<input type="tel" value={values.phone} onChange={set("phone")} placeholder={tx(CONTACT.phonePh, locale)} maxLength={40} className={`${field} h-[47px]`} />
 					</label>
 					<label className="mb-30 block">
-						<span className="mb-8 block text-16 lg:text-18 font-medium text-[#f1f4ee]">{tx(CONTACT.message, locale)}</span>
+						<span className="mb-8 block text-16 lg:text-18 font-medium text-[#edf2ff]">{tx(CONTACT.message, locale)}</span>
 						<textarea value={values.message} onChange={set("message")} placeholder={tx(CONTACT.messagePh, locale)} maxLength={3000} required rows={6} className={`${field} py-12 resize-none lg:h-[137px]`} />
 					</label>
 					<div className="flex flex-col items-end gap-12">
 						<button type="submit" disabled={state === "sending"} className="h-[52px] rounded-4 bg-authBtn px-[30px] text-18 font-medium tracking-[0.4px] text-[#0A0A0A] transition-opacity hover:opacity-80 disabled:opacity-60">
 							{tx(state === "sending" ? CONTACT.sending : CONTACT.send, locale)}
 						</button>
-						{state === "sent" && <p role="status" className="self-stretch text-14 text-[#5FBF3C]">{tx(CONTACT.sent, locale)}</p>}
+						{state === "sent" && <p role="status" className="self-stretch text-14 text-[#36CFC9]">{tx(CONTACT.sent, locale)}</p>}
 						{state === "error" && <p role="alert" className="self-stretch text-14 text-danger">{tx(CONTACT.failed, locale)}</p>}
 					</div>
 				</form>

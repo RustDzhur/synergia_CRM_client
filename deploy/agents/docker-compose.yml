@@ -4,7 +4,8 @@
 #
 # Что видит агент внутри контейнера:
 #   /workspace — общая папка агентов (на сервере ~/agents): у каждого агента своя подпапка;
-#   /site      — код сайта, ТОЛЬКО ЧТЕНИЕ (боевой репозиторий; менять сайт можно только через git);
+#   /site      — код сайта (CRM), ТОЛЬКО ЧТЕНИЕ (боевой репозиторий; менять сайт можно только через git);
+#   /site-new  — код НОВОГО сайта firmspace-website (~/firmspace-website), ТОЛЬКО ЧТЕНИЕ (SEO-агент готовит правки в output/);
 #   сеть host  — сам сайт доступен как http://127.0.0.1:3210 (API агентов: /api/agent/…, токены — в CRM, Настройки → Агенты).
 #
 # Запуск:  docker compose -p dsh -f deploy/agents/docker-compose.yml up -d
@@ -20,6 +21,7 @@ services:
       - dsh-home:/root/.dsh
       - ${AGENTS_DIR:-/home/server/agents}:/workspace
       - ${SITE_DIR:-/home/server/crm-duplicate}:/site:ro
+      - ${WEBSITE_DIR:-/home/server/firmspace-website}:/site-new:ro
     environment:
       DSH_TRUSTED_HOSTS: "harness.firmspace.de www.harness.firmspace.de 127.0.0.1:3080 localhost:3080"
 volumes:
