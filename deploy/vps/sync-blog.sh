@@ -39,8 +39,27 @@ for line in open(os.path.join(tmp, "posts.ndjson"), encoding="utf-8"):
     if not slug or not isinstance(data, dict):
         continue
     path = os.path.join(blog_dir, slug + ".json")
+    # ru-переводы статей живут только на сайте (CRM их не хранит): при перезаписи
+    # из CRM сохраняем уже переведённые поля, иначе каждый sync стирал бы перевод.
+    old_text = open(path, encoding="utf-8").read() if os.path.exists(path) else None
+    if old_text:
+        try:
+            prev = json.loads(old_text)
+            if isinstance(prev.get("title"), dict) and prev["title"].get("ru"):
+                data.setdefault("title", {})["ru"] = prev["title"]["ru"]
+            if isinstance(prev.get("excerpt"), dict) and prev["excerpt"].get("ru"):
+                data.setdefault("excerpt", {})["ru"] = prev["excerpt"]["ru"]
+            prev_body = prev.get("body") if isinstance(prev.get("body"), list) else []
+            body = data.get("body") if isinstance(data.get("body"), list) else []
+            for i, paragraph in enumerate(body):
+                if i < len(prev_body) and isinstance(paragraph, dict) and isinstance(prev_body[i], dict):
+                    ru_value = prev_body[i].get("ru")
+                    if ru_value:
+                        paragraph["ru"] = ru_value
+        except ValueError:
+            pass
     text = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
-    old = open(path, encoding="utf-8").read() if os.path.exists(path) else None
+    old = old_text
     if old != text:
         with open(path, "w", encoding="utf-8") as f:
             f.write(text)
