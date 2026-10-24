@@ -4,6 +4,7 @@ import { ToolError, allowedTools, type AiCtx } from "@/lib/ai/tools";
 import { OfficeError, IRIS_ID, type OfficeTask, type Robot, createTask, getRobot, getTask, getTaskScoped, listRobots, updateTask } from "./store";
 import { bossPersona, robotPersona, toolsFor } from "./templates";
 import { catalogById } from "./catalog";
+import { findAds } from "@/lib/ads";
 
 // Исполнитель поручений Робот-офиса. Поручение роботу — это обычный разговор Айрис (runChat), в котором:
 //   • инструменты ограничены навыками робота, а подсказка — его должностной инструкцией;
@@ -24,6 +25,15 @@ const chains = (g.__officeChains ??= new Map<string, Promise<void>>());
 const active = (g.__officeActive ??= new Set<string>());
 
 const fail = async (org: string, id: string, message: string) => updateTask(org, id, { status: "failed", error: message.slice(0, 400), finishedAt: new Date().toISOString() });
+
+/** Текст «нужен доступ» на языке поручения: владельцу он читается без перевода. */
+const adsAccessMessage = (locale?: string) => {
+    const lang = (locale || "en").slice(0, 2);
+    if (lang === "ru") return "НЕТ ДОСТУПА к Google Ads. Робот не может построить или оптимизировать кампанию, пока рекламный кабинет не подключён: Настройки → Маркетинг → Ad Performance → Connect Google Ads, затем выберите аккаунт и запустите поручение заново.";
+    if (lang === "ua" || lang === "uk") return "НЕМАЄ ДОСТУПУ до Google Ads. Робот не може створити чи оптимізувати кампанію, доки рекламний кабінет не підключено: Налаштування → Маркетинг → Ad Performance → Connect Google Ads, потім виберіть акаунт і запустіть доручення знову.";
+    if (lang === "de") return "ZUGANG FEHLT zu Google Ads. Der Roboter kann keine Kampagne aufbauen oder optimieren, solange kein Werbekonto verbunden ist: Einstellungen → Marketing → Ad Performance → Connect Google Ads, danach das Konto auswählen und die Aufgabe neu starten.";
+    return "ACCESS MISSING for Google Ads. The robot cannot build or optimize a campaign while no ad account is connected: Settings → Marketing → Ad Performance → Connect Google Ads, then pick the account and start the task again.";
+};
 
 /** Ставит поручение в очередь робота и запускает в фоне. robot — id робота или "iris" (начальник распределяет сам). */
 export async function startOfficeTask(ctx: OfficeCtx, input: { robot: string; text: string; source: OfficeTask["source"]; locale?: string }): Promise<OfficeTask> {
@@ -50,6 +60,19 @@ async function execute(ctx: OfficeCtx, taskId: string): Promise<void> {
     if (robot && !robot.enabled) return void (await fail(org, taskId, "This robot is switched off"));
     if (robot && watchOnly(robot)) return void (await fail(org, taskId, "This robot only watches the platform and takes no tasks"));
 
+    // Рекламное поручение без подключённого кабинета выполнить нельзя. Раньше модель
+    // просто отвечала «готово», и поручение закрывалось успехом — теперь это отказ
+    // ДО работы, с просьбой дать доступ (и карточка открывает настройки подключения).
+    const skills = robot?.skills ?? [];
+    const adsTask = (skills.includes("ads") || boss) && /anz(eig|üg)|google ?ads|adwords|kampagn|реклам|конверс|conversion|оптимиз|optimier|clicks?|klicks?/i.test(task.text);
+    if (adsTask) {
+        const connection = (await findAds(org, "google"))[0];
+        const cfg = (connection?.config ?? {}) as { accountId?: string };
+        if (!connection || connection.status !== "connected" || !cfg.accountId) {
+            return void (await fail(org, taskId, adsAccessMessage(task.locale)));
+        }
+    }
+
     active.add(taskId);
     await updateTask(org, taskId, { status: "running", startedAt: new Date().toISOString() });
     try {
@@ -73,6 +96,16 @@ async function execute(ctx: OfficeCtx, taskId: string): Promise<void> {
             }
         }
         const all = { pending: [...pending, ...res!.actions], executed: [...executed, ...(res!.executed ?? [])], steps: Array.from(new Set([...steps, ...res!.steps])) };
+        const adsActions = all.executed.filter((action) => String(action.tool || "").startsWith("ads_"));
+        const accessMissing = /(ZUGANG FEHLT|ACCESS MISSING|НЕТ ДОСТУПА)/i.test(res!.reply || "");
+        if (adsTask && adsActions.length === 0 && all.pending.length === 0) {
+            // Поручение про рекламу, но ни одного шага в Google Ads: это не «готово».
+            return void (await fail(org, taskId,
+                `${adsAccessMessage(task.locale)} (Antwort: ${String(res!.reply || "").slice(0, 200)})`));
+        }
+        if (accessMissing && all.executed.length === 0) {
+            return void (await fail(org, taskId, `Zugang fehlt — der Roboter hat nichts ausgeführt: ${String(res!.reply || "").slice(0, 320)}`));
+        }
         await updateTask(org, taskId, { ...all, reply: res!.reply, status: all.pending.length ? "waiting" : "done", finishedAt: all.pending.length ? undefined : new Date().toISOString() });
     } catch (e) {
         await fail(org, taskId, e instanceof Error && e.message ? e.message : "The task failed");

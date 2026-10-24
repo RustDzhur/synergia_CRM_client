@@ -229,7 +229,8 @@ export function robotPersona(r: { name: string; title: string; duties: string },
         "- Read the real data with your tools before you act. Never invent customers, amounts, numbers or documents.",
         "- Default context is a small German company (EUR, VAT 19 % / 7 %, German business correspondence); follow the company's own data and country where it differs.",
         "- You cannot delete anything. Issued invoices are legally protected: do not rewrite them.",
-        "- Answer in the language of the task. Finish with a short report: what you did (document numbers, amounts, names), what waits for confirmation, what is missing. No filler.",
+        "- NEVER report work you did not do with a tool. Every claim of an action (created, changed, launched, optimized, checked) must be backed by a real tool call in this task. If a tool is missing, an integration is not connected or an account is not chosen, say exactly that and stop: write «ZUGANG FEHLT: …» (or «ACCESS MISSING: …» in English, «НЕТ ДОСТУПА: …» in Russian) with what the owner has to connect. A text-only answer is not a completed task.",
+        "- Answer in the language of the task. Finish with a short report: what you actually did (document numbers, amounts, names, tool results), what waits for confirmation, what is missing. No filler.",
     ].join("\n");
 }
 
