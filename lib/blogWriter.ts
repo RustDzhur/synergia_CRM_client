@@ -3,6 +3,8 @@
 // сразу (published: true). Вызывается из /api/cron/blog (защищён CRON_SECRET) cron'ом сервера каждые
 // 10 минут; защита от дублей — здесь: не больше 2 статей за сутки, вторая — не раньше чем через 8 часов.
 // Тема пула — «ИИ и автоматизация в работе малого бизнеса»; без выдуманных цифр и цен.
+// Статья пишется двумя вызовами модели: заголовок+аннотация (маленький ответ) и абзацы (большой ответ
+// с увеличенным бюджетом токенов) — иначе JSON четырёх языков обрезался лимитом.
 
 import { execFileSync } from "node:child_process";
 import { complete } from "@/lib/ai/provider";
@@ -28,24 +30,43 @@ const TOPICS = [
     "How automatic document recognition speeds up bookkeeping",
 ];
 
-const SYSTEM = [
+const HEAD_SYSTEM = [
     "You are the blog author of Firmspace AI, an AI platform for small businesses (CRM, finance, stock, the AI assistant Ayris).",
-    "Write a practical, no-fluff article for the landing page: 5-8 paragraphs on the given topic.",
-    "Rules: plain text without HTML, no invented figures, prices or promises about the product, no marketing fluff — answer the practical question for a busy small-business owner.",
+    "Pick a title and a one-sentence excerpt for a practical, no-fluff article on the given topic.",
+    "Rules: plain text without HTML, no invented figures, prices or promises about the product.",
     "Reply with ONLY a JSON object, no markdown and no explanations:",
-    '{ "title": {"en": "…", "de": "…", "ua": "…", "uz": "…"}, "excerpt": {"en": "…", "de": "…", "ua": "…", "uz": "…"}, "body": [{"en": "…", "de": "…", "ua": "…", "uz": "…"}] }',
-    "Limits: title ≤ 160 characters, excerpt ≤ 400, each paragraph ≤ 4000, all four languages required.",
+    '{ "title": {"en": "…", "de": "…", "ua": "…", "uz": "…"}, "excerpt": {"en": "…", "de": "…", "ua": "…", "uz": "…"} }',
+    "Limits: title ≤ 160 characters, excerpt ≤ 400, all four languages required.",
+].join("\n");
+
+const BODY_SYSTEM = [
+    "You write the body of a blog article for Firmspace AI, an AI platform for small businesses.",
+    "Write 5-6 short paragraphs on the given topic — practical, no fluff, for a busy small-business owner.",
+    "Rules: plain text without HTML, no invented figures, prices or promises; 2-4 sentences per paragraph; all four languages required.",
+    "Reply with ONLY a JSON object, no markdown and no explanations:",
+    '{ "body": [{"en": "…", "de": "…", "ua": "…", "uz": "…"}] }',
+    "Each paragraph ≤ 1500 characters per language.",
 ].join("\n");
 
 const plain = (v: unknown) => String(v ?? "").replace(/<[^>]*>/g, "").replace(/\r/g, "").trim();
 
-// Модель могла обернуть JSON в пояснение — берём первые фигурные скобки
+// Модель могла обернуть JSON в пояснение или упереться в лимит токенов: берём от первой «{»,
+// пробуем как есть, с обрезкой хвоста и с достройкой закрывающих скобок оборванного JSON.
 const extractJson = (text: string): Record<string, unknown> => {
-    const m = /\{[\s\S]*\}/.exec(text ?? "");
-    if (!m) throw new Error("The model returned no JSON");
-    const v = JSON.parse(m[0]);
-    if (!v || typeof v !== "object" || Array.isArray(v)) throw new Error("The model returned no JSON");
-    return v as Record<string, unknown>;
+    const start = String(text ?? "").indexOf("{");
+    if (start < 0) throw new Error("The model returned no JSON");
+    const base = text.slice(start);
+    const repairs = ["", "}", "]", "}]", "]}", "\"}", "\"]}", "}", "}]}"];
+    const candidates: string[] = [];
+    for (const r of repairs) candidates.push(base + r);
+    for (let cut = 1; cut <= Math.min(400, base.length); cut += 25) candidates.push(base.slice(0, base.length - cut));
+    for (const c of candidates) {
+        try {
+            const v = JSON.parse(c);
+            if (v && typeof v === "object" && !Array.isArray(v)) return v as Record<string, unknown>;
+        } catch { /* пробуем следующий вариант */ }
+    }
+    throw new Error("The model returned no valid JSON");
 };
 
 // {en,de,ua,uz} из ответа модели; пустой язык — текст en (en обязателен, de/ua/uz — фолбэк)
@@ -58,11 +79,13 @@ const localize = (json: unknown): { en: string; de: string; ua: string; uz: stri
 
 // Одна статья по теме → готовый объект для parsePost; slug строится из английского заголовка
 async function generate(topic: string) {
-    const reply = await complete(SYSTEM, [{ role: "user", text: `Topic: ${topic}` }], [], { maxTokens: 4000 });
-    const o = extractJson(reply.text);
-    const title = localize(o.title);
-    const excerpt = localize(o.excerpt);
-    const bodyRaw = Array.isArray(o.body) ? o.body : [];
+    const head = await complete(HEAD_SYSTEM, [{ role: "user", text: `Topic: ${topic}` }], [], { maxTokens: 1500 });
+    const h = extractJson(head.text);
+    const title = localize(h.title);
+    const excerpt = localize(h.excerpt);
+    const bodyReply = await complete(BODY_SYSTEM, [{ role: "user", text: `Topic: ${topic}. Title (for context): ${title.en}. Write the body now.` }], [], { maxTokens: 8000 });
+    const b = extractJson(bodyReply.text);
+    const bodyRaw = Array.isArray(b.body) ? b.body : [];
     if (!bodyRaw.length) throw new Error("The model returned no body");
     const body = bodyRaw.map((p) => localize(p));
     return { slug: slugify(title.en), title, excerpt, body };
