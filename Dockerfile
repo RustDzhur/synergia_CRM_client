@@ -44,5 +44,7 @@ COPY --from=build /app/scripts/migrate-office.mjs ./scripts/migrate-office.mjs
 COPY --from=build /app/scripts/check-ai.mjs ./scripts/check-ai.mjs
 # создание/вывод токенов интеграций «landing» для приёма заявок лендингов (idempotent)
 COPY --from=build /app/scripts/seed-landing-tokens.mjs ./scripts/seed-landing-tokens.mjs
+# выгрузка опубликованных статей блога и картинок на новый сайт (sync-blog.sh)
+COPY --from=build /app/scripts/sync-blog.mjs ./scripts/sync-blog.mjs
 EXPOSE 3000
 CMD ["/entrypoint.sh"]
