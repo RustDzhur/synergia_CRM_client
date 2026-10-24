@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { PICK_SKILLS, PICK_ZONES } from "@/lib/office/templates";
+import type { RoutineDraft } from "@/lib/office/hireVoice";
 import { useOfficeStore, type Accent, type Robot, type RobotInput, type Skill, type Zone } from "@/store/useOfficeStore";
 import RobotAvatar from "./RobotAvatar";
 import { ACCENTS, ACCENT_HEX } from "./theme";
@@ -10,16 +11,26 @@ import { ACCENTS, ACCENT_HEX } from "./theme";
 const ZONE_IDS: Zone[] = PICK_ZONES;
 
 // Форма робота: и для найма своего, и для настройки готового. Для готового пустые должность и инструкция означают «как в каталоге».
-export default function RobotForm({ robot, onSubmit, onCancel, submitLabel }: { robot?: Robot; onSubmit: (input: RobotInput) => Promise<void>; onCancel: () => void; submitLabel: string }) {
+// initial — черновик из диктовки («нанять голосом»): форма открывается уже заполненной, человек проверяет и жмёт «Нанять».
+export default function RobotForm({ robot, initial, adsWarn, onSubmit, onCancel, submitLabel }: {
+	robot?: Robot;
+	initial?: { name?: string; title?: string; zone?: Zone; accent?: Accent; skills?: Skill[]; instructions?: string; routines?: RoutineDraft[] };
+	adsWarn?: string;
+	onSubmit: (input: RobotInput) => Promise<void>;
+	onCancel: () => void;
+	submitLabel: string;
+}) {
 	const t = useTranslations("office");
-	const [name, setName] = useState(robot?.name ?? "");
-	const [title, setTitle] = useState(robot?.title ?? "");
+	const [name, setName] = useState(robot?.name ?? initial?.name ?? "");
+	const [title, setTitle] = useState(robot?.title ?? initial?.title ?? "");
 	const rooms = useOfficeStore((s) => s.rooms);
-	const [zone, setZone] = useState<Zone>(robot?.zone ?? "office");
-	const [accent, setAccent] = useState<Accent>(robot?.accent ?? "lime");
-	const [skills, setSkills] = useState<Skill[]>(robot?.skills ?? []);
-	const [instructions, setInstructions] = useState(robot?.instructions ?? "");
+	const [zone, setZone] = useState<Zone>(robot?.zone ?? initial?.zone ?? "office");
+	const [accent, setAccent] = useState<Accent>(robot?.accent ?? initial?.accent ?? "lime");
+	const [skills, setSkills] = useState<Skill[]>(robot?.skills ?? initial?.skills ?? []);
+	const [instructions, setInstructions] = useState(robot?.instructions ?? initial?.instructions ?? "");
 	const [autonomy, setAutonomy] = useState<"ask" | "auto">(robot?.autonomy ?? "ask");
+	// регулярные задачи из диктовки показываем списком — править их можно после найма в карточке робота
+	const [routines] = useState<RoutineDraft[]>(initial?.routines ?? []);
 	const [busy, setBusy] = useState(false);
 	const custom = !robot || robot.template === "custom";
 
@@ -30,13 +41,18 @@ export default function RobotForm({ robot, onSubmit, onCancel, submitLabel }: { 
 		if (!skills.length) return void toast.error(t("needSkill"));
 		if (custom && !title.trim() && !instructions.trim()) return void toast.error(t("needTitle"));
 		setBusy(true);
-		try { await onSubmit({ name, title, zone, accent, skills, instructions, autonomy, ...(robot ? {} : { template: "custom" }) }); } finally { setBusy(false); }
+		try {
+			await onSubmit({ name, title, zone, accent, skills, instructions, autonomy, ...(robot ? {} : { template: "custom" }), ...(routines.length ? { routines } : {}) });
+		} finally { setBusy(false); }
 	}
 	const seg = (on: boolean) => `flex-1 rounded-8 border px-10 py-8 text-12 font-medium transition-colors ${on ? "border-[#7c93ff] bg-[rgba(124,147,255,0.08)] text-[#edf2ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`;
 	const label = "mb-6 block text-11 font-semibold uppercase tracking-[0.06em] text-[#9aa7c9]";
+	const routineLabel = (r: RoutineDraft) => `${t(`k_${r.kind}`)}${r.kind === "weekly" ? ` · ${t(`wd${r.day ?? 1}`)}` : r.kind === "monthly" ? ` · ${r.day ?? 1}` : ""} · ${r.time}`;
 
 	return (
 		<form onSubmit={submit} className="flex flex-col gap-16">
+			{/* Предупреждение до формы: в диктовке упомянута реклама, а Google Ads не подключён — робот при первом поручении сам об этом скажет */}
+			{adsWarn && <p className="rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] px-12 py-10 text-12 leading-[1.5] text-[#F4A100]">{adsWarn}</p>}
 			<div className="flex items-center gap-14">
 				<RobotAvatar accent={accent} size={64} />
 				<div className="grid flex-1 grid-cols-1 gap-10 sm:grid-cols-2">
@@ -76,6 +92,20 @@ export default function RobotForm({ robot, onSubmit, onCancel, submitLabel }: { 
 				<textarea id="rb-ins" value={instructions} onChange={(e) => setInstructions(e.target.value)} maxLength={1500} rows={3} placeholder={t("fInstructionsPh")} className="fs-field fs-scroll w-full p-12 text-13 outline-none" />
 				{!custom && <p className="mt-6 text-11 text-[#9aa7c9]">{t("fInstructionsDefault")}</p>}
 			</div>
+			{routines.length > 0 && (
+				<div>
+					<span className={label}>{t("routinesTitle")}</span>
+					<ul className="flex flex-col gap-6">
+						{routines.map((r, i) => (
+							<li key={i} className="flex items-baseline justify-between gap-8 rounded-8 border border-inkLine px-10 py-6">
+								<span className="min-w-0 flex-1 text-12 text-[#edf2ff]">{r.text}</span>
+								<span className="shrink-0 text-11 text-[#9aa7c9]">{routineLabel(r)}</span>
+							</li>
+						))}
+					</ul>
+					<p className="mt-6 text-11 text-[#9aa7c9]">{t("voiceRoutinesHint")}</p>
+				</div>
+			)}
 			<div>
 				<span className={label}>{t("autonomy")}</span>
 				<div className="flex gap-8" role="radiogroup" aria-label={t("autonomy")}>

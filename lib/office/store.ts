@@ -112,7 +112,7 @@ export async function visibleTasks(org: string, tasks: OfficeTask[], scope: Scop
     return tasks.filter((t) => !hidden.has(t.robot));
 }
 
-export interface RobotInput { template?: string; name?: string; title?: string; zone?: string; accent?: string; skills?: unknown; instructions?: string; autonomy?: string; enabled?: boolean }
+export interface RobotInput { template?: string; name?: string; title?: string; zone?: string; accent?: string; skills?: unknown; instructions?: string; autonomy?: string; enabled?: boolean; routines?: unknown }
 
 /** Нанимает робота: из шаблона каталога или своего («custom»). Для шаблона пустые поля берутся из него. */
 export async function createRobot(org: string, input: RobotInput, opts: { platform?: boolean } = {}): Promise<Robot> {
@@ -140,7 +140,7 @@ export async function createRobot(org: string, input: RobotInput, opts: { platfo
         instructions: cleanLong(input.instructions, 1500),
         autonomy: input.autonomy === "auto" || tpl?.platform ? "auto" : "ask",
         enabled: input.enabled !== false,
-        routines: (tpl?.routines ?? []).map((r) => cleanRoutine(r)).filter((r): r is Routine => !!r),
+        routines: (Array.isArray(input.routines) ? input.routines.map(cleanRoutine) : tpl?.routines ?? []).filter((r): r is Routine => !!r),
         createdAt: new Date().toISOString(),
     };
     if (!tpl && !robot.title && !robot.instructions) throw new OfficeError("Describe the job: give a title or instructions");
