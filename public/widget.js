@@ -74,7 +74,7 @@
 
   // Акцент по умолчанию — лаймовый, как на сайте и в кабинете: фирма может выбрать свой в настройках канала,
   // но новый канал должен совпадать с сайтом сразу, а не становиться синим
-  var cfg = { title: "Chat with us", greeting: "Hello! How can we help?", color: "#C6FF4D", quick: [], links: {}, hours: null, cta: null };
+  var cfg = { title: "Chat with us", greeting: "Hello! How can we help?", color: "#7C93FF", quick: [], links: {}, hours: null, cta: null };
   // Оформление можно задать прямо в теге скрипта (так лендинг показывает Айрис): data-title, data-greeting, data-avatar (адрес картинки)
   var attrTitle = script.getAttribute("data-title"), attrGreeting = script.getAttribute("data-greeting"), attrAvatar = script.getAttribute("data-avatar");
   if (attrTitle) cfg.title = attrTitle;
@@ -82,7 +82,7 @@
   var open = false, messages = [], seen = 0, timer = null;
 
   // Оформление под тёмный сайт: почти чёрные слои и лаймовый акцент, как в кабинете и на лендинге
-  var INK = "#131715", INK_DEEP = "#101412", PANEL = "#1d2320", LINE = "rgba(255,255,255,.10)", TEXT = "#f1f4ee", MUTED = "#8c948b", DARK = "#0a0c0b";
+  var INK = "#0B1120", INK_DEEP = "#0A0F1C", PANEL = "#121C34", LINE = "rgba(255,255,255,.10)", TEXT = "#EDF2FF", MUTED = "#9AA7C9", DARK = "#0b1120";
 
   // Текст поверх акцента фирмы: у лаймового это почти чёрный, у тёмно-синего — белый. Фирма выбирает
   // любой цвет, и раньше на тёмном выборе подписи становились невидимыми — считаем по яркости

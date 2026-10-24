@@ -586,7 +586,7 @@ export function webchatConfig(input: Input) {
     return {
         title: str(input.title, 60) || "Chat with us",
         greeting: str(input.greeting, 200) || "Hello! How can we help?",
-        color: /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#C6FF4D",
+        color: /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#7C93FF",
         // Часы работы: по ним виджет честно говорит «ответим утром», а не оставляет человека ждать.
         // Дни — как в календаре JavaScript: 0 — воскресенье, 1–5 — будни.
         hoursFrom: time(input.hoursFrom, "09:00"),
