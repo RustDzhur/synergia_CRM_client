@@ -8,6 +8,8 @@
 set -uo pipefail
 
 SITE="${FIRMSPACE_WEBSITE_DIR:-/home/server/firmspace-website}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="${CRON_ENV_FILE:-/home/server/crm-duplicate/deploy/vps/.env}"
 BLOG="$SITE/content/blog"
 IMG="$SITE/public/images/blog"
 TMP="$(mktemp -d)"
@@ -75,7 +77,7 @@ PY
 
 echo "$(date -Is) sync-blog: изменено файлов: ${CHANGED:-?}"
 if [ -f /home/server/translate-blog.js ]; then
-  SECRET_T=$(sed -n "s/^CRON_SECRET=//p" "$HERE/.env" 2>/dev/null | head -1 | tr -d "\"")
+  SECRET_T=$(sed -n "s/^CRON_SECRET=//p" "$ENV_FILE" 2>/dev/null | head -1 | tr -d "\"")
   TRANSLATED=$(docker run --rm --network host -e CRON_SECRET="$SECRET_T" \
     -v /home/server/translate-blog.js:/translate-blog.js:ro \
     -v "$SITE/content/blog:/blog" \
