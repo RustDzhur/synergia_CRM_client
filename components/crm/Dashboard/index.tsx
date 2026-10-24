@@ -15,6 +15,9 @@ import DealsChart from "./DealsChart";
 import TasksDonut from "./TasksDonut";
 import AdsCard from "./AdsCard";
 import FinanceCard from "./FinanceCard";
+import StageBars from "./StageBars";
+import ActivitySparkline from "./ActivitySparkline";
+import RevenueTrend from "./RevenueTrend";
 
 // Dashboard: сверху графики сеткой, ниже — задачи выбранного дня.
 // Раньше графики стояли одним узким столбцом справа, из-за чего страница вытягивалась вниз,
@@ -49,11 +52,15 @@ export default function Dashboard() {
 			</div>
 			{/* Объявления команды: то, что коллеги написали в ленте, — чтобы не искать их отдельно */}
 			{hasCollab && <div className="mt-16 lg:mt-20"><FeedCard enabled={hasCollab} /></div>}
-			{/* И только потом общая картина: сделки по этапам, задачи по статусам, реклама */}
+			{/* И только потом общая картина: сделки по этапам, задачи по статусам, реклама,
+			    воронка, пульс новых сделок и тренд дохода */}
 			<div className="mt-16 grid gap-16 md:grid-cols-2 lg:mt-20 lg:grid-cols-3 lg:gap-20">
 				<DealsChart deals={deals} stages={stages} />
 				<TasksDonut tasks={tasks} />
 				<AdsCard />
+				<StageBars deals={deals} stages={stages} />
+				<ActivitySparkline deals={deals} />
+				<RevenueTrend />
 			</div>
 		</div>
 	);

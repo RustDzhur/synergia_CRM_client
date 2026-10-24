@@ -27,7 +27,7 @@ export default function ModalMobNav() {
 				const active = isActivePath(path, item.href);
 				const Icon = item.icon;
 				const color = active ? "text-[#edf2ff]" : "text-[#cfd4cb]";
-				const rowClass = `${ROW} ${active ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)]" : "hover:bg-[rgba(255,255,255,0.04)]"}`;
+				const rowClass = `${ROW} ${active ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.12)] shadow-[0_0_18px_-6px_rgba(124,147,255,0.55)]" : "hover:bg-[rgba(255,255,255,0.04)]"}`;
 				const content = (
 					<>
 						<Icon size={18} className={`shrink-0 ${active ? "text-[#7c93ff]" : "text-[#9aa7c9]"}`} />

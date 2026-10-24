@@ -706,7 +706,12 @@
         "noData": "No data yet",
         "allTime": "All",
         "doneOf": "{done} of {total} done",
-        "noTasksYet": "no tasks yet"
+        "noTasksYet": "no tasks yet",
+        "stageBarsTitle": "Pipeline",
+        "activityTitle": "Activity",
+        "activityLastDays": "Last {n} days",
+        "activityNewDeals": "New deals",
+        "revenueTrendTitle": "Revenue trend"
     },
     "tasks": {
         "projectNew": "New project",

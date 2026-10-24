@@ -6,7 +6,8 @@ import PeriodSelect from "./PeriodSelect";
 
 type Period = "all" | "month" | "week" | "year";
 
-const COLORS = { active: "#FFB02E", completed: "#7C93FF", ended: "#F04333" } as const;
+// Сегменты в стиле сайта: cyan — активные, indigo — выполненные, violet — просроченные
+const COLORS = { active: "#22d3ee", completed: "#7c93ff", ended: "#a78bfa" } as const;
 
 // Задача относится к периоду по сроку, а без срока — по дате создания (раньше задачи без срока в кольцо не попадали вовсе). «Все» берёт любые задачи.
 function inPeriod(deadline: string | undefined, period: Period, now: Date, createdAt?: string): boolean {
@@ -38,6 +39,8 @@ export default function TasksDonut({ tasks }: { tasks: Task[] }) {
 
 	const total = counts.active + counts.completed + counts.ended;
 	const percent = total ? Math.round((counts.completed / total) * 100) : 0;
+	// сегмент под курсором: утолщается и показывает свою долю в центре кольца
+	const [hoverSeg, setHoverSeg] = useState<string | null>(null);
 
 	const R = 130;
 	const C = 2 * Math.PI * R;
@@ -75,12 +78,13 @@ export default function TasksDonut({ tasks }: { tasks: Task[] }) {
 			</ul>
 
 			<div className="relative mx-auto mt-16 w-full max-w-[340px]">
-				<svg viewBox="0 0 320 320" className="w-full" role="img" aria-label={`${percent}%`}>
+				<svg viewBox="0 0 320 320" className="w-full fs-chart-glow" role="img" aria-label={`${percent}%`}>
 					<g transform="rotate(-110 160 160)">
 						<circle cx="160" cy="160" r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="22" />
 						{segments.map((s) => {
 							const dashOffset = -offset;
 							offset += s.length + GAP;
+							const active = hoverSeg === s.key;
 							return (
 								<circle
 									key={s.key}
@@ -89,19 +93,25 @@ export default function TasksDonut({ tasks }: { tasks: Task[] }) {
 									r={R}
 									fill="none"
 									stroke={COLORS[s.key]}
-									strokeWidth="22"
+									strokeWidth={active ? 26 : 22}
 									strokeDasharray={`${s.length} ${C - s.length}`}
 									strokeDashoffset={dashOffset}
-									className="transition-[stroke-dasharray] duration-500"
-								/>
+									className="transition-[stroke-dasharray,stroke-width] duration-200"
+									onMouseEnter={() => setHoverSeg(s.key)}
+									onMouseLeave={() => setHoverSeg(null)}
+								>
+									<title>{`${t(s.key)}: ${counts[s.key]}`}</title>
+								</circle>
 							);
 						})}
 					</g>
 				</svg>
 				<div className="absolute inset-0 flex flex-col items-center justify-center">
-					<p className="text-[56px] font-bold leading-none md:text-[64px]" style={{ color: total ? COLORS.completed : "#9AA7C9" }}>{percent} %</p>
+					<p className="text-[56px] font-bold leading-none md:text-[64px]" style={{ color: hoverSeg ? COLORS[hoverSeg as keyof typeof COLORS] : total ? COLORS.completed : "#9AA7C9" }}>
+						{hoverSeg ? counts[hoverSeg as keyof typeof counts] : `${percent} %`}
+					</p>
 					{/* Подпись объясняет круг: сколько из скольких выполнено; цвет дуги показывает долю активных и просроченных */}
-					<p className="mt-8 text-12 text-[#9aa7c9]">{total ? t("doneOf", { done: counts.completed, total }) : t("noTasksYet")}</p>
+					<p className="mt-8 text-12 text-[#9aa7c9]">{hoverSeg ? t(hoverSeg) : total ? t("doneOf", { done: counts.completed, total }) : t("noTasksYet")}</p>
 				</div>
 			</div>
 		</section>

@@ -55,8 +55,8 @@ function FinanceBars({ series }: { series: FinanceDashboard["series"] }) {
 		<div className="mt-16 border-t border-inkLine pt-14">
 			<PairBars compact data={series.map((s) => ({ label: String(Number(s.month.slice(5))).padStart(2, "0"), a: s.revenue, b: s.expenses, c: s.invoiced ?? 0, titleC: `${t("kpiInvoiced")}: ${s.invoiced ?? 0}`, titleA: `${t("kpiRevenue")}: ${s.revenue}`, titleB: `${t("kpiExpenses")}: ${s.expenses}` }))} />
 			<div className="mt-8 flex gap-20 text-11 text-[#9aa7c9]">
-				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#4d8bff]" />{t("kpiInvoiced")}</span>
-				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#7c93ff]" />{t("kpiRevenue")}</span>
+				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px]" style={{ background: "linear-gradient(180deg, #a78bfa, #7c93ff)" }} />{t("kpiInvoiced")}</span>
+				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px]" style={{ background: "linear-gradient(180deg, #22d3ee, #7c93ff)" }} />{t("kpiRevenue")}</span>
 				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#9AA7C9]" />{t("kpiExpenses")}</span>
 			</div>
 		</div>

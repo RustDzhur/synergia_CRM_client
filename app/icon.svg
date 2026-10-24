@@ -1,8 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" role="img" aria-label="Firmspace AI">
-  <!-- Тот же знак, что рисует BrandMark в интерфейсе: салатовая плитка и тёмный блик внутри.
+  <!-- Тот же знак, что рисует BrandMark в интерфейсе: плитка в цвете акцента сайта и тёмный блик внутри.
        Отдельный файл нужен потому, что вкладка браузера берёт иконку только из app/icon или favicon. -->
-  <rect width="32" height="32" rx="10.24" fill="#c6ff4d"/>
-  <g transform="translate(6.88 6.88) scale(1.14)" fill="#0a0c0b">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="0.55" stop-color="#7c93ff"/>
+      <stop offset="1" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="10.24" fill="url(#tile)"/>
+  <g transform="translate(6.88 6.88) scale(1.14)" fill="#0b1120">
     <path d="M8 .6c.35 3.2 1.6 4.45 4.8 4.8-3.2.35-4.45 1.6-4.8 4.8-.35-3.2-1.6-4.45-4.8-4.8C6.4 5.05 7.65 3.8 8 .6Z"/>
     <path d="M11.9 9.6c.18 1.62.81 2.25 2.43 2.43-1.62.18-2.25.81-2.43 2.43-.18-1.62-.81-2.25-2.43-2.43 1.62-.18 2.25-.81 2.43-2.43Z"/>
   </g>

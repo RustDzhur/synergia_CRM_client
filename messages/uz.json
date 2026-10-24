@@ -631,7 +631,12 @@
     "noData": "Hozircha ma’lumotlar yo‘q",
     "allTime": "Hammasi",
     "doneOf": "{total} dan {done} tasi bajarildi",
-    "noTasksYet": "hozircha vazifalar yo‘q"
+    "noTasksYet": "hozircha vazifalar yo‘q",
+    "stageBarsTitle": "Voronka",
+    "activityTitle": "Faollik",
+    "activityLastDays": "So‘nggi {n} kun",
+    "activityNewDeals": "Yangi bitimlar",
+    "revenueTrendTitle": "Daromad trendi"
   },
   "tasks": {
     "projectNew": "Yangi loyiha",

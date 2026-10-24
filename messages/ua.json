@@ -706,7 +706,12 @@
         "noData": "Даних ще немає",
         "allTime": "Усі",
         "doneOf": "виконано {done} з {total}",
-        "noTasksYet": "завдань ще немає"
+        "noTasksYet": "завдань ще немає",
+        "stageBarsTitle": "Воронка",
+        "activityTitle": "Активність",
+        "activityLastDays": "Останні {n} днів",
+        "activityNewDeals": "Нові угоди",
+        "revenueTrendTitle": "Тренд доходу"
     },
     "tasks": {
         "projectNew": "Новий проєкт",

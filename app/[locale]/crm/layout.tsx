@@ -55,7 +55,7 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
     // личную фирму заблокировал администратор платформы — работать нельзя, пока он не снимет блокировку
     if (activeOrg?.blocked) {
         return (
-            <div className="bg-ink flex min-h-screen items-center justify-center p-24 text-center">
+            <div className="flex min-h-screen items-center justify-center p-24 text-center">
                 <div className="fs-card max-w-[420px] p-24">
                     <h1 className="mb-10 text-18 font-semibold text-[#edf2ff]">Firmspace AI</h1>
                     <p className="text-13 text-[#9aa7c9]">{locale === "de" ? "Dieses Konto wurde gesperrt. Bitte wenden Sie sich an den Support." : locale === "ua" ? "Цей акаунт заблоковано. Зверніться до підтримки." : "This account has been blocked. Please contact support."}</p>
@@ -68,13 +68,13 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
         <>
             {/* Каркас кабинета: сайдбар во всю высоту слева, справа — закреплённая шапка и содержимое раздела.
                 Прокручивается документ целиком (а не отдельная область), поэтому выпадающие списки и модальные окна
-                ведут себя как раньше. */}
-            <div className="flex min-h-screen bg-ink">
+                ведут себя как раньше. Корень без собственного фона: сквозь него виден космический фон body. */}
+            <div className="flex min-h-screen">
                 <Sidebar />
                 <div className="flex min-w-0 flex-1 flex-col">
                     <DemoBanner />
-                    {/* Шапка: 56px на телефоне, 64px от планшета */}
-                    <header className="sticky top-0 z-40 border-b border-inkLine bg-[rgba(10,12,11,0.86)] backdrop-blur-md">
+                    {/* Шапка: 56px на телефоне, 64px от планшета — стекло поверх космоса */}
+                    <header className="sticky top-0 z-40 border-b border-inkLine bg-[rgba(11,17,32,0.72)] backdrop-blur-xl">
                         <div className="flex h-56 items-center px-16 md:h-64 md:px-24 lg:px-32">
                             <Header />
                         </div>

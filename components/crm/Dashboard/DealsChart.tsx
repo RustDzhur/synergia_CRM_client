@@ -50,6 +50,7 @@ export default function DealsChart({ deals, stages }: Props) {
 	const [period, setPeriod] = useState<Period>("monthly");
 	const [hover, setHover] = useState<number | null>(null);
 	const gradientId = useId().replace(/:/g, "");
+	const lineId = useId().replace(/:/g, "");
 	const wrap = useRef<HTMLDivElement>(null);
 	const [width, setWidth] = useState(420);
 	useEffect(() => {
@@ -139,9 +140,9 @@ export default function DealsChart({ deals, stages }: Props) {
 
 			<p className="mt-14 flex items-center gap-8 text-12 text-[#9aa7c9]">
 				{t("closedDeals")}
-				<span className="inline-block h-[10px] w-[10px] rounded-50 border-2 border-primaryColor" />
+				<span className="inline-block h-[10px] w-[10px] rounded-50 border-2 border-[#7c93ff]" />
 				<span className="ml-8">{t("newDeals")}</span>
-				<span className="inline-block h-[10px] w-[10px] rounded-50 border-2 border-[#9AA7C9]" />
+				<span className="inline-block h-[10px] w-[10px] rounded-50 border-2 border-[#a78bfa]" />
 			</p>
 
 			<div ref={wrap} className="mt-8 w-full">
@@ -150,6 +151,12 @@ export default function DealsChart({ deals, stages }: Props) {
 					<linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
 						<stop offset="0%" stopColor="#7C93FF" stopOpacity="0.35" />
 						<stop offset="100%" stopColor="#7C93FF" stopOpacity="0" />
+					</linearGradient>
+					{/* Линия в стиле сайта: cyan → indigo → violet по горизонтали */}
+					<linearGradient id={lineId} x1="0" y1="0" x2="1" y2="0">
+						<stop offset="0%" stopColor="#22d3ee" />
+						<stop offset="50%" stopColor="#7c93ff" />
+						<stop offset="100%" stopColor="#a78bfa" />
 					</linearGradient>
 				</defs>
 
@@ -160,9 +167,9 @@ export default function DealsChart({ deals, stages }: Props) {
 					</g>
 				))}
 
-				{area && <path d={area} fill={`url(#${gradientId})`} />}
-				{madeLine && max > 0 && <path d={madeLine} fill="none" stroke="#9AA7C9" strokeWidth="2" strokeDasharray="5 4" />}
-				{line && max > 0 && <path d={line} fill="none" stroke="#7C93FF" strokeWidth="2" />}
+				{area && <path d={area} fill={`url(#${gradientId})`} className="fs-chart-area" />}
+				{madeLine && max > 0 && <path d={madeLine} fill="none" stroke="#a78bfa" strokeOpacity="0.7" strokeWidth="2" strokeDasharray="5 4" />}
+				{line && max > 0 && <path d={line} pathLength={1} fill="none" stroke={`url(#${lineId})`} strokeWidth="2.5" strokeLinecap="round" className="fs-chart-line fs-chart-glow" />}
 
 				{tickIdx.map((i) => (
 					// крайние подписи выравниваем внутрь графика, иначе последняя обрезается по краю
@@ -186,8 +193,11 @@ export default function DealsChart({ deals, stages }: Props) {
 
 				{shown >= 0 && max > 0 && (
 					<g pointerEvents="none">
-						<circle cx={x(shown)} cy={y(values[shown])} r="4" fill="#0A0C0B" stroke="#7C93FF" strokeWidth="2" />
-						<text x={Math.min(Math.max(x(shown), M.left + 20), W - M.right - 20)} y={y(values[shown]) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fill="#EDF2FF">
+						{/* бегущий пунктир под курсором: связывает точку с осью */}
+						<line x1={x(shown)} x2={x(shown)} y1={y(values[shown])} y2={H - M.bottom} stroke="#7c93ff" strokeOpacity="0.5" strokeWidth="1" className="fs-chart-guide" />
+						<circle cx={x(shown)} cy={y(values[shown])} r="4.5" fill="#0b1120" stroke="#a2b3ff" strokeWidth="2" />
+						<rect x={Math.min(Math.max(x(shown) - 22, M.left), W - M.right - 44)} y={Math.max(y(values[shown]) - 44, M.top)} width="44" height="22" rx="7" fill="#121c34" stroke="rgba(124,147,255,0.4)" strokeWidth="1" />
+						<text x={Math.min(Math.max(x(shown), M.left + 22), W - M.right - 22)} y={Math.max(y(values[shown]) - 28, M.top + 15)} textAnchor="middle" fontSize="12" fontWeight="600" fill="#EDF2FF">
 							{values[shown]}
 						</text>
 					</g>

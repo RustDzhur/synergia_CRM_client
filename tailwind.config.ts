@@ -261,9 +261,9 @@ const config: Config = {
 			authFormsFocus: "#5EA8F5",
 			authFormsUnFocus: "#cccccc",
 			authBtn: "#7C93FF",
-			authTabBtn: "#C6FF4D",
+			authTabBtn: "#7C93FF",
 			cardPlan: "#4A5FBF",
-			testimonials: "#C6FF4D",
+			testimonials: "#7C93FF",
 			// без цвета рамка берёт currentColor — так «невидимая» рамка становится видимой
 			DEFAULT: "currentColor",
 			transparent: "transparent",

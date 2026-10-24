@@ -15,13 +15,14 @@ import OrgSwitcher from "./OrgSwitcher";
 import SidebarUser from "./SidebarUser";
 
 // Пункт меню: строка 40px, скругление 10px, иконка 17px и подпись 13.5px.
-// Активный пункт не заливается акцентом, а обводится салатовой рамкой на лёгкой подсветке —
-// так он читается и не спорит с остальными пунктами.
+// Активный пункт не заливается акцентом, а обводится индиго-рамкой на лёгкой подсветке
+// с неоновым свечением — так он читается и не спорит с остальными пунктами.
 const ROW =
-	"flex items-center w-full h-40 rounded-10 border border-transparent text-left transition-[background-color,border-color,color] duration-150";
+	"flex items-center w-full h-40 rounded-10 border border-transparent text-left transition-[background-color,border-color,color,box-shadow] duration-150";
 const ROW_FULL = `${ROW} gap-12 px-12`;
 const ROW_ICON = `${ROW} justify-center`;
-const ACTIVE = "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)]";
+const ACTIVE =
+	"border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.12)] shadow-[0_0_18px_-6px_rgba(124,147,255,0.55),inset_0_0_12px_-6px_rgba(124,147,255,0.4)]";
 
 // Подраздел (Feed, Kalender, …) — та же строка, но с отступом под иконку родителя.
 const SUB_ROW = `${ROW} h-34 pl-42 pr-12 text-13`;
@@ -73,7 +74,7 @@ export default function Layout() {
 
 	return (
 		<aside
-			className={`hidden md:flex sticky top-0 h-screen shrink-0 flex-col border-r border-inkLine bg-inkDeep transition-[width] duration-300 ease-in-out motion-reduce:transition-none ${
+			className={`hidden md:flex sticky top-0 h-screen shrink-0 flex-col border-r border-inkLine bg-[rgba(10,15,28,0.72)] backdrop-blur-xl transition-[width] duration-300 ease-in-out motion-reduce:transition-none ${
 				menu ? "w-248 lg:w-272" : "w-68"
 			}`}>
 			{/* Логотип и сворачивание меню */}

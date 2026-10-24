@@ -98,35 +98,47 @@
   // пометка нужна, чтобы виджет можно было убрать при переходе в кабинет (см. components/website/components/ChatWidget.tsx)
   host.setAttribute("data-firmspace-chat", "1");
   host.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:2147483000;display:flex;flex-direction:column;align-items:flex-end";
+  // Акцент по умолчанию — цвет сайта (#7c93ff). Для него кнопки и заголовок рисуются градиентом
+  // cyan→indigo→violet, как на главном сайте; если фирма выбрала свой цвет в настройках канала,
+  // используется он (поведение прежнее).
+  var DEFAULT_ACCENT = "#7C93FF";
+  var GRAD = "linear-gradient(135deg, #22d3ee 0%, #7c93ff 55%, #a78bfa 100%)";
+  function accentBg(color) { return String(color || "").toUpperCase() === DEFAULT_ACCENT ? GRAD : color; }
+  function accentInk(color) { return String(color || "").toUpperCase() === DEFAULT_ACCENT ? "#ffffff" : onAccent(color); }
   var root = host.attachShadow ? host.attachShadow({ mode: "open" }) : host;
   root.innerHTML =
     "<style>" +
     "*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}" +
-    ".btn{width:56px;height:56px;border-radius:50%;border:0;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;color:" + DARK + ";box-shadow:0 8px 22px rgba(0,0,0,.5);transition:transform .18s ease}" +
-    ".btn:hover{transform:scale(1.04)}" +
+    // Пузырь крупнее и со свечением в цвет сайта; цвет заливки ставит paint() (градиент или цвет фирмы)
+    ".btn{width:60px;height:60px;border-radius:50%;border:0;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;color:" + DARK + ";box-shadow:0 10px 30px rgba(2,6,20,.55),0 0 26px rgba(124,147,255,.4);transition:transform .18s ease,box-shadow .2s ease}" +
+    ".btn:hover{transform:scale(1.05)}" +
     ".dot{position:absolute;top:2px;right:2px;min-width:14px;height:14px;border-radius:7px;background:#e5484d;border:2px solid " + INK + ";display:none}" +
     // Высота окна ограничена так, чтобы оно всегда висело над пузырём, а не уезжало к верху экрана
     // (две строки height: вторая с dvh — на телефонах адресная строка меняет высоту окна).
-    // Запас — только под пузырь и отступы (56 + 12 + 16 + 16), колонка каналов при открытом окне убрана,
-    // поэтому переписке достаётся больше места, чем раньше
-    ".panel{display:none;flex-direction:column;width:340px;max-width:calc(100vw - 32px);height:520px;max-height:calc(100vh - 100px);margin-bottom:12px;background:" + INK + ";border:1px solid " + LINE + ";border-radius:18px;overflow:hidden;box-shadow:0 18px 48px rgba(0,0,0,.62);color:" + TEXT + ";transform-origin:100% 100%}" +
-    ".panel{height:min(520px, calc(100dvh - 100px))}" +
+    // Запас — под пузырь и отступы (60 + 12 + 16 + 16), колонка каналов при открытом окне убрана,
+    // поэтому переписке достаётся больше места, чем раньше.
+    // Панель — стекло в стиле сайта: полупрозрачная, с blur, светлой кромкой, скруглением 20px
+    // и мягким свечением; сверху — градиентная нить cyan→indigo→violet.
+    ".panel{display:none;flex-direction:column;position:relative;width:360px;max-width:calc(100vw - 32px);height:560px;max-height:calc(100vh - 108px);margin-bottom:12px;background:rgba(13,20,40,.86);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);border:1px solid " + LINE + ";border-radius:20px;overflow:hidden;box-shadow:0 24px 70px rgba(2,6,20,.75),0 0 50px -18px rgba(124,147,255,.45);color:" + TEXT + ";transform-origin:100% 100%}" +
+    ".panel{height:min(560px, calc(100dvh - 108px))}" +
+    ".panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#22d3ee,#7c93ff 55%,#a78bfa);z-index:2}" +
     ".panel.on{display:flex;animation:pop .18s ease}" +
     "@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}" +
     // Шапка — «лицо» фирмы: кружок с её цветом, название и состояние (на связи / нерабочее время).
-    // Сплошная цветная полоса выглядела чужой на тёмном сайте, поэтому акцент ушёл в кружок и кнопки
-    ".head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 12px 11px 14px;background:" + INK_DEEP + ";border-bottom:1px solid " + LINE + "}" +
+    // Сплошная цветная полоса выглядела чужой на тёмном сайте, поэтому акцент ушёл в кружок и кнопки,
+    // а сама шапка получила лёгкую градиентную подсветку в цвет сайта
+    ".head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 12px 13px 14px;background:linear-gradient(120deg, rgba(34,211,238,.10), rgba(124,147,255,.10) 50%, rgba(167,139,250,.10)), " + INK_DEEP + ";border-bottom:1px solid " + LINE + "}" +
     ".who{display:flex;align-items:center;gap:10px;min-width:0}" +
-    ".ava{width:34px;height:34px;border-radius:50%;flex:0 0 34px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:" + DARK + "}" +
+    ".ava{width:36px;height:36px;border-radius:50%;flex:0 0 36px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:" + DARK + "}" +
     ".cap{display:flex;flex-direction:column;min-width:0}" +
-    ".cap b{font-size:14px;font-weight:600;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
-    ".cap i{font-style:normal;font-size:11px;color:" + MUTED + ";line-height:1.3;display:flex;align-items:center;gap:5px}" +
-    ".st{width:6px;height:6px;border-radius:50%;background:#36cfc9;flex:0 0 6px}" +
+    ".cap b{font-size:15px;font-weight:600;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+    ".cap i{font-style:normal;font-size:11.5px;color:" + MUTED + ";line-height:1.3;display:flex;align-items:center;gap:5px}" +
+    ".st{width:7px;height:7px;border-radius:50%;background:#2fe3dc;flex:0 0 7px}" +
     ".head .x{background:none;border:0;color:" + MUTED + ";font-size:20px;line-height:1;cursor:pointer;padding:4px 6px;border-radius:8px}" +
     ".head .x:hover{color:" + TEXT + ";background:rgba(255,255,255,.05)}" +
-    ".list{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:" + INK + "}" +
-    ".m{max-width:80%;padding:8px 12px;border-radius:14px;font-size:14px;line-height:1.35;white-space:pre-wrap;word-break:break-word}" +
-    ".me{align-self:flex-end;color:" + DARK + ";border-bottom-right-radius:4px}" +
+    ".list{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:transparent}" +
+    ".m{max-width:80%;padding:8px 13px;border-radius:14px;font-size:14.5px;line-height:1.35;white-space:pre-wrap;word-break:break-word}" +
+    ".me{align-self:flex-end;color:" + DARK + ";border-bottom-right-radius:4px;box-shadow:0 4px 14px rgba(2,6,20,.35)}" +
     ".ag{align-self:flex-start;background:" + PANEL + ";color:" + TEXT + ";border-bottom-left-radius:4px}" +
     ".err{align-self:center;font-size:12px;color:#eb5757}" +
     // Системная строка в переписке (нерабочее время): раньше это была полоса над списком, и вместе
@@ -142,7 +154,7 @@
     ".links i{font-style:normal;font-size:12px;color:" + MUTED + ";width:100%}" +
     ".links a{display:flex;align-items:center;gap:6px;font-size:12px;text-decoration:none;color:#cfd4cb;border:1px solid " + LINE + ";border-radius:99px;padding:5px 10px;transition:border-color .15s ease,color .15s ease}" +
     ".links a:hover{border-color:rgba(124,147,255,.45);color:" + TEXT + "}" +
-    ".cta{display:none;margin:0 12px 10px;padding:10px;border-radius:10px;text-align:center;font-size:14px;font-weight:600;text-decoration:none;color:" + DARK + "}" +
+    ".cta{display:none;margin:0 12px 10px;padding:11px;border-radius:999px;text-align:center;font-size:14px;font-weight:600;text-decoration:none;color:" + DARK + ";box-shadow:0 8px 24px -10px rgba(99,102,241,.7)}" +
     ".cta.on{display:block}" +
     // Контакт: подпись и одно поле. Раньше строкой ниже висело объяснение «мы напишем, если не выйдет в чате» —
     // то же самое уже сказано системной строкой в переписке, и на телефоне это съедало две строки высоты
@@ -153,17 +165,17 @@
     ".ask input{flex:1;min-width:0;height:38px;border:1px solid " + LINE + ";background:" + PANEL + ";color:" + TEXT + ";border-radius:19px;padding:0 14px;font-size:13px;outline:none}" +
     ".ask input:focus{border-color:rgba(124,147,255,.55)}" +
     ".ask input::placeholder{color:" + MUTED + "}" +
-    ".ask button{width:38px;height:38px;flex:0 0 38px;border-radius:50%;border:0;cursor:pointer;color:" + DARK + ";display:flex;align-items:center;justify-content:center}" +
+    ".ask button{width:38px;height:38px;flex:0 0 38px;border-radius:50%;border:0;cursor:pointer;color:" + DARK + ";display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px -8px rgba(99,102,241,.7)}" +
     ".rate{display:flex;gap:6px;margin-top:4px}" +
     ".rate button{border:0;background:none;cursor:pointer;font-size:14px;opacity:.45;padding:0 2px}" +
     ".rate button.on{opacity:1}" +
     "form{display:flex;gap:8px;align-items:center;padding:10px;border-top:1px solid " + LINE + "}" +
-    "input.text{flex:1;min-width:0;height:40px;border:1px solid " + LINE + ";background:" + PANEL + ";color:" + TEXT + ";border-radius:20px;padding:0 14px;font-size:14px;outline:none}" +
+    "input.text{flex:1;min-width:0;height:42px;border:1px solid " + LINE + ";background:" + PANEL + ";color:" + TEXT + ";border-radius:21px;padding:0 14px;font-size:14px;outline:none}" +
     "input.text:focus{border-color:rgba(124,147,255,.55)}" +
     "input.text::placeholder{color:" + MUTED + "}" +
     // Отправка — круглая кнопка со стрелкой: подпись «Senden» занимала четверть строки ввода,
     // а сама кнопка читалась как второй, конкурирующий вход
-    "form .send{width:40px;height:40px;flex:0 0 40px;border-radius:50%;border:0;cursor:pointer;color:" + DARK + ";display:flex;align-items:center;justify-content:center;transition:transform .15s ease}" +
+    "form .send{width:42px;height:42px;flex:0 0 42px;border-radius:50%;border:0;cursor:pointer;color:" + DARK + ";display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px -8px rgba(99,102,241,.7);transition:transform .15s ease}" +
     "form .send:hover{transform:scale(1.05)}" +
     "form .clip{background:none;border:0;font-size:18px;line-height:1;cursor:pointer;padding:0 2px;border-radius:0;color:" + MUTED + "}" +
     "form .clip:hover{color:" + TEXT + "}" +
@@ -186,24 +198,24 @@
   var panel = $(".panel"), list = $(".list"), input = $("input.text"), btn = $(".btn"), dot = $(".dot");
 
   function paint() {
-    // Акцент фирмы (по умолчанию лаймовый, как на сайте) — кружок в шапке, пузырь, кнопка отправки
-    // и кнопка формы контакта: цвет выбирается в настройках канала
-    $(".ava").style.background = cfg.color;
-    $(".ava").style.color = onAccent(cfg.color);
+    // Акцент фирмы (по умолчанию — цвет сайта, для него кнопки получают градиент cyan→indigo→violet)
+    // — кружок в шапке, пузырь, кнопка отправки и кнопка формы контакта: цвет выбирается в настройках канала
+    $(".ava").style.background = accentBg(cfg.color);
+    $(".ava").style.color = accentInk(cfg.color);
     $(".ava").textContent = String(cfg.title || "?").trim().charAt(0).toUpperCase();
     // картинка вместо буквы (аватарка Айрис): круглая, поверх цветного кружка
     if (attrAvatar) {
       $(".ava").style.background = "#0b1120 url('" + attrAvatar.replace(/'/g, "%27") + "') center/cover no-repeat";
       $(".ava").textContent = "";
     }
-    btn.style.background = cfg.color;
-    btn.style.color = onAccent(cfg.color);
+    btn.style.background = accentBg(cfg.color);
+    btn.style.color = accentInk(cfg.color);
     // кнопка открытия чата — тоже лицо Айрис, если задана аватарка
     if (attrAvatar) { btn.style.background = "#0b1120 url('" + attrAvatar.replace(/'/g, "%27") + "') center/cover no-repeat"; btn.style.border = "2px solid " + cfg.color; var ic = btn.querySelector("svg"); if (ic) ic.style.display = "none"; }
-    $("form .send").style.background = cfg.color;
-    $("form .send").style.color = onAccent(cfg.color);
-    $(".ask button").style.background = cfg.color;
-    $(".ask button").style.color = onAccent(cfg.color);
+    $("form .send").style.background = accentBg(cfg.color);
+    $("form .send").style.color = accentInk(cfg.color);
+    $(".ask button").style.background = accentBg(cfg.color);
+    $(".ask button").style.color = accentInk(cfg.color);
     $(".title").textContent = cfg.title;
 
     // Круглые кнопки выбора связи: чат — всегда, мессенджеры — только те, что фирма подключила
@@ -249,8 +261,8 @@
     if (cfg.cta && cfg.cta.url) {
       cta.href = cfg.cta.url;
       cta.textContent = cfg.cta.label || T.cta;
-      cta.style.background = cfg.color;
-      cta.style.color = onAccent(cfg.color);
+      cta.style.background = accentBg(cfg.color);
+      cta.style.color = accentInk(cfg.color);
       cta.classList.add("on");
     } else {
       cta.classList.remove("on");
@@ -337,8 +349,9 @@
     var d = document.createElement("div");
     d.className = "m " + cls;
     if (bg) d.style.background = bg;
-    // реплика посетителя — цветом фирмы, и текст на нём подбираем по яркости этого цвета
-    if (bg && cls === "me") d.style.color = onAccent(bg);
+    // реплика посетителя — цветом фирмы (или градиентом сайта для цвета по умолчанию),
+    // и текст на нём подбираем по яркости этого цвета
+    if (bg && cls === "me") d.style.color = accentInk(bg);
     d.textContent = text;
     list.appendChild(d);
     list.scrollTop = list.scrollHeight;
@@ -362,7 +375,7 @@
     add("ag", cfg.greeting);
     if (offline) addSys(T.offline);
     messages.forEach(function (m) {
-      if (m.direction === "in") return add("me", m.text, cfg.color);
+      if (m.direction === "in") return add("me", m.text, accentBg(cfg.color));
       add("ag", m.text);
       // под ответом бота — оценка: по ней видно, каких тем не хватает в базе знаний
       if (m.meta && m.meta.bot) {
@@ -481,7 +494,7 @@
     var form = new FormData();
     form.append("visitor", visitor);
     form.append("file", file);
-    addBubble("me", "📎 " + file.name, cfg.color);
+    addBubble("me", "📎 " + file.name, accentBg(cfg.color));
     fetch(api + "/upload", { method: "POST", body: form })
       .then(function (r) { if (!r.ok) throw new Error(String(r.status)); poll(); })
       .catch(function () { addBubble("err", T.fileBad); });

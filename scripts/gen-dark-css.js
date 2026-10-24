@@ -84,15 +84,15 @@ for (const tok of [...tokens].sort()) {
 }
 
 let css = "/* Сгенерировано scripts/gen-dark-css.js — не править вручную */\n";
-css += "html.dark { color-scheme: dark; }\nhtml.dark body { background-color: #131513; color: #E8EAE5; }\n";
-css += "html.dark .dark-surface { background-color: #1D1F1B; }\n";
+css += "html.dark { color-scheme: dark; }\nhtml.dark body { background-color: #050a18; color: #EDF2FF; }\n";
+css += "html.dark .dark-surface { background-color: #121C34; }\n";
 css += rules.base.join("\n") + "\n";
 for (const bp of ["sm", "md", "mp", "lg"]) if (rules[bp].length) css += `@media (min-width: ${SCREENS[bp]}px) {\n${rules[bp].join("\n")}\n}\n`;
 // обёртки без своих цветовых классов: карточки на bg-white внутри, оверлей модальных окон и тени
 css += ".dark .bg-modalBG { background-color: rgba(0, 0, 0, 0.7); }\n";
 css += ".dark img { filter: brightness(0.92); }\n";
-css += ".dark input, .dark textarea, .dark select { color-scheme: dark; background-color: #1A1C18; color: #E8EAE5; border-color: #2C302A; }\n";
-css += ".dark input::placeholder, .dark textarea::placeholder { color: #868C80; }\n";
-css += ".dark table { color: #E8EAE5; }\n";
+css += ".dark input, .dark textarea, .dark select { color-scheme: dark; background-color: #121C34; color: #EDF2FF; border-color: #26304A; }\n";
+css += ".dark input::placeholder, .dark textarea::placeholder { color: #7E8ABD; }\n";
+css += ".dark table { color: #EDF2FF; }\n";
 fs.writeFileSync(path.join(ROOT, "app/[locale]/styles/crm-dark.css"), css);
 console.log(`tokens: ${tokens.size}, rules: ${Object.values(rules).reduce((a, r) => a + r.length, 0)}`);
