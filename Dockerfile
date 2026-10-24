@@ -46,5 +46,7 @@ COPY --from=build /app/scripts/check-ai.mjs ./scripts/check-ai.mjs
 COPY --from=build /app/scripts/seed-landing-tokens.mjs ./scripts/seed-landing-tokens.mjs
 # выгрузка опубликованных статей блога и картинок на новый сайт (sync-blog.sh)
 COPY --from=build /app/scripts/sync-blog.mjs ./scripts/sync-blog.mjs
+# картинка для статьи блога: Openverse (CC0/PD) → 1200×630 в public/images/blog (cron-blog)
+COPY --from=build /app/scripts/fetch-blog-image.mjs ./scripts/fetch-blog-image.mjs
 EXPOSE 3000
 CMD ["/entrypoint.sh"]

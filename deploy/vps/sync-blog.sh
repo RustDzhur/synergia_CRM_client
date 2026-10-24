@@ -51,8 +51,12 @@ for line in open(os.path.join(tmp, "posts.ndjson"), encoding="utf-8"):
     if src.startswith("/images/blog/"):
         name = os.path.basename(src) or ""
         if name:
-            r = subprocess.run(["docker", "cp", f"firmspace-crm:/app/public/images/blog/{name}", target], capture_output=True)
-            made = r.returncode == 0
+            # сперва public/images/blog (старые картинки), затем том /data/storage (копия cron-blog переживает пересоздание контейнера)
+            for csrc in (f"firmspace-crm:/app/public/images/blog/{name}", f"firmspace-crm:/data/storage/blog-images/{name}"):
+                r = subprocess.run(["docker", "cp", csrc, target], capture_output=True)
+                if r.returncode == 0:
+                    made = True
+                    break
     elif src.startswith("http://") or src.startswith("https://"):
         try:
             urllib.request.urlretrieve(src, target)
