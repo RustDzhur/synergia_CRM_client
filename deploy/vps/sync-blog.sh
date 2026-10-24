@@ -74,6 +74,7 @@ PY
 )"
 
 echo "$(date -Is) sync-blog: изменено файлов: ${CHANGED:-?}"
+node /home/server/translate-blog.js >> /home/server/translate-blog.log 2>&1 || true
 if [ "${CHANGED:-0}" -gt 0 ] 2>/dev/null; then
     echo "sync-blog: пересобираю сайт (content/ попадает в образ на сборке)"
     (cd "$SITE/deploy" && docker compose build web && docker compose up -d web)
