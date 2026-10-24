@@ -58,7 +58,7 @@ const localize = (json: unknown): { en: string; de: string; ua: string; uz: stri
 
 // Одна статья по теме → готовый объект для parsePost; slug строится из английского заголовка
 async function generate(topic: string) {
-    const reply = await complete(SYSTEM, [{ role: "user", text: `Topic: ${topic}` }], []);
+    const reply = await complete(SYSTEM, [{ role: "user", text: `Topic: ${topic}` }], [], { maxTokens: 4000 });
     const o = extractJson(reply.text);
     const title = localize(o.title);
     const excerpt = localize(o.excerpt);

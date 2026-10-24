@@ -74,7 +74,7 @@ const gatewayEndpoint = () => ({ url: openaiBase(), key: process.env.OPENAI_API_
 const primaryEndpoint = () => (process.env.AI_API_URL && process.env.AI_API_KEY ? { url: trim(process.env.AI_API_URL), key: process.env.AI_API_KEY } : gatewayEndpoint());
 type Endpoint = { url: string; key: string };
 
-async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiModel("openai"), timeoutMs = 55000, ep: Endpoint = primaryEndpoint()): Promise<Reply> {
+async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiModel("openai"), timeoutMs = 55000, ep: Endpoint = primaryEndpoint(), maxTokens = 2000): Promise<Reply> {
     const messages: unknown[] = [{ role: "system", content: system }];
     for (const m of msgs) {
         if (m.role === "user") messages.push({ role: "user", content: m.text });
@@ -87,7 +87,7 @@ async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiM
         // Ограничение сверху обязательно: без него провайдер считает бюджет на максимум модели (~65k токенов) и может отказать при малом балансе.
         // Пустой список инструментов не отправляем: некоторые модели в ответ на tools: [] заставляли «вызвать инструмент», и текст приходил пустым —
         // именно так молчал «Проанализировать с помощью ИИ» в отчётах
-        { model, max_tokens: 2000, messages, ...(tools.length ? { tools: tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) } : {}) },
+        { model, max_tokens: maxTokens, messages, ...(tools.length ? { tools: tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) } : {}) },
         timeoutMs
     );
     const msg = j.choices?.[0]?.message;
@@ -96,7 +96,7 @@ async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiM
 }
 
 // ── Anthropic ──
-async function anthropic(system: string, msgs: Msg[], tools: ToolDef[], model = aiModel("anthropic"), timeoutMs = 55000): Promise<Reply> {
+async function anthropic(system: string, msgs: Msg[], tools: ToolDef[], model = aiModel("anthropic"), timeoutMs = 55000, maxTokens = 2000): Promise<Reply> {
     const messages: { role: "user" | "assistant"; content: unknown[] }[] = [];
     const push = (role: "user" | "assistant", block: unknown) => {
         const last = messages[messages.length - 1];
@@ -113,7 +113,7 @@ async function anthropic(system: string, msgs: Msg[], tools: ToolDef[], model = 
     const j = await post<{ content?: { type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }[] }>(
         `${trim(process.env.ANTHROPIC_API_URL || "https://api.anthropic.com/v1")}/messages`,
         { "x-api-key": process.env.ANTHROPIC_API_KEY ?? "", "anthropic-version": "2023-06-01" },
-        { model, max_tokens: 2000, system, messages, ...(tools.length ? { tools: tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters })) } : {}) },
+        { model, max_tokens: maxTokens, system, messages, ...(tools.length ? { tools: tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters })) } : {}) },
         timeoutMs
     );
     const blocks = j.content ?? [];
@@ -144,15 +144,16 @@ export const fallbackModels = () => (process.env.AI_FALLBACK_MODELS ?? "").split
  * моделью (перегрузка, «нет инструментов», 403/404/429/5xx шлюза), не доходит до человека: берётся следующая. Ошибка бросается, только если
  * не вышло ни у одной; время всей цепочки ограничено, чтобы не держать запрос минутами.
  */
-export async function complete(system: string, msgs: Msg[], tools: ToolDef[], opts: { model?: string } = {}): Promise<Reply> {
+export async function complete(system: string, msgs: Msg[], tools: ToolDef[], opts: { model?: string; maxTokens?: number } = {}): Promise<Reply> {
     const p = aiProvider();
     if (!p) throw new ProviderError("AI is not configured on this site");
+    const maxTokens = Math.max(100, Math.min(16000, opts.maxTokens ?? 2000));
     // Ключ и модель могут быть внесены в кабинете администратора платформы (lib/ai/config.ts) — они важнее переменных сервера
     const ov = await aiOverrides();
     const primary: Endpoint = ov?.apiUrl && ov.apiKey ? { url: trim(ov.apiUrl), key: ov.apiKey } : primaryEndpoint();
     const gateway = gatewayEndpoint();
     const direct = primary.url !== gateway.url || primary.key !== gateway.key; // чат идёт мимо шлюза — шлюз становится запасным путём
-    const run = (model: string | undefined, timeoutMs: number, ep: Endpoint) => (p === "anthropic" ? anthropic(system, msgs, tools, model, timeoutMs) : openai(system, msgs, tools, model, timeoutMs, ep));
+    const run = (model: string | undefined, timeoutMs: number, ep: Endpoint) => (p === "anthropic" ? anthropic(system, msgs, tools, model, timeoutMs, maxTokens) : openai(system, msgs, tools, model, timeoutMs, ep, maxTokens));
     const chain: { model: string | undefined; ep: Endpoint }[] = [];
     // Чат идёт к самому OpenAI: чужие имена моделей из старого .env (openrouter/…, auto/…) он отвергает ответом 400, и голосовой разговор молчал бы.
     // Такие имена пропускаем; прямому стороннему провайдеру (AI_API_URL) имена не трогаем.
