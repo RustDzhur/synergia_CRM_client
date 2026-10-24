@@ -14,7 +14,7 @@ export default function TaskBoard({ wide = false }: { wide?: boolean }) {
 
 	const Section = ({ title, items }: { title: string; items: typeof tasks }) => items.length === 0 ? null : (
 		<section>
-			<h3 className="mb-8 text-11 font-semibold uppercase tracking-[0.06em] text-[#8c948b]">{title} · {items.length}</h3>
+			<h3 className="mb-8 text-11 font-semibold uppercase tracking-[0.06em] text-[#9aa7c9]">{title} · {items.length}</h3>
 			<ul className="flex flex-col gap-8">{items.map((x) => <TaskItem key={x.id} task={x} />)}</ul>
 		</section>
 	);
@@ -22,10 +22,10 @@ export default function TaskBoard({ wide = false }: { wide?: boolean }) {
 	return (
 		<div className="fs-card p-16">
 			<div className="mb-14 flex items-center justify-between gap-12">
-				<h2 className="text-15 font-semibold text-[#f1f4ee]">{t("boardTitle")}</h2>
-				{canEdit && finished.length > 0 && <button type="button" onClick={() => void clearDone()} className="text-12 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">{t("clearDone")}</button>}
+				<h2 className="text-15 font-semibold text-[#edf2ff]">{t("boardTitle")}</h2>
+				{canEdit && finished.length > 0 && <button type="button" onClick={() => void clearDone()} className="text-12 text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">{t("clearDone")}</button>}
 			</div>
-			{tasks.length === 0 ? <p className="text-13 text-[#8c948b]">{t("boardEmpty")}</p> : (
+			{tasks.length === 0 ? <p className="text-13 text-[#9aa7c9]">{t("boardEmpty")}</p> : (
 				<div className={wide ? "grid grid-cols-1 gap-18 md:grid-cols-3" : "flex flex-col gap-18"}>
 					<Section title={t("colWaiting")} items={waiting} />
 					<Section title={t("colWorking")} items={working} />

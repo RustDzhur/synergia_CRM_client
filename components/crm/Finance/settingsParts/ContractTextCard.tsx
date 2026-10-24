@@ -33,8 +33,8 @@ export default function ContractTextCard() {
 
 	return (
 		<div className="mb-16 fs-card p-16 md:p-20">
-			<h3 className="mb-8 text-14 font-semibold text-[#f1f4ee]">{t("contractSection")}</h3>
-			<p className="mb-12 text-12 leading-[1.5] text-[#8c948b]">{t("contractSectionHint")}</p>
+			<h3 className="mb-8 text-14 font-semibold text-[#edf2ff]">{t("contractSection")}</h3>
+			<p className="mb-12 text-12 leading-[1.5] text-[#9aa7c9]">{t("contractSectionHint")}</p>
 			<textarea
 				value={text}
 				onChange={(e) => setText(e.target.value)}
@@ -42,13 +42,13 @@ export default function ContractTextCard() {
 				placeholder={t("contractSectionPlaceholder")}
 				className="fs-field fs-scroll w-full resize-y p-10 text-12 leading-[1.5] outline-none"
 			/>
-			<p className="mt-[4px] text-11 text-[#9AA396]">{t("contractVarsHint", { vars })}</p>
+			<p className="mt-[4px] text-11 text-[#9AA7C9]">{t("contractVarsHint", { vars })}</p>
 			<div className="mt-12 flex flex-wrap items-center gap-8">
 				<button type="button" onClick={() => setText(defaultContractText(marketOf(settings?.country) ?? null))} className="fs-btn fs-btn-ghost h-38">
 					<TbRotateClockwise size={14} /> {t("contractInsertDefault")}
 				</button>
 				<button type="button" onClick={() => void save()} disabled={saving} className="fs-btn fs-btn-primary h-38 disabled:opacity-[0.5]">{t("save")}</button>
-				<p className="text-11 text-[#9AA396]">{t("contractSectionHint2")}</p>
+				<p className="text-11 text-[#9AA7C9]">{t("contractSectionHint2")}</p>
 			</div>
 		</div>
 	);

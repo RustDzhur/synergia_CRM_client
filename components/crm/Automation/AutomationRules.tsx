@@ -66,22 +66,22 @@ export default function AutomationRules({ stages }: CustomTabApi & { stages: Sta
 	}
 
 	const field = "fs-field h-40 w-full px-12 text-13 outline-none";
-	const label = "mb-6 block text-12 text-[#8c948b]";
+	const label = "mb-6 block text-12 text-[#9aa7c9]";
 	const v = editing?.values ?? EMPTY;
 
 	return (
 		<div>
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-12">
 				<div className="max-w-[640px]">
-					<p className="text-12 text-[#8c948b]">{t("r_help")}</p>
+					<p className="text-12 text-[#9aa7c9]">{t("r_help")}</p>
 					{/* Пока тариф не получен, лимит неизвестен: строка «0 правил» до ответа сервера читалась как «правил нет».
 					    Тариф без автоматизации (Free) называем прямо и не показываем «0/0» — правил не будет вовсе. */}
 					{planKnown && (
 						<p className="mt-6 inline-flex flex-wrap items-center rounded-10 border border-inkLine bg-[rgba(255,255,255,0.03)] px-12 py-6 text-12 text-[#cfd4cb]">
 							<span>{limit > 0 ? t("planBanner", { count: limit }) : t("planNone")}</span>
-							<span className="mx-6 text-[#8C948B]">·</span>
+							<span className="mx-6 text-[#9AA7C9]">·</span>
 							<span>{tUpgrade(planName)}</span>
-							<span className="mx-6 text-[#8C948B]">·</span>
+							<span className="mx-6 text-[#9AA7C9]">·</span>
 							{limit > 0
 								? <span aria-label="rules-used">{records.length}/{limit}</span>
 								: <Link href={`/${locale}/crm/upgrade`} className="fs-link text-12">{tUpgrade("changePlan")}</Link>}
@@ -92,7 +92,7 @@ export default function AutomationRules({ stages }: CustomTabApi & { stages: Sta
 			</div>
 
 			{records.length === 0 ? (
-				<p className="fs-card p-24 text-center text-13 text-[#8c948b]">{t("r_empty")}</p>
+				<p className="fs-card p-24 text-center text-13 text-[#9aa7c9]">{t("r_empty")}</p>
 			) : (
 				<ul className="grid gap-12 md:grid-cols-2">
 					{records.map((r) => {
@@ -102,22 +102,22 @@ export default function AutomationRules({ stages }: CustomTabApi & { stages: Sta
 								<div className="flex items-start gap-10">
 									<TbBolt size={18} className="mt-2 shrink-0 text-[#F4A100]" aria-hidden />
 									<div className="min-w-0 flex-1">
-										<p className="truncate text-13 font-semibold text-[#f1f4ee]">{r.values.name}</p>
-										<p className="mt-4 text-12 text-[#8c948b]">
+										<p className="truncate text-13 font-semibold text-[#edf2ff]">{r.values.name}</p>
+										<p className="mt-4 text-12 text-[#9aa7c9]">
 											{t(`ev_${r.values.event}`)}{STAGE_EVENTS.includes(r.values.event) ? ` · ${stageName(r.values.stage)}` : ""}
-											{" → "}{t(`o_${r.values.timing}`)}{" → "}<span className="font-medium text-[#c6ff4d]">{t(`ac_${r.values.action}`)}</span>
+											{" → "}{t(`o_${r.values.timing}`)}{" → "}<span className="font-medium text-[#7c93ff]">{t(`ac_${r.values.action}`)}</span>
 										</p>
-										{r.values.message && <p className="mt-4 truncate text-11 text-[#9AA396]">{r.values.message}</p>}
+										{r.values.message && <p className="mt-4 truncate text-11 text-[#9AA7C9]">{r.values.message}</p>}
 									</div>
-									<label className="flex shrink-0 cursor-pointer items-center gap-6 text-12 text-[#8c948b]">
-										<input type="checkbox" checked={on} onChange={async (e) => save({ id: r.id, values: { ...r.values, enabled: e.target.checked ? "1" : "0" } })} className="accent-[#c6ff4d]" />
+									<label className="flex shrink-0 cursor-pointer items-center gap-6 text-12 text-[#9aa7c9]">
+										<input type="checkbox" checked={on} onChange={async (e) => save({ id: r.id, values: { ...r.values, enabled: e.target.checked ? "1" : "0" } })} className="accent-[#7c93ff]" />
 										{t("r_enabled")}
 									</label>
 								</div>
 								<div className="mt-12 flex items-center justify-end gap-16 text-12">
-									<button type="button" onClick={() => test(r)} className="flex items-center gap-4 text-[#c6ff4d] transition-opacity hover:opacity-80"><TbPlayerPlay size={16} />{t("r_test")}</button>
-									<button type="button" onClick={() => setEditing({ id: r.id, values: { ...EMPTY, ...r.values } })} className="flex items-center gap-4 text-[#8c948b] transition-colors hover:text-[#c6ff4d]"><TbPencil size={16} />{t("r_edit")}</button>
-									<button type="button" onClick={() => setToDelete(r)} className="flex items-center gap-4 text-[#9AA396] transition-colors hover:text-danger"><TbTrash size={16} />{t("r_delete")}</button>
+									<button type="button" onClick={() => test(r)} className="flex items-center gap-4 text-[#7c93ff] transition-opacity hover:opacity-80"><TbPlayerPlay size={16} />{t("r_test")}</button>
+									<button type="button" onClick={() => setEditing({ id: r.id, values: { ...EMPTY, ...r.values } })} className="flex items-center gap-4 text-[#9aa7c9] transition-colors hover:text-[#7c93ff]"><TbPencil size={16} />{t("r_edit")}</button>
+									<button type="button" onClick={() => setToDelete(r)} className="flex items-center gap-4 text-[#9AA7C9] transition-colors hover:text-danger"><TbTrash size={16} />{t("r_delete")}</button>
 								</div>
 							</li>
 						);
@@ -127,7 +127,7 @@ export default function AutomationRules({ stages }: CustomTabApi & { stages: Sta
 
 			<Modal open={editing !== null} onClose={() => setEditing(null)} label={t("r_addRule")} className="w-full max-w-[520px]">
 				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[calc(100vh-32px)] overflow-y-auto p-20">
-					<h2 className="mb-16 text-16 font-semibold text-[#f1f4ee]">{editing?.id ? t("r_edit") : t("r_addRule")}</h2>
+					<h2 className="mb-16 text-16 font-semibold text-[#edf2ff]">{editing?.id ? t("r_edit") : t("r_addRule")}</h2>
 					<div className="flex flex-col gap-14">
 						<label><span className={label}>{t("r_name")}</span><input value={v.name} onChange={(e) => set("name", e.target.value)} maxLength={100} className={field} autoFocus /></label>
 						<label><span className={label}>{t("r_when")}</span>
@@ -165,7 +165,7 @@ export default function AutomationRules({ stages }: CustomTabApi & { stages: Sta
 							<>
 								<label><span className={label}>{v.action === "ai_action" ? t("r_instruction") : v.action === "add_note" || v.action === "notify" ? t("r_text") : t("r_message")}</span>
 									<textarea value={v.message} onChange={(e) => set("message", e.target.value)} rows={3} maxLength={1000} placeholder={v.action === "ai_action" ? t("r_instructionPlaceholder") : undefined} className="fs-field fs-scroll w-full p-10 text-13 outline-none" />
-									{v.action === "ai_action" && <span className="mt-4 block text-11 text-[#9AA396]">{t("r_aiActionHint")}</span>}
+									{v.action === "ai_action" && <span className="mt-4 block text-11 text-[#9AA7C9]">{t("r_aiActionHint")}</span>}
 								</label>
 								{/* подстановки — вне <label>: клик по токену копирует его, а не переводит курсор в поле текста */}
 								{v.action !== "ai_action" && <VariableHints />}

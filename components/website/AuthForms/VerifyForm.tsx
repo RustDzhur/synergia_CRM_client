@@ -62,10 +62,10 @@ export default function VerifyForm({ email }: { email: string }) {
 					autoFocus
 					placeholder={t("verifyPlaceholder")}
 					aria-label={t("verifyPlaceholder")}
-					className={`w-[100%] rounded-8 border bg-[rgba(255,255,255,0.04)] px-20 py-14 text-center text-28 tracking-[0.5em] text-[#f1f4ee] outline-none transition-colors placeholder:text-16 placeholder:tracking-normal placeholder:text-[#8c948b] focus:border-[rgba(198,255,77,0.55)] ${error ? "border-[#eb5757]" : "border-[rgba(255,255,255,0.14)]"}`}
+					className={`w-[100%] rounded-8 border bg-[rgba(255,255,255,0.04)] px-20 py-14 text-center text-28 tracking-[0.5em] text-[#edf2ff] outline-none transition-colors placeholder:text-16 placeholder:tracking-normal placeholder:text-[#9aa7c9] focus:border-[rgba(124,147,255,0.55)] ${error ? "border-[#eb5757]" : "border-[rgba(255,255,255,0.14)]"}`}
 				/>
 				{error && <p role="alert" className="mt-8 text-left text-13 text-[#eb5757]">{error}</p>}
-				<p className="mt-8 text-left text-12 text-[#8c948b]">{t("verifySpam")}</p>
+				<p className="mt-8 text-left text-12 text-[#9aa7c9]">{t("verifySpam")}</p>
 				<button
 					type="submit"
 					disabled={isLoading || code.length !== 6}
@@ -74,10 +74,10 @@ export default function VerifyForm({ email }: { email: string }) {
 				</button>
 			</form>
 			<div className="mt-16 flex flex-wrap items-center justify-between gap-8 text-14">
-				<button type="button" onClick={resend} disabled={wait > 0} className="text-[#c6ff4d] disabled:text-[#8c948b]">
+				<button type="button" onClick={resend} disabled={wait > 0} className="text-[#7c93ff] disabled:text-[#9aa7c9]">
 					{wait > 0 ? t("verifyResendIn", { sec: wait }) : t("verifyResend")}
 				</button>
-				<button type="button" onClick={openSignUpForm} className="text-[#8c948b] hover:text-[#c6ff4d]">{t("verifyWrongEmail")}</button>
+				<button type="button" onClick={openSignUpForm} className="text-[#9aa7c9] hover:text-[#7c93ff]">{t("verifyWrongEmail")}</button>
 			</div>
 		</div>
 	);

@@ -34,7 +34,7 @@ function RowMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => voi
     const item = "fs-popover-row block w-full px-14 py-10 text-left text-13 transition-colors duration-150";
     return (
         <div ref={ref} className="relative inline-block">
-            <button type="button" aria-label={t("rowMenu")} aria-expanded={open} onClick={() => setOpen(!open)} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
+            <button type="button" aria-label={t("rowMenu")} aria-expanded={open} onClick={() => setOpen(!open)} className="text-[#9aa7c9] transition-colors hover:text-[#7c93ff]">
                 <TbDots size={20} />
             </button>
             <Dropdown open={open} className="left-0 top-full mt-8 min-w-[150px]">
@@ -125,7 +125,7 @@ export default function Company() {
                     <table className="fs-table min-w-[1040px] table-fixed">
                         <thead>
                             <tr>
-                                <th className="w-[60px]"><TbSettings size={18} className="mx-auto block text-[#8c948b]" aria-hidden /></th>
+                                <th className="w-[60px]"><TbSettings size={18} className="mx-auto block text-[#9aa7c9]" aria-hidden /></th>
                                 <th className={`${th} w-[100px]`}>{t("photo")}</th>
                                 <th className={`${th} w-[230px]`}>{t("fullName")}</th>
                                 <th className={`${th} w-[200px]`}>{t("email")}</th>
@@ -142,7 +142,7 @@ export default function Company() {
                                     <td className="text-center">
                                         <Avatar src={e.avatarUrl} initials={initials(e)} size={40} className="mx-auto flex text-13" />
                                     </td>
-                                    <td className={`${td} font-medium text-[#f1f4ee] fs-wrap`}>{e.firstname} {e.lastname}</td>
+                                    <td className={`${td} font-medium text-[#edf2ff] fs-wrap`}>{e.firstname} {e.lastname}</td>
                                     <td className={td}>{e.email}</td>
                                     <td className={td}>{e.workPhone}</td>
                                     <td className={`${td} fs-wrap`}>{e.position}</td>
@@ -152,17 +152,17 @@ export default function Company() {
                             ))}
                         </tbody>
                     </table>
-                    {!isLoading && items.length === 0 && <p className="py-40 text-center text-13 text-[#8c948b]">{t("empty")}</p>}
-                    {isLoading && items.length === 0 && <p className="py-40 text-center text-13 text-[#8c948b]">…</p>}
+                    {!isLoading && items.length === 0 && <p className="py-40 text-center text-13 text-[#9aa7c9]">{t("empty")}</p>}
+                    {isLoading && items.length === 0 && <p className="py-40 text-center text-13 text-[#9aa7c9]">…</p>}
 
-                    <footer className="flex flex-wrap items-center gap-x-24 gap-y-8 border-t border-inkLine px-18 py-14 text-11 uppercase tracking-[0.08em] text-[#8c948b]">
+                    <footer className="flex flex-wrap items-center gap-x-24 gap-y-8 border-t border-inkLine px-18 py-14 text-11 uppercase tracking-[0.08em] text-[#9aa7c9]">
                         <span>{t("total", { total })}</span>
                         <span>{t("pages", { pages })}</span>
-                        <div className="flex w-full items-center justify-center gap-24 text-[#8c948b] md:ml-[-160px] md:flex-1">
-                            <button type="button" disabled={page <= 1} onClick={() => fetchEmployees(page - 1)} className="flex items-center gap-6 transition-colors enabled:hover:text-[#c6ff4d] disabled:opacity-40">
+                        <div className="flex w-full items-center justify-center gap-24 text-[#9aa7c9] md:ml-[-160px] md:flex-1">
+                            <button type="button" disabled={page <= 1} onClick={() => fetchEmployees(page - 1)} className="flex items-center gap-6 transition-colors enabled:hover:text-[#7c93ff] disabled:opacity-40">
                                 <TbChevronLeft size={18} />{t("previous")}
                             </button>
-                            <button type="button" disabled={page >= pages} onClick={() => fetchEmployees(page + 1)} className="flex items-center gap-6 transition-colors enabled:hover:text-[#c6ff4d] disabled:opacity-40">
+                            <button type="button" disabled={page >= pages} onClick={() => fetchEmployees(page + 1)} className="flex items-center gap-6 transition-colors enabled:hover:text-[#7c93ff] disabled:opacity-40">
                                 {t("next")}<TbChevronRight size={18} />
                             </button>
                         </div>

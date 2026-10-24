@@ -123,8 +123,8 @@ export default function EntityEditPage<T extends Entity>({
 	if (missing) {
 		return (
 			<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
-				<p className="mb-20 text-13 text-[#8c948b]">{t("notFound")}</p>
-				<button type="button" onClick={() => router.push(backHref)} className="text-13 font-semibold text-[#c6ff4d]">
+				<p className="mb-20 text-13 text-[#9aa7c9]">{t("notFound")}</p>
+				<button type="button" onClick={() => router.push(backHref)} className="text-13 font-semibold text-[#7c93ff]">
 					{t("back")}
 				</button>
 			</div>
@@ -139,7 +139,7 @@ export default function EntityEditPage<T extends Entity>({
 					save();
 				}}>
 				<div className="mb-16 flex flex-wrap items-center justify-between gap-12">
-					<h1 className="text-20 font-semibold tracking-[-0.4px] text-[#f1f4ee]">{isNew ? titleNew : titleEdit}</h1>
+					<h1 className="text-20 font-semibold tracking-[-0.4px] text-[#edf2ff]">{isNew ? titleNew : titleEdit}</h1>
 					{!isNew && entity && <AiSummaryButton kind={tab === "contacts" ? "contact" : "company"} name={String(entity.name ?? "")} />}
 				</div>
 				<div className="flex flex-col gap-16">
@@ -182,7 +182,7 @@ export default function EntityEditPage<T extends Entity>({
 
 			<div className="min-w-0">
 				{isNew || !entity ? (
-					<p className="fs-card p-20 text-13 text-[#8c948b]">{t("saveFirst")}</p>
+					<p className="fs-card p-20 text-13 text-[#9aa7c9]">{t("saveFirst")}</p>
 				) : (
 					<>
 						{extraPanel?.(entity)}

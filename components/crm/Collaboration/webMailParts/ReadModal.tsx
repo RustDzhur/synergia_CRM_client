@@ -37,7 +37,7 @@ export default function ReadModal({ mail, onClose }: { mail: MailDTO | null; onC
 			    Без этого длинное письмо уезжало за верх и низ экрана (100dvh учитывает панели браузера) */}
 			<div className="fs-popover flex max-h-[calc(100dvh-32px)] flex-col p-24">
 				<div className="mb-6 flex items-start justify-between gap-16">
-					<h2 className="break-words text-16 font-semibold text-[#f1f4ee]">{mail?.subject || t("noSubject")}</h2>
+					<h2 className="break-words text-16 font-semibold text-[#edf2ff]">{mail?.subject || t("noSubject")}</h2>
 					<div className="flex shrink-0 items-center gap-12 pt-[4px]">
 						{mail && (
 							<AiQuickAsk
@@ -46,10 +46,10 @@ export default function ReadModal({ mail, onClose }: { mail: MailDTO | null; onC
 								label={tAi("analyzeMail")}
 							/>
 						)}
-						<button type="button" onClick={onClose} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]"><TbX size={18} /></button>
+						<button type="button" onClick={onClose} aria-label={t("close")} className="text-[#9aa7c9] transition-colors hover:text-[#edf2ff]"><TbX size={18} /></button>
 					</div>
 				</div>
-				<p className="mb-20 break-words text-12 text-[#8C948B]">
+				<p className="mb-20 break-words text-12 text-[#9AA7C9]">
 					{mail?.from} → {mail?.to} · {mail ? new Date(mail.at).toLocaleString(localeTag(locale)) : ""}
 				</p>
 				<div className="fs-scroll min-h-0 flex-1 overflow-y-auto">
@@ -65,7 +65,7 @@ export default function ReadModal({ mail, onClose }: { mail: MailDTO | null; onC
 							style={{ height: frameHeight || 200 }}
 						/>
 					) : (
-						<p className="whitespace-pre-wrap break-words text-13 text-[#f1f4ee]">{mail?.body}</p>
+						<p className="whitespace-pre-wrap break-words text-13 text-[#edf2ff]">{mail?.body}</p>
 					)}
 				</div>
 			</div>

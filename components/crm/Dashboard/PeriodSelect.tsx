@@ -31,9 +31,9 @@ export default function PeriodSelect<T extends string>({ value, options, onChang
 				aria-expanded={open}
 				onClick={() => setOpen(!open)}
 				className="flex items-center gap-6 whitespace-nowrap text-12">
-				<span className="font-medium text-[#c6ff4d]">{t("show")}:</span>
+				<span className="font-medium text-[#7c93ff]">{t("show")}:</span>
 				<span className="text-[#cfd4cb]">{current?.label}</span>
-				<TbChevronDown size={15} className={`text-[#8c948b] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+				<TbChevronDown size={15} className={`text-[#9aa7c9] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
 			</button>
 			<Dropdown open={open} className="right-0 top-full mt-8 min-w-[160px]">
 				<ul className="fs-popover overflow-hidden py-4">
@@ -46,7 +46,7 @@ export default function PeriodSelect<T extends string>({ value, options, onChang
 									setOpen(false);
 								}}
 								className={`fs-popover-row block w-full px-14 py-10 text-left text-13 transition-colors duration-150 ${
-									o.value === value ? "font-medium text-[#c6ff4d]" : "text-[#cfd4cb]"
+									o.value === value ? "font-medium text-[#7c93ff]" : "text-[#cfd4cb]"
 								}`}>
 								{o.label}
 							</button>

@@ -35,10 +35,10 @@ export default function RoomsDialog({ open, onClose }: { open: boolean; onClose:
 		<Modal open={open} onClose={onClose} label={tr("title")} align="top" className="w-full max-w-[520px]" flushOnMobile>
 			<div className="fs-popover fs-scroll max-h-[92vh] overflow-y-auto p-18 md:p-24">
 				<div className="flex items-start justify-between gap-12">
-					<h2 className="text-18 font-semibold text-[#f1f4ee]">{tr("title")}</h2>
-					<button type="button" onClick={onClose} className="shrink-0 text-13 text-[#8c948b] hover:text-[#f1f4ee]">{tr("close")}</button>
+					<h2 className="text-18 font-semibold text-[#edf2ff]">{tr("title")}</h2>
+					<button type="button" onClick={onClose} className="shrink-0 text-13 text-[#9aa7c9] hover:text-[#edf2ff]">{tr("close")}</button>
 				</div>
-				<p className="mt-6 text-12 leading-[1.5] text-[#8c948b]">{tr("hint")}</p>
+				<p className="mt-6 text-12 leading-[1.5] text-[#9aa7c9]">{tr("hint")}</p>
 
 				<ul className="mt-14 flex flex-col gap-8">
 					{rooms.length === 0 && <li className="text-12 text-[#6b736a]">{tr("none")}</li>}
@@ -51,8 +51,8 @@ export default function RoomsDialog({ open, onClose }: { open: boolean; onClose:
 								</>
 							) : (
 								<>
-									<span className="min-w-0 flex-1 truncate text-13 text-[#f1f4ee]">{r.name}</span>
-									<button type="button" onClick={() => setEdit({ id: r.id, name: r.name })} className="text-[#8c948b] hover:text-[#f1f4ee]" aria-label={tr("rename")} title={tr("rename")}><TbPencil size={16} /></button>
+									<span className="min-w-0 flex-1 truncate text-13 text-[#edf2ff]">{r.name}</span>
+									<button type="button" onClick={() => setEdit({ id: r.id, name: r.name })} className="text-[#9aa7c9] hover:text-[#edf2ff]" aria-label={tr("rename")} title={tr("rename")}><TbPencil size={16} /></button>
 									<button type="button" onClick={() => { if (window.confirm(tr("confirmRemove"))) void removeRoom(r.id); }} className="text-[#ff9f9f] hover:text-[#ff6f6f]" aria-label={tr("remove")} title={tr("remove")}><TbTrash size={16} /></button>
 								</>
 							)}

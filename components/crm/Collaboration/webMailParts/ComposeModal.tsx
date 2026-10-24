@@ -19,7 +19,7 @@ export default function ComposeModal({ open, draft, sending, onChange, onClose, 
 	return (
 		<Modal open={open} onClose={onClose} label={t("newEmail")} className="w-full max-w-[600px]">
 			<form onSubmit={(e) => { e.preventDefault(); onSave(false); }} className="fs-popover p-24">
-				<h2 className="mb-20 text-16 font-semibold text-[#f1f4ee]">{t("newEmail")}</h2>
+				<h2 className="mb-20 text-16 font-semibold text-[#edf2ff]">{t("newEmail")}</h2>
 				<div className="flex flex-col gap-12">
 					<input value={draft.to} onChange={(e) => onChange({ ...draft, to: e.target.value })} placeholder={t("mailTo")} aria-label={t("mailTo")} maxLength={300} className={inputClass} />
 					<input value={draft.subject} onChange={(e) => onChange({ ...draft, subject: e.target.value })} placeholder={t("mailSubject")} aria-label={t("mailSubject")} maxLength={200} className={inputClass} />

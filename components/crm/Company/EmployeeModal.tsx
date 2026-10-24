@@ -74,10 +74,10 @@ export default function EmployeeModal({ open, employee, onClose }: Props) {
 	return (
 		<Modal open={open} onClose={onClose} label={employee ? t("editTitle") : t("inviteTitle")} className="w-full max-w-[560px]">
 			<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-24">
-				<button type="button" onClick={onClose} aria-label={t("cancel")} className="absolute right-16 top-16 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+				<button type="button" onClick={onClose} aria-label={t("cancel")} className="absolute right-16 top-16 text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
 					<TbX size={20} />
 				</button>
-				<h2 className="mb-20 text-16 font-semibold text-[#f1f4ee]">{employee ? t("editTitle") : t("inviteTitle")}</h2>
+				<h2 className="mb-20 text-16 font-semibold text-[#edf2ff]">{employee ? t("editTitle") : t("inviteTitle")}</h2>
 				<div className="grid grid-cols-1 gap-16 md:grid-cols-2">
 					<FormField label={t("firstname")} value={form.firstname ?? ""} onChange={set("firstname")} maxLength={100} />
 					<FormField label={t("lastname")} value={form.lastname ?? ""} onChange={set("lastname")} maxLength={100} />
@@ -91,13 +91,13 @@ export default function EmployeeModal({ open, employee, onClose }: Props) {
 				</div>
 				{!employee && canGrant && (
 					<div className="mt-16 rounded-10 border border-inkLine p-12">
-						<label className="flex cursor-pointer items-center gap-8 text-13 text-[#f1f4ee]">
-							<input type="checkbox" checked={grant} onChange={(e) => setGrant(e.target.checked)} className="accent-[#c6ff4d]" />
+						<label className="flex cursor-pointer items-center gap-8 text-13 text-[#edf2ff]">
+							<input type="checkbox" checked={grant} onChange={(e) => setGrant(e.target.checked)} className="accent-[#7c93ff]" />
 							{t("grantAccess")}
 						</label>
-						<p className="mt-6 text-11 text-[#9AA396]">{t("grantHint")}</p>
+						<p className="mt-6 text-11 text-[#9AA7C9]">{t("grantHint")}</p>
 						{grant && (
-							<label className="mt-10 flex items-center gap-8 text-12 text-[#8c948b]">
+							<label className="mt-10 flex items-center gap-8 text-12 text-[#9aa7c9]">
 								{t("grantRole")}
 								<select value={role} onChange={(e) => setRole(e.target.value as Role)} className="fs-field h-32 px-10 text-12 outline-none">
 									{(["manager", "employee", "viewer"] as Role[]).map((r) => <option key={r} value={r}>{ts(`role_${r}`)}</option>)}

@@ -18,12 +18,12 @@ export default function ColumnsMenu({ fields, hiddenKeys, onToggle, label }: Pro
 
 	return (
 		<div ref={ref} className="relative inline-block">
-			<button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={tr("columns")} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
+			<button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={tr("columns")} className="text-[#9aa7c9] transition-colors hover:text-[#7c93ff]">
 				<MdSettings size={20} className={`transition-transform duration-300 ${open ? "rotate-90" : ""}`} />
 			</button>
 			<Dropdown open={open} className="left-0 top-full mt-8 min-w-[220px]">
 				<div className="fs-popover p-12 text-left">
-					<p className="mb-8 text-12 text-[#8c948b]">{tr("columns")}</p>
+					<p className="mb-8 text-12 text-[#9aa7c9]">{tr("columns")}</p>
 					{fields.map((f) => (
 						// строка кликабельна целиком; флажок сам обрабатывает нажатие, поэтому его обёртка гасит всплытие
 						<div

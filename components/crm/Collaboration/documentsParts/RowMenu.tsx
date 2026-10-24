@@ -11,7 +11,7 @@ export default function RowMenu({ actions }: { actions: Action[] }) {
 	return (
 		<Menu align="right" options={actions.map((a) => ({ label: a.label, danger: a.danger, onClick: a.onClick }))}>
 			{({ open, toggle }) => (
-				<button type="button" aria-label={t("more")} aria-expanded={open} onClick={toggle} className="text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
+				<button type="button" aria-label={t("more")} aria-expanded={open} onClick={toggle} className="text-[#9aa7c9] transition-colors hover:text-[#7c93ff]">
 					<TbDots size={20} />
 				</button>
 			)}

@@ -14,11 +14,11 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
     }, [error]);
     return (
         <html lang="en">
-            <body style={{ margin: 0, background: "#0a0c0b", color: "#f1f4ee", fontFamily: "system-ui, sans-serif" }}>
+            <body style={{ margin: 0, background: "#0b1120", color: "#edf2ff", fontFamily: "system-ui, sans-serif" }}>
                 <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, textAlign: "center" }}>
                     <h1 style={{ fontSize: 22, fontWeight: 600 }}>Something went wrong</h1>
-                    <p style={{ maxWidth: 420, color: "#8c948b", fontSize: 14 }}>The site could not be loaded. The error has been reported.</p>
-                    <button type="button" onClick={reset} style={{ height: 40, padding: "0 20px", borderRadius: 999, border: 0, background: "#c6ff4d", color: "#0a0c0b", fontWeight: 600, cursor: "pointer" }}>Try again</button>
+                    <p style={{ maxWidth: 420, color: "#9aa7c9", fontSize: 14 }}>The site could not be loaded. The error has been reported.</p>
+                    <button type="button" onClick={reset} style={{ height: 40, padding: "0 20px", borderRadius: 999, border: 0, background: "#7c93ff", color: "#0b1120", fontWeight: 600, cursor: "pointer" }}>Try again</button>
                 </main>
             </body>
         </html>

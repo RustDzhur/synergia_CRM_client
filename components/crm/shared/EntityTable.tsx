@@ -53,7 +53,7 @@ export default function EntityTable<T>({ rows, columns, getId, selected, onToggl
 						return (
 							<tr
 								key={id}
-								className={`animate-fade-in transition-colors duration-150 ${checked ? "bg-[rgba(198,255,77,0.06)]" : ""}`}>
+								className={`animate-fade-in transition-colors duration-150 ${checked ? "bg-[rgba(124,147,255,0.06)]" : ""}`}>
 								<td className="pl-16">
 									<Checkbox checked={checked} onChange={() => onToggle(id)} label={t("selectRow")} />
 								</td>
@@ -69,8 +69,8 @@ export default function EntityTable<T>({ rows, columns, getId, selected, onToggl
 					})}
 				</tbody>
 			</table>
-			{isLoading && rows.length === 0 && <p className="py-40 text-center text-14 text-[#8c948b]">{t("loading")}</p>}
-			{!isLoading && rows.length === 0 && <p className="py-40 text-center text-14 text-[#8c948b]">{emptyText}</p>}
+			{isLoading && rows.length === 0 && <p className="py-40 text-center text-14 text-[#9aa7c9]">{t("loading")}</p>}
+			{!isLoading && rows.length === 0 && <p className="py-40 text-center text-14 text-[#9aa7c9]">{emptyText}</p>}
 		</div>
 	);
 }

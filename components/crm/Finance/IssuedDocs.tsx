@@ -54,7 +54,7 @@ export default function IssuedDocs({ kind }: { kind: "act" | "delivery_note" }) 
 				/>
 			</div>
 			{rows.length === 0 ? (
-				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t(kind === "act" ? "issuedEmptyAct" : "issuedEmptyDelivery")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t(kind === "act" ? "issuedEmptyAct" : "issuedEmptyDelivery")}</p>
 			) : (
 				<div className="fs-card overflow-x-auto">
 					<table className="fs-table min-w-[640px] text-left">
@@ -71,10 +71,10 @@ export default function IssuedDocs({ kind }: { kind: "act" | "delivery_note" }) 
 						<tbody>
 							{rows.map((r) => (
 								<tr key={r.id}>
-									<td className="px-16 text-13 font-medium text-[#f1f4ee]">{r.docNumber}</td>
-									<td className="px-10 text-13 text-[#8c948b]">{r.date}</td>
+									<td className="px-16 text-13 font-medium text-[#edf2ff]">{r.docNumber}</td>
+									<td className="px-10 text-13 text-[#9aa7c9]">{r.date}</td>
 									<td className="px-10 text-13 text-[#cfd4cb] fs-wrap">{r.customerName}</td>
-									<td className="px-10 text-13 text-[#8c948b]">{r.orderNumber}</td>
+									<td className="px-10 text-13 text-[#9aa7c9]">{r.orderNumber}</td>
 									<td className="px-10 text-right text-13">{money(r.total, r.currency, locale)}</td>
 									<td className="px-10 text-right">
 										<div className="flex items-center justify-end gap-8">

@@ -28,7 +28,7 @@ export default function MoreCard({ deal, editing, draft, onChange, onToggle, onS
 					<>
 						<FormField label={t("dealType")} value={draft.dealType} onChange={(e) => onChange({ ...draft, dealType: e.target.value })} wrapperClassName="mb-12" />
 						<label className="mb-12 block">
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("availableToAll")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("availableToAll")}</span>
 							<select
 								value={draft.availableToAll ? "yes" : "no"}
 								onChange={(e) => onChange({ ...draft, availableToAll: e.target.value === "yes" })}

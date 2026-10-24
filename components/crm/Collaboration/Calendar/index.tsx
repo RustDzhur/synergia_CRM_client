@@ -28,7 +28,7 @@ const isWeekend = (d: Date) => d.getDay() === 0 || d.getDay() === 6;
 interface Pill { id: string; title: string; color: string; done?: boolean; event?: CalEvent; task?: Task; href?: string }
 // Сроки из других разделов (оплата счетов, окончание договоров, срок сделок): GET /api/calendar/derived
 interface Derived { id: string; kind: "invoice" | "contract" | "deal"; date: string; title: string; overdue: boolean; href: string }
-const DERIVED_COLOR = { invoice: "#F4A100", contract: "#8A8FF5", deal: "#c6ff4d" };
+const DERIVED_COLOR = { invoice: "#F4A100", contract: "#8A8FF5", deal: "#7c93ff" };
 
 // Calendar (/crm/collaboration/calendar): месяц и неделя, «My / Company Calendar», события с цветом и напоминанием.
 // Задачи с дедлайном из раздела Tasks показываются тут же (синие) и открываются в окне задачи.
@@ -141,7 +141,7 @@ export default function Calendar() {
 	}
 
 	const selectedPills = pillsByDay.get(selectedDay) ?? [];
-	const control = "text-13 text-[#8c948b] transition-colors hover:text-[#c6ff4d]";
+	const control = "text-13 text-[#9aa7c9] transition-colors hover:text-[#7c93ff]";
 
 	return (
 		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
@@ -167,7 +167,7 @@ export default function Calendar() {
 
 			<div className="md:rounded-14 md:border md:border-inkLine md:bg-[rgba(255,255,255,0.022)] md:p-16">
 				<div className="flex flex-col md:flex-row md:items-center md:justify-between md:pb-16">
-					<h2 className="hidden text-16 font-semibold text-[#f1f4ee] md:block">{title}</h2>
+					<h2 className="hidden text-16 font-semibold text-[#edf2ff] md:block">{title}</h2>
 					<div className="flex flex-col md:flex-row md:items-center md:gap-20">
 						<div ref={viewRef} className="relative -mx-16 border-y border-inkLine px-16 md:mx-0 md:border-0 md:px-0">
 							<button
@@ -185,7 +185,7 @@ export default function Calendar() {
 											key={v}
 											type="button"
 											onClick={() => { setView(v); setViewOpen(false); }}
-											className={`fs-popover-row block w-full px-14 py-10 text-left text-13 transition-colors duration-150 ${view === v ? "text-[#c6ff4d]" : ""}`}>
+											className={`fs-popover-row block w-full px-14 py-10 text-left text-13 transition-colors duration-150 ${view === v ? "text-[#7c93ff]" : ""}`}>
 											{v === "month" ? t("month") : t("week")}
 										</button>
 									))}
@@ -201,7 +201,7 @@ export default function Calendar() {
 				</div>
 
 				<div className="-mx-16 md:mx-0">
-					<div className="grid grid-cols-7 pb-8 text-center text-11 uppercase tracking-[0.08em] text-[#8c948b] md:text-right md:[&>span]:pr-16">
+					<div className="grid grid-cols-7 pb-8 text-center text-11 uppercase tracking-[0.08em] text-[#9aa7c9] md:text-right md:[&>span]:pr-16">
 						{weekdays.map((w) => <span key={w}>{w}</span>)}
 					</div>
 					<div className="grid grid-cols-7 border-l border-t border-inkLine">
@@ -219,7 +219,7 @@ export default function Calendar() {
 									onClick={() => onDay(key)}
 									onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onDay(key))}
 									className={`group relative cursor-pointer border-b border-r transition-colors duration-150 hover:bg-[rgba(255,255,255,0.03)] ${
-										isToday ? "border-[#c6ff4d]" : "border-inkLine"
+										isToday ? "border-[#7c93ff]" : "border-inkLine"
 									} ${isWeekend(d) ? "bg-[rgba(255,255,255,0.02)]" : ""} ${
 										view === "week" ? "min-h-[300px]" : "min-h-[52px] md:min-h-[90px] lg:min-h-[150px]"
 									}`}>
@@ -227,9 +227,9 @@ export default function Calendar() {
 										<span
 											className={`flex h-[36px] min-w-[54px] items-center justify-center text-13 max-md:rounded-50 md:h-auto md:min-w-0 md:rounded-6 md:px-6 ${
 												isToday
-													? "font-semibold text-[#c6ff4d] md:bg-[#c6ff4d] md:text-[#0a0c0b]"
-													: inMonth ? "text-[#cfd4cb]" : "text-[#8C948B]"
-											} ${selectedDay === key ? "max-md:bg-[rgba(255,255,255,0.12)] max-md:text-[#f1f4ee]" : ""}`}>
+													? "font-semibold text-[#7c93ff] md:bg-[#7c93ff] md:text-[#0b1120]"
+													: inMonth ? "text-[#cfd4cb]" : "text-[#9AA7C9]"
+											} ${selectedDay === key ? "max-md:bg-[rgba(255,255,255,0.12)] max-md:text-[#edf2ff]" : ""}`}>
 											{d.getDate()}
 										</span>
 									</div>
@@ -250,7 +250,7 @@ export default function Calendar() {
 											</li>
 										))}
 										{view === "month" && pills.length > MAX_PILLS && (
-											<li className="px-6 text-11 text-[#9AA396]">+{pills.length - MAX_PILLS}</li>
+											<li className="px-6 text-11 text-[#9AA7C9]">+{pills.length - MAX_PILLS}</li>
 										)}
 									</ul>
 								</div>
@@ -263,13 +263,13 @@ export default function Calendar() {
 			{/* телефон: события выбранного дня и кнопка добавления */}
 			<div className="mt-20 md:hidden">
 				<div className="mb-10 flex items-center justify-between">
-					<p className="text-13 font-medium text-[#f1f4ee]">{new Date(`${selectedDay}T00:00`).toLocaleDateString(tag, { day: "numeric", month: "long" })}</p>
+					<p className="text-13 font-medium text-[#edf2ff]">{new Date(`${selectedDay}T00:00`).toLocaleDateString(tag, { day: "numeric", month: "long" })}</p>
 					<button type="button" onClick={() => openCreate(selectedDay)} className="fs-btn fs-btn-primary h-34">
 						{t("addEvent")}
 					</button>
 				</div>
 				{selectedPills.length === 0 ? (
-					<p className="text-12 text-[#8c948b]">{t("noEvents")}</p>
+					<p className="text-12 text-[#9aa7c9]">{t("noEvents")}</p>
 				) : (
 					<ul className="flex flex-col gap-8">
 						{selectedPills.map((p) => (

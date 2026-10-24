@@ -87,10 +87,10 @@ export default function EventModal({ open, draft, onClose }: Props) {
 	}
 
 	const plain =
-		"cursor-pointer bg-transparent text-13 text-[#f1f4ee] outline-none transition-colors focus:text-[#c6ff4d] [&::-webkit-calendar-picker-indicator]:hidden";
+		"cursor-pointer bg-transparent text-13 text-[#edf2ff] outline-none transition-colors focus:text-[#7c93ff] [&::-webkit-calendar-picker-indicator]:hidden";
 	// значок календаря скрыт, как в макете (там просто «26.06.2023»); окно выбора открывается нажатием на само поле
 	const openPicker = (e: React.MouseEvent<HTMLInputElement>) => (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.();
-	const label = "text-12 text-[#8c948b]";
+	const label = "text-12 text-[#9aa7c9]";
 
 	return (
 		<Modal open={open} onClose={onClose} label={t("eventName")} className="w-full max-w-[788px]" align="top" flushOnMobile>
@@ -102,10 +102,10 @@ export default function EventModal({ open, draft, onClose }: Props) {
 						placeholder={t("eventName")}
 						aria-label={t("eventName")}
 						maxLength={100}
-						className="min-w-0 flex-1 bg-transparent text-18 font-semibold text-[#f1f4ee] outline-none placeholder:text-[#8C948B]"
+						className="min-w-0 flex-1 bg-transparent text-18 font-semibold text-[#edf2ff] outline-none placeholder:text-[#9AA7C9]"
 					/>
 					<div ref={colorRef} className="relative flex shrink-0 items-center gap-10">
-						<button type="button" onClick={() => setColorsOpen(!colorsOpen)} aria-label={t("eventColor")} aria-expanded={colorsOpen} className="flex items-center gap-6 text-[#8c948b]">
+						<button type="button" onClick={() => setColorsOpen(!colorsOpen)} aria-label={t("eventColor")} aria-expanded={colorsOpen} className="flex items-center gap-6 text-[#9aa7c9]">
 							<span className="h-24 w-24 rounded-4" style={{ background: form.color }} />
 							<TbChevronDown size={18} className={`transition-transform duration-200 ${colorsOpen ? "rotate-180" : ""}`} />
 						</button>
@@ -118,12 +118,12 @@ export default function EventModal({ open, draft, onClose }: Props) {
 										aria-label={c}
 										onClick={() => { set("color", c); setColorsOpen(false); }}
 										style={{ background: c }}
-										className={`h-26 w-26 rounded-4 transition-transform hover:scale-110 ${form.color === c ? "ring-2 ring-[#c6ff4d] ring-offset-2 ring-offset-[#141716]" : ""}`}
+										className={`h-26 w-26 rounded-4 transition-transform hover:scale-110 ${form.color === c ? "ring-2 ring-[#7c93ff] ring-offset-2 ring-offset-[#0b1120]" : ""}`}
 									/>
 								))}
 							</div>
 						</Dropdown>
-						<button type="button" onClick={onClose} aria-label={t("close")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+						<button type="button" onClick={onClose} aria-label={t("close")} className="text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
 							<TbX size={20} />
 						</button>
 					</div>
@@ -142,12 +142,12 @@ export default function EventModal({ open, draft, onClose }: Props) {
 						className="fs-field fs-scroll mt-8 w-full resize-y px-12 py-8 text-13 outline-none"
 					/>
 
-					<label className="relative mt-16 flex items-center gap-8 text-13 text-[#8c948b] md:mt-20">
+					<label className="relative mt-16 flex items-center gap-8 text-13 text-[#9aa7c9] md:mt-20">
 						{t("calendarLabel")}:
 						<select
 							value={form.calendar}
 							onChange={(e) => set("calendar", e.target.value as CalendarKind)}
-							className="cursor-pointer appearance-none bg-transparent pr-24 text-[#f1f4ee] outline-none focus:text-[#c6ff4d]">
+							className="cursor-pointer appearance-none bg-transparent pr-24 text-[#edf2ff] outline-none focus:text-[#7c93ff]">
 							<option value="my">{t("myCalendar")}</option>
 							<option value="company">{t("companyCalendar")}</option>
 						</select>
@@ -157,7 +157,7 @@ export default function EventModal({ open, draft, onClose }: Props) {
 					<div className="mt-20 flex flex-wrap items-center gap-x-8 gap-y-8 md:gap-x-12 md:pl-20">
 						<input type="date" value={form.date} onChange={(e) => set("date", e.target.value)} aria-label={t("startDate")} onClick={openPicker} className={`${plain} w-[88px] md:w-auto`} />
 						<input type="time" value={form.startTime} onChange={(e) => set("startTime", e.target.value)} aria-label={t("startTime")} onClick={openPicker} className={`${plain} w-[46px] md:w-auto`} />
-						<span className="text-[#8C948B]">-</span>
+						<span className="text-[#9AA7C9]">-</span>
 						<input type="time" value={form.endTime} onChange={(e) => set("endTime", e.target.value)} aria-label={t("endTime")} onClick={openPicker} className={`${plain} w-[46px] md:w-auto`} />
 						<input type="date" value={form.endDate} onChange={(e) => set("endDate", e.target.value)} aria-label={t("endDate")} onClick={openPicker} className={`${plain} w-[88px] md:w-auto`} />
 					</div>
@@ -170,9 +170,9 @@ export default function EventModal({ open, draft, onClose }: Props) {
 							placeholder={t("change")}
 							aria-label={t("attendees")}
 							maxLength={200}
-							className="min-w-0 flex-1 bg-transparent text-[#f1f4ee] outline-none placeholder:text-[#8C948B] focus:text-[#c6ff4d]"
+							className="min-w-0 flex-1 bg-transparent text-[#edf2ff] outline-none placeholder:text-[#9AA7C9] focus:text-[#7c93ff]"
 						/>
-						<Link href={`/${locale}/crm/collaboration/chat-and-calls`} className="flex shrink-0 items-center gap-8 text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
+						<Link href={`/${locale}/crm/collaboration/chat-and-calls`} className="flex shrink-0 items-center gap-8 text-[#9aa7c9] transition-colors hover:text-[#7c93ff]">
 							{t("openChat")}
 							<TbChevronDown size={18} />
 						</Link>
@@ -180,26 +180,26 @@ export default function EventModal({ open, draft, onClose }: Props) {
 				</div>
 
 				<div className="mt-20 grid grid-cols-[auto_1fr] items-center gap-x-24 gap-y-16 border-y border-inkLine bg-[rgba(255,255,255,0.02)] px-16 py-14 text-13 md:px-[60px] md:py-16">
-					<label htmlFor="event-location" className="text-[#8c948b]">{t("location")}:</label>
+					<label htmlFor="event-location" className="text-[#9aa7c9]">{t("location")}:</label>
 					<input
 						id="event-location"
 						value={form.location}
 						onChange={(e) => set("location", e.target.value)}
 						placeholder={t("add")}
 						maxLength={200}
-						className="min-w-0 bg-transparent text-[#f1f4ee] outline-none placeholder:text-[#8C948B] focus:text-[#c6ff4d]"
+						className="min-w-0 bg-transparent text-[#edf2ff] outline-none placeholder:text-[#9AA7C9] focus:text-[#7c93ff]"
 					/>
-					<span className="text-[#8c948b]">{t("reminder")}:</span>
+					<span className="text-[#9aa7c9]">{t("reminder")}:</span>
 					<div className="flex flex-wrap items-center gap-x-24 gap-y-8">
 						{form.reminder > 0 && (
-							<span className="flex items-center gap-6 text-[#c6ff4d]">
+							<span className="flex items-center gap-6 text-[#7c93ff]">
 								{t("minutesBefore", { count: form.reminder })}
-								<button type="button" onClick={() => set("reminder", 0)} aria-label={t("removeReminder")} className="text-[#8c948b] transition-colors hover:text-danger">
+								<button type="button" onClick={() => set("reminder", 0)} aria-label={t("removeReminder")} className="text-[#9aa7c9] transition-colors hover:text-danger">
 									<TbX size={16} />
 								</button>
 							</span>
 						)}
-						<label className="relative cursor-pointer text-[#8c948b] transition-colors hover:text-[#c6ff4d]">
+						<label className="relative cursor-pointer text-[#9aa7c9] transition-colors hover:text-[#7c93ff]">
 							{t("add")}
 							<select
 								value=""

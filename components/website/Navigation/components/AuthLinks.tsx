@@ -42,18 +42,18 @@ export default function AuthLinks() {
 
 	return (
 		<ul className="flex items-center gap-16 sm:justify-between sm:px-20 lg:gap-14 lg:px-0 whitespace-nowrap">
-			<li className="text-16 font-medium text-[#c6ff4d] transition-opacity hover:opacity-80 lg:text-14 lg:tracking-[0.2px]">
+			<li className="text-16 font-medium text-[#7c93ff] transition-opacity hover:opacity-80 lg:text-14 lg:tracking-[0.2px]">
 				<DemoButton className="flex cursor-pointer items-center gap-6" onDone={() => { if (menu) toggleMenu(); }} />
 			</li>
 			<li
 				onClick={handleToggleSignin}
-				className="cursor-pointer text-16 font-medium text-[#8c948b] transition-colors hover:text-[#f1f4ee] lg:text-14 lg:tracking-[0.2px]">
+				className="cursor-pointer text-16 font-medium text-[#9aa7c9] transition-colors hover:text-[#edf2ff] lg:text-14 lg:tracking-[0.2px]">
 				{t("signin")}
 			</li>
 			{/* Основное действие шапки — контурная пилюля во всю высоту строки меню */}
 			<li
 				onClick={handleToggleSignup}
-				className="flex cursor-pointer items-center gap-8 rounded-300 border border-[rgba(198,255,77,0.55)] px-20 py-11 text-14 font-semibold text-[#c6ff4d] transition-colors hover:bg-[rgba(198,255,77,0.1)] sm:text-16 lg:py-12 lg:text-14 lg:tracking-[0.2px]">
+				className="flex cursor-pointer items-center gap-8 rounded-300 border border-[rgba(124,147,255,0.55)] px-20 py-11 text-14 font-semibold text-[#7c93ff] transition-colors hover:bg-[rgba(124,147,255,0.1)] sm:text-16 lg:py-12 lg:text-14 lg:tracking-[0.2px]">
 				{t("signup")}
 				<TbArrowUpRight size={16} />
 			</li>

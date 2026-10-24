@@ -20,7 +20,7 @@ function VatLines({ title, lines, fmt }: { title: string; lines: VatLine[]; fmt:
 	const t = useTranslations("finance");
 	return (
 		<section className="fs-card overflow-x-auto">
-			<h3 className="px-16 pt-14 text-14 font-semibold text-[#f1f4ee]">{title}</h3>
+			<h3 className="px-16 pt-14 text-14 font-semibold text-[#edf2ff]">{title}</h3>
 			<table className="fs-table mt-8 min-w-[360px]">
 				<thead>
 					<tr>
@@ -31,7 +31,7 @@ function VatLines({ title, lines, fmt }: { title: string; lines: VatLine[]; fmt:
 				</thead>
 				<tbody>
 					{lines.length === 0 ? (
-						<tr><td className="px-16 text-13 text-[#8c948b]" colSpan={3}>{t("empty")}</td></tr>
+						<tr><td className="px-16 text-13 text-[#9aa7c9]" colSpan={3}>{t("empty")}</td></tr>
 					) : (
 						lines.map((l) => (
 							<tr key={l.rate}>
@@ -60,13 +60,13 @@ function VatView({ period, currency }: { period: PeriodKind; currency: string })
 
 	return (
 		<div className="flex flex-col gap-16">
-			<p className="text-12 text-[#9AA396]">{t("periodLabel")}: {report.from} – {report.to}</p>
+			<p className="text-12 text-[#9AA7C9]">{t("periodLabel")}: {report.from} – {report.to}</p>
 
 			{/* Kleinunternehmer (§ 19 UStG): декларация не подаётся, но цифры не прячем — они всё равно информативны */}
 			{report.exempt && (
 				<div className="flex items-start gap-10 rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
 					<TbInfoCircle size={17} className="mt-[2px] shrink-0 text-[#F4A100]" aria-hidden />
-					<p className="text-13 leading-[1.5] text-[#e6eae2]">{t("vatExempt")}</p>
+					<p className="text-13 leading-[1.5] text-[#c7d3f2]">{t("vatExempt")}</p>
 				</div>
 			)}
 
@@ -75,33 +75,33 @@ function VatView({ period, currency }: { period: PeriodKind; currency: string })
 
 			<section className="fs-card p-16 md:p-20">
 				<div className="flex items-center justify-between gap-16 border-b border-inkLineSoft py-9 text-13">
-					<span className="text-[#8c948b]">{t("vatSalesTax")}</span>
-					<span className="font-medium text-[#f1f4ee]">{fmt(report.salesTax)}</span>
+					<span className="text-[#9aa7c9]">{t("vatSalesTax")}</span>
+					<span className="font-medium text-[#edf2ff]">{fmt(report.salesTax)}</span>
 				</div>
 				<div className="flex items-center justify-between gap-16 border-b border-inkLineSoft py-9 text-13">
-					<span className="text-[#8c948b]">{t("vatInputTax")}</span>
-					<span className="font-medium text-[#f1f4ee]">− {fmt(report.inputTax)}</span>
+					<span className="text-[#9aa7c9]">{t("vatInputTax")}</span>
+					<span className="font-medium text-[#edf2ff]">− {fmt(report.inputTax)}</span>
 				</div>
 				<div className="flex items-center justify-between gap-16 pt-12">
-					<span className="text-15 font-semibold text-[#e6eae2]">{owesTax ? t("vatPayable") : t("vatRefund")}</span>
-					<span className="text-20 font-semibold" style={{ color: owesTax ? "#F4A100" : "#c6ff4d" }}>{fmt(Math.abs(report.payable))}</span>
+					<span className="text-15 font-semibold text-[#c7d3f2]">{owesTax ? t("vatPayable") : t("vatRefund")}</span>
+					<span className="text-20 font-semibold" style={{ color: owesTax ? "#F4A100" : "#7c93ff" }}>{fmt(Math.abs(report.payable))}</span>
 				</div>
 			</section>
 
 			{/* Куда именно вписать каждую цифру в ELSTER: строка бланка (Kennzahl) и поле */}
 			<section className="fs-card p-16 md:p-20">
-				<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("elsterTitle")}</h3>
-				<p className="mt-6 text-12 text-[#8c948b]">{t("elsterHint")}</p>
+				<h3 className="text-14 font-semibold text-[#edf2ff]">{t("elsterTitle")}</h3>
+				<p className="mt-6 text-12 text-[#9aa7c9]">{t("elsterHint")}</p>
 				<ul className="mt-12 flex flex-col gap-10">
 					{report.elster.map((e, i) => (
 						<li key={i} className="flex flex-wrap items-baseline justify-between gap-x-16 gap-y-6 rounded-10 border border-inkLine bg-[rgba(255,255,255,0.02)] px-14 py-10">
 							<div className="min-w-0">
-								<p className="text-13 font-medium text-[#f1f4ee]">{e.label}</p>
-								<p className="mt-4 text-12 text-[#9AA396]">{e.where}</p>
+								<p className="text-13 font-medium text-[#edf2ff]">{e.label}</p>
+								<p className="mt-4 text-12 text-[#9AA7C9]">{e.where}</p>
 							</div>
 							<div className="flex shrink-0 items-baseline gap-10">
 								<span className="fs-chip h-24 px-10 text-11 text-[#cfd4cb]">Kz {e.kennzahl}</span>
-								<span className="text-13 font-medium text-[#f1f4ee]">{fmt(e.value)}</span>
+								<span className="text-13 font-medium text-[#edf2ff]">{fmt(e.value)}</span>
 							</div>
 						</li>
 					))}
@@ -135,30 +135,30 @@ function UzVatView({ period, currency }: { period: PeriodKind; currency: string 
 	const owesTax = report.payable >= 0;
 	return (
 		<div className="flex flex-col gap-16">
-			<p className="text-12 text-[#9AA396]">{t("periodLabel")}: {report.from} – {report.to} · {t("uzVatRegime", { regime: t(`uzRegime_${report.regime}` as never) })}</p>
+			<p className="text-12 text-[#9AA7C9]">{t("periodLabel")}: {report.from} – {report.to} · {t("uzVatRegime", { regime: t(`uzRegime_${report.regime}` as never) })}</p>
 			{!report.vatPayer && (
 				<div className="flex items-start gap-10 rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
 					<TbInfoCircle size={17} className="mt-[2px] shrink-0 text-[#F4A100]" aria-hidden />
-					<p className="text-13 leading-[1.5] text-[#e6eae2]">{t("uzWarn_not_vat_payer")}</p>
+					<p className="text-13 leading-[1.5] text-[#c7d3f2]">{t("uzWarn_not_vat_payer")}</p>
 				</div>
 			)}
 			<VatLines title={t("vatSalesTitle")} lines={report.sales} fmt={fmt} />
 			<VatLines title={t("vatInputTitle")} lines={report.inputVat} fmt={fmt} />
 			<section className="fs-card p-16 md:p-20">
 				<div className="flex items-center justify-between gap-16 border-b border-inkLineSoft py-9 text-13">
-					<span className="text-[#8c948b]">{t("vatSalesTax")}</span>
-					<span className="font-medium text-[#f1f4ee]">{fmt(report.salesTax)}</span>
+					<span className="text-[#9aa7c9]">{t("vatSalesTax")}</span>
+					<span className="font-medium text-[#edf2ff]">{fmt(report.salesTax)}</span>
 				</div>
 				<div className="flex items-center justify-between gap-16 border-b border-inkLineSoft py-9 text-13">
-					<span className="text-[#8c948b]">{t("vatInputTax")}</span>
-					<span className="font-medium text-[#f1f4ee]">− {fmt(report.inputTax)}</span>
+					<span className="text-[#9aa7c9]">{t("vatInputTax")}</span>
+					<span className="font-medium text-[#edf2ff]">− {fmt(report.inputTax)}</span>
 				</div>
 				{!report.inputCreditAllowed && <p className="mt-8 text-12 text-[#F4A100]">{t("uzVatNoCredit")}</p>}
 				<div className="flex items-center justify-between gap-16 pt-12">
-					<span className="text-15 font-semibold text-[#e6eae2]">{owesTax ? t("vatPayable") : t("vatRefund")}</span>
-					<span className="text-20 font-semibold" style={{ color: owesTax ? "#F4A100" : "#c6ff4d" }}>{fmt(Math.abs(report.payable))}</span>
+					<span className="text-15 font-semibold text-[#c7d3f2]">{owesTax ? t("vatPayable") : t("vatRefund")}</span>
+					<span className="text-20 font-semibold" style={{ color: owesTax ? "#F4A100" : "#7c93ff" }}>{fmt(Math.abs(report.payable))}</span>
 				</div>
-				<p className="mt-10 text-11 text-[#9AA396]">{t("uzVatPrepared")}</p>
+				<p className="mt-10 text-11 text-[#9AA7C9]">{t("uzVatPrepared")}</p>
 			</section>
 			{report.warnings.length > 0 && (
 				<div className="rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
@@ -177,22 +177,22 @@ function AmountList({ title, rows, total, totalLabel, fmt }: { title: string; ro
 	const t = useTranslations("finance");
 	return (
 		<section className="fs-card p-16 md:p-20">
-			<h3 className="text-14 font-semibold text-[#f1f4ee]">{title}</h3>
+			<h3 className="text-14 font-semibold text-[#edf2ff]">{title}</h3>
 			{rows.length === 0 ? (
-				<p className="mt-10 text-13 text-[#8c948b]">{t("empty")}</p>
+				<p className="mt-10 text-13 text-[#9aa7c9]">{t("empty")}</p>
 			) : (
 				<ul className="mt-10 flex flex-col">
 					{rows.map((r) => (
 						<li key={r.label} className="flex items-start justify-between gap-16 border-b border-inkLineSoft py-9 text-13 last:border-b-0">
 							<span className="min-w-0 text-[#cfd4cb]">{r.label}</span>
-							<span className="shrink-0 font-medium text-[#f1f4ee]">{fmt(r.amount)}</span>
+							<span className="shrink-0 font-medium text-[#edf2ff]">{fmt(r.amount)}</span>
 						</li>
 					))}
 				</ul>
 			)}
 			<div className="mt-10 flex items-center justify-between gap-16 border-t border-inkLine pt-10 text-13">
-				<span className="font-semibold text-[#e6eae2]">{totalLabel}</span>
-				<span className="font-semibold text-[#f1f4ee]">{fmt(total)}</span>
+				<span className="font-semibold text-[#c7d3f2]">{totalLabel}</span>
+				<span className="font-semibold text-[#edf2ff]">{fmt(total)}</span>
 			</div>
 		</section>
 	);
@@ -208,15 +208,15 @@ function EurView({ period, currency }: { period: PeriodKind; currency: string })
 
 	return (
 		<div className="flex flex-col gap-16">
-			<p className="text-12 text-[#9AA396]">{t("periodLabel")}: {report.from} – {report.to}</p>
+			<p className="text-12 text-[#9AA7C9]">{t("periodLabel")}: {report.from} – {report.to}</p>
 			<div className="grid grid-cols-1 gap-16 lg:grid-cols-2">
 				<AmountList title={t("eurIncome")} rows={report.income} total={report.incomeTotal} totalLabel={t("total")} fmt={fmt} />
 				<AmountList title={t("eurExpenses")} rows={report.expenses} total={report.expenseTotal} totalLabel={t("total")} fmt={fmt} />
 			</div>
 			<section className="fs-card p-16 md:p-20">
 				<div className="flex items-center justify-between gap-16">
-					<span className="text-15 font-semibold text-[#e6eae2]">{report.profit >= 0 ? t("kpiProfit") : t("lossLabel")}</span>
-					<span className="text-24 font-semibold" style={{ color: report.profit >= 0 ? "#c6ff4d" : "#eb5757" }}>{fmt(report.profit)}</span>
+					<span className="text-15 font-semibold text-[#c7d3f2]">{report.profit >= 0 ? t("kpiProfit") : t("lossLabel")}</span>
+					<span className="text-24 font-semibold" style={{ color: report.profit >= 0 ? "#7c93ff" : "#eb5757" }}>{fmt(report.profit)}</span>
 				</div>
 			</section>
 		</div>
@@ -238,7 +238,7 @@ function UaVatView({ period }: { period: PeriodKind }) {
 
 	const table = (title: string, rows: VatRegister["issued"]) => (
 		<section className="fs-card overflow-x-auto">
-			<h3 className="px-16 pt-14 text-14 font-semibold text-[#f1f4ee]">{title}</h3>
+			<h3 className="px-16 pt-14 text-14 font-semibold text-[#edf2ff]">{title}</h3>
 			<table className="fs-table mt-8 min-w-[560px]">
 				<thead>
 					<tr>
@@ -251,7 +251,7 @@ function UaVatView({ period }: { period: PeriodKind }) {
 				</thead>
 				<tbody>
 					{rows.length === 0 ? (
-						<tr><td className="px-16 text-13 text-[#8c948b]" colSpan={5}>{t("empty")}</td></tr>
+						<tr><td className="px-16 text-13 text-[#9aa7c9]" colSpan={5}>{t("empty")}</td></tr>
 					) : rows.map((r, i) => (
 						<tr key={`${r.number}-${i}`}>
 							<td className="px-16 text-13">{r.date}</td>
@@ -268,30 +268,30 @@ function UaVatView({ period }: { period: PeriodKind }) {
 
 	return (
 		<div className="flex flex-col gap-16">
-			<p className="text-12 text-[#9AA396]">{t("periodLabel")}: {report.from} – {report.to}</p>
+			<p className="text-12 text-[#9AA7C9]">{t("periodLabel")}: {report.from} – {report.to}</p>
 			<div className="grid grid-cols-1 gap-16 md:grid-cols-3">
 				<section className="fs-card p-16">
-					<p className="text-12 text-[#8c948b]">{t("uaIssuedTax")}</p>
-					<p className="mt-6 text-16 font-semibold text-[#f1f4ee]">{fmt(report.issuedTax)}</p>
+					<p className="text-12 text-[#9aa7c9]">{t("uaIssuedTax")}</p>
+					<p className="mt-6 text-16 font-semibold text-[#edf2ff]">{fmt(report.issuedTax)}</p>
 				</section>
 				<section className="fs-card p-16">
-					<p className="text-12 text-[#8c948b]">{t("uaReceivedTax")}</p>
-					<p className="mt-6 text-16 font-semibold text-[#f1f4ee]">{fmt(report.receivedTax)}</p>
+					<p className="text-12 text-[#9aa7c9]">{t("uaReceivedTax")}</p>
+					<p className="mt-6 text-16 font-semibold text-[#edf2ff]">{fmt(report.receivedTax)}</p>
 				</section>
 				<section className="fs-card p-16">
-					<p className="text-12 text-[#8c948b]">{report.payable >= 0 ? t("uaVatPayable") : t("uaVatRefund")}</p>
-					<p className="mt-6 text-16 font-semibold" style={{ color: report.payable >= 0 ? "#f1f4ee" : "#2DDEB6" }}>{fmt(Math.abs(report.payable))}</p>
+					<p className="text-12 text-[#9aa7c9]">{report.payable >= 0 ? t("uaVatPayable") : t("uaVatRefund")}</p>
+					<p className="mt-6 text-16 font-semibold" style={{ color: report.payable >= 0 ? "#edf2ff" : "#2DDEB6" }}>{fmt(Math.abs(report.payable))}</p>
 				</section>
 			</div>
 			{table(t("uaIssued"), report.issued)}
 			{table(t("uaReceived"), report.received)}
-			<p className="text-12 text-[#9AA396]">{t("uaTurnover12m")}: {fmt(report.turnover12m)} · {t("uaLimitLeft")}: {fmt(report.limitLeft)}</p>
+			<p className="text-12 text-[#9AA7C9]">{t("uaTurnover12m")}: {fmt(report.turnover12m)} · {t("uaLimitLeft")}: {fmt(report.limitLeft)}</p>
 			{/* Подача в ДПС идёт вне CRM (нужен КЕП); отсюда — файл для кабинета.
 			    Период выгрузки — тот же, что выбран на экране (from/to), иначе файл не совпадал с таблицей */}
 			<div className="flex flex-wrap items-center gap-10">
 				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=vat-register&from=${report.from}&to=${report.to}&format=csv`, `vat-register-${report.from}_${report.to}.csv`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportCsv")}</button>
 				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=vat-register&from=${report.from}&to=${report.to}&format=xml`, `vat-register-${report.from}_${report.to}.xml`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportXml")}</button>
-				<span className="text-11 text-[#9AA396]">{t("uaExportHint")}</span>
+				<span className="text-11 text-[#9AA7C9]">{t("uaExportHint")}</span>
 			</div>
 			{report.warnings.length > 0 && (
 				<div className="rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
@@ -319,18 +319,18 @@ function UaIncomeView({ currency }: { currency: string }) {
 
 	return (
 		<div className="flex flex-col gap-16">
-			<p className="text-12 text-[#9AA396]">{t("uaYearLabel")}: {report.year}</p>
+			<p className="text-12 text-[#9AA7C9]">{t("uaYearLabel")}: {report.year}</p>
 			<div className="grid grid-cols-1 gap-16 md:grid-cols-2 xl:grid-cols-4">
 				{[["uaIncome", report.income], ["uaSingleTax", report.singleTax], ["uaMilitary", report.military], ["uaEsv", report.esv]].map(([key, value]) => (
 					<section key={key as string} className="fs-card p-16">
-						<p className="text-12 text-[#8c948b]">{t(key as string)}</p>
-						<p className="mt-6 text-16 font-semibold text-[#f1f4ee]">{fmt(value as number)}</p>
+						<p className="text-12 text-[#9aa7c9]">{t(key as string)}</p>
+						<p className="mt-6 text-16 font-semibold text-[#edf2ff]">{fmt(value as number)}</p>
 					</section>
 				))}
 			</div>
 			{report.quarters.map((q) => (
 				<section key={q.quarter} className="fs-card overflow-x-auto">
-					<h3 className="px-16 pt-14 text-14 font-semibold text-[#f1f4ee]">{t("uaQuarter", { n: q.quarter })}</h3>
+					<h3 className="px-16 pt-14 text-14 font-semibold text-[#edf2ff]">{t("uaQuarter", { n: q.quarter })}</h3>
 					<table className="fs-table mt-8 min-w-[520px]">
 						<thead>
 							<tr>
@@ -342,7 +342,7 @@ function UaIncomeView({ currency }: { currency: string }) {
 						</thead>
 						<tbody>
 							{q.rows.length === 0 ? (
-								<tr><td className="px-16 text-13 text-[#8c948b]" colSpan={4}>{t("empty")}</td></tr>
+								<tr><td className="px-16 text-13 text-[#9aa7c9]" colSpan={4}>{t("empty")}</td></tr>
 							) : q.rows.map((r, i) => (
 								<tr key={i}>
 									<td className="px-16 text-13">{r.date}</td>
@@ -353,18 +353,18 @@ function UaIncomeView({ currency }: { currency: string }) {
 							))}
 						</tbody>
 					</table>
-					<div className="flex flex-wrap gap-x-20 gap-y-6 px-16 py-12 text-12 text-[#8c948b]">
-						<span>{t("uaQuarterIncome")}: <b className="text-[#f1f4ee]">{fmt(q.income)}</b></span>
-						<span>{t("uaSingleTax")}: <b className="text-[#f1f4ee]">{fmt(q.singleTax)}</b></span>
-						<span>{t("uaMilitary")}: <b className="text-[#f1f4ee]">{fmt(q.military)}</b></span>
-						<span>{t("uaEsv")}: <b className="text-[#f1f4ee]">{fmt(q.esv)}</b></span>
+					<div className="flex flex-wrap gap-x-20 gap-y-6 px-16 py-12 text-12 text-[#9aa7c9]">
+						<span>{t("uaQuarterIncome")}: <b className="text-[#edf2ff]">{fmt(q.income)}</b></span>
+						<span>{t("uaSingleTax")}: <b className="text-[#edf2ff]">{fmt(q.singleTax)}</b></span>
+						<span>{t("uaMilitary")}: <b className="text-[#edf2ff]">{fmt(q.military)}</b></span>
+						<span>{t("uaEsv")}: <b className="text-[#edf2ff]">{fmt(q.esv)}</b></span>
 					</div>
 				</section>
 			))}
 			<section className="fs-card p-16 md:p-20">
 				<div className="flex items-center justify-between gap-16">
-					<span className="text-15 font-semibold text-[#e6eae2]">{t("uaTotalToPay")}</span>
-					<span className="text-24 font-semibold text-[#c6ff4d]">{fmt(report.total)}</span>
+					<span className="text-15 font-semibold text-[#c7d3f2]">{t("uaTotalToPay")}</span>
+					<span className="text-24 font-semibold text-[#7c93ff]">{fmt(report.total)}</span>
 				</div>
 			</section>
 			{/* Календарь платежей: когда и сколько платить — ЄСВ, єдиний податок, военный сбор, ПДВ */}
@@ -373,9 +373,9 @@ function UaIncomeView({ currency }: { currency: string }) {
 			<div className="flex flex-wrap items-center gap-10">
 				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=income-book&year=${report.year}&format=csv`, `income-book-${report.year}.csv`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportCsv")}</button>
 				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=income-book&year=${report.year}&format=xml`, `income-book-${report.year}.xml`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportXml")}</button>
-				<span className="text-11 text-[#9AA396]">{t("uaExportHint")}</span>
+				<span className="text-11 text-[#9AA7C9]">{t("uaExportHint")}</span>
 			</div>
-			<p className="text-11 text-[#9AA396]">{report.rules.notice} · {report.rules.source}</p>
+			<p className="text-11 text-[#9AA7C9]">{report.rules.notice} · {report.rules.source}</p>
 			{report.warnings.length > 0 && (
 				<div className="rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
 					<p className="flex items-center gap-8 text-12 font-semibold text-[#F4A100]"><TbAlertTriangle size={15} aria-hidden /> {t("warningTitle")}</p>
@@ -412,19 +412,19 @@ function UaProfitView({ currency, year }: { currency: string; year: string }) {
 
 	return (
 		<div className="flex flex-col gap-16">
-			<p className="text-12 text-[#9AA396]">{t("uaYearLabel")}: {report.year}</p>
+			<p className="text-12 text-[#9AA7C9]">{t("uaYearLabel")}: {report.year}</p>
 			<div className="grid grid-cols-1 gap-16 md:grid-cols-2 xl:grid-cols-4">
 				{[["uaIncome", report.income], ["uaExpensesLabel", report.expenses], ["uaDepreciationLabel", report.depreciation], ["uaProfitLabel", report.profit]].map(([key, value]) => (
 					<section key={key as string} className="fs-card p-16">
-						<p className="text-12 text-[#8c948b]">{t(key as string)}</p>
-						<p className="mt-6 text-16 font-semibold text-[#f1f4ee]">{fmt(value as number)}</p>
+						<p className="text-12 text-[#9aa7c9]">{t(key as string)}</p>
+						<p className="mt-6 text-16 font-semibold text-[#edf2ff]">{fmt(value as number)}</p>
 					</section>
 				))}
 			</div>
 			<section className="fs-card p-16 md:p-20">
 				<div className="flex items-center justify-between gap-16">
-					<span className="text-15 font-semibold text-[#e6eae2]">{t("uaProfitTax", { rate: report.rate })}</span>
-					<span className="text-24 font-semibold text-[#c6ff4d]">{fmt(report.tax)}</span>
+					<span className="text-15 font-semibold text-[#c7d3f2]">{t("uaProfitTax", { rate: report.rate })}</span>
+					<span className="text-24 font-semibold text-[#7c93ff]">{fmt(report.tax)}</span>
 				</div>
 			</section>
 			{/* Календарь платежей и на этом экране: ТОВ на общей системе платит ещё и авансами */}
@@ -432,7 +432,7 @@ function UaProfitView({ currency, year }: { currency: string; year: string }) {
 			<div className="flex flex-wrap items-center gap-10">
 				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=profit&year=${report.year}&format=csv`, `profit-${report.year}.csv`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportCsv")}</button>
 				<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=profit&year=${report.year}&format=xml`, `profit-${report.year}.xml`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-34">{t("uaExportXml")}</button>
-				<span className="text-11 text-[#9AA396]">{t("uaExportHint")}</span>
+				<span className="text-11 text-[#9AA7C9]">{t("uaExportHint")}</span>
 			</div>
 			{report.warnings.length > 0 && (
 				<div className="rounded-10 border border-[rgba(244,161,0,0.35)] bg-[rgba(244,161,0,0.08)] p-14">
@@ -441,7 +441,7 @@ function UaProfitView({ currency, year }: { currency: string; year: string }) {
 					</ul>
 				</div>
 			)}
-			<p className="text-11 text-[#9AA396]">{report.rules.notice} · {report.rules.source}</p>
+			<p className="text-11 text-[#9AA7C9]">{report.rules.notice} · {report.rules.source}</p>
 		</div>
 	);
 }
@@ -466,10 +466,10 @@ function PaymentCalendar({ year, currency }: { year: string; currency: string })
 	return (
 		<section className="fs-card overflow-x-auto">
 			<div className="flex flex-wrap items-center justify-between gap-10 px-16 pt-14">
-				<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("uaCalendarTitle", { year: state.year })}</h3>
+				<h3 className="text-14 font-semibold text-[#edf2ff]">{t("uaCalendarTitle", { year: state.year })}</h3>
 				<div className="flex flex-wrap items-center gap-10">
 					{state.summary.next && (
-						<span className="text-12 text-[#8c948b]">{t("uaCalendarNext", { date: state.summary.next.date, title: state.summary.next.title, amount: money(state.summary.next.amount, currency, locale) })}</span>
+						<span className="text-12 text-[#9aa7c9]">{t("uaCalendarNext", { date: state.summary.next.date, title: state.summary.next.title, amount: money(state.summary.next.amount, currency, locale) })}</span>
 					)}
 					{/* Тот же календарь файлом — напоминание бухгалтеру, что и когда платить */}
 					<button type="button" onClick={() => void downloadAuthed(`/api/finance/ua/export?kind=calendar&year=${state.year}&format=csv`, `payment-calendar-${state.year}.csv`, t("pdfFailed"))} className="fs-btn fs-btn-ghost h-30 text-12">
@@ -489,13 +489,13 @@ function PaymentCalendar({ year, currency }: { year: string; currency: string })
 					{state.entries.map((e, i) => (
 						<tr key={i}>
 							<td className="px-16 text-13">{e.date}</td>
-							<td className="px-10 text-13 fs-wrap">{e.title}<span className="ml-6 text-11 text-[#8c948b]">{e.note}</span></td>
+							<td className="px-10 text-13 fs-wrap">{e.title}<span className="ml-6 text-11 text-[#9aa7c9]">{e.note}</span></td>
 							<td className="px-10 text-right text-13">{e.amount > 0 ? fmt(e.amount) : "—"}</td>
 						</tr>
 					))}
 				</tbody>
 			</table>
-			<p className="px-16 py-12 text-11 text-[#9AA396]">{state.summary.notice}</p>
+			<p className="px-16 py-12 text-11 text-[#9AA7C9]">{state.summary.notice}</p>
 		</section>
 	);
 }
@@ -514,7 +514,7 @@ export default function Taxes({ kind }: { kind: "vat" | "eur" }) {
 		return (
 			<div>
 				<div className="mb-16 flex flex-wrap items-center justify-between gap-x-20 gap-y-10">
-					<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("uzVatTitle")}</h2>
+					<h2 className="text-16 font-semibold text-[#edf2ff]">{t("uzVatTitle")}</h2>
 					<PeriodSwitch value={period} onChange={setPeriod} />
 				</div>
 				<UzVatView period={period} currency={currency} />
@@ -526,7 +526,7 @@ export default function Taxes({ kind }: { kind: "vat" | "eur" }) {
 	return (
 		<div>
 			<div className="mb-16 flex flex-wrap items-center justify-between gap-x-20 gap-y-10">
-				<h2 className="text-16 font-semibold text-[#f1f4ee]">
+				<h2 className="text-16 font-semibold text-[#edf2ff]">
 					{kind === "vat" ? (ua ? t("uaVatTitle") : t("vatTitle")) : ua ? t("uaIncomeTitle") : t("eurTitle")}
 				</h2>
 				{!(ua && kind === "eur") && <PeriodSwitch value={period} onChange={setPeriod} />}

@@ -48,7 +48,7 @@ export default function Notifications() {
 			<div className="flex flex-col gap-20 lg:flex-row lg:gap-20">
 				<SettingsTabs className="shrink-0 md:self-start" />
 				<section className="w-full lg:w-[496px]">
-					<h2 className="mb-10 text-15 font-semibold text-[#f1f4ee]">{t("notifTitle")}</h2>
+					<h2 className="mb-10 text-15 font-semibold text-[#edf2ff]">{t("notifTitle")}</h2>
 
 					<div className={`${row} min-h-[44px]`}>
 						<span className={label}>{t("notifBrowser")}</span>
@@ -63,11 +63,11 @@ export default function Notifications() {
 					<div className={`${row} mt-10 items-end`}>
 						<div className="flex gap-16 md:gap-24">
 							<label>
-								<span className="mb-6 block text-12 text-[#8c948b]">{t("from")}</span>
+								<span className="mb-6 block text-12 text-[#9aa7c9]">{t("from")}</span>
 								<input type="time" value={prefs.muteFrom} onChange={(e) => patch({ muteFrom: e.target.value })} className={timeClass} />
 							</label>
 							<label>
-								<span className="mb-6 block text-12 text-[#8c948b]">{t("to")}</span>
+								<span className="mb-6 block text-12 text-[#9aa7c9]">{t("to")}</span>
 								<input type="time" value={prefs.muteTo} onChange={(e) => patch({ muteTo: e.target.value })} className={timeClass} />
 							</label>
 						</div>

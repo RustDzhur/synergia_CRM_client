@@ -204,14 +204,14 @@ export default function DealsBoard({ search }: Props) {
     if (isLoading && stages.length === 0) {
         return (
             <div className="flex justify-center py-60">
-                <Loader color="#c6ff4d" width="50" height="10" radius="9" />
+                <Loader color="#7c93ff" width="50" height="10" radius="9" />
             </div>
         );
     }
 
     const tab = (active: boolean) =>
         `px-14 py-8 text-13 font-medium capitalize border-b-2 transition-colors duration-200 ${
-            active ? "border-[#c6ff4d] text-[#c6ff4d]" : "border-transparent text-[#8c948b] hover:text-[#f1f4ee]"
+            active ? "border-[#7c93ff] text-[#7c93ff]" : "border-transparent text-[#9aa7c9] hover:text-[#edf2ff]"
         }`;
 
     return (
@@ -229,18 +229,18 @@ export default function DealsBoard({ search }: Props) {
 
                 <div className="flex items-center gap-12">
                     <div className="flex items-center gap-8">
-                        <span className="text-12 text-[#8c948b] capitalize">{t("inbound")}</span>
+                        <span className="text-12 text-[#9aa7c9] capitalize">{t("inbound")}</span>
                         <span className="fs-chip h-22 px-8 text-10">{inboundCount}</span>
                     </div>
                     <div className="flex items-center gap-8" title={t("dealWon")}>
-                        <span className="flex items-center gap-4 text-12 text-[#8c948b] capitalize">
-                            <TbTrophy size={13} className="text-[#c6ff4d]" />
+                        <span className="flex items-center gap-4 text-12 text-[#9aa7c9] capitalize">
+                            <TbTrophy size={13} className="text-[#7c93ff]" />
                             {t("dealsWon")}
                         </span>
                         <span className="fs-chip h-22 px-8 text-10">{wonCount}</span>
                     </div>
                     <div className="flex items-center gap-8">
-                        <span className="text-12 text-[#8c948b] capitalize">{t("planned")}</span>
+                        <span className="text-12 text-[#9aa7c9] capitalize">{t("planned")}</span>
                         <span className="fs-chip h-22 px-8 text-10">{plannedCount}</span>
                     </div>
                     <div ref={moreRef} className="relative">
@@ -249,11 +249,11 @@ export default function DealsBoard({ search }: Props) {
                             aria-expanded={moreOpen}
                             onClick={() => setMoreOpen(!moreOpen)}
                         >
-                            <span className="text-12 text-[#8c948b] capitalize">{t("more")}</span>
+                            <span className="text-12 text-[#9aa7c9] capitalize">{t("more")}</span>
                             <span className="fs-chip h-22 px-8 text-10">{moreCount}</span>
                             <TbChevronDown
                                 size={15}
-                                className={`text-[#8c948b] transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`}
+                                className={`text-[#9aa7c9] transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`}
                             />
                         </button>
                         <Dropdown open={moreOpen} className="right-0 top-full mt-6 min-w-[180px]">
@@ -261,7 +261,7 @@ export default function DealsBoard({ search }: Props) {
                                 {sortedStages.slice(2).map((s) => (
                                     <div key={s._id} className="fs-popover-row flex items-center justify-between gap-12 rounded-8 px-10 py-6 text-12">
                                         <span className="truncate">{s.name}</span>
-                                        <span className="shrink-0 text-[#8c948b]">{dealsForStage(s._id).length}</span>
+                                        <span className="shrink-0 text-[#9aa7c9]">{dealsForStage(s._id).length}</span>
                                     </div>
                                 ))}
                             </div>
@@ -269,7 +269,7 @@ export default function DealsBoard({ search }: Props) {
                     </div>
                 </div>
 
-                <TbDots size={18} className="text-[#9AA396]" />
+                <TbDots size={18} className="text-[#9AA7C9]" />
             </div>
 
             {view === "kanban" ? (
@@ -293,7 +293,7 @@ export default function DealsBoard({ search }: Props) {
                                         className={`pointer-events-none absolute z-10 flex flex-col items-center justify-center gap-8 rounded-12 border border-dashed text-center transition-colors duration-150 ${
                                             hotZone === "trash"
                                                 ? "border-[#EB5757] bg-[rgba(235,87,87,0.22)] text-[#EB5757]"
-                                                : "border-[rgba(235,87,87,0.45)] bg-[rgba(20,24,20,0.85)] text-[#8c948b]"
+                                                : "border-[rgba(235,87,87,0.45)] bg-[rgba(20,24,20,0.85)] text-[#9aa7c9]"
                                         }`}
                                     >
                                         <TbTrash size={22} />
@@ -328,13 +328,13 @@ export default function DealsBoard({ search }: Props) {
                                         style={{ left: zoneBox.wonLeft, top: zoneBox.wonTop, width: zoneBox.wonWidth, height: zoneBox.wonHeight }}
                                         className={`pointer-events-none absolute z-10 flex flex-col items-center justify-center gap-8 rounded-12 border border-dashed px-10 text-center transition-colors duration-150 ${
                                             hotZone === "won"
-                                                ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.20)] text-[#c6ff4d]"
-                                                : "border-[rgba(198,255,77,0.45)] bg-[rgba(20,24,20,0.85)] text-[#8c948b]"
+                                                ? "border-[#7c93ff] bg-[rgba(124,147,255,0.20)] text-[#7c93ff]"
+                                                : "border-[rgba(124,147,255,0.45)] bg-[rgba(20,24,20,0.85)] text-[#9aa7c9]"
                                         }`}
                                     >
                                         <TbTrophy size={22} />
                                         <span className="text-11 font-medium leading-tight">{t("dropToWin")}</span>
-                                        <span className="text-10 leading-tight text-[#8c948b]">{t("dropToWinHint")}</span>
+                                        <span className="text-10 leading-tight text-[#9aa7c9]">{t("dropToWinHint")}</span>
                                     </div>
                                 )}
 
@@ -355,14 +355,14 @@ export default function DealsBoard({ search }: Props) {
                                                     onKeyDown={(e) => e.key === "Enter" && saveNewStage()}
                                                 />
                                                 <div className="flex gap-10 text-13">
-                                                    <button className="text-[#c6ff4d] transition-opacity hover:opacity-80" onClick={saveNewStage}>{t("save")}</button>
-                                                    <button className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]" onClick={() => setIsAddingStage(false)}>{t("cancel")}</button>
+                                                    <button className="text-[#7c93ff] transition-opacity hover:opacity-80" onClick={saveNewStage}>{t("save")}</button>
+                                                    <button className="text-[#9aa7c9] transition-colors hover:text-[#edf2ff]" onClick={() => setIsAddingStage(false)}>{t("cancel")}</button>
                                                 </div>
                                             </div>
                                         </Collapse>
                                         {!isAddingStage && (
                                             <button
-                                                className="animate-fade-in flex h-[54px] w-full items-center justify-center gap-6 rounded-10 border border-dashed border-[rgba(255,255,255,0.14)] text-13 text-[#8c948b] transition-colors duration-200 hover:border-[rgba(198,255,77,0.45)] hover:text-[#c6ff4d]"
+                                                className="animate-fade-in flex h-[54px] w-full items-center justify-center gap-6 rounded-10 border border-dashed border-[rgba(255,255,255,0.14)] text-13 text-[#9aa7c9] transition-colors duration-200 hover:border-[rgba(124,147,255,0.45)] hover:text-[#7c93ff]"
                                                 onClick={() => setIsAddingStage(true)}
                                             >
                                                 + {t("addStage")}

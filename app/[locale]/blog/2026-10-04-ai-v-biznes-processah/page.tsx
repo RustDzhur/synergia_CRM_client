@@ -136,59 +136,59 @@ export default function Page({ params }: { params: { locale: string } }) {
 					priority
 				/>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Что агент видит в CRM</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Что агент видит в CRM</h2>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Агент читает те же данные, что и сотрудник: доску сделок, контакты и компании, почту и беседы в
 					мессенджерах. Набор инструментов привязан к разделам CRM: если у пользователя нет доступа к разделу,
 					соответствующий инструмент ему не выдаётся.
 				</p>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Агент предлагает, а выполняет сервер</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Агент предлагает, а выполняет сервер</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Запись не срабатывает «молча»: агент готовит действие — перенос сделки, задачу, письмо, черновик
 					договора — и показывает карточку подтверждения. Выполняет его сервер по адресу{" "}
-					<code className="text-14 text-[#f1f4ee]">api/ai/actions</code>, от имени пользователя и с теми же
+					<code className="text-14 text-[#edf2ff]">api/ai/actions</code>, от имени пользователя и с теми же
 					проверками, что и обычный запрос к CRM. Исключение — включённый режим без подтверждения; удаление
 					подтверждается всегда.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">От заявки до сделки</h2>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Стадии и колонки</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">От заявки до сделки</h2>
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Стадии и колонки</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Доска сделок создаётся с шестью колонками: New Lead, Contacted, Qualified, Proposal, Negotiation, Won.
 					Агент может переставить карточку инструментом{" "}
-					<code className="text-14 text-[#f1f4ee]">update_deal_stage</code> — после подтверждения и с учётом
+					<code className="text-14 text-[#edf2ff]">update_deal_stage</code> — после подтверждения и с учётом
 					прав роли.
 				</p>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Каналы и лиды</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Каналы и лиды</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Заявки приходят из разных каналов: веб-чат, мессенджеры, почта. У беседы есть поле канала, у сделки —
-					источник и UTM-метки. Инструмент <code className="text-14 text-[#f1f4ee]">analyze_leads</code>{" "}
+					источник и UTM-метки. Инструмент <code className="text-14 text-[#edf2ff]">analyze_leads</code>{" "}
 					разбирает то, что уже лежит в сделках, контактах, компаниях, почте и беседах;{" "}
-					<code className="text-14 text-[#f1f4ee]">lead_log</code> показывает, что отсеяно и почему;{" "}
-					<code className="text-14 text-[#f1f4ee]">restore_lead</code> возвращает ошибочно отсеянного клиента,
-					а <code className="text-14 text-[#f1f4ee]">set_lead_rules</code> сохраняет ваше определение клиента.
+					<code className="text-14 text-[#edf2ff]">lead_log</code> показывает, что отсеяно и почему;{" "}
+					<code className="text-14 text-[#edf2ff]">restore_lead</code> возвращает ошибочно отсеянного клиента,
+					а <code className="text-14 text-[#edf2ff]">set_lead_rules</code> сохраняет ваше определение клиента.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Автоматизация, задачи и календарь</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
-					Движок автоматизации в разделе <code className="text-14 text-[#f1f4ee]">crm/automation</code> слушает
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Автоматизация, задачи и календарь</h2>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
+					Движок автоматизации в разделе <code className="text-14 text-[#edf2ff]">crm/automation</code> слушает
 					события сделок — создание и смену стадии — и рассылает уведомления команде со ссылкой на нужный
 					раздел. Агент дополняет её там, где жёсткое правило не сработало: ставит задачу с дедлайном в{" "}
-					<code className="text-14 text-[#f1f4ee]">crm/tasks</code>, пишет заметку в контакт, готовит письмо.
+					<code className="text-14 text-[#edf2ff]">crm/tasks</code>, пишет заметку в контакт, готовит письмо.
 					Календарь фирмы синхронизируется с Google Calendar и iCloud.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Договоры, журнал и лимиты</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Договоры, журнал и лимиты</h2>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Черновик договора агент собирает сам, PDF формируется в разделе договоров, а подпись остаётся за
 					человеком. Каждое чтение, предложение и выполненное действие попадает в журнал ИИ: последние 100
 					записей доступны владельцу и администратору в{" "}
-					<code className="text-14 text-[#f1f4ee]">api/ai/log</code>. Расход ИИ ограничен дневным лимитом
+					<code className="text-14 text-[#edf2ff]">api/ai/log</code>. Расход ИИ ограничен дневным лимитом
 					тарифа и общий для чата и распознавания чеков.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Итог</h2>
-				<p className="text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Итог</h2>
+				<p className="text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Агент берёт на себя рутину — разбор входящих, перенос карточек, черновики и напоминания, — а решение
 					остаётся за сотрудником. Посмотреть остальные функции платформы можно в разделе{" "}
 					<Link href={sitePath(locale, "/features")} className="text-authBtn">

@@ -137,58 +137,58 @@ export default function Page({ params }: { params: { locale: string } }) {
 					priority
 				/>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Один агент — все каналы</h2>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Веб-чат на сайте</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Один агент — все каналы</h2>
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Веб-чат на сайте</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Публичная точка входа — виджет веб-чата (
-					<code className="text-14 text-[#f1f4ee]">api/webchat/[token]</code>). Он отдаёт посетителю
+					<code className="text-14 text-[#edf2ff]">api/webchat/[token]</code>). Он отдаёт посетителю
 					приветствие, цвет, часы работы и быстрые вопросы, а ссылки показывает только на те каналы, которые
 					действительно подключены — Telegram, Viber или WhatsApp. Вести человека в никуда платформа не даёт.
 				</p>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Telegram и звонки</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Telegram и звонки</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Отдельный бот Айрис принимает текст и голосовые сообщения: сказанное распознаётся, разбирается на
 					поручения и выполняется в CRM с правами того, кто подключил бота. Изменения применяются сразу — кроме
 					удаления и случаев, когда агент читал чужой текст: тогда он переспрашивает. Звонки в браузере и их
 					история собираются в разделе{" "}
-					<code className="text-14 text-[#f1f4ee]">crm/collaboration/chat-and-calls</code> по всем
+					<code className="text-14 text-[#edf2ff]">crm/collaboration/chat-and-calls</code> по всем
 					провайдерам.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Что происходит с обращением</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Что происходит с обращением</h2>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Сообщение попадает в единый инбокс. Агент отвечает на типовые вопросы, определяет тему и приоритет, а
 					если нужен человек — создаёт задачу в{" "}
-					<code className="text-14 text-[#f1f4ee]">crm/tasks</code>: она сразу появляется в ленте (
-					<code className="text-14 text-[#f1f4ee]">crm/collaboration/feed</code>). Перспективная заявка уходит
+					<code className="text-14 text-[#edf2ff]">crm/tasks</code>: она сразу появляется в ленте (
+					<code className="text-14 text-[#edf2ff]">crm/collaboration/feed</code>). Перспективная заявка уходит
 					в воронку сделок, а календарь фирмы синхронизируется с Google Calendar и iCloud, чтобы встречи не
 					терялись.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Документы и деньги</h2>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Чеки и расходы</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
-					Загруженный чек (<code className="text-14 text-[#f1f4ee]">api/documents/upload</code>) агент
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Документы и деньги</h2>
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Чеки и расходы</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
+					Загруженный чек (<code className="text-14 text-[#edf2ff]">api/documents/upload</code>) агент
 					распознаёт и превращает в черновик расхода (
-					<code className="text-14 text-[#f1f4ee]">api/expenses/extract</code>): он возвращает предложенные
+					<code className="text-14 text-[#edf2ff]">api/expenses/extract</code>): он возвращает предложенные
 					поля, а сам расход не создаёт — цифры проверяет человек.
 				</p>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Договоры, банк и файлы</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Договоры, банк и файлы</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Договор готовится и подписывается в разделе договоров. Выписки подтягиваются из monobank и
-					ПриватБанка (<code className="text-14 text-[#f1f4ee]">api/bank/monobank</code>,{" "}
-					<code className="text-14 text-[#f1f4ee]">api/bank/privatbank</code>): подключение, привязка счёта,
+					ПриватБанка (<code className="text-14 text-[#edf2ff]">api/bank/monobank</code>,{" "}
+					<code className="text-14 text-[#edf2ff]">api/bank/privatbank</code>): подключение, привязка счёта,
 					синхронизация. Документы лежат в онлайн-документах, а файлы можно подключить через Google Drive.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Что агент не делает сам</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Что агент не делает сам</h2>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Финансовые документы он только готовит: подтверждение, подпись и отправку делает человек. Дневной
 					лимит ИИ — общий для чата и распознавания чеков — зависит от тарифа.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Итог</h2>
-				<p className="text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Итог</h2>
+				<p className="text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Клиент получает ответ сразу, а не в рабочие часы, команда — готовую задачу и черновик документа.
 					Агент работает с реальными данными Firmspace: все цифры берутся из вашей CRM. Больше о платформе — в
 					разделе{" "}

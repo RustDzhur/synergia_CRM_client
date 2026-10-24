@@ -25,11 +25,11 @@ export default function FinanceCard() {
 	return (
 		<section className="fs-card p-16 md:p-20">
 			<header className="flex flex-wrap items-center justify-between gap-12">
-				<h2 className="shrink-0 text-14 font-semibold text-[#f1f4ee]">{t("title")}</h2>
-				<Link href={`/${locale}/crm/finance`} className="text-12 font-semibold text-[#c6ff4d] transition-opacity hover:opacity-80">{t("details")}</Link>
+				<h2 className="shrink-0 text-14 font-semibold text-[#edf2ff]">{t("title")}</h2>
+				<Link href={`/${locale}/crm/finance`} className="text-12 font-semibold text-[#7c93ff] transition-opacity hover:opacity-80">{t("details")}</Link>
 			</header>
 			{nothingYet ? (
-				<p className="mt-14 text-13 text-[#8c948b]">{t("dashboardEmpty")}</p>
+				<p className="mt-14 text-13 text-[#9aa7c9]">{t("dashboardEmpty")}</p>
 			) : (
 				<>
 					<div className="mt-14 grid grid-cols-2 gap-8">
@@ -54,10 +54,10 @@ function FinanceBars({ series }: { series: FinanceDashboard["series"] }) {
 	return (
 		<div className="mt-16 border-t border-inkLine pt-14">
 			<PairBars compact data={series.map((s) => ({ label: String(Number(s.month.slice(5))).padStart(2, "0"), a: s.revenue, b: s.expenses, c: s.invoiced ?? 0, titleC: `${t("kpiInvoiced")}: ${s.invoiced ?? 0}`, titleA: `${t("kpiRevenue")}: ${s.revenue}`, titleB: `${t("kpiExpenses")}: ${s.expenses}` }))} />
-			<div className="mt-8 flex gap-20 text-11 text-[#8c948b]">
+			<div className="mt-8 flex gap-20 text-11 text-[#9aa7c9]">
 				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#4d8bff]" />{t("kpiInvoiced")}</span>
-				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#c6ff4d]" />{t("kpiRevenue")}</span>
-				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#8C948B]" />{t("kpiExpenses")}</span>
+				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#7c93ff]" />{t("kpiRevenue")}</span>
+				<span className="flex items-center gap-6"><span className="h-10 w-10 rounded-[3px] bg-[#9AA7C9]" />{t("kpiExpenses")}</span>
 			</div>
 		</div>
 	);

@@ -92,12 +92,12 @@ export default function SignInForm() {
 									placeholder={t("username")}
 									type="email"
 									id="email"
-									className={`pl-50 pr-20 py-14 w-[100%] rounded-8 border bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18 ${fieldState.error ? "border-[#eb5757]" : "border-[rgba(255,255,255,0.14)]"}`}
+									className={`pl-50 pr-20 py-14 w-[100%] rounded-8 border bg-[rgba(255,255,255,0.04)] text-[#edf2ff] placeholder:text-[#9aa7c9] outline-none transition-colors focus:border-[rgba(124,147,255,0.55)] mb-18 ${fieldState.error ? "border-[#eb5757]" : "border-[rgba(255,255,255,0.14)]"}`}
 								/>
 								{fieldState.error?.message && <p role="alert" className="-mt-12 mb-14 pl-4 text-left text-12 text-[#eb5757]">{fieldState.error.message}</p>}
 								<div className="absolute top-17 left-20">
 									<IconContext.Provider
-										value={{ size: "22px", color: "#8c948b" }}>
+										value={{ size: "22px", color: "#9aa7c9" }}>
 										<FaUser />
 									</IconContext.Provider>
 								</div>
@@ -119,12 +119,12 @@ export default function SignInForm() {
 									placeholder={t("password")}
 									type={passwordVisible ? "text" : "password"}
 									id="password"
-									className={`pl-50 pr-50 py-14 w-[100%] rounded-8 border bg-[rgba(255,255,255,0.04)] text-[#f1f4ee] placeholder:text-[#8c948b] outline-none transition-colors focus:border-[rgba(198,255,77,0.55)] mb-18 ${fieldState.error ? "border-[#eb5757]" : "border-[rgba(255,255,255,0.14)]"}`}
+									className={`pl-50 pr-50 py-14 w-[100%] rounded-8 border bg-[rgba(255,255,255,0.04)] text-[#edf2ff] placeholder:text-[#9aa7c9] outline-none transition-colors focus:border-[rgba(124,147,255,0.55)] mb-18 ${fieldState.error ? "border-[#eb5757]" : "border-[rgba(255,255,255,0.14)]"}`}
 								/>
 								{fieldState.error?.message && <p role="alert" className="-mt-12 mb-14 pl-4 text-left text-12 text-[#eb5757]">{fieldState.error.message}</p>}
 								<div className="absolute top-17 left-20">
 									<IconContext.Provider
-										value={{ size: "22px", color: "#8c948b" }}>
+										value={{ size: "22px", color: "#9aa7c9" }}>
 										{passwordVisible ? <IoIosUnlock /> : <IoIosLock />}
 									</IconContext.Provider>
 								</div>
@@ -132,7 +132,7 @@ export default function SignInForm() {
 									onClick={() => setPasswordVisible(!passwordVisible)}
 									className="absolute top-17 right-20 cursor-pointer">
 									<IconContext.Provider
-										value={{ size: "22px", color: "#8c948b" }}>
+										value={{ size: "22px", color: "#9aa7c9" }}>
 										{passwordVisible ? <BsEye /> : <BsEyeSlash />}
 									</IconContext.Provider>
 								</div>
@@ -141,10 +141,10 @@ export default function SignInForm() {
 					/>
 				</div>
 				{formError && <p role="alert" className="mb-12 rounded-8 bg-[rgba(235,87,87,0.12)] px-12 py-10 text-left text-14 text-[#ff9b9b]">{formError}</p>}
-				<div className="text-left text-16 text-[#8c948b] sm:mb-30 mb-60">
+				<div className="text-left text-16 text-[#9aa7c9] sm:mb-30 mb-60">
 					{t("haveaccount.no")}{" "}
 					<span
-						className="text-[#c6ff4d] cursor-pointer"
+						className="text-[#7c93ff] cursor-pointer"
 						onClick={handleChangeForm}>
 						{t("signup")}
 					</span>

@@ -33,10 +33,10 @@ export default function HireDialog({ open, onClose }: { open: boolean; onClose: 
 			<div className="fs-popover fs-scroll max-h-[92vh] overflow-y-auto p-18 md:p-24">
 				<div className="mb-4 flex items-start justify-between gap-12">
 					<div>
-						<h2 className="text-18 font-semibold text-[#f1f4ee]">{custom ? t("customTitle") : t("hireTitle")}</h2>
-						<p className="mt-4 text-13 text-[#8c948b]">{custom ? t("customHint") : t("hireHint")}</p>
+						<h2 className="text-18 font-semibold text-[#edf2ff]">{custom ? t("customTitle") : t("hireTitle")}</h2>
+						<p className="mt-4 text-13 text-[#9aa7c9]">{custom ? t("customHint") : t("hireHint")}</p>
 					</div>
-					<button type="button" onClick={close} className="shrink-0 text-13 text-[#8c948b] hover:text-[#f1f4ee]">{t("close")}</button>
+					<button type="button" onClick={close} className="shrink-0 text-13 text-[#9aa7c9] hover:text-[#edf2ff]">{t("close")}</button>
 				</div>
 
 				{custom ? (
@@ -52,11 +52,11 @@ export default function HireDialog({ open, onClose }: { open: boolean; onClose: 
 									<li key={c.id} className="fs-card flex gap-12 p-14">
 										<RobotAvatar accent={c.accent} size={52} />
 										<div className="min-w-0 flex-1">
-											<p className="text-14 font-semibold text-[#f1f4ee]">{label(c, "title")}</p>
-											<p className="mt-2 text-12 text-[#8c948b]">{label(c, "desc")}</p>
-											<div className="mt-8 flex flex-wrap gap-4">{c.skills.map((s) => <span key={s} className="rounded-[10px] border border-inkLine px-8 py-[2px] text-10 text-[#8c948b]">{t(`skill_${s}`)}</span>)}</div>
+											<p className="text-14 font-semibold text-[#edf2ff]">{label(c, "title")}</p>
+											<p className="mt-2 text-12 text-[#9aa7c9]">{label(c, "desc")}</p>
+											<div className="mt-8 flex flex-wrap gap-4">{c.skills.map((s) => <span key={s} className="rounded-[10px] border border-inkLine px-8 py-[2px] text-10 text-[#9aa7c9]">{t(`skill_${s}`)}</span>)}</div>
 											<div className="mt-10 flex items-center justify-between gap-8">
-												<span className="text-11 text-[#8c948b]">{have > 0 ? t("alreadyHired", { n: have }) : ""}</span>
+												<span className="text-11 text-[#9aa7c9]">{have > 0 ? t("alreadyHired", { n: have }) : ""}</span>
 												<button type="button" disabled={full || busy !== null} onClick={() => void hireTemplate(c.id)} className="fs-btn fs-btn-ghost h-32 px-14 text-12 disabled:opacity-50">{busy === c.id ? "…" : t("hireNow")}</button>
 											</div>
 										</div>
@@ -64,7 +64,7 @@ export default function HireDialog({ open, onClose }: { open: boolean; onClose: 
 								);
 							})}
 						</ul>
-						<button type="button" disabled={full} onClick={() => setCustom(true)} className="fs-card mt-10 flex w-full items-center justify-center gap-8 border-dashed p-14 text-13 font-medium text-[#cfd4cb] transition-colors hover:text-[#c6ff4d] disabled:opacity-50"><TbPlus size={16} aria-hidden />{t("customTitle")}</button>
+						<button type="button" disabled={full} onClick={() => setCustom(true)} className="fs-card mt-10 flex w-full items-center justify-center gap-8 border-dashed p-14 text-13 font-medium text-[#cfd4cb] transition-colors hover:text-[#7c93ff] disabled:opacity-50"><TbPlus size={16} aria-hidden />{t("customTitle")}</button>
 					</>
 				)}
 			</div>

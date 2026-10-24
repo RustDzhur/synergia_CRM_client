@@ -26,7 +26,7 @@ interface WarehouseRow { id: string; name: string }
 
 type Section = "orders" | "suppliers" | "invoices";
 
-const STATUS_COLOR: Record<string, string> = { draft: "#8c948b", confirmed: "#5EA8F5", received: "#2DDEB6", cancelled: "#eb5757" };
+const STATUS_COLOR: Record<string, string> = { draft: "#9aa7c9", confirmed: "#5EA8F5", received: "#2DDEB6", cancelled: "#eb5757" };
 
 export default function Purchases() {
 	const t = useTranslations("finance");
@@ -161,7 +161,7 @@ export default function Purchases() {
 						key={s}
 						type="button"
 						onClick={() => setSection(s)}
-						className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${section === s ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#f1f4ee]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+						className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${section === s ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)] text-[#edf2ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`}>
 						{t(`purTab_${s}`)}
 					</button>
 				))}
@@ -170,17 +170,17 @@ export default function Purchases() {
 			{section === "orders" && (
 				<section className="fs-card overflow-x-auto p-16 md:p-20">
 					<div className="mb-12 flex flex-wrap items-center justify-between gap-10">
-						<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("purOrders")}</h3>
+						<h3 className="text-14 font-semibold text-[#edf2ff]">{t("purOrders")}</h3>
 						<button type="button" disabled={!activeSuppliers.length} onClick={() => { setPoForm({ ...poForm, supplier: activeSuppliers[0]?.id ?? "", warehouse: warehouses[0]?.id ?? "" }); setPoOpen(true); }} className="fs-btn fs-btn-ghost h-34 disabled:opacity-50">
 							<TbPlus size={14} /> {t("purNewOrder")}
 						</button>
 					</div>
 					{orders.length === 0 ? (
-						<p className="text-12 text-[#8c948b]">{activeSuppliers.length ? t("purNoOrders") : t("purAddSupplierFirst")}</p>
+						<p className="text-12 text-[#9aa7c9]">{activeSuppliers.length ? t("purNoOrders") : t("purAddSupplierFirst")}</p>
 					) : (
 						<table className="w-full min-w-[760px] text-12">
 							<thead>
-								<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#8c948b]">
+								<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#9aa7c9]">
 									<th className="pb-6 font-medium">{t("stockColNumber")}</th>
 									<th className="pb-6 font-medium">{t("purColSupplier")}</th>
 									<th className="pb-6 font-medium">{t("stockColKind")}</th>
@@ -194,10 +194,10 @@ export default function Purchases() {
 									const total = po.lines.reduce((s, l) => s + l.qty * l.price, 0);
 									return (
 										<tr key={po.id} className="border-t border-inkLine text-[#cfd4cb]">
-											<td className="py-7 text-[#f1f4ee]">{po.number}<span className="ml-6 text-11 text-[#8c948b]">{po.date}</span></td>
+											<td className="py-7 text-[#edf2ff]">{po.number}<span className="ml-6 text-11 text-[#9aa7c9]">{po.date}</span></td>
 											<td className="py-7">{po.supplier}</td>
-											<td className="py-7"><span style={{ color: STATUS_COLOR[po.status] ?? "#8c948b" }}>{t(`purStatus_${po.status}`)}</span>
-												{po.warehouse && <span className="ml-6 text-11 text-[#8c948b]">{po.warehouse}</span>}</td>
+											<td className="py-7"><span style={{ color: STATUS_COLOR[po.status] ?? "#9aa7c9" }}>{t(`purStatus_${po.status}`)}</span>
+												{po.warehouse && <span className="ml-6 text-11 text-[#9aa7c9]">{po.warehouse}</span>}</td>
 											<td className="py-7">{po.lines.slice(0, 2).map((l) => `${l.name} ${l.receivedQty}/${l.qty}`).join(", ")}{po.lines.length > 2 ? " …" : ""}</td>
 											<td className="py-7 text-right">{money(total, po.currency, locale)}</td>
 											<td className="py-7">
@@ -209,7 +209,7 @@ export default function Purchases() {
 													)}
 													{po.status === "received" && <span className="inline-flex items-center gap-4 text-11 text-[#2DDEB6]"><TbCheck size={12} /> {t("purStatus_received")}</span>}
 													{po.status !== "received" && po.status !== "cancelled" && (
-														<button type="button" disabled={busy !== ""} onClick={() => setCancelFor(po)} className="text-[#9AA396] transition-colors hover:text-danger disabled:opacity-50" aria-label={t("cancel")}>
+														<button type="button" disabled={busy !== ""} onClick={() => setCancelFor(po)} className="text-[#9AA7C9] transition-colors hover:text-danger disabled:opacity-50" aria-label={t("cancel")}>
 															<TbX size={14} />
 														</button>
 													)}
@@ -227,20 +227,20 @@ export default function Purchases() {
 			{section === "suppliers" && (
 				<section className="fs-card p-16 md:p-20">
 					<div className="mb-12 flex flex-wrap items-center justify-between gap-10">
-						<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("purSuppliers")}</h3>
+						<h3 className="text-14 font-semibold text-[#edf2ff]">{t("purSuppliers")}</h3>
 						<button type="button" onClick={() => { setSupForm({ name: "", code: "", phone: "", email: "", paymentDays: "0", currency: "", notes: "" }); setSupOpen(true); }} className="fs-btn fs-btn-ghost h-34">
 							<TbPlus size={14} /> {t("purAddSupplier")}
 						</button>
 					</div>
 					{suppliers.length === 0 ? (
-						<p className="text-12 text-[#8c948b]">{t("purNoSuppliers")}</p>
+						<p className="text-12 text-[#9aa7c9]">{t("purNoSuppliers")}</p>
 					) : (
 						<ul className="flex flex-col gap-8">
 							{suppliers.map((s) => (
 								<li key={s.id} className={`flex flex-wrap items-center justify-between gap-10 border-t border-inkLine pt-8 text-12 ${s.archived ? "opacity-50" : ""}`}>
-									<span className="text-[#f1f4ee]">{s.name}<span className="ml-6 text-11 text-[#8c948b]">{s.code}</span></span>
-									<span className="text-[#8c948b]">{[s.phone, s.email].filter(Boolean).join(" · ")}</span>
-									<span className="text-[#8c948b]">{s.paymentDays ? t("purPaymentDaysWith", { days: s.paymentDays }) : ""} {s.currency}</span>
+									<span className="text-[#edf2ff]">{s.name}<span className="ml-6 text-11 text-[#9aa7c9]">{s.code}</span></span>
+									<span className="text-[#9aa7c9]">{[s.phone, s.email].filter(Boolean).join(" · ")}</span>
+									<span className="text-[#9aa7c9]">{s.paymentDays ? t("purPaymentDaysWith", { days: s.paymentDays }) : ""} {s.currency}</span>
 								</li>
 							))}
 						</ul>
@@ -250,13 +250,13 @@ export default function Purchases() {
 
 			{section === "invoices" && (
 				<section className="fs-card overflow-x-auto p-16 md:p-20">
-					<h3 className="mb-12 text-14 font-semibold text-[#f1f4ee]">{t("purInvoices")}</h3>
+					<h3 className="mb-12 text-14 font-semibold text-[#edf2ff]">{t("purInvoices")}</h3>
 					{invoices.length === 0 ? (
-						<p className="text-12 text-[#8c948b]">{t("purNoInvoices")}</p>
+						<p className="text-12 text-[#9aa7c9]">{t("purNoInvoices")}</p>
 					) : (
 						<table className="w-full min-w-[640px] text-12">
 							<thead>
-								<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#8c948b]">
+								<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#9aa7c9]">
 									<th className="pb-6 font-medium">{t("purColSupplier")}</th>
 									<th className="pb-6 font-medium">{t("stockColNumber")}</th>
 									<th className="pb-6 font-medium">{t("purColDue")}</th>
@@ -268,8 +268,8 @@ export default function Purchases() {
 							<tbody>
 								{invoices.map((i) => (
 									<tr key={i.id} className="border-t border-inkLine text-[#cfd4cb]">
-										<td className="py-7 text-[#f1f4ee]">{i.supplier}</td>
-										<td className="py-7">{i.number || "—"}<span className="ml-6 text-11 text-[#8c948b]">{i.date}</span></td>
+										<td className="py-7 text-[#edf2ff]">{i.supplier}</td>
+										<td className="py-7">{i.number || "—"}<span className="ml-6 text-11 text-[#9aa7c9]">{i.date}</span></td>
 										<td className={`py-7 ${i.overdue ? "text-[#F4A100]" : ""}`}>{i.dueDate || "—"}</td>
 										<td className="py-7 text-right">{money(i.amount, i.currency, locale)}</td>
 										<td className="py-7 text-right">{money(i.paidAmount, i.currency, locale)}</td>
@@ -293,7 +293,7 @@ export default function Purchases() {
 			{/* Новый поставщик */}
 			<Modal open={supOpen} onClose={() => setSupOpen(false)} label={t("purAddSupplier")} className="w-full max-w-[480px]">
 				<div className="fs-popover flex max-h-[calc(100dvh-32px)] flex-col gap-12 overflow-y-auto p-20">
-					<h2 className="text-15 font-semibold text-[#f1f4ee]">{t("purAddSupplier")}</h2>
+					<h2 className="text-15 font-semibold text-[#edf2ff]">{t("purAddSupplier")}</h2>
 					<FormField label={t("purName")} value={supForm.name} onChange={(e) => setSupForm({ ...supForm, name: e.target.value })} maxLength={120} autoFocus />
 					<div className="grid grid-cols-2 gap-12">
 						<FormField label={t("purCode")} value={supForm.code} onChange={(e) => setSupForm({ ...supForm, code: e.target.value })} maxLength={60} />
@@ -315,17 +315,17 @@ export default function Purchases() {
 			{/* Новый заказ поставщику */}
 			<Modal open={poOpen} onClose={() => setPoOpen(false)} label={t("purNewOrder")} className="w-full max-w-[640px]">
 				<div className="fs-popover flex max-h-[calc(100dvh-32px)] flex-col p-20">
-					<h2 className="mb-12 text-15 font-semibold text-[#f1f4ee]">{t("purNewOrder")}</h2>
+					<h2 className="mb-12 text-15 font-semibold text-[#edf2ff]">{t("purNewOrder")}</h2>
 					<div className="fs-scroll min-h-0 flex-1 overflow-y-auto pr-4">
 						<div className="mb-12 grid grid-cols-1 gap-12 md:grid-cols-2">
 							<label className="block">
-								<span className="mb-6 block text-12 text-[#8c948b]">{t("purColSupplier")}</span>
+								<span className="mb-6 block text-12 text-[#9aa7c9]">{t("purColSupplier")}</span>
 								<select value={poForm.supplier} onChange={(e) => setPoForm({ ...poForm, supplier: e.target.value })} className={input}>
 									{activeSuppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
 								</select>
 							</label>
 							<label className="block">
-								<span className="mb-6 block text-12 text-[#8c948b]">{t("stockTo")}</span>
+								<span className="mb-6 block text-12 text-[#9aa7c9]">{t("stockTo")}</span>
 								<select value={poForm.warehouse} onChange={(e) => setPoForm({ ...poForm, warehouse: e.target.value })} className={input}>
 									<option value="">—</option>
 									{warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
@@ -334,7 +334,7 @@ export default function Purchases() {
 							<FormField label={t("stockColDate")} type="date" value={poForm.date} onChange={(e) => setPoForm({ ...poForm, date: e.target.value })} />
 							<FormField label={t("purExpected")} type="date" value={poForm.expectedDate} onChange={(e) => setPoForm({ ...poForm, expectedDate: e.target.value })} />
 						</div>
-						<span className="mb-6 block text-12 text-[#8c948b]">{t("stockColLines")}</span>
+						<span className="mb-6 block text-12 text-[#9aa7c9]">{t("stockColLines")}</span>
 						<div className="flex flex-col gap-8">
 							{poLines.map((line, i) => (
 								<div key={i} className="grid grid-cols-[1fr_90px_110px_32px] items-center gap-8">
@@ -344,7 +344,7 @@ export default function Purchases() {
 									</select>
 									<input value={line.qty} onChange={(e) => setPoLines(poLines.map((l, j) => (j === i ? { ...l, qty: e.target.value.replace(/[^\d.]/g, "") } : l)))} placeholder={t("stockQty")} className={input} />
 									<input value={line.price} onChange={(e) => setPoLines(poLines.map((l, j) => (j === i ? { ...l, price: e.target.value.replace(/[^\d.]/g, "") } : l)))} placeholder={t("stockPrice")} className={input} />
-									<button type="button" onClick={() => setPoLines(poLines.length > 1 ? poLines.filter((_, j) => j !== i) : poLines)} className="text-[#8c948b] transition-colors hover:text-danger" aria-label={t("delete")}>
+									<button type="button" onClick={() => setPoLines(poLines.length > 1 ? poLines.filter((_, j) => j !== i) : poLines)} className="text-[#9aa7c9] transition-colors hover:text-danger" aria-label={t("delete")}>
 										<TbX size={15} />
 									</button>
 								</div>
@@ -367,11 +367,11 @@ export default function Purchases() {
 			{/* Приход по накладной: сколько принимаем, счёт поставщика, склад */}
 			<Modal open={!!receiveFor} onClose={() => setReceiveFor(null)} label={t("purReceive")} className="w-full max-w-[560px]">
 				<div className="fs-popover flex flex-col gap-12 p-20">
-					<h2 className="text-15 font-semibold text-[#f1f4ee]">{t("purReceiveTitle", { number: receiveFor?.number ?? "" })}</h2>
+					<h2 className="text-15 font-semibold text-[#edf2ff]">{t("purReceiveTitle", { number: receiveFor?.number ?? "" })}</h2>
 					<div className="flex flex-col gap-8">
 						{receiveFor?.lines.map((l, i) => (
 							<div key={i} className="grid grid-cols-[1fr_100px] items-center gap-8 text-12">
-								<span className="text-[#cfd4cb]">{l.name}<span className="ml-6 text-11 text-[#8c948b]">{t("purOrdered", { qty: l.qty })}</span></span>
+								<span className="text-[#cfd4cb]">{l.name}<span className="ml-6 text-11 text-[#9aa7c9]">{t("purOrdered", { qty: l.qty })}</span></span>
 								<input
 									value={receiveForm.quantities[i] ?? ""}
 									onChange={(e) => setReceiveForm({ ...receiveForm, quantities: receiveForm.quantities.map((q, j) => (j === i ? e.target.value.replace(/[^\d.]/g, "") : q)) })}
@@ -381,7 +381,7 @@ export default function Purchases() {
 						))}
 					</div>
 					<label className="block">
-						<span className="mb-6 block text-12 text-[#8c948b]">{t("stockTo")}</span>
+						<span className="mb-6 block text-12 text-[#9aa7c9]">{t("stockTo")}</span>
 						<select value={receiveForm.warehouse} onChange={(e) => setReceiveForm({ ...receiveForm, warehouse: e.target.value })} className={input}>
 							<option value="">—</option>
 							{warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
@@ -392,7 +392,7 @@ export default function Purchases() {
 						<FormField label={t("stockColDate")} type="date" value={receiveForm.invoiceDate} onChange={(e) => setReceiveForm({ ...receiveForm, invoiceDate: e.target.value })} />
 						<FormField label={t("purColDue")} type="date" value={receiveForm.dueDate} onChange={(e) => setReceiveForm({ ...receiveForm, dueDate: e.target.value })} />
 					</div>
-					<p className="text-11 text-[#9AA396]">{t("purInvoiceHint")}</p>
+					<p className="text-11 text-[#9AA7C9]">{t("purInvoiceHint")}</p>
 					<div className="mt-4 flex justify-end gap-10">
 						<button type="button" onClick={() => setReceiveFor(null)} className="fs-btn fs-btn-ghost h-38">{t("cancel")}</button>
 						<button type="button" disabled={busy !== ""} onClick={() => void receive()} className="fs-btn fs-btn-primary h-38 disabled:opacity-50">{t("purReceive")}</button>

@@ -18,10 +18,10 @@ export default function PairBars({ data, compact = false }: { data: PairBar[]; c
 					<div key={`${d.label}-${i}`} className="flex min-w-0 flex-1 flex-col items-center gap-4">
 						<div className={`flex w-full items-end justify-center gap-[2px] ${plot}`}>
 							{triple && <div className={`${barW} rounded-t-[3px] bg-[#4d8bff]`} style={{ height: `${Math.max(2, ((d.c ?? 0) / max) * 100)}%` }} title={d.titleC} />}
-							<div className={`${barW} rounded-t-[3px] bg-[#c6ff4d]`} style={{ height: `${Math.max(2, (d.a / max) * 100)}%` }} title={d.titleA} />
-							<div className={`${barW} rounded-t-[3px] bg-[#8C948B]`} style={{ height: `${Math.max(2, (d.b / max) * 100)}%` }} title={d.titleB} />
+							<div className={`${barW} rounded-t-[3px] bg-[#7c93ff]`} style={{ height: `${Math.max(2, (d.a / max) * 100)}%` }} title={d.titleA} />
+							<div className={`${barW} rounded-t-[3px] bg-[#9AA7C9]`} style={{ height: `${Math.max(2, (d.b / max) * 100)}%` }} title={d.titleB} />
 						</div>
-						<span className="text-11 text-[#9AA396]">{d.label}</span>
+						<span className="text-11 text-[#9AA7C9]">{d.label}</span>
 					</div>
 				))}
 			</div>

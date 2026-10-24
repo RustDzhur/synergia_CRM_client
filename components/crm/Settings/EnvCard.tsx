@@ -48,22 +48,22 @@ export default function EnvCard() {
 	if (vars === null) return null;
 	return (
 		<div className="fs-card mb-20 p-16">
-			<p className="text-14 font-medium text-[#f1f4ee]">{t("envTitle")}</p>
-			<p className="mt-4 max-w-[720px] text-12 leading-[1.5] text-[#8c948b]">{t("envHelp")}</p>
+			<p className="text-14 font-medium text-[#edf2ff]">{t("envTitle")}</p>
+			<p className="mt-4 max-w-[720px] text-12 leading-[1.5] text-[#9aa7c9]">{t("envHelp")}</p>
 
 			{vars.length === 0 ? (
-				<p className="mt-12 text-12 text-[#8c948b]">{t("envNone")}</p>
+				<p className="mt-12 text-12 text-[#9aa7c9]">{t("envNone")}</p>
 			) : (
 				<ul className="mt-12 flex flex-col gap-8">
 					{vars.map((v) => (
 						<li key={v.name} className="flex flex-wrap items-center justify-between gap-10 rounded-10 border border-inkLine px-12 py-8">
 							<div className="min-w-0">
-								<p className="text-13 text-[#f1f4ee]"><code>{v.name}</code> <span className="ml-6 text-11 text-[#8c948b]">{shown[v.name] === undefined ? `•••• (${v.length})` : ""}</span></p>
-								{shown[v.name] !== undefined && <code className="mt-4 block select-all break-all rounded-8 bg-[rgba(0,0,0,0.35)] p-6 text-12 text-[#c6ff4d]">{shown[v.name]}</code>}
-								<p className="text-11 text-[#9AA396]">{v.updatedAt.slice(0, 16).replace("T", " ")}</p>
+								<p className="text-13 text-[#edf2ff]"><code>{v.name}</code> <span className="ml-6 text-11 text-[#9aa7c9]">{shown[v.name] === undefined ? `•••• (${v.length})` : ""}</span></p>
+								{shown[v.name] !== undefined && <code className="mt-4 block select-all break-all rounded-8 bg-[rgba(0,0,0,0.35)] p-6 text-12 text-[#7c93ff]">{shown[v.name]}</code>}
+								<p className="text-11 text-[#9AA7C9]">{v.updatedAt.slice(0, 16).replace("T", " ")}</p>
 							</div>
 							<div className="flex gap-12">
-								<button type="button" onClick={() => reveal(v)} className="text-12 text-[#c6ff4d] hover:underline">{shown[v.name] === undefined ? t("envShow") : t("envHide")}</button>
+								<button type="button" onClick={() => reveal(v)} className="text-12 text-[#7c93ff] hover:underline">{shown[v.name] === undefined ? t("envShow") : t("envHide")}</button>
 								<button type="button" onClick={() => remove(v)} className="text-12 text-danger hover:underline">{t("envDelete")}</button>
 							</div>
 						</li>
@@ -72,11 +72,11 @@ export default function EnvCard() {
 			)}
 
 			<div className="mt-14 grid gap-10 md:grid-cols-[1fr_1.4fr_auto] md:items-end">
-				<label className="flex flex-col gap-6"><span className="text-11 text-[#8c948b]">{t("envName")}</span><input value={name} onChange={(e) => setName(e.target.value.toUpperCase())} placeholder="SHIPPING_API_KEY" maxLength={64} className="fs-field h-40 w-full px-12 text-13 outline-none" /></label>
-				<label className="flex flex-col gap-6"><span className="text-11 text-[#8c948b]">{t("envValue")}</span><input value={value} onChange={(e) => setValue(e.target.value)} type="password" autoComplete="off" maxLength={4000} className="fs-field h-40 w-full px-12 text-13 outline-none" /></label>
+				<label className="flex flex-col gap-6"><span className="text-11 text-[#9aa7c9]">{t("envName")}</span><input value={name} onChange={(e) => setName(e.target.value.toUpperCase())} placeholder="SHIPPING_API_KEY" maxLength={64} className="fs-field h-40 w-full px-12 text-13 outline-none" /></label>
+				<label className="flex flex-col gap-6"><span className="text-11 text-[#9aa7c9]">{t("envValue")}</span><input value={value} onChange={(e) => setValue(e.target.value)} type="password" autoComplete="off" maxLength={4000} className="fs-field h-40 w-full px-12 text-13 outline-none" /></label>
 				<button type="button" onClick={save} disabled={busy || name.trim().length < 2 || !value} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{busy ? "…" : t("envSave")}</button>
 			</div>
-			<p className="mt-8 text-11 text-[#8c948b]">{t("envUse")}</p>
+			<p className="mt-8 text-11 text-[#9aa7c9]">{t("envUse")}</p>
 		</div>
 	);
 }

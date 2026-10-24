@@ -55,8 +55,8 @@ export default function CountryPicker({ onOpenSettings, settingsOpen }: { onOpen
 
 	return (
 		<div className="max-w-[960px]">
-			<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("market_title")}</h2>
-			<p className="mt-6 max-w-[560px] text-13 text-[#8c948b]">{t("market_hint")}</p>
+			<h2 className="text-16 font-semibold text-[#edf2ff]">{t("market_title")}</h2>
+			<p className="mt-6 max-w-[560px] text-13 text-[#9aa7c9]">{t("market_hint")}</p>
 			{error && <p className="mt-10 text-13 text-[#ff9f9f]">{error}</p>}
 
 			<div className="mt-18 grid gap-12 md:grid-cols-2 lg:grid-cols-3">
@@ -65,18 +65,18 @@ export default function CountryPicker({ onOpenSettings, settingsOpen }: { onOpen
 					return (
 						<div key={market} className="rounded-14 border border-[rgba(255,255,255,0.10)] bg-[rgba(255,255,255,0.03)] p-16">
 							<div className="flex items-center gap-10">
-								<Icon size={20} className="text-[#c6ff4d]" />
-								<p className="text-15 font-semibold text-[#f1f4ee]">{t(`market_${market.toLowerCase()}`)}</p>
+								<Icon size={20} className="text-[#7c93ff]" />
+								<p className="text-15 font-semibold text-[#edf2ff]">{t(`market_${market.toLowerCase()}`)}</p>
 							</div>
 							<ul className="mt-10 space-y-6 text-13 text-[#cfd4cb]">
 								{bulletKeys.map((k) => (
 									<li key={k} className="flex gap-8">
-										<span className="text-[#c6ff4d]">·</span>
+										<span className="text-[#7c93ff]">·</span>
 										<span>{t(k)}</span>
 									</li>
 								))}
 								<li className="flex gap-8">
-									<span className="text-[#c6ff4d]">·</span>
+									<span className="text-[#7c93ff]">·</span>
 									<span>{t("market_defaults", { currency: p.currencyDefault, days: p.features.dunning ? 14 : 5 })}</span>
 								</li>
 							</ul>
@@ -92,7 +92,7 @@ export default function CountryPicker({ onOpenSettings, settingsOpen }: { onOpen
 				<TbSettings size={15} />
 				{t("market_settings_first")}
 			</button>
-			<p className="mt-8 inline-flex items-center gap-6 text-12 text-[#8c948b]">
+			<p className="mt-8 inline-flex items-center gap-6 text-12 text-[#9aa7c9]">
 				<TbReceipt size={14} />
 				{t("market_later_hint")}
 			</p>

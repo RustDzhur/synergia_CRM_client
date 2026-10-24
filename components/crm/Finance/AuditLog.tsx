@@ -18,14 +18,14 @@ export default function AuditLog() {
 	}, []);
 
 	if (entries === null) return null;
-	if (entries.length === 0) return <p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("auditEmpty")}</p>;
+	if (entries.length === 0) return <p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("auditEmpty")}</p>;
 
 	return (
 		<ul className="flex flex-col gap-8">
 			{entries.map((e) => (
 				<li key={e.id} className="flex flex-wrap items-center justify-between gap-8 fs-card px-16 py-12">
 					<p className="text-13 text-[#cfd4cb]">{e.summary}</p>
-					<p className="shrink-0 text-11 text-[#9AA396]">{e.userName || "—"} · {new Date(e.createdAt).toLocaleString(localeTag(locale))}</p>
+					<p className="shrink-0 text-11 text-[#9AA7C9]">{e.userName || "—"} · {new Date(e.createdAt).toLocaleString(localeTag(locale))}</p>
 				</li>
 			))}
 		</ul>

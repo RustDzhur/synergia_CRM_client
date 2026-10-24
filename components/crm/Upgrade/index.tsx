@@ -68,7 +68,7 @@ export default function Upgrade() {
 	const current = billing?.plan ?? "free";
 	const noMethods = !!billing && !billing.methods.bank && !billing.methods.usdt;
 	const cur = billing?.currency === "UAH" ? "₴" : "€";
-	const seg = (on: boolean) => `h-34 rounded-50 px-16 text-13 font-medium transition-colors ${on ? "bg-[#c6ff4d] text-[#0a0c0b]" : "text-[#8c948b] hover:text-[#f1f4ee]"}`;
+	const seg = (on: boolean) => `h-34 rounded-50 px-16 text-13 font-medium transition-colors ${on ? "bg-[#7c93ff] text-[#0b1120]" : "text-[#9aa7c9] hover:text-[#edf2ff]"}`;
 
 	return (
 		<div className="px-16 py-20 md:px-24 md:py-24 lg:px-32">
@@ -82,13 +82,13 @@ export default function Upgrade() {
 					</button>
 				</div>
 				{lockedFeature && <p role="alert" className="rounded-10 bg-[rgba(244,161,0,0.10)] px-16 py-10 text-center text-13 text-[#F4A100]">{t("lockedNotice", { feature: t(lockedFeature) })}</p>}
-				{noMethods && <p className="rounded-10 border border-inkLine bg-[rgba(255,255,255,0.03)] px-16 py-10 text-12 text-[#8c948b]">{t("paymentsNotConfigured")}</p>}
+				{noMethods && <p className="rounded-10 border border-inkLine bg-[rgba(255,255,255,0.03)] px-16 py-10 text-12 text-[#9aa7c9]">{t("paymentsNotConfigured")}</p>}
 				{billing && billing.open.length > 0 && (
 					<ul className="flex w-full max-w-[560px] flex-col gap-6" aria-label={t("openInvoices")}>
 						{billing.open.map((o) => (
 							<li key={o.id} className="fs-card flex items-center justify-between gap-12 px-14 py-10 text-12">
-								<span className="text-[#f1f4ee]">{t("invoiceNo")} {o.number} · {t(o.plan)} · {o.status === "claimed" ? t("statusClaimed") : t("statusNew")}</span>
-								<button type="button" onClick={() => setPay({ plan: o.plan, orderId: o.id })} className="font-semibold text-[#c6ff4d] hover:opacity-80">{t("openInvoice")}</button>
+								<span className="text-[#edf2ff]">{t("invoiceNo")} {o.number} · {t(o.plan)} · {o.status === "claimed" ? t("statusClaimed") : t("statusNew")}</span>
+								<button type="button" onClick={() => setPay({ plan: o.plan, orderId: o.id })} className="font-semibold text-[#7c93ff] hover:opacity-80">{t("openInvoice")}</button>
 							</li>
 						))}
 					</ul>
@@ -107,15 +107,15 @@ export default function Upgrade() {
 						<li
 							key={plan.id}
 							className={`fs-card mx-auto flex w-full max-w-[340px] flex-col items-center px-24 pb-30 pt-24 md:max-w-none ${
-								plan.highlighted ? "border-[rgba(198,255,77,0.35)] bg-[rgba(198,255,77,0.04)]" : ""
-							} ${isCurrent ? "border-[#c6ff4d]" : ""}`}>
-							<Icon size={32} className="text-[#c6ff4d]" aria-hidden />
-							<h2 className="mt-4 text-17 font-semibold text-[#f1f4ee]">{t(plan.id)}</h2>
+								plan.highlighted ? "border-[rgba(124,147,255,0.35)] bg-[rgba(124,147,255,0.04)]" : ""
+							} ${isCurrent ? "border-[#7c93ff]" : ""}`}>
+							<Icon size={32} className="text-[#7c93ff]" aria-hidden />
+							<h2 className="mt-4 text-17 font-semibold text-[#edf2ff]">{t(plan.id)}</h2>
 							<div className="mt-6 flex h-[22px] items-center">
-								{isCurrent && <span className="fs-chip h-24 border-[rgba(198,255,77,0.40)] px-10 text-10 text-[#c6ff4d]">{t("currentPlan")}</span>}
+								{isCurrent && <span className="fs-chip h-24 border-[rgba(124,147,255,0.40)] px-10 text-10 text-[#7c93ff]">{t("currentPlan")}</span>}
 							</div>
 
-							<p className="mt-24 text-30 font-bold leading-[1.1] text-[#f1f4ee] lg:text-34">
+							<p className="mt-24 text-30 font-bold leading-[1.1] text-[#edf2ff] lg:text-34">
 								{plan.priceMonth === 0 ? (
 									t("freePrice")
 								) : (
@@ -124,16 +124,16 @@ export default function Upgrade() {
 									</>
 								)}
 							</p>
-							<p className="mt-6 text-center text-13 text-[#8c948b]">
+							<p className="mt-6 text-center text-13 text-[#9aa7c9]">
 								{plan.users === null ? t("unlimitedUsers") : t("users", { count: plan.users })}
 							</p>
-							{limitsLine(plan, t) && <p className="mt-2 text-center text-11 text-[#9AA396]">{limitsLine(plan, t)}</p>}
+							{limitsLine(plan, t) && <p className="mt-2 text-center text-11 text-[#9AA7C9]">{limitsLine(plan, t)}</p>}
 
 							<ul className="mb-30 mt-30 flex w-full flex-col gap-8 text-13">
 								{FEATURE_KEYS.map((f) => {
 									const included = plan.features[f];
 									return (
-										<li key={f} className={`flex items-start gap-8 ${included ? "text-[#c6ff4d]" : "text-[#8C948B] line-through"}`}>
+										<li key={f} className={`flex items-start gap-8 ${included ? "text-[#7c93ff]" : "text-[#9AA7C9] line-through"}`}>
 											{included ? <TbCircleCheck size={16} className="mt-2 shrink-0" aria-hidden /> : <TbCircle size={16} className="mt-2 shrink-0" aria-hidden />}
 											{t(f)}
 										</li>
@@ -143,11 +143,11 @@ export default function Upgrade() {
 							{plan.id === "professional" && <p className="mb-16 text-12 font-medium text-[#2DDEB6]">{t("fullAccess")}</p>}
 
 							{isCurrent && billing?.paidUntil && plan.priceMonth > 0 && (
-								<p className="mb-12 text-center text-12 text-[#8c948b]">{t("paidUntil", { date: new Date(billing.paidUntil).toLocaleDateString(localeTag(locale)) })}</p>
+								<p className="mb-12 text-center text-12 text-[#9aa7c9]">{t("paidUntil", { date: new Date(billing.paidUntil).toLocaleDateString(localeTag(locale)) })}</p>
 							)}
 
 							{plan.priceMonth === 0 ? (
-								isCurrent ? <button type="button" disabled className="fs-btn mt-auto h-40 w-[165px] bg-[rgba(255,255,255,0.05)] text-13 font-semibold text-[#8C948B]">{t("currentPlan")}</button> : <span className="mt-auto h-40" aria-hidden />
+								isCurrent ? <button type="button" disabled className="fs-btn mt-auto h-40 w-[165px] bg-[rgba(255,255,255,0.05)] text-13 font-semibold text-[#9AA7C9]">{t("currentPlan")}</button> : <span className="mt-auto h-40" aria-hidden />
 							) : (
 								<button
 									type="button"
@@ -163,9 +163,9 @@ export default function Upgrade() {
 			</ul>
 
 			<div className="mx-auto mt-30 flex max-w-[1140px] flex-col items-center gap-10">
-				<p className="max-w-[640px] text-center text-12 font-medium text-[#8c948b]">{t("methodsLine")}</p>
-				<p className="max-w-[640px] text-center text-11 text-[#9AA396]">{t("methodsNote")}</p>
-				<p className="flex items-center justify-center gap-6 text-center text-12 text-[#8c948b]">
+				<p className="max-w-[640px] text-center text-12 font-medium text-[#9aa7c9]">{t("methodsLine")}</p>
+				<p className="max-w-[640px] text-center text-11 text-[#9AA7C9]">{t("methodsNote")}</p>
+				<p className="flex items-center justify-center gap-6 text-center text-12 text-[#9aa7c9]">
 					<TbLock size={14} aria-hidden /> {t("securePayment")}
 				</p>
 			</div>

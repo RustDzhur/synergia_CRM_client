@@ -205,23 +205,23 @@ export default function Invoices({ openId, prefill, preset, onPrefillDone }: { o
 				<div className="mb-14 flex flex-wrap gap-8" role="group" aria-label={t("filterLabel")}>
 					{(["all", "unpaid", "overdue", "draft", "paid"] as const).map((f) => (
 						<button key={f} type="button" onClick={() => setFilter(f)} aria-pressed={filter === f}
-							className={`fs-chip h-30 cursor-pointer px-12 text-12 transition-colors ${filter === f ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#f1f4ee]" : "text-[#cfd4cb] hover:text-[#f1f4ee]"}`}>
+							className={`fs-chip h-30 cursor-pointer px-12 text-12 transition-colors ${filter === f ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)] text-[#edf2ff]" : "text-[#cfd4cb] hover:text-[#edf2ff]"}`}>
 							{f === "all" ? t("filterAll") : f === "unpaid" ? t("filterUnpaid") : t(`istatus_${f}`)} · {invoices.filter((inv) => matches(inv, f)).length}
 						</button>
 					))}
 				</div>
 			)}
 			{invoices.length === 0 ? (
-				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("empty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("empty")}</p>
 			) : shownInvoices.length === 0 ? (
-				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("filterEmpty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("filterEmpty")}</p>
 			) : (
 				<ul className="flex flex-col gap-10">
 					{shownInvoices.map((inv) => (
 						<li key={inv.id} ref={(el) => { rowRefs.current[inv.id] = el; }} className={`fs-card p-14 transition-shadow md:p-18 ${openId === inv.id ? "ring-[1.5px] ring-inkAccentLine" : ""}`}>
 							<div className="flex flex-wrap items-start justify-between gap-12">
 								<div className="min-w-0">
-									<p className="flex flex-wrap items-center gap-8 text-14 font-semibold text-[#f1f4ee]">
+									<p className="flex flex-wrap items-center gap-8 text-14 font-semibold text-[#edf2ff]">
 										{inv.number}
 										{inv.kind === "credit_note" && <span className="fs-chip h-22 px-8 text-10">{t("creditNote")}</span>}
 										<span className="fs-chip h-22 gap-6 px-8 text-10">
@@ -240,24 +240,24 @@ export default function Invoices({ openId, prefill, preset, onPrefillDone }: { o
 										)}
 										{inv.reminderCount > 0 && <span className="fs-chip h-22 border-[rgba(244,161,0,0.35)] px-8 text-10 text-[#f4a100]">{t("remindersSent", { count: inv.reminderCount })}</span>}
 									</p>
-									<p className="mt-[4px] text-12 text-[#8c948b]">
+									<p className="mt-[4px] text-12 text-[#9aa7c9]">
 										{/* Кредит-нота без ссылки на исходный счёт непонятна — показываем, что она исправляет */}
 										{inv.kind === "credit_note" && sourceNumberOf(inv) ? `${t("creditFor")} ${sourceNumberOf(inv)} · ` : ""}
 										{inv.customerName} · {t("colDate")}: {inv.issueDate}{inv.dueDate ? ` · ${t("dueDate")}: ${inv.dueDate}` : ""}
 									</p>
 								</div>
-								<p className="text-15 font-semibold text-[#f1f4ee]">{money(inv.totals.gross, inv.currency, locale)}</p>
+								<p className="text-15 font-semibold text-[#edf2ff]">{money(inv.totals.gross, inv.currency, locale)}</p>
 							</div>
 							<div className="mt-12 flex flex-wrap items-center gap-8">
 								{inv.status === "draft" && <button type="button" onClick={() => setSendFor({ id: inv.id })} className="fs-btn fs-btn-primary h-34">{t("send")}</button>}
 								{inv.status === "draft" && inv.kind === "invoice" && (
-									<label className="flex items-center gap-6 text-12 text-[#8c948b]">
+									<label className="flex items-center gap-6 text-12 text-[#9aa7c9]">
 										{t("supplyDateShort")}
 										<input type="date" defaultValue={inv.supplyDate || inv.issueDate} onBlur={(e) => e.target.value && e.target.value !== (inv.supplyDate || inv.issueDate) && void saveSupplyDate(inv.id, e.target.value)} className="fs-field h-34 px-8 text-12" />
 									</label>
 								)}
-								{inv.kind === "invoice" && (inv.status === "draft" || inv.status === "sent" || inv.status === "overdue") && <button type="button" disabled={busy === inv.id} onClick={() => pay(inv.id)} className="fs-btn fs-btn-ghost h-34 border-[rgba(198,255,77,0.4)] text-[#c6ff4d] disabled:opacity-[0.5]">{t("markPaid")}</button>}
-								{inv.status === "paid" && <span className="text-12 text-[#c6ff4d]">{t("paidOn", { date: inv.paidAt ? new Date(inv.paidAt).toLocaleDateString(locale) : "" })}</span>}
+								{inv.kind === "invoice" && (inv.status === "draft" || inv.status === "sent" || inv.status === "overdue") && <button type="button" disabled={busy === inv.id} onClick={() => pay(inv.id)} className="fs-btn fs-btn-ghost h-34 border-[rgba(124,147,255,0.4)] text-[#7c93ff] disabled:opacity-[0.5]">{t("markPaid")}</button>}
+								{inv.status === "paid" && <span className="text-12 text-[#7c93ff]">{t("paidOn", { date: inv.paidAt ? new Date(inv.paidAt).toLocaleDateString(locale) : "" })}</span>}
 								{inv.kind === "invoice" && ["sent", "paid", "overdue"].includes(inv.status) && (
 									<button type="button" disabled={busy === inv.id} onClick={() => setCreditTarget(inv.id)} className="fs-btn fs-btn-ghost h-34 disabled:opacity-[0.5]">
 										<TbReceipt size={15} /> {t("issueCreditNote")}
@@ -290,7 +290,7 @@ export default function Invoices({ openId, prefill, preset, onPrefillDone }: { o
 								)}
 								{/* Ссылка на оплату: клиент платит сам, счёт закрывается вебхуком кассы */}
 								{inv.kind === "invoice" && inv.status !== "paid" && inv.status !== "cancelled" && (
-									<button type="button" onClick={() => setPayFor(inv.id)} className="fs-btn fs-btn-ghost h-34 border-[rgba(198,255,77,0.4)] text-[#c6ff4d]">
+									<button type="button" onClick={() => setPayFor(inv.id)} className="fs-btn fs-btn-ghost h-34 border-[rgba(124,147,255,0.4)] text-[#7c93ff]">
 										{inv.payLink ? t("payLinkReady") : t("payLink")}
 									</button>
 								)}
@@ -310,8 +310,8 @@ export default function Invoices({ openId, prefill, preset, onPrefillDone }: { o
 										{inv.dunningLog.map((e, i) => (
 											<li key={i} className="flex flex-wrap items-baseline gap-x-10 text-12">
 												<span className="text-[#cfd4cb]">{t(`level_${Math.min(4, e.level)}`)}</span>
-												<span className="text-[#8c948b]">{e.sentAt ? new Date(e.sentAt).toLocaleDateString(locale) : ""}</span>
-												<span className="text-[#8c948b]">{e.fee > 0 ? money(e.fee, inv.currency, locale) : "—"}</span>
+												<span className="text-[#9aa7c9]">{e.sentAt ? new Date(e.sentAt).toLocaleDateString(locale) : ""}</span>
+												<span className="text-[#9aa7c9]">{e.fee > 0 ? money(e.fee, inv.currency, locale) : "—"}</span>
 											</li>
 										))}
 									</ul>
@@ -324,10 +324,10 @@ export default function Invoices({ openId, prefill, preset, onPrefillDone }: { o
 
 			<Modal open={open} onClose={() => setOpen(false)} label={t("newInvoice")} className="w-full max-w-[640px]">
 				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
-					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("newInvoice")}</h2>
+					<h2 className="mb-14 text-16 font-semibold text-[#edf2ff]">{t("newInvoice")}</h2>
 					{/* Клиент подтягивается из CRM (контакты и фирмы): контакт, заведённый в CRM, находится сразу */}
 					<div className="mb-16">
-						<span className="mb-6 block text-12 text-[#8c948b]">{t("customer")}</span>
+						<span className="mb-6 block text-12 text-[#9aa7c9]">{t("customer")}</span>
 						<SuggestInput
 							value={customerName}
 							onChange={(v) => { setCustomerName(v); setClientLink((l) => ({ deal: l.deal })); }}
@@ -340,7 +340,7 @@ export default function Invoices({ openId, prefill, preset, onPrefillDone }: { o
 							placeholder={t("contractClientPlaceholder")}
 							showSearchIcon
 						/>
-						{(clientLink.contact || clientLink.company) && <span className="mt-6 block text-11 text-[#9AA396]">{t("contractClientLinked")}</span>}
+						{(clientLink.contact || clientLink.company) && <span className="mt-6 block text-11 text-[#9AA7C9]">{t("contractClientLinked")}</span>}
 					</div>
 					{/* Leistungsdatum — обязательный реквизит именно немецкого счёта (§14 Abs. 4 Nr. 6 UStG);
 					    украинскому рахунку он не нужен, и подсказка про немецкий закон там только путала.
@@ -349,7 +349,7 @@ export default function Invoices({ openId, prefill, preset, onPrefillDone }: { o
 						{marketLoaded && market === "DE" && (
 							<>
 								<FormField label={t("supplyDate")} type="date" value={supplyDate} onChange={(e) => setSupplyDate(e.target.value)} />
-								<p className="mt-[4px] text-11 text-[#9AA396]">{t("supplyDateHint")}</p>
+								<p className="mt-[4px] text-11 text-[#9AA7C9]">{t("supplyDateHint")}</p>
 							</>
 						)}
 						<FormField label={t("invIncoterms")} value={incoterms} onChange={(e) => setIncoterms(e.target.value.toUpperCase())} maxLength={10} placeholder="FCA / DAP" />
@@ -380,8 +380,8 @@ export default function Invoices({ openId, prefill, preset, onPrefillDone }: { o
 
 			<Modal open={!!creditTarget} onClose={() => setCreditTarget(null)} label={t("issueCreditNote")} className="w-full max-w-[520px]">
 				<form onSubmit={submitCreditNote} className="fs-popover p-20 md:p-24">
-					<h2 className="mb-8 text-16 font-semibold text-[#f1f4ee]">{t("issueCreditNote")}</h2>
-					<p className="mb-16 text-12 text-[#8c948b]">{t("creditNoteHint")}</p>
+					<h2 className="mb-8 text-16 font-semibold text-[#edf2ff]">{t("issueCreditNote")}</h2>
+					<p className="mb-16 text-12 text-[#9aa7c9]">{t("creditNoteHint")}</p>
 					<FormField label={t("notes")} value={creditNotes} onChange={(e) => setCreditNotes(e.target.value)} maxLength={2000} />
 					<div className="mt-20 flex justify-end gap-10">
 						<button type="button" onClick={() => setCreditTarget(null)} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>

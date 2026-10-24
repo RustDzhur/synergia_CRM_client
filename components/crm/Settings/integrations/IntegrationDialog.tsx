@@ -75,7 +75,7 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 		if (!type) return;
 		setError("");
 		const cfg = items.find((i) => i.type === type)?.config;
-		setValues(type === "webchat" ? { title: cfg?.title ?? "", greeting: cfg?.greeting ?? "", color: cfg?.color ?? "#C6FF4D", botEnabled: cfg?.botEnabled ?? "1" } : {});
+		setValues(type === "webchat" ? { title: cfg?.title ?? "", greeting: cfg?.greeting ?? "", color: cfg?.color ?? "#7C93FF", botEnabled: cfg?.botEnabled ?? "1" } : {});
 		setFbId("");
 		setFbSecret("");
 		// открываем плитку уже подключённого провайдера, а если ничего нет — показываем выбор
@@ -238,20 +238,20 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 		<>
 			<Modal open={type !== null} onClose={onClose} label={title} className="w-full max-w-[520px]">
 				<div className="fs-popover fs-scroll max-h-[calc(100vh-32px)] overflow-y-auto">
-					<div className="flex items-center justify-between border-b border-inkLine bg-[rgba(198,255,77,0.06)] px-20 py-12">
-						<h2 className="text-15 font-semibold text-[#f1f4ee]">{title}</h2>
-						<button type="button" onClick={onClose} aria-label={t("intClose")} className="text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+					<div className="flex items-center justify-between border-b border-inkLine bg-[rgba(124,147,255,0.06)] px-20 py-12">
+						<h2 className="text-15 font-semibold text-[#edf2ff]">{title}</h2>
+						<button type="button" onClick={onClose} aria-label={t("intClose")} className="text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
 							<TbX size={18} />
 						</button>
 					</div>
 
 					<form onSubmit={submit} className="flex flex-col gap-14 p-20">
 						{providerSwitch && <ProviderTiles catalog={catalog} preset={preset} onPick={pickProvider} isConnected={tileConnected} />}
-						{chooserOnly && <p className="text-12 text-[#8c948b]">{providerKind === "sms" ? t("intChooseProviderSms") : t("intChooseProvider")}</p>}
-						{!chooserOnly && <p className="text-12 text-[#8c948b]">{providerKind === "call" && shown === "sip" && preset && preset !== "custom" ? t(`provHelp_${preset}`) : t(`intHelp_${shown}`)}</p>}
+						{chooserOnly && <p className="text-12 text-[#9aa7c9]">{providerKind === "sms" ? t("intChooseProviderSms") : t("intChooseProvider")}</p>}
+						{!chooserOnly && <p className="text-12 text-[#9aa7c9]">{providerKind === "call" && shown === "sip" && preset && preset !== "custom" ? t(`provHelp_${preset}`) : t(`intHelp_${shown}`)}</p>}
 						{/* Входящие СМС принимает только Twilio: у остальных своя подпись вебхука, а без её проверки
 						    в беседу мог бы написать кто угодно. Об этом честно сказано у каждой такой плитки */}
-						{providerKind === "sms" && shown !== "twilio" && !chooserOnly && <p className="text-11 text-[#9AA396]">{t("intSmsInboundNote")}</p>}
+						{providerKind === "sms" && shown !== "twilio" && !chooserOnly && <p className="text-11 text-[#9AA7C9]">{t("intSmsInboundNote")}</p>}
 						{replacing && <p className="rounded-10 bg-[rgba(244,161,0,0.10)] p-12 text-12 text-[#F4A100]">{t("intSipReplaces", { name: replacing.name })}</p>}
 
 						{current && (
@@ -259,7 +259,7 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 								{current.status === "connected" ? t("intStatusOn", { name: current.name }) : t("intStatusWarn", { name: current.name })}
 							</p>
 						)}
-						{current?.type === "telegram" && current.config.polling === "1" && <p className="text-12 text-[#8c948b]">{t("intPollingInfo")}</p>}
+						{current?.type === "telegram" && current.config.polling === "1" && <p className="text-12 text-[#9aa7c9]">{t("intPollingInfo")}</p>}
 						{current?.status === "error" && current.error && <p className="rounded-10 bg-[rgba(244,161,0,0.10)] p-12 text-12 text-[#F4A100]">{current.error.startsWith("Webhooks need a public https address") ? t("intErrNeedHttps") : current.error}</p>}
 
 						{/* Основной путь для WhatsApp: окно Meta в три клика. Ключи приложения платформы
@@ -283,7 +283,7 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 						)}
 						{fbOptions.length > 0 && !connectedNow && <FacebookChoice options={fbOptions} onChoose={chooseFacebook} />}
 
-						{editable && !chooserOnly && fbForm && <p className="text-11 text-[#9AA396]">{t("intFbOrManual")}</p>}
+						{editable && !chooserOnly && fbForm && <p className="text-11 text-[#9AA7C9]">{t("intFbOrManual")}</p>}
 						{editable && !chooserOnly &&
 							fields.map((f) =>
 								f.type === "bool" ? (
@@ -292,14 +292,14 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 											type="checkbox"
 											checked={(values[f.key] ?? "1") !== "0"}
 											onChange={(e) => setValues({ ...values, [f.key]: e.target.checked ? "1" : "0" })}
-											className="h-16 w-16 accent-[#c6ff4d]"
+											className="h-16 w-16 accent-[#7c93ff]"
 										/>
-										<span className="text-12 text-[#8c948b]">{t(f.label)}</span>
+										<span className="text-12 text-[#9aa7c9]">{t(f.label)}</span>
 									</label>
 								) : f.type === "color" ? (
 									<label key={f.key} className="block">
-										<span className="mb-6 block text-12 text-[#8c948b]">{t(f.label)}</span>
-										<input type="color" value={values[f.key] ?? "#C6FF4D"} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} className="fs-field h-40 w-80 cursor-pointer p-4" />
+										<span className="mb-6 block text-12 text-[#9aa7c9]">{t(f.label)}</span>
+										<input type="color" value={values[f.key] ?? "#7C93FF"} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} className="fs-field h-40 w-80 cursor-pointer p-4" />
 									</label>
 								) : (
 									<FormField
@@ -329,7 +329,7 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 							<>
 								<CopyField label={t("intCallbackUrl")} value={current.webhookUrl} />
 								<CopyField label={t("intVerifyToken")} value={current.platformVerifyToken ?? ""} />
-								<p className="text-11 text-[#8c948b]">{t("intWaWebhookHelp")}</p>
+								<p className="text-11 text-[#9aa7c9]">{t("intWaWebhookHelp")}</p>
 							</>
 						)}
 						{/* Маркетплейсы: заказы приезжают в воронку по расписанию, но кнопка нужна —
@@ -344,15 +344,15 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 						{current && (shown === "payme" || shown === "click") && (
 							<>
 								<CopyField label={t(shown === "payme" ? "intPaymeEndpoint" : "intClickPrepare")} value={current.webhookUrl} />
-								<p className="text-11 leading-[1.5] text-[#8c948b]">{t(shown === "payme" ? "intPaymeHelp" : "intClickHelp")}</p>
+								<p className="text-11 leading-[1.5] text-[#9aa7c9]">{t(shown === "payme" ? "intPaymeHelp" : "intClickHelp")}</p>
 							</>
 						)}
-						{current && shown === "twilio" && <p className="text-12 text-[#8c948b]">{t("intTwilioAuto")}</p>}
-						{current && shown === "sip" && <p className="text-12 text-[#8c948b]">{t("intSipConnected")}</p>}
+						{current && shown === "twilio" && <p className="text-12 text-[#9aa7c9]">{t("intTwilioAuto")}</p>}
+						{current && shown === "sip" && <p className="text-12 text-[#9aa7c9]">{t("intSipConnected")}</p>}
 						{current && isWebchat && (
 							<div>
 								<CopyField label={t("intEmbedCode")} value={snippet} />
-								<p className="mt-6 text-11 text-[#8c948b]">{t("intEmbedHelp")}</p>
+								<p className="mt-6 text-11 text-[#9aa7c9]">{t("intEmbedHelp")}</p>
 							</div>
 						)}
 

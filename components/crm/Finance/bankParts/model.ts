@@ -62,7 +62,7 @@ export const dayGap = (a: string, b: string) => {
 const withinWindow = (date: string, around: string) => dayGap(date, around) <= MATCH_WINDOW_DAYS;
 
 // Цвет суммы по её знаку: приход — салатовый, расход — красный, ноль — обычный текст.
-export const amountColor = (value: number) => (value > 0 ? "#c6ff4d" : value < 0 ? "#EB5757" : undefined);
+export const amountColor = (value: number) => (value > 0 ? "#7c93ff" : value < 0 ? "#EB5757" : undefined);
 
 // Кандидаты на сверку: приход ищем среди открытых счетов клиентам, расход — среди расходов;
 // всё, что вне окна вокруг даты движения, не показываем, чтобы список оставался коротким.

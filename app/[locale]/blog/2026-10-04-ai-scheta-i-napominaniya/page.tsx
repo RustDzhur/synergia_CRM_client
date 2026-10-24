@@ -145,59 +145,59 @@ export default function Page({ params }: { params: { locale: string } }) {
 					priority
 				/>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Счёт: черновик, отправка, оплата</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
-					В разделе <code className="text-14 text-[#f1f4ee]">crm/finance</code> счёт можно собрать вручную, а
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Счёт: черновик, отправка, оплата</h2>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
+					В разделе <code className="text-14 text-[#edf2ff]">crm/finance</code> счёт можно собрать вручную, а
 					можно поручить ассистенту. Инструмент{" "}
-					<code className="text-14 text-[#f1f4ee]">create_invoice</code> создаёт{" "}
+					<code className="text-14 text-[#edf2ff]">create_invoice</code> создаёт{" "}
 					<em>черновик</em> счёта для клиента и только после подтверждения человеком. Черновик — ключевое
 					слово: сам агент счёт не выставляет.
 				</p>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Отправка и отметка об оплате</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
-					Инструмент <code className="text-14 text-[#f1f4ee]">send_invoice</code> отправляет черновик
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Отправка и отметка об оплате</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
+					Инструмент <code className="text-14 text-[#edf2ff]">send_invoice</code> отправляет черновик
 					клиенту письмом с PDF из почты фирмы и переводит счёт в статус «отправлен» — тоже после
-					подтверждения. Дальше события <code className="text-14 text-[#f1f4ee]">invoice_sent</code> и{" "}
-					<code className="text-14 text-[#f1f4ee]">invoice_paid</code> подхватывает автоматизация. Оплату
-					отмечает <code className="text-14 text-[#f1f4ee]">mark_invoice_paid</code> — полностью или
+					подтверждения. Дальше события <code className="text-14 text-[#edf2ff]">invoice_sent</code> и{" "}
+					<code className="text-14 text-[#edf2ff]">invoice_paid</code> подхватывает автоматизация. Оплату
+					отмечает <code className="text-14 text-[#edf2ff]">mark_invoice_paid</code> — полностью или
 					частично, с суммой.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Просрочка: напоминания и ступени</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
-					Раз в сутки крон <code className="text-14 text-[#f1f4ee]">api/cron/automation</code> проходит по
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Просрочка: напоминания и ступени</h2>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
+					Раз в сутки крон <code className="text-14 text-[#edf2ff]">api/cron/automation</code> проходит по
 					счетам: «отправленные» с истёкшим сроком оплаты становятся «просроченными» и дают событие{" "}
-					<code className="text-14 text-[#f1f4ee]">invoice_overdue</code> — один раз на счёт. Второй обход,{" "}
-					<code className="text-14 text-[#f1f4ee]">api/cron/reminders</code>, поднимает ступень напоминания,
+					<code className="text-14 text-[#edf2ff]">invoice_overdue</code> — один раз на счёт. Второй обход,{" "}
+					<code className="text-14 text-[#edf2ff]">api/cron/reminders</code>, поднимает ступень напоминания,
 					если с прошлого напоминания прошёл интервал из настроек фирмы (по умолчанию семь дней). Ступени с
 					первой по четвёртую автоматические; дальше автоматика не идёт, потому что начинается правовая
 					стадия, и решение принимает человек. Проценты за просрочку считаются справочно и в счёт не
 					включаются — окончательное слово за бухгалтером.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Выписки банка и сверка</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Выписки банка и сверка</h2>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Выписки подтягиваются из monobank и ПриватБанка: счёт подключается в CRM, движения
-					синхронизируются (<code className="text-14 text-[#f1f4ee]">api/bank/monobank</code>,{" "}
-					<code className="text-14 text-[#f1f4ee]">api/bank/privatbank</code>). Дубликаты по внешнему
+					синхронизируются (<code className="text-14 text-[#edf2ff]">api/bank/monobank</code>,{" "}
+					<code className="text-14 text-[#edf2ff]">api/bank/privatbank</code>). Дубликаты по внешнему
 					идентификатору не создаются, а к каждой новой строке подбирается предполагаемая пара — счёт
 					клиенту или расход. Уверенное совпадение (номер в назначении либо сумма и дата рядом) ставится
 					сразу, слабое остаётся подсказкой человеку.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Расходы из чека и отчёты</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Расходы из чека и отчёты</h2>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Фотография или PDF чека превращается в предложенные поля расхода (
-					<code className="text-14 text-[#f1f4ee]">api/expenses/extract</code>) — сам расход создаёт
+					<code className="text-14 text-[#edf2ff]">api/expenses/extract</code>) — сам расход создаёт
 					человек. По цифрам фирмы ассистент отвечает без выдумок: инструменты{" "}
-					<code className="text-14 text-[#f1f4ee]">list_invoices</code> и{" "}
-					<code className="text-14 text-[#f1f4ee]">finance_summary</code> читают реальные счета, а{" "}
-					<code className="text-14 text-[#f1f4ee]">email_report</code> собирает отчёт в PDF и отправляет его
+					<code className="text-14 text-[#edf2ff]">list_invoices</code> и{" "}
+					<code className="text-14 text-[#edf2ff]">finance_summary</code> читают реальные счета, а{" "}
+					<code className="text-14 text-[#edf2ff]">email_report</code> собирает отчёт в PDF и отправляет его
 					письмом.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Что остаётся человеку</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Что остаётся человеку</h2>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Подтверждение, подпись, отправка и любое удаление. Дневная квота ИИ — общая для чата и
 					распознавания чеков — зависит от тарифа. О том, как ассистент работает с клиентами круглосуточно,
 					рассказывает{" "}
@@ -207,8 +207,8 @@ export default function Page({ params }: { params: { locale: string } }) {
 					.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Итог</h2>
-				<p className="text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Итог</h2>
+				<p className="text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Счёт, напоминание, выписка и расход живут в Firmspace рядом со сделкой и клиентом, а не в отдельной
 					таблице. Больше о платформе — в разделе{" "}
 					<Link href={sitePath(locale, "/features")} className="text-authBtn">

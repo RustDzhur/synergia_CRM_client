@@ -20,7 +20,7 @@ export default function ProviderTiles({ catalog, preset, onPick, isConnected }: 
 						type="button"
 						onClick={() => onPick(p.id)}
 						aria-pressed={preset === p.id}
-						className={`relative flex h-80 w-full flex-col items-center justify-center gap-6 rounded-12 border px-6 text-center text-12 font-medium transition-colors ${preset === p.id ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.08)] text-[#c6ff4d]" : "border-inkLine bg-transparent text-[#8c948b] hover:border-[rgba(255,255,255,0.20)]"}`}>
+						className={`relative flex h-80 w-full flex-col items-center justify-center gap-6 rounded-12 border px-6 text-center text-12 font-medium transition-colors ${preset === p.id ? "border-[#7c93ff] bg-[rgba(124,147,255,0.08)] text-[#7c93ff]" : "border-inkLine bg-transparent text-[#9aa7c9] hover:border-[rgba(255,255,255,0.20)]"}`}>
 						<ProviderLogo id={p.id} size={30} />
 						<span className="leading-[1.15]">{p.id === "custom" ? t("provCustom") : p.name}</span>
 						{isConnected(p.id) && <span className="absolute right-6 top-6 h-8 w-8 rounded-50 bg-[#2DDEB6]" title={t("intStatusShort")} />}

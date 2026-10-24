@@ -84,16 +84,16 @@ export default function PayModal({ open, onClose, plan, interval, methods, order
 	}
 
 	const copy = (v: string) => navigator.clipboard?.writeText(v).then(() => toast.success(t("copied")), () => undefined);
-	const seg = (on: boolean) => `flex flex-1 items-center justify-center gap-8 rounded-10 border px-12 py-12 text-13 font-medium transition-colors ${on ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.06)] text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`;
+	const seg = (on: boolean) => `flex flex-1 items-center justify-center gap-8 rounded-10 border px-12 py-12 text-13 font-medium transition-colors ${on ? "border-[#7c93ff] bg-[rgba(124,147,255,0.06)] text-[#7c93ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`;
 
 	return (
 		<Modal open={open} onClose={onClose} label={t("payTitle")} className="w-full max-w-[520px]">
 			<div className="fs-popover fs-scroll max-h-[88vh] overflow-y-auto p-20">
-				<h2 className="mb-8 text-16 font-semibold text-[#f1f4ee]">{view ? `${t("invoiceNo")} ${view.order.number}` : t("payTitle")}</h2>
+				<h2 className="mb-8 text-16 font-semibold text-[#edf2ff]">{view ? `${t("invoiceNo")} ${view.order.number}` : t("payTitle")}</h2>
 
 				{!view && (
 					<form onSubmit={create} className="flex flex-col gap-12">
-						<p className="text-13 text-[#8c948b]">{t("payText")}</p>
+						<p className="text-13 text-[#9aa7c9]">{t("payText")}</p>
 						<div className="flex gap-8" role="radiogroup" aria-label={t("payTitle")}>
 							{methods.bank && <button type="button" role="radio" aria-checked={method === "bank"} onClick={() => setMethod("bank")} className={seg(method === "bank")}><TbBuildingBank size={18} aria-hidden />{t("viaBank")}</button>}
 							{methods.usdt && <button type="button" role="radio" aria-checked={method === "usdt"} onClick={() => setMethod("usdt")} className={seg(method === "usdt")}><TbCurrencyDollar size={18} aria-hidden />USDT</button>}
@@ -109,8 +109,8 @@ export default function PayModal({ open, onClose, plan, interval, methods, order
 
 				{view && (
 					<div className="flex flex-col gap-14">
-						<p className="text-13 text-[#8c948b]">{view.order.method === "usdt" ? t("usdtText") : t("bankText")}</p>
-						<p className="text-22 font-bold text-[#c6ff4d]">{view.payTo}</p>
+						<p className="text-13 text-[#9aa7c9]">{view.order.method === "usdt" ? t("usdtText") : t("bankText")}</p>
+						<p className="text-22 font-bold text-[#7c93ff]">{view.payTo}</p>
 						<div className="flex flex-col items-center gap-12 sm:flex-row sm:items-start">
 							{/* SVG собирает сервер из матрицы QR (lib/transferPay.ts qrSvg): в нём только фигуры, пользовательского текста нет */}
 							<div className="h-[168px] w-[168px] shrink-0 overflow-hidden rounded-10 bg-white p-6" role="img" aria-label="QR" dangerouslySetInnerHTML={{ __html: view.qr }} />
@@ -118,10 +118,10 @@ export default function PayModal({ open, onClose, plan, interval, methods, order
 								{view.lines.map((l, i) =>
 									l.label ? (
 										<div key={i} className="contents">
-											<dt className="text-[#8c948b]">{l.label}</dt>
-											<dd className="flex min-w-0 items-start gap-6 break-all text-[#f1f4ee]">
+											<dt className="text-[#9aa7c9]">{l.label}</dt>
+											<dd className="flex min-w-0 items-start gap-6 break-all text-[#edf2ff]">
 												{l.value}
-												<button type="button" onClick={() => copy(l.value)} aria-label={t("copy")} title={t("copy")} className="shrink-0 text-[#8c948b] hover:text-[#c6ff4d]"><TbCopy size={14} aria-hidden /></button>
+												<button type="button" onClick={() => copy(l.value)} aria-label={t("copy")} title={t("copy")} className="shrink-0 text-[#9aa7c9] hover:text-[#7c93ff]"><TbCopy size={14} aria-hidden /></button>
 											</dd>
 										</div>
 									) : (
@@ -133,12 +133,12 @@ export default function PayModal({ open, onClose, plan, interval, methods, order
 						<button type="button" onClick={pdf} className="fs-btn fs-btn-ghost h-38 self-start"><TbDownload size={16} aria-hidden />{t("downloadPdf")}</button>
 
 						{view.order.status === "claimed" || view.order.status === "paid" ? (
-							<p role="status" className="rounded-10 bg-[rgba(198,255,77,0.08)] px-14 py-10 text-13 text-[#c6ff4d]">{view.order.status === "paid" ? t("paidDone") : t("claimed")}</p>
+							<p role="status" className="rounded-10 bg-[rgba(124,147,255,0.08)] px-14 py-10 text-13 text-[#7c93ff]">{view.order.status === "paid" ? t("paidDone") : t("claimed")}</p>
 						) : (
 							<div className="flex flex-col gap-8 border-t border-inkLine pt-14">
 								<input value={payerRef} onChange={(e) => setPayerRef(e.target.value)} maxLength={300} placeholder={view.order.method === "usdt" ? t("payerRefUsdt") : t("payerRefBank")} aria-label={t("payerRefBank")} className="fs-field h-40 px-12 text-13 outline-none" />
 								<button type="button" onClick={claim} disabled={busy} className="fs-btn fs-btn-primary h-40 disabled:opacity-60">{busy ? "…" : t("iPaid")}</button>
-								<p className="text-11 text-[#9AA396]">{t("iPaidHint")}</p>
+								<p className="text-11 text-[#9AA7C9]">{t("iPaidHint")}</p>
 							</div>
 						)}
 						<div className="flex justify-end"><button type="button" onClick={onClose} className="fs-btn fs-btn-ghost h-36">{t("close")}</button></div>

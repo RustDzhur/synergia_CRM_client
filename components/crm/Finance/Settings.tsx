@@ -130,8 +130,8 @@ export default function FinanceSettingsTab() {
 		}
 	}
 
-	const label = "mb-6 block text-12 text-[#8c948b]";
-	const hint = "mt-[4px] block text-11 text-[#9AA396]";
+	const label = "mb-6 block text-12 text-[#9aa7c9]";
+	const hint = "mt-[4px] block text-11 text-[#9AA7C9]";
 
 	return (
 		<form onSubmit={submit} className="max-w-[640px]">
@@ -140,7 +140,7 @@ export default function FinanceSettingsTab() {
 			<ActivitiesCard />
 
 			<div className="mb-16 fs-card p-16 md:p-20">
-				<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("taxSection")}</h3>
+				<h3 className="mb-14 text-14 font-semibold text-[#edf2ff]">{t("taxSection")}</h3>
 				<div className="grid grid-cols-1 gap-12 md:grid-cols-2">
 					{/* Страна — не выпадающий список «на будущее», а режим работы: смена показывает, что скроется,
 					    и применяет набор по умолчанию. Существующие документы сохраняют свою валюту и формат. */}
@@ -158,18 +158,18 @@ export default function FinanceSettingsTab() {
 				{/* Подсказка повторяет то, что реально делает код (lib/finance/tax.ts): у освобождённой фирмы ставка
 				    страны не применяется вообще — 0 % и пометка §19 на каждом документе, поэтому и текст другой */}
 				{market === "DE" && (form.smallBusiness ? (
-					<p className="mt-8 text-12 text-[#9AA396]">{t("taxHintExempt")}</p>
+					<p className="mt-8 text-12 text-[#9AA7C9]">{t("taxHintExempt")}</p>
 				) : selectedCountry ? (
-					<p className="mt-8 text-12 text-[#8c948b]">{t("taxHint", { rate: selectedCountry.standard, label: selectedCountry.label })}</p>
+					<p className="mt-8 text-12 text-[#9aa7c9]">{t("taxHint", { rate: selectedCountry.standard, label: selectedCountry.label })}</p>
 				) : null)}
 				{/* Kleinunternehmerregelung §19 — немецкое поле; у украинской фирмы его место занимает «платник ПДВ» */}
 				{market === "DE" && (
 					<>
 						<label className="mt-14 flex items-center gap-10 text-13 text-[#cfd4cb]">
-							<input type="checkbox" checked={form.smallBusiness} onChange={(e) => setForm({ ...form, smallBusiness: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
+							<input type="checkbox" checked={form.smallBusiness} onChange={(e) => setForm({ ...form, smallBusiness: e.target.checked })} className="h-16 w-16 accent-[#7c93ff]" />
 							{t("smallBusiness")}
 						</label>
-						<p className="mt-[4px] pl-[26px] text-11 text-[#9AA396]">{t("smallBusinessHint")}</p>
+						<p className="mt-[4px] pl-[26px] text-11 text-[#9AA7C9]">{t("smallBusinessHint")}</p>
 					</>
 				)}
 			</div>
@@ -179,7 +179,7 @@ export default function FinanceSettingsTab() {
 			{switchTo && market && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(6,8,6,0.72)] p-16" role="dialog" aria-modal="true">
 					<div className="w-full max-w-[520px] rounded-14 border border-[rgba(255,255,255,0.10)] bg-[#131715] p-20">
-						<h3 className="text-15 font-semibold text-[#f1f4ee]">{t("market_change_title")}</h3>
+						<h3 className="text-15 font-semibold text-[#edf2ff]">{t("market_change_title")}</h3>
 						<p className="mt-8 text-13 text-[#cfd4cb]">{t("market_hint")}</p>
 						<div className="mt-12 flex flex-wrap gap-8" role="radiogroup">
 							{registeredMarkets().filter((m) => m !== market).map((m) => (
@@ -192,18 +192,18 @@ export default function FinanceSettingsTab() {
 							return (
 								<div className="mt-12 space-y-10">
 									<div>
-										<p className="mb-6 text-11 uppercase tracking-[0.08em] text-[#8c948b]">{t("market_change_hide")}</p>
+										<p className="mb-6 text-11 uppercase tracking-[0.08em] text-[#9aa7c9]">{t("market_change_hide")}</p>
 										<p className="text-13 text-[#cfd4cb]">{diff.hidden.length ? diff.hidden.map(name).join(" · ") : t("market_change_same")}</p>
 									</div>
 									<div>
-										<p className="mb-6 text-11 uppercase tracking-[0.08em] text-[#8c948b]">{t("market_change_show")}</p>
+										<p className="mb-6 text-11 uppercase tracking-[0.08em] text-[#9aa7c9]">{t("market_change_show")}</p>
 										<p className="text-13 text-[#cfd4cb]">{diff.shown.length ? diff.shown.map(name).join(" · ") : t("market_change_same")}</p>
 									</div>
 								</div>
 							);
 						})()}
 						<label className="mt-14 flex items-start gap-10 text-13 text-[#cfd4cb]">
-							<input type="checkbox" checked={applyDefaults} onChange={(e) => setApplyDefaults(e.target.checked)} className="mt-2 h-16 w-16 accent-[#c6ff4d]" />
+							<input type="checkbox" checked={applyDefaults} onChange={(e) => setApplyDefaults(e.target.checked)} className="mt-2 h-16 w-16 accent-[#7c93ff]" />
 							<span>{t("market_change_defaults")}</span>
 						</label>
 						<div className="mt-16 flex justify-end gap-10">
@@ -246,7 +246,7 @@ export default function FinanceSettingsTab() {
 			<ExpenseCategoriesCard />
 
 			<div className="mb-16 fs-card p-16 md:p-20">
-				<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("companySection")}</h3>
+				<h3 className="mb-14 text-14 font-semibold text-[#edf2ff]">{t("companySection")}</h3>
 				<div className="flex flex-col gap-12">
 					<FormField label={t("legalName")} value={form.legalName} onChange={(e) => setForm({ ...form, legalName: e.target.value })} maxLength={200} />
 					<FormField label={t("address")} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} maxLength={500} />
@@ -266,7 +266,7 @@ export default function FinanceSettingsTab() {
 			</div>
 
 			<div className="mb-16 fs-card p-16 md:p-20">
-				<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("contactSection")}</h3>
+				<h3 className="mb-14 text-14 font-semibold text-[#edf2ff]">{t("contactSection")}</h3>
 				<div className="grid grid-cols-1 gap-12 md:grid-cols-2">
 					<FormField label={t("phone")} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} maxLength={100} />
 					<FormField label={t("email")} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} maxLength={100} />
@@ -277,11 +277,11 @@ export default function FinanceSettingsTab() {
 			</div>
 
 			<div className="mb-16 fs-card p-16 md:p-20">
-				<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("documentSection")}</h3>
+				<h3 className="mb-14 text-14 font-semibold text-[#edf2ff]">{t("documentSection")}</h3>
 				<div className="flex flex-wrap items-start gap-14">
 					<div className="flex h-[84px] w-[168px] shrink-0 items-center justify-center overflow-hidden rounded-10 border border-inkLine bg-[rgba(255,255,255,0.03)] p-8">
 						{/* Превью того, что уйдёт в шапку PDF: белый фон — как у страницы документа */}
-						{form.logo ? <img src={form.logo} alt={t("logo")} className="max-h-full max-w-full object-contain" /> : <span className="text-11 text-[#9AA396]">{t("logo")}</span>}
+						{form.logo ? <img src={form.logo} alt={t("logo")} className="max-h-full max-w-full object-contain" /> : <span className="text-11 text-[#9AA7C9]">{t("logo")}</span>}
 					</div>
 					<div className="flex flex-col items-start gap-6">
 						<button type="button" onClick={() => logoInput.current?.click()} className="fs-btn fs-btn-ghost h-34">{t("logoUpload")}</button>
@@ -298,23 +298,23 @@ export default function FinanceSettingsTab() {
 			</div>
 
 			<div className="mb-16 fs-card p-16 md:p-20">
-				<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("templateSection")}</h3>
-				<p className="mb-14 text-12 text-[#8c948b]">{t("templateSectionHint")}</p>
+				<h3 className="mb-14 text-14 font-semibold text-[#edf2ff]">{t("templateSection")}</h3>
+				<p className="mb-14 text-12 text-[#9aa7c9]">{t("templateSectionHint")}</p>
 				<TemplatePicker value={form.template || "classic"} onChange={(v) => setForm({ ...form, template: v || "classic" })} columns={5} />
 				{/* EPC/SEPA-QR — немецкий способ оплаты по QR; украинскому счёту он ничего не даёт */}
 				{(mp?.features.sepaQr ?? true) && (
 					<>
 						<label className="mt-16 flex items-center gap-10 text-13 text-[#cfd4cb]">
-							<input type="checkbox" checked={form.paymentQr} onChange={(e) => setForm({ ...form, paymentQr: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
+							<input type="checkbox" checked={form.paymentQr} onChange={(e) => setForm({ ...form, paymentQr: e.target.checked })} className="h-16 w-16 accent-[#7c93ff]" />
 							{t("paymentQr")}
 						</label>
-						<p className="mt-[4px] pl-[26px] text-11 text-[#9AA396]">{t("paymentQrHint")}</p>
+						<p className="mt-[4px] pl-[26px] text-11 text-[#9AA7C9]">{t("paymentQrHint")}</p>
 					</>
 				)}
 			</div>
 
 			<div className="mb-16 fs-card p-16 md:p-20">
-				<h3 className="mb-14 text-14 font-semibold text-[#f1f4ee]">{t("invoiceSection")}</h3>
+				<h3 className="mb-14 text-14 font-semibold text-[#edf2ff]">{t("invoiceSection")}</h3>
 				<div className="grid grid-cols-1 gap-12 md:grid-cols-2">
 					<FormField label={t("paymentTerms")} type="number" min={0} value={form.paymentTermsDays} onChange={(e) => setForm({ ...form, paymentTermsDays: e.target.value })} />
 					<FormField label={t("reminderIntervalLabel")} type="number" min={1} max={90} value={form.reminderIntervalDays} onChange={(e) => setForm({ ...form, reminderIntervalDays: e.target.value })} />
@@ -329,8 +329,8 @@ export default function FinanceSettingsTab() {
 			    Mahnwesen — немецкий институт: украинской фирме его настройки не показываем. */}
 			{(mp?.features.dunning ?? true) && (
 			<div className="mb-16 fs-card p-16 md:p-20">
-				<h3 className="mb-8 text-14 font-semibold text-[#f1f4ee]">{t("dunningSection")}</h3>
-				<p className="mb-14 text-12 leading-[1.5] text-[#8c948b]">{t("dunningSettingsHint")}</p>
+				<h3 className="mb-8 text-14 font-semibold text-[#edf2ff]">{t("dunningSection")}</h3>
+				<p className="mb-14 text-12 leading-[1.5] text-[#9aa7c9]">{t("dunningSettingsHint")}</p>
 				<span className={label}>{t("dunningFeesLabel")}</span>
 				<div className="grid grid-cols-2 gap-12 md:grid-cols-5">
 					{form.dunningFees.map((v, i) => (

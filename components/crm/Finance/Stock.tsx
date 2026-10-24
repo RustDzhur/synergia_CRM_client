@@ -225,7 +225,7 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 						key={s}
 						type="button"
 						onClick={() => setSection(s)}
-						className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${section === s ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#f1f4ee]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+						className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${section === s ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)] text-[#edf2ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`}>
 						{t(`stockTab_${s}`)}
 					</button>
 				))}
@@ -235,20 +235,20 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 				<>
 					<section className="fs-card p-16 md:p-20">
 						<div className="mb-12 flex flex-wrap items-center justify-between gap-10">
-							<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("stockWarehouses")}</h3>
+							<h3 className="text-14 font-semibold text-[#edf2ff]">{t("stockWarehouses")}</h3>
 							<button type="button" onClick={() => { setWhForm({ name: "", kind: "warehouse", address: "", isDefault: warehouses.length === 0 }); setWhOpen(true); }} className="fs-btn fs-btn-ghost h-34">
 								<TbPlus size={14} /> {t("stockAddWarehouse")}
 							</button>
 						</div>
 						{warehouses.length === 0 ? (
-							<p className="text-12 text-[#8c948b]">{t("stockNoWarehouses")}</p>
+							<p className="text-12 text-[#9aa7c9]">{t("stockNoWarehouses")}</p>
 						) : (
 							// Склады — настоящий фильтр остатков, а не подписи: нажатие показывает остатки этого склада
 							<div className="flex flex-wrap gap-8">
 								<button
 									type="button"
 									onClick={() => setWarehouseFilter("")}
-									className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${warehouseFilter === "" ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#f1f4ee]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+									className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${warehouseFilter === "" ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)] text-[#edf2ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`}>
 									{t("stockAllWarehouses")}
 								</button>
 								{warehouses.filter((w) => !w.archived).map((w) => (
@@ -256,9 +256,9 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 										key={w.id}
 										type="button"
 										onClick={() => setWarehouseFilter(w.id)}
-										className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${warehouseFilter === w.id ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#f1f4ee]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>
+										className={`rounded-10 border px-12 py-7 text-12 font-medium transition-colors ${warehouseFilter === w.id ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)] text-[#edf2ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`}>
 										{w.name}
-										<span className="ml-8 text-11 text-[#9AA396]">{t(`stockKind_${w.kind}`)}{w.isDefault ? ` · ${t("stockDefault")}` : ""}</span>
+										<span className="ml-8 text-11 text-[#9AA7C9]">{t(`stockKind_${w.kind}`)}{w.isDefault ? ` · ${t("stockDefault")}` : ""}</span>
 									</button>
 								))}
 							</div>
@@ -266,17 +266,17 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 					</section>
 					<section className="fs-card overflow-x-auto p-16 md:p-20">
 						<div className="mb-10 flex flex-wrap items-center justify-between gap-10">
-							<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("stockOnHand")}</h3>
+							<h3 className="text-14 font-semibold text-[#edf2ff]">{t("stockOnHand")}</h3>
 							<SearchBox value={onHandQuery} onChange={setOnHandQuery} placeholder={t("stockSearchPlaceholder")} className="w-full md:w-[320px]" />
 						</div>
 						{!onHand || onHand.rows.length === 0 ? (
-							<p className="text-12 text-[#8c948b]">{t("stockEmpty")}</p>
+							<p className="text-12 text-[#9aa7c9]">{t("stockEmpty")}</p>
 						) : onHandRows.length === 0 ? (
-							<p className="text-12 text-[#8c948b]">{t("stockSearchEmpty")}</p>
+							<p className="text-12 text-[#9aa7c9]">{t("stockSearchEmpty")}</p>
 						) : (
 							<table className="w-full min-w-[560px] text-12">
 								<thead>
-									<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#8c948b]">
+									<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#9aa7c9]">
 										<th className="pb-6 font-medium">{t("stockColProduct")}</th>
 										{warehouseFilter === "" ? (
 											onHand.warehouses.map((w) => <th key={w.id} className="pb-6 text-right font-medium">{w.name}</th>)
@@ -290,12 +290,12 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 								<tbody>
 									{onHandRows.map((r) => (
 										<tr key={r.id} className="border-t border-inkLine text-[#cfd4cb]">
-											<td className="py-7 text-[#f1f4ee]">
+											<td className="py-7 text-[#edf2ff]">
 												<span className="flex items-center gap-10">
 													{r.image ? <img src={r.image} alt="" className="h-28 w-28 shrink-0 rounded-6 border border-inkLine object-cover" loading="lazy" /> : null}
 													<span className="min-w-0">
 														{r.name}
-														<span className="ml-6 text-11 text-[#8c948b]">{r.sku}{r.barcode ? ` · ${r.barcode}` : ""}</span>
+														<span className="ml-6 text-11 text-[#9aa7c9]">{r.sku}{r.barcode ? ` · ${r.barcode}` : ""}</span>
 														{r.reorderLevel > 0 && r.total < r.reorderLevel && (
 															<span className="ml-8 inline-flex items-center gap-4 text-11 text-[#F4A100]"><TbAlertTriangle size={11} /> {t("stockBelowMin")}</span>
 														)}
@@ -307,8 +307,8 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 											) : (
 												<td className="py-7 text-right">{r.byWarehouse[warehouseFilter] ?? 0}</td>
 											)}
-											{hasNoWarehouse && <td className="py-7 text-right text-[#9AA396]">{r.noWarehouse || 0}</td>}
-											<td className="py-7 text-right font-medium text-[#f1f4ee]">{r.total} {r.unit}</td>
+											{hasNoWarehouse && <td className="py-7 text-right text-[#9AA7C9]">{r.noWarehouse || 0}</td>}
+											<td className="py-7 text-right font-medium text-[#edf2ff]">{r.total} {r.unit}</td>
 										</tr>
 									))}
 								</tbody>
@@ -321,17 +321,17 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 			{section === "docs" && (
 				<section className="fs-card overflow-x-auto p-16 md:p-20">
 					<div className="mb-12 flex flex-wrap items-center justify-between gap-10">
-						<h3 className="text-14 font-semibold text-[#f1f4ee]">{t("stockDocs")}</h3>
+						<h3 className="text-14 font-semibold text-[#edf2ff]">{t("stockDocs")}</h3>
 						<button type="button" onClick={() => { setDocForm({ ...docForm, warehouseFrom: defaults.from, warehouseTo: defaults.to }); setDocLines([]); setLineQuery(""); setDocOpen(true); }} className="fs-btn fs-btn-ghost h-34">
 							<TbPlus size={14} /> {t("stockNewDoc")}
 						</button>
 					</div>
 					{docs.length === 0 ? (
-						<p className="text-12 text-[#8c948b]">{t("stockNoDocs")}</p>
+						<p className="text-12 text-[#9aa7c9]">{t("stockNoDocs")}</p>
 					) : (
 						<table className="w-full min-w-[720px] text-12">
 							<thead>
-								<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#8c948b]">
+								<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#9aa7c9]">
 									<th className="pb-6 font-medium">{t("stockColNumber")}</th>
 									<th className="pb-6 font-medium">{t("stockColKind")}</th>
 									<th className="pb-6 font-medium">{t("stockColRoute")}</th>
@@ -343,7 +343,7 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 							<tbody>
 								{docs.map((d) => (
 									<tr key={d.id} className={`cursor-pointer border-t border-inkLine text-[#cfd4cb] transition-colors hover:bg-[rgba(255,255,255,0.03)] ${d.reversed ? "opacity-50" : ""}`} onClick={() => void openDoc(d.id)}>
-										<td className="py-7 text-[#f1f4ee]">{d.number}</td>
+										<td className="py-7 text-[#edf2ff]">{d.number}</td>
 										<td className="py-7">{t(`stockDoc_${d.kind}`)}{d.reversalOf ? ` · ${t("stockReversalMark")}` : ""}</td>
 										<td className="py-7">{[d.warehouseFrom, d.warehouseTo].filter(Boolean).join(" → ")}</td>
 										<td className="py-7">{d.lines.slice(0, 3).map((l) => `${l.name} ${l.qty}`).join(", ")}{d.lines.length > 3 ? " …" : ""}</td>
@@ -371,13 +371,13 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 			{section === "reports" && (
 				<>
 					<section className="fs-card overflow-x-auto p-16 md:p-20">
-						<h3 className="mb-10 text-14 font-semibold text-[#f1f4ee]">{t("stockTurnover", { from: turnoverView?.from ?? "", to: turnoverView?.to ?? "" })}</h3>
+						<h3 className="mb-10 text-14 font-semibold text-[#edf2ff]">{t("stockTurnover", { from: turnoverView?.from ?? "", to: turnoverView?.to ?? "" })}</h3>
 						{!turnoverView || turnoverView.rows.length === 0 ? (
-							<p className="text-12 text-[#8c948b]">{t("stockEmpty")}</p>
+							<p className="text-12 text-[#9aa7c9]">{t("stockEmpty")}</p>
 						) : (
 							<table className="w-full min-w-[560px] text-12">
 								<thead>
-									<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#8c948b]">
+									<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#9aa7c9]">
 										<th className="pb-6 font-medium">{t("stockColProduct")}</th>
 										<th className="pb-6 text-right font-medium">{t("stockOpening")}</th>
 										<th className="pb-6 text-right font-medium">{t("stockIncoming")}</th>
@@ -388,11 +388,11 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 								<tbody>
 									{turnoverView.rows.map((r) => (
 										<tr key={r.product} className="border-t border-inkLine text-[#cfd4cb]">
-											<td className="py-7 text-[#f1f4ee]">{r.name}<span className="ml-6 text-11 text-[#8c948b]">{r.sku}</span></td>
+											<td className="py-7 text-[#edf2ff]">{r.name}<span className="ml-6 text-11 text-[#9aa7c9]">{r.sku}</span></td>
 											<td className="py-7 text-right">{r.opening}</td>
 											<td className="py-7 text-right text-[#2DDEB6]">+{r.incoming}</td>
 											<td className="py-7 text-right text-[#F4A100]">−{r.outgoing}</td>
-											<td className="py-7 text-right font-medium text-[#f1f4ee]">{r.closing}</td>
+											<td className="py-7 text-right font-medium text-[#edf2ff]">{r.closing}</td>
 										</tr>
 									))}
 								</tbody>
@@ -401,21 +401,21 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 					</section>
 					<div className="grid grid-cols-1 gap-16 xl:grid-cols-2">
 						<section className="fs-card p-16 md:p-20">
-							<h3 className="mb-10 text-14 font-semibold text-[#f1f4ee]">{t("stockDead")}</h3>
-							{dead.length === 0 ? <p className="text-12 text-[#8c948b]">{t("stockNoDead")}</p> : (
+							<h3 className="mb-10 text-14 font-semibold text-[#edf2ff]">{t("stockDead")}</h3>
+							{dead.length === 0 ? <p className="text-12 text-[#9aa7c9]">{t("stockNoDead")}</p> : (
 								<ul className="flex flex-col gap-6 text-12 text-[#cfd4cb]">
 									{dead.slice(0, 10).map((d) => <li key={d.id}>{d.name} · {d.qty} {t("stockPcs")}</li>)}
 								</ul>
 							)}
 						</section>
 						<section className="fs-card p-16 md:p-20">
-							<h3 className="mb-10 text-14 font-semibold text-[#f1f4ee]">{t("stockAbc")}</h3>
-							{abc.length === 0 ? <p className="text-12 text-[#8c948b]">{t("stockEmpty")}</p> : (
+							<h3 className="mb-10 text-14 font-semibold text-[#edf2ff]">{t("stockAbc")}</h3>
+							{abc.length === 0 ? <p className="text-12 text-[#9aa7c9]">{t("stockEmpty")}</p> : (
 								<ul className="flex flex-col gap-6 text-12 text-[#cfd4cb]">
 									{abc.slice(0, 10).map((r) => (
 										<li key={r.product} className="flex justify-between gap-10">
 											<span>{r.group} · {r.name}</span>
-											<span className="text-[#8c948b]">{money(r.revenue, settings?.currency ?? "UAH", locale)} · {r.share}%</span>
+											<span className="text-[#9aa7c9]">{money(r.revenue, settings?.currency ?? "UAH", locale)} · {r.share}%</span>
 										</li>
 									))}
 								</ul>
@@ -428,17 +428,17 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 			{/* Новый склад */}
 			<Modal open={whOpen} onClose={() => setWhOpen(false)} label={t("stockAddWarehouse")} className="w-full max-w-[460px]">
 				<div className="fs-popover flex flex-col gap-12 p-20">
-					<h2 className="text-15 font-semibold text-[#f1f4ee]">{t("stockAddWarehouse")}</h2>
+					<h2 className="text-15 font-semibold text-[#edf2ff]">{t("stockAddWarehouse")}</h2>
 					<FormField label={t("stockWhName")} value={whForm.name} onChange={(e) => setWhForm({ ...whForm, name: e.target.value })} maxLength={80} autoFocus />
 					<label className="block">
-						<span className="mb-6 block text-12 text-[#8c948b]">{t("stockWhKind")}</span>
+						<span className="mb-6 block text-12 text-[#9aa7c9]">{t("stockWhKind")}</span>
 						<select value={whForm.kind} onChange={(e) => setWhForm({ ...whForm, kind: e.target.value })} className="fs-field h-40 w-full px-12 text-13 outline-none">
 							{["warehouse", "store", "transit"].map((k) => <option key={k} value={k}>{t(`stockKind_${k}`)}</option>)}
 						</select>
 					</label>
 					<FormField label={t("stockWhAddress")} value={whForm.address} onChange={(e) => setWhForm({ ...whForm, address: e.target.value })} maxLength={200} />
 					<label className="flex items-center gap-10 text-13 text-[#cfd4cb]">
-						<input type="checkbox" checked={whForm.isDefault} onChange={(e) => setWhForm({ ...whForm, isDefault: e.target.checked })} className="h-16 w-16 accent-[#c6ff4d]" />
+						<input type="checkbox" checked={whForm.isDefault} onChange={(e) => setWhForm({ ...whForm, isDefault: e.target.checked })} className="h-16 w-16 accent-[#7c93ff]" />
 						{t("stockDefault")}
 					</label>
 					<div className="mt-4 flex justify-end gap-10">
@@ -451,10 +451,10 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 			{/* Новый документ склада: строки добавляются поиском — сканер вводит штрихкод как текст */}
 			<Modal open={docOpen} onClose={() => setDocOpen(false)} label={t("stockNewDoc")} className="w-full max-w-[640px]">
 				<div className="fs-popover flex max-h-[calc(100dvh-32px)] flex-col p-20">
-					<h2 className="mb-12 text-15 font-semibold text-[#f1f4ee]">{t("stockNewDoc")}</h2>
+					<h2 className="mb-12 text-15 font-semibold text-[#edf2ff]">{t("stockNewDoc")}</h2>
 					<div className="fs-scroll min-h-0 flex-1 overflow-y-auto pr-4">
 						<label className="mb-12 block">
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("stockColKind")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("stockColKind")}</span>
 							<select value={docKind} onChange={(e) => setDocKind(e.target.value as DocKind)} className="fs-field h-40 w-full px-12 text-13 outline-none">
 								{DOC_KINDS.map((k) => <option key={k} value={k}>{t(`stockDoc_${k}`)}</option>)}
 							</select>
@@ -462,7 +462,7 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 						<div className="mb-12 grid grid-cols-1 gap-12 md:grid-cols-3">
 							{NEEDS[docKind].from && (
 								<label className="block">
-									<span className="mb-6 block text-12 text-[#8c948b]">{docKind === "inventory" ? t("stockInventoryAt") : t("stockFrom")}</span>
+									<span className="mb-6 block text-12 text-[#9aa7c9]">{docKind === "inventory" ? t("stockInventoryAt") : t("stockFrom")}</span>
 									<select value={docForm.warehouseFrom} onChange={(e) => setDocForm({ ...docForm, warehouseFrom: e.target.value })} className={input}>
 										<option value="">—</option>
 										{warehouses.filter((w) => !w.archived).map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
@@ -471,7 +471,7 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 							)}
 							{NEEDS[docKind].to && (
 								<label className="block">
-									<span className="mb-6 block text-12 text-[#8c948b]">{t("stockTo")}</span>
+									<span className="mb-6 block text-12 text-[#9aa7c9]">{t("stockTo")}</span>
 									<select value={docForm.warehouseTo} onChange={(e) => setDocForm({ ...docForm, warehouseTo: e.target.value })} className={input}>
 										<option value="">—</option>
 										{warehouses.filter((w) => !w.archived).map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
@@ -480,7 +480,7 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 							)}
 							<FormField label={t("stockColDate")} type="date" value={docForm.date} onChange={(e) => setDocForm({ ...docForm, date: e.target.value })} />
 						</div>
-						<span className="mb-6 block text-12 text-[#8c948b]">{t("stockColLines")}</span>
+						<span className="mb-6 block text-12 text-[#9aa7c9]">{t("stockColLines")}</span>
 						{/* Поиск товара: название, артикул или штрихкод. Точное совпадение кода добавляет строку сразу —
 						    так работает сканер; подсказки добавляют товар нажатием или Enter */}
 						<div className="relative mb-8">
@@ -496,14 +496,14 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 								{/* Камера телефона или аппаратный сканер: код встаёт в поле и добавляет строку сам */}
 								<ScanCode onDetect={(code) => onLineQueryChange(code)} />
 							</div>
-							{lineQuery.trim() && !lineMatches.length && <p className="mt-6 text-11 text-[#9AA396]">{t("stockSearchEmpty")}</p>}
+							{lineQuery.trim() && !lineMatches.length && <p className="mt-6 text-11 text-[#9AA7C9]">{t("stockSearchEmpty")}</p>}
 							{lineMatches.length > 0 && (
 								<ul className="mt-6 flex flex-col gap-4">
 									{lineMatches.map((p) => (
 										<li key={p.id}>
-											<button type="button" onClick={() => addDocLine(p.id)} className="w-full rounded-8 border border-inkLine px-10 py-6 text-left text-12 text-[#cfd4cb] transition-colors hover:border-[rgba(198,255,77,0.4)] hover:text-[#f1f4ee]">
+											<button type="button" onClick={() => addDocLine(p.id)} className="w-full rounded-8 border border-inkLine px-10 py-6 text-left text-12 text-[#cfd4cb] transition-colors hover:border-[rgba(124,147,255,0.4)] hover:text-[#edf2ff]">
 												{p.name}
-												<span className="ml-8 text-11 text-[#8c948b]">{p.sku}{p.barcode ? ` · ${p.barcode}` : ""} · {t("stockAtStock", { qty: p.stockQty, unit: p.unit })}</span>
+												<span className="ml-8 text-11 text-[#9aa7c9]">{p.sku}{p.barcode ? ` · ${p.barcode}` : ""} · {t("stockAtStock", { qty: p.stockQty, unit: p.unit })}</span>
 											</button>
 										</li>
 									))}
@@ -515,9 +515,9 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 								const p = productInfo.get(line.product);
 								return (
 									<div key={line.product} className="grid grid-cols-[1fr_110px_32px] items-center gap-8">
-										<span className="min-w-0 truncate text-13 text-[#f1f4ee]">
+										<span className="min-w-0 truncate text-13 text-[#edf2ff]">
 											{p?.name ?? "—"}
-											<span className="ml-6 text-11 text-[#8c948b]">{p?.sku}</span>
+											<span className="ml-6 text-11 text-[#9aa7c9]">{p?.sku}</span>
 										</span>
 										<input
 											value={line.qty}
@@ -525,16 +525,16 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 											placeholder={docKind === "inventory" ? t("stockQtyFact") : t("stockQty")}
 											className={input}
 										/>
-										<button type="button" onClick={() => setDocLines(docLines.filter((_, j) => j !== i))} className="text-[#8c948b] transition-colors hover:text-danger" aria-label={t("delete")}>
+										<button type="button" onClick={() => setDocLines(docLines.filter((_, j) => j !== i))} className="text-[#9aa7c9] transition-colors hover:text-danger" aria-label={t("delete")}>
 											<TbTrash size={15} />
 										</button>
 									</div>
 								);
 							})}
-							{docLines.length === 0 && <p className="text-11 text-[#9AA396]">{t("stockNoLinesYet")}</p>}
+							{docLines.length === 0 && <p className="text-11 text-[#9AA7C9]">{t("stockNoLinesYet")}</p>}
 						</div>
 						<FormField label={t("stockNote")} value={docForm.note} onChange={(e) => setDocForm({ ...docForm, note: e.target.value })} maxLength={500} className="mt-12" />
-						{docKind === "inventory" && <p className="mt-8 text-11 text-[#9AA396]">{t("stockInventoryHint")}</p>}
+						{docKind === "inventory" && <p className="mt-8 text-11 text-[#9AA7C9]">{t("stockInventoryHint")}</p>}
 					</div>
 					<div className="mt-16 flex justify-end gap-10">
 						<button type="button" onClick={() => setDocOpen(false)} className="fs-btn fs-btn-ghost h-38">{t("cancel")}</button>
@@ -548,13 +548,13 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 				{viewDoc && (
 					<div className="fs-popover fs-scroll max-h-[calc(100dvh-32px)] overflow-y-auto p-20">
 						<div className="mb-10 flex flex-wrap items-center justify-between gap-10">
-							<h2 className="text-15 font-semibold text-[#f1f4ee]">
+							<h2 className="text-15 font-semibold text-[#edf2ff]">
 								{t(`stockDoc_${viewDoc.kind}`)} № {viewDoc.number}
-								{viewDoc.reversalOf && <span className="ml-8 text-12 text-[#9AA396]">{t("stockReversalMark")} {viewDoc.reversalOfNumber}</span>}
+								{viewDoc.reversalOf && <span className="ml-8 text-12 text-[#9AA7C9]">{t("stockReversalMark")} {viewDoc.reversalOfNumber}</span>}
 							</h2>
 							{viewDoc.reversed && <span className="fs-chip border-[rgba(235,87,87,0.35)] text-danger">{t("stockReversedMark")}{viewDoc.reversalNumber ? ` · ${viewDoc.reversalNumber}` : ""}</span>}
 						</div>
-						<p className="mb-10 text-12 text-[#8c948b]">
+						<p className="mb-10 text-12 text-[#9aa7c9]">
 							{viewDoc.date}
 							{[viewDoc.warehouseFrom, viewDoc.warehouseTo].filter(Boolean).length ? ` · ${[viewDoc.warehouseFrom, viewDoc.warehouseTo].filter(Boolean).join(" → ")}` : ""}
 							{viewDoc.by ? ` · ${t("stockPostedBy", { name: viewDoc.by })}` : ""}
@@ -562,7 +562,7 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 						{viewDoc.note && <p className="mb-10 text-12 text-[#cfd4cb]">{viewDoc.note}</p>}
 						<table className="w-full min-w-[520px] text-12">
 							<thead>
-								<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#8c948b]">
+								<tr className="text-left text-11 uppercase tracking-[0.06em] text-[#9aa7c9]">
 									<th className="pb-6 font-medium">{t("stockColProduct")}</th>
 									{viewDoc.kind === "inventory" ? (
 										<>
@@ -578,12 +578,12 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 							<tbody>
 								{viewDoc.lines.map((l, i) => (
 									<tr key={`${l.product}-${i}`} className="border-t border-inkLine text-[#cfd4cb]">
-										<td className="py-6 text-[#f1f4ee]">{l.name}<span className="ml-6 text-11 text-[#8c948b]">{l.sku}</span></td>
+										<td className="py-6 text-[#edf2ff]">{l.name}<span className="ml-6 text-11 text-[#9aa7c9]">{l.sku}</span></td>
 										{viewDoc.kind === "inventory" ? (
 											<>
 												<td className="py-6 text-right">{l.qty} {l.unit}</td>
-												<td className="py-6 text-right text-[#8c948b]">{Math.round((l.qty - l.diff) * 1000) / 1000} {l.unit}</td>
-												<td className={`py-6 text-right ${l.diff === 0 ? "text-[#8c948b]" : l.diff > 0 ? "text-[#2DDEB6]" : "text-danger"}`}>{l.diff > 0 ? "+" : ""}{l.diff} {l.unit}</td>
+												<td className="py-6 text-right text-[#9aa7c9]">{Math.round((l.qty - l.diff) * 1000) / 1000} {l.unit}</td>
+												<td className={`py-6 text-right ${l.diff === 0 ? "text-[#9aa7c9]" : l.diff > 0 ? "text-[#2DDEB6]" : "text-danger"}`}>{l.diff > 0 ? "+" : ""}{l.diff} {l.unit}</td>
 											</>
 										) : (
 											<td className="py-6 text-right">{l.qty} {l.unit}</td>
@@ -598,7 +598,7 @@ export default function Stock({ section: wantedSection, sectionKey }: { section?
 								<ul className="flex flex-col gap-4 text-12 text-[#cfd4cb]">
 									{viewDoc.movements.map((m) => (
 										<li key={m.id} className="flex flex-wrap justify-between gap-10 border-t border-inkLine pt-4">
-											<span>{m.name}<span className="ml-6 text-11 text-[#9AA396]">{m.warehouse}{m.unitCost ? ` · ${money(m.unitCost, settings?.currency ?? "UAH", locale)}` : ""}</span></span>
+											<span>{m.name}<span className="ml-6 text-11 text-[#9AA7C9]">{m.warehouse}{m.unitCost ? ` · ${money(m.unitCost, settings?.currency ?? "UAH", locale)}` : ""}</span></span>
 											<span className={m.qty >= 0 ? "text-[#2DDEB6]" : "text-[#F4A100]"}>{m.qty >= 0 ? "+" : ""}{m.qty}</span>
 										</li>
 									))}

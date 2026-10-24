@@ -136,21 +136,21 @@ export default function WaybillDialog({
 	return (
 		<Modal open={open} onClose={onClose} label={t("npWaybillTitle")} className="w-full max-w-[560px]">
 			<div className="fs-popover flex max-h-[calc(100dvh-32px)] flex-col p-20">
-				<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("npWaybillTitle")}</h2>
+				<h2 className="mb-14 text-16 font-semibold text-[#edf2ff]">{t("npWaybillTitle")}</h2>
 
 				<div className="fs-scroll min-h-0 flex-1 overflow-y-auto pr-4">
 					<label className="mb-12 block">
-						<span className="mb-6 block text-12 text-[#8c948b]">{t("npCity")}</span>
+						<span className="mb-6 block text-12 text-[#9aa7c9]">{t("npCity")}</span>
 						<input value={city ? `${city.name}${city.area ? ` · ${city.area}` : ""}` : query} onChange={(e) => { setCity(null); setQuery(e.target.value); }} placeholder={t("npSearchCity")} className="fs-field h-40 w-full px-12 text-13 outline-none" />
 					</label>
 					{!city && cities && (
 						<ul className="mb-12 max-h-[180px] overflow-y-auto rounded-10 border border-inkLineSoft">
 							{cities.length === 0 ? (
-								<li className="px-12 py-10 text-13 text-[#8c948b]">{t("npNoCities")}</li>
+								<li className="px-12 py-10 text-13 text-[#9aa7c9]">{t("npNoCities")}</li>
 							) : cities.map((c) => (
 								<li key={c.ref}>
-									<button type="button" onClick={() => void pickCity(c)} className="w-full px-12 py-9 text-left text-13 text-[#f1f4ee] transition-colors hover:bg-[rgba(255,255,255,0.04)]">
-										{c.name}{c.area ? <span className="text-[#8c948b]"> · {c.area}</span> : null}
+									<button type="button" onClick={() => void pickCity(c)} className="w-full px-12 py-9 text-left text-13 text-[#edf2ff] transition-colors hover:bg-[rgba(255,255,255,0.04)]">
+										{c.name}{c.area ? <span className="text-[#9aa7c9]"> · {c.area}</span> : null}
 									</button>
 								</li>
 							))}
@@ -161,11 +161,11 @@ export default function WaybillDialog({
 					{city && (
 						<div className="mb-12 flex gap-14">
 							<label className="flex items-center gap-8 text-13 text-[#cfd4cb]">
-								<input type="radio" checked={!byAddress} onChange={() => setByAddress(false)} className="h-15 w-15 accent-[#c6ff4d]" name="np-delivery" />
+								<input type="radio" checked={!byAddress} onChange={() => setByAddress(false)} className="h-15 w-15 accent-[#7c93ff]" name="np-delivery" />
 								{t("npToWarehouse")}
 							</label>
 							<label className="flex items-center gap-8 text-13 text-[#cfd4cb]">
-								<input type="radio" checked={byAddress} onChange={() => setByAddress(true)} className="h-15 w-15 accent-[#c6ff4d]" name="np-delivery" />
+								<input type="radio" checked={byAddress} onChange={() => setByAddress(true)} className="h-15 w-15 accent-[#7c93ff]" name="np-delivery" />
 								{t("npToAddress")}
 							</label>
 						</div>
@@ -173,9 +173,9 @@ export default function WaybillDialog({
 
 					{!byAddress && city && (
 						<label className="mb-12 block">
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("npWarehouse")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("npWarehouse")}</span>
 							{warehouses === null ? (
-								<p className="text-13 text-[#8c948b]">…</p>
+								<p className="text-13 text-[#9aa7c9]">…</p>
 							) : (
 								<select value={warehouse?.ref ?? ""} onChange={(e) => setWarehouse(warehouses.find((w) => w.ref === e.target.value) ?? null)} className="fs-field h-40 w-full px-12 text-13 outline-none">
 									<option value="">—</option>
@@ -211,11 +211,11 @@ export default function WaybillDialog({
 						</div>
 					</div>
 					{price && (
-						<p className="mt-10 rounded-10 bg-[rgba(198,255,77,0.08)] p-10 text-12 text-[#cfd4cb]">
+						<p className="mt-10 rounded-10 bg-[rgba(124,147,255,0.08)] p-10 text-12 text-[#cfd4cb]">
 							{t("npPriceLine", { cost: price.cost, redelivery: price.redelivery })}
 						</p>
 					)}
-					<p className="mt-10 flex items-start gap-8 text-11 leading-[1.5] text-[#9AA396]">
+					<p className="mt-10 flex items-start gap-8 text-11 leading-[1.5] text-[#9AA7C9]">
 						<TbInfoCircle size={13} className="mt-[2px] shrink-0" aria-hidden />
 						{t("npCodHint")}
 					</p>

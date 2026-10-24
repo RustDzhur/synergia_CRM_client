@@ -32,7 +32,7 @@ export default function Search() {
 				aria-label={t("search")}
 				className="fs-field h-34 w-240 rounded-9 pl-12 pr-34 text-13 outline-none"
 			/>
-			<span className="pointer-events-none absolute inset-y-0 right-11 flex items-center text-[#9AA396]">
+			<span className="pointer-events-none absolute inset-y-0 right-11 flex items-center text-[#9AA7C9]">
 				<TbSearch size={16} />
 			</span>
 			{searchData.map((result) => (

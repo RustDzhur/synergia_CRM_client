@@ -29,17 +29,17 @@ export default function ChatEmpty() {
 
 	return (
 		<div className="flex min-h-[calc(100vh-137px)] flex-col items-center justify-center gap-16 p-16 text-center md:min-h-[calc(100vh-110px)] md:p-30">
-			<TbMessages size={48} className="text-[#8C948B]" />
-			<p className="text-14 text-[#8c948b]">{t("chatsEmpty")}</p>
+			<TbMessages size={48} className="text-[#9AA7C9]" />
+			<p className="text-14 text-[#9aa7c9]">{t("chatsEmpty")}</p>
 
 			{!loaded || channels.length === 0 ? (
 				<>
-					{loaded && <p className="max-w-[420px] text-12 text-[#8C948B]">{t("chatsEmptyHint")}</p>}
+					{loaded && <p className="max-w-[420px] text-12 text-[#9AA7C9]">{t("chatsEmptyHint")}</p>}
 					{loaded && <Link href={`/${locale}/crm/settings/integration`} className={link}>{t("goIntegration")}</Link>}
 				</>
 			) : (
 				<>
-					<p className="max-w-[420px] text-12 text-[#8C948B]">{t("chatsWaitingHint")}</p>
+					<p className="max-w-[420px] text-12 text-[#9AA7C9]">{t("chatsWaitingHint")}</p>
 					<ul className="flex w-full max-w-[520px] flex-col gap-12 text-left">
 						{channels.map((c) => {
 							const Icon = CHANNEL_ICON[c.type as MessagingChannel];
@@ -48,12 +48,12 @@ export default function ChatEmpty() {
 								<li key={c.id} className="fs-card p-16">
 									<div className="flex items-center gap-10">
 										<span style={{ color: CHANNEL_COLOR[c.type as MessagingChannel] }}><Icon size={22} /></span>
-										<span className="min-w-0 flex-1 truncate text-13 font-medium text-[#f1f4ee]">{t(`ch_${c.type}`)} · {c.name}</span>
-										<span className={`shrink-0 text-12 ${ok ? "text-[#c6ff4d]" : "text-[#e2a33c]"}`}>{ok ? t("chStatusOn") : t("chStatusWarn")}</span>
+										<span className="min-w-0 flex-1 truncate text-13 font-medium text-[#edf2ff]">{t(`ch_${c.type}`)} · {c.name}</span>
+										<span className={`shrink-0 text-12 ${ok ? "text-[#7c93ff]" : "text-[#e2a33c]"}`}>{ok ? t("chStatusOn") : t("chStatusWarn")}</span>
 									</div>
-									<p className="mt-8 text-12 text-[#8c948b]">{t(`hint_${c.type}`, { name: c.name })}</p>
+									<p className="mt-8 text-12 text-[#9aa7c9]">{t(`hint_${c.type}`, { name: c.name })}</p>
 									{!ok && c.error && <p className="mt-8 rounded-8 bg-[rgba(226,163,60,0.10)] p-10 text-12 text-[#e2a33c]">{reason(c.error)}</p>}
-									{c.type === "telegram" && c.config.polling === "1" && <p className="mt-8 text-11 text-[#8C948B]">{t("chPollingInfo")}</p>}
+									{c.type === "telegram" && c.config.polling === "1" && <p className="mt-8 text-11 text-[#9AA7C9]">{t("chPollingInfo")}</p>}
 								</li>
 							);
 						})}

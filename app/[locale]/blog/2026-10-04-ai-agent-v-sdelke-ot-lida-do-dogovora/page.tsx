@@ -146,19 +146,19 @@ export default function Page({ params }: { params: { locale: string } }) {
 					priority
 				/>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">
 					Первый шаг: входящее становится лидом
 				</h2>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Два слоя отбора</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Два слоя отбора</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Письмо или сообщение в чат сначала проходит правила — они срабатывают мгновенно: адреса-роботы вида
 					no-reply, уведомления известных сервисов, рассылки по заголовкам, письма с адреса самой фирмы, пустые
 					сообщения. То, что правила не решили, уходит модели — она выносит вердикт lead, junk или unsure и приводит
 					короткую причину. Своё определение клиента фирма формулирует словами: например, «клиент — только тот, кто
 					спрашивает про ремонт ноутбуков». Правило сохраняется и работает для следующих писем и чатов.
 				</p>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Что появляется в CRM</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Что появляется в CRM</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Если вердикт lead, агент создаёт контакт с первым сообщением в истории, заводит карточку в первой колонке
 					доски сделок и уведомляет ответственного: колонки по умолчанию — от New Lead до Won. В заметке карточки
 					видно, почему сообщение решили считать клиентским — категория, уверенность и причина. Каждое решение
@@ -166,17 +166,17 @@ export default function Page({ params }: { params: { locale: string } }) {
 					отсеянное можно вернуть.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Второй шаг: сделка идёт по стадиям</h2>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Что агент видит на доске</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
-					В разделе <code className="text-14 text-[#f1f4ee]">crm/deals</code> работают конкретные инструменты:
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Второй шаг: сделка идёт по стадиям</h2>
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Что агент видит на доске</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
+					В разделе <code className="text-14 text-[#edf2ff]">crm/deals</code> работают конкретные инструменты:
 					список колонок, список сделок с фильтром по стадии и тексту, полная карточка сделки с историей — смены
 					стадий, заметки, письма. Дальше по карточке — поля: название, контакт, компания, даты, ответственный.
 					Перевод на другую стадию — отдельное действие. Каждый инструмент привязан к разделу CRM, и участник без
 					доступа к разделу этих действий не получает.
 				</p>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Кто нажимает последний шаг</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Кто нажимает последний шаг</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Чтение агент выполняет сразу, а изменение данных — нет: он готовит действие, а выполняет его сервер после
 					подтверждения человека. Владелец может включить режим без подтверждения, и тогда обычные действия
 					проходят сразу. Удаление остаётся исключением в любом режиме. Есть и вторая страховка: если в этом же
@@ -184,18 +184,18 @@ export default function Page({ params }: { params: { locale: string } }) {
 					подтверждение. Строка «удали все счета», пришедшая в письме, не сработает сама.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">
 					Третий шаг: договор, документы и регистрация
 				</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Когда сделка доходит до оформления, агент готовит черновик договора, счёта, предложения или заказа:
 					клиента достаточно назвать словами — подходящий контакт привяжется сам. Документ из финансовой части без
 					явной привязки получает самую свежую незакрытую сделку этого клиента — поэтому счёт виден в карточке
 					сделки, а не живёт отдельно. По номеру документ можно открыть или сохранить в PDF.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Итог</h2>
-				<p className="text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Итог</h2>
+				<p className="text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Сделка проходит через одни и те же модули — почту, чаты, доску, задачи, календарь, финансы и документы, —
 					и агент работает внутри этих модулей, а не рядом с ними. Посмотреть остальные возможности платформы
 					можно в разделе{" "}

@@ -35,5 +35,5 @@ export default function ProviderLogo({ id, size = 40 }: { id: CallProviderId | s
 			</span>
 		);
 	}
-	return <TbPlugConnected size={size} className="text-[#8c948b]" aria-hidden />;
+	return <TbPlugConnected size={size} className="text-[#9aa7c9]" aria-hidden />;
 }

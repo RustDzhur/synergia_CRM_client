@@ -122,38 +122,38 @@ export default function Contracts() {
 				</button>
 			</div>
 			{contracts.length === 0 ? (
-				<p className="fs-card p-30 text-center text-13 text-[#8c948b]">{t("empty")}</p>
+				<p className="fs-card p-30 text-center text-13 text-[#9aa7c9]">{t("empty")}</p>
 			) : (
 				<ul className="flex flex-col gap-10">
 					{contracts.map((c) => (
 						<li key={c.id} className="fs-card p-14 md:p-18">
 							<div className="flex flex-wrap items-start justify-between gap-12">
 								<div className="min-w-0">
-									<p className="flex flex-wrap items-center gap-8 text-14 font-semibold text-[#f1f4ee]">
+									<p className="flex flex-wrap items-center gap-8 text-14 font-semibold text-[#edf2ff]">
 										{c.number}
 										<span className="fs-chip h-22 gap-6 px-8 text-10">
 											<span className="h-6 w-6 rounded-50" style={{ background: STATUS_COLOR[c.status] }} />
 											{t(`cstatus_${c.status}`)}
 										</span>
 									</p>
-									<p className="mt-[4px] text-12 text-[#8c948b]">{c.customerName}{c.startDate ? ` · ${c.startDate}${c.endDate ? ` – ${c.endDate}` : ""}` : ""}</p>
+									<p className="mt-[4px] text-12 text-[#9aa7c9]">{c.customerName}{c.startDate ? ` · ${c.startDate}${c.endDate ? ` – ${c.endDate}` : ""}` : ""}</p>
 								</div>
-								{c.value > 0 && <p className="text-15 font-semibold text-[#f1f4ee]">{money(c.value, c.currency, locale)}</p>}
+								{c.value > 0 && <p className="text-15 font-semibold text-[#edf2ff]">{money(c.value, c.currency, locale)}</p>}
 							</div>
 							<div className="mt-12 flex flex-wrap items-center gap-8">
 								{c.status === "draft" && (
 									<>
 										<button type="button" disabled={busy === c.id} onClick={() => act(c.id, signContract)} className="fs-btn fs-btn-primary h-34 disabled:opacity-[0.5]">{t("markSigned")}</button>
-										<button type="button" disabled={busy === c.id} onClick={() => setToDelete(c.id)} className="text-12 text-[#9AA396] transition-colors hover:text-danger">{t("delete")}</button>
+										<button type="button" disabled={busy === c.id} onClick={() => setToDelete(c.id)} className="text-12 text-[#9AA7C9] transition-colors hover:text-danger">{t("delete")}</button>
 									</>
 								)}
 								{c.status === "active" && (
 									<>
-										<button type="button" disabled={busy === c.id} onClick={() => act(c.id, completeContract)} className="fs-btn fs-btn-ghost h-34 border-[rgba(198,255,77,0.4)] text-[#c6ff4d] disabled:opacity-[0.5]">{t("markCompleted")}</button>
-										<button type="button" disabled={busy === c.id} onClick={() => act(c.id, cancelContract)} className="text-12 text-[#9AA396] transition-colors hover:text-danger">{t("cancel")}</button>
+										<button type="button" disabled={busy === c.id} onClick={() => act(c.id, completeContract)} className="fs-btn fs-btn-ghost h-34 border-[rgba(124,147,255,0.4)] text-[#7c93ff] disabled:opacity-[0.5]">{t("markCompleted")}</button>
+										<button type="button" disabled={busy === c.id} onClick={() => act(c.id, cancelContract)} className="text-12 text-[#9AA7C9] transition-colors hover:text-danger">{t("cancel")}</button>
 									</>
 								)}
-								{c.status === "active" && c.signedAt && <span className="text-12 text-[#9AA396]">{t("signedOn", { date: new Date(c.signedAt).toLocaleDateString(locale) })}</span>}
+								{c.status === "active" && c.signedAt && <span className="text-12 text-[#9AA7C9]">{t("signedOn", { date: new Date(c.signedAt).toLocaleDateString(locale) })}</span>}
 								<button type="button" onClick={() => viewContractPdf(c.id, c.number)} className="fs-btn fs-btn-ghost h-34">
 									<TbEye size={15} /> {t("viewPdf")}
 								</button>
@@ -169,11 +169,11 @@ export default function Contracts() {
 
 			<Modal open={open} onClose={() => setOpen(false)} label={t("newContract")} className="w-full max-w-[720px]">
 				<form onSubmit={submit} className="fs-popover fs-scroll max-h-[90vh] overflow-y-auto p-20 md:p-24">
-					<h2 className="mb-14 text-16 font-semibold text-[#f1f4ee]">{t("newContract")}</h2>
+					<h2 className="mb-14 text-16 font-semibold text-[#edf2ff]">{t("newContract")}</h2>
 					<div className="flex flex-col gap-12">
 						{/* Клиент подтягивается из CRM (контакты и фирмы) — тот же список, что в разделе CRM */}
 						<div>
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("customer")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("customer")}</span>
 							<SuggestInput
 								value={form.customerName}
 								onChange={(v) => { setForm({ ...form, customerName: v }); setLink({}); }}
@@ -186,10 +186,10 @@ export default function Contracts() {
 								placeholder={t("contractClientPlaceholder")}
 								showSearchIcon
 							/>
-							{link.contact || link.company ? <span className="mt-6 block text-11 text-[#9AA396]">{t("contractClientLinked")}</span> : null}
+							{link.contact || link.company ? <span className="mt-6 block text-11 text-[#9AA7C9]">{t("contractClientLinked")}</span> : null}
 						</div>
 						<div>
-							<span className="mb-6 block text-12 text-[#8c948b]">{tr("templates")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{tr("templates")}</span>
 							<select value={form.templateId} onChange={(e) => selectTemplate(e.target.value)} className="fs-field w-full px-8 py-8 text-13 outline-none">
 								<option value="">—</option>
 							{contractTemplates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.name}</option>)}
@@ -212,7 +212,7 @@ export default function Contracts() {
 							onSaveToCard={setSaveToCard}
 						/>
 						<div>
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("contractBody")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("contractBody")}</span>
 							<RichContractEditor
 								value={form.body}
 								onChange={(html) => setForm((f) => ({ ...f, body: html }))}
@@ -221,7 +221,7 @@ export default function Contracts() {
 								height={380}
 								palette={false}
 							/>
-							<span className="mt-[4px] block text-11 text-[#9AA396]">{t("contractBodyHint", { vars: "{{number}} {{customer}} {{value}} {{start}} {{end}}" })}</span>
+							<span className="mt-[4px] block text-11 text-[#9AA7C9]">{t("contractBodyHint", { vars: "{{number}} {{customer}} {{value}} {{start}} {{end}}" })}</span>
 						</div>
 						<FormField label={t("notes")} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} maxLength={2000} />
 					</div>

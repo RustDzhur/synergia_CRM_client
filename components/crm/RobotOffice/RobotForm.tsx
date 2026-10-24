@@ -32,8 +32,8 @@ export default function RobotForm({ robot, onSubmit, onCancel, submitLabel }: { 
 		setBusy(true);
 		try { await onSubmit({ name, title, zone, accent, skills, instructions, autonomy, ...(robot ? {} : { template: "custom" }) }); } finally { setBusy(false); }
 	}
-	const seg = (on: boolean) => `flex-1 rounded-8 border px-10 py-8 text-12 font-medium transition-colors ${on ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.08)] text-[#f1f4ee]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`;
-	const label = "mb-6 block text-11 font-semibold uppercase tracking-[0.06em] text-[#8c948b]";
+	const seg = (on: boolean) => `flex-1 rounded-8 border px-10 py-8 text-12 font-medium transition-colors ${on ? "border-[#7c93ff] bg-[rgba(124,147,255,0.08)] text-[#edf2ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`;
+	const label = "mb-6 block text-11 font-semibold uppercase tracking-[0.06em] text-[#9aa7c9]";
 
 	return (
 		<form onSubmit={submit} className="flex flex-col gap-16">
@@ -57,7 +57,7 @@ export default function RobotForm({ robot, onSubmit, onCancel, submitLabel }: { 
 					<div className="flex h-40 items-center gap-8">
 						{ACCENTS.map((a) => (
 							<button key={a} type="button" onClick={() => setAccent(a)} aria-label={t(`c_${a}`)} aria-pressed={accent === a} title={t(`c_${a}`)}
-								className={`h-[22px] w-[22px] rounded-[7px] border-2 transition-transform ${accent === a ? "scale-110 border-[#f1f4ee]" : "border-transparent"}`} style={{ background: ACCENT_HEX[a] }} />
+								className={`h-[22px] w-[22px] rounded-[7px] border-2 transition-transform ${accent === a ? "scale-110 border-[#edf2ff]" : "border-transparent"}`} style={{ background: ACCENT_HEX[a] }} />
 						))}
 					</div>
 				</div>
@@ -67,14 +67,14 @@ export default function RobotForm({ robot, onSubmit, onCancel, submitLabel }: { 
 				<div className="flex flex-wrap gap-8">
 					{PICK_SKILLS.map((s) => (
 						<button key={s} type="button" onClick={() => toggle(s)} aria-pressed={skills.includes(s)}
-							className={`h-[30px] rounded-[15px] border px-12 text-12 transition-colors ${skills.includes(s) ? "border-[#c6ff4d] bg-[rgba(198,255,77,0.10)] text-[#f1f4ee]" : "border-inkLine text-[#8c948b] hover:text-[#f1f4ee]"}`}>{t(`skill_${s}`)}</button>
+							className={`h-[30px] rounded-[15px] border px-12 text-12 transition-colors ${skills.includes(s) ? "border-[#7c93ff] bg-[rgba(124,147,255,0.10)] text-[#edf2ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`}>{t(`skill_${s}`)}</button>
 					))}
 				</div>
 			</div>
 			<div>
 				<label className={label} htmlFor="rb-ins">{t("fInstructions")}</label>
 				<textarea id="rb-ins" value={instructions} onChange={(e) => setInstructions(e.target.value)} maxLength={1500} rows={3} placeholder={t("fInstructionsPh")} className="fs-field fs-scroll w-full p-12 text-13 outline-none" />
-				{!custom && <p className="mt-6 text-11 text-[#8c948b]">{t("fInstructionsDefault")}</p>}
+				{!custom && <p className="mt-6 text-11 text-[#9aa7c9]">{t("fInstructionsDefault")}</p>}
 			</div>
 			<div>
 				<span className={label}>{t("autonomy")}</span>
@@ -82,7 +82,7 @@ export default function RobotForm({ robot, onSubmit, onCancel, submitLabel }: { 
 					<button type="button" role="radio" aria-checked={autonomy === "ask"} onClick={() => setAutonomy("ask")} className={seg(autonomy === "ask")}>{t("autonomyAsk")}</button>
 					<button type="button" role="radio" aria-checked={autonomy === "auto"} onClick={() => setAutonomy("auto")} className={seg(autonomy === "auto")}>{t("autonomyAuto")}</button>
 				</div>
-				<p className="mt-6 text-11 text-[#8c948b]">{t("autonomyHint")}</p>
+				<p className="mt-6 text-11 text-[#9aa7c9]">{t("autonomyHint")}</p>
 			</div>
 			<div className="flex justify-end gap-10">
 				<button type="button" onClick={onCancel} className="fs-btn fs-btn-ghost h-40">{t("cancel")}</button>

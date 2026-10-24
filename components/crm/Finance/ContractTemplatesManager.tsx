@@ -90,22 +90,22 @@ export default function ContractTemplatesManager() {
 				{!hasEditor ? (
 					<>
 						<div className="mb-12 flex items-center justify-between">
-							<h3 className="text-14 font-semibold text-[#f1f4ee]">{tr("templates")}</h3>
+							<h3 className="text-14 font-semibold text-[#edf2ff]">{tr("templates")}</h3>
 							<button type="button" onClick={startNew} className="fs-btn fs-btn-primary h-36"><TbPlus size={15} /> {tr("newTemplate")}</button>
 						</div>
 						{contractTemplates.length === 0 ? (
-							<p className="fs-card p-20 text-center text-12 text-[#8c948b]">{tr("empty")}</p>
+							<p className="fs-card p-20 text-center text-12 text-[#9aa7c9]">{tr("empty")}</p>
 						) : (
 							<ul className="flex flex-col gap-8">
 								{contractTemplates.map((t) => (
 									<li key={t.id} className="fs-card flex items-center justify-between gap-8 p-12">
 										<div className="min-w-0">
-											<p className="text-13 font-semibold text-[#f1f4ee]">{t.name}</p>
-											<p className="text-11 text-[#8c948b]">{tokensIn(t.body).length} {tr("used")} · {t.fields.length} {tr("ownFields")}</p>
+											<p className="text-13 font-semibold text-[#edf2ff]">{t.name}</p>
+											<p className="text-11 text-[#9aa7c9]">{tokensIn(t.body).length} {tr("used")} · {t.fields.length} {tr("ownFields")}</p>
 										</div>
 										<div className="flex items-center gap-6">
 											<button type="button" onClick={() => startEdit(t)} className="fs-btn fs-btn-ghost h-32"><TbPencil size={14} /> {tr("edit")}</button>
-											<button type="button" onClick={() => void remove(t.id)} className="fs-btn fs-btn-ghost h-32 text-[#9AA396] hover:text-danger" aria-label="delete"><TbTrash size={14} /></button>
+											<button type="button" onClick={() => void remove(t.id)} className="fs-btn fs-btn-ghost h-32 text-[#9AA7C9] hover:text-danger" aria-label="delete"><TbTrash size={14} /></button>
 										</div>
 									</li>
 								))}
@@ -114,13 +114,13 @@ export default function ContractTemplatesManager() {
 					</>
 				) : (
 					<>
-						<h3 className="mb-12 text-14 font-semibold text-[#f1f4ee]">{editing ? tr("editTemplate") : tr("newTemplate")}</h3>
+						<h3 className="mb-12 text-14 font-semibold text-[#edf2ff]">{editing ? tr("editTemplate") : tr("newTemplate")}</h3>
 						<div className="flex flex-col gap-10">
 							<FormField label={tr("nameLabel")} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
 
 							<div>
 								<div className="mb-6 flex flex-wrap items-center gap-8">
-									<span className="text-12 text-[#8c948b]">{tr("yourText")}</span>
+									<span className="text-12 text-[#9aa7c9]">{tr("yourText")}</span>
 									<input ref={fileRef} type="file" accept=".docx,.txt,.md,text/plain" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void importFile(f); }} />
 									<button type="button" onClick={() => fileRef.current?.click()} className="fs-btn fs-btn-ghost ml-auto h-30"><TbFileImport size={14} /> {tr("importFile")}</button>
 								</div>
@@ -139,25 +139,25 @@ export default function ContractTemplatesManager() {
 
 							<div>
 								<div className="mb-8 flex items-center justify-between">
-									<span className="text-12 text-[#8c948b]">{tr("customFields")}</span>
+									<span className="text-12 text-[#9aa7c9]">{tr("customFields")}</span>
 									<button type="button" onClick={addField} className="fs-btn fs-btn-ghost h-32"><TbPlus size={14} /> {tr("addField")}</button>
 								</div>
 								<ul className="flex flex-col gap-8">
 									{draft.fields.map((f, i) => (
 										<li key={i} className="fs-card flex flex-wrap items-end gap-8 p-10">
 											<div className="min-w-[130px] flex-1">
-												<span className="mb-4 block text-11 text-[#8c948b]">{tr("key")}</span>
+												<span className="mb-4 block text-11 text-[#9aa7c9]">{tr("key")}</span>
 												<input value={f.key} onChange={(e) => setField(i, { key: e.target.value.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase() })} className="fs-field w-full px-8 py-6 text-12 outline-none" placeholder="passport" />
 											</div>
 											<div className="min-w-[160px] flex-1">
-												<span className="mb-4 block text-11 text-[#8c948b]">{tr("label")}</span>
+												<span className="mb-4 block text-11 text-[#9aa7c9]">{tr("label")}</span>
 												<input value={f.label} onChange={(e) => setField(i, { label: e.target.value })} className="fs-field w-full px-8 py-6 text-12 outline-none" />
 											</div>
-											<label className="flex items-center gap-6 pb-6 text-12 text-[#8c948b]">
-												<input type="checkbox" checked={f.source === "contact"} onChange={(e) => setField(i, { source: e.target.checked ? "contact" : "manual" })} className="accent-[#C6FF4D]" />
+											<label className="flex items-center gap-6 pb-6 text-12 text-[#9aa7c9]">
+												<input type="checkbox" checked={f.source === "contact"} onChange={(e) => setField(i, { source: e.target.checked ? "contact" : "manual" })} className="accent-[#7C93FF]" />
 												{tr("fromCard")}
 											</label>
-											<button type="button" onClick={() => removeField(i)} className="fs-btn fs-btn-ghost h-32 text-[#9AA396] hover:text-danger" aria-label="delete"><TbTrash size={14} /></button>
+											<button type="button" onClick={() => removeField(i)} className="fs-btn fs-btn-ghost h-32 text-[#9AA7C9] hover:text-danger" aria-label="delete"><TbTrash size={14} /></button>
 										</li>
 									))}
 								</ul>
@@ -205,12 +205,12 @@ function FirmContractData() {
 	return (
 		<div className="fs-card p-16 md:p-24">
 			<button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between text-left">
-				<h3 className="text-14 font-semibold text-[#f1f4ee]">{tr("firmTitle")}</h3>
-				<span className="text-12 text-[#8c948b]">{open ? "−" : "+"}</span>
+				<h3 className="text-14 font-semibold text-[#edf2ff]">{tr("firmTitle")}</h3>
+				<span className="text-12 text-[#9aa7c9]">{open ? "−" : "+"}</span>
 			</button>
 			{open && (
 				<div className="mt-12">
-					<p className="mb-10 text-12 text-[#8c948b]">{tr("firmHint")}</p>
+					<p className="mb-10 text-12 text-[#9aa7c9]">{tr("firmHint")}</p>
 					<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr("search")} className="fs-field mb-10 h-32 w-full px-8 text-12 outline-none md:max-w-[320px]" />
 					<div className="grid grid-cols-1 gap-8 md:grid-cols-2">
 						{GROUP_ORDER.map((g) => {
@@ -222,7 +222,7 @@ function FirmContractData() {
 									<div className="grid grid-cols-1 gap-8 md:grid-cols-2">
 										{items.map((f) => (
 											<label key={f.key} className="block">
-												<span className="mb-4 block text-11 text-[#8c948b]">{labelOf(f, locale).replace(/^[^:]+:\s*/, "")}</span>
+												<span className="mb-4 block text-11 text-[#9aa7c9]">{labelOf(f, locale).replace(/^[^:]+:\s*/, "")}</span>
 												<input
 													value={edits[f.base] ?? settings?.contractData?.[f.base] ?? ""}
 													onChange={(e) => setEdits((d) => ({ ...d, [f.base]: e.target.value }))}

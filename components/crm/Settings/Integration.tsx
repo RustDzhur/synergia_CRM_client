@@ -166,7 +166,7 @@ export default function IntegrationSettings() {
 						const linkedAll = kinds.length ? items.filter((i) => kinds.includes(i.type)) : [];
 						const on = item.real ? linkedAll.some((i) => i.status === "connected") : enabled.includes(item.id);
 						const warn = !on && linkedAll.some((i) => i.status === "error");
-						const color = warn ? "text-[#F4A100]" : on ? "text-[#c6ff4d]" : "text-[#9AA396]";
+						const color = warn ? "text-[#F4A100]" : on ? "text-[#7c93ff]" : "text-[#9AA7C9]";
 						const Icon = item.icon;
 						return (
 							<li key={item.id}>
@@ -175,7 +175,7 @@ export default function IntegrationSettings() {
 									onClick={() => press(item)}
 									aria-pressed={on}
 									title={item.real ? undefined : t("intDemo")}
-									className={`fs-card flex h-[112px] w-full flex-col items-center justify-center gap-10 px-8 transition-all duration-200 hover:-translate-y-2 ${on ? "border-[rgba(198,255,77,0.28)]" : "hover:border-[rgba(255,255,255,0.16)]"}`}>
+									className={`fs-card flex h-[112px] w-full flex-col items-center justify-center gap-10 px-8 transition-all duration-200 hover:-translate-y-2 ${on ? "border-[rgba(124,147,255,0.28)]" : "hover:border-[rgba(255,255,255,0.16)]"}`}>
 									<Icon size={30} className={`transition-colors duration-200 ${color}`} />
 									<span className={`text-center text-12 font-medium transition-colors duration-200 ${color}`}>
 										{t(item.key)}

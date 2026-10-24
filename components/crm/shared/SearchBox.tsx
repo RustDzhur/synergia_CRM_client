@@ -37,16 +37,16 @@ export default function SearchBox({ value, onChange, placeholder, filters, activ
 	return (
 		<div ref={ref} className={`relative flex items-center gap-8 ${className}`}>
 			<div className="fs-field flex h-46 min-w-0 flex-1 items-center gap-10 rounded-10 px-14 transition-colors">
-				<TbSearch size={17} className="shrink-0 text-[#9AA396]" />
+				<TbSearch size={17} className="shrink-0 text-[#9AA7C9]" />
 				<input
 					value={value}
 					onChange={(e) => onChange(e.target.value)}
 					placeholder={placeholder}
 					aria-label={placeholder}
-					className="w-full min-w-0 bg-transparent text-14 text-[#f1f4ee] outline-none placeholder:text-[#9AA396]"
+					className="w-full min-w-0 bg-transparent text-14 text-[#edf2ff] outline-none placeholder:text-[#9AA7C9]"
 				/>
 				{value && (
-					<button type="button" onClick={() => onChange("")} aria-label={t("clearSearch")} className="shrink-0 text-[#9AA396] transition-colors hover:text-[#f1f4ee]">
+					<button type="button" onClick={() => onChange("")} aria-label={t("clearSearch")} className="shrink-0 text-[#9AA7C9] transition-colors hover:text-[#edf2ff]">
 						<TbX size={15} />
 					</button>
 				)}
@@ -60,7 +60,7 @@ export default function SearchBox({ value, onChange, placeholder, filters, activ
 						aria-label={t("filters")}
 						onClick={() => setOpen((v) => !v)}
 						className={`flex h-46 shrink-0 items-center gap-6 rounded-10 border px-12 text-13 transition-colors ${
-							chosen ? "border-[rgba(198,255,77,0.55)] bg-[rgba(198,255,77,0.10)] text-[#c6ff4d]" : "border-inkLine text-[#9AA396] hover:text-[#f1f4ee]"
+							chosen ? "border-[rgba(124,147,255,0.55)] bg-[rgba(124,147,255,0.10)] text-[#7c93ff]" : "border-inkLine text-[#9AA7C9] hover:text-[#edf2ff]"
 						}`}>
 						<TbAdjustments size={17} />
 						{chosen > 0 && <span className="font-semibold">{chosen}</span>}
@@ -69,7 +69,7 @@ export default function SearchBox({ value, onChange, placeholder, filters, activ
 						<div className="fs-popover p-12 text-left">
 							{filters.map((f) => (
 								<label key={f.key} className="mb-10 block last:mb-0">
-									<span className="mb-6 block text-11 text-[#8c948b]">{f.label}</span>
+									<span className="mb-6 block text-11 text-[#9aa7c9]">{f.label}</span>
 									<select
 										value={active[f.key] ?? ""}
 										onChange={(e) => onFilter?.(f.key, e.target.value)}
@@ -84,7 +84,7 @@ export default function SearchBox({ value, onChange, placeholder, filters, activ
 								<button
 									type="button"
 									onClick={() => { for (const f of filters) onFilter?.(f.key, ""); }}
-									className="mt-4 text-12 text-[#c6ff4d] transition-opacity hover:opacity-80">
+									className="mt-4 text-12 text-[#7c93ff] transition-opacity hover:opacity-80">
 									{t("filtersReset")}
 								</button>
 							)}

@@ -17,8 +17,8 @@ export default async function SharePage({ params }: { params: { token: string } 
         return (
             <main className="flex min-h-screen items-center justify-center bg-[#0a0a0a] px-20 text-center">
                 <div className="max-w-[420px]">
-                    <h1 className="text-18 font-semibold text-[#f1f4ee]">{t("goneTitle")}</h1>
-                    <p className="mt-10 text-13 leading-[1.6] text-[#8c948b]">{t("goneText")}</p>
+                    <h1 className="text-18 font-semibold text-[#edf2ff]">{t("goneTitle")}</h1>
+                    <p className="mt-10 text-13 leading-[1.6] text-[#9aa7c9]">{t("goneText")}</p>
                 </div>
             </main>
         );

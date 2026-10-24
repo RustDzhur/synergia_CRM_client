@@ -148,10 +148,10 @@ export default function Page({ params }: { params: { locale: string } }) {
 					priority
 				/>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">
 					Первая линия: виджет чата на сайте
 				</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Публичный API онлайн-чата рассчитан на виджет со стороннего сайта, поэтому у него открытый CORS, а права
 					посетителя ограничены одной его беседой: идентификатор знает только его браузер. На сообщения отвечает
 					Айрис по базе знаний о платформе — без доступа к данным CRM и без инструментов, то есть она не может
@@ -161,34 +161,34 @@ export default function Page({ params }: { params: { locale: string } }) {
 					человек: «смотрит цены» — заметная подсказка для ответа.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">
 					Мессенджеры, звонки и единая лента обращений
 				</h2>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Один вход для всех каналов</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
-					Раздел <code className="text-14 text-[#f1f4ee]">collaboration/chat-and-calls</code> — общая точка
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Один вход для всех каналов</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
+					Раздел <code className="text-14 text-[#edf2ff]">collaboration/chat-and-calls</code> — общая точка
 					приёма: сообщения и звонки из каналов попадают в одну беседу с клиентом, вложения поддерживают Telegram и
-					Viber, у остальных каналов — текст. Внутри CRM письма лежат в <code className="text-14 text-[#f1f4ee]">web mail</code>,
+					Viber, у остальных каналов — текст. Внутри CRM письма лежат в <code className="text-14 text-[#edf2ff]">web mail</code>,
 					поэтому контекст переписки не теряется между каналами.
 				</p>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Звонки в браузере</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Звонки в браузере</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Звонить и принимать звонки можно прямо в браузере. Пропущенный звонок без содержания лидом не считается —
 					он остаётся в журнале звонков, и команда видит уведомление. Как только человек после этого напишет, его
 					сообщение проходит обычную оценку.
 				</p>
-				<h3 className="mb-8 text-18 font-medium text-[#f1f4ee]">Что видит команда</h3>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h3 className="mb-8 text-18 font-medium text-[#edf2ff]">Что видит команда</h3>
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Лента и календарь связывают обращения с работой команды: задача с дедлайном, запись в календаре и
 					уведомление по конкретному клиенту не дают разговору потеряться. Дальше в дело вступают инструменты
 					Айрис: она читает переписку и карточку клиента, готовит короткую сводку — кто, что, в каком состоянии,
 					какой следующий шаг — и может предложить письмо-ответ на языке собеседника.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">
 					Границы: когда агент молчит, а решает человек
 				</h2>
-				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<p className="mb-20 text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Круглосуточность не означает «бот вместо людей». Пока с посетителем недавно говорил человек, бот молчит —
 					оператора он не перебивает, а в настройках канала его можно выключить совсем. Публичный API
 					ограничивает частоту сообщений, у бота есть суточный потолок на весь сайт, а если он недоступен,
@@ -199,8 +199,8 @@ export default function Page({ params }: { params: { locale: string } }) {
 					как обычно.
 				</p>
 
-				<h2 className="mb-12 text-20 font-medium text-[#f1f4ee] lg:text-24">Итог</h2>
-				<p className="text-16 leading-[1.7] tracking-[0.4px] text-[#8c948b] lg:text-18">
+				<h2 className="mb-12 text-20 font-medium text-[#edf2ff] lg:text-24">Итог</h2>
+				<p className="text-16 leading-[1.7] tracking-[0.4px] text-[#9aa7c9] lg:text-18">
 					Ночное сообщение не остаётся без ответа, заявка превращается в карточку, а сложный вопрос уходит человеку
 					с готовым контекстом. Остальные возможности платформы — в разделе{" "}
 					<Link href={sitePath(locale, "/features")} className="text-authBtn">

@@ -82,7 +82,7 @@ export default function Tasks() {
 
     const tab = (active: boolean) =>
         `h-30 shrink-0 rounded-8 px-12 text-12 font-medium transition-colors duration-150 ${
-            active ? "bg-[rgba(198,255,77,0.14)] text-[#c6ff4d]" : "text-[#8c948b] hover:text-[#f1f4ee]"
+            active ? "bg-[rgba(124,147,255,0.14)] text-[#7c93ff]" : "text-[#9aa7c9] hover:text-[#edf2ff]"
         }`;
 
     return (
@@ -138,10 +138,10 @@ export default function Tasks() {
                                 </button>
                             ))}
                         </div>
-                        <div className="flex items-center gap-16 text-12 text-[#8c948b]">
+                        <div className="flex items-center gap-16 text-12 text-[#9aa7c9]">
                             <span>{t("myItems")}:</span>
-                            <span className="flex items-center gap-6">{t("overdue")}<span className="flex h-20 items-center rounded-50 bg-[rgba(198,255,77,0.14)] px-8 text-11 font-semibold text-[#c6ff4d]">{overdue}</span></span>
-                            <span className="flex items-center gap-6">{t("comments")}<span className="flex h-20 items-center rounded-50 bg-[rgba(198,255,77,0.14)] px-8 text-11 font-semibold text-[#c6ff4d]">{commentsCount}</span></span>
+                            <span className="flex items-center gap-6">{t("overdue")}<span className="flex h-20 items-center rounded-50 bg-[rgba(124,147,255,0.14)] px-8 text-11 font-semibold text-[#7c93ff]">{overdue}</span></span>
+                            <span className="flex items-center gap-6">{t("comments")}<span className="flex h-20 items-center rounded-50 bg-[rgba(124,147,255,0.14)] px-8 text-11 font-semibold text-[#7c93ff]">{commentsCount}</span></span>
                         </div>
                         <div className="flex items-center gap-12">
                             <button type="button" onClick={() => openEdit(null)} className="fs-btn fs-btn-primary h-38">
@@ -197,5 +197,5 @@ export default function Tasks() {
 }
 
 function MoreIcon() {
-    return <TbDots size={20} className="text-[#8c948b]" aria-hidden />;
+    return <TbDots size={20} className="text-[#9aa7c9]" aria-hidden />;
 }

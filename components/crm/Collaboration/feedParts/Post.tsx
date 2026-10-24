@@ -9,10 +9,10 @@ import { useClickOutside } from "@/utils/useClickOutside";
 import Avatar from "../../shared/Avatar";
 import { formatDueDate, formatPostDate, initialsOf } from "../format";
 
-const NAVY = "text-[#f1f4ee]";
+const NAVY = "text-[#edf2ff]";
 // Набор смайликов для реакций: «свои эмоции» без свободного ввода — одинаково у всех и не ломает вёрстку
 const REACTIONS = ["👍", "❤️", "😄", "🎉", "👏", "🚀"];
-const action = "text-13 text-[#8c948b] transition-colors hover:text-[#c6ff4d]";
+const action = "text-13 text-[#9aa7c9] transition-colors hover:text-[#7c93ff]";
 
 export default function Post({ post, meName, meAvatar }: { post: FeedPost; meName: string; meAvatar: string }) {
 	const t = useTranslations("collab");
@@ -53,10 +53,10 @@ export default function Post({ post, meName, meAvatar }: { post: FeedPost; meNam
 				<Avatar src={post.authorAvatar} initials={initialsOf(post.author)} size={38} className="flex text-13" />
 				<div className="min-w-0 flex-1">
 					<p className={`truncate text-13 font-medium ${NAVY}`}>{post.author}</p>
-					<p className="text-11 text-[#8c948b]">{formatPostDate(post.at, locale)}</p>
+					<p className="text-11 text-[#9aa7c9]">{formatPostDate(post.at, locale)}</p>
 				</div>
-				<div ref={menuRef} className="relative flex shrink-0 items-center gap-12 pt-6 text-[#8C948B]">
-					<button type="button" aria-label={t("more")} aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)} className="transition-colors hover:text-[#f1f4ee]">
+				<div ref={menuRef} className="relative flex shrink-0 items-center gap-12 pt-6 text-[#9AA7C9]">
+					<button type="button" aria-label={t("more")} aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)} className="transition-colors hover:text-[#edf2ff]">
 						<TbDots size={18} />
 					</button>
 					<button
@@ -64,7 +64,7 @@ export default function Post({ post, meName, meAvatar }: { post: FeedPost; meNam
 						aria-pressed={post.pinned}
 						aria-label={t("pin")}
 						onClick={() => togglePin(post.id)}
-						className={`transition-[color,transform] duration-200 ${post.pinned ? "-rotate-45 text-[#c6ff4d]" : "hover:text-[#f1f4ee]"}`}>
+						className={`transition-[color,transform] duration-200 ${post.pinned ? "-rotate-45 text-[#7c93ff]" : "hover:text-[#edf2ff]"}`}>
 						<TbPin size={17} />
 					</button>
 					<Dropdown open={menuOpen} className="right-0 top-full mt-8 min-w-[150px]">
@@ -89,21 +89,21 @@ export default function Post({ post, meName, meAvatar }: { post: FeedPost; meNam
 						</span>
 						<div className="min-w-0">
 							<p className="text-13">
-								<span className="max-md:hidden text-[#8c948b]">{t("taskLabel")} </span>
+								<span className="max-md:hidden text-[#9aa7c9]">{t("taskLabel")} </span>
 								<span className={`font-semibold ${NAVY}`}>{post.taskTitle}</span>
 							</p>
 						</div>
 					</div>
-					<p className="mt-6 text-12 text-[#8c948b] md:pl-[80px]">
+					<p className="mt-6 text-12 text-[#9aa7c9] md:pl-[80px]">
 						{t("responsible")} <span className={NAVY}>{post.responsible}</span>
 					</p>
 				</>
 			) : (
-				<p className="mt-12 whitespace-pre-wrap break-words text-13 text-[#f1f4ee]">{post.text}</p>
+				<p className="mt-12 whitespace-pre-wrap break-words text-13 text-[#edf2ff]">{post.text}</p>
 			)}
 
 			{(post.dueAt || post.audience === "people") && (
-				<div className="mt-12 flex flex-wrap items-center gap-x-10 gap-y-6 text-11 text-[#8c948b]">
+				<div className="mt-12 flex flex-wrap items-center gap-x-10 gap-y-6 text-11 text-[#9aa7c9]">
 					{post.dueAt && (
 						<span className="flex h-24 items-center gap-6 rounded-6 border border-inkLine px-10">
 							<TbCalendarEvent size={14} aria-hidden />
@@ -121,9 +121,9 @@ export default function Post({ post, meName, meAvatar }: { post: FeedPost; meNam
 			<hr className="my-14 border-inkLine" />
 
 			<div className="mt-12 flex flex-wrap gap-x-12 gap-y-6">
-				<span className="text-12 text-[#8C948B]">{post.kind === "news" ? t("news") : post.kind === "task" ? t("task") : t("kindPost")}</span>
+				<span className="text-12 text-[#9AA7C9]">{post.kind === "news" ? t("news") : post.kind === "task" ? t("task") : t("kindPost")}</span>
 				<button type="button" className={action} onClick={() => inputRef.current?.focus()}>{t("comment")}</button>
-				<button type="button" className={`${action} ${post.following ? "!text-[#c6ff4d]" : ""}`} aria-pressed={post.following} onClick={() => toggleFollow(post.id)}>
+				<button type="button" className={`${action} ${post.following ? "!text-[#7c93ff]" : ""}`} aria-pressed={post.following} onClick={() => toggleFollow(post.id)}>
 					{post.following ? t("unfollow") : t("follow")}
 				</button>
 				{post.kind !== "task" && (
@@ -150,7 +150,7 @@ export default function Post({ post, meName, meAvatar }: { post: FeedPost; meNam
 							aria-label={`${t("reactions")} ${emoji}`}
 							onClick={() => react(post.id, emoji)}
 							className={`flex h-28 items-center gap-6 rounded-50 border px-10 text-12 transition-colors ${
-								r?.mine ? "border-inkAccentLine bg-[rgba(198,255,77,0.10)] text-[#c6ff4d]" : "border-inkLine text-[#8c948b] hover:border-inkAccentLine"
+								r?.mine ? "border-inkAccentLine bg-[rgba(124,147,255,0.10)] text-[#7c93ff]" : "border-inkLine text-[#9aa7c9] hover:border-inkAccentLine"
 							}`}>
 							<span aria-hidden>{emoji}</span>
 							{r ? r.count : ""}
@@ -165,10 +165,10 @@ export default function Post({ post, meName, meAvatar }: { post: FeedPost; meNam
 						<li key={c.id} className="animate-fade-in-up rounded-12 border border-inkLine px-14 py-10">
 							<p className="flex flex-wrap items-center gap-10">
 								<Avatar src={c.authorAvatar} initials={initialsOf(c.author)} size={26} className="flex text-11" />
-								<span className="text-13 font-medium text-[#f1f4ee]">{c.author}</span>
-								<span className="text-11 text-[#8C948B]">{formatPostDate(c.at, locale)}</span>
+								<span className="text-13 font-medium text-[#edf2ff]">{c.author}</span>
+								<span className="text-11 text-[#9AA7C9]">{formatPostDate(c.at, locale)}</span>
 							</p>
-							<p className="mt-2 break-words text-13 text-[#8c948b]">{c.text}</p>
+							<p className="mt-2 break-words text-13 text-[#9aa7c9]">{c.text}</p>
 						</li>
 					))}
 				</ul>

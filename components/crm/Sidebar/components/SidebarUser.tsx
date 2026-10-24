@@ -56,15 +56,15 @@ export default function SidebarUser({ collapsed = false }: { collapsed?: boolean
 					initials={initials}
 					size={collapsed ? 30 : 34}
 					className="flex text-12 font-semibold"
-					style={user.avatarUrl ? undefined : { background: "linear-gradient(140deg, #c6ff4d, #7fd12f)", color: "#0a0c0b" }}
+					style={user.avatarUrl ? undefined : { background: "linear-gradient(140deg, #7c93ff, #36cfc9)", color: "#0b1120" }}
 				/>
 				{collapsed ? null : (
 					<>
 						<span className="min-w-0 flex-1">
-							<span className="block truncate text-13 font-medium text-[#f1f4ee]">{fullName}</span>
-							<span className="mt-2 block truncate text-11 text-[#9AA396]">{user.email}</span>
+							<span className="block truncate text-13 font-medium text-[#edf2ff]">{fullName}</span>
+							<span className="mt-2 block truncate text-11 text-[#9AA7C9]">{user.email}</span>
 						</span>
-						<TbDots size={16} className="shrink-0 text-[#8c948b]" />
+						<TbDots size={16} className="shrink-0 text-[#9aa7c9]" />
 					</>
 				)}
 			</button>
@@ -72,18 +72,18 @@ export default function SidebarUser({ collapsed = false }: { collapsed?: boolean
 			<Dropdown open={open} className={collapsed ? "left-full bottom-0 ml-8 w-200" : "bottom-full left-0 right-0 mb-8"}>
 				<div className="fs-popover overflow-hidden py-4">
 					<button type="button" onClick={() => { close(); openProfile(); }} className={row}>
-						<TbSettings size={17} className="text-[#8c948b]" />
+						<TbSettings size={17} className="text-[#9aa7c9]" />
 						{t("currentUser.settings")}
 					</button>
 					{user.isAdmin && (
 						<Link href={`/${locale}/crm/admin`} onClick={close} className={row}>
-							<TbShieldCog size={17} className="text-[#8c948b]" />
+							<TbShieldCog size={17} className="text-[#9aa7c9]" />
 							{t("adminCabinet")}
 						</Link>
 					)}
 					<div className="my-4 border-t border-[rgba(255,255,255,0.07)]" />
 					<button type="button" onClick={handleLogout} className={row}>
-						<TbLogout size={17} className="text-[#8c948b]" />
+						<TbLogout size={17} className="text-[#9aa7c9]" />
 						{t("currentUser.logout")}
 					</button>
 				</div>

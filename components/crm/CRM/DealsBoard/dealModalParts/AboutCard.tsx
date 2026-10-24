@@ -59,7 +59,7 @@ export default function AboutCard({ deal, editing, draft, onChange, onToggle, on
 							wrapperClassName="mb-12"
 						/>
 						<label className="mb-12 block">
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("stage")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("stage")}</span>
 							<select value={draft.stage} onChange={(e) => onChange({ ...draft, stage: e.target.value })} className={fieldClass}>
 								{stages.map((s) => (
 									<option key={s._id} value={s._id}>{s.name}</option>
@@ -74,8 +74,8 @@ export default function AboutCard({ deal, editing, draft, onChange, onToggle, on
 							wrapperClassName="mb-16"
 						/>
 						<div className="-mx-16 rounded-10 bg-[rgba(255,255,255,0.03)] px-16 py-14">
-							<p className="mb-10 text-12 font-medium text-[#8c948b]">{t("client")}</p>
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("contact")}</span>
+							<p className="mb-10 text-12 font-medium text-[#9aa7c9]">{t("client")}</p>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("contact")}</span>
 							<SuggestInput
 								value={draft.contactName}
 								onChange={(text) => onChange({ ...draft, contactName: text, contact: "" })}
@@ -90,10 +90,10 @@ export default function AboutCard({ deal, editing, draft, onChange, onToggle, on
 							<button
 								type="button"
 								onClick={() => onChange({ ...draft, contactName: draft.contactName ? `${draft.contactName}, ` : "", contact: "" })}
-								className="my-8 block text-12 text-[#c6ff4d] transition-opacity hover:opacity-80">
+								className="my-8 block text-12 text-[#7c93ff] transition-opacity hover:opacity-80">
 								{t("addParticipant")}
 							</button>
-							<span className="mb-6 block text-12 text-[#8c948b]">{t("company")}</span>
+							<span className="mb-6 block text-12 text-[#9aa7c9]">{t("company")}</span>
 							<SuggestInput
 								value={draft.companyName}
 								onChange={(text) => onChange({ ...draft, companyName: text, company: "" })}

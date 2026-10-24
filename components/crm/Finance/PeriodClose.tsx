@@ -72,36 +72,36 @@ export default function PeriodClose() {
 	return (
 		<div className="flex flex-col gap-20">
 			<section className="fs-card p-16 md:p-20">
-				<h2 className="text-16 font-semibold text-[#f1f4ee]">{t("closeTitle")}</h2>
-				<p className="mt-6 max-w-[640px] text-12 leading-[1.5] text-[#8c948b]">{t("closeHint")}</p>
+				<h2 className="text-16 font-semibold text-[#edf2ff]">{t("closeTitle")}</h2>
+				<p className="mt-6 max-w-[640px] text-12 leading-[1.5] text-[#9aa7c9]">{t("closeHint")}</p>
 				<div className="mt-14 flex flex-wrap items-end gap-10">
-					<label className="text-12 text-[#8c948b]">{t("closeFrom")}<input type="date" className="fs-field mt-6 h-40 px-12 text-13 outline-none" value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })} /></label>
-					<label className="text-12 text-[#8c948b]">{t("closeTo")}<input type="date" className="fs-field mt-6 h-40 px-12 text-13 outline-none" value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })} /></label>
+					<label className="text-12 text-[#9aa7c9]">{t("closeFrom")}<input type="date" className="fs-field mt-6 h-40 px-12 text-13 outline-none" value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })} /></label>
+					<label className="text-12 text-[#9aa7c9]">{t("closeTo")}<input type="date" className="fs-field mt-6 h-40 px-12 text-13 outline-none" value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })} /></label>
 					<button type="button" className="fs-btn fs-btn-ghost h-40" onClick={() => setRange(monthRange(-1))}>{t("closePrevMonth")}</button>
 				</div>
 				{checklist.length > 0 ? (
 					<ul className="mt-14 flex flex-col gap-6">
 						{checklist.map((i) => <li key={i.code} className={`text-13 ${i.severity === "blocker" ? "text-[#ff9f9f]" : "text-[#F4A100]"}`}>{i.severity === "blocker" ? "✕" : "!"} {t(`closeItem_${i.code}` as never, { n: i.count })}</li>)}
 					</ul>
-				) : <p className="mt-14 text-13 text-[#c6ff4d]">{t("closeClean")}</p>}
+				) : <p className="mt-14 text-13 text-[#7c93ff]">{t("closeClean")}</p>}
 				{reviewer && (
 					<button type="button" disabled={busy || already} onClick={() => void act(() => apiCall("/api/review/periods", "POST", { action: "close", from: range.from, to: range.to, acknowledge: blockers }), t("closeDone"))} className="fs-btn fs-btn-primary mt-14 h-40 disabled:opacity-50">
 						<TbLock size={15} /> {blockers ? t("closeAnyway") : t("closeBtn")}
 					</button>
 				)}
 				<button type="button" className="fs-btn fs-btn-ghost mt-14 ml-8 h-40" onClick={() => void downloadAuthed(`/api/finance/handoff?from=${range.from}&to=${range.to}`, `handoff-${range.from}_${range.to}.zip`, t("closeHandoffError"))}>{t("closeHandoff")}</button>
-				{already && <p className="mt-8 text-12 text-[#9AA396]">{t("closeAlready")}</p>}
+				{already && <p className="mt-8 text-12 text-[#9AA7C9]">{t("closeAlready")}</p>}
 			</section>
 
 			<section>
-				<h3 className="mb-8 text-14 font-semibold text-[#f1f4ee]">{t("closeLocks")}</h3>
+				<h3 className="mb-8 text-14 font-semibold text-[#edf2ff]">{t("closeLocks")}</h3>
 				<ul className="flex flex-col gap-8">
-					{locks.length === 0 && <li className="text-12 text-[#8c948b]">{t("empty")}</li>}
+					{locks.length === 0 && <li className="text-12 text-[#9aa7c9]">{t("empty")}</li>}
 					{locks.map((l) => (
 						<li key={l.id} className="fs-card flex flex-wrap items-center gap-x-14 gap-y-6 p-12 text-13">
-							<span className="font-medium text-[#f1f4ee]">{l.from} – {l.to}</span>
-							<span className="text-12 text-[#8c948b]">{l.lockedByName} · {date(l.lockedAt)}</span>
-							{l.reopenedAt ? <span className="text-12 text-[#F4A100]">{t("closeReopened", { reason: l.reopenReason })}</span> : <span className="fs-chip h-22 px-8 text-10 text-[#c6ff4d]">{t("closeLocked")}</span>}
+							<span className="font-medium text-[#edf2ff]">{l.from} – {l.to}</span>
+							<span className="text-12 text-[#9aa7c9]">{l.lockedByName} · {date(l.lockedAt)}</span>
+							{l.reopenedAt ? <span className="text-12 text-[#F4A100]">{t("closeReopened", { reason: l.reopenReason })}</span> : <span className="fs-chip h-22 px-8 text-10 text-[#7c93ff]">{t("closeLocked")}</span>}
 							{!l.reopenedAt && reviewer && (
 								<button type="button" disabled={busy} className="ml-auto flex items-center gap-4 text-12 text-[#F4A100] hover:underline" onClick={() => { const reason = window.prompt(t("closeReopenReason")); if (reason) void act(() => apiCall("/api/review/periods", "POST", { action: "reopen", id: l.id, reason }), t("closeReopenDone")); }}>
 									<TbLockOpen size={14} /> {t("closeReopen")}
@@ -113,22 +113,22 @@ export default function PeriodClose() {
 			</section>
 
 			<section>
-				<h3 className="mb-8 text-14 font-semibold text-[#f1f4ee]">{t("reviewTitle")}</h3>
-				{kinds.every(([, rows]) => rows.length === 0) && <p className="text-12 text-[#8c948b]">{t("reviewEmpty")}</p>}
+				<h3 className="mb-8 text-14 font-semibold text-[#edf2ff]">{t("reviewTitle")}</h3>
+				{kinds.every(([, rows]) => rows.length === 0) && <p className="text-12 text-[#9aa7c9]">{t("reviewEmpty")}</p>}
 				{kinds.map(([kind, rows]) => rows.length > 0 && (
 					<div key={kind} className="mb-12">
 						<div className="mb-6 flex items-center justify-between">
-							<p className="text-12 text-[#8c948b]">{t(`review_${kind}`)}</p>
-							{reviewer && <button type="button" disabled={busy} className="text-12 text-[#c6ff4d] hover:underline" onClick={() => void act(() => apiCall("/api/review/bulk", "POST", { kind, ids: rows.filter((r) => r.review?.status === "needs_review").map((r) => r.id) }), t("reviewApproved"))}>{t("reviewApproveAll")}</button>}
+							<p className="text-12 text-[#9aa7c9]">{t(`review_${kind}`)}</p>
+							{reviewer && <button type="button" disabled={busy} className="text-12 text-[#7c93ff] hover:underline" onClick={() => void act(() => apiCall("/api/review/bulk", "POST", { kind, ids: rows.filter((r) => r.review?.status === "needs_review").map((r) => r.id) }), t("reviewApproved"))}>{t("reviewApproveAll")}</button>}
 						</div>
 						<ul className="flex flex-col gap-6">
 							{rows.map((r) => (
 								<li key={r.id} className="fs-card flex flex-wrap items-center gap-x-14 gap-y-4 p-12 text-13">
-									<span className="font-medium text-[#f1f4ee]">{r.title}</span><span className="text-[#8c948b]">{r.party} · {r.date}</span>
+									<span className="font-medium text-[#edf2ff]">{r.title}</span><span className="text-[#9aa7c9]">{r.party} · {r.date}</span>
 									<span className={`fs-chip h-22 px-8 text-10 ${r.review?.status === "needs_fix" ? "text-[#ff9f9f]" : "text-[#F4A100]"}`}>{t(`reviewStatus_${r.review?.status ?? "needs_review"}` as never)}</span>
 									{reviewer && (
 										<span className="ml-auto flex gap-12 text-12">
-											<button type="button" className="text-[#c6ff4d] hover:underline" onClick={() => void act(() => apiCall(`/api/review/${kind}/${r.id}`, "PATCH", { status: "approved" }), t("reviewApproved"))}>{t("reviewApprove")}</button>
+											<button type="button" className="text-[#7c93ff] hover:underline" onClick={() => void act(() => apiCall(`/api/review/${kind}/${r.id}`, "PATCH", { status: "approved" }), t("reviewApproved"))}>{t("reviewApprove")}</button>
 											<button type="button" className="text-[#ff9f9f] hover:underline" onClick={() => { const note = window.prompt(t("reviewFixNote")) ?? ""; void act(() => apiCall(`/api/review/${kind}/${r.id}`, "PATCH", { status: "needs_fix", note }), t("reviewReturned")); }}>{t("reviewReturn")}</button>
 										</span>
 									)}
@@ -141,7 +141,7 @@ export default function PeriodClose() {
 			</section>
 
 			<section>
-				<h3 className="mb-8 text-14 font-semibold text-[#f1f4ee]">{t("requestsTitle")}</h3>
+				<h3 className="mb-8 text-14 font-semibold text-[#edf2ff]">{t("requestsTitle")}</h3>
 				{reviewer && (
 					<div className="mb-12 flex flex-wrap gap-10">
 						<input className="fs-field h-40 min-w-[260px] flex-1 px-12 text-13 outline-none" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={t("requestsPlaceholder")} maxLength={200} />
@@ -149,10 +149,10 @@ export default function PeriodClose() {
 					</div>
 				)}
 				<ul className="flex flex-col gap-8">
-					{requests.length === 0 && <li className="text-12 text-[#8c948b]">{t("empty")}</li>}
+					{requests.length === 0 && <li className="text-12 text-[#9aa7c9]">{t("empty")}</li>}
 					{requests.map((r) => (
 						<li key={r.id} className="fs-card p-12 text-13">
-							<div className="flex flex-wrap items-center gap-x-12 gap-y-4"><span className="font-medium text-[#f1f4ee]">{r.subject}</span><span className="text-12 text-[#8c948b]">{r.createdName} · {date(r.createdAt)}</span><span className="fs-chip h-22 px-8 text-10">{t(`requestsStatus_${r.status}` as never)}</span></div>
+							<div className="flex flex-wrap items-center gap-x-12 gap-y-4"><span className="font-medium text-[#edf2ff]">{r.subject}</span><span className="text-12 text-[#9aa7c9]">{r.createdName} · {date(r.createdAt)}</span><span className="fs-chip h-22 px-8 text-10">{t(`requestsStatus_${r.status}` as never)}</span></div>
 							{r.status === "answered" && <p className="mt-6 text-12 text-[#cfd4cb]">{r.answer}</p>}
 							{r.status === "open" && (
 								<div className="mt-8 flex flex-wrap gap-10">

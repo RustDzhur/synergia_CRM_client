@@ -43,13 +43,13 @@ export default function EntriesTable({ subfolders, docs, sortAsc, onSort, status
 				<thead>
 					<tr>
 						<th className={`${th} w-[38%]`}>
-							<button type="button" onClick={onSort} className="inline-flex items-center gap-6 transition-colors hover:text-[#c6ff4d]" aria-label={t("sortByName")}>
+							<button type="button" onClick={onSort} className="inline-flex items-center gap-6 transition-colors hover:text-[#7c93ff]" aria-label={t("sortByName")}>
 								{t("fileName")} {sortAsc ? "↑" : "↓"}
 							</button>
 						</th>
 						<th className={th}>
 							<div ref={statusRef} className="relative inline-block">
-								<button type="button" onClick={() => setStatusOpen(!statusOpen)} aria-expanded={statusOpen} className="inline-flex items-center gap-6 transition-colors hover:text-[#c6ff4d]">
+								<button type="button" onClick={() => setStatusOpen(!statusOpen)} aria-expanded={statusOpen} className="inline-flex items-center gap-6 transition-colors hover:text-[#7c93ff]">
 									{statusLabel[status]}
 									<TbChevronDown size={16} className={`transition-transform duration-200 ${statusOpen ? "rotate-180" : ""}`} />
 								</button>
@@ -60,7 +60,7 @@ export default function EntriesTable({ subfolders, docs, sortAsc, onSort, status
 												key={s}
 												type="button"
 												onClick={() => { onStatus(s); setStatusOpen(false); }}
-												className={`fs-popover-row block w-full px-14 py-10 text-left text-13 transition-colors duration-150 ${status === s ? "text-[#c6ff4d]" : ""}`}>
+												className={`fs-popover-row block w-full px-14 py-10 text-left text-13 transition-colors duration-150 ${status === s ? "text-[#7c93ff]" : ""}`}>
 												{statusLabel[s]}
 											</button>
 										))}
@@ -77,9 +77,9 @@ export default function EntriesTable({ subfolders, docs, sortAsc, onSort, status
 					{subfolders.map((f) => (
 						<tr key={f.id} className="h-[52px] animate-fade-in">
 							<td className="px-16">
-								<button type="button" onClick={() => onOpenFolder(f.id)} className="flex w-full items-center gap-10 text-left transition-colors hover:text-[#c6ff4d]">
+								<button type="button" onClick={() => onOpenFolder(f.id)} className="flex w-full items-center gap-10 text-left transition-colors hover:text-[#7c93ff]">
 									<EntryIcon folder size={20} />
-									<span className="truncate text-13 font-medium text-[#f1f4ee]">{f.name}</span>
+									<span className="truncate text-13 font-medium text-[#edf2ff]">{f.name}</span>
 								</button>
 							</td>
 							<td className={td}>{t("folder")}</td>
@@ -91,11 +91,11 @@ export default function EntriesTable({ subfolders, docs, sortAsc, onSort, status
 					{docs.map((d) => (
 						<tr key={d.id} className="h-[52px] animate-fade-in">
 							<td className="px-16">
-								<button type="button" onClick={() => onOpenDoc(d)} className="flex w-full items-center gap-10 text-left transition-colors hover:text-[#c6ff4d]" title={d.url ? t("openInGoogle") : t("openFile")}>
+								<button type="button" onClick={() => onOpenDoc(d)} className="flex w-full items-center gap-10 text-left transition-colors hover:text-[#7c93ff]" title={d.url ? t("openInGoogle") : t("openFile")}>
 									<EntryIcon doc={d} size={18} />
 									<span className="min-w-0">
-										<span className="block truncate text-13 text-[#f1f4ee]">{d.name}</span>
-										<span className="block truncate text-11 text-[#8c948b]">{kindLabel(d)}</span>
+										<span className="block truncate text-13 text-[#edf2ff]">{d.name}</span>
+										<span className="block truncate text-11 text-[#9aa7c9]">{kindLabel(d)}</span>
 									</span>
 								</button>
 							</td>
@@ -107,7 +107,7 @@ export default function EntriesTable({ subfolders, docs, sortAsc, onSort, status
 					))}
 				</tbody>
 			</table>
-			{notice && <p className="py-40 text-center text-13 text-[#8c948b]">{notice}</p>}
+			{notice && <p className="py-40 text-center text-13 text-[#9aa7c9]">{notice}</p>}
 		</div>
 	);
 }

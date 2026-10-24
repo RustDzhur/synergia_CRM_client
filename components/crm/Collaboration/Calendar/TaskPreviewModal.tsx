@@ -41,7 +41,7 @@ export default function TaskPreviewModal({ taskId, onClose }: Props) {
 
 	const status = task ? taskStatus(task) : "active";
 	const statusText = status === "completed" ? t("statusCompleted") : status === "ended" ? t("statusOverdue") : t("statusInProgress");
-	const statusColor = status === "ended" ? "text-[#ff7b8a]" : status === "completed" ? "text-[#0BD065]" : "text-[#c6ff4d]";
+	const statusColor = status === "ended" ? "text-[#ff7b8a]" : status === "completed" ? "text-[#0BD065]" : "text-[#7c93ff]";
 
 	async function finish() {
 		if (!task || busyRef.current) return; // второе нажатие, пока идёт запрос, игнорируем
@@ -77,8 +77,8 @@ export default function TaskPreviewModal({ taskId, onClose }: Props) {
 		<Modal open={open} onClose={onClose} label={task?.title ?? t("task")} className="w-full max-w-[788px]" flushOnMobile>
 			<div className="fs-popover fs-scroll overflow-hidden max-md:min-h-screen max-md:rounded-[0px] max-md:border-0">
 				<div className="flex items-center justify-between gap-16 border-b border-inkLine bg-[rgba(255,255,255,0.02)] px-16 py-14 md:border-0 md:bg-transparent md:px-32 md:pt-24">
-					<h2 className="min-w-0 truncate text-16 font-semibold text-[#f1f4ee]">{task?.title}</h2>
-					<button type="button" onClick={onClose} aria-label={t("close")} className="shrink-0 text-[#8c948b] transition-colors hover:text-[#f1f4ee]">
+					<h2 className="min-w-0 truncate text-16 font-semibold text-[#edf2ff]">{task?.title}</h2>
+					<button type="button" onClick={onClose} aria-label={t("close")} className="shrink-0 text-[#9aa7c9] transition-colors hover:text-[#edf2ff]">
 						<TbX size={20} />
 					</button>
 				</div>
@@ -92,13 +92,13 @@ export default function TaskPreviewModal({ taskId, onClose }: Props) {
 						aria-label={t("pin")}
 						aria-pressed={task?.pinned ?? false}
 						onClick={togglePin}
-						className={`shrink-0 transition-colors ${task?.pinned ? "text-[#F4A100]" : "text-[#8C948B] hover:text-[#8c948b]"}`}>
+						className={`shrink-0 transition-colors ${task?.pinned ? "text-[#F4A100]" : "text-[#9AA7C9] hover:text-[#9aa7c9]"}`}>
 						{task?.pinned ? <TbStarFilled size={20} /> : <TbStar size={20} />}
 					</button>
 				</div>
 				{task?.responsible && (
-					<p className="border-b border-inkLine px-16 py-14 text-13 text-[#8c948b] md:px-32">
-						{t("responsible")} <span className="text-[#f1f4ee]">{task.responsible}</span>
+					<p className="border-b border-inkLine px-16 py-14 text-13 text-[#9aa7c9] md:px-32">
+						{t("responsible")} <span className="text-[#edf2ff]">{task.responsible}</span>
 					</p>
 				)}
 				<div className="flex flex-col items-stretch gap-12 px-16 py-20 md:flex-row md:items-center md:justify-end md:gap-12 md:px-32 md:py-24">
