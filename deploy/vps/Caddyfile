@@ -8,6 +8,12 @@
 # (вебхуки Telegram/Viber/WhatsApp/платежей, OAuth-колбэки, портал клиентов /c, оплата /pay,
 # приложение /crm и вход /login, агенты /agent, MCP /connect) остаются на CRM (127.0.0.1:3210) —
 # иначе сломаются внешние вебхуки и ссылки, уже разосланные клиентам.
+# www.firmspace.de — только редирект на основной хост: два адреса с одинаковым контентом
+# ломают canonical/hreflang (поисковик видит две копии страницы и разные хосты в разметке).
+www.firmspace.de {
+	redir https://firmspace.de{uri} permanent
+}
+
 {$SITE_DOMAINS} {
 	encode zstd gzip
 	# Форма большого сайта (его собственный endpoint) — идёт в контейнер сайта,
