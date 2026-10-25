@@ -129,9 +129,11 @@ async function messengerSend(accessToken: string, psid: string, message: Record<
     return res.message_id;
 }
 
-async function uploadMessengerFile(accessToken: string, media: MessengerMedia) {
+async function uploadMessengerFile(accessToken: string, media: MessengerMedia, type: string) {
     const form = new FormData();
     form.append("filedata", new Blob([new Uint8Array(media.data)], { type: media.mime || "application/octet-stream" }), media.name || "file");
+    // Meta требует описание вложения в поле message, иначе на filedata отвечает «The parameter message is required»
+    form.append("message", JSON.stringify({ attachment: { type, payload: { is_reusable: true } } }));
     const res = await graph<{ attachment_id?: string }>("/me/message_attachments", accessToken, { method: "POST", body: form });
     if (!res.attachment_id) throw new ProviderError("Facebook did not return an attachment id — the file was not accepted");
     return res.attachment_id;
@@ -141,7 +143,7 @@ export async function sendMessenger(accessToken: string, psid: string, text: str
     // у Send API текст и вложение — разные сообщения, поэтому отправляем их подряд
     if (!media) return messengerSend(accessToken, psid, { text });
     const type = media.kind === "image" ? "image" : media.kind === "voice" ? "audio" : "file";
-    const attachmentId = await uploadMessengerFile(accessToken, media);
+    const attachmentId = await uploadMessengerFile(accessToken, media, type);
     const id = await messengerSend(accessToken, psid, { attachment: { type, payload: { attachment_id: attachmentId } } });
     if (text) await messengerSend(accessToken, psid, { text });
     return id;
