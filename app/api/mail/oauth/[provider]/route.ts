@@ -4,12 +4,14 @@ import { appOrigin } from "@/lib/appUrl";
 import { badRequest, unauthorized } from "@/lib/api";
 import { authorizeUrl, makeState, oauthAvailable } from "@/lib/mail/oauth";
 import { isLocale } from "@/lib/locales";
+import { ensurePlatformEnv } from "@/lib/platformEnv";
 
 export const dynamic = "force-dynamic";
 
 // POST /api/mail/oauth/google|microsoft — { locale }: адрес страницы входа у провайдера.
 // Браузерный переход не может нести заголовок Authorization, поэтому пользователь определяется здесь и попадает в подписанный state.
 export async function POST(req: Request, { params }: { params: { provider: string } }) {
+    await ensurePlatformEnv();
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     const vendor = params.provider === "google" || params.provider === "microsoft" ? params.provider : null;

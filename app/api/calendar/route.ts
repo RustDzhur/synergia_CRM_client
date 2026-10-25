@@ -11,6 +11,7 @@ import { connectIcloud, disconnectIcloud, findIcloud, icloudCalendars, setIcloud
 import { syncCalendars } from "@/lib/calendar/sync";
 import { gcalToken } from "@/lib/google";
 import { isFullLocale } from "@/lib/locales";
+import { ensurePlatformEnv } from "@/lib/platformEnv";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -19,6 +20,7 @@ export const maxDuration = 60;
 // GET /api/calendar — состояние обеих интеграций: что подключено, какие календари выбраны, когда была
 // последняя синхронизация и какая ошибка. Интерфейсу этого достаточно, чтобы нарисовать настройки.
 export async function GET(req: Request) {
+    await ensurePlatformEnv();
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
 

@@ -4,15 +4,18 @@ import type { AdsAccount, AdsInsights } from "./types";
 // Google Ads API (REST). Нужны: OAuth-клиент Google (тот же, что для почты и Drive) с областью adwords и «developer token»
 // рекламного менеджерского аккаунта (GOOGLE_ADS_DEVELOPER_TOKEN). Версия API меняется — задаётся GOOGLE_ADS_API_VERSION.
 export const GOOGLE_ADS_SCOPE = "https://www.googleapis.com/auth/adwords";
-const base = () => (process.env.GOOGLE_ADS_API_URL || `https://googleads.googleapis.com/${process.env.GOOGLE_ADS_API_VERSION || "v21"}`).replace(/\/+$/, "");
-export const googleAdsConfigured = () => !!process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+import { platformEnvCached } from "@/lib/platformEnv";
+
+const base = () => (platformEnvCached("GOOGLE_ADS_API_URL") || `https://googleads.googleapis.com/${platformEnvCached("GOOGLE_ADS_API_VERSION") || "v21"}`).replace(/\/+$/, "");
+// Developer-token принадлежит приложению; задаётся в кабинете админа, окружение — фолбэк.
+export const googleAdsConfigured = () => !!platformEnvCached("GOOGLE_ADS_DEVELOPER_TOKEN");
 
 export async function call<T>(token: string, path: string, init: { method?: string; body?: unknown; loginCustomerId?: string } = {}): Promise<T> {
     const res = await fetchProvider(`${base()}${path}`, {
         method: init.method ?? "GET",
         headers: {
             Authorization: `Bearer ${token}`,
-            "developer-token": process.env.GOOGLE_ADS_DEVELOPER_TOKEN ?? "",
+            "developer-token": platformEnvCached("GOOGLE_ADS_DEVELOPER_TOKEN"),
             "Content-Type": "application/json",
             ...(init.loginCustomerId ? { "login-customer-id": init.loginCustomerId } : {}),
         },

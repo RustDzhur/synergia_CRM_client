@@ -1,7 +1,9 @@
 // Статья от внешнего агента (например, из DeepSeek Harness): разбор и проверка. Токены и права агентов — в lib/agents.ts
 // (реестр в CRM → Настройки → «Агенты»; право «blog» — читать список статей и класть статьи в блог, по умолчанию черновиками).
 export const LANGS = ["en", "de", "ua", "uz"] as const;
-export type Tx3 = { en: string; de: string; ua: string; uz: string };
+/** Языки, которые уходят на сайт: немецкий, английский, русский. */
+export const SITE_LANGS = ["de", "en", "ru"] as const;
+export type Tx3 = { en: string; de: string; ua: string; uz: string; ru?: string };
 
 // Только текст: теги вырезаем, чтобы статья не принесла на лендинг чужую разметку или скрипт
 const plain = (v: unknown, max: number) => String(v ?? "").replace(/<[^>]*>/g, "").replace(/\r/g, "").trim().slice(0, max);
@@ -14,6 +16,9 @@ function tx3(v: unknown, what: string, max: number): Tx3 {
         if (!s) throw new Error(`${what}: text in "${l}" is required (all of en, de, ua, uz)`);
         out[l] = s;
     }
+    // Русский пишет сам блог-робот; у внешнего агента его может не быть — принимаем, если передан.
+    const ru = plain(o.ru, max);
+    if (ru) out.ru = ru;
     return out;
 }
 

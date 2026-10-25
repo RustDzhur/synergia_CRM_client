@@ -35,8 +35,8 @@ const HEAD_SYSTEM = [
     "Pick a title and a one-sentence excerpt for a practical, no-fluff article on the given topic.",
     "Rules: plain text without HTML, no invented figures, prices or promises about the product.",
     "Reply with ONLY a JSON object, no markdown and no explanations:",
-    '{ "title": {"en": "…", "de": "…", "ua": "…", "uz": "…"}, "excerpt": {"en": "…", "de": "…", "ua": "…", "uz": "…"} }',
-    "Limits: title ≤ 160 characters, excerpt ≤ 400, all four languages required.",
+    '{ "title": {"en": "…", "de": "…", "ru": "…", "ua": "…", "uz": "…"}, "excerpt": {"en": "…", "de": "…", "ru": "…", "ua": "…", "uz": "…"} }',
+    "Limits: title ≤ 160 characters, excerpt ≤ 400, all five languages required (German, English and Russian are the site languages: they must be written by you, not translated later).",
 ].join("\n");
 
 const BODY_SYSTEM = [
@@ -44,7 +44,7 @@ const BODY_SYSTEM = [
     "Write 5-6 short paragraphs on the given topic — practical, no fluff, for a busy small-business owner.",
     "Rules: plain text without HTML, no invented figures, prices or promises; 2-4 sentences per paragraph; all four languages required.",
     "Reply with ONLY a JSON object, no markdown and no explanations:",
-    '{ "body": [{"en": "…", "de": "…", "ua": "…", "uz": "…"}] }',
+    '{ "body": [{"en": "…", "de": "…", "ru": "…", "ua": "…", "uz": "…"}] }',
     "Each paragraph ≤ 1500 characters per language.",
 ].join("\n");
 
@@ -70,11 +70,12 @@ const extractJson = (text: string): Record<string, unknown> => {
 };
 
 // {en,de,ua,uz} из ответа модели; пустой язык — текст en (en обязателен, de/ua/uz — фолбэк)
-const localize = (json: unknown): { en: string; de: string; ua: string; uz: string } => {
+const localize = (json: unknown): { en: string; de: string; ru: string; ua: string; uz: string } => {
     const o = (json && typeof json === "object" ? json : {}) as Record<string, unknown>;
     const en = plain(o.en);
     if (!en) throw new Error("The model returned no English text");
-    return { en, de: plain(o.de) || en, ua: plain(o.ua) || en, uz: plain(o.uz) || en };
+    // Немецкий, английский и русский — языки сайта и обязательны; ua/uz необязательны, фолбэк — en.
+    return { en, de: plain(o.de) || en, ru: plain(o.ru) || en, ua: plain(o.ua) || en, uz: plain(o.uz) || en };
 };
 
 // Одна статья по теме → готовый объект для parsePost; slug строится из английского заголовка

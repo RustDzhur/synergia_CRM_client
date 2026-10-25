@@ -95,15 +95,7 @@ PY
 )"
 
 echo "$(date -Is) sync-blog: изменено файлов: ${CHANGED:-?}"
-if [ -f /home/server/translate-blog.js ]; then
-  SECRET_T=$(sed -n "s/^CRON_SECRET=//p" "$ENV_FILE" 2>/dev/null | head -1 | tr -d "\"")
-  TRANSLATED=$(docker run --rm --network host -e CRON_SECRET="$SECRET_T" \
-    -v /home/server/translate-blog.js:/translate-blog.js:ro \
-    -v "$SITE/content/blog:/blog" \
-    -e BLOG_DIR=/blog firmspace-crm:latest node /translate-blog.js 2>&1 || true)
-  echo "$TRANSLATED" >> /home/server/translate-blog.log
-  if echo "$TRANSLATED" | grep -qE "переведено [1-9]"; then CHANGED=$((CHANGED + 1)); fi
-fi
+# Языки сайта (de/en/ru) пишет сам блог-робот — отдельный переводчик больше не нужен.
 if [ "${CHANGED:-0}" -gt 0 ] 2>/dev/null; then
     echo "sync-blog: пересобираю сайт (content/ попадает в образ на сборке)"
     (cd "$SITE/deploy" && docker compose build web && docker compose up -d web)

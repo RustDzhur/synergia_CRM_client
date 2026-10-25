@@ -6,11 +6,13 @@ import { adsAvailable, adsPlanOk, makeMetaState, metaAuthorizeUrl } from "@/lib/
 import { GOOGLE_ADS_SCOPE } from "@/lib/ads/google";
 import { authorizeUrl, makeState } from "@/lib/mail/oauth";
 import { isLocale } from "@/lib/locales";
+import { ensurePlatformEnv } from "@/lib/platformEnv";
 
 export const dynamic = "force-dynamic";
 
 // POST /api/ads/oauth — { platform: "google" | "meta", locale }: адрес страницы, где пользователь разрешает читать статистику рекламы
 export async function POST(req: Request) {
+    await ensurePlatformEnv();
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     // Имя тарифа в сообщении не называем: текст для пользователя берётся из переводов по коду plan_limit

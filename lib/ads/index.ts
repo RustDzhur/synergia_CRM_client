@@ -4,6 +4,7 @@ import { ProviderError } from "@/lib/http";
 import { packSecrets, secretsOf } from "@/lib/integrations";
 import { randomToken } from "@/lib/crypto";
 import { Tokens, oauthAvailable, refreshTokens } from "@/lib/mail/oauth";
+import { ensurePlatformEnv } from "@/lib/platformEnv";
 import { prisma } from "@/lib/prisma";
 import { googleAccounts, googleAdsConfigured, googleInsights } from "./google";
 import { META_SCOPE, metaAccounts, metaAuthUrl, metaConfigured, metaExchange, metaInsights } from "./meta";
@@ -73,6 +74,8 @@ export async function accessToken(d: Doc): Promise<string> {
     if (s.expiresAt > Date.now() + 60_000) return s.accessToken;
     if (!s.refreshToken) return fail(d, "Connect Google Ads again");
     try {
+        // Ключи OAuth-приложения берутся из настроек платформы (кабинет админа): правка .env не нужна.
+        await ensurePlatformEnv();
         const fresh = await refreshTokens("google", s.refreshToken);
         await prisma.integration.update({ where: { id: d.id }, data: { secrets: packSecrets(fresh) } });
         return fresh.accessToken;

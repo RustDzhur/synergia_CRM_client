@@ -4,12 +4,14 @@ import { badRequest, failure, unauthorized } from "@/lib/api";
 import { connectPasswordAccount, toMailAccountDTO } from "@/lib/mail";
 import { oauthAvailable } from "@/lib/mail/oauth";
 import { prisma } from "@/lib/prisma";
+import { ensurePlatformEnv } from "@/lib/platformEnv";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 // GET /api/mail/accounts — подключённые ящики и доступные способы входа через OAuth
 export async function GET(req: Request) {
+    await ensurePlatformEnv();
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
     const list = await prisma.integration.findMany({ where: { owner: user.id, type: "mail" }, orderBy: { createdAt: "asc" } });

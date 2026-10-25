@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { ProviderError, fetchProvider } from "@/lib/http";
+import { ensurePlatformEnv, platformEnvCached } from "@/lib/platformEnv";
 
 export type Vendor = "google" | "microsoft";
 
@@ -8,8 +9,10 @@ export type Vendor = "google" | "microsoft";
 // Адреса можно переопределить (для проверки без настоящих аккаунтов).
 const CONFIG = {
     google: {
-        id: () => process.env.GOOGLE_CLIENT_ID,
-        secret: () => process.env.GOOGLE_CLIENT_SECRET,
+        // Ключи OAuth-приложения принадлежат платформе (одна пара на всех клиентов): задаются
+        // в кабинете администратора (Настройки → Интеграции → Переменные окружения), окружение — фолбэк.
+        id: () => platformEnvCached("GOOGLE_CLIENT_ID"),
+        secret: () => platformEnvCached("GOOGLE_CLIENT_SECRET"),
         authUrl: () => process.env.GOOGLE_AUTH_URL || "https://accounts.google.com/o/oauth2/v2/auth",
         tokenUrl: () => process.env.GOOGLE_TOKEN_URL || "https://oauth2.googleapis.com/token",
         scope: "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send",
@@ -24,6 +27,9 @@ const CONFIG = {
         extra: { prompt: "select_account" },
     },
 } as const;
+
+/** Подтягивает настройки платформы в кэш перед показом кнопок входа/подключения. */
+export const refreshOAuthConfig = () => ensurePlatformEnv();
 
 export const oauthAvailable = () => ({ google: !!(CONFIG.google.id() && CONFIG.google.secret()), microsoft: !!(CONFIG.microsoft.id() && CONFIG.microsoft.secret()) });
 export const redirectUri = (origin: string) => `${origin}/api/mail/oauth/callback`;

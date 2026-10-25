@@ -5,11 +5,11 @@
 // обёртка на хосте deploy/vps/sync-blog.sh (в контейнер /home/server не смонтирован).
 //   data — схема сайта: { slug, title{de,en,ua}, excerpt{de,en,ua}, body[{de,en,ua}], publishedAt, image }
 //   src  — исходная картинка поста: /images/blog/… (файл в public/images/blog) или http(s)-URL; "" — картинки нет.
-// ru-тексты не кладём: сайт для непереведённых языков показывает английский (en-фолбэк), ua храним отдельным полем на будущее.
+// Языки сайта — de/en/ru: робот пишет их сам. ua/uz в CRM остаются, но на сайт не выгружаются.
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
-const LANGS = ["de", "en", "ua"];
+const LANGS = ["de", "en", "ru"]; // языки сайта: немецкий, английский, русский
 
 const plain = (v) => String(v ?? "").replace(/<[^>]*>/g, "").replace(/\r/g, "").trim();
 
