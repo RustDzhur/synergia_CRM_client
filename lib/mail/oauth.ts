@@ -67,11 +67,20 @@ export interface Tokens { accessToken: string; refreshToken: string; expiresAt: 
 
 async function tokenRequest(vendor: Vendor, form: Record<string, string>) {
     const c = CONFIG[vendor];
-    const res = await fetchProvider(c.tokenUrl(), {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ client_id: c.id() ?? "", client_secret: c.secret() ?? "", ...form }).toString(),
-    });
+    const body = new URLSearchParams({ client_id: c.id() ?? "", client_secret: c.secret() ?? "", ...form }).toString();
+    const attempt = () => fetchProvider(c.tokenUrl(), { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body }, 20000);
+    let res: Response;
+    try {
+        res = await attempt();
+    } catch (e) {
+        // Обмен кода/токена можно безопасно повторить: повторный запрос не создаёт дублей.
+        if (e instanceof ProviderError && /did not respond/i.test(e.message)) {
+            await new Promise((r) => setTimeout(r, 800));
+            res = await attempt();
+        } else {
+            throw e;
+        }
+    }
     const json = (await res.json().catch(() => null)) as { access_token?: string; refresh_token?: string; expires_in?: number; scope?: string; error_description?: string; error?: string } | null;
     if (!res.ok || !json?.access_token) throw new ProviderError(json?.error_description || json?.error || "Sign-in was rejected by the provider");
     return { accessToken: json.access_token, refreshToken: json.refresh_token ?? "", expiresAt: Date.now() + (json.expires_in ?? 3600) * 1000, scope: json.scope ?? "" };

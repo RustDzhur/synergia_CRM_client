@@ -91,7 +91,9 @@ export function ItemStats({ item, locale, compact = false }: { item: AdsItem; lo
 	const t = useTranslations("ads");
 	if (item.error) {
 		// Подсказка по конкретной причине отказа Google (коды приходят с сервера в тексте ошибки)
-		const hint = /CUSTOMER_NOT_ENABLED/.test(item.error)
+		const hint = /did not respond|Connect Timeout|timeout/i.test(item.error)
+			? "errNetwork"
+			: /CUSTOMER_NOT_ENABLED/.test(item.error)
 			? "errCustomerDisabled"
 			: /DEVELOPER_TOKEN_NOT_APPROVED/.test(item.error)
 				? "errDeveloperToken"

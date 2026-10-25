@@ -3349,7 +3349,8 @@
     "errPermissionHint": "Der verbundene Google-Nutzer hat keinen Zugriff auf dieses Werbekonto. Fügen Sie ihn in Google Ads → Zugriff und Sicherheit hinzu.",
     "inventoryHint": "Kampagnen im Konto (auch pausiert):",
     "statusEnabled": "aktiv",
-    "statusPaused": "pausiert"
+    "statusPaused": "pausiert",
+    "errNetwork": "Google hat nicht rechtzeitig geantwortet — meist ein kurzer Netzwerkfehler. Seite neu laden; wiederholt es sich, die Serververbindung prüfen."
   },
   "marketing": {
     "tab_start": "Start",

@@ -3349,7 +3349,8 @@
     "errPermissionHint": "The connected Google user has no access to this ad account. Add the user in Google Ads → Access and security.",
     "inventoryHint": "Campaigns in the account (including paused):",
     "statusEnabled": "enabled",
-    "statusPaused": "paused"
+    "statusPaused": "paused",
+    "errNetwork": "Google did not answer in time — usually a short network glitch. Reload the page; if it repeats, check the server connection."
   },
   "marketing": {
     "tab_start": "Start",

@@ -27,51 +27,72 @@ function versionsToTry(): string[] {
 // Developer-token принадлежит приложению; задаётся в кабинете админа, окружение — фолбэк.
 export const googleAdsConfigured = () => !!platformEnvCached("GOOGLE_ADS_DEVELOPER_TOKEN");
 
+const NETWORK_ERROR = /did not respond/i;
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export async function call<T>(token: string, path: string, init: { method?: string; body?: unknown; loginCustomerId?: string } = {}): Promise<T> {
+    // Чтения (search, listAccessibleCustomers) можно безопасно повторить при сетевом сбое:
+    // дублей не будет. Мутации НЕ повторяем — иначе кампания создастся дважды.
+    const retryable = !/:(mutate|createCustomerClient)/i.test(path);
     let lastError = "";
     for (const version of versionsToTry()) {
-        const res = await fetchProvider(`${baseFor(version)}${path}`, {
-            method: init.method ?? "GET",
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "developer-token": platformEnvCached("GOOGLE_ADS_DEVELOPER_TOKEN"),
-                "Content-Type": "application/json",
-                ...(init.loginCustomerId ? { "login-customer-id": init.loginCustomerId } : {}),
-            },
-            body: init.body === undefined ? undefined : JSON.stringify(init.body),
-        }, 20000);
-        const json = (await res.json().catch(() => null)) as {
-        error?: { message?: string; status?: string; details?: { "@type"?: string; errors?: { errorCode?: Record<string, string>; message?: string }[] }[] };
-    } & T;
-        if (res.ok) {
-            if (!EXPLICIT_VERSION()) g.__adsVersion = { at: Date.now(), value: version };
-            return json;
+        for (let attempt = 0; ; attempt++) {
+            try {
+                return await performCall<T>(token, version, path, init);
+            } catch (e) {
+                if (e instanceof ProviderError && e.message === "VERSION_404") {
+                    lastError = version;
+                    break; // пробуем следующую версию API
+                }
+                const transient = e instanceof ProviderError && NETWORK_ERROR.test(e.message);
+                if (attempt === 0 && retryable && transient) {
+                    await delay(600);
+                    continue; // один повтор той же версии
+                }
+                throw e;
+            }
         }
-        // Google прячет настоящую причину в details[].errors[].errorCode — достаём её: по ней
-        // человек понимает, что делать (аккаунт отключён, нет прав, неверный manager id).
-        const failure = (json?.error?.details ?? []).find((d) => d["@type"]?.includes("GoogleAdsFailure"));
-        const code = failure?.errors?.[0]?.errorCode ? Object.values(failure.errors[0].errorCode)[0] : "";
-        const known: Record<string, string> = {
-            CUSTOMER_NOT_ENABLED: "рекламный аккаунт не активирован или отключён — проверьте его статус в Google Ads",
-            DEVELOPER_TOKEN_NOT_APPROVED: "developer token не одобрен для реальных аккаунтов — нужен доступ Basic в Google Ads API Center",
-            USER_PERMISSION_DENIED: "у Google-пользователя нет доступа к этому рекламному аккаунту",
-            CUSTOMER_NOT_FOUND: "рекламный аккаунт не найден — проверьте номер",
-        };
-        const message = `${json?.error?.message || json?.error?.status || `error ${res.status}`}${code ? ` (${code}${known[code] ? `: ${known[code]}` : ""})` : ""}`;
-        // 404 на самом эндпоинте = версия снята с поддержки: пробуем следующую, не показывая это человеку
-        if (res.status === 404) {
-            lastError = message;
-            continue;
-        }
-        // PERMISSION_DENIED чаще всего означает «нужен login-customer-id менеджерского аккаунта»
-        const hint = /does not have permission|permission_denied|PERMISSION_DENIED/i.test(message)
-            ? " — если рекламный аккаунт подключён через менеджерский (MCC), укажите его ID в поле «Аккаунт-менеджер (MCC)»"
-            : "";
-        throw new ProviderError(`Google Ads: ${message}${hint}`.slice(0, 400));
     }
     throw new ProviderError(
         `Google Ads: версия API недоступна (${lastError || "404"}). Укажите актуальную в переменной GOOGLE_ADS_API_VERSION (сейчас поддерживается v26) или обновите приложение.`.slice(0, 300),
     );
+}
+
+async function performCall<T>(token: string, version: string, path: string, init: { method?: string; body?: unknown; loginCustomerId?: string }): Promise<T> {
+    const res = await fetchProvider(`${baseFor(version)}${path}`, {
+        method: init.method ?? "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "developer-token": platformEnvCached("GOOGLE_ADS_DEVELOPER_TOKEN"),
+            "Content-Type": "application/json",
+            ...(init.loginCustomerId ? { "login-customer-id": init.loginCustomerId } : {}),
+        },
+        body: init.body === undefined ? undefined : JSON.stringify(init.body),
+    }, 25000);
+    const json = (await res.json().catch(() => null)) as {
+        error?: { message?: string; status?: string; details?: { "@type"?: string; errors?: { errorCode?: Record<string, string>; message?: string }[] }[] };
+    } & T;
+    if (res.ok) {
+        if (!EXPLICIT_VERSION()) g.__adsVersion = { at: Date.now(), value: version };
+        return json;
+    }
+    // 404 на самом эндпоинте = версия снята с поддержки: сигналим вызывающему коду попробовать следующую
+    if (res.status === 404) throw new ProviderError("VERSION_404");
+    // Google прячет настоящую причину в details[].errors[].errorCode — достаём её: по ней
+    // человек понимает, что делать (аккаунт отключён, нет прав, неверный manager id).
+    const failure = (json?.error?.details ?? []).find((d) => d["@type"]?.includes("GoogleAdsFailure"));
+    const code = failure?.errors?.[0]?.errorCode ? Object.values(failure.errors[0].errorCode)[0] : "";
+    const known: Record<string, string> = {
+        CUSTOMER_NOT_ENABLED: "рекламный аккаунт не активирован или отключён — проверьте его статус в Google Ads",
+        DEVELOPER_TOKEN_NOT_APPROVED: "developer token не одобрен для реальных аккаунтов — нужен доступ Basic в Google Ads API Center",
+        USER_PERMISSION_DENIED: "у Google-пользователя нет доступа к этому рекламному аккаунту",
+        CUSTOMER_NOT_FOUND: "рекламный аккаунт не найден — проверьте номер",
+    };
+    const message = `${json?.error?.message || json?.error?.status || `error ${res.status}`}${code ? ` (${code}${known[code] ? `: ${known[code]}` : ""})` : ""}`;
+    const hint = /does not have permission|permission_denied|PERMISSION_DENIED/i.test(message)
+        ? " — если рекламный аккаунт подключён через менеджерский (MCC), укажите его ID в поле «Аккаунт-менеджер (MCC)»"
+        : "";
+    throw new ProviderError(`Google Ads: ${message}${hint}`.slice(0, 400));
 }
 
 export const query = <T>(token: string, customer: string, gaql: string, loginCustomerId?: string) =>
