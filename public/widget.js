@@ -186,7 +186,7 @@
     '<div class="list"></div><div class="quick"></div>' +
     '<div class="ask"><b>' + T.contactTitle + '</b><div><input maxlength="120" placeholder="' + T.contactPh + '" aria-label="' + T.contactHint + '">' +
     '<button type="button" aria-label="' + T.contactSend + '" title="' + T.contactSend + '"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12.6 2-12.6 2z"/></svg></button></div></div>' +
-    '<div class="links"></div><a class="cta" target="_blank" rel="noopener"></a>' +
+    '<div class="links"></div><span class="cta-slot"></span>' +
     '<form><button class="clip" type="button" aria-label="' + T.file + '" title="' + T.file + '">📎</button>' +
     '<input class="text" maxlength="1000" placeholder="' + T.ph + '" aria-label="' + T.ph + '"><input class="file" type="file" hidden>' +
     '<button class="send" type="submit" aria-label="' + T.send + '" title="' + T.send + '"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12.6 2-12.6 2z"/></svg></button></form></div>' +
@@ -257,15 +257,27 @@
     }
 
     // кнопка действия: «начать бесплатно» и подобное — чтобы её не искали на странице
-    var cta = $(".cta");
+    // Кнопка-ссылка создаётся ТОЛЬКО при заданном адресе: пустой <a> без href поисковики
+    // считают битой ссылкой и не могут её просканировать. Нет адреса — нет элемента.
+    var slot = $(".cta-slot");
+    var existing = $(".cta");
     if (cfg.cta && cfg.cta.url) {
+      var cta = existing;
+      if (!cta) {
+        cta = document.createElement("a");
+        cta.className = "cta on";
+        cta.target = "_blank";
+        cta.rel = "noopener";
+        if (slot) slot.appendChild(cta); else return;
+      }
       cta.href = cfg.cta.url;
       cta.textContent = cfg.cta.label || T.cta;
       cta.style.background = accentBg(cfg.color);
       cta.style.color = accentInk(cfg.color);
       cta.classList.add("on");
-    } else {
-      cta.classList.remove("on");
+      cta.removeAttribute("aria-hidden");
+    } else if (existing && existing.parentNode) {
+      existing.parentNode.removeChild(existing);
     }
   }
 
