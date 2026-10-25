@@ -1,0 +1,249 @@
+{
+  "meta": {
+    "purpose": "Готовый план кампании Firmspace для заливки в Meta Marketing API. Ничего не активно: все объекты создаются в PAUSED, бюджеты не запускаются, способ оплаты не добавляется.",
+    "graph_api": "https://graph.facebook.com/v23.0",
+    "ad_account_id": "4436277693",
+    "ad_account_act": "act_4436277693",
+    "page_id": "1334056129793648",
+    "instagram_actor_id": "17841462923280272",
+    "business_id": "2436697483042476",
+    "app_id": "1094471060236854",
+    "created": "2026-10-25",
+    "source_doc": "docs/FACEBOOK_ADS.md",
+    "currency": null,
+    "currency_note": "Валюта аккаунта не прочитана (нет ads_read). daily_budget задаётся в минорных единицах валюты аккаунта: 600 = 6,00 EUR только если currency=EUR. Перед заливкой проверить GET /act_4436277693?fields=currency — если валюта другая, пересчитать бюджеты.",
+    "budget_per_day_minor": { "AS1": 600, "AS2": 600, "total": 1200 },
+    "hard_rules": [
+      "status всех объектов — только PAUSED",
+      "никаких платежей, billing, funding_source",
+      "никаких запусков: скрипт fb-ads-upload.mjs отказывается работать с любым status != PAUSED",
+      "AS2 (ретаргетинг) не создаётся, пока нет пикселя и Custom Audience"
+    ]
+  },
+  "assets": {
+    "image": "public/brand/cover.png",
+    "image_size": "1640x856",
+    "image_aspect": "1.91:1",
+    "upload_endpoint": "POST /act_4436277693/adimages (multipart, поле filename)",
+    "note": "Этот файл — 1.91:1 (лента, link ad). Для 1:1 и 4:5 (план §5) нужны отдельные кропы: один и тот же файл в квадрат не растягивать."
+  },
+  "lead_form": {
+    "endpoint": "POST /1334056129793648/leadgen_forms",
+    "name": "Firmspace — Kostenlose Prozessanalyse (DE)",
+    "locale": "DE",
+    "privacy_policy_url": "https://firmspace.de/de/datenschutz",
+    "follow_up_action_url": "https://firmspace.de/de",
+    "questions": [
+      { "type": "FULL_NAME" },
+      { "type": "EMAIL" },
+      { "type": "PHONE" },
+      { "type": "COMPANY_NAME" }
+    ],
+    "thank_you_page": {
+      "title": "Danke für Ihre Anfrage",
+      "body": "Wir melden uns innerhalb eines Werktags und stimmen einen Termin für die kostenlose Prozessanalyse ab.",
+      "button_text": "Zur Website",
+      "button_url": "https://firmspace.de/de"
+    },
+    "fallbacks": [
+      "Если API не принимает privacy_policy_url — отправить privacy_policy: { url: ... } (встречается в разных версиях API).",
+      "Если POST /<page_id>/leadgen_forms недоступен — попробовать POST /act_4436277693/leadgen_forms с page_id в теле."
+    ],
+    "note": "Instant Form нужен потому, что пикселя на сайте нет, а оптимизация на лиды по сайту (OFFSITE_CONVERSIONS) без пикселя невозможна."
+  },
+  "campaign": {
+    "name": "Firmspace — Lead Gen DE",
+    "objective": "OUTCOME_LEADS",
+    "status": "PAUSED",
+    "special_ad_categories": ["NONE"],
+    "buying_type": "AUCTION",
+    "bid_strategy": "LOWEST_COST_WITHOUT_CAP",
+    "daily_budget": null,
+    "budget_note": "Бюджет на уровне адсетов (ABO), как в плане: 6 €/день на адсет."
+  },
+  "adsets": [
+    {
+      "key": "AS1",
+      "ready": true,
+      "name": "FS | AS1 | DE 25-60 | Kleinunternehmen & Selbstständige",
+      "status": "PAUSED",
+      "daily_budget": 600,
+      "billing_event": "IMPRESSIONS",
+      "optimization_goal": "LEAD_GENERATION",
+      "destination_type": "ON_AD",
+      "bid_strategy": "LOWEST_COST_WITHOUT_CAP",
+      "promoted_object": { "page_id": "{{page_id}}" },
+      "dsa_beneficiary": "Firmspace",
+      "dsa_payor": "Firmspace",
+      "dsa_note": "Обязательные поля DSA для показов в ЕС. Название бенефициара/плательщика должно совпадать с реальным юрлицом из Impressum — сейчас Impressum на сайте состоит из плейсхолдеров, это надо заполнить до запуска.",
+      "targeting": {
+        "geo_locations": { "countries": ["DE"] },
+        "age_min": 25,
+        "age_max": 60,
+        "genders": [0],
+        "locales": [5],
+        "interests": [
+          { "id": "6002884511422", "name": "Kleinunternehmen" },
+          { "id": "6003214937861", "name": "Selbstständigkeit" }
+        ],
+        "interests_note": "ID получены через GET /search?type=adinterest (этот запрос доступен и без ads_read). Глобальный размер: Kleinunternehmen 177–208 млн, Selbstständigkeit 43–51 млн; после гео DE и возраста 25–60 аудитория будет измерена Meta — проверить GET /act_<id>/targetingsentencelines или Ads Manager."
+      },
+      "ads": [
+        {
+          "key": "AS1-a",
+          "name": "FS | AS1-a | Dokumente",
+          "status": "PAUSED",
+          "creative": {
+            "name": "FS | AS1-a | Dokumente | cover 1.91:1",
+            "object_story_spec": {
+              "page_id": "{{page_id}}",
+              "instagram_actor_id": "{{instagram_actor_id}}",
+              "link_data": {
+                "message": "Dokumente, Rechnungen und CRM-Aufgaben laufen automatisch – in der Software, die Sie schon nutzen.",
+                "name": "Dokumente automatisch verarbeiten",
+                "description": "Jetzt Prozessanalyse anfragen",
+                "link": "https://firmspace.de/de/automatisierung/dokumentenverarbeitung",
+                "image_hash": "{{image_hash}}",
+                "call_to_action": {
+                  "type": "LEARN_MORE",
+                  "value": { "lead_gen_form_id": "{{lead_form_id}}" }
+                }
+              }
+            }
+          },
+          "text_lengths": { "message": 98, "name": 33, "description": 29 }
+        },
+        {
+          "key": "AS1-b",
+          "name": "FS | AS1-b | Weniger Routine",
+          "status": "PAUSED",
+          "creative": {
+            "name": "FS | AS1-b | Weniger Routine | cover 1.91:1",
+            "object_story_spec": {
+              "page_id": "{{page_id}}",
+              "instagram_actor_id": "{{instagram_actor_id}}",
+              "link_data": {
+                "message": "Weniger Routine, mehr Zeit: Automatisierung in Ihren bestehenden Programmen. Kostenlose Prozessanalyse.",
+                "name": "Automatisierung ohne neues System",
+                "description": "Kostenlos und unverbindlich",
+                "link": "https://firmspace.de/de/automatisierung/dokumentenverarbeitung",
+                "image_hash": "{{image_hash}}",
+                "call_to_action": {
+                  "type": "LEARN_MORE",
+                  "value": { "lead_gen_form_id": "{{lead_form_id}}" }
+                }
+              }
+            }
+          },
+          "text_lengths": { "message": 103, "name": 33, "description": 27 }
+        }
+      ]
+    },
+    {
+      "key": "AS2",
+      "ready": false,
+      "blocked_by": ["pixel", "custom_audience", "ads_management"],
+      "blocked_reason": "Ретаргетинг посетителей сайта требует Meta Pixel (его на firmspace.de нет) и Custom Audience из него; плюс право ads_management. Пока не создаётся.",
+      "name": "FS | AS2 | DE | Retargeting Website 30d",
+      "status": "PAUSED",
+      "daily_budget": 600,
+      "billing_event": "IMPRESSIONS",
+      "optimization_goal": "OFFSITE_CONVERSIONS",
+      "destination_type": "WEBSITE",
+      "bid_strategy": "LOWEST_COST_WITHOUT_CAP",
+      "promoted_object": { "pixel_id": "{{pixel_id}}", "custom_event_type": "LEAD" },
+      "dsa_beneficiary": "Firmspace",
+      "dsa_payor": "Firmspace",
+      "targeting": {
+        "geo_locations": { "countries": ["DE"] },
+        "age_min": 25,
+        "age_max": 60,
+        "genders": [0],
+        "locales": [5],
+        "custom_audiences": [{ "id": "{{custom_audience_id}}", "name": "FS | Website visitors 30d" }],
+        "excluded_custom_audiences_note": "После пикселя: исключить тех, кто уже отправил заявку (Custom Audience из Lead-формы)."
+      },
+      "prerequisites": [
+        "Создать Meta Pixel в Events Manager и вставить базовый код на firmspace.de (после согласия, как gtag с Consent Mode v2).",
+        "События: Lead (успешная отправка формы), Contact (клик по телефону/почте).",
+        "Custom Audience «FS | Website visitors 30d» из события PageView.",
+        "Запросить ads_management и ads_read для приложения FirmSpace."
+      ],
+      "ads": [
+        {
+          "key": "AS2-a",
+          "name": "FS | AS2-a | Kostenlose Prozessanalyse",
+          "status": "PAUSED",
+          "creative": {
+            "name": "FS | AS2-a | Kostenlose Prozessanalyse | cover 1.91:1",
+            "object_story_spec": {
+              "page_id": "{{page_id}}",
+              "instagram_actor_id": "{{instagram_actor_id}}",
+              "link_data": {
+                "message": "Erste 500 Nutzer testen kostenlos: Sehen Sie in einer kostenlosen Prozessanalyse, was sich automatisieren lässt.",
+                "name": "Kostenlose Prozessanalyse",
+                "description": "Kostenlos und unverbindlich",
+                "link": "https://firmspace.de/de",
+                "image_hash": "{{image_hash}}",
+                "call_to_action": { "type": "LEARN_MORE" }
+              }
+            }
+          },
+          "text_lengths": { "message": 112, "name": 25, "description": 27 }
+        },
+        {
+          "key": "AS2-b",
+          "name": "FS | AS2-b | Team behält Kontrolle",
+          "status": "PAUSED",
+          "creative": {
+            "name": "FS | AS2-b | Team behält Kontrolle | cover 1.91:1",
+            "object_story_spec": {
+              "page_id": "{{page_id}}",
+              "instagram_actor_id": "{{instagram_actor_id}}",
+              "link_data": {
+                "message": "Ihr Team behält die Kontrolle: Automatisierung mit Prüfschritten, nachvollziehbar und dokumentiert.",
+                "name": "Weniger Routine im CRM",
+                "description": "Beratung in 20 Minuten",
+                "link": "https://firmspace.de/de",
+                "image_hash": "{{image_hash}}",
+                "call_to_action": { "type": "LEARN_MORE" }
+              }
+            }
+          },
+          "text_lengths": { "message": 99, "name": 22, "description": 22 }
+        }
+      ]
+    }
+  ],
+  "upload_order": [
+    "POST /act_4436277693/adimages  → image_hash",
+    "POST /1334056129793648/leadgen_forms → lead_form_id",
+    "POST /act_4436277693/campaigns → campaign_id",
+    "POST /act_4436277693/adsets (AS1) → adset_id",
+    "POST /act_4436277693/adcreatives (AS1-a, AS1-b) → creative_id",
+    "POST /act_4436277693/ads (AS1-a, AS1-b) → ad_id",
+    "AS2 — пропустить: нет пикселя и Custom Audience"
+  ],
+  "external_blockers": [
+    {
+      "what": "Marketing API",
+      "blocked_by": "нет ads_management / ads_read",
+      "detail": "GET /act_4436277693 возвращает (#200) Ad account owner has NOT grant ads_management or ads_read permission."
+    },
+    {
+      "what": "Пиксель",
+      "blocked_by": "не установлен на firmspace.de",
+      "detail": "В коде сайта и в HTML нет connect.facebook.net/fbq; есть только Google Ads gtag AW-18467574110."
+    },
+    {
+      "what": "Оплата",
+      "blocked_by": "не добавлена",
+      "detail": "Способ оплаты не добавлялся по условию задачи. Нужен на ad account 4436277693 перед запуском (Ads Manager → Billing)."
+    },
+    {
+      "what": "DSA / Impressum",
+      "blocked_by": "Impressum — плейсхолдеры",
+      "detail": "Для показов в ЕС нужны dsa_beneficiary/dsa_payor, совпадающие с юрлицом; на сайте в Impressum стоят заглушки."
+    }
+  ]
+}
