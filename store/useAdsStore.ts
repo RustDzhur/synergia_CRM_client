@@ -34,6 +34,9 @@ export const useAdsStore = create<AdsStore>()((set, get) => ({
 		set({ loading: true, days });
 		const res = await apiCall<{ items: AdsItem[] }>(`/api/ads/insights?days=${days}`);
 		set({ loading: false, ...(res.ok && res.data ? { items: res.data.items } : {}) });
+		// Если данные загрузились, сервер мог обновить статус (например, убрал неверный MCC) —
+		// подтягиваем статус, чтобы в карточке не висела старая красная ошибка.
+		if (res.ok) await get().loadStatus();
 	},
 	connect: async (platform, locale) => {
 		const res = await apiCall<{ url: string }>("/api/ads/oauth", "POST", { platform, locale });

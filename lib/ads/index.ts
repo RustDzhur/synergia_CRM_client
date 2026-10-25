@@ -118,6 +118,19 @@ export async function insightsFor(d: Doc, days: number): Promise<AdsInsights> {
         const message = e instanceof ProviderError ? e.message : "";
         // Частая причина отказа: developer token принадлежит менеджерскому аккаунту, а login-customer-id
         // не задан. Пробуем найти его сами среди аккаунтов, доступных этому Google-пользователю.
+        // Неверный/недоступный MCC даёт 401 «missing authentication» или CUSTOMER_NOT_FOUND:
+        // убираем его из настроек и пробуем ещё раз без него — панель сама «вылечивается».
+        if (cfg.platform === "google" && cfg.loginCustomerId && /CUSTOMER_NOT_FOUND|missing required authentication|UNAUTHENTICATED/i.test(message)) {
+            try {
+                const clean = { ...cfg, loginCustomerId: "" };
+                await prisma.integration.update({ where: { id: d.id }, data: { config: clean as never } });
+                const retry = await googleInsights(token, accountId, days, currency, "");
+                await prisma.integration.update({ where: { id: d.id }, data: { status: "connected", error: "" } });
+                return retry;
+            } catch {
+                /* если и без MCC не вышло — покажем исходную ошибку */
+            }
+        }
         if (cfg.platform === "google" && !cfg.loginCustomerId && /permission/i.test(message)) {
             try {
                 const candidates = (await accessibleCustomers(token)).filter((id) => id !== accountId).slice(0, 6);
