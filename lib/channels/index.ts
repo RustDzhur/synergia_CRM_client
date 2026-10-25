@@ -252,7 +252,9 @@ export async function sendToConversation(integration: Doc, conversation: Doc, te
             externalId = media
                 ? await sendMessenger(pageToken, conversation.externalId, text, {
                       kind: media.attachment.kind,
-                      url: mediaUrl(media.origin, media.attachment.path),
+                      data: media.data,
+                      name: media.attachment.name,
+                      mime: media.attachment.mime,
                   })
                 : await sendMessenger(pageToken, conversation.externalId, text);
             break;

@@ -111,11 +111,13 @@ export function messengerCredentialsProblem(pageAccessToken: string, appSecret: 
     return "";
 }
 
-// Meta присылает вложения только по публичной ссылке (payload.url), поэтому файл сначала кладём
-// в наше хранилище, а затем отдаём провайдеру адрес /api/media/<token>.
+// Meta не скачивает вложения по нашим ссылкам (загрузчик получает отказ), поэтому файл отправляем
+// их же методом upload: POST /me/message_attachments → attachment_id → сообщение с этим id.
 export interface MessengerMedia {
     kind: "image" | "file" | "voice";
-    url: string;
+    data: Buffer;
+    name: string;
+    mime: string;
 }
 
 async function messengerSend(accessToken: string, psid: string, message: Record<string, unknown>) {
@@ -127,13 +129,20 @@ async function messengerSend(accessToken: string, psid: string, message: Record<
     return res.message_id;
 }
 
+async function uploadMessengerFile(accessToken: string, media: MessengerMedia) {
+    const form = new FormData();
+    form.append("filedata", new Blob([new Uint8Array(media.data)], { type: media.mime || "application/octet-stream" }), media.name || "file");
+    const res = await graph<{ attachment_id?: string }>("/me/message_attachments", accessToken, { method: "POST", body: form });
+    if (!res.attachment_id) throw new ProviderError("Facebook did not return an attachment id — the file was not accepted");
+    return res.attachment_id;
+}
+
 export async function sendMessenger(accessToken: string, psid: string, text: string, media?: MessengerMedia) {
     // у Send API текст и вложение — разные сообщения, поэтому отправляем их подряд
     if (!media) return messengerSend(accessToken, psid, { text });
     const type = media.kind === "image" ? "image" : media.kind === "voice" ? "audio" : "file";
-    const id = await messengerSend(accessToken, psid, {
-        attachment: { type, payload: { url: media.url, is_reusable: true } },
-    });
+    const attachmentId = await uploadMessengerFile(accessToken, media);
+    const id = await messengerSend(accessToken, psid, { attachment: { type, payload: { attachment_id: attachmentId } } });
     if (text) await messengerSend(accessToken, psid, { text });
     return id;
 }
