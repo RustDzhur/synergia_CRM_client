@@ -471,6 +471,33 @@ export const TOOLS: AiTool[] = [
     },
     {
         module: "collab", write: false,
+        def: {
+            name: "seo_audit",
+            description: "Audit a PUBLIC website without code access: reads robots.txt, sitemap and up to 25 pages, checks titles, meta descriptions, canonical, hreflang, Open Graph, structured data (JSON-LD), h1 and image alt texts, and returns a scored report with concrete fixes. Use it when the owner asks to check/optimize a site (their own or a client's) and then send the report by e-mail with email_report or send_email.",
+            parameters: schema({ url: S("site address, e.g. https://example.com or example.de"), pages: { type: "number", description: "how many pages to check (default 12, max 25)" } }, ["url"]),
+        },
+        check: (a) => {
+            const raw = need(str(a.url, 500), "url");
+            let parsed: URL;
+            try {
+                parsed = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+            } catch {
+                throw new ToolError("url must be a public site address, e.g. https://example.com");
+            }
+            if (!/^https?:$/.test(parsed.protocol)) throw new ToolError("url must start with http:// or https://");
+            return { url: parsed.toString(), pages: Number.isFinite(Number(a.pages)) ? Math.min(Math.max(Number(a.pages), 1), 25) : 12 };
+        },
+        run: async (_c, a) => {
+            const { auditSite } = await import("@/lib/seo/audit");
+            try {
+                return await auditSite(String(a.url), { limit: Number(a.pages) || 12 });
+            } catch (e) {
+                throw new ToolError(e instanceof Error ? e.message : "The site could not be audited");
+            }
+        },
+    },
+    {
+        module: "collab", write: false,
         def: { name: "save_research", description: "Save a research report (what you found, with sources) to the firm's research log and as a task so the owner sees it. Use it as the LAST step of a research job. Put concrete facts (prices, dates, names) in the body.", parameters: schema({ title: S("short report title, e.g. 'Competitors — week 41'"), body: S("the report, up to 8000 characters"), sources: { type: "array", items: { type: "string" }, description: "addresses the facts came from" } }, ["title", "body"]) },
         check: (a) => ({ title: need(str(a.title, 160), "title"), body: need(str(a.body, 8000), "body"), sources: Array.isArray(a.sources) ? a.sources.map((x) => str(x, 300)).filter(Boolean).slice(0, 30) : [] }),
         run: async (c, a) => {

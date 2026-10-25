@@ -3650,7 +3650,13 @@
     "st_waiting_short": "Tasdiq kerak",
     "fInstructionsDefault": "Bo‘sh qoldiring — robot katalogning standart ko‘rsatmalari bo‘yicha ishlaydi.",
     "viewScene": "Ofis",
-    "viewList": "Ro‘yxat"
+    "viewList": "Ro‘yxat",
+    "skill_seo": "SEO auditi va yaxshilash rejasi",
+    "tpl_ms_seo_title": "SEO menejeri (saytlarni tekshirish)",
+    "tpl_ms_seo_desc": "Har qanday ochiq saytni (o'ziniki yoki mijoz sayti) title, tavsif, canonical, hreflang, tuzilgan ma'lumotlar va alt matnlar bo'yicha tekshiradi va tayyor rejani pochtaga yuboradi.",
+    "tpl_ms_seo_s1": "https://firmspace.de saytini tekshir va hisobotni pochtaga yubor",
+    "tpl_ms_seo_s2": "Bosh sahifamizni raqobatchi sayti bilan solishtir va asosiy kamchiliklarni ayt",
+    "tpl_ms_seo_s3": "Mijoz saytini tekshir va eng zarur tuzatishlarni sanab ber"
   },
   "marketing": {
     "tab_start": "Boshlash",
