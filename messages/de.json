@@ -4042,7 +4042,8 @@
     "micStart": "Diktieren",
     "micListening": "Spricht …",
     "micDenied": "Mikrofon nicht erlaubt",
-    "micUnavailable": "Diktat ist in diesem Browser nicht verfügbar"
+    "micUnavailable": "Diktat ist in diesem Browser nicht verfügbar",
+    "skill_harness": "Aufgaben an die Cloud (Harness)"
   },
   "demo": {
     "try": "Demo ausprobieren",

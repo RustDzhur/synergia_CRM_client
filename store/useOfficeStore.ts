@@ -4,7 +4,7 @@ import { apiCall } from "./crmApi";
 import { configureRooms } from "@/components/crm/RobotOffice/scene/iso";
 
 // Робот-офис на клиенте (сервер — lib/office). Данные обновляются опросом: часто, пока кто-то работает или ждёт, и редко в покое.
-export type Skill = "crm" | "quotes" | "invoices" | "finance" | "stock" | "purchasing" | "production" | "tasks" | "mail" | "documents" | "blog" | "hr" | "data" | "blogwrite" | "monitor" | "web" | "ads" | "seo";
+export type Skill = "crm" | "quotes" | "invoices" | "finance" | "stock" | "purchasing" | "production" | "tasks" | "mail" | "documents" | "blog" | "hr" | "data" | "blogwrite" | "monitor" | "web" | "ads" | "seo" | "harness";
 export type BuiltinZone = "sales" | "finance" | "warehouse" | "office" | "marketing" | "service" | "platform";
 /** Готовая зона или своя комната (id вида room_ab12cd). */
 export type Zone = string;

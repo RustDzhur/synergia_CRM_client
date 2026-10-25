@@ -472,6 +472,27 @@ export const TOOLS: AiTool[] = [
     {
         module: "collab", write: false,
         def: {
+            name: "delegate_to_harness",
+            description: "Hand a heavy task (code changes, site fixes, long research, anything that needs repository or build access) to the cloud Harness agent. The agent picks it up over the queue, does the work and writes the result back as a task for the owner. Use it when the task cannot be done with your own tools. Put the full, self-contained instruction in `task` — the agent does not see this conversation.",
+            parameters: schema({ task: S("complete instruction for the cloud agent: what to do, where, and what result is expected"), robot: S("optional robot name that delegates (for the report)") }, ["task"]),
+        },
+        check: (a) => ({ task: need(str(a.task, 4000), "task"), robot: str(a.robot, 60) }),
+        run: async (c, a) => {
+            const { delegateToHarness, pruneHarness } = await import("@/lib/office/harnessBridge");
+            const who = await prisma.robot.findFirst({ where: { org: c.org, rid: String(a.robot) }, select: { data: true } }).catch(() => null);
+            const robotName = String(((who?.data ?? {}) as { name?: string }).name ?? "Robot");
+            const request = await delegateToHarness({ org: c.org, userId: c.userId, text: String(a.task), robot: String(a.robot || "office"), robotName });
+            void pruneHarness(c.org).catch(() => undefined);
+            return {
+                params: { request: request.id },
+                link: "/crm/automation",
+                message: `Задача передана облачному агенту Harness (${request.id}). Он заберёт её из очереди; результат придёт в задачи и в историю офиса.`,
+            };
+        },
+    },
+    {
+        module: "collab", write: false,
+        def: {
             name: "seo_audit",
             description: "Audit a PUBLIC website without code access: reads robots.txt, sitemap and up to 25 pages, checks titles, meta descriptions, canonical, hreflang, Open Graph, structured data (JSON-LD), h1 and image alt texts, and returns a scored report with concrete fixes. Use it when the owner asks to check/optimize a site (their own or a client's) and then send the report by e-mail with email_report or send_email.",
             parameters: schema({ url: S("site address, e.g. https://example.com or example.de"), pages: { type: "number", description: "how many pages to check (default 12, max 25)" } }, ["url"]),

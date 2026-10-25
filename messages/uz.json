@@ -3663,7 +3663,8 @@
     "micStart": "Diktovka",
     "micListening": "Tinglayapman …",
     "micDenied": "Mikrofon ruxsat etilmagan",
-    "micUnavailable": "Diktovka bu brauzerda mavjud emas"
+    "micUnavailable": "Diktovka bu brauzerda mavjud emas",
+    "skill_harness": "Vazifalarni bulutga uzatish (Harness)"
   },
   "marketing": {
     "tab_start": "Boshlash",

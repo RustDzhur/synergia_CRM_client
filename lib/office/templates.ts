@@ -2,9 +2,9 @@
 // Робот — это сотрудник с ролью: он видит и делает только то, что входит в его навыки, и только в рамках прав самого владельца
 // (инструменты по-прежнему проходят через allowedTools). Удалять данные робот не может никогда: delete_* в навыки не входят.
 
-export type SkillId = "crm" | "quotes" | "invoices" | "finance" | "stock" | "purchasing" | "production" | "tasks" | "mail" | "documents" | "blog" | "hr" | "data" | "blogwrite" | "monitor" | "web" | "ads" | "seo";
+export type SkillId = "crm" | "quotes" | "invoices" | "finance" | "stock" | "purchasing" | "production" | "tasks" | "mail" | "documents" | "blog" | "hr" | "data" | "blogwrite" | "monitor" | "web" | "ads" | "seo" | "harness";
 
-export const SKILL_IDS: SkillId[] = ["crm", "quotes", "invoices", "finance", "stock", "purchasing", "production", "tasks", "mail", "documents", "blog", "hr", "data", "blogwrite", "monitor", "web", "ads", "seo"];
+export const SKILL_IDS: SkillId[] = ["crm", "quotes", "invoices", "finance", "stock", "purchasing", "production", "tasks", "mail", "documents", "blog", "hr", "data", "blogwrite", "monitor", "web", "ads", "seo", "harness"];
 /** Навыки, которые можно выдать своему роботу. «blogwrite» и «monitor» — служебные, только у роботов платформы. */
 export const PICK_SKILLS: SkillId[] = SKILL_IDS.filter((x) => x !== "blogwrite" && x !== "monitor");
 
@@ -27,6 +27,8 @@ export const SKILLS: Record<SkillId, { tools: string[]; write: boolean }> = {
     ads: { write: true, tools: ["ads_account", "ads_keyword_ideas", "ads_save_plan", "ads_apply_plan", "ads_set_status", "web_search", "web_fetch"] },
     // SEO: аудит любого сайта по публичным страницам и отчёт на почту (кода клиента не касается)
     seo: { write: true, tools: ["seo_audit", "web_search", "web_fetch", "save_research", "email_report", "send_email", "create_task", "browse_data"] },
+    // Делегирование тяжёлых задач облачному агенту Harness (очередь + право «harness»)
+    harness: { write: false, tools: ["delegate_to_harness", "web_search", "web_fetch", "create_task", "browse_data"] },
     // интернет: читает публичные страницы (конкуренты, цены, новости) и складывает отчёт в журнал исследований и задачи
     web: { write: false, tools: ["web_search", "web_fetch", "save_research", "list_research", "send_telegram_report"] },
     // служебные навыки роботов платформы (видны только администратору платформы)

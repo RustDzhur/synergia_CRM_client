@@ -4042,7 +4042,8 @@
     "micStart": "Dictate",
     "micListening": "Listening …",
     "micDenied": "Microphone not allowed",
-    "micUnavailable": "Dictation is not available in this browser"
+    "micUnavailable": "Dictation is not available in this browser",
+    "skill_harness": "Delegate to the cloud (Harness)"
   },
   "demo": {
     "try": "Try the demo",
