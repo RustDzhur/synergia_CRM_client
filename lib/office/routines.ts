@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { orgFeatures } from "@/lib/features";
 import type { Robot, Routine } from "./store";
 import { startOfficeTask } from "./runner";
+import { SOCIAL_TEMPLATE, runSocialRoutine } from "./social";
 
 // Регулярные задачи роботов: «каждое утро в 9:00 проверь просроченные счета». Раз в минуту сервер смотрит, чья пора, и ставит
 // поручение роботу как обычное (с теми же подтверждениями). Время — по часовому поясу фирмы: Германия — Europe/Berlin, Украина — Europe/Kyiv.
@@ -64,8 +65,14 @@ export async function runDueRoutines(now = new Date()): Promise<number> {
                 // сначала отметка «сегодня запускали», потом поручение: при сбое лучше пропустить день, чем запустить дважды
                 const routines = ((v.routines ?? []) as Routine[]).map((x) => (x.id === routine.id ? stamped : x));
                 await prisma.robot.updateMany({ where: { id: row.id }, data: { data: { ...(row.data as object), routines } as never } });
-                const ctx = { org: row.org, platformAdmin: true, userId: o.owner, role: "owner" as const, modules: [] as string[], today: l.date, now: `${l.date}T${l.time}`, orgName: o.name };
-                await startOfficeTask(ctx, { robot: row.rid, text: routine.text, source: "routine" });
+                // «Social Poster» публикует серверным конвейером (очередь → Facebook → Instagram), без разговора с моделью:
+                // пост в соцсети — это доставка по расписанию, а не рассуждение. Запись в журнал робота создаёт он сам.
+                if (v.template === SOCIAL_TEMPLATE) {
+                    await runSocialRoutine({ org: row.org, robotId: row.rid, robotName: String(v.name ?? "") });
+                } else {
+                    const ctx = { org: row.org, platformAdmin: true, userId: o.owner, role: "owner" as const, modules: [] as string[], today: l.date, now: `${l.date}T${l.time}`, orgName: o.name };
+                    await startOfficeTask(ctx, { robot: row.rid, text: routine.text, source: "routine" });
+                }
                 started++;
             } catch { /* поручение не создано (робота выключили, нет ИИ) — завтра попробуем снова */ }
         }

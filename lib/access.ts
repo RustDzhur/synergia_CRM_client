@@ -92,6 +92,8 @@ export function moduleForPath(pathname: string, method: string, search?: URLSear
         case "calendar": case "messages": case "onedrive": return "collab";
         case "mail": return "mail";
         case "marketing": case "ads": return "marketing";
+        // публикация в соцсети платформы: маршрут дополнительно требует владельца платформы (lib/social/api)
+        case "social": return "marketing";
         // раздел переименован из «Inventory Management» в «Finance» (склад остался его частью) — модуль в правах тот же
         case "products": case "orders": case "invoices": case "expenses": case "finance": case "quotes": case "contracts": return "inventory";
         // остальная бухгалтерия: банк, склад, закупки, производство, касса, доставка, основные средства, выгрузки документов

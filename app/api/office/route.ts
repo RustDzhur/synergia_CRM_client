@@ -8,6 +8,7 @@ import { platformInfo } from "@/lib/office/platform";
 import { hireCatalog } from "@/lib/office/catalog";
 import { orgMarket } from "@/lib/finance/marketGuard";
 import { MAX_ROBOTS, MAX_ROOMS, ensurePlatformRobots, ensureStarters, listRobots, listRooms, listTasks, visibleTasks } from "@/lib/office/store";
+import { ensureSocialRobot } from "@/lib/office/social";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +19,14 @@ export async function GET(req: Request) {
     if (!user) return unauthorized(req);
     try {
         await ensureStarters(user.id);
-        // администратору платформы в офисе сидят ещё три робота платформы: ловля ошибок, оптимизация сайта, блог
+        // администратору платформы в офисе сидят ещё три робота платформы: ловля ошибок, оптимизация сайта, блог;
+        // рядом — «Social Poster» с рутиной каждые 8 часов (Facebook + Instagram)
         const scope = await platformScope(user);
         const admin = scope.platform;
-        if (admin) await ensurePlatformRobots(user.id);
+        if (admin) {
+            await ensurePlatformRobots(user.id);
+            await ensureSocialRobot(user.id);
+        }
         const [robots, allTasks] = await Promise.all([listRobots(user.id, scope), listTasks(user.id, 80)]);
         const tasks = await visibleTasks(user.id, allTasks, scope);
         const catalog = (await hireCatalog(await orgMarket(user.id))).map((t) => ({ id: t.id, name: t.name, zone: t.zone, accent: t.accent, skills: t.skills, texts: t.texts }));

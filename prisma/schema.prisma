@@ -865,6 +865,32 @@ model PlatformSettings {
   @@map("platformsettings")
 }
 
+// Очередь постов социальных сетей платформы (страница Facebook + Instagram). Робот «Social Poster»
+// берёт самый старый queued-пост, публикует и помечает published; когда очередь пройдена, старые посты
+// возвращаются в оборот. Текст постов — немецкий (аудитория страницы Firmspace).
+model SocialPost {
+  id          String    @id @default(cuid())
+  // стабильный ключ темы: повторный запуск сида не создаёт дублей
+  key         String    @unique
+  text        String
+  // путь к картинке относительно public/, например "public/brand/agents.png"
+  image       String    @default("")
+  // queued | published | failed
+  status      String    @default("queued")
+  attempts    Int       @default(0)
+  fbPostId    String    @default("")
+  fbUrl       String    @default("")
+  igMediaId   String    @default("")
+  igUrl       String    @default("")
+  error       String    @default("")
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@map("social_posts")
+}
+
 model Product {
   id            String   @id @default(cuid())
   org           String

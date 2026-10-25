@@ -2,11 +2,11 @@
 // Робот — это сотрудник с ролью: он видит и делает только то, что входит в его навыки, и только в рамках прав самого владельца
 // (инструменты по-прежнему проходят через allowedTools). Удалять данные робот не может никогда: delete_* в навыки не входят.
 
-export type SkillId = "crm" | "quotes" | "invoices" | "finance" | "stock" | "purchasing" | "production" | "tasks" | "mail" | "documents" | "blog" | "hr" | "data" | "blogwrite" | "monitor" | "web" | "ads" | "seo" | "harness";
+export type SkillId = "crm" | "quotes" | "invoices" | "finance" | "stock" | "purchasing" | "production" | "tasks" | "mail" | "documents" | "blog" | "hr" | "data" | "blogwrite" | "monitor" | "social" | "web" | "ads" | "seo" | "harness";
 
-export const SKILL_IDS: SkillId[] = ["crm", "quotes", "invoices", "finance", "stock", "purchasing", "production", "tasks", "mail", "documents", "blog", "hr", "data", "blogwrite", "monitor", "web", "ads", "seo", "harness"];
-/** Навыки, которые можно выдать своему роботу. «blogwrite» и «monitor» — служебные, только у роботов платформы. */
-export const PICK_SKILLS: SkillId[] = SKILL_IDS.filter((x) => x !== "blogwrite" && x !== "monitor");
+export const SKILL_IDS: SkillId[] = ["crm", "quotes", "invoices", "finance", "stock", "purchasing", "production", "tasks", "mail", "documents", "blog", "hr", "data", "blogwrite", "monitor", "social", "web", "ads", "seo", "harness"];
+/** Навыки, которые можно выдать своему роботу. «blogwrite», «monitor» и «social» — служебные, только у роботов платформы. */
+export const PICK_SKILLS: SkillId[] = SKILL_IDS.filter((x) => x !== "blogwrite" && x !== "monitor" && x !== "social");
 
 /** Навык → инструменты Айрис. write — навык меняет данные (в режиме «спрашивать» каждое такое действие ждёт подтверждения). */
 export const SKILLS: Record<SkillId, { tools: string[]; write: boolean }> = {
@@ -34,6 +34,7 @@ export const SKILLS: Record<SkillId, { tools: string[]; write: boolean }> = {
     // служебные навыки роботов платформы (видны только администратору платформы)
     blogwrite: { write: true, tools: ["list_blog_posts", "save_blog_draft"] }, // писать статьи в блог лендинга ЧЕРНОВИКАМИ; публикует человек
     monitor: { write: false, tools: [] }, // следит за данными платформы (ошибки, SEO-агент), сам ничего не делает
+    social: { write: true, tools: [] }, // публикация в соцсети платформы: работа идёт серверным конвейером, инструментов модели нет
 };
 
 export const isSkill = (v: unknown): v is SkillId => typeof v === "string" && (SKILL_IDS as string[]).includes(v);
@@ -222,6 +223,16 @@ export const TEMPLATES: RobotTemplate[] = [
             { text: "Write one new article for the landing-page blog and save it as a draft.", kind: "weekly", day: 4, time: "09:00" },
         ],
         duties: "Blog author of Firmspace AI (a platform for small businesses: CRM, finance, stock, the AI assistant Ayris). Write practical, no-fluff articles for the landing page: 5–8 paragraphs on sales, CRM, bookkeeping, stock, automation and working with AI. First call list_blog_posts and do NOT repeat an existing topic. Every article is in four languages (en, de, ua, uz), plain text without HTML, no invented figures, prices or promises about the product. Save it with save_blog_draft (title, excerpt and every paragraph in en, de, ua and uz). Never publish: a human publishes the draft.",
+    },
+    {
+        id: "p_social", name: "Social Poster", zone: "platform", accent: "violet", skills: ["social"], platform: true,
+        texts: {
+            en: { title: "Social media manager", desc: "Publishes the next German post from the queue to the Firmspace Facebook page and duplicates it to Instagram — three times a day, with the links written to the robot log." },
+            de: { title: "Social-Media-Redaktion", desc: "Veröffentlicht dreimal am Tag den nächsten deutschen Beitrag aus der Warteschlange auf der Firmspace-Facebook-Seite und dupliziert ihn in Instagram; die Links stehen im Protokoll des Roboters." },
+            ua: { title: "Менеджер соцмереж", desc: "Тричі на день публікує на сторінці Firmspace у Facebook наступний німецький пост із черги та дублює його в Instagram; посилання пише в журнал робота." },
+            uz: { title: "Ijtimoiy tarmoq menejeri", desc: "Kuniga uch marta navbatdagi nemis tilidagi postni Firmspace Facebook sahifasida chop etadi va Instagramga takrorlaydi; havolalarni robot jurnaliga yozadi." },
+        },
+        duties: "Social media publisher of Firmspace AI. Your pipeline is deterministic and runs on the server: take the oldest queued German post, publish the photo with its caption on the Facebook page and duplicate it on the linked Instagram account, then write both links into your task log. You do not rewrite the queued text and you do not invent topics; if the queue is empty, the owner adds posts. Do not use any tools for publishing — the server does it and records the result.",
     },
 ];
 

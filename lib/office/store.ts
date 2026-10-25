@@ -69,7 +69,7 @@ const MAX_TASKS_KEPT = 250;
 
 const rid = (p: string) => `${p}${Date.now().toString(36)}${randomBytes(3).toString("hex")}`;
 /** Служебные навыки и зона «платформа» есть только у роботов платформы: своему роботу их выдать нельзя. */
-const ownSkill = (v: unknown): v is SkillId => isSkill(v) && v !== "monitor" && v !== "blogwrite";
+const ownSkill = (v: unknown): v is SkillId => isSkill(v) && v !== "monitor" && v !== "blogwrite" && v !== "social";
 const clean = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/[\p{Cc}<>]/gu, " ").replace(/\s+/g, " ").trim().slice(0, max) : "");
 const cleanLong = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F<>]/g, " ").trim().slice(0, max) : "");
 
@@ -206,8 +206,12 @@ export async function updateRobot(org: string, id: string, patch: RobotInput & {
     if (patch.routines !== undefined) {
         const list = (Array.isArray(patch.routines) ? patch.routines : []).map(cleanRoutine).filter((x): x is Routine => !!x);
         if (list.length > MAX_ROUTINES) throw new OfficeError(`At most ${MAX_ROUTINES} regular tasks per robot`);
-        // дата последнего запуска серверная: клиент не должен ни сбросить, ни выдумать её
-        next.routines = list.map((r) => ({ ...r, lastRun: cur.routines.find((o) => o.id === r.id)?.lastRun }));
+        // дата последнего запуска серверная: клиент не должен ни сбросить, ни выдумать её.
+        // Для интервального режима это ещё и lastRunAt — иначе правка названия робота запускала бы пост заново.
+        next.routines = list.map((r) => {
+            const prev = cur.routines.find((o) => o.id === r.id);
+            return { ...r, lastRun: prev?.lastRun, ...(r.kind === "interval" && prev?.lastRunAt ? { lastRunAt: prev.lastRunAt } : {}) };
+        });
     }
     await prisma.robot.updateMany({ where: { org, rid: id }, data: { data: robotValues(next) as never, enabled: next.enabled } });
     return next;

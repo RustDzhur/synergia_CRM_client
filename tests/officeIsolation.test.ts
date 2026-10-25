@@ -7,7 +7,7 @@ import { POST as giveTask } from "@/app/api/office/tasks/route";
 import { POST as taskAction } from "@/app/api/office/tasks/[id]/route";
 import { getRobot, listRobots, createTask } from "@/lib/office/store";
 
-// Платформенные роботы (Rex, Sven, Ada) живут в фирме администратора платформы. Их не должен видеть и трогать никто, кроме самого администратора:
+// Платформенные роботы (Rex, Sven, Ada, Social Poster) живут в фирме администратора платформы. Их не должен видеть и трогать никто, кроме самого администратора:
 // ни другая фирма, ни рядовой сотрудник той же фирмы.
 async function scene() {
     const a = await makeOrg();
@@ -25,7 +25,7 @@ async function scene() {
 describe.skipIf(!hasDb)("изоляция роботов платформы", () => {
     it("администратор видит роботов платформы, остальные — нет", async () => {
         const s = await scene();
-        expect(s.platform.length).toBe(3);
+        expect(s.platform.length).toBe(4);
         for (const req of [s.colleagueReq, s.otherReq]) {
             const body = await (await office(req("/api/office"))).json();
             expect(body.robots.some((r: { template: string }) => r.template.startsWith("p_"))).toBe(false);
