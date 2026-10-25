@@ -24,7 +24,7 @@ export function Kpi({ label, value }: { label: string; value: string }) {
 	);
 }
 
-function Connection({ c, available, planOk, onChoose, onDisconnect, onConnect }: { c: AdsConnectionDTO | undefined; available: boolean; planOk: boolean; platform: AdsPlatform; onChoose: (id: string, account: string) => void; onDisconnect: (c: AdsConnectionDTO) => void; onConnect: () => void }) {
+function Connection({ c, available, planOk, missing, onChoose, onDisconnect, onConnect }: { c: AdsConnectionDTO | undefined; available: boolean; planOk: boolean; missing: readonly string[]; platform: AdsPlatform; onChoose: (id: string, account: string) => void; onDisconnect: (c: AdsConnectionDTO) => void; onConnect: () => void }) {
 	const t = useTranslations("ads");
 	const locale = useLocale();
 	const expired = !!c && c.expiresAt > 0 && c.expiresAt < Date.now();
@@ -48,7 +48,17 @@ function Connection({ c, available, planOk, onChoose, onDisconnect, onConnect }:
 				</>
 			)}
 			{!c && !planOk && <p className="text-12 text-[#F4A100]">{t("needsUpgrade")}</p>}
-			{!c && planOk && !available && <p className="text-12 text-[#9aa7c9]">{t("notConfigured")}</p>}
+			{!c && planOk && !available && (
+				<div className="flex flex-col gap-4">
+					<p className="text-12 text-[#F4A100]">{t("notConfigured")}</p>
+					{missing.length > 0 && (
+						<p className="text-11 leading-[1.5] text-[#9aa7c9]">
+							{t("missingVars", { vars: missing.join(", ") })}
+						</p>
+					)}
+					<p className="text-11 leading-[1.5] text-[#9aa7c9]">{t("missingWhere")}</p>
+				</div>
+			)}
 			<div className="flex gap-10">
 				<button type="button" disabled={!available || !planOk} onClick={onConnect} className="fs-btn fs-btn-primary h-36 disabled:cursor-default disabled:opacity-40">
 					{c ? t("reconnect") : t("connect")}
@@ -123,7 +133,7 @@ export default function AdsPanel() {
 						return (
 							<div key={p.id}>
 								<p className="mb-10 flex items-center gap-10 text-14 font-medium text-[#edf2ff]">{p.icon}{t(p.id)}</p>
-								<Connection c={c} platform={p.id} available={!!status?.available[p.id]} planOk={status ? status.planOk : true} onChoose={onChoose} onDisconnect={setToRemove} onConnect={() => onConnect(p.id)} />
+								<Connection c={c} platform={p.id} available={!!status?.available[p.id]} planOk={status ? status.planOk : true} missing={p.id === "google" ? status?.missing?.google ?? [] : []} onChoose={onChoose} onDisconnect={setToRemove} onConnect={() => onConnect(p.id)} />
 							</div>
 						);
 					})}

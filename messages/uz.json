@@ -3263,7 +3263,9 @@
     "agentSttAuto": "Avtomatik (o‘zbekcha — server, boshqa tillar — brauzer)",
     "agentSttBrowser": "Brauzer (bepul)",
     "agentSttServer": "Server (o‘zbekcha uchun; ingliz, nemis, rus va ukrain tillari uchun brauzer yaxshiroq)",
-    "micFallback": "Server nutq aniqlashi mavjud emas — brauzer aniqlashiga o‘tildi"
+    "micFallback": "Server nutq aniqlashi mavjud emas — brauzer aniqlashiga o‘tildi",
+    "missingVars": "Yetishmayotgan sozlamalar: {vars}",
+    "missingWhere": "Ularni platforma administratori kiritadi: Sozlamalar → Integratsiyalar → Muhit o'zgaruvchilari."
   },
   "automation": {
     "tab_rules": "Avtomatlashtirish qoidalari",

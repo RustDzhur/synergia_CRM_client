@@ -2107,7 +2107,9 @@
     "agentSttAuto": "Automatic (Uzbek on the server, other languages in the browser)",
     "agentSttBrowser": "Browser (free)",
     "agentSttServer": "Server (for Uzbek; for English, German, Russian and Ukrainian the browser is better)",
-    "micFallback": "Server speech recognition is unavailable — switched to the browser's recognition"
+    "micFallback": "Server speech recognition is unavailable — switched to the browser's recognition",
+    "missingVars": "Missing settings: {vars}",
+    "missingWhere": "A platform administrator adds them: Settings → Integrations → Environment variables."
   },
   "finance": {
     "title": "Accounting",

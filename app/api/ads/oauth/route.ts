@@ -4,7 +4,7 @@ import { appOrigin } from "@/lib/appUrl";
 import { badRequest, unauthorized } from "@/lib/api";
 import { adsAvailable, adsPlanOk, makeMetaState, metaAuthorizeUrl } from "@/lib/ads";
 import { GOOGLE_ADS_SCOPE } from "@/lib/ads/google";
-import { authorizeUrl, makeState } from "@/lib/mail/oauth";
+import { adsRedirectUri, authorizeUrl, makeState } from "@/lib/mail/oauth";
 import { isLocale } from "@/lib/locales";
 import { ensurePlatformEnv } from "@/lib/platformEnv";
 
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     if (b?.platform === "google") {
         if (!adsAvailable().google) return badRequest("Google Ads is not configured on this site (needs Google sign-in keys and GOOGLE_ADS_DEVELOPER_TOKEN)");
         // возврат — на общий адрес Google-входа (/api/mail/oauth/callback), различаем по полю state
-        return NextResponse.json({ url: authorizeUrl("google", origin, makeState(user.id, "google", locale, "ads"), GOOGLE_ADS_SCOPE) });
+        return NextResponse.json({ url: authorizeUrl("google", origin, makeState(user.id, "google", locale, "ads"), GOOGLE_ADS_SCOPE, adsRedirectUri(origin)) });
     }
     if (b?.platform === "meta") {
         if (!adsAvailable().meta) return badRequest("Meta Ads is not configured on this site (needs META_APP_ID and META_APP_SECRET)");

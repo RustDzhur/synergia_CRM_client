@@ -53,10 +53,11 @@ export function readState(state: string) {
     }
 }
 
-// scope — если нужен не тот, что у почты (Google Drive, Google Calendar)
-export function authorizeUrl(vendor: Vendor, origin: string, state: string, scope?: string) {
+// scope — если нужен не тот, что у почты (Google Drive, Google Calendar, Google Ads);
+// redirectUri — если у сценария свой адрес возврата (реклама → /api/ads/callback)
+export function authorizeUrl(vendor: Vendor, origin: string, state: string, scope?: string, redirectUriOverride?: string) {
     const c = CONFIG[vendor];
-    const q = new URLSearchParams({ client_id: c.id() ?? "", redirect_uri: redirectUri(origin), response_type: "code", scope: scope ?? c.scope, state, ...c.extra });
+    const q = new URLSearchParams({ client_id: c.id() ?? "", redirect_uri: redirectUriOverride || redirectUri(origin), response_type: "code", scope: scope ?? c.scope, state, ...c.extra });
     return `${c.authUrl()}?${q}`;
 }
 
@@ -76,8 +77,11 @@ async function tokenRequest(vendor: Vendor, form: Record<string, string>) {
     return { accessToken: json.access_token, refreshToken: json.refresh_token ?? "", expiresAt: Date.now() + (json.expires_in ?? 3600) * 1000, scope: json.scope ?? "" };
 }
 
-export const exchangeCode = (vendor: Vendor, code: string, origin: string) =>
-    tokenRequest(vendor, { grant_type: "authorization_code", code, redirect_uri: redirectUri(origin) });
+export const exchangeCode = (vendor: Vendor, code: string, origin: string, customRedirectUri?: string) =>
+    tokenRequest(vendor, { grant_type: "authorization_code", code, redirect_uri: customRedirectUri || redirectUri(origin) });
+
+/** Адрес возврата для рекламных подключений: отдельный путь, чтобы в адресной строке не было «почты». */
+export const adsRedirectUri = (origin: string) => `${origin}/api/ads/callback`;
 
 export async function refreshTokens(vendor: Vendor, refreshToken: string): Promise<Tokens> {
     const t = await tokenRequest(vendor, { grant_type: "refresh_token", refresh_token: refreshToken });

@@ -4,6 +4,7 @@ import { ProviderError } from "@/lib/http";
 import { packSecrets, secretsOf } from "@/lib/integrations";
 import { randomToken } from "@/lib/crypto";
 import { Tokens, oauthAvailable, refreshTokens } from "@/lib/mail/oauth";
+import { platformEnvCached } from "@/lib/platformEnv";
 import { ensurePlatformEnv } from "@/lib/platformEnv";
 import { prisma } from "@/lib/prisma";
 import { googleAccounts, googleAdsConfigured, googleInsights } from "./google";
@@ -15,6 +16,15 @@ export { ADS_PLATFORMS } from "./types";
 export type { AdsPlatform } from "./types";
 
 export const adsAvailable = (): AdsStatusDTO["available"] => ({ google: oauthAvailable().google && googleAdsConfigured(), meta: metaConfigured() });
+
+/** Чего не хватает для подключения Google Ads: владелец платформы видит точный список. */
+export function adsMissingGoogle(): string[] {
+    const missing: string[] = [];
+    if (!platformEnvCached("GOOGLE_CLIENT_ID")) missing.push("GOOGLE_CLIENT_ID");
+    if (!platformEnvCached("GOOGLE_CLIENT_SECRET")) missing.push("GOOGLE_CLIENT_SECRET");
+    if (!platformEnvCached("GOOGLE_ADS_DEVELOPER_TOKEN")) missing.push("GOOGLE_ADS_DEVELOPER_TOKEN");
+    return missing;
+}
 export const metaRedirectUri = (origin: string) => `${origin}/api/ads/callback`;
 
 // вынесено из app/api/ads/route.ts — route.ts не может экспортировать ничего, кроме обработчиков HTTP-методов
