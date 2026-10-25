@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { accessToken, adsAvailable, adsMissingGoogle, adsPlanOk, findAds, toConnectionDTO } from "@/lib/ads";
-import { accessibleCustomers } from "@/lib/ads/google";
+import { accessibleCustomers, canLoginAs } from "@/lib/ads/google";
 import { prisma } from "@/lib/prisma";
 import { ensurePlatformEnv } from "@/lib/platformEnv";
 import { appOrigin } from "@/lib/appUrl";
@@ -43,7 +43,11 @@ export async function PATCH(req: Request) {
             try {
                 const token = await accessToken(doc);
                 const allowed = await accessibleCustomers(token);
-                if (!allowed.includes(digits)) return badRequest(`Manager account ${digits} is not accessible for the connected Google user`);
+                // Список доступных аккаунтов не всегда содержит менеджерские, поэтому дополнительно
+                // проверяем прямой запрос от имени этого аккаунта — так не отвергаем рабочий ID.
+                if (!allowed.includes(digits) && !(await canLoginAs(token, digits))) {
+                    return badRequest(`Manager account ${digits} is not accessible for the connected Google user`);
+                }
             } catch {
                 /* не смогли проверить (истёк токен) — сохраняем как есть, ошибка покажется при загрузке данных */
             }
