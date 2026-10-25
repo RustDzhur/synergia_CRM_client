@@ -7,7 +7,7 @@ import { Tokens, oauthAvailable, refreshTokens } from "@/lib/mail/oauth";
 import { platformEnvCached } from "@/lib/platformEnv";
 import { ensurePlatformEnv } from "@/lib/platformEnv";
 import { prisma } from "@/lib/prisma";
-import { googleAccounts, googleAdsConfigured, googleInsights } from "./google";
+import { accessibleCustomers, canLoginAs, googleAccounts, googleAdsConfigured, googleInsights } from "./google";
 import { META_SCOPE, metaAccounts, metaAuthUrl, metaConfigured, metaExchange, metaInsights } from "./meta";
 import type { AdsAccount, AdsConnectionDTO, AdsInsights, AdsPlatform, AdsStatusDTO } from "./types";
 
@@ -115,6 +115,22 @@ export async function insightsFor(d: Doc, days: number): Promise<AdsInsights> {
         if (d.status !== "connected") await prisma.integration.update({ where: { id: d.id }, data: { status: "connected", error: "" } });
         return out;
     } catch (e) {
+        const message = e instanceof ProviderError ? e.message : "";
+        // Частая причина отказа: developer token принадлежит менеджерскому аккаунту, а login-customer-id
+        // не задан. Пробуем найти его сами среди аккаунтов, доступных этому Google-пользователю.
+        if (cfg.platform === "google" && !cfg.loginCustomerId && /permission/i.test(message)) {
+            try {
+                const candidates = (await accessibleCustomers(token)).filter((id) => id !== accountId).slice(0, 6);
+                for (const candidate of candidates) {
+                    if (!(await canLoginAs(token, candidate))) continue;
+                    const config = { ...cfg, loginCustomerId: candidate };
+                    await prisma.integration.update({ where: { id: d.id }, data: { config: config as never, status: "connected", error: "" } });
+                    return await googleInsights(token, accountId, days, currency, candidate);
+                }
+            } catch {
+                /* автопоиск не удался — покажем исходную ошибку с подсказкой */
+            }
+        }
         await prisma.integration.update({ where: { id: d.id }, data: { status: "error", error: e instanceof ProviderError ? e.message : "Could not load ad data" } });
         throw e;
     }

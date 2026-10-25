@@ -66,9 +66,24 @@ export const query = <T>(token: string, customer: string, gaql: string, loginCus
     call<{ results?: T[] }>(token, `/customers/${customer}/googleAds:search`, { method: "POST", body: { query: gaql }, loginCustomerId }).then((r) => r.results ?? []);
 
 // Рекламные аккаунты, к которым у пользователя есть доступ (менеджерские аккаунты без показателей пропускаем)
-export async function googleAccounts(token: string, loginCustomerId?: string): Promise<AdsAccount[]> {
+/** Все аккаунты, к которым у пользователя есть доступ (включая менеджерские). */
+export async function accessibleCustomers(token: string): Promise<string[]> {
     const list = await call<{ resourceNames?: string[] }>(token, "/customers:listAccessibleCustomers");
-    const ids = (list.resourceNames ?? []).map((r) => r.replace("customers/", "")).slice(0, 25);
+    return (list.resourceNames ?? []).map((r) => r.replace("customers/", "")).slice(0, 25);
+}
+
+/** Можно ли обращаться к API от имени этого аккаунта (проверка login-customer-id). */
+export async function canLoginAs(token: string, loginCustomerId: string): Promise<boolean> {
+    try {
+        await query(token, loginCustomerId, "SELECT customer.id FROM customer LIMIT 1", loginCustomerId);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+export async function googleAccounts(token: string, loginCustomerId?: string): Promise<AdsAccount[]> {
+    const ids = await accessibleCustomers(token);
     const out: AdsAccount[] = [];
     for (const id of ids) {
         try {
