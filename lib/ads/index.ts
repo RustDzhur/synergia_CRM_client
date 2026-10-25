@@ -53,19 +53,22 @@ export const toConnectionDTO = (d: Doc): AdsConnectionDTO => {
         currency: chosen?.currency ?? "",
         accounts,
         expiresAt: cfg.platform === "meta" ? Number(cfg.expiresAt) || 0 : 0,
+        loginCustomerId: String(cfg.loginCustomerId ?? ""),
     };
 };
 
 // Подключение платформы: сохраняем токены и список рекламных аккаунтов; если аккаунт один — выбираем его сразу
 export async function connectAds(owner: string, platform: AdsPlatform, tokens: { accessToken: string; refreshToken?: string; expiresAt: number }) {
     if (platform === "google" && !tokens.refreshToken) throw new ProviderError("Google did not allow offline access. Remove the app in your Google account permissions and connect again.");
-    const accounts = platform === "google" ? await googleAccounts(tokens.accessToken) : await metaAccounts(tokens.accessToken);
-    if (!accounts.length) throw new ProviderError(platform === "google" ? "No Google Ads accounts are available for this Google account" : "No ad accounts are available for this Facebook account");
     const existing = (await findAds(owner, platform))[0];
+    // MCC (аккаунт-менеджер) — настройка, а не токен: сохраняется между переподключениями
+    const loginCustomerId = String(((existing?.config as any)?.loginCustomerId) ?? "");
+    const accounts = platform === "google" ? await googleAccounts(tokens.accessToken, loginCustomerId) : await metaAccounts(tokens.accessToken);
+    if (!accounts.length) throw new ProviderError(platform === "google" ? "No Google Ads accounts are available for this Google account" : "No ad accounts are available for this Facebook account");
     const keep = accounts.find((a) => a.id === ((existing?.config as any)?.accountId ?? ""))?.id ?? (accounts.length === 1 ? accounts[0].id : "");
     const data = {
         name: platform === "google" ? "Google Ads" : "Meta Ads",
-        config: { platform, accounts, accountId: keep, expiresAt: platform === "meta" ? tokens.expiresAt : 0 } as any,
+        config: { platform, accounts, accountId: keep, expiresAt: platform === "meta" ? tokens.expiresAt : 0, loginCustomerId } as any,
         secrets: packSecrets(tokens),
         status: "connected",
         error: "",
@@ -106,7 +109,9 @@ export async function insightsFor(d: Doc, days: number): Promise<AdsInsights> {
     const currency = (cfg.accounts as AdsAccount[]).find((a) => a.id === accountId)?.currency ?? "";
     const token = await accessToken(d);
     try {
-        const out = cfg.platform === "google" ? await googleInsights(token, accountId, days, currency) : await metaInsights(token, accountId, days, currency);
+        const out = cfg.platform === "google"
+            ? await googleInsights(token, accountId, days, currency, String(cfg.loginCustomerId ?? ""))
+            : await metaInsights(token, accountId, days, currency);
         if (d.status !== "connected") await prisma.integration.update({ where: { id: d.id }, data: { status: "connected", error: "" } });
         return out;
     } catch (e) {

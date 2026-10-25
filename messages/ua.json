@@ -2110,7 +2110,10 @@
     "micFallback": "Серверне розпізнавання недоступне — переключилась на розпізнавання браузера",
     "missingVars": "Не вистачає налаштувань: {vars}",
     "missingWhere": "Їх додає адміністратор платформи: Налаштування → Інтеграції → Змінні оточення.",
-    "redirectHint": "Адреса повернення для Google Cloud (Authorized redirect URI): {uri}"
+    "redirectHint": "Адреса повернення для Google Cloud (Authorized redirect URI): {uri}",
+    "mccLabel": "Акаунт-менеджер (MCC)",
+    "mccHint": "Потрібно, якщо developer token належить менеджерському акаунту: його ID без дефісів.",
+    "save": "Зберегти"
   },
   "finance": {
     "title": "Бухгалтерія",

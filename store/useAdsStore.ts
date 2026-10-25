@@ -15,6 +15,7 @@ interface AdsStore {
 	// браузер уходит на страницу входа провайдера
 	connect: (platform: "google" | "meta", locale: string) => Promise<{ message: string; code: string } | null>;
 	choose: (id: string, accountId: string) => Promise<string | null>;
+	setLogin: (id: string, loginCustomerId: string) => Promise<string | null>;
 	disconnect: (id: string) => Promise<void>;
 }
 
@@ -42,6 +43,13 @@ export const useAdsStore = create<AdsStore>()((set, get) => ({
 	},
 	choose: async (id, accountId) => {
 		const res = await apiCall("/api/ads", "PATCH", { id, accountId });
+		if (!res.ok) return res.message;
+		await Promise.all([get().loadStatus(), get().loadInsights()]);
+		return null;
+	},
+	// ID аккаунта-менеджера (MCC): нужен, когда developer token принадлежит менеджерскому аккаунту
+	setLogin: async (id, loginCustomerId) => {
+		const res = await apiCall("/api/ads", "PATCH", { id, loginCustomerId });
 		if (!res.ok) return res.message;
 		await Promise.all([get().loadStatus(), get().loadInsights()]);
 		return null;

@@ -2110,7 +2110,10 @@
     "micFallback": "Server speech recognition is unavailable — switched to the browser's recognition",
     "missingVars": "Missing settings: {vars}",
     "missingWhere": "A platform administrator adds them: Settings → Integrations → Environment variables.",
-    "redirectHint": "Return address for Google Cloud (Authorized redirect URI): {uri}"
+    "redirectHint": "Return address for Google Cloud (Authorized redirect URI): {uri}",
+    "mccLabel": "Manager account (MCC)",
+    "mccHint": "Only needed when the developer token belongs to a manager account: its ID without dashes.",
+    "save": "Save"
   },
   "finance": {
     "title": "Accounting",

@@ -26,8 +26,20 @@ export async function PATCH(req: Request) {
     const doc = await prisma.integration.findFirst({ where: { id: String(b.id), owner: user.id, type: "ads" } });
     if (!doc) return notFound();
     const config = (doc.config ?? {}) as any;
-    if (!(config.accounts ?? []).some((a: { id: string }) => a.id === String(b.accountId))) return badRequest("Unknown ad account");
-    const updated = await prisma.integration.update({ where: { id: doc.id }, data: { config: { ...config, accountId: String(b.accountId) } as any } });
+    const patch: Record<string, unknown> = {};
+    // accountId обязателен при выборе аккаунта; loginCustomerId можно сохранить отдельно
+    if (b.accountId !== undefined) {
+        if (!(config.accounts ?? []).some((a: { id: string }) => a.id === String(b.accountId))) return badRequest("Unknown ad account");
+        patch.accountId = String(b.accountId);
+    }
+    if (b.loginCustomerId !== undefined) {
+        // Google принимает ID менеджерского аккаунта без дефисов; пустая строка — сброс
+        const digits = String(b.loginCustomerId).replace(/\D/g, "");
+        if (digits && !/^\d{6,12}$/.test(digits)) return badRequest("Manager account id must be 6–12 digits");
+        patch.loginCustomerId = digits;
+    }
+    if (Object.keys(patch).length === 0) return badRequest("Nothing to update");
+    const updated = await prisma.integration.update({ where: { id: doc.id }, data: { config: { ...config, ...patch } as any } });
     return NextResponse.json(toConnectionDTO(updated));
 }
 

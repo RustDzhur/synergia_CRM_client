@@ -24,7 +24,8 @@ export function Kpi({ label, value }: { label: string; value: string }) {
 	);
 }
 
-function Connection({ c, available, planOk, missing, redirectUri, onChoose, onDisconnect, onConnect }: { c: AdsConnectionDTO | undefined; available: boolean; planOk: boolean; missing: readonly string[]; redirectUri?: string; platform: AdsPlatform; onChoose: (id: string, account: string) => void; onDisconnect: (c: AdsConnectionDTO) => void; onConnect: () => void }) {
+function Connection({ c, platform, available, planOk, missing, redirectUri, onChoose, onLogin, onDisconnect, onConnect }: { c: AdsConnectionDTO | undefined; available: boolean; planOk: boolean; missing: readonly string[]; redirectUri?: string; platform: AdsPlatform; onChoose: (id: string, account: string) => void; onLogin: (id: string, value: string) => void; onDisconnect: (c: AdsConnectionDTO) => void; onConnect: () => void }) {
+	const [mcc, setMcc] = useState(c?.loginCustomerId ?? "");
 	const t = useTranslations("ads");
 	const locale = useLocale();
 	const expired = !!c && c.expiresAt > 0 && c.expiresAt < Date.now();
@@ -46,6 +47,22 @@ function Connection({ c, available, planOk, missing, redirectUri, onChoose, onDi
 						</select>
 					</label>
 				</>
+			)}
+			{c && platform === "google" && (
+				<label className="flex flex-col gap-[4px] text-12 text-[#9aa7c9]">
+					{t("mccLabel")}
+					<span className="flex items-center gap-8">
+						<input
+							value={mcc}
+							onChange={(e) => setMcc(e.target.value.replace(/\D/g, "").slice(0, 12))}
+							placeholder="1234567890"
+							inputMode="numeric"
+							className="fs-field h-40 min-w-0 flex-1 px-12 text-13 outline-none"
+						/>
+						<button type="button" disabled={mcc === (c.loginCustomerId ?? "")} onClick={() => onLogin(c.id, mcc)} className="fs-btn fs-btn-ghost h-40 px-12 text-12 disabled:opacity-40">{t("save")}</button>
+					</span>
+					<span className="text-11 leading-[1.4] text-[#9aa7c9]">{t("mccHint")}</span>
+				</label>
 			)}
 			{!c && !planOk && <p className="text-12 text-[#F4A100]">{t("needsUpgrade")}</p>}
 			{!c && planOk && !available && (
@@ -72,7 +89,19 @@ function Connection({ c, available, planOk, missing, redirectUri, onChoose, onDi
 
 export function ItemStats({ item, locale, compact = false }: { item: AdsItem; locale: string; compact?: boolean }) {
 	const t = useTranslations("ads");
-	if (item.error) return <p className="rounded-10 bg-[rgba(235,87,87,0.08)] p-14 text-13 text-danger">{item.error}</p>;
+	if (item.error) {
+		const permission = /does not have permission|permission_denied/i.test(item.error);
+		return (
+			<div className="rounded-10 bg-[rgba(235,87,87,0.08)] p-14">
+				<p className="text-13 text-danger">{item.error}</p>
+				{permission && item.connection.platform === "google" && (
+					<p className="mt-6 text-12 text-[#9aa7c9]">
+						Похоже, developer token принадлежит менеджерскому аккаунту: укажите его ID в поле «{t("mccLabel")}» выше — после этого статистика загрузится.
+					</p>
+				)}
+			</div>
+		);
+	}
 	if (!item.data) return null;
 	const sum = totals(item.data.days);
 	const cur = item.data.currency;
@@ -97,7 +126,7 @@ export function ItemStats({ item, locale, compact = false }: { item: AdsItem; lo
 export default function AdsPanel() {
 	const t = useTranslations("ads");
 	const locale = useLocale();
-	const { status, items, days, loading, loadStatus, loadInsights, connect, choose, disconnect } = useAdsStore();
+	const { status, items, days, loading, loadStatus, loadInsights, connect, choose, setLogin, disconnect } = useAdsStore();
 	const [toRemove, setToRemove] = useState<AdsConnectionDTO | null>(null);
 
 	useEffect(() => {
@@ -134,7 +163,7 @@ export default function AdsPanel() {
 						return (
 							<div key={p.id}>
 								<p className="mb-10 flex items-center gap-10 text-14 font-medium text-[#edf2ff]">{p.icon}{t(p.id)}</p>
-								<Connection c={c} platform={p.id} available={!!status?.available[p.id]} planOk={status ? status.planOk : true} missing={p.id === "google" ? status?.missing?.google ?? [] : []} redirectUri={p.id === "google" ? status?.redirectUri : undefined} onChoose={onChoose} onDisconnect={setToRemove} onConnect={() => onConnect(p.id)} />
+								<Connection c={c} platform={p.id} available={!!status?.available[p.id]} planOk={status ? status.planOk : true} missing={p.id === "google" ? status?.missing?.google ?? [] : []} redirectUri={p.id === "google" ? status?.redirectUri : undefined} onChoose={onChoose} onLogin={(id, value) => void setLogin(id, value)} onDisconnect={setToRemove} onConnect={() => onConnect(p.id)} />
 							</div>
 						);
 					})}

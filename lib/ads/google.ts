@@ -51,7 +51,11 @@ export async function call<T>(token: string, path: string, init: { method?: stri
             lastError = message;
             continue;
         }
-        throw new ProviderError(`Google Ads: ${message}`.slice(0, 300));
+        // PERMISSION_DENIED чаще всего означает «нужен login-customer-id менеджерского аккаунта»
+        const hint = /does not have permission|permission_denied|PERMISSION_DENIED/i.test(message)
+            ? " — если рекламный аккаунт подключён через менеджерский (MCC), укажите его ID в поле «Аккаунт-менеджер (MCC)»"
+            : "";
+        throw new ProviderError(`Google Ads: ${message}${hint}`.slice(0, 400));
     }
     throw new ProviderError(
         `Google Ads: версия API недоступна (${lastError || "404"}). Укажите актуальную в переменной GOOGLE_ADS_API_VERSION (сейчас поддерживается v26) или обновите приложение.`.slice(0, 300),
@@ -62,13 +66,13 @@ export const query = <T>(token: string, customer: string, gaql: string, loginCus
     call<{ results?: T[] }>(token, `/customers/${customer}/googleAds:search`, { method: "POST", body: { query: gaql }, loginCustomerId }).then((r) => r.results ?? []);
 
 // Рекламные аккаунты, к которым у пользователя есть доступ (менеджерские аккаунты без показателей пропускаем)
-export async function googleAccounts(token: string): Promise<AdsAccount[]> {
+export async function googleAccounts(token: string, loginCustomerId?: string): Promise<AdsAccount[]> {
     const list = await call<{ resourceNames?: string[] }>(token, "/customers:listAccessibleCustomers");
     const ids = (list.resourceNames ?? []).map((r) => r.replace("customers/", "")).slice(0, 25);
     const out: AdsAccount[] = [];
     for (const id of ids) {
         try {
-            const [row] = await query<{ customer?: { descriptiveName?: string; currencyCode?: string; manager?: boolean } }>(token, id, "SELECT customer.descriptive_name, customer.currency_code, customer.manager FROM customer LIMIT 1");
+            const [row] = await query<{ customer?: { descriptiveName?: string; currencyCode?: string; manager?: boolean } }>(token, id, "SELECT customer.descriptive_name, customer.currency_code, customer.manager FROM customer LIMIT 1", loginCustomerId);
             if (row?.customer?.manager) continue;
             out.push({ id, name: row?.customer?.descriptiveName || id, currency: row?.customer?.currencyCode || "" });
         } catch {
@@ -81,14 +85,14 @@ export async function googleAccounts(token: string): Promise<AdsAccount[]> {
 const num = (v: unknown) => Number(v) || 0;
 const day = (d: Date) => d.toISOString().slice(0, 10);
 
-export async function googleInsights(token: string, customer: string, days: number, currency: string): Promise<AdsInsights> {
+export async function googleInsights(token: string, customer: string, days: number, currency: string, loginCustomerId?: string): Promise<AdsInsights> {
     const to = new Date();
     const from = new Date(Date.now() - (days - 1) * 86400000);
     const range = `segments.date BETWEEN '${day(from)}' AND '${day(to)}'`;
     type Metrics = { costMicros?: string; clicks?: string; impressions?: string; conversions?: number };
     const [daily, camps] = await Promise.all([
-        query<{ segments?: { date?: string }; metrics?: Metrics }>(token, customer, `SELECT segments.date, metrics.cost_micros, metrics.clicks, metrics.impressions, metrics.conversions FROM customer WHERE ${range} ORDER BY segments.date`),
-        query<{ campaign?: { id?: string; name?: string; status?: string }; metrics?: Metrics }>(token, customer, `SELECT campaign.id, campaign.name, campaign.status, metrics.cost_micros, metrics.clicks, metrics.impressions, metrics.conversions FROM campaign WHERE ${range} AND campaign.status != 'REMOVED' ORDER BY metrics.cost_micros DESC LIMIT 20`),
+        query<{ segments?: { date?: string }; metrics?: Metrics }>(token, customer, `SELECT segments.date, metrics.cost_micros, metrics.clicks, metrics.impressions, metrics.conversions FROM customer WHERE ${range} ORDER BY segments.date`, loginCustomerId),
+        query<{ campaign?: { id?: string; name?: string; status?: string }; metrics?: Metrics }>(token, customer, `SELECT campaign.id, campaign.name, campaign.status, metrics.cost_micros, metrics.clicks, metrics.impressions, metrics.conversions FROM campaign WHERE ${range} AND campaign.status != 'REMOVED' ORDER BY metrics.cost_micros DESC LIMIT 20`, loginCustomerId),
     ]);
     const m = (x?: Metrics) => ({ spend: num(x?.costMicros) / 1e6, clicks: num(x?.clicks), impressions: num(x?.impressions), conversions: num(x?.conversions) });
     return {

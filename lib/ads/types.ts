@@ -16,6 +16,8 @@ export interface AdsConnectionDTO {
     currency: string;
     accounts: AdsAccount[];
     expiresAt: number; // 0 — токен обновляется сам (Google); иначе момент, когда нужно войти заново (Meta)
+    /** ID аккаунта-менеджера (MCC) для заголовка login-customer-id: нужен, если developer token принадлежит менеджерскому аккаунту. */
+    loginCustomerId: string;
 }
 
 export interface AdsStatusDTO {
