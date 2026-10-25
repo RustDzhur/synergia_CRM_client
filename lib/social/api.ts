@@ -5,14 +5,19 @@ import { prisma } from "@/lib/prisma";
 import { ensureSocialQueue } from "./queue";
 
 // Доступ к публикации в соцсети платформы: только владелец платформы (администратор) с ролью owner/admin
-// в своей фирме. Ссылка на страницу и токен одни на платформу, поэтому «владелец» здесь — владелец платформы,
+// в своей фирме. Страница и токен одни на платформу, поэтому «владелец» здесь — владелец платформы,
 // а не владелец любой клиентской фирмы.
-export async function authorizeSocialOwner(req: Request): Promise<AuthContext | null> {
+export async function isSocialOwner(user: AuthContext): Promise<boolean> {
+    if (user.role !== "owner" && user.role !== "admin") return false;
+    const row = await prisma.user.findUnique({ where: { id: user.userId }, select: { id: true, email: true, platformAdmin: true } });
+    return isPlatformAdminUser(row);
+}
+
+/** Вход и проверка владельца в одном месте: null — не вошёл, false — вошёл, но не владелец платформы. */
+export async function socialOwner(req: Request): Promise<{ user: AuthContext; owner: boolean } | null> {
     const user = await requireUser(req);
     if (!user) return null;
-    if (user.role !== "owner" && user.role !== "admin") return null;
-    const row = await prisma.user.findUnique({ where: { id: user.userId }, select: { id: true, email: true, platformAdmin: true } });
-    return (await isPlatformAdminUser(row)) ? user : null;
+    return { user, owner: await isSocialOwner(user) };
 }
 
 /** Состояние очереди для владельца: что выйдет следующим и чем закончились последние публикации. */

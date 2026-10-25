@@ -47,6 +47,8 @@ COPY --from=build /app/scripts/migrate-office.mjs ./scripts/migrate-office.mjs
 COPY --from=build /app/scripts/check-ai.mjs ./scripts/check-ai.mjs
 # создание/вывод токенов интеграций «landing» для приёма заявок лендингов (idempotent)
 COPY --from=build /app/scripts/seed-landing-tokens.mjs ./scripts/seed-landing-tokens.mjs
+# токен страницы для публикации в соцсети (Social Poster): читается из stdin, кладётся зашифрованным в platformsettings
+COPY --from=build /app/scripts/social-seed.mjs ./scripts/social-seed.mjs
 # выгрузка опубликованных статей блога и картинок на новый сайт (sync-blog.sh)
 COPY --from=build /app/scripts/sync-blog.mjs ./scripts/sync-blog.mjs
 # картинка для статьи блога: Openverse (CC0/PD) → 1200×630 в public/images/blog (cron-blog)
