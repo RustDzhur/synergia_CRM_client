@@ -12,7 +12,20 @@ const K_META = "office:meta";
 
 export class OfficeError extends Error {}
 
-export interface Routine { id: string; text: string; kind: "daily" | "weekdays" | "weekly" | "monthly"; time: string; day?: number; lastRun?: string }
+export interface Routine {
+    id: string;
+    text: string;
+    /** daily/weekdays/weekly/monthly — раз в день в заданное время; interval — каждые N минут (робот «ходит» по задаче весь день). */
+    kind: "daily" | "weekdays" | "weekly" | "monthly" | "interval";
+    time: string;
+    day?: number;
+    /** Только для kind=interval: период в минутах (5…1440). */
+    everyMinutes?: number;
+    /** Дата последнего запуска (для дневных режимов). */
+    lastRun?: string;
+    /** Время последнего запуска для интервального режима. */
+    lastRunAt?: string;
+}
 export interface Robot {
     id: string;
     name: string;
@@ -137,7 +150,7 @@ export async function createRobot(org: string, input: RobotInput, opts: { platfo
         zone: tpl?.platform ? "platform" : isRoomId(input.zone) && (await roomExists(org, input.zone)) ? input.zone : isZone(input.zone) && input.zone !== "platform" ? input.zone : tpl?.zone ?? "office",
         accent: isAccent(input.accent) ? input.accent : tpl?.accent ?? ACCENTS[Math.floor(Math.random() * ACCENTS.length)],
         skills: Array.from(new Set(skills)),
-        instructions: cleanLong(input.instructions, 1500),
+        instructions: cleanLong(input.instructions, 6000),
         autonomy: input.autonomy === "auto" || tpl?.platform ? "auto" : "ask",
         enabled: input.enabled !== false,
         routines: (Array.isArray(input.routines) ? input.routines.map(cleanRoutine) : tpl?.routines ?? []).filter((r): r is Routine => !!r),
@@ -150,12 +163,24 @@ export async function createRobot(org: string, input: RobotInput, opts: { platfo
 
 const cleanRoutine = (x: unknown): Routine | null => {
     const r = x as Partial<Routine> | null;
-    const text = clean(r?.text, 600);
-    const time = typeof r?.time === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(r.time) ? r.time : "";
-    const kind = r?.kind === "weekdays" || r?.kind === "weekly" || r?.kind === "monthly" ? r.kind : "daily";
-    if (!text || !time) return null;
+    const text = cleanLong(r?.text, 4000);
+    const kind = r?.kind === "weekdays" || r?.kind === "weekly" || r?.kind === "monthly" || r?.kind === "interval" ? r.kind : "daily";
+    // Интервальный режим работает по времени последнего запуска, фиксированный час ему не нужен.
+    const time = kind === "interval" ? "" : typeof r?.time === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(r.time) ? r.time : "";
+    const everyMinutes = kind === "interval" ? Math.min(1440, Math.max(5, Math.round(Number(r?.everyMinutes) || 30))) : undefined;
+    if (!text) return null;
+    if (kind !== "interval" && !time) return null;
     const day = kind === "weekly" ? Math.min(6, Math.max(0, Number(r?.day) || 0)) : kind === "monthly" ? Math.min(28, Math.max(1, Number(r?.day) || 1)) : undefined;
-    return { id: typeof r?.id === "string" && /^[\w-]{3,24}$/.test(r.id) ? r.id : rid("n"), text, kind, time, ...(day !== undefined ? { day } : {}), ...(typeof r?.lastRun === "string" ? { lastRun: r.lastRun.slice(0, 10) } : {}) };
+    return {
+        id: typeof r?.id === "string" && /^[\w-]{3,24}$/.test(r.id) ? r.id : rid("n"),
+        text,
+        kind,
+        time,
+        ...(day !== undefined ? { day } : {}),
+        ...(everyMinutes !== undefined ? { everyMinutes } : {}),
+        ...(typeof r?.lastRun === "string" ? { lastRun: r.lastRun.slice(0, 10) } : {}),
+        ...(typeof r?.lastRunAt === "string" && !Number.isNaN(Date.parse(r.lastRunAt)) ? { lastRunAt: r.lastRunAt } : {}),
+    };
 };
 
 export async function updateRobot(org: string, id: string, patch: RobotInput & { routines?: unknown }, scope: Scope = {}): Promise<Robot> {
@@ -175,7 +200,7 @@ export async function updateRobot(org: string, id: string, patch: RobotInput & {
         next.skills = Array.from(new Set((Array.isArray(patch.skills) ? patch.skills : []).filter(ownSkill)));
         if (!next.skills.length) throw new OfficeError("Choose at least one skill");
     }
-    if (patch.instructions !== undefined) next.instructions = cleanLong(patch.instructions, 1500);
+    if (patch.instructions !== undefined) next.instructions = cleanLong(patch.instructions, 6000);
     if (patch.autonomy !== undefined) next.autonomy = patch.autonomy === "auto" ? "auto" : "ask";
     if (patch.enabled !== undefined) next.enabled = patch.enabled !== false;
     if (patch.routines !== undefined) {

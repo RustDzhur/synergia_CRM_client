@@ -12,7 +12,16 @@ export interface Room { id: string; name: string }
 export type AgentName = "seo-agent" | "article-writer" | "mail-sorter";
 export interface PlatformInfo { errors: { telegram: boolean; items: { at: string; title: string; count: number; source: string }[] }; agents: Partial<Record<AgentName, { lastActivity: string; seenAt: string; note: string }>> }
 export type Accent = "lime" | "teal" | "sky" | "amber" | "coral" | "violet";
-export interface Routine { id: string; text: string; kind: "daily" | "weekdays" | "weekly" | "monthly"; time: string; day?: number; lastRun?: string }
+export interface Routine {
+    id: string;
+    text: string;
+    kind: "daily" | "weekdays" | "weekly" | "monthly" | "interval";
+    time: string;
+    day?: number;
+    everyMinutes?: number;
+    lastRun?: string;
+    lastRunAt?: string;
+}
 export interface Robot { id: string; name: string; title: string; template: string; zone: Zone; accent: Accent; skills: Skill[]; instructions: string; autonomy: "ask" | "auto"; enabled: boolean; routines: Routine[]; createdAt: string }
 export type TaskStatus = "queued" | "running" | "waiting" | "done" | "failed" | "cancelled";
 export interface OfficeAction { id: string; tool: string; args: Record<string, unknown>; target: string; state?: "done" | "failed"; params?: Record<string, string>; link?: string; message?: string }

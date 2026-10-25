@@ -24,6 +24,13 @@ export interface PageAudit {
   readonly hasOgImage: boolean;
   readonly structuredData: number;
   readonly imagesWithoutAlt: number;
+  /** Адреса картинок без alt — чтобы было видно, какие именно править. */
+  readonly imagesWithoutAltSample: readonly string[];
+  readonly h1: string;
+  /** Типы найденных структурированных данных (Organization, Product, FAQPage…). */
+  readonly structuredTypes: readonly string[];
+  /** Готовые правки: что заменить и на что. */
+  readonly suggestions: readonly string[];
   readonly internalLinks: number;
   readonly htmlLang: string;
   readonly issues: readonly string[];
@@ -124,7 +131,7 @@ async function discover(url: URL, limit: number): Promise<string[]> {
 function parsePage(url: string, status: number, html: string): PageAudit {
   const head = html.slice(0, html.indexOf("</head>") + 7 || html.length);
   const titleRaw = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(head)?.[1] ?? "";
-  const title = decode(titleRaw).slice(0, 300);
+  const title = decode(titleRaw.replace(/<[^>]*>/g, " ")).slice(0, 300);
   const meta = (name: string): string => {
     const pattern = new RegExp(`<meta\\s[^>]*(?:name|property)=["']${name}["'][^>]*content=["']([^"']*)["']`, "i");
     return decode(pattern.exec(head)?.[1] ?? "").slice(0, 500);
@@ -135,10 +142,14 @@ function parsePage(url: string, status: number, html: string): PageAudit {
   const hasOgImage = /<meta[^>]+property=["']og:image["']/i.test(head);
   const hasOpenGraph = /<meta[^>]+property=["']og:/i.test(head);
   const structuredData = (html.match(/application\/ld\+json/gi) ?? []).length;
+  const structuredTypes = Array.from(new Set(Array.from(html.matchAll(/"@type"\s*:\s*"([^"]+)"/g)).map((m) => m[1]))).slice(0, 6);
   const h1Count = (html.match(/<h1[\s>]/gi) ?? []).length;
   const htmlLang = /<html[^>]+lang=["']([^"']+)["']/i.exec(html)?.[1] ?? "";
   const images = Array.from(html.matchAll(/<img\s[^>]*>/gi)).map((m) => m[0]);
-  const imagesWithoutAlt = images.filter((tag) => !/\salt=["'][^"']*["']/i.test(tag)).length;
+  const imagesWithoutAltTags = images.filter((tag) => !/\salt=["'][^"']*["']/i.test(tag));
+  const imagesWithoutAlt = imagesWithoutAltTags.length;
+  const imagesWithoutAltSample = imagesWithoutAltTags.slice(0, 3).map((tag) => /src=["']([^"']+)["']/i.exec(tag)?.[1] ?? "");
+  const h1 = decode((/<h1[^>]*>([\s\S]*?)<\/h1>/i.exec(html)?.[1] ?? "").replace(/<[^>]*>/g, " ")).slice(0, 200);
   let internalLinks = 0;
   try {
     const host = new URL(url).hostname;
@@ -172,6 +183,31 @@ function parsePage(url: string, status: number, html: string): PageAudit {
   if (!htmlLang) issues.push("no-lang");
   if (status >= 400) issues.push("http-error");
 
+  const suggestions: string[] = [];
+  const clip = (text: string, max: number) => {
+    const words = text.split(/\s+/);
+    let out = "";
+    for (const word of words) {
+      if ((out + " " + word).trim().length > max) break;
+      out = (out + " " + word).trim();
+    }
+    return out || text.slice(0, max);
+  };
+  if (titleLength > 65) suggestions.push(`title сократить до ~60 символов, например: «${clip(title, 58)}»`);
+  if (!title) suggestions.push("добавить title: польза страницы для клиента + бренд, до 60 символов");
+  if (!description) suggestions.push("добавить description на 120–160 символов: что человек получит на странице");
+  else if (descriptionLength > 165) suggestions.push(`description сократить до ~155 символов, например: «${clip(description, 152)}»`);
+  else if (descriptionLength < 70) suggestions.push(`description расширить до 120–160 символов (сейчас ${descriptionLength})`);
+  if (!canonical) suggestions.push(`добавить <link rel="canonical" href="${url}">`);
+  if (hreflang.length === 0) suggestions.push("если есть языковые версии — связать их hreflang (de/en/ru + x-default)");
+  if (!hasOgImage) suggestions.push("добавить og:image 1200×630 (cначала нарисовать/выбрать картинку страницы)");
+  if (!hasOpenGraph) suggestions.push("добавить og:title, og:description, og:image");
+  if (structuredData === 0) suggestions.push("добавить JSON-LD: Organization на главной, Service/Product на страницах услуг, BlogPosting у статей");
+  if (h1Count === 0) suggestions.push("добавить один h1 с главной мыслью страницы");
+  if (h1Count > 1) suggestions.push(`оставить один h1 (сейчас ${h1Count})`);
+  if (imagesWithoutAlt > 0) suggestions.push(`добавить alt к ${imagesWithoutAlt} картинкам${imagesWithoutAltSample.length ? ` (например: ${imagesWithoutAltSample.join(", ")})` : ""}`);
+  if (!htmlLang) suggestions.push('указать язык страницы: <html lang="de">');
+
   return {
     url,
     status,
@@ -186,6 +222,10 @@ function parsePage(url: string, status: number, html: string): PageAudit {
     hasOgImage,
     structuredData,
     imagesWithoutAlt,
+    imagesWithoutAltSample,
+    h1,
+    structuredTypes,
+    suggestions,
     internalLinks,
     htmlLang,
     issues,
@@ -268,7 +308,23 @@ export async function auditSite(input: string, options: { limit?: number } = {})
     lines.push("", "Что исправить в первую очередь:");
     for (const advice of recommendations) lines.push(`— ${advice}`);
   }
-  lines.push("", "Отчёт построен по публичным страницам; доступ к коду не использовался.");
+  lines.push("", "Постранично (что именно написано сейчас и что исправить):");
+  for (const page of pages.slice(0, 12)) {
+    lines.push("", `■ ${page.url}  (HTTP ${page.status || "нет ответа"})`);
+    lines.push(`   title: ${page.title ? `«${page.title}» (${page.titleLength} симв.)` : "нет"}`);
+    lines.push(`   description: ${page.description ? `«${page.description}» (${page.descriptionLength} симв.)` : "нет"}`);
+    lines.push(`   h1: ${page.h1 ? `«${page.h1}»` : "нет"}${page.h1Count > 1 ? ` (h1 на странице: ${page.h1Count})` : ""}`);
+    lines.push(`   canonical: ${page.canonical || "нет"} · hreflang: ${page.hreflang.length ? page.hreflang.join("/") : "нет"}`);
+    lines.push(`   структурированные данные: ${page.structuredData ? `${page.structuredData} блок(ов)${page.structuredTypes.length ? ` (${page.structuredTypes.join(", ")})` : ""}` : "нет"} · og:image: ${page.hasOgImage ? "есть" : "нет"}`);
+    if (page.imagesWithoutAlt) lines.push(`   картинки без alt: ${page.imagesWithoutAlt}${page.imagesWithoutAltSample.length ? ` — ${page.imagesWithoutAltSample.join(", ")}` : ""}`);
+    if (page.suggestions.length) {
+      lines.push("   что исправить:");
+      for (const suggestion of page.suggestions) lines.push(`     — ${suggestion}`);
+    } else {
+      lines.push("   проблем по техническим критериям нет");
+    }
+  }
+  lines.push("", "Как читать отчёт: проверяются публичные страницы и их HTML. Файл и номер строки можно указать только при доступе к коду сайта — для этого нужен инженерный агент с репозиторием; здесь указаны точный URL, элемент и текущий текст, который надо заменить.");
 
   return {
     url: url.toString(),

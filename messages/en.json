@@ -4035,7 +4035,14 @@
     "tpl_ms_seo_desc": "Audits any public website (your own or a client site) for titles, descriptions, canonical, hreflang, structured data and image alt texts, and e-mails a ready improvement plan.",
     "tpl_ms_seo_s1": "Audit https://firmspace.de and e-mail me the report",
     "tpl_ms_seo_s2": "Compare our home page with a competitor and name the biggest gaps",
-    "tpl_ms_seo_s3": "Audit a client website and list the most urgent fixes"
+    "tpl_ms_seo_s3": "Audit a client website and list the most urgent fixes",
+    "k_interval": "Continuous",
+    "routineEvery": "every {n} min",
+    "routineEveryLabel": "Interval",
+    "micStart": "Dictate",
+    "micListening": "Listening …",
+    "micDenied": "Microphone not allowed",
+    "micUnavailable": "Dictation is not available in this browser"
   },
   "demo": {
     "try": "Try the demo",

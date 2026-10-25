@@ -4035,7 +4035,14 @@
     "tpl_ms_seo_desc": "Prüft jede öffentliche Website (die eigene oder eine Kundenwebsite) auf Titel, Beschreibungen, Canonical, hreflang, strukturierte Daten und Bilder und schickt einen fertigen Optimierungsplan per E-Mail.",
     "tpl_ms_seo_s1": "Prüfe https://firmspace.de und schicke mir den Bericht per E-Mail",
     "tpl_ms_seo_s2": "Vergleiche unsere Startseite mit der eines Wettbewerbers und nenne die wichtigsten Lücken",
-    "tpl_ms_seo_s3": "Prüfe die Website eines Kunden und liste die dringendsten Korrekturen auf"
+    "tpl_ms_seo_s3": "Prüfe die Website eines Kunden und liste die dringendsten Korrekturen auf",
+    "k_interval": "Durchgehend",
+    "routineEvery": "alle {n} Min.",
+    "routineEveryLabel": "Intervall",
+    "micStart": "Diktieren",
+    "micListening": "Spricht …",
+    "micDenied": "Mikrofon nicht erlaubt",
+    "micUnavailable": "Diktat ist in diesem Browser nicht verfügbar"
   },
   "demo": {
     "try": "Demo ausprobieren",

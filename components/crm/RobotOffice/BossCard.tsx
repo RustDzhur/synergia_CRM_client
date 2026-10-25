@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { useOfficeStore } from "@/store/useOfficeStore";
 import RobotAvatar from "./RobotAvatar";
+import MicButton from "./MicButton";
 
 // Начальник офиса — Айрис. Человек даёт ей поручение обычными словами, она сама делит его и раздаёт роботам (см. lib/office/templates.ts, bossPersona).
 export default function BossCard() {
@@ -40,8 +41,11 @@ export default function BossCard() {
 					<p className="mb-6 text-12 text-[#9aa7c9]">{t("bossHint")}</p>
 					{canEdit ? (
 						<div className="flex flex-col gap-8">
-							<textarea id="boss-input" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); } }} rows={2} maxLength={4000} disabled={!ai || robots.length === 0} placeholder={t("bossPlaceholder")} aria-label={tn("automation")} className="fs-field fs-scroll min-h-[56px] flex-1 resize-none p-10 text-13 outline-none disabled:opacity-60" />
-							<button type="button" onClick={() => void send()} disabled={busy || !text.trim() || !ai || robots.length === 0} className="fs-btn fs-btn-primary h-40 w-full shrink-0 px-18 disabled:opacity-50">{busy ? "…" : t("send")}</button>
+							<textarea id="boss-input" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); } }} rows={2} maxLength={30000} disabled={!ai || robots.length === 0} placeholder={t("bossPlaceholder")} aria-label={tn("automation")} className="fs-field fs-scroll min-h-[56px] flex-1 resize-none p-10 text-13 outline-none disabled:opacity-60" />
+							<div className="flex items-center gap-8">
+								<MicButton onText={(v) => setText(v.slice(0, 30000))} className="flex size-40 items-center justify-center rounded-10 border border-inkLine" />
+								<button type="button" onClick={() => void send()} disabled={busy || !text.trim() || !ai || robots.length === 0} className="fs-btn fs-btn-primary h-40 min-w-0 flex-1 px-18 disabled:opacity-50">{busy ? "…" : t("send")}</button>
+							</div>
 						</div>
 					) : <p className="text-12 text-[#9aa7c9]">{t("readOnly")}</p>}
 					{!ai && <p className="mt-8 text-12 text-[#F4A100]">{t("notConfigured")}</p>}

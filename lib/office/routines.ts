@@ -21,6 +21,13 @@ export function localParts(now: Date, timeZone: string) {
 
 /** Пора ли выполнить регулярную задачу сейчас. */
 export function isDue(r: Routine, now: Date, timeZone: string): boolean {
+    // Интервальный режим: робот снова берётся за ту же задачу каждые N минут весь день.
+    if (r.kind === "interval") {
+        const every = Math.max(5, Math.min(1440, Number(r.everyMinutes) || 30));
+        const last = r.lastRunAt ? Date.parse(r.lastRunAt) : 0;
+        if (!Number.isFinite(last) || last <= 0) return true;
+        return now.getTime() - last >= every * 60_000;
+    }
     const l = localParts(now, timeZone);
     if (r.lastRun === l.date) return false;
     const [h, m] = r.time.split(":").map(Number);
@@ -52,9 +59,10 @@ export async function runDueRoutines(now = new Date()): Promise<number> {
         for (const routine of (v.routines ?? []) as Routine[]) {
             if (!isDue(routine, now, o.zone)) continue;
             const l = localParts(now, o.zone);
+            const stamped = routine.kind === "interval" ? { ...routine, lastRunAt: now.toISOString(), lastRun: l.date } : { ...routine, lastRun: l.date };
             try {
                 // сначала отметка «сегодня запускали», потом поручение: при сбое лучше пропустить день, чем запустить дважды
-                const routines = ((v.routines ?? []) as Routine[]).map((x) => (x.id === routine.id ? { ...x, lastRun: l.date } : x));
+                const routines = ((v.routines ?? []) as Routine[]).map((x) => (x.id === routine.id ? stamped : x));
                 await prisma.robot.updateMany({ where: { id: row.id }, data: { data: { ...(row.data as object), routines } as never } });
                 const ctx = { org: row.org, platformAdmin: true, userId: o.owner, role: "owner" as const, modules: [] as string[], today: l.date, now: `${l.date}T${l.time}`, orgName: o.name };
                 await startOfficeTask(ctx, { robot: row.rid, text: routine.text, source: "routine" });

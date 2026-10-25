@@ -89,7 +89,7 @@ export default function RobotForm({ robot, initial, adsWarn, onSubmit, onCancel,
 			</div>
 			<div>
 				<label className={label} htmlFor="rb-ins">{t("fInstructions")}</label>
-				<textarea id="rb-ins" value={instructions} onChange={(e) => setInstructions(e.target.value)} maxLength={1500} rows={3} placeholder={t("fInstructionsPh")} className="fs-field fs-scroll w-full p-12 text-13 outline-none" />
+				<textarea id="rb-ins" value={instructions} onChange={(e) => setInstructions(e.target.value)} maxLength={6000} rows={3} placeholder={t("fInstructionsPh")} className="fs-field fs-scroll w-full p-12 text-13 outline-none" />
 				{!custom && <p className="mt-6 text-11 text-[#9aa7c9]">{t("fInstructionsDefault")}</p>}
 			</div>
 			{routines.length > 0 && (

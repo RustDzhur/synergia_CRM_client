@@ -10,9 +10,10 @@ import Modal from "../shared/Modal";
 import RobotAvatar from "./RobotAvatar";
 import RobotForm from "./RobotForm";
 import TaskItem from "./TaskItem";
+import MicButton from "./MicButton";
 import { isMonitor, titleOf, viewOf } from "./theme";
 
-const KINDS: Routine["kind"][] = ["daily", "weekdays", "weekly", "monthly"];
+const KINDS: Routine["kind"][] = ["daily", "weekdays", "weekly", "monthly", "interval"];
 
 // Карточка выбранного робота: что он делает, новое поручение (со «шпаргалками»), режим работы, регулярные задачи, история.
 export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: () => void }) {
@@ -24,7 +25,7 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 	const [editing, setEditing] = useState(false);
 	const [confirmDismiss, setConfirmDismiss] = useState(false);
 	const [adding, setAdding] = useState(false);
-	const [rt, setRt] = useState({ text: "", kind: "daily" as Routine["kind"], time: "09:00", day: 1 });
+	const [rt, setRt] = useState({ text: "", kind: "daily" as Routine["kind"], time: "09:00", day: 1, everyMinutes: 60 });
 	const view = viewOf(robot, tasks, Date.now(), platform);
 	const monitor = isMonitor(robot);
 	const clock = (iso: string) => { const d = new Date(iso); return Number.isFinite(d.getTime()) && d.getTime() > 0 ? d.toLocaleString(locale === "ua" ? "uk" : locale, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : ""; };
@@ -41,14 +42,35 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 		if (task) { setText(""); toast.success(t("taskAssigned", { name: robot.name })); }
 	}
 
+	/** Сериализация существующей регулярной задачи без потери интервального режима. */
+	const routineInput = (r: Routine) => ({
+		id: r.id,
+		text: r.text,
+		kind: r.kind,
+		time: r.time,
+		...(r.day !== undefined ? { day: r.day } : {}),
+		...(r.everyMinutes !== undefined ? { everyMinutes: r.everyMinutes } : {}),
+		...(r.lastRun ? { lastRun: r.lastRun } : {}),
+		...(r.lastRunAt ? { lastRunAt: r.lastRunAt } : {}),
+	});
 	async function addRoutine() {
 		if (!rt.text.trim()) return;
-		const cur = robot.routines.map((r) => ({ id: r.id, text: r.text, kind: r.kind, time: r.time, ...(r.day !== undefined ? { day: r.day } : {}) }));
-		const ok = await update(robot.id, { routines: [...cur, { text: rt.text, kind: rt.kind, time: rt.time, ...(rt.kind === "weekly" || rt.kind === "monthly" ? { day: rt.day } : {}) }] as never });
-		if (ok) { setAdding(false); setRt({ text: "", kind: "daily", time: "09:00", day: 1 }); }
+		const cur = robot.routines.map(routineInput);
+		const next = {
+			text: rt.text.trim(),
+			kind: rt.kind,
+			time: rt.kind === "interval" ? "" : rt.time,
+			...(rt.kind === "weekly" || rt.kind === "monthly" ? { day: rt.day } : {}),
+			...(rt.kind === "interval" ? { everyMinutes: rt.everyMinutes } : {}),
+		};
+		const ok = await update(robot.id, { routines: [...cur, next] as never });
+		if (ok) { setAdding(false); setRt({ text: "", kind: "daily", time: "09:00", day: 1, everyMinutes: 60 }); }
 	}
-	const removeRoutine = (id: string) => void update(robot.id, { routines: robot.routines.filter((r) => r.id !== id).map((r) => ({ id: r.id, text: r.text, kind: r.kind, time: r.time, ...(r.day !== undefined ? { day: r.day } : {}) })) as never });
-	const routineLabel = (r: Routine) => `${t(`k_${r.kind}`)}${r.kind === "weekly" ? ` · ${t(`wd${r.day ?? 1}`)}` : r.kind === "monthly" ? ` · ${r.day ?? 1}` : ""} · ${r.time}`;
+	const removeRoutine = (id: string) => void update(robot.id, { routines: robot.routines.filter((r) => r.id !== id).map(routineInput) as never });
+	const routineLabel = (r: Routine) =>
+		(r.kind === "interval"
+			? `${t("k_interval")} · ${t("routineEvery", { n: r.everyMinutes ?? 30 })}`
+			: `${t(`k_${r.kind}`)}${r.kind === "weekly" ? ` · ${t(`wd${r.day ?? 1}`)}` : r.kind === "monthly" ? ` · ${r.day ?? 1}` : ""} · ${r.time}`);
 
 	const head = "mb-8 text-11 font-semibold uppercase tracking-[0.06em] text-[#9aa7c9]";
 	const seg = (on: boolean) => `flex-1 rounded-8 border px-10 py-8 text-12 font-medium transition-colors disabled:opacity-60 ${on ? "border-[#7c93ff] bg-[rgba(124,147,255,0.08)] text-[#edf2ff]" : "border-inkLine text-[#9aa7c9] hover:text-[#edf2ff]"}`;
@@ -97,8 +119,11 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 			{!monitor && canEdit && robot.enabled && (
 				<div className="mt-18">
 					<p className={head}>{t("assignTitle")}</p>
-					<textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void send(); }} rows={3} maxLength={4000} placeholder={t("assignPlaceholder")} className="fs-field fs-scroll w-full p-10 text-13 outline-none" disabled={!ai} />
-					<div className="mt-8 flex justify-end"><button type="button" disabled={busy || !text.trim() || !ai} onClick={() => void send()} className="fs-btn fs-btn-primary h-36 px-16 text-12 disabled:opacity-50">{busy ? "…" : t("assign")}</button></div>
+					<textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void send(); }} rows={3} maxLength={30000} placeholder={t("assignPlaceholder")} className="fs-field fs-scroll w-full p-10 text-13 outline-none" disabled={!ai} />
+					<div className="mt-8 flex items-center justify-end gap-8">
+						<MicButton onText={(v) => setText(v.slice(0, 30000))} className="flex size-36 items-center justify-center rounded-10 border border-inkLine" />
+						<button type="button" disabled={busy || !text.trim() || !ai} onClick={() => void send()} className="fs-btn fs-btn-primary h-36 px-16 text-12 disabled:opacity-50">{busy ? "…" : t("assign")}</button>
+					</div>
 					{quick.length > 0 && (
 						<div className="mt-10">
 							<p className={head}>{t("tryTitle")}</p>
@@ -141,17 +166,28 @@ export default function RobotPanel({ robot, onClose }: { robot: Robot; onClose: 
 				</ul>
 				{adding && (
 					<div className="mt-8 flex flex-col gap-8 rounded-8 border border-inkLine p-10">
-						<textarea value={rt.text} onChange={(e) => setRt({ ...rt, text: e.target.value })} rows={2} maxLength={600} placeholder={t("routineText")} className="fs-field fs-scroll w-full p-8 text-12 outline-none" />
+						<textarea value={rt.text} onChange={(e) => setRt({ ...rt, text: e.target.value })} rows={2} maxLength={4000} placeholder={t("routineText")} className="fs-field fs-scroll w-full p-8 text-12 outline-none" />
 						<div className="flex flex-wrap items-center gap-8">
 							<select value={rt.kind} onChange={(e) => setRt({ ...rt, kind: e.target.value as Routine["kind"] })} aria-label={t("routineKind")} className="fs-field h-34 px-8 text-12 outline-none">{KINDS.map((k) => <option key={k} value={k}>{t(`k_${k}`)}</option>)}</select>
 							{rt.kind === "weekly" && <select value={rt.day} onChange={(e) => setRt({ ...rt, day: Number(e.target.value) })} aria-label={t("routineDay")} className="fs-field h-34 px-8 text-12 outline-none">{[1, 2, 3, 4, 5, 6, 0].map((d) => <option key={d} value={d}>{t(`wd${d}`)}</option>)}</select>}
 							{rt.kind === "monthly" && <select value={rt.day} onChange={(e) => setRt({ ...rt, day: Number(e.target.value) })} aria-label={t("routineDay")} className="fs-field h-34 px-8 text-12 outline-none">{Array.from({ length: 28 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d}</option>)}</select>}
-							<span className="text-12 text-[#9aa7c9]">{t("routineTime")}</span>
-							<input type="time" value={rt.time} onChange={(e) => setRt({ ...rt, time: e.target.value })} className="fs-field h-34 px-8 text-12 outline-none" />
+							{rt.kind === "interval" ? (
+								<>
+									<span className="text-12 text-[#9aa7c9]">{t("routineEveryLabel")}</span>
+									<select value={rt.everyMinutes} onChange={(e) => setRt({ ...rt, everyMinutes: Number(e.target.value) })} aria-label={t("routineEveryLabel")} className="fs-field h-34 px-8 text-12 outline-none">
+										{[15, 30, 60, 120, 180, 240, 360, 480].map((m) => <option key={m} value={m}>{t("routineEvery", { n: m })}</option>)}
+									</select>
+								</>
+							) : (
+								<>
+									<span className="text-12 text-[#9aa7c9]">{t("routineTime")}</span>
+									<input type="time" value={rt.time} onChange={(e) => setRt({ ...rt, time: e.target.value })} className="fs-field h-34 px-8 text-12 outline-none" />
+								</>
+							)}
 						</div>
 						<div className="flex justify-end gap-8">
 							<button type="button" onClick={() => setAdding(false)} className="fs-btn fs-btn-ghost h-32 px-12 text-12">{t("cancel")}</button>
-							<button type="button" disabled={!rt.text.trim() || !/^\d{2}:\d{2}$/.test(rt.time)} onClick={() => void addRoutine()} className="fs-btn fs-btn-primary h-32 px-12 text-12 disabled:opacity-50">{t("save")}</button>
+							<button type="button" disabled={!rt.text.trim() || (rt.kind !== "interval" && !/^\d{2}:\d{2}$/.test(rt.time))} onClick={() => void addRoutine()} className="fs-btn fs-btn-primary h-32 px-12 text-12 disabled:opacity-50">{t("save")}</button>
 						</div>
 					</div>
 				)}

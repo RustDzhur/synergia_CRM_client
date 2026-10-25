@@ -3656,7 +3656,14 @@
     "tpl_ms_seo_desc": "Har qanday ochiq saytni (o'ziniki yoki mijoz sayti) title, tavsif, canonical, hreflang, tuzilgan ma'lumotlar va alt matnlar bo'yicha tekshiradi va tayyor rejani pochtaga yuboradi.",
     "tpl_ms_seo_s1": "https://firmspace.de saytini tekshir va hisobotni pochtaga yubor",
     "tpl_ms_seo_s2": "Bosh sahifamizni raqobatchi sayti bilan solishtir va asosiy kamchiliklarni ayt",
-    "tpl_ms_seo_s3": "Mijoz saytini tekshir va eng zarur tuzatishlarni sanab ber"
+    "tpl_ms_seo_s3": "Mijoz saytini tekshir va eng zarur tuzatishlarni sanab ber",
+    "k_interval": "Uzluksiz",
+    "routineEvery": "har {n} daqiqa",
+    "routineEveryLabel": "Interval",
+    "micStart": "Diktovka",
+    "micListening": "Tinglayapman …",
+    "micDenied": "Mikrofon ruxsat etilmagan",
+    "micUnavailable": "Diktovka bu brauzerda mavjud emas"
   },
   "marketing": {
     "tab_start": "Boshlash",
