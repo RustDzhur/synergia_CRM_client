@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { storageProblem } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
 import { missingTables } from "@/lib/schemaCheck";
+import { ensurePlatformEnv, platformEnvCached } from "@/lib/platformEnv";
 
 export const dynamic = "force-dynamic";
 
@@ -33,10 +34,14 @@ export async function GET() {
     if (db === "ok") {
         try { const missing = await missingTables(); schema = missing.length ? missing : "ok"; } catch { schema = "unknown"; }
     }
-    // Необязательные возможности: только «настроено или что не так», значения не раскрываются
+    // Необязательные возможности: только «настроено или что не так», значения не раскрываются.
+    // Ключи Google могут лежать в кабинете администратора (переменные окружения), поэтому
+    // сначала подтягиваем их в кэш — иначе диагностика врала бы «не настроено».
+    await ensurePlatformEnv().catch(() => undefined);
     const features = {
         storage: storageProblem() || "ok",
-        googleSignIn: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+        googleSignIn: !!(platformEnvCached("GOOGLE_CLIENT_ID") && platformEnvCached("GOOGLE_CLIENT_SECRET")),
+        googleAds: !!platformEnvCached("GOOGLE_ADS_DEVELOPER_TOKEN"),
         admin: !!process.env.ADMIN_EMAILS,
         cron: !!process.env.CRON_SECRET,
     };
