@@ -22,13 +22,18 @@ const KEY = "office:harness";
  * токена; сейчас ограничение осознанное (иначе один токен видел бы чужие задачи).
  */
 export async function harnessOrg(): Promise<string | null> {
-  const rows = await prisma.sectionRecord.findMany({ where: { key: "admin:env" }, take: 200, select: { org: true } });
-  for (const row of Array.from(new Map(rows.map((r) => [r.org, r])).values())) {
-    const org = await prisma.organization.findUnique({ where: { id: row.org }, select: { ownerUser: true } }).catch(() => null);
-    if (!org) continue;
-    return row.org;
+  const g = globalThis as { __harnessOrg?: { at: number; value: string | null } };
+  if (g.__harnessOrg && Date.now() - g.__harnessOrg.at < 60_000) return g.__harnessOrg.value;
+  const orgs = await prisma.organization.findMany({ take: 50, select: { id: true, ownerUser: true } }).catch(() => []);
+  let value: string | null = null;
+  for (const row of orgs) {
+    const owner = await prisma.user.findUnique({ where: { id: row.ownerUser } }).catch(() => null);
+    if (!owner) continue;
+    const { isPlatformAdminUser } = await import("@/lib/admin");
+    if (await isPlatformAdminUser(owner as never)) { value = row.id; break; }
   }
-  return null;
+  g.__harnessOrg = { at: Date.now(), value };
+  return value;
 }
 const TTL_HOURS = 24;
 
@@ -63,6 +68,10 @@ const toRequest = (row: Row): HarnessRequest => ({
 
 /** Робот передаёт задачу облачному агенту. Возвращает идентификатор запроса. */
 export async function delegateToHarness(input: { org: string; userId: string; text: string; robot: string; robotName: string }): Promise<HarnessRequest> {
+  // Очередь одна на платформу: владелец облачного агента — администратор платформы.
+  const target = await harnessOrg();
+  if (!target) throw new Error("Harness is not set up yet: no platform-admin workspace found");
+  if (target !== input.org) throw new Error("Harness delegation is enabled for the platform-admin workspace only");
   const id = `h${randomBytes(8).toString("hex")}`;
   const values = {
     text: input.text.slice(0, 20000),
