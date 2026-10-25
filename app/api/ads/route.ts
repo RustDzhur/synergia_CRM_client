@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
-import { adsAvailable, adsMissingGoogle, adsPlanOk, findAds, toConnectionDTO } from "@/lib/ads";
+import { accessToken, adsAvailable, adsMissingGoogle, adsPlanOk, findAds, toConnectionDTO } from "@/lib/ads";
+import { accessibleCustomers } from "@/lib/ads/google";
 import { prisma } from "@/lib/prisma";
 import { ensurePlatformEnv } from "@/lib/platformEnv";
 import { appOrigin } from "@/lib/appUrl";
@@ -36,6 +37,17 @@ export async function PATCH(req: Request) {
         // Google принимает ID менеджерского аккаунта без дефисов; пустая строка — сброс
         const digits = String(b.loginCustomerId).replace(/\D/g, "");
         if (digits && !/^\d{6,12}$/.test(digits)) return badRequest("Manager account id must be 6–12 digits");
+        // Проверяем, что этот аккаунт-менеджер действительно доступен подключённому Google-пользователю:
+        // иначе Google отвечает 401 «missing authentication credential», что путает.
+        if (digits && config.platform === "google") {
+            try {
+                const token = await accessToken(doc);
+                const allowed = await accessibleCustomers(token);
+                if (!allowed.includes(digits)) return badRequest(`Manager account ${digits} is not accessible for the connected Google user`);
+            } catch {
+                /* не смогли проверить (истёк токен) — сохраняем как есть, ошибка покажется при загрузке данных */
+            }
+        }
         patch.loginCustomerId = digits;
     }
     if (Object.keys(patch).length === 0) return badRequest("Nothing to update");

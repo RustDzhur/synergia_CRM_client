@@ -3342,7 +3342,11 @@
     "save": "Speichern",
     "missingVars": "Es fehlen Einstellungen: {vars}",
     "missingWhere": "Ein Administrator der Plattform trägt sie ein: Einstellungen → Integrationen → Umgebungsvariablen.",
-    "redirectHint": "Rückkehr-Adresse für Google Cloud (Authorized redirect URI): {uri}"
+    "redirectHint": "Rückkehr-Adresse für Google Cloud (Authorized redirect URI): {uri}",
+    "errCustomerDisabled": "Das Google-Ads-Konto ist nicht aktiv (Einrichtung nicht abgeschlossen oder gekündigt). Öffnen Sie es in Google Ads, prüfen Sie den Kontostatus und verbinden Sie danach erneut.",
+    "errDeveloperToken": "Der Developer-Token ist nur für Testkonten freigegeben. Beantragen Sie in Google Ads → Tools → API Center den Zugriff „Basic“.",
+    "errMccUnavailable": "Diese Manager-Konto-ID (MCC) ist für den verbundenen Google-Nutzer nicht erreichbar. Lassen Sie das Feld leer oder tragen Sie die ID ein, die in Google Ads unter dem Kontowechsler sichtbar ist.",
+    "errPermissionHint": "Der verbundene Google-Nutzer hat keinen Zugriff auf dieses Werbekonto. Fügen Sie ihn in Google Ads → Zugriff und Sicherheit hinzu."
   },
   "marketing": {
     "tab_start": "Start",

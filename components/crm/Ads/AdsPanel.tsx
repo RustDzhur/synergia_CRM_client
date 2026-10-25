@@ -90,15 +90,20 @@ function Connection({ c, platform, available, planOk, missing, redirectUri, onCh
 export function ItemStats({ item, locale, compact = false }: { item: AdsItem; locale: string; compact?: boolean }) {
 	const t = useTranslations("ads");
 	if (item.error) {
-		const permission = /does not have permission|permission_denied/i.test(item.error);
+		// Подсказка по конкретной причине отказа Google (коды приходят с сервера в тексте ошибки)
+		const hint = /CUSTOMER_NOT_ENABLED/.test(item.error)
+			? "errCustomerDisabled"
+			: /DEVELOPER_TOKEN_NOT_APPROVED/.test(item.error)
+				? "errDeveloperToken"
+				: /missing required authentication credential|UNAUTHENTICATED/i.test(item.error)
+					? "errMccUnavailable"
+					: /does not have permission|PERMISSION_DENIED/i.test(item.error)
+						? "errPermissionHint"
+						: "";
 		return (
 			<div className="rounded-10 bg-[rgba(235,87,87,0.08)] p-14">
 				<p className="text-13 text-danger">{item.error}</p>
-				{permission && item.connection.platform === "google" && (
-					<p className="mt-6 text-12 text-[#9aa7c9]">
-						Похоже, developer token принадлежит менеджерскому аккаунту: укажите его ID в поле «{t("mccLabel")}» выше — после этого статистика загрузится.
-					</p>
-				)}
+				{hint && item.connection.platform === "google" && <p className="mt-6 text-12 leading-[1.5] text-[#9aa7c9]">{t(hint)}</p>}
 			</div>
 		);
 	}

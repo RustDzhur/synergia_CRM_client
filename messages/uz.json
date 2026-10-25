@@ -3775,7 +3775,11 @@
     "save": "Saqlash",
     "missingVars": "Yetishmayotgan sozlamalar: {vars}",
     "missingWhere": "Ularni platforma administratori kiritadi: Sozlamalar → Integratsiyalar → Muhit o'zgaruvchilari.",
-    "redirectHint": "Google Cloud uchun qaytish manzili (Authorized redirect URI): {uri}"
+    "redirectHint": "Google Cloud uchun qaytish manzili (Authorized redirect URI): {uri}",
+    "errCustomerDisabled": "Google Ads akkaunti faol emas (sozlash tugallanmagan yoki bekor qilingan). Uni Google Ads da ochib, holatini tekshiring va qayta ulang.",
+    "errDeveloperToken": "Developer token faqat test akkauntlar uchun tasdiqlangan. Basic ruxsat uchun ariza bering: Google Ads → Tools → API Center.",
+    "errMccUnavailable": "Bu menejer akkaunt (MCC) ID ulangan Google foydalanuvchisi uchun ochiq emas. Maydonni bo'sh qoldiring yoki Google Ads akkaunt almashtirgichida ko'rsatilgan IDni kiriting.",
+    "errPermissionHint": "Ulangan Google foydalanuvchisida bu reklama akkauntiga ruxsat yo'q. Uni qo'shing: Google Ads → Access and security."
   },
   "admin": {
     "title": "Admin: firmalar va obunalar",

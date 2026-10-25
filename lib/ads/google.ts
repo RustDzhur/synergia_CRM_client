@@ -40,12 +40,24 @@ export async function call<T>(token: string, path: string, init: { method?: stri
             },
             body: init.body === undefined ? undefined : JSON.stringify(init.body),
         }, 20000);
-        const json = (await res.json().catch(() => null)) as { error?: { message?: string; status?: string } } & T;
+        const json = (await res.json().catch(() => null)) as {
+        error?: { message?: string; status?: string; details?: { "@type"?: string; errors?: { errorCode?: Record<string, string>; message?: string }[] }[] };
+    } & T;
         if (res.ok) {
             if (!EXPLICIT_VERSION()) g.__adsVersion = { at: Date.now(), value: version };
             return json;
         }
-        const message = json?.error?.message || json?.error?.status || `error ${res.status}`;
+        // Google прячет настоящую причину в details[].errors[].errorCode — достаём её: по ней
+        // человек понимает, что делать (аккаунт отключён, нет прав, неверный manager id).
+        const failure = (json?.error?.details ?? []).find((d) => d["@type"]?.includes("GoogleAdsFailure"));
+        const code = failure?.errors?.[0]?.errorCode ? Object.values(failure.errors[0].errorCode)[0] : "";
+        const known: Record<string, string> = {
+            CUSTOMER_NOT_ENABLED: "рекламный аккаунт не активирован или отключён — проверьте его статус в Google Ads",
+            DEVELOPER_TOKEN_NOT_APPROVED: "developer token не одобрен для реальных аккаунтов — нужен доступ Basic в Google Ads API Center",
+            USER_PERMISSION_DENIED: "у Google-пользователя нет доступа к этому рекламному аккаунту",
+            CUSTOMER_NOT_FOUND: "рекламный аккаунт не найден — проверьте номер",
+        };
+        const message = `${json?.error?.message || json?.error?.status || `error ${res.status}`}${code ? ` (${code}${known[code] ? `: ${known[code]}` : ""})` : ""}`;
         // 404 на самом эндпоинте = версия снята с поддержки: пробуем следующую, не показывая это человеку
         if (res.status === 404) {
             lastError = message;
