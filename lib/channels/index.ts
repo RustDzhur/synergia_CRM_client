@@ -222,7 +222,7 @@ const CHANNEL_LABELS: Record<string, string> = {
 };
 
 // Каналы, через которые можно отправлять фото, файлы и голосовые (у остальных таких методов нет)
-export const MEDIA_CHANNELS: MessagingChannel[] = ["telegram", "viber"];
+export const MEDIA_CHANNELS: MessagingChannel[] = ["telegram", "viber", "messenger"];
 
 // Отправка ответа оператора: провайдер отправляет, и только потом сообщение попадает в беседу
 export async function sendToConversation(integration: Doc, conversation: Doc, text: string, media?: OutgoingMedia) {
@@ -246,9 +246,17 @@ export async function sendToConversation(integration: Doc, conversation: Doc, te
                 : await sendViber(token, botName, conversation.externalId, text);
             break;
         }
-        case "messenger":
-            externalId = await sendMessenger(secretsOf(integration).pageAccessToken, conversation.externalId, text);
+        case "messenger": {
+            // Messenger принимает вложение только публичной ссылкой — отдаём наш /api/media/<token>
+            const pageToken = secretsOf(integration).pageAccessToken;
+            externalId = media
+                ? await sendMessenger(pageToken, conversation.externalId, text, {
+                      kind: media.attachment.kind,
+                      url: mediaUrl(media.origin, media.attachment.path),
+                  })
+                : await sendMessenger(pageToken, conversation.externalId, text);
             break;
+        }
         case "whatsapp":
             externalId = await sendWhatsApp(secretsOf(integration).accessToken, (integration.config as any).phoneNumberId, conversation.externalId, text);
             break;

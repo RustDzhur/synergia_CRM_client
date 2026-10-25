@@ -3,7 +3,7 @@ import type { MessagingChannel } from "@/types/integrations";
 export const mmss = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 
 // Каналы, в которые можно отправлять фото, файлы и голосовые (совпадает с серверным списком)
-export const MEDIA_CHANNELS: MessagingChannel[] = ["telegram", "viber"];
+export const MEDIA_CHANNELS: MessagingChannel[] = ["telegram", "viber", "messenger"];
 
 export const sizeLabel = (bytes: number) => (bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`);
 

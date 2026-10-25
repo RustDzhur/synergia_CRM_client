@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-import { TbArrowLeft, TbDots, TbMessages, TbMicrophone, TbPaperclip, TbPhone, TbPlayerStop } from "react-icons/tb";
+import { TbArrowLeft, TbDots, TbMessages, TbMicrophone, TbPaperclip, TbPhone, TbPlayerStop, TbSend } from "react-icons/tb";
 import { apiCall, authHeaders } from "@/store/crmApi";
 import { useCallStore } from "@/store/useCallStore";
 import type { ConversationDTO, MessageDTO } from "@/types/integrations";
@@ -251,6 +251,15 @@ export default function Chat() {
 								maxLength={2000}
 								className="h-[56px] w-full bg-transparent text-13 text-[#edf2ff] outline-none placeholder:text-[#9AA7C9]"
 							/>
+							{/* кнопка отправки: в некоторых каналах её не было вовсе, и отправить можно было только Enter */}
+							<button
+								type="button"
+								onClick={submit}
+								disabled={sending || !text.trim()}
+								aria-label={t("send")}
+								className="shrink-0 rounded-8 p-6 text-[#7c93ff] transition-colors hover:bg-[#7c93ff]/10 disabled:opacity-40">
+								<TbSend size={20} />
+							</button>
 							{active && MEDIA_CHANNELS.includes(active.channel) && (
 								<>
 									{/* голосовое с микрофона */}

@@ -111,13 +111,31 @@ export function messengerCredentialsProblem(pageAccessToken: string, appSecret: 
     return "";
 }
 
-export async function sendMessenger(accessToken: string, psid: string, text: string) {
+// Meta присылает вложения только по публичной ссылке (payload.url), поэтому файл сначала кладём
+// в наше хранилище, а затем отдаём провайдеру адрес /api/media/<token>.
+export interface MessengerMedia {
+    kind: "image" | "file" | "voice";
+    url: string;
+}
+
+async function messengerSend(accessToken: string, psid: string, message: Record<string, unknown>) {
     const res = await graph<{ message_id: string }>("/me/messages", accessToken, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipient: { id: psid }, messaging_type: "RESPONSE", message: { text } }),
+        body: JSON.stringify({ recipient: { id: psid }, messaging_type: "RESPONSE", message }),
     });
     return res.message_id;
+}
+
+export async function sendMessenger(accessToken: string, psid: string, text: string, media?: MessengerMedia) {
+    // у Send API текст и вложение — разные сообщения, поэтому отправляем их подряд
+    if (!media) return messengerSend(accessToken, psid, { text });
+    const type = media.kind === "image" ? "image" : media.kind === "voice" ? "audio" : "file";
+    const id = await messengerSend(accessToken, psid, {
+        attachment: { type, payload: { url: media.url, is_reusable: true } },
+    });
+    if (text) await messengerSend(accessToken, psid, { text });
+    return id;
 }
 
 // Имя собеседника Meta отдаёт не всегда — тогда остаётся заглушка
