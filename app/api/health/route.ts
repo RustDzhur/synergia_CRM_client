@@ -42,6 +42,12 @@ export async function GET() {
         storage: storageProblem() || "ok",
         googleSignIn: !!(platformEnvCached("GOOGLE_CLIENT_ID") && platformEnvCached("GOOGLE_CLIENT_SECRET")),
         googleAds: !!platformEnvCached("GOOGLE_ADS_DEVELOPER_TOKEN"),
+        // Адреса возврата OAuth: ровно эти строки должны быть в Google Cloud Console
+        // (Authorized redirect URIs), иначе Google отвечает redirect_uri_mismatch.
+        googleRedirects: (() => {
+            const origin = (process.env.APP_URL ?? "").replace(/\/+$/, "");
+            return origin ? { ads: `${origin}/api/ads/callback`, mail: `${origin}/api/mail/oauth/callback` } : null;
+        })(),
         admin: !!process.env.ADMIN_EMAILS,
         cron: !!process.env.CRON_SECRET,
     };

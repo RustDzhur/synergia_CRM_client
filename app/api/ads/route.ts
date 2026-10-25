@@ -4,6 +4,8 @@ import { badRequest, notFound, unauthorized, validId } from "@/lib/api";
 import { adsAvailable, adsMissingGoogle, adsPlanOk, findAds, toConnectionDTO } from "@/lib/ads";
 import { prisma } from "@/lib/prisma";
 import { ensurePlatformEnv } from "@/lib/platformEnv";
+import { appOrigin } from "@/lib/appUrl";
+import { adsRedirectUri } from "@/lib/mail/oauth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +14,7 @@ export async function GET(req: Request) {
     await ensurePlatformEnv();
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
-    return NextResponse.json({ available: adsAvailable(), missing: { google: adsMissingGoogle() }, planOk: await adsPlanOk(user.id), connections: (await findAds(user.id)).map(toConnectionDTO) });
+    return NextResponse.json({ available: adsAvailable(), missing: { google: adsMissingGoogle() }, redirectUri: adsRedirectUri(appOrigin(req)), planOk: await adsPlanOk(user.id), connections: (await findAds(user.id)).map(toConnectionDTO) });
 }
 
 // PATCH /api/ads — { id, accountId }: выбрать рекламный аккаунт из найденных

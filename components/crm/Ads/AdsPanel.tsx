@@ -24,7 +24,7 @@ export function Kpi({ label, value }: { label: string; value: string }) {
 	);
 }
 
-function Connection({ c, available, planOk, missing, onChoose, onDisconnect, onConnect }: { c: AdsConnectionDTO | undefined; available: boolean; planOk: boolean; missing: readonly string[]; platform: AdsPlatform; onChoose: (id: string, account: string) => void; onDisconnect: (c: AdsConnectionDTO) => void; onConnect: () => void }) {
+function Connection({ c, available, planOk, missing, redirectUri, onChoose, onDisconnect, onConnect }: { c: AdsConnectionDTO | undefined; available: boolean; planOk: boolean; missing: readonly string[]; redirectUri?: string; platform: AdsPlatform; onChoose: (id: string, account: string) => void; onDisconnect: (c: AdsConnectionDTO) => void; onConnect: () => void }) {
 	const t = useTranslations("ads");
 	const locale = useLocale();
 	const expired = !!c && c.expiresAt > 0 && c.expiresAt < Date.now();
@@ -57,6 +57,7 @@ function Connection({ c, available, planOk, missing, onChoose, onDisconnect, onC
 						</p>
 					)}
 					<p className="text-11 leading-[1.5] text-[#9aa7c9]">{t("missingWhere")}</p>
+					{redirectUri && <p className="break-all text-11 leading-[1.5] text-[#9aa7c9]">{t("redirectHint", { uri: redirectUri })}</p>}
 				</div>
 			)}
 			<div className="flex gap-10">
@@ -133,7 +134,7 @@ export default function AdsPanel() {
 						return (
 							<div key={p.id}>
 								<p className="mb-10 flex items-center gap-10 text-14 font-medium text-[#edf2ff]">{p.icon}{t(p.id)}</p>
-								<Connection c={c} platform={p.id} available={!!status?.available[p.id]} planOk={status ? status.planOk : true} missing={p.id === "google" ? status?.missing?.google ?? [] : []} onChoose={onChoose} onDisconnect={setToRemove} onConnect={() => onConnect(p.id)} />
+								<Connection c={c} platform={p.id} available={!!status?.available[p.id]} planOk={status ? status.planOk : true} missing={p.id === "google" ? status?.missing?.google ?? [] : []} redirectUri={p.id === "google" ? status?.redirectUri : undefined} onChoose={onChoose} onDisconnect={setToRemove} onConnect={() => onConnect(p.id)} />
 							</div>
 						);
 					})}

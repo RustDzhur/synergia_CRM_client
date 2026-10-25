@@ -2109,7 +2109,8 @@
     "agentSttServer": "Server (für Usbekisch; für Englisch, Deutsch, Russisch und Ukrainisch ist der Browser besser)",
     "micFallback": "Die Server-Spracherkennung ist nicht verfügbar – auf die Browser-Erkennung umgestellt",
     "missingVars": "Es fehlen Einstellungen: {vars}",
-    "missingWhere": "Ein Administrator der Plattform trägt sie ein: Einstellungen → Integrationen → Umgebungsvariablen."
+    "missingWhere": "Ein Administrator der Plattform trägt sie ein: Einstellungen → Integrationen → Umgebungsvariablen.",
+    "redirectHint": "Rückkehr-Adresse für Google Cloud (Authorized redirect URI): {uri}"
   },
   "finance": {
     "title": "Buchhaltung",

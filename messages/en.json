@@ -2109,7 +2109,8 @@
     "agentSttServer": "Server (for Uzbek; for English, German, Russian and Ukrainian the browser is better)",
     "micFallback": "Server speech recognition is unavailable — switched to the browser's recognition",
     "missingVars": "Missing settings: {vars}",
-    "missingWhere": "A platform administrator adds them: Settings → Integrations → Environment variables."
+    "missingWhere": "A platform administrator adds them: Settings → Integrations → Environment variables.",
+    "redirectHint": "Return address for Google Cloud (Authorized redirect URI): {uri}"
   },
   "finance": {
     "title": "Accounting",

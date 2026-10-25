@@ -3265,7 +3265,8 @@
     "agentSttServer": "Server (o‘zbekcha uchun; ingliz, nemis, rus va ukrain tillari uchun brauzer yaxshiroq)",
     "micFallback": "Server nutq aniqlashi mavjud emas — brauzer aniqlashiga o‘tildi",
     "missingVars": "Yetishmayotgan sozlamalar: {vars}",
-    "missingWhere": "Ularni platforma administratori kiritadi: Sozlamalar → Integratsiyalar → Muhit o'zgaruvchilari."
+    "missingWhere": "Ularni platforma administratori kiritadi: Sozlamalar → Integratsiyalar → Muhit o'zgaruvchilari.",
+    "redirectHint": "Google Cloud uchun qaytish manzili (Authorized redirect URI): {uri}"
   },
   "automation": {
     "tab_rules": "Avtomatlashtirish qoidalari",

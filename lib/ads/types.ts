@@ -22,6 +22,8 @@ export interface AdsStatusDTO {
     available: Record<AdsPlatform, boolean>; // настроены ли ключи приложения на сервере
     /** Чего не хватает для Google Ads (имена переменных) — владелец платформы видит точный список. */
     missing?: { google: string[] };
+    /** Адрес возврата, который должен быть вписан в Google Cloud Console (Authorized redirect URI). */
+    redirectUri?: string;
     planOk: boolean; // разрешает ли тариф фирмы рекламу (app/config/plans.ts)
     connections: AdsConnectionDTO[];
 }
