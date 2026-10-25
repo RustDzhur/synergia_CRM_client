@@ -16,6 +16,9 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-c
     && rm -rf /var/lib/apt/lists/*
 COPY . .
 RUN npx prisma generate && npm run build
+# Виджет чата отдаётся всем сайтам — минифицируем при сборке: файл меньше на ~4 КиБ,
+# разметка и логика те же. Если esbuild недоступен, оставляем исходник (сборка не падает).
+RUN if [ -x node_modules/.bin/esbuild ]; then node_modules/.bin/esbuild public/widget.js --minify --outfile=/tmp/widget.min.js --log-level=error && cp /tmp/widget.min.js public/widget.js; fi
 
 # ── запуск ────────────────────────────────────────────────────────────────────
 FROM node:24-bookworm-slim AS run
