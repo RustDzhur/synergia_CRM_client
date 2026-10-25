@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { appOrigin } from "@/lib/appUrl";
+import { appOrigin, crmLocale, crmOrigin } from "@/lib/appUrl";
 import { connectAds } from "@/lib/ads";
 import { connectDrive, connectGcal } from "@/lib/google";
 import { connectOAuthAccount, syncAccount } from "@/lib/mail";
@@ -26,7 +26,8 @@ export async function GET(req: Request) {
     const onedrive = state.p === "onedrive";
     const back = (status: string, message = "") => {
         const section = ads ? "marketing" : gcal ? "collaboration/calendar" : `collaboration/${drive || onedrive ? "online-documents" : "web-mails"}`;
-        const u = new URL(`${origin}/${state.l}/crm/${section}`);
+        // Возврат — в кабинет CRM (crm.firmspace.de), а не на основной сайт, и только на языке CRM.
+        const u = new URL(`${crmOrigin(req)}/${crmLocale(state.l)}/crm/${section}`);
         u.searchParams.set(ads ? "ads" : gcal ? "gcal" : onedrive ? "onedrive" : drive ? "drive" : "mail", status);
         if (message) u.searchParams.set("message", message.slice(0, 200));
         return NextResponse.redirect(u);

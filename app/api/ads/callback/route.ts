@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { appOrigin } from "@/lib/appUrl";
+import { appOrigin, crmLocale, crmOrigin } from "@/lib/appUrl";
 import { connectAds } from "@/lib/ads";
 import { adsRedirectUri, exchangeCode, readState } from "@/lib/mail/oauth";
 import { ensurePlatformEnv } from "@/lib/platformEnv";
@@ -19,8 +19,10 @@ export async function GET(req: Request) {
     const q = new URL(req.url).searchParams;
     const state = readState(q.get("state") ?? "");
     const back = (status: string, message = "") => {
-        const locale = state?.l && /^[a-z]{2}$/.test(state.l) ? state.l : "de";
-        const u = new URL(`${origin}/${locale}/crm/marketing`);
+        const locale = crmLocale(state?.l);
+        // Возвращаем в CRM-кабинет, а не на основной сайт: на firmspace.de локализованных
+        // страниц /<locale>/crm/... нет, и пользователь попадал на 404.
+        const u = new URL(`${crmOrigin(req)}/${locale}/crm/marketing`);
         u.searchParams.set("ads", status);
         if (message) u.searchParams.set("message", message.slice(0, 200));
         return NextResponse.redirect(u);

@@ -6,24 +6,56 @@ import type { AdsAccount, AdsInsights } from "./types";
 export const GOOGLE_ADS_SCOPE = "https://www.googleapis.com/auth/adwords";
 import { platformEnvCached } from "@/lib/platformEnv";
 
-const base = () => (platformEnvCached("GOOGLE_ADS_API_URL") || `https://googleads.googleapis.com/${platformEnvCached("GOOGLE_ADS_API_VERSION") || "v21"}`).replace(/\/+$/, "");
+// Явно заданная версия (GOOGLE_ADS_API_VERSION / GOOGLE_ADS_API_URL) — единственная; иначе пробуем
+// известные версии от новой к старой: Google снимает версии с поддержки, и устаревшая отвечает 404.
+const EXPLICIT_VERSION = () => platformEnvCached("GOOGLE_ADS_API_VERSION");
+const EXPLICIT_URL = () => platformEnvCached("GOOGLE_ADS_API_URL");
+const VERSIONS = ["v26", "v25", "v24", "v23", "v22", "v20"] as const;
+const g = globalThis as { __adsVersion?: { at: number; value: string } };
+const VERSION_TTL = 6 * 60 * 60 * 1000;
+
+const baseFor = (version: string) =>
+    (EXPLICIT_URL() && EXPLICIT_VERSION() ? EXPLICIT_URL() : EXPLICIT_URL() || `https://googleads.googleapis.com/${version}`).replace(/\/+$/, "");
+
+/** Рабочая версия API: сперва запомнённая, иначе последовательно v26 → v22. */
+function versionsToTry(): string[] {
+    const explicit = EXPLICIT_VERSION();
+    if (explicit) return [explicit];
+    const remembered = g.__adsVersion && Date.now() - g.__adsVersion.at < VERSION_TTL ? g.__adsVersion.value : "";
+    return remembered ? [remembered, ...VERSIONS.filter((v) => v !== remembered)] : [...VERSIONS];
+}
 // Developer-token принадлежит приложению; задаётся в кабинете админа, окружение — фолбэк.
 export const googleAdsConfigured = () => !!platformEnvCached("GOOGLE_ADS_DEVELOPER_TOKEN");
 
 export async function call<T>(token: string, path: string, init: { method?: string; body?: unknown; loginCustomerId?: string } = {}): Promise<T> {
-    const res = await fetchProvider(`${base()}${path}`, {
-        method: init.method ?? "GET",
-        headers: {
-            Authorization: `Bearer ${token}`,
-            "developer-token": platformEnvCached("GOOGLE_ADS_DEVELOPER_TOKEN"),
-            "Content-Type": "application/json",
-            ...(init.loginCustomerId ? { "login-customer-id": init.loginCustomerId } : {}),
-        },
-        body: init.body === undefined ? undefined : JSON.stringify(init.body),
-    }, 20000);
-    const json = (await res.json().catch(() => null)) as { error?: { message?: string; status?: string } } & T;
-    if (!res.ok) throw new ProviderError(`Google Ads: ${json?.error?.message || json?.error?.status || `error ${res.status}`}`.slice(0, 300));
-    return json;
+    let lastError = "";
+    for (const version of versionsToTry()) {
+        const res = await fetchProvider(`${baseFor(version)}${path}`, {
+            method: init.method ?? "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "developer-token": platformEnvCached("GOOGLE_ADS_DEVELOPER_TOKEN"),
+                "Content-Type": "application/json",
+                ...(init.loginCustomerId ? { "login-customer-id": init.loginCustomerId } : {}),
+            },
+            body: init.body === undefined ? undefined : JSON.stringify(init.body),
+        }, 20000);
+        const json = (await res.json().catch(() => null)) as { error?: { message?: string; status?: string } } & T;
+        if (res.ok) {
+            if (!EXPLICIT_VERSION()) g.__adsVersion = { at: Date.now(), value: version };
+            return json;
+        }
+        const message = json?.error?.message || json?.error?.status || `error ${res.status}`;
+        // 404 на самом эндпоинте = версия снята с поддержки: пробуем следующую, не показывая это человеку
+        if (res.status === 404) {
+            lastError = message;
+            continue;
+        }
+        throw new ProviderError(`Google Ads: ${message}`.slice(0, 300));
+    }
+    throw new ProviderError(
+        `Google Ads: версия API недоступна (${lastError || "404"}). Укажите актуальную в переменной GOOGLE_ADS_API_VERSION (сейчас поддерживается v26) или обновите приложение.`.slice(0, 300),
+    );
 }
 
 export const query = <T>(token: string, customer: string, gaql: string, loginCustomerId?: string) =>
