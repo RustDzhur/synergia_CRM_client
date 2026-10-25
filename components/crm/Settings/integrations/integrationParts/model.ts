@@ -106,6 +106,12 @@ export const FIELDS: Record<Real, FieldDef[]> = {
 		{ key: "pageAccessToken", label: "intfPageToken", secret: true },
 		{ key: "appSecret", label: "intfAppSecret", secret: true },
 	],
+	// Instagram Direct: переписка идёт через страницу Facebook, к которой привязан бизнес-аккаунт Instagram
+	instagram: [
+		{ key: "pageAccessToken", label: "intfPageToken", secret: true },
+		{ key: "appSecret", label: "intfAppSecret", secret: true },
+		{ key: "igAccountId", label: "intfIgAccountId", placeholder: "17841400000000000" },
+	],
 	whatsapp: [
 		{ key: "phoneNumberId", label: "intfWaPhoneId", placeholder: "123456789012345" },
 		{ key: "accessToken", label: "intfWaToken", secret: true },

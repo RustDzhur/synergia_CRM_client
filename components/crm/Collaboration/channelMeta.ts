@@ -1,5 +1,5 @@
 import type { IconType } from "react-icons";
-import { FaFacebookMessenger, FaTelegram, FaViber, FaWhatsapp } from "react-icons/fa";
+import { FaFacebookMessenger, FaInstagram, FaTelegram, FaViber, FaWhatsapp } from "react-icons/fa";
 import { MdDialpad, MdSensors, MdSms } from "react-icons/md";
 import type { MessagingChannel } from "@/types/integrations";
 
@@ -9,6 +9,7 @@ export const CHANNEL_ICON: Record<MessagingChannel, IconType> = {
 	viber: FaViber,
 	whatsapp: FaWhatsapp,
 	messenger: FaFacebookMessenger,
+	instagram: FaInstagram,
 	twilio: MdSms,
 	vonage: MdSms,
 	plivo: MdSms,
@@ -22,6 +23,7 @@ export const CHANNEL_COLOR: Record<MessagingChannel, string> = {
 	viber: "#7360F2",
 	whatsapp: "#25D366",
 	messenger: "#0084FF",
+	instagram: "#E1306C",
 	twilio: "#F22F46",
 	vonage: "#6C4BF4",
 	plivo: "#00A99D",

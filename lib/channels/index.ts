@@ -6,6 +6,7 @@ import { notify } from "@/lib/notify";
 import { notifyTeamTelegram } from "@/lib/notifyTeam";
 import { secretsOf } from "@/lib/integrations";
 import { prisma } from "@/lib/prisma";
+import { sendInstagram } from "./instagram";
 import { sendMessenger } from "./messenger";
 import { type PlivoSecrets, sendSms as sendPlivoSms } from "./plivo";
 import { type TelnyxSecrets, sendSms as sendTelnyxSms } from "./telnyx";
@@ -213,6 +214,7 @@ const CHANNEL_LABELS: Record<string, string> = {
     viber: "Viber",
     whatsapp: "WhatsApp",
     messenger: "Messenger",
+    instagram: "Instagram",
     twilio: "SMS",
     sms: "SMS",
     vonage: "SMS",
@@ -259,6 +261,10 @@ export async function sendToConversation(integration: Doc, conversation: Doc, te
                 : await sendMessenger(pageToken, conversation.externalId, text);
             break;
         }
+        case "instagram":
+            // Instagram Direct: собеседник — IGSID, отвечать можно только в течение 24 часов после его сообщения
+            externalId = await sendInstagram(secretsOf(integration).pageAccessToken, conversation.externalId, text);
+            break;
         case "whatsapp":
             externalId = await sendWhatsApp(secretsOf(integration).accessToken, (integration.config as any).phoneNumberId, conversation.externalId, text);
             break;

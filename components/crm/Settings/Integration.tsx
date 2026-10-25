@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import type { IconType } from "react-icons";
-import { FaFacebookMessenger, FaTelegram, FaViber, FaWhatsapp } from "react-icons/fa";
+import { FaFacebookMessenger, FaInstagram, FaTelegram, FaViber, FaWhatsapp } from "react-icons/fa";
 import { TbCreditCard, TbCurrencyBitcoin, TbShoppingCart, TbReceipt, TbTruckDelivery, TbCode, TbDeviceMobileMessage, TbForms, TbHeadset, TbPhone } from "react-icons/tb";
 import { SMS_PROVIDER_TYPES } from "@/config/smsProviders";
 import { useIntegrationsStore } from "@/store/useIntegrationsStore";
@@ -42,6 +42,7 @@ const INTEGRATIONS: Integration[] = [
 	{ id: "viber", key: "intViber", icon: FaViber, real: "viber" },
 	{ id: "telegram", key: "intTelegram", icon: FaTelegram, real: "telegram" },
 	{ id: "messenger", key: "intMessenger", icon: FaFacebookMessenger, real: "messenger" },
+	{ id: "instagram", key: "intInstagram", icon: FaInstagram, real: "instagram" },
 	{ id: "whatsapp", key: "intWhatsapp", icon: FaWhatsapp, real: "whatsapp" },
 	{ id: "onlinechat", key: "intOnlineChat", icon: TbHeadset, real: "webchat" },
 	{ id: "widget", key: "intWidget", icon: TbCode, real: "webchat" }, // код для сайта — в окне онлайн-чата

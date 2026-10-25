@@ -356,6 +356,19 @@ export async function connectIntegration(owner: string, type: string, input: Inp
             secrets = { accessToken, appSecret };
             break;
         }
+        case "instagram": {
+            // Instagram Direct работает через страницу Facebook, к которой привязан бизнес-аккаунт:
+            // токен страницы проверяем сразу, иначе переписка молча не приходит и не отправляется
+            const pageAccessToken = need(str(input.pageAccessToken, 500).replace(/\s+/g, ""), "Page access token");
+            const appSecret = need(str(input.appSecret, 200).replace(/\s+/g, ""), "App secret");
+            const igAccountId = need(str(input.igAccountId, 64).replace(/\s+/g, ""), "Instagram account ID");
+            const page = await getPage(pageAccessToken);
+            name = page.name;
+            // igId — аккаунт Instagram, чьи сообщения принимаем; verifyToken — маркер подтверждения вебхука
+            config = { igId: igAccountId, verifyToken: randomToken(8) };
+            secrets = { pageAccessToken, appSecret };
+            break;
+        }
         case "messenger": {
             // переносы строк из буфера обмена убираем: токен их не содержит, а Meta на них отвечает отказом
             const pageAccessToken = str(input.pageAccessToken, 500).replace(/\s+/g, "");

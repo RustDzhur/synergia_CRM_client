@@ -15,7 +15,7 @@ export function webhookPath(type: IntegrationType, token: string) {
     return `/api/webhooks/${type}/${token}`;
 }
 
-/** Verify-токен вебхука Meta (WhatsApp/Messenger): сохранённый при подключении или постоянный производный. */
+/** Verify-токен вебхука Meta (WhatsApp/Messenger/Instagram): сохранённый при подключении или постоянный производный. */
 export const verifyTokenOf = (doc: Doc): string => String(doc.config?.verifyToken || "") || derivedVerifyToken(String(doc.token ?? ""));
 
 export function toIntegrationDTO(doc: Doc, origin: string): IntegrationDTO {
@@ -29,7 +29,7 @@ export function toIntegrationDTO(doc: Doc, origin: string): IntegrationDTO {
         name: doc.name,
         status: doc.status,
         error: doc.error,
-        config: doc.type === "messenger" || doc.type === "whatsapp" ? { ...(doc.config ?? {}), verifyToken: verifyTokenOf(doc) } : doc.config ?? {},
+        config: doc.type === "messenger" || doc.type === "whatsapp" || doc.type === "instagram" ? { ...(doc.config ?? {}), verifyToken: verifyTokenOf(doc) } : doc.config ?? {},
         webhookUrl: url,
         createdAt: doc.createdAt?.toISOString?.() ?? "",
     };

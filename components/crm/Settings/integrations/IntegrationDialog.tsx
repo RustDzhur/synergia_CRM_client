@@ -316,7 +316,7 @@ export default function IntegrationDialog({ type, title, onClose, providerKind }
 								)
 							)}
 
-						{current && shown === "messenger" && (
+						{current && (shown === "messenger" || shown === "instagram") && (
 							<>
 								<CopyField label={t("intCallbackUrl")} value={current.webhookUrl} />
 								<CopyField label={t("intVerifyToken")} value={current.config.verifyToken ?? ""} />
