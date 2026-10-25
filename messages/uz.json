@@ -3779,7 +3779,10 @@
     "errCustomerDisabled": "Google Ads akkaunti faol emas (sozlash tugallanmagan yoki bekor qilingan). Uni Google Ads da ochib, holatini tekshiring va qayta ulang.",
     "errDeveloperToken": "Developer token faqat test akkauntlar uchun tasdiqlangan. Basic ruxsat uchun ariza bering: Google Ads → Tools → API Center.",
     "errMccUnavailable": "Bu menejer akkaunt (MCC) ID ulangan Google foydalanuvchisi uchun ochiq emas. Maydonni bo'sh qoldiring yoki Google Ads akkaunt almashtirgichida ko'rsatilgan IDni kiriting.",
-    "errPermissionHint": "Ulangan Google foydalanuvchisida bu reklama akkauntiga ruxsat yo'q. Uni qo'shing: Google Ads → Access and security."
+    "errPermissionHint": "Ulangan Google foydalanuvchisida bu reklama akkauntiga ruxsat yo'q. Uni qo'shing: Google Ads → Access and security.",
+    "inventoryHint": "Akkauntdagi kampaniyalar (pauzadagilar ham):",
+    "statusEnabled": "faol",
+    "statusPaused": "pauzada"
   },
   "admin": {
     "title": "Admin: firmalar va obunalar",

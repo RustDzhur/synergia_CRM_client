@@ -213,6 +213,24 @@ export default function AdsPanel() {
 												{it.data.campaigns.length === 0 && <tr><td colSpan={5} className="py-20 text-center text-13 text-[#9aa7c9]">{t("noData")}</td></tr>}
 											</tbody>
 										</table>
+										{/* Все кампании аккаунта, включая паузу и нулевые показы: созданные роботом
+										    кампании сразу видны, даже когда в Google Ads «Обзор» их не показывает. */}
+										{(it.data.inventory?.length ?? 0) > 0 && (
+											<div className="mt-16 border-t border-inkLine pt-12">
+												<p className="mb-8 text-12 text-[#9aa7c9]">{t("inventoryHint")}</p>
+												<div className="flex flex-col gap-6">
+													{it.data.inventory!.map((c) => (
+														<div key={c.id} className="flex flex-wrap items-center gap-x-10 gap-y-2 text-12">
+															<span className={`rounded-6 px-6 py-1 text-11 ${c.status === "enabled" ? "bg-[rgba(45,222,182,0.12)] text-[#2DDEB6]" : "bg-[rgba(244,161,0,0.12)] text-[#F4A100]"}`}>
+																{c.status === "enabled" ? t("statusEnabled") : c.status === "paused" ? t("statusPaused") : c.status || "—"}
+															</span>
+															<span className="min-w-0 flex-1 truncate text-[#edf2ff]">{c.name}</span>
+															<span className="text-[#9aa7c9]">#{c.id}</span>
+														</div>
+													))}
+												</div>
+											</div>
+										)}
 									</div>
 								)}
 							</div>

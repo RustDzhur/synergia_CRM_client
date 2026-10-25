@@ -4,7 +4,14 @@ export const ADS_PLATFORMS: AdsPlatform[] = ["google", "meta"];
 export interface AdsAccount { id: string; name: string; currency: string }
 export interface AdsDay { date: string; spend: number; clicks: number; impressions: number; conversions: number }
 export interface AdsCampaign { id: string; name: string; status: string; spend: number; clicks: number; impressions: number; conversions: number }
-export interface AdsInsights { currency: string; days: AdsDay[]; campaigns: AdsCampaign[] }
+export interface AdsCampaignRef { id: string; name: string; status: string; channel: string }
+export interface AdsInsights {
+    currency: string;
+    days: AdsDay[];
+    campaigns: AdsCampaign[];
+    /** Все кампании аккаунта (включая паузу и нулевые показы) — чтобы созданное было видно сразу. */
+    inventory?: AdsCampaignRef[];
+}
 
 export interface AdsConnectionDTO {
     id: string;

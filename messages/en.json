@@ -3346,7 +3346,10 @@
     "errCustomerDisabled": "The Google Ads account is not active (setup not finished or cancelled). Open it in Google Ads, check the account status, then connect again.",
     "errDeveloperToken": "The developer token is approved for test accounts only. Apply for Basic access in Google Ads → Tools → API Center.",
     "errMccUnavailable": "This manager account (MCC) ID is not reachable for the connected Google user. Leave the field empty or use the ID shown in the Google Ads account switcher.",
-    "errPermissionHint": "The connected Google user has no access to this ad account. Add the user in Google Ads → Access and security."
+    "errPermissionHint": "The connected Google user has no access to this ad account. Add the user in Google Ads → Access and security.",
+    "inventoryHint": "Campaigns in the account (including paused):",
+    "statusEnabled": "enabled",
+    "statusPaused": "paused"
   },
   "marketing": {
     "tab_start": "Start",

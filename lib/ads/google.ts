@@ -112,6 +112,26 @@ export async function googleAccounts(token: string, loginCustomerId?: string): P
 const num = (v: unknown) => Number(v) || 0;
 const day = (d: Date) => d.toISOString().slice(0, 10);
 
+/** Все кампании аккаунта независимо от показов: созданные в паузе тоже видны. */
+export async function googleCampaignInventory(
+    token: string,
+    customer: string,
+    loginCustomerId?: string,
+): Promise<{ id: string; name: string; status: string; channel: string }[]> {
+    const rows = await query<{ campaign?: { id?: string; name?: string; status?: string; advertisingChannelType?: string } }>(
+        token,
+        customer,
+        "SELECT campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type FROM campaign ORDER BY campaign.id",
+        loginCustomerId,
+    );
+    return rows.map((r) => ({
+        id: String(r.campaign?.id ?? ""),
+        name: r.campaign?.name ?? "",
+        status: String(r.campaign?.status ?? "").toLowerCase(),
+        channel: String(r.campaign?.advertisingChannelType ?? "").toLowerCase(),
+    }));
+}
+
 export async function googleInsights(token: string, customer: string, days: number, currency: string, loginCustomerId?: string): Promise<AdsInsights> {
     const to = new Date();
     const from = new Date(Date.now() - (days - 1) * 86400000);

@@ -7,7 +7,7 @@ import { Tokens, oauthAvailable, refreshTokens } from "@/lib/mail/oauth";
 import { platformEnvCached } from "@/lib/platformEnv";
 import { ensurePlatformEnv } from "@/lib/platformEnv";
 import { prisma } from "@/lib/prisma";
-import { accessibleCustomers, canLoginAs, googleAccounts, googleAdsConfigured, googleInsights } from "./google";
+import { accessibleCustomers, canLoginAs, googleAccounts, googleAdsConfigured, googleCampaignInventory, googleInsights } from "./google";
 import { META_SCOPE, metaAccounts, metaAuthUrl, metaConfigured, metaExchange, metaInsights } from "./meta";
 import type { AdsAccount, AdsConnectionDTO, AdsInsights, AdsPlatform, AdsStatusDTO } from "./types";
 
@@ -109,9 +109,14 @@ export async function insightsFor(d: Doc, days: number): Promise<AdsInsights> {
     const currency = (cfg.accounts as AdsAccount[]).find((a) => a.id === accountId)?.currency ?? "";
     const token = await accessToken(d);
     try {
+        const login = String(cfg.loginCustomerId ?? "");
         const out = cfg.platform === "google"
-            ? await googleInsights(token, accountId, days, currency, String(cfg.loginCustomerId ?? ""))
+            ? await googleInsights(token, accountId, days, currency, login)
             : await metaInsights(token, accountId, days, currency);
+        if (cfg.platform === "google") {
+            // Отдельным запросом — без фильтра по датам, иначе созданные в паузе кампании не видны.
+            out.inventory = await googleCampaignInventory(token, accountId, login).catch(() => []);
+        }
         if (d.status !== "connected") await prisma.integration.update({ where: { id: d.id }, data: { status: "connected", error: "" } });
         return out;
     } catch (e) {

@@ -3346,7 +3346,10 @@
     "errCustomerDisabled": "Das Google-Ads-Konto ist nicht aktiv (Einrichtung nicht abgeschlossen oder gekündigt). Öffnen Sie es in Google Ads, prüfen Sie den Kontostatus und verbinden Sie danach erneut.",
     "errDeveloperToken": "Der Developer-Token ist nur für Testkonten freigegeben. Beantragen Sie in Google Ads → Tools → API Center den Zugriff „Basic“.",
     "errMccUnavailable": "Diese Manager-Konto-ID (MCC) ist für den verbundenen Google-Nutzer nicht erreichbar. Lassen Sie das Feld leer oder tragen Sie die ID ein, die in Google Ads unter dem Kontowechsler sichtbar ist.",
-    "errPermissionHint": "Der verbundene Google-Nutzer hat keinen Zugriff auf dieses Werbekonto. Fügen Sie ihn in Google Ads → Zugriff und Sicherheit hinzu."
+    "errPermissionHint": "Der verbundene Google-Nutzer hat keinen Zugriff auf dieses Werbekonto. Fügen Sie ihn in Google Ads → Zugriff und Sicherheit hinzu.",
+    "inventoryHint": "Kampagnen im Konto (auch pausiert):",
+    "statusEnabled": "aktiv",
+    "statusPaused": "pausiert"
   },
   "marketing": {
     "tab_start": "Start",
