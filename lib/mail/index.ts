@@ -85,11 +85,15 @@ export async function syncAccount(d: Doc) {
     try {
         const known = new Set<string>((await prisma.mailMessage.findMany({ where: { account: d.id }, select: { externalId: true } })).map((m) => m.externalId));
         const fetched = await fetchAll(d, known);
-        // уже известные письма НЕ перезаписываются: раньше это делал $setOnInsert, теперь — проверка по known
+        // уже известные письма НЕ перезаписываются: раньше это делал $setOnInsert, теперь — проверка по seen.
+        // seen пополняем и внутри прохода: письмо самому себе Gmail отдаёт и во «Входящих», и в «Отправленных»
+        // с одним Message-ID — без этого одна отправка создавала в CRM две записи.
+        const seen = new Set(known);
         const firstRun = !cfg.leadsSince;
         const inserted: Fetched[] = [];
         for (const m of fetched) {
-            if (known.has(m.externalId)) continue;
+            if (seen.has(m.externalId)) continue;
+            seen.add(m.externalId);
             try {
                 await prisma.mailMessage.create({
                     data: { owner, account: d.id, externalId: m.externalId, folder: m.folder, from: m.from, to: m.to, subject: m.subject, body: m.body, at: m.at, read: m.read, starred: m.starred },
