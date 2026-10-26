@@ -86,7 +86,7 @@ interface ViberMessage {
 export function parseViberEvent(body: {
     event?: string;
     message_token?: number;
-    sender?: { id: string; name?: string };
+    sender?: { id: string; name?: string; avatar?: string };
     message?: ViberMessage;
 }) {
     if (body.event !== "message" || !body.sender?.id || !body.message) return null;
@@ -106,6 +106,8 @@ export function parseViberEvent(body: {
     return {
         externalId: body.sender.id,
         name: body.sender.name || "Viber",
+        // Viber присылает аватар собеседника прямо в событии — сетевой запрос за ним не нужен
+        avatar: body.sender.avatar || "",
         text: m.type === "text" ? m.text ?? "" : m.text ?? (media ? "" : label),
         media,
         messageId: body.message_token ? String(body.message_token) : undefined,

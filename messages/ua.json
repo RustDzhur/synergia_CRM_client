@@ -1412,6 +1412,8 @@
     "confirmDeleteDoc": "Видалити цей документ?",
     "confirmDeleteMails": "Видалити вибрані листи ({count})?",
     "conversations": "Розмови",
+    "firstContact": "Перший контакт: {date}",
+    "openContact": "Відкрити контакт",
     "create": "Створити",
     "createdBy": "Автор",
     "delete": "Видалити",

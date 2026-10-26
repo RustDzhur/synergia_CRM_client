@@ -18,6 +18,15 @@ export interface IntegrationDTO {
     createdAt: string;
 }
 
+// Карточка собеседника в шапке переписки: обычный контакт CRM, заведённый из канала
+export interface ConversationContactDTO {
+    id: string;
+    name: string;
+    avatar: string;
+    channel: MessagingChannel;
+    firstContactAt: string | null;
+}
+
 export interface ConversationDTO {
     id: string;
     channel: MessagingChannel;
@@ -28,6 +37,8 @@ export interface ConversationDTO {
     lastText: string;
     lastAt: string;
     contactId: string;
+    // null — у старой беседы контакта ещё нет (он появится при следующем входящем сообщении)
+    contact: ConversationContactDTO | null;
 }
 
 // Запись журнала звонков (все провайдеры): для списка «Недавние» в звонилке

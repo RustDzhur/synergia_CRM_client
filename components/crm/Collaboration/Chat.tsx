@@ -17,6 +17,7 @@ import AttachmentView from "./chatParts/AttachmentView";
 import CallEntry from "./chatParts/CallEntry";
 import ChannelBadge from "./chatParts/ChannelBadge";
 import ChatList from "./chatParts/ChatList";
+import ContactCard from "./chatParts/ContactCard";
 import useAttachmentUrls from "./chatParts/useAttachmentUrls";
 import { MEDIA_CHANNELS, voiceExt } from "./chatParts/model";
 
@@ -62,7 +63,8 @@ export default function Chat() {
 		const res = await apiCall<{ conversation: ConversationDTO; messages: MessageDTO[] }>(`/api/conversations/${activeId}?read=1`);
 		if (!res.ok || !res.data) return;
 		setMessages(res.data.messages);
-		setChats((list) => list.map((c) => (c.id === activeId ? { ...c, unread: 0 } : c)));
+		// контакт беседы мог появиться после первого сообщения — обновляем и карточку в списке
+		setChats((list) => list.map((c) => (c.id === activeId ? { ...c, ...res.data!.conversation, unread: 0 } : c)));
 	}, [activeId]);
 
 	const attachmentUrls = useAttachmentUrls(messages);
@@ -181,7 +183,7 @@ export default function Chat() {
 								<button type="button" onClick={() => setView("list")} aria-label={t("back")} className={`${iconButton} md:hidden`}>
 									<TbArrowLeft size={20} />
 								</button>
-								<h2 className="truncate text-14 font-semibold text-[#edf2ff]">{active.name}</h2>
+								<h2 className="truncate text-14 font-semibold text-[#edf2ff]">{active.contact?.name || active.name}</h2>
 								<ChannelBadge channel={active.channel} size={18} />
 							</div>
 							<div ref={menuRef} className="relative flex items-center gap-16">
@@ -209,6 +211,9 @@ export default function Chat() {
 							</div>
 						</header>
 
+						{/* карточка собеседника: имя, канал, аватар и переход в обычный контакт CRM */}
+						<ContactCard conversation={active} />
+
 						<div className="fs-scroll flex-1 overflow-y-auto px-16 py-20 md:px-20">
 							<div className="flex flex-col gap-14">
 								{messages.map((m) => {
@@ -217,7 +222,7 @@ export default function Chat() {
 									return (
 										<div key={m.id} className={`flex animate-fade-in flex-col ${mine ? "items-end" : "items-start"}`}>
 											<p className="mb-6 text-12 font-medium text-[#9aa7c9]">
-												{mine ? t("you") : active.name}{" "}
+												{mine ? t("you") : active.contact?.name || active.name}{" "}
 												<span className="ml-6 text-11 font-normal text-[#9AA7C9]">{hhmm(new Date(m.at))}</span>
 											</p>
 											{m.attachment && (

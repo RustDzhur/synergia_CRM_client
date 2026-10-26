@@ -16,7 +16,12 @@ const PHONE = /^\+?[\d\s()-]{7,}$/;
 interface Conv { id: string; contact: string | null; name: string; externalId: string }
 
 export async function leadFromConversation(owner: string, channel: string, conv: Conv, input: { kind?: string; text?: string; missed?: boolean }): Promise<string | null> {
-    if (!filterEnabled() || conv.contact) return null;
+    // Контакт внешнего канала заводится автоматически при первом сообщении, но человек при этом ещё незнакомый:
+    // отбор лидов должен его оценить. Контакт, заведённый вручную (channel пустой), — уже известный клиент.
+    const existing = conv.contact
+        ? await prisma.contact.findFirst({ where: { id: String(conv.contact), owner }, select: { id: true, channel: true, activities: true } })
+        : null;
+    if (!filterEnabled() || (existing && !existing.channel)) return null;
     const prior = await prisma.sectionRecord.findMany({ where: { org: owner, key: "ai:leadlog", values: { path: ["ref"], equals: conv.id } as never }, take: 6 }).catch(() => []);
     const verdicts = prior.map((r) => String((r.values as { verdict?: string } | null)?.verdict ?? ""));
     if (verdicts.includes("lead") || verdicts.includes("junk") || verdicts.filter((v) => v === "unsure").length >= 3) return null;
@@ -36,8 +41,12 @@ export async function leadFromConversation(owner: string, channel: string, conv:
     }
 
     const phone = PHONE.test(conv.externalId) ? conv.externalId : "";
-    const contact = await prisma.contact.create({ data: { owner, name: conv.name || conv.externalId, ...(phone ? { phone } : {}), source: channel, activities: [mkActivity("note", `Первое сообщение (${channel}): ${text.slice(0, 300)}`)] } });
-    await prisma.conversation.update({ where: { id: conv.id }, data: { contact: contact.id } }).catch(() => undefined);
+    const note = mkActivity("note", `Первое сообщение (${channel}): ${text.slice(0, 300)}`);
+    // Канальный контакт уже есть — не заводим второй, а дописываем в его ленту, что человек проявил интерес.
+    const contact = existing
+        ? await prisma.contact.update({ where: { id: existing.id }, data: { activities: [...(Array.isArray(existing.activities) ? existing.activities : []), note] as any } })
+        : await prisma.contact.create({ data: { owner, name: conv.name || conv.externalId, ...(phone ? { phone } : {}), source: channel, activities: [note] } });
+    if (!existing) await prisma.conversation.update({ where: { id: conv.id }, data: { contact: contact.id } }).catch(() => undefined);
     const stage = String((await ensureStages(owner))[0]._id);
     const order = await prisma.deal.count({ where: { owner, stage } });
     const title = text.replace(/\s+/g, " ").slice(0, 80) || `${channel}: ${conv.name}`;

@@ -2643,6 +2643,8 @@
     "confirmDeleteDoc": "Bu hujjat o‘chirilsinmi?",
     "confirmDeleteMails": "Tanlangan xatlar o‘chirilsinmi ({count})?",
     "conversations": "Suhbatlar",
+    "firstContact": "Birinchi aloqa: {date}",
+    "openContact": "Kontaktni ochish",
     "create": "Yaratish",
     "createdBy": "Yaratuvchi",
     "delete": "O‘chirish",

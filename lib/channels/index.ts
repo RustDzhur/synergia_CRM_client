@@ -6,6 +6,7 @@ import { notify } from "@/lib/notify";
 import { notifyTeamTelegram } from "@/lib/notifyTeam";
 import { secretsOf } from "@/lib/integrations";
 import { prisma } from "@/lib/prisma";
+import { ensureChannelContact, isChannelContactChannel } from "./contact";
 import { sendInstagram } from "./instagram";
 import { sendMessenger } from "./messenger";
 import { type PlivoSecrets, sendSms as sendPlivoSms } from "./plivo";
@@ -19,7 +20,9 @@ import { sendWhatsApp } from "./whatsapp";
 
 type Doc = any;
 
-export const toConversationDTO = (c: Doc): ConversationDTO => ({
+// contact — строка Contact из Prisma (id, name, avatar, channel, firstContactAt), если беседа уже привязана к карточке.
+// В список и в переписку кладём её сразу, чтобы шапка чата не делала отдельный запрос за контактом.
+export const toConversationDTO = (c: Doc, contact?: Doc | null): ConversationDTO => ({
     id: c.id,
     channel: c.channel,
     integrationId: String(c.integration),
@@ -29,6 +32,15 @@ export const toConversationDTO = (c: Doc): ConversationDTO => ({
     lastText: c.lastText,
     lastAt: (c.lastAt as Date).toISOString(),
     contactId: c.contact ? String(c.contact) : "",
+    contact: contact
+        ? {
+              id: String(contact.id),
+              name: contact.name ?? "",
+              avatar: contact.avatar ?? "",
+              channel: (contact.channel || c.channel) as MessagingChannel,
+              firstContactAt: contact.firstContactAt ? new Date(contact.firstContactAt).toISOString() : null,
+          }
+        : null,
 });
 
 export const toMessageDTO = (m: Doc): MessageDTO => ({
@@ -75,6 +87,7 @@ export function callActivityText(direction: "in" | "out", status: string, durati
 interface MessageInput {
     externalId: string; // собеседник
     name?: string;
+    avatar?: string; // аватар из события провайдера (Viber), если он там есть
     text: string;
     direction?: "in" | "out";
     kind?: "text" | "call";
@@ -99,8 +112,14 @@ export async function recordMessage(integration: Doc, input: MessageInput) {
     const attachment = input.attachment ?? (input.media ? await fetchMedia(owner, integration, input.media) : null);
 
     let conversation = await prisma.conversation.findFirst({ where: { integration: integration.id, externalId: input.externalId } });
+    // Внешний канал: у собеседника должна быть обычная карточка контакта в CRM. Создаём её при первом
+    // входящем сообщении (или подхватываем уже созданную), чтобы карточка была и в чате, и в разделе контактов.
+    // Для беседы, у которой контакт уже есть, лишний запрос не делаем.
+    const channelContact = direction === "in" && isChannelContactChannel(channel) && !conversation?.contact
+        ? await ensureChannelContact(integration, input.externalId, { name: input.name, avatar: input.avatar }).catch(() => null)
+        : null;
     if (!conversation) {
-        const contact = await matchContact(owner, channel, input.externalId);
+        const contact = channelContact ?? await matchContact(owner, channel, input.externalId);
         try {
             conversation = await prisma.conversation.create({
                 data: {
@@ -120,6 +139,10 @@ export async function recordMessage(integration: Doc, input: MessageInput) {
     // звонок от номера, который добавили в контакты уже после первой беседы, тоже привязываем к контакту
     let convContact = conversation.contact;
     let convName = conversation.name;
+    if (!convContact && channelContact) {
+        convContact = channelContact.id;
+        convName = channelContact.name || convName;
+    }
     if (input.kind === "call" && !convContact) {
         const contact = await matchContact(owner, channel, input.externalId);
         if (contact) {

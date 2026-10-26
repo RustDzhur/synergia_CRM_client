@@ -17,6 +17,12 @@ export interface Contact {
     twitter?: string;
     facebook?: string;
     notes?: string;
+    // каналы, из которых карточка заведена автоматически (instagram, messenger, telegram, viber, webchat)
+    channel?: string | null;
+    externalId?: string | null;
+    avatar?: string;
+    source?: string;
+    firstContactAt?: string | null;
     activities?: Activity[];
     createdAt?: string;
     updatedAt?: string;

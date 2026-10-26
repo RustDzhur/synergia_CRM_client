@@ -20,12 +20,12 @@ export default function ChatList({ chats, activeId, onSelect }: { chats: Convers
 							onClick={() => onSelect(c.id)}
 							aria-current={active ? "true" : undefined}
 							className={`flex w-full items-center gap-12 border-b border-inkLineSoft px-14 py-14 text-left transition-colors duration-150 last:border-b-0 ${active ? "bg-[rgba(124,147,255,0.08)]" : "hover:bg-[rgba(255,255,255,0.04)]"}`}>
-							<Avatar initials={initialsOf(c.name)} size={44} className="flex text-14" />
+							<Avatar src={c.contact?.avatar || undefined} initials={initialsOf(c.contact?.name || c.name)} size={44} className="flex text-14" />
 							<div className="min-w-0 flex-1">
 								<div className="flex items-start justify-between gap-8">
 									<p className="flex min-w-0 items-center gap-6 text-13 font-semibold text-[#edf2ff]">
 											<ChannelBadge channel={c.channel} />
-											<span className="truncate">{c.name}</span>
+											<span className="truncate">{c.contact?.name || c.name}</span>
 										</p>
 									<p className="shrink-0 whitespace-nowrap text-11 text-[#9AA7C9] md:max-lg:hidden">{formatChatDate(c.lastAt, locale)}</p>
 								</div>

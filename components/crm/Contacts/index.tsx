@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useContactStore, Contact } from "@/store/useContactStore";
 import { completeness, relativeTime } from "@/utils/crmFormat";
+import Avatar from "../shared/Avatar";
 import EntityTable, { Column } from "../shared/EntityTable";
 import ListToolbar from "../shared/ListToolbar";
 import ConfirmDialog from "../shared/ConfirmDialog";
@@ -34,9 +35,13 @@ export default function Contacts({ search }: { search: string }) {
             key: "name", header: t("name"), align: "left", width: "24%",
             render: (c) => (
                 <span className="flex items-center gap-12">
-                    <span className="flex h-32 w-32 shrink-0 items-center justify-center rounded-50 bg-[rgba(124,147,255,0.14)] text-12 font-semibold text-[#7c93ff]">
-                        {initials(c.name)}
-                    </span>
+                    <Avatar
+                        src={c.avatar || undefined}
+                        initials={initials(c.name)}
+                        size={32}
+                        className="flex text-12 font-semibold"
+                        style={{ background: "rgba(124,147,255,0.14)", color: "#7c93ff" }}
+                    />
                     <span className="truncate text-14 font-medium text-[#edf2ff]">{c.name}</span>
                 </span>
             ),

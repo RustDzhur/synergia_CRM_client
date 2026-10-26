@@ -41,6 +41,21 @@ export async function instagramUserName(pageAccessToken: string, igsid: string) 
     }
 }
 
+// Профиль для карточки контакта: username/имя и аватар одним запросом. Вызывается только при создании
+// контакта (recordMessage → ensureChannelContact), а не на каждое сообщение: приём Instagram Direct
+// остаётся прежним. Если Meta не отдаёт поле (нет права instagram_basic), просто не будет аватара.
+export async function instagramUserProfile(pageAccessToken: string, igsid: string) {
+    try {
+        const u = await graph<{ username?: string; name?: string; profile_pic?: string }>(
+            `/${encodeURIComponent(igsid)}?fields=username,name,profile_pic`,
+            pageAccessToken
+        );
+        return { name: u.username || u.name || "", avatar: u.profile_pic || "" };
+    } catch {
+        return { name: "", avatar: "" };
+    }
+}
+
 interface InstagramEvent {
     sender?: { id: string };
     recipient?: { id: string };

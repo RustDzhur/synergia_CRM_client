@@ -199,11 +199,18 @@ model Contact {
   facebook   String   @default("")
   notes      String?
   source     String   @default("")
+  // Контакт, заведённый автоматически из внешнего канала (Instagram, Messenger, Telegram, Viber, чат на сайте):
+  // channel + externalId — ключ собеседника у провайдера. У контактов, созданных вручную, оба поля пустые.
+  channel        String?
+  externalId     String?
+  avatar         String   @default("")
+  firstContactAt DateTime?
   activities Json?
   extra      Json?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  @@unique([owner, channel, externalId])
   @@index([owner, companyId])
   @@index([owner, updatedAt])
   @@map("contacts")

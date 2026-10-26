@@ -1412,6 +1412,8 @@
     "confirmDeleteDoc": "Delete this document?",
     "confirmDeleteMails": "Delete the selected e-mails ({count})?",
     "conversations": "Conversations",
+    "firstContact": "First contact: {date}",
+    "openContact": "Open contact",
     "create": "Create",
     "createdBy": "Created By",
     "delete": "Delete",

@@ -16,5 +16,11 @@ export async function GET(req: Request) {
     await healWebhooks(user.id, appOrigin(req)).catch(() => undefined);
     await pullAllTelegram(user.id); // Telegram в режиме без вебхука: подтягиваем новые сообщения
     const list = await prisma.conversation.findMany({ where: { owner: user.id }, orderBy: { lastAt: "desc" }, take: 200 });
-    return NextResponse.json(list.map(toConversationDTO));
+    // Контакты бесед — одним запросом, чтобы у каждой карточка была сразу в списке (без N+1)
+    const ids = Array.from(new Set(list.map((c) => (c.contact ? String(c.contact) : "")).filter(Boolean)));
+    const contacts = ids.length
+        ? await prisma.contact.findMany({ where: { owner: user.id, id: { in: ids } }, select: { id: true, name: true, avatar: true, channel: true, firstContactAt: true } })
+        : [];
+    const byId = new Map(contacts.map((c) => [c.id, c]));
+    return NextResponse.json(list.map((c) => toConversationDTO(c, c.contact ? byId.get(String(c.contact)) ?? null : null)));
 }

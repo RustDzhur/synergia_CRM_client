@@ -159,6 +159,18 @@ export async function messengerUserName(accessToken: string, psid: string) {
     }
 }
 
+// Профиль для карточки контакта: имя и аватар одним запросом. Его вызывает только создание контакта
+// (recordMessage → ensureChannelContact), а не каждое сообщение, — иначе на поток сообщений уходило бы
+// по лишнему запросу к Meta. Ошибка не должна мешать приёму сообщения: остаётся пустой профиль.
+export async function messengerUserProfile(accessToken: string, psid: string) {
+    try {
+        const u = await graph<{ name?: string; profile_pic?: string }>(`/${psid}?fields=name,profile_pic`, accessToken);
+        return { name: u.name || "", avatar: u.profile_pic || "" };
+    } catch {
+        return { name: "", avatar: "" };
+    }
+}
+
 // X-Hub-Signature-256: "sha256=" + HMAC-SHA256(тело, секрет приложения)
 export function verifyMetaSignature(rawBody: string, header: string | null, appSecret: string) {
     if (!header?.startsWith("sha256=")) return false;
