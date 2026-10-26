@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ConversationDTO } from "@/types/integrations";
+import { localeTag } from "@/utils/dateHelpers";
 import Avatar from "../../shared/Avatar";
 import { initialsOf } from "../format";
 import ChannelBadge from "./ChannelBadge";
@@ -16,7 +17,7 @@ export default function ContactCard({ conversation }: { conversation: Conversati
 	const name = contact?.name || conversation.name;
 	const channel = contact?.channel || conversation.channel;
 	const first = contact?.firstContactAt
-		? new Date(contact.firstContactAt).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" })
+		? new Date(contact.firstContactAt).toLocaleDateString(localeTag(locale), { day: "numeric", month: "short", year: "numeric" })
 		: "";
 
 	return (
