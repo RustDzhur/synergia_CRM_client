@@ -234,7 +234,8 @@ export async function trashImapMessages(c: ImapSmtpConfig, items: MailTrashItem[
 }
 
 // Последние письма из «Входящих» и «Отправленных»
-export async function fetchImap(c: ImapSmtpConfig, limit = 40): Promise<Fetched[]> {    await assertPublicHost(c.imapHost);
+export async function fetchImap(c: ImapSmtpConfig, limit = 40): Promise<Fetched[]> {
+    await assertPublicHost(c.imapHost);
     const imap = client(c);
     const out: Fetched[] = [];
     try {
