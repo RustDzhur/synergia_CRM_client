@@ -20,6 +20,7 @@ import { EMPTY_DRAFT, inView, LABELS, MailView } from "./webMailParts/model";
 // Web Mails (/crm/collaboration/web-mails): подключение ящика (Gmail / Outlook через OAuth или пароль приложения, Yahoo, iCloud, любой IMAP),
 // затем ящик — Inbox / Starred / Snoozed / Sent / Draft. Письма загружаются с почтового сервера (сервер CRM ходит по IMAP или API провайдера),
 // новые подтягиваются раз в минуту и по кнопке «обновить». Звезда, «отложить» и удаление действуют только в CRM, на почтовом сервере письма остаются.
+// Compose — HTML с панелью форматирования и диктовкой (Whisper), удаление дополнительно уносит письмо в корзину ящика.
 export default function WebMails() {
 	const t = useTranslations("collab");
 	const router = useRouter();
@@ -143,17 +144,24 @@ export default function WebMails() {
 	async function removeMails() {
 		const ids = selected;
 		setConfirmDelete(false);
-		setSelected([]);
-		setMails((list) => list.filter((m) => !ids.includes(m.id)));
+		// Письмо сначала уезжает в корзину ящика и только потом исчезает из CRM: при отказе провайдера
+		// список перечитывается, и письмо остаётся на месте — молча «удалить» его нельзя.
 		const res = await apiCall("/api/mail/messages", "DELETE", { ids });
-		if (!res.ok) loadMails();
+		setSelected([]);
+		if (!res.ok) {
+			toast.error(res.message || t("mailDeleteFailed"));
+			loadMails();
+			return;
+		}
+		setMails((list) => list.filter((m) => !ids.includes(m.id)));
+		toast.success(t("mailDeleted"));
 	}
 
 	async function openMail(m: MailDTO) {
 		const res = await apiCall<MailDTO>(`/api/mail/messages/${m.id}`);
 		if (!res.ok || !res.data) return void toast.error(res.message);
 		if (m.folder === "draft") {
-			setDraft({ id: m.id, to: res.data.to, subject: res.data.subject, body: res.data.body });
+			setDraft({ id: m.id, to: res.data.to, subject: res.data.subject, body: res.data.body, html: res.data.html ?? "" });
 			return setComposeOpen(true);
 		}
 		setReading(res.data);
@@ -164,7 +172,7 @@ export default function WebMails() {
 		if (!accountId || sending) return;
 		if (!asDraft && !/^\S+@\S+\.\S+$/.test(draft.to.trim().split(/[,;]/)[0].trim())) return void toast.error(t("mailToInvalid"));
 		setSending(true);
-		const res = await apiCall("/api/mail/send", "POST", { accountId, to: draft.to, subject: draft.subject, body: draft.body, draft: asDraft, draftId: draft.id || undefined });
+		const res = await apiCall("/api/mail/send", "POST", { accountId, to: draft.to, subject: draft.subject, body: draft.body, html: draft.html, draft: asDraft, draftId: draft.id || undefined });
 		setSending(false);
 		if (!res.ok) return void toast.error(res.message || t("mailSendFailed"));
 		toast.success(asDraft ? t("mailDraftSaved") : t("mailSent"));

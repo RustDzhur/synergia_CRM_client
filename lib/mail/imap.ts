@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 import { randomToken } from "@/lib/crypto";
 import { ProviderError } from "@/lib/http";
 import { assertPublicHost } from "./hosts";
-import type { Fetched, MailAttachment } from "./types";
+import type { Fetched, MailAttachment, MailTrashFailure, MailTrashItem } from "./types";
 
 export interface ImapSmtpConfig {
     email: string;
@@ -91,12 +91,14 @@ const addressText = (a?: AddressObject | AddressObject[]) =>
         .filter(Boolean)
         .join(", ");
 
-export async function sendSmtp(c: ImapSmtpConfig, msg: { to: string; subject: string; text: string; attachments?: MailAttachment[] }) {
+export async function sendSmtp(c: ImapSmtpConfig, msg: { to: string; subject: string; text: string; html?: string; attachments?: MailAttachment[] }) {
     await assertPublicHost(c.smtpHost);
     const domain = c.email.split("@")[1] || "localhost";
     const messageId = `<${randomToken(12)}@${domain}>`;
     try {
-        await smtp(c).sendMail({ from: c.email, to: msg.to, subject: msg.subject, text: msg.text, messageId, attachments: msg.attachments });
+        // html и text вместе дают multipart/alternative: форматирование видят современные клиенты,
+        // обычный текст — остальные (и поиск в почте)
+        await smtp(c).sendMail({ from: c.email, to: msg.to, subject: msg.subject, text: msg.text, ...(msg.html ? { html: msg.html } : {}), messageId, attachments: msg.attachments });
     } catch (e) {
         throw mailError(e, "SMTP");
     }
@@ -143,9 +145,96 @@ export async function fetchImapMessage(c: ImapSmtpConfig, externalId: string): P
     }
 }
 
-// Последние письма из «Входящих» и «Отправленных»
-export async function fetchImap(c: ImapSmtpConfig, limit = 40): Promise<Fetched[]> {
+// Удаление на стороне IMAP: письмо перемещается в «Корзину» (Trash), а не стирается навсегда.
+// Сначала ищем папку корзины по special-use \Trash (Gmail: «[Gmail]/Trash», Яндекс: «Удалённые»,
+// iCloud: «Deleted Messages»), затем по известным названиям. Если MOVE сервер не умеет, ImapFlow
+// сам делает COPY + \Deleted + EXPUNGE в исходной папке — сама корзина не чистится.
+// Возвращаем отказы по одному письму: успешно перемещённые CRM вправе помечать удалёнными.
+const TRASH_NAME = /(^|\/)(trash|bin|deleted(\s*(items|messages))?|papierkorb|corbeille|papelera|kosz|кошик|удал[её]нные|корзина)(\/|$)/i;
+
+export async function trashImapMessages(c: ImapSmtpConfig, items: MailTrashItem[]): Promise<MailTrashFailure[]> {
     await assertPublicHost(c.imapHost);
+    const imap = client(c);
+    const failures: MailTrashFailure[] = [];
+    try {
+        await imap.connect();
+        const boxes = await imap.list();
+        const sentPath = boxes.find((b) => b.specialUse === "\\Sent")?.path ?? boxes.find((b) => /^(inbox\.)?sent( items| messages| mail)?$/i.test(b.path))?.path;
+        const trashPath = boxes.find((b) => b.specialUse === "\\Trash" && b.path !== "INBOX")?.path ?? boxes.find((b) => TRASH_NAME.test(b.path))?.path;
+        // «All Mail» Gmail: письмо могло быть заархивировано после синхронизации, и в INBOX его уже нет
+        const allPath = boxes.find((b) => b.specialUse === "\\All" && b.path !== "INBOX")?.path;
+
+        const moveOut = async (path: string, uid: number): Promise<boolean> => {
+            // корзину не чистим: в Trash Gmail EXPUNGE удалил бы письмо навсегда, поэтому только MOVE/COPY
+            if (trashPath && trashPath !== path) {
+                const moved = await imap.messageMove(String(uid), trashPath, { uid: true });
+                return moved !== false && moved !== undefined;
+            }
+            const deleted = await imap.messageDelete(String(uid), { uid: true });
+            return deleted === true;
+        };
+
+        type Pending = { item: MailTrashItem; uid: number | null; explicit: boolean };
+        const groups = new Map<string, Pending[]>();
+        const missing: MailTrashItem[] = []; // не нашли в ожидаемой папке — попробуем в «All Mail»
+        const add = (path: string, pending: Pending) => {
+            const list = groups.get(path) ?? [];
+            list.push(pending);
+            groups.set(path, list);
+        };
+        for (const item of items) {
+            const byUid = /^uid:([^:]+):(\d+)$/.exec(item.externalId);
+            if (byUid) add(byUid[1], { item, uid: Number(byUid[2]), explicit: true });
+            else add(item.folder === "sent" ? sentPath ?? "INBOX" : "INBOX", { item, uid: null, explicit: false });
+        }
+
+        const search = async (item: MailTrashItem): Promise<number | null> => {
+            const found = await imap.search({ header: { "message-id": item.externalId } }, { uid: true });
+            return Array.isArray(found) && found.length ? found[found.length - 1] : null;
+        };
+
+        for (const [path, list] of Array.from(groups.entries())) {
+            const lock = await imap.getMailboxLock(path);
+            try {
+                for (const pending of list) {
+                    const uid = pending.explicit ? pending.uid : await search(pending.item);
+                    if (!uid) {
+                        if (!pending.explicit) missing.push(pending.item);
+                        continue;
+                    }
+                    if (!(await moveOut(path, uid))) failures.push({ id: pending.item.id, message: "The mail server did not move the e-mail to Trash" });
+                }
+            } finally {
+                lock.release();
+            }
+        }
+
+        // Письмо не нашлось в своей папке: ищем в «All Mail» (архив Gmail) — оттуда MOVE в Trash тоже работает
+        if (missing.length && allPath) {
+            const lock = await imap.getMailboxLock(allPath);
+            try {
+                for (const item of missing) {
+                    const uid = await search(item);
+                    if (!uid) continue; // провайдер уже не знает об этом письме — локально его можно убрать
+                    if (!(await moveOut(allPath, uid))) failures.push({ id: item.id, message: "The mail server did not move the e-mail to Trash" });
+                }
+            } finally {
+                lock.release();
+            }
+        }
+    } catch (e) {
+        imap.close();
+        const err = mailError(e, "IMAP");
+        // Соединение/папка не открылись — виноват сервер. Отказываем всем письмам пачки, чтобы CRM их не удаляла.
+        return items.map((i) => ({ id: i.id, message: err.message }));
+    } finally {
+        try { await imap.logout(); } catch { /* соединение уже закрыто */ }
+    }
+    return failures;
+}
+
+// Последние письма из «Входящих» и «Отправленных»
+export async function fetchImap(c: ImapSmtpConfig, limit = 40): Promise<Fetched[]> {    await assertPublicHost(c.imapHost);
     const imap = client(c);
     const out: Fetched[] = [];
     try {

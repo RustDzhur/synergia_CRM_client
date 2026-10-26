@@ -6,12 +6,12 @@ import { createLeadsFromMail } from "@/lib/leads";
 import { notify } from "@/lib/notify";
 import { notifyTeamTelegram } from "@/lib/notifyTeam";
 import { prisma } from "@/lib/prisma";
-import { fetchGmail, gmailEmail, gmailMessageBody, sendGmail } from "./gmail";
-import { ImapSmtpConfig, fetchImap, fetchImapMessage, sendSmtp, verifyImapSmtp } from "./imap";
+import { fetchGmail, gmailEmail, gmailMessageBody, sendGmail, trashGmailMessages } from "./gmail";
+import { ImapSmtpConfig, fetchImap, fetchImapMessage, sendSmtp, trashImapMessages, verifyImapSmtp } from "./imap";
 import { Tokens, Vendor, refreshTokens } from "./oauth";
-import { fetchOutlook, outlookEmail, outlookMessageBody, sendOutlook } from "./outlook";
+import { fetchOutlook, outlookEmail, outlookMessageBody, sendOutlook, trashOutlookMessages } from "./outlook";
 import { MAIL_PRESETS, MAIL_PROVIDERS } from "./providers";
-import type { Fetched, MailAttachment } from "./types";
+import type { Fetched, MailAttachment, MailTrashFailure, MailTrashItem } from "./types";
 
 type Doc = any;
 
@@ -141,7 +141,7 @@ function syncSoon(d: Doc, ms = 6000) {
     setTimeout(() => { syncScheduled.delete(id); void syncAccount(d).catch(() => undefined); }, ms).unref?.();
 }
 
-export async function sendFromAccount(d: Doc, msg: { to: string; subject: string; text: string; attachments?: MailAttachment[] }) {
+export async function sendFromAccount(d: Doc, msg: { to: string; subject: string; text: string; html?: string; attachments?: MailAttachment[] }) {
     const owner = String(d.owner);
     const email: string = (d.config as any).email;
     let externalId: string | null;
@@ -156,7 +156,8 @@ export async function sendFromAccount(d: Doc, msg: { to: string; subject: string
     }
     syncSoon(d);
     if (!externalId) return null;
-    return prisma.mailMessage.create({ data: { owner, account: d.id, externalId, folder: "sent", from: email, to: msg.to, subject: msg.subject, body: msg.text, at: new Date(), read: true } });
+    // Копия в «Отправленных» хранит и HTML: иначе письмо с форматированием открывалось бы в CRM простым текстом
+    return prisma.mailMessage.create({ data: { owner, account: d.id, externalId, folder: "sent", from: email, to: msg.to, subject: msg.subject, body: msg.text, html: msg.html ?? "", at: new Date(), read: true } });
 }
 
 // Отправка без сохранения копии в «Отправленных»: для системных писем платформы (коды подтверждения почты) — код не должен оседать в ящике
@@ -172,6 +173,18 @@ export async function fetchMailBody(d: Doc, externalId: string): Promise<{ html:
     if (!isOAuth(d)) return fetchImapMessage(imapConfig(d), externalId);
     const token = await accessToken(d);
     return (d.config as any).vendor === "google" ? gmailMessageBody(token, externalId) : outlookMessageBody(token, externalId);
+}
+
+// Удаление в CRM начинается с провайдера: письмо должно уехать в корзину ящика (Gmail — trash,
+// Outlook — deleteditems, IMAP — перемещение в папку Trash). Только после подтверждения провайдера
+// вызывающий помечает запись удалённой. Черновики живут только в CRM — их провайдеру отправлять нечего.
+// Возвращаем отказы поштучно: одна ошибка не должна мешать удалить остальные письма пачки.
+export async function trashMailMessages(d: Doc, items: MailTrashItem[]): Promise<MailTrashFailure[]> {
+    const remote = items.filter((m) => m.folder !== "draft" && !m.externalId.startsWith("draft:"));
+    if (!remote.length) return [];
+    if (!isOAuth(d)) return trashImapMessages(imapConfig(d), remote);
+    const token = await accessToken(d);
+    return (d.config as any).vendor === "google" ? trashGmailMessages(token, remote) : trashOutlookMessages(token, remote);
 }
 
 // ── подключение ───────────────────────────────────────────────────────────────

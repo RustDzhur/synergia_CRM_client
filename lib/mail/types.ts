@@ -19,3 +19,15 @@ export interface MailAttachment {
     contentType: string;
     content: Buffer;
 }
+
+// Письмо, которое удаляют в CRM: id записи нужен, чтобы вернуть отказ провайдера к конкретному письму.
+export interface MailTrashItem {
+    id: string;
+    externalId: string;
+    folder: string;
+}
+
+export interface MailTrashFailure {
+    id: string;
+    message: string;
+}

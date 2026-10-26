@@ -21,5 +21,7 @@ export function inView(m: MailDTO, view: MailView) {
 
 export const LABELS: Record<MailProviderId, string> = { gmail: "Google Mail", outlook: "Outlook", yahoo: "Yahoo", icloud: "iCloud", office365: "Office 365", imap: "IMAP" };
 
-export interface Draft { id: string; to: string; subject: string; body: string }
-export const EMPTY_DRAFT: Draft = { id: "", to: "", subject: "", body: "" };
+// body — обычный текст (text/plain), html — разметка из редактора письма. Храним оба: письмо уходит
+// multipart/alternative, а черновик открывается с сохранённым форматированием.
+export interface Draft { id: string; to: string; subject: string; body: string; html: string }
+export const EMPTY_DRAFT: Draft = { id: "", to: "", subject: "", body: "", html: "" };

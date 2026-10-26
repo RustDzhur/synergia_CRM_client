@@ -76,18 +76,45 @@ export async function outlookMessageBody(token: string, id: string) {
     return m?.body?.contentType === "html" ? { html: content, text: "" } : { html: "", text: content };
 }
 
-export async function sendOutlook(token: string, msg: { to: string; subject: string; text: string; attachments?: MailAttachment[] }) {
+// Письмо с разметкой: Graph принимает только одно тело (HTML или текст), поэтому при наличии
+// HTML отправляем его — вёрстка сохраняется, а клиенты без HTML покажут её же упрощённо.
+export async function sendOutlook(token: string, msg: { to: string; subject: string; text: string; html?: string; attachments?: MailAttachment[] }) {
     await graph(token, "/me/sendMail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             message: {
                 subject: msg.subject,
-                body: { contentType: "Text", content: msg.text },
+                body: msg.html ? { contentType: "HTML", content: msg.html } : { contentType: "Text", content: msg.text },
                 toRecipients: msg.to.split(",").map((a) => ({ emailAddress: { address: a.trim() } })),
                 attachments: graphAttachments(msg.attachments),
             },
             saveToSentItems: true,
         }),
     });
+}
+
+// Удаление через Graph: перемещаем письмо в «Удалённые» (deleteditems) — это корзина Outlook,
+// письмо можно восстановить. 404/ErrorItemNotFound значит, что письма уже нет — локальную запись убираем.
+export async function trashOutlookMessages(token: string, items: { id: string; externalId: string }[]): Promise<{ id: string; message: string }[]> {
+    const failures: { id: string; message: string }[] = [];
+    for (const item of items) {
+        try {
+            await graph(token, `/me/messages/${encodeURIComponent(item.externalId)}/move`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ destinationId: "deleteditems" }),
+            });
+        } catch (e) {
+            const message = e instanceof Error ? e.message : "Outlook did not confirm the deletion";
+            if (/not found|404|ErrorItemNotFound/i.test(message)) continue;
+            // Старое подключение с Mail.Read/Mail.Send: перемещение в «Удалённые» требует Mail.ReadWrite
+            if (/insufficient|permission|forbidden|access is denied|403|unauthorized/i.test(message)) {
+                failures.push({ id: item.id, message: "The mailbox does not allow deleting messages. Reconnect it and allow Outlook access to read and write mail." });
+                continue;
+            }
+            failures.push({ id: item.id, message });
+        }
+    }
+    return failures;
 }

@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { randomToken } from "@/lib/crypto";
 import { badRequest, failure, notFound, unauthorized, validId } from "@/lib/api";
 import { sendFromAccount, toMailDTO } from "@/lib/mail";
+import { htmlToText, sanitizeOutgoingHtml } from "@/lib/mail/html";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -11,8 +12,9 @@ export const maxDuration = 60;
 
 const ADDRESS = /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/;
 
-// POST /api/mail/send — { accountId, to, subject, body, draft?: true, draftId? }
-// draft: true — сохранить черновик (только в CRM), иначе отправить письмо через ящик
+// POST /api/mail/send — { accountId, to, subject, body, html?, draft?: true, draftId? }
+// body — обычный текст, html — разметка из композера (панель форматирования, диктовка).
+// draft: true — сохранить черновик (только в CRM), иначе отправить письмо через ящик.
 export async function POST(req: Request) {
     const user = await requireUser(req);
     if (!user) return unauthorized(req);
@@ -20,7 +22,9 @@ export async function POST(req: Request) {
     if (!b || typeof b.accountId !== "string" || !validId(b.accountId)) return badRequest("accountId is required");
     const to = typeof b.to === "string" ? b.to.trim() : "";
     const subject = typeof b.subject === "string" ? b.subject.trim().replace(/[\r\n]+/g, " ").slice(0, 300) : "";
-    const text = typeof b.body === "string" ? b.body.slice(0, 20000) : "";
+    // HTML приходит из браузера — очищаем на сервере, чтобы скрипт из буфера обмена не уехал получателю
+    const html = typeof b.html === "string" ? sanitizeOutgoingHtml(b.html) : "";
+    const text = (typeof b.body === "string" && b.body.trim() ? b.body : htmlToText(html)).slice(0, 20000);
     const isDraft = b.draft === true;
 
     const recipients = to.split(/[,;]/).map((a: string) => a.trim()).filter(Boolean);
@@ -32,7 +36,7 @@ export async function POST(req: Request) {
 
         const draftId = typeof b.draftId === "string" && validId(b.draftId) ? b.draftId : null;
         if (isDraft) {
-            const fields = { from: String((account.config as any)?.email ?? ""), to: recipients.join(", "), subject, body: text, at: new Date() };
+            const fields = { from: String((account.config as any)?.email ?? ""), to: recipients.join(", "), subject, body: text, html, at: new Date() };
             let draft = null;
             if (draftId) {
                 const existing = await prisma.mailMessage.findFirst({ where: { id: draftId, owner: user.id, folder: "draft" } });
@@ -43,7 +47,7 @@ export async function POST(req: Request) {
             return NextResponse.json(draft ? toMailDTO(draft, false) : null, { status: 201 });
         }
 
-        const sent = await sendFromAccount(account, { to: recipients.join(", "), subject: subject || "(no subject)", text });
+        const sent = await sendFromAccount(account, { to: recipients.join(", "), subject: subject || "(no subject)", text, html: html || undefined });
         if (draftId) await prisma.mailMessage.updateMany({ where: { id: draftId, owner: user.id, folder: "draft" }, data: { deleted: true } });
         return NextResponse.json(sent ? toMailDTO(sent, false) : null, { status: 201 });
     } catch (e) {

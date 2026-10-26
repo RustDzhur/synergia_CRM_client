@@ -15,7 +15,10 @@ const CONFIG = {
         secret: () => platformEnvCached("GOOGLE_CLIENT_SECRET"),
         authUrl: () => process.env.GOOGLE_AUTH_URL || "https://accounts.google.com/o/oauth2/v2/auth",
         tokenUrl: () => process.env.GOOGLE_TOKEN_URL || "https://oauth2.googleapis.com/token",
-        scope: "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send",
+        // gmail.modify нужен для users.messages.trash: удаление в CRM должно уносить письмо
+        // в корзину ящика. Почта, подключённая раньше с согласием только на чтение и отправку,
+        // продолжит работать; для удаления её нужно подключить заново (иначе провайдер ответит 403).
+        scope: "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.modify",
         extra: { access_type: "offline", prompt: "consent" },
     },
     microsoft: {
@@ -23,7 +26,9 @@ const CONFIG = {
         secret: () => process.env.MS_CLIENT_SECRET,
         authUrl: () => process.env.MS_AUTH_URL || "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
         tokenUrl: () => process.env.MS_TOKEN_URL || "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-        scope: "offline_access Mail.Read Mail.Send User.Read",
+        // Mail.ReadWrite нужен для перемещения письма в «Удалённые» (Graph /move). Старые подключения
+        // с Mail.Read/Mail.Send не ломаются: чтение и отправка работают, удаление попросит переподключить.
+        scope: "offline_access Mail.Read Mail.Send Mail.ReadWrite User.Read",
         extra: { prompt: "select_account" },
     },
 } as const;
