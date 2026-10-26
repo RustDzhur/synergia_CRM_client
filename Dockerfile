@@ -39,6 +39,8 @@ COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
 COPY --from=build /app/prisma ./prisma
+# справочник категорий расходов читает prisma/seed.mjs; в standalone-дерево он не попадает
+COPY --from=build /app/lib/finance/expenseCategoryCatalog.json ./lib/finance/expenseCategoryCatalog.json
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=build /app/deploy/entrypoint.sh /entrypoint.sh

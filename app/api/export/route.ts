@@ -5,6 +5,8 @@ import { toCsv } from "@/lib/import/csv";
 import { computeTotals } from "@/lib/finance/totals";
 import { prisma } from "@/lib/prisma";
 import { datevCsv } from "@/lib/finance/datev";
+import { loadExpenseCategories } from "@/lib/finance/expenseCatalogDb";
+import { EXPENSE_EXPORT_COLUMNS, expenseExportRows } from "@/lib/finance/expenseExport";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -81,9 +83,15 @@ export async function GET(req: Request) {
             return [q.number, q.status, q.customerName, q.issueDate ?? "", q.validUntil ?? "", t.net, t.gross, q.currency];
         });
     } else {
-        const list = await prisma.expense.findMany({ where: { org: user.id }, orderBy: { date: "desc" }, take: 2000 });
-        columns = ["date", "vendor", "category", "amount", "taxRate", "currency", "notes"];
-        rows = list.map((e) => [e.date, e.vendor, e.category ?? "", e.amount, e.taxRate ?? 0, e.currency, e.notes ?? ""]);
+        // Расходы: полный набор налоговых колонок для бухгалтера (DATEV-импорт: Belegdatum, Konto,
+        // Netto/USt/Brutto, Vorsteuer, Buchungsart, AfA). Старые строки без net/gross считаются из amount.
+        const from = url.searchParams.get("from"); const to = url.searchParams.get("to");
+        const where: Record<string, unknown> = { org: user.id };
+        if (from || to) where.date = { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) };
+        const list = await prisma.expense.findMany({ where: where as never, orderBy: { date: "desc" }, take: 2000 });
+        const { entries } = await loadExpenseCategories();
+        columns = [...EXPENSE_EXPORT_COLUMNS];
+        rows = expenseExportRows(list as never, entries);
     }
 
     if (format === "json") {

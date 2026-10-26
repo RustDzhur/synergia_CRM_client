@@ -74,7 +74,37 @@ export interface RecurringInvoice {
 }
 export interface Expense {
 	id: string; vendor: string; category: string; amount: number; taxRate: number; currency: string; date: string;
+	// Steuerliche Angaben (ELSTER/DATEV): справочник категорий, счета SKR03/04, суммы Beleg, USt и AfA
+	categoryCode: string; subcategory: string;
+	netAmount: number; grossAmount: number; vatAmount: number; inputVatDeductible: boolean;
+	documentDate: string; paidDate: string; documentNumber: string;
+	vendorVatId: string; vendorIban: string;
+	datevAccount: string; datevChart: "SKR03" | "SKR04";
+	bookingKind: "Betriebsausgabe" | "Investition" | "Privatentnahme";
+	afaYears: number | null; afaResidualValue: number | null;
+	folder: string; reviewStatus: "AUTO" | "REVIEW" | "OK"; confidence: number;
+	manualFields: string[]; autoFields: unknown | null;
 	deal: string; order: string; receipt: string; recurring: string; notes: string; createdByName: string;
+	esf?: unknown;
+}
+
+export interface ExpenseCategory {
+	code: string; parentCode: string; isGroup: boolean;
+	name: { de: string; en: string; ru: string; ua: string }; label: string;
+	datev: { skr03: string; skr04: string }; account: string;
+	vatRate: number; deductible: boolean; bookingKind: Expense["bookingKind"];
+	folder: string; afaYears: number | null; sortOrder: number;
+}
+
+export interface ExpenseAutofillResult {
+	expenseId: string; source: "text" | "document" | "meta" | "mixed";
+	applied: string[]; skipped: string[];
+	confidence: number; confidenceByField: Record<string, number>;
+	reviewStatus: Expense["reviewStatus"]; evidence: string[];
+	warnings: Array<{ code: string; message: string }>;
+	fields: Record<string, unknown>;
+	category: { code: string; parentCode: string; nameDe: string; nameEn: string; account: string } | null;
+	manualFields: string[]; expense: Expense;
 }
 export interface QuoteVersion { version: number; customerName: string; currency: string; items: LineItem[]; totals: Totals; savedAt: string }
 export interface Quote {
@@ -116,6 +146,8 @@ export interface FinanceSettings {
 	rateMargin: number;
 	// Справочник категорий расходов фирмы; пусто — форма предлагает типовой набор страны
 	expenseCategories: string[];
+	// План счетов DATEV для новых расходов (SKR03/SKR04)
+	datevChart?: "SKR03" | "SKR04";
 	// Типовой текст договора фирмы с подстановками {{…}}; пусто — встроенный типовой текст
 	contractTemplate: string;
 	contractData?: Record<string, string>;
@@ -131,6 +163,7 @@ export interface FinanceDashboard {
 
 interface FinanceStore {
 	products: Product[]; orders: Order[]; invoices: Invoice[]; expenses: Expense[]; quotes: Quote[]; contracts: Contract[];
+	expenseCategories: ExpenseCategory[];
 	contractTemplates: ContractTemplate[];
 	recurringInvoices: RecurringInvoice[];
 	settings: FinanceSettings | null; countries: CountryOption[]; dashboard: FinanceDashboard | null;
@@ -139,6 +172,7 @@ interface FinanceStore {
 	loadOrders: () => Promise<void>;
 	loadInvoices: () => Promise<void>;
 	loadExpenses: () => Promise<void>;
+	loadExpenseCategories: () => Promise<void>;
 	loadQuotes: () => Promise<void>;
 	loadContracts: () => Promise<void>;
 	loadContractTemplates: () => Promise<void>;
@@ -167,6 +201,8 @@ interface FinanceStore {
 	updateRecurringInvoice: (id: string, data: Partial<RecurringInvoice>) => Promise<string | null>;
 	deleteRecurringInvoice: (id: string) => Promise<string | null>;
 	createExpense: (data: Partial<Expense>) => Promise<string | null>;
+	updateExpense: (id: string, data: Partial<Expense>) => Promise<string | null>;
+	autofillExpense: (id: string, data?: { documentId?: string; documentText?: string; meta?: Record<string, unknown>; overwrite?: boolean }) => Promise<{ ok: boolean; message: string; data: ExpenseAutofillResult | null }>;
 	deleteExpense: (id: string) => Promise<void>;
 	createQuote: (data: Partial<Quote>) => Promise<string | null>;
 	updateQuote: (id: string, data: Partial<Quote>) => Promise<string | null>;
@@ -187,11 +223,17 @@ let dashboardRequest = 0;
 
 export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 	products: [], orders: [], invoices: [], expenses: [], quotes: [], contracts: [], contractTemplates: [], recurringInvoices: [], settings: null, countries: [], dashboard: null, loading: false,
+	expenseCategories: [],
 
 	loadProducts: async () => { const r = await apiCall<Product[]>("/api/products"); if (r.ok && r.data) set({ products: r.data }); },
 	loadOrders: async () => { const r = await apiCall<Order[]>("/api/orders"); if (r.ok && r.data) set({ orders: r.data }); },
 	loadInvoices: async () => { const r = await apiCall<Invoice[]>("/api/invoices"); if (r.ok && r.data) set({ invoices: r.data }); },
 	loadExpenses: async () => { const r = await apiCall<Expense[]>("/api/expenses"); if (r.ok && r.data) set({ expenses: r.data }); },
+	// Справочник нужен форме и фильтрам; сервер отдаёт его из базы, пока база пуста — встроенный каталог
+	loadExpenseCategories: async () => {
+		const r = await apiCall<{ categories: ExpenseCategory[] }>("/api/expense-categories");
+		if (r.ok && r.data) set({ expenseCategories: r.data.categories });
+	},
 	loadQuotes: async () => { const r = await apiCall<Quote[]>("/api/quotes"); if (r.ok && r.data) set({ quotes: r.data }); },
 	loadContracts: async () => { const r = await apiCall<Contract[]>("/api/contracts"); if (r.ok && r.data) set({ contracts: r.data }); },
 	loadRecurringInvoices: async () => { const r = await apiCall<RecurringInvoice[]>("/api/recurring-invoices"); if (r.ok && r.data) set({ recurringInvoices: r.data }); },
@@ -316,6 +358,18 @@ export const useFinanceStore = create<FinanceStore>()((set, get) => ({
 		if (!r.ok || !r.data) return r.message;
 		set((s) => ({ expenses: [r.data as Expense, ...s.expenses] }));
 		return null;
+	},
+	updateExpense: async (id, data) => {
+		const r = await apiCall<Expense>(`/api/expenses/${id}`, "PATCH", data);
+		if (!r.ok || !r.data) return r.message;
+		set((s) => ({ expenses: s.expenses.map((e) => (e.id === id ? (r.data as Expense) : e)) }));
+		return null;
+	},
+	autofillExpense: async (id, data) => {
+		const r = await apiCall<ExpenseAutofillResult>(`/api/expenses/${id}/autofill`, "POST", data ?? {});
+		if (!r.ok || !r.data) return { ok: false, message: r.message, data: null };
+		set((s) => ({ expenses: s.expenses.map((e) => (e.id === id ? (r.data as ExpenseAutofillResult).expense : e)) }));
+		return { ok: true, message: "", data: r.data };
 	},
 	deleteExpense: async (id) => { const before = get().expenses; set({ expenses: before.filter((e) => e.id !== id) }); const r = await apiCall(`/api/expenses/${id}`, "DELETE"); if (!r.ok) set({ expenses: before }); },
 

@@ -76,6 +76,8 @@ function toDTO(s: any) {
         paymentQr: s.paymentQr !== false,
         // Справочник категорий расходов: пусто — интерфейс предлагает типовой набор страны
         expenseCategories: parseCategories(s.expenseCategories),
+        // План счетов DATEV для новых расходов (SKR03 по умолчанию)
+        datevChart: s.datevChart === "SKR04" ? "SKR04" : "SKR03",
         // Типовой текст договора фирмы (подстановки {{…}} заполняет PDF); пусто — встроенный типовой
         contractTemplate: s.contractTemplate ?? "",
         // реквизиты фирмы для договоров, которых нет в настройках (должность и основание подписанта, регистрационные номера, банковские коды…)
@@ -177,6 +179,8 @@ export async function PATCH(req: Request) {
     }
     // Категории расходов: фирма ведёт список сама (пустой массив — вернуться к типовым подсказкам)
     if (Array.isArray(b.expenseCategories)) set.expenseCategories = parseCategories(b.expenseCategories);
+    // План счетов DATEV: влияет на счёт, который автоопределение подставляет в новый расход
+    if (b.datevChart !== undefined) set.datevChart = b.datevChart === "SKR04" ? "SKR04" : "SKR03";
     // Типовой текст договора: длинный текст, ограничение только по размеру поля
     if (typeof b.contractTemplate === "string") set.contractTemplate = b.contractTemplate.trim().slice(0, 20000);
     if (b.contractData && typeof b.contractData === "object") {

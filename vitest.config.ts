@@ -16,5 +16,5 @@ const ttfDataUri = {
 export default defineConfig({
     plugins: [ttfDataUri],
     resolve: { alias: { "@": path.resolve(__dirname) } },
-    test: { include: ["tests/**/*.test.ts"], testTimeout: 30_000, hookTimeout: 60_000, fileParallelism: false },
+    test: { include: ["tests/**/*.test.ts"], setupFiles: ["tests/setup.ts"], testTimeout: 30_000, hookTimeout: 60_000, fileParallelism: false },
 });

@@ -75,7 +75,7 @@ export async function vatReturn(org: string, from: string, to: string): Promise<
         where: { org, kind: "credit_note", status: { notIn: ["draft", "cancelled"] }, issueDate: { gte: from, lte: to } },
         select: { items: true, issueDate: true },
     });
-    const expenses = await prisma.expense.findMany({ where: { org, date: { gte: from, lte: to } }, select: { amount: true, taxRate: true } });
+    const expenses = await prisma.expense.findMany({ where: { org, date: { gte: from, lte: to } }, select: { amount: true, taxRate: true, vatAmount: true, inputVatDeductible: true } });
 
     // Всю арифметику ведёт lib/finance/reportMath.ts
     const sales = salesByRate(invoices as never, creditNotes as never, exempt);

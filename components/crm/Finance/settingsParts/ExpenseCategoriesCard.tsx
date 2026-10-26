@@ -18,12 +18,16 @@ export default function ExpenseCategoriesCard() {
 	const market = marketOf(settings?.country) ?? "DE";
 	const [list, setList] = useState<string[]>([]);
 	const [name, setName] = useState("");
+	const [chart, setChart] = useState<"SKR03" | "SKR04">("SKR03");
 	const [saving, setSaving] = useState(false);
 
 	// Список фирмы, а пока он пуст — типовой набор страны: с него удобнее начать, чем с пустого поля
 	useEffect(() => {
 		setList(categoriesFor(marketOf(settings?.country) ?? null, settings?.expenseCategories));
 	}, [settings?.country, settings?.expenseCategories]);
+	useEffect(() => {
+		setChart(settings?.datevChart === "SKR04" ? "SKR04" : "SKR03");
+	}, [settings?.datevChart]);
 
 	function add() {
 		const value = name.trim();
@@ -37,7 +41,7 @@ export default function ExpenseCategoriesCard() {
 	async function save() {
 		if (saving) return;
 		setSaving(true);
-		const err = await saveSettings({ expenseCategories: parseCategories(list) } as never);
+		const err = await saveSettings({ expenseCategories: parseCategories(list), datevChart: chart } as never);
 		setSaving(false);
 		if (err) return void toast.error(err);
 		toast.success(t("saved"));
@@ -46,7 +50,17 @@ export default function ExpenseCategoriesCard() {
 	return (
 		<div className="mb-16 fs-card p-16 md:p-20">
 			<h3 className="mb-8 text-14 font-semibold text-[#edf2ff]">{t("catSection")}</h3>
-			<p className="mb-14 text-12 leading-[1.5] text-[#9aa7c9]">{t("catSectionHint")}</p>
+			<p className="mb-4 text-12 leading-[1.5] text-[#9aa7c9]">{t("catSectionHint")}</p>
+			<p className="mb-14 text-12 leading-[1.5] text-[#9aa7c9]">{t("expTaxSettingsCatalogHint")}</p>
+			{/* План счетов фирмы: от него зависит счёт, который форма и автоопределение подставляют в расход */}
+			<div className="mb-16 max-w-[360px]">
+				<span className="mb-6 block text-12 text-[#9aa7c9]">{t("expTaxSettingsChart")}</span>
+				<select value={chart} onChange={(e) => setChart(e.target.value === "SKR04" ? "SKR04" : "SKR03")} className="fs-field h-40 w-full px-12 text-13 outline-none">
+					<option value="SKR03">SKR03</option>
+					<option value="SKR04">SKR04</option>
+				</select>
+				<span className="mt-6 block text-11 leading-[1.5] text-[#9aa7c9]">{t("expTaxSettingsChartHint")}</span>
+			</div>
 			{list.length === 0 && <p className="mb-10 text-12 text-[#9AA7C9]">{t("catEmpty")}</p>}
 			<div className="mb-12 flex flex-wrap gap-8">
 				{list.map((c) => (

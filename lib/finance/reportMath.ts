@@ -2,7 +2,7 @@
 // Так расчёт можно проверить тестом, не поднимая Mongo, и он один для всех отчётов.
 
 export interface ReportLine { qty: number; unitPrice: number; taxRate?: number }
-export interface ReportDoc { items?: ReportLine[]; date?: string; paidAmount?: number; category?: string; amount?: number; taxRate?: number }
+export interface ReportDoc { items?: ReportLine[]; date?: string; paidAmount?: number; category?: string; amount?: number; taxRate?: number; vatAmount?: number; inputVatDeductible?: boolean }
 
 const round = (n: number) => Math.round(n * 100) / 100;
 
@@ -43,7 +43,11 @@ export function inputVatByRate(expenses: ReportDoc[], exempt: boolean): Array<{ 
         const rate = Number(e.taxRate) || 0;
         const cur = acc.get(rate) ?? { net: 0, tax: 0 };
         cur.net += net;
-        cur.tax += exempt ? 0 : net * (rate / 100);
+        // Vorsteuer abziehbar = false (Privatentnahme, §19-Lieferant, nicht abzugsfähige Ausgabe):
+        // сумма расхода остаётся, но в Kz 66 она не попадает. Ставка/сумма берутся из Beleg.
+        const deductible = e.inputVatDeductible !== false;
+        const documentVat = Number(e.vatAmount) || 0;
+        cur.tax += exempt || !deductible ? 0 : documentVat || net * (rate / 100);
         acc.set(rate, cur);
     }
     return Array.from(acc.entries())

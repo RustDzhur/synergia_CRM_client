@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssh server@10.50.0.1:*)",
+      "Bash(ssh -o BatchMode=yes server@10.50.0.1:*)",
+      "Bash(ssh -o BatchMode=yes -o ConnectTimeout=10 server@10.50.0.1:*)"
+    ]
+  }
+}

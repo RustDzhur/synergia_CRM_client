@@ -29,7 +29,7 @@ export function permForPath(pathname: string): PracticePerm | null {
     const [first, second] = p.split("/");
     switch (first) {
         case "invoices": case "quotes": case "orders": case "recurring-invoices": return "invoices";
-        case "expenses": case "suppliers": case "supplier-invoices": case "purchases": return "expenses";
+        case "expenses": case "expense-categories": case "suppliers": case "supplier-invoices": case "purchases": return "expenses";
         case "bank": case "reconciliation": return "bank";
         case "products": case "stock": case "stock-docs": case "warehouses": case "boms": case "production": case "production-orders": case "pos": case "novaposhta": case "ukrposhta": case "marketplace": return "stock";
         case "contracts": case "contract-templates": case "legal": return "contracts";
@@ -95,7 +95,7 @@ export function moduleForPath(pathname: string, method: string, search?: URLSear
         // публикация в соцсети платформы: маршрут дополнительно требует владельца платформы (lib/social/api)
         case "social": return "marketing";
         // раздел переименован из «Inventory Management» в «Finance» (склад остался его частью) — модуль в правах тот же
-        case "products": case "orders": case "invoices": case "expenses": case "finance": case "quotes": case "contracts": return "inventory";
+        case "products": case "orders": case "invoices": case "expenses": case "expense-categories": case "finance": case "quotes": case "contracts": return "inventory";
         // остальная бухгалтерия: банк, склад, закупки, производство, касса, доставка, основные средства, выгрузки документов
         case "bank": case "boms": case "pos": case "production": case "production-orders": case "purchases": case "reconciliation":
         case "recurring-invoices": case "stock": case "stock-docs": case "supplier-invoices": case "suppliers": case "warehouses":

@@ -450,6 +450,11 @@ model Event {
   @@map("events")
 }
 
+// Расход / Beleg: строка «Ausgaben» финансов. Помимо суммы и категории, у неё есть полный набор
+// налоговых реквизитов (ELSTER/DATEV): справочник категорий с кодами и счетами SKR03/SKR04, ставка
+// и сумма USt, признак вычета Vorsteuer, дата платежа, номер документа, USt-IdNr. и IBAN поставщика,
+// Art der Buchung и AfA. Поля заполняет человек или сервис lib/finance/expenseExtract.ts; ручная
+// правка записывается в manualFields и автоопределение её больше не перекрывает.
 model Expense {
   id            String   @id @default(cuid())
   org           String
@@ -467,14 +472,73 @@ model Expense {
   // Узбекистан: полученный ЭСФ поставщика { number, date, supplierInn } — основание для вычета входного QQS
   esf           Json?
   review        Json?
-  createdByName String   @default("")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  // ── Steuerliche Angaben (ELSTER/DATEV) ──────────────────────────────────────────────────────────
+  // categoryCode — код категории (группы) из справочника expense_categories, subcategory — код
+  // подкатегории (листа) того же справочника; по ней выбирается счёт DATEV и папка документа.
+  categoryCode       String   @default("")
+  subcategory        String   @default("")
+  datevAccount       String   @default("")
+  datevChart         String   @default("SKR03") // SKR03 | SKR04
+  // amount остаётся нетто-суммой для старых отчётов; netAmount/grossAmount/vatAmount — явные суммы Beleg
+  netAmount          Float    @default(0)
+  grossAmount        Float    @default(0)
+  vatAmount          Float    @default(0)
+  inputVatDeductible Boolean  @default(true)
+  paidDate           String   @default("")
+  documentNumber     String   @default("")
+  vendorVatId        String   @default("")
+  vendorIban         String   @default("")
+  bookingKind        String   @default("Betriebsausgabe") // Betriebsausgabe | Investition | Privatentnahme
+  afaYears           Float? // Abschreibung (AfA) — срок полезного использования, лет
+  afaResidualValue   Float? // Restwert nach AfA
+  folder             String   @default("") // папка/категория документа в хранилище
+  reviewStatus       String   @default("REVIEW") // AUTO | REVIEW | OK
+  confidence         Float    @default(0) // уверенность автоопределения, 0..1
+  manualFields       String[] @default([]) // поля, которые человек правил вручную: авто их не перекрывает
+  autoFields         Json? // снимок последнего автоопределения { at, source, confidence, fields, evidence }
+  createdByName      String   @default("")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@index([org, deal])
   @@index([org, date])
   @@index([org, updatedAt])
+  @@index([org, reviewStatus])
+  @@index([org, categoryCode])
   @@map("expenses")
+}
+
+// Справочник категорий расходов (ELSTER/DATEV): дерево «категория → подкатегория».
+// Строки isGroup = true — категории (верхний уровень, выбираются в поле «Kategorie»), остальные —
+// подкатегории с конкретным счётом SKR03/SKR04. Код стабилен (code): на него ссылаются Expense.categoryCode
+// и Expense.subcategory, поэтому переименование названий не ломает уже разнесённые расходы.
+// Наполняется prisma/seed.mjs из lib/finance/expenseCategoryCatalog.json; фирма может дополнить список.
+model ExpenseCategory {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  parentCode    String   @default("")
+  isGroup       Boolean  @default(false)
+  nameDe        String
+  nameEn        String
+  nameRu        String
+  nameUa        String   @default("")
+  datevSkr03    String   @default("")
+  datevSkr04    String   @default("")
+  vatRate       Float    @default(0)
+  deductible    Boolean  @default(true)
+  bookingKind   String   @default("Betriebsausgabe")
+  folder        String   @default("")
+  afaYears      Float?
+  keywords      String[] @default([])
+  vendors       String[] @default([])
+  sortOrder     Int      @default(0)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([parentCode])
+  @@index([isGroup, sortOrder])
+  @@map("expense_categories")
 }
 
 model FeedPost {
@@ -560,6 +624,8 @@ model FinanceSettings {
   rateMargin           Float    @default(0)
   stockCosting         String   @default("avg")
   expenseCategories    String[] @default([])
+  // Используемый план счетов DATEV для новых расходов: SKR03 (по умолчанию) или SKR04
+  datevChart           String   @default("SKR03")
   contractTemplate     String   @default("")
   contractData        Json?
   counters             Json?
