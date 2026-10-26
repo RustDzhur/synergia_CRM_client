@@ -1,23 +1,33 @@
-# Social Poster: автопубликация в Facebook-страницу и Instagram
+# Social Poster: автопубликация в Facebook, Instagram, YouTube и TikTok
 
 Робот платформы в Робот-офисе (`lib/office/social.ts`, шаблон `p_social`, имя **Social Poster**). Раз в 8 часов
 (3 раза в день) берёт следующий пост из очереди и публикует его:
 
 1. фото + подпись на страницу Facebook (`POST /<page>/photos`, файл уходит multipart-ом);
-2. дублирование в Instagram: `POST /<ig>/media` с `image_url` из `full_picture` Facebook-поста → `media_publish`.
+2. дублирование в Instagram: `POST /<ig>/media` с `image_url` из `full_picture` Facebook-поста → `media_publish`;
+3. **видео** — в YouTube (resumable `videos.insert`) и TikTok (Content Posting API).
 
-Каждая попытка пишется в журнал робота (Робот-офис → Social Poster → Поручения) со ссылками FB и IG.
-Если Instagram не принял пост, Facebook-публикация не отменяется: в журнале и в записи очереди остаётся причина.
+Список целей задаётся у поста (`targets`): `facebook`, `instagram`, `youtube`, `tiktok`. Картинка
+по умолчанию идёт в Facebook + Instagram, видео — в YouTube + TikTok. Подробности, квоты и настройка
+провайдеров — [SOCIAL_PUBLISHING.md](./SOCIAL_PUBLISHING.md).
+
+Каждая попытка пишется в журнал робота (Робот-офис → Social Poster → Поручения) со ссылками площадок.
+Если одна площадка не приняла пост, остальные публикации не отменяются: в журнале и в записи очереди
+остаётся причина (`errors`), а пост считается вышедшим, если хотя бы одна цель ответила успехом.
 
 ## Где что лежит
 
 | Что | Где |
 | --- | --- |
-| Публикация (Graph API) | `lib/social/publish.ts` |
-| Токен и id страницы/аккаунта | `lib/social/config.ts` |
+| Цели, тип медиа, приватность | `lib/social/types.ts` |
+| Публикация (Graph API, YouTube, TikTok) | `lib/social/publish.ts` |
+| YouTube Data API | `lib/social/youtube.ts` |
+| TikTok Content Posting API | `lib/social/tiktok.ts` |
+| Токены и id страницы/аккаунта | `lib/social/config.ts`, `platformsettings/{social,youtube,tiktok}` |
 | Очередь и немецкие тексты | `lib/social/queue.ts`, таблица `social_posts` |
 | Робот и рутина | `lib/office/social.ts` (создаётся при открытии офиса администратором платформы) |
 | HTTP-маршрут | `app/api/social/publish/route.ts` |
+| Настройки и тест | `app/api/social/settings`, `app/api/social/test`, `components/crm/Settings/SocialPublishCard.tsx` |
 
 ## Токен
 
@@ -36,11 +46,16 @@ cat page-token.txt | docker exec -i -w /app firmspace-crm node /app/scripts/soci
 
 ## Очередь
 
-`social_posts` — простые строки: `key` (уникальный ключ темы), `text`, `image` (путь внутри `public/`),
-`status` (`queued` / `published` / `failed`), ссылки и число попыток. Пять стартовых тем заводит
-`ensureSocialQueue()`; после трёх неудачных попыток тема помечается `failed` и очередь идёт дальше.
-Когда все темы опубликованы, самый давний пост возвращается в очередь — робот публикует по кругу,
-пока владелец не добавит новые строки.
+`social_posts` — строки поста: `key` (уникальный ключ темы), `text`, `image` (картинка внутри
+`public/`), `mediaType` (`image` / `video`), `video` (путь к видео внутри `public/`), `targets`
+(список площадок), `title`, `tags`, `privacyStatus`, `status` (`queued` / `published` / `failed`),
+ссылки и число попыток. Пять стартовых тем заводит `ensureSocialQueue()`; после трёх неудачных
+попыток тема помечается `failed` и очередь идёт дальше. Когда все темы опубликованы, самый давний
+пост возвращается в очередь — робот публикует по кругу, пока владелец не добавит новые строки.
+
+Видео-пост: `mediaType = 'video'`, `video = 'public/social/launch.mp4'`,
+`targets = ARRAY['youtube','tiktok']`, `privacyStatus = 'private'` (по умолчанию). Пример SQL —
+в [SOCIAL_PUBLISHING.md](./SOCIAL_PUBLISHING.md#очередь).
 
 ## API
 
@@ -52,9 +67,19 @@ curl -X POST https://crm.firmspace.de/api/social/publish \
   -d '{"text":"…немецкий текст…","image":"public/brand/avatar.png"}'
 # → {"ok":true,"fbUrl":"…","igUrl":"…","fbPostId":"…","igMediaId":"…"}
 
+curl -X POST https://crm.firmspace.de/api/social/publish \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"text":"…","mediaType":"video","video":"public/social/launch.mp4",
+       "targets":["youtube","tiktok"],"privacyStatus":"unlisted"}'
+# → {"ok":true,"youtubeUrl":"…","tiktokPublishId":"…","errors":{…}}
+
 curl https://crm.firmspace.de/api/social/publish -H "Authorization: Bearer $TOKEN"
 # → очередь: counts и последние публикации
 ```
 
 Робот вызывает `publishPost()` напрямую, без HTTP: планировщик рутин (`lib/office/routines.ts`) для шаблона
 `p_social` уходит в `runSocialRoutine()`, а не в разговор с моделью.
+
+Настройки площадок и безопасный тест — Настройки → Интеграции → карточки **YouTube** и **TikTok**:
+`GET/PUT /api/social/settings`, `POST /api/social/test`. Тест YouTube всегда private/unlisted,
+тест TikTok — черновик (inbox); без токенов возвращается mock, ничего не загружается.

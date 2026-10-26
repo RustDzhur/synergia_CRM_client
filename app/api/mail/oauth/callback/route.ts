@@ -5,6 +5,7 @@ import { connectDrive, connectGcal } from "@/lib/google";
 import { connectOAuthAccount, syncAccount } from "@/lib/mail";
 import { connectOnedrive } from "@/lib/onedrive";
 import { exchangeCode, readState } from "@/lib/mail/oauth";
+import { connectYoutube } from "@/lib/social/youtube";
 import { reportError } from "@/lib/reportError";
 import { ProviderError } from "@/lib/http";
 
@@ -19,12 +20,21 @@ export async function GET(req: Request) {
     const state = readState(q.get("state") ?? "");
     if (!state) return new Response("Invalid or expired request. Start again from Web Mails.", { status: 400 });
 
-    // тот же адрес возврата обслуживает и вход в Google Drive, OneDrive (Online Documents) и Google Ads (Marketing) — различаем по state
+    // тот же адрес возврата обслуживает и вход в Google Drive, OneDrive (Online Documents), Google Ads (Marketing)
+    // и YouTube — различаем по state. Для YouTube отдельный redirect URI не нужен: адрес уже зарегистрирован в Google Cloud.
     const drive = state.p === "drive";
     const ads = state.p === "ads";
     const gcal = state.p === "gcal";
     const onedrive = state.p === "onedrive";
+    const youtube = state.p === "youtube";
     const back = (status: string, message = "") => {
+        if (youtube) {
+            // Возврат в карточку YouTube в настройках интеграций CRM
+            const u = new URL(`${crmOrigin(req)}/${crmLocale(state.l)}/crm/settings/integration`);
+            u.searchParams.set("youtube", status);
+            if (message) u.searchParams.set("message", message.slice(0, 200));
+            return NextResponse.redirect(u);
+        }
         const section = ads ? "marketing" : gcal ? "collaboration/calendar" : `collaboration/${drive || onedrive ? "online-documents" : "web-mails"}`;
         // Возврат — в кабинет CRM (crm.firmspace.de), а не на основной сайт, и только на языке CRM.
         const u = new URL(`${crmOrigin(req)}/${crmLocale(state.l)}/crm/${section}`);
@@ -36,7 +46,11 @@ export async function GET(req: Request) {
     const code = q.get("code");
     if (q.get("error") || !code) return back("denied");
     try {
-            const tokens = await exchangeCode(state.v, code, origin);
+        const tokens = await exchangeCode(state.v, code, origin);
+        if (youtube) {
+            await connectYoutube(state.sub, tokens);
+            return back("connected");
+        }
         if (ads) {
             await connectAds(state.sub, "google", tokens);
             return back("connected");

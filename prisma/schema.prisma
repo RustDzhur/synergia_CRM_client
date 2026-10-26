@@ -882,6 +882,18 @@ model SocialPost {
   text        String
   // путь к картинке относительно public/, например "public/brand/agents.png"
   image       String    @default("")
+  // image | video: видео уходит в YouTube/TikTok, картинка — в Facebook/Instagram
+  mediaType   String    @default("image")
+  // путь к MP4 относительно public/, например "public/social/launch.mp4"
+  video       String    @default("")
+  // куда публиковать: facebook, instagram, youtube, tiktok (см. lib/social/types.ts)
+  targets     String[]  @default(["facebook", "instagram"])
+  // заголовок для YouTube/TikTok; пусто — берётся первая строка текста
+  title       String    @default("")
+  // метки YouTube; пусто — берутся хештеги из текста
+  tags        String[]  @default([])
+  // private | unlisted | public (public — только с явным подтверждением владельца)
+  privacyStatus String  @default("private")
   // queued | published | failed
   status      String    @default("queued")
   attempts    Int       @default(0)
@@ -889,6 +901,10 @@ model SocialPost {
   fbUrl       String    @default("")
   igMediaId   String    @default("")
   igUrl       String    @default("")
+  youtubeVideoId String  @default("")
+  youtubeUrl     String  @default("")
+  tiktokPublishId String @default("")
+  tiktokUrl       String @default("")
   error       String    @default("")
   publishedAt DateTime?
   createdAt   DateTime  @default(now())

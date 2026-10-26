@@ -3,6 +3,8 @@ import { storageProblem } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
 import { missingTables } from "@/lib/schemaCheck";
 import { ensurePlatformEnv, platformEnvCached } from "@/lib/platformEnv";
+import { tiktokStatus } from "@/lib/social/tiktok";
+import { youtubeStatus } from "@/lib/social/youtube";
 
 export const dynamic = "force-dynamic";
 
@@ -38,10 +40,25 @@ export async function GET() {
     // Ключи Google могут лежать в кабинете администратора (переменные окружения), поэтому
     // сначала подтягиваем их в кэш — иначе диагностика врала бы «не настроено».
     await ensurePlatformEnv().catch(() => undefined);
+    // Публикация в соцсети: показываем только «настроено / подключено», без имён каналов и токенов.
+    const socialPublishing = await (async () => {
+        try {
+            const [youtube, tiktok] = await Promise.all([youtubeStatus(), tiktokStatus()]);
+            return {
+                youtubeConfigured: youtube.configured,
+                youtubeConnected: youtube.connected,
+                tiktokConfigured: tiktok.configured,
+                tiktokConnected: tiktok.connected,
+            };
+        } catch {
+            return { youtubeConfigured: false, youtubeConnected: false, tiktokConfigured: false, tiktokConnected: false };
+        }
+    })();
     const features = {
         storage: storageProblem() || "ok",
         googleSignIn: !!(platformEnvCached("GOOGLE_CLIENT_ID") && platformEnvCached("GOOGLE_CLIENT_SECRET")),
         googleAds: !!platformEnvCached("GOOGLE_ADS_DEVELOPER_TOKEN"),
+        socialPublishing,
         // Адреса возврата OAuth: ровно эти строки должны быть в Google Cloud Console
         // (Authorized redirect URIs), иначе Google отвечает redirect_uri_mismatch.
         googleRedirects: (() => {

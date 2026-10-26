@@ -62,32 +62,59 @@ export async function runSocialRoutine(input: SocialRoutineInput): Promise<boole
     const startedAt = new Date().toISOString();
     await updateTask(input.org, task.id, { status: "running", startedAt });
     try {
-        const result = await publishPost({ text: post.text, imagePath: post.image });
+        const result = await publishPost({
+            text: post.text,
+            imagePath: post.mediaType === "image" ? post.image : undefined,
+            videoPath: post.mediaType === "video" ? post.video : undefined,
+            mediaType: post.mediaType,
+            targets: post.targets,
+            title: post.title || undefined,
+            tags: post.tags.length ? post.tags : undefined,
+            privacyStatus: post.privacyStatus,
+        });
         await markPostPublished(post.id, result);
-        const reply = [
-            `Auf Facebook veröffentlicht: ${result.fbUrl}`,
-            `In Instagram: ${result.igUrl || "—"}`,
-            ...(result.igError ? [`Instagram hat nicht angenommen: ${result.igError}`] : []),
+        const failures = (Object.entries(result.errors) as Array<[string, string]>).map(([target, message]) => `${target}: ${message}`);
+        const lines = [
+            result.fbUrl ? `Auf Facebook veröffentlicht: ${result.fbUrl}` : "",
+            result.igUrl ? `In Instagram: ${result.igUrl}` : "",
+            result.youtubeUrl ? `Auf YouTube: ${result.youtubeUrl} (${result.youtubePrivacy ?? "private"})` : "",
+            result.tiktokUrl
+                ? `TikTok: ${result.tiktokUrl}`
+                : result.tiktokPublishId
+                  ? `TikTok: Upload gestartet (${result.tiktokPublishId}, ${result.tiktokStatus ?? "processing"})`
+                  : "",
+            ...failures.map((failure) => `Nicht veröffentlicht — ${failure}`),
             `Thema: ${post.key}`,
-        ].join("\n");
+        ].filter(Boolean);
+        const reply = lines.join("\n");
+        const link = result.fbUrl || result.igUrl || result.youtubeUrl || result.tiktokUrl || "";
+        const delivered = [
+            result.fbUrl ? "Facebook" : "",
+            result.igUrl ? "Instagram" : "",
+            result.youtubeUrl ? "YouTube" : "",
+            result.tiktokPublishId ? "TikTok" : "",
+        ].filter(Boolean).join(" + ");
         await updateTask(input.org, task.id, {
             status: "done",
             finishedAt: new Date().toISOString(),
             reply,
             steps: [
-                `Social-Queue: Thema ${post.key}`,
-                `Facebook: ${result.fbUrl}`,
-                `Instagram: ${result.igUrl || result.igError || "—"}`,
+                `Social-Queue: Thema ${post.key} (${post.mediaType})`,
+                ...(result.fbUrl ? [`Facebook: ${result.fbUrl}`] : []),
+                ...(result.igUrl ? [`Instagram: ${result.igUrl}`] : []),
+                ...(result.youtubeUrl ? [`YouTube: ${result.youtubeUrl}`] : []),
+                ...(result.tiktokUrl || result.tiktokPublishId ? [`TikTok: ${result.tiktokUrl || result.tiktokPublishId}`] : []),
+                ...failures.map((failure) => `Fehler — ${failure}`),
             ],
             executed: [
                 {
                     id: `social_${post.id}`,
                     tool: "social_publish",
-                    args: { key: post.key, image: post.image },
-                    target: result.fbUrl,
+                    args: { key: post.key, image: post.image, video: post.video, targets: post.targets },
+                    target: link,
                     state: "done",
-                    link: result.fbUrl,
-                    message: result.igUrl ? `Facebook + Instagram: ${result.igUrl}` : "Facebook (Instagram nicht angenommen)",
+                    link,
+                    message: delivered ? `${delivered}${failures.length ? " (teilweise)" : ""}` : "Keine Plattform hat den Beitrag angenommen",
                 },
             ],
         });

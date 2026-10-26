@@ -44,14 +44,14 @@ export const redirectUri = (origin: string) => `${origin}/api/mail/oauth/callbac
 export const ONEDRIVE_SCOPE = "offline_access Files.ReadWrite User.Read";
 
 // state защищает от подделки запроса: подписан, живёт 10 минут и содержит пользователя, провайдера и язык страницы
-export type OAuthPurpose = "mail" | "drive" | "ads" | "gcal" | "onedrive";
+export type OAuthPurpose = "mail" | "drive" | "ads" | "gcal" | "onedrive" | "youtube";
 export function makeState(userId: string, vendor: Vendor, locale: string, purpose: OAuthPurpose = "mail") {
     return jwt.sign({ sub: userId, v: vendor, l: locale, p: purpose }, process.env.JWT_SECRET as string, { expiresIn: "10m" });
 }
 export function readState(state: string) {
     try {
         const s = jwt.verify(state, process.env.JWT_SECRET as string) as { sub: string; v: Vendor; l: string; p?: OAuthPurpose };
-        const purpose: OAuthPurpose = s.p === "drive" || s.p === "ads" || s.p === "gcal" || s.p === "onedrive" ? s.p : "mail";
+        const purpose: OAuthPurpose = s.p === "drive" || s.p === "ads" || s.p === "gcal" || s.p === "onedrive" || s.p === "youtube" ? s.p : "mail";
         return CONFIG[s.v] ? { ...s, p: purpose } : null;
     } catch {
         return null;

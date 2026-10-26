@@ -1,17 +1,37 @@
 import { prisma } from "@/lib/prisma";
 import type { PublishResult } from "./publish";
+import {
+    normalizeMediaType,
+    normalizePrivacy,
+    normalizeTags,
+    normalizeTargets,
+    type PrivacyStatus,
+    type SocialMediaType,
+    type SocialPlatform,
+} from "./types";
 
 // Очередь постов соцсетей платформы. Пять тем на немецком (CRM, Buchhaltung, Bürokratie, KI-Agenten,
 // Automatisierung) — по одной на публикацию, три публикации в день. Тексты живут в базе (таблица social_posts):
 // сид кладёт их один раз, дальше очередь можно пополнять и править без выкладки кода.
 // Когда очередь пройдена, самый давний опубликованный пост возвращается в оборот — робот не «умирает»
 // через два дня, а продолжает публиковать по кругу. Это осознанное решение: замену темам дописывает владелец.
+//
+// Пост очереди бывает картинкой (mediaType=image, image) или видео (mediaType=video, video).
+// targets говорит, куда его публиковать: старые записи без поля получают facebook+instagram.
 
 export interface QueuedPost {
     id: string;
     key: string;
     text: string;
+    /** Путь к картинке внутри public/ (для mediaType=image). */
     image: string;
+    /** Путь к видео внутри public/ (для mediaType=video). */
+    video: string;
+    mediaType: SocialMediaType;
+    targets: SocialPlatform[];
+    title: string;
+    tags: string[];
+    privacyStatus: PrivacyStatus;
 }
 
 interface SeedPost {
@@ -114,7 +134,32 @@ export async function ensureSocialQueue(): Promise<void> {
     });
 }
 
-const toQueued = (row: { id: string; key: string; text: string; image: string }): QueuedPost => ({ id: row.id, key: row.key, text: row.text, image: row.image });
+const toQueued = (row: {
+    id: string;
+    key: string;
+    text: string;
+    image: string;
+    video: string;
+    mediaType: string;
+    targets: string[];
+    title: string;
+    tags: string[];
+    privacyStatus: string;
+}): QueuedPost => {
+    const mediaType = normalizeMediaType(row.mediaType);
+    return {
+        id: row.id,
+        key: row.key,
+        text: row.text,
+        image: row.image,
+        video: row.video,
+        mediaType,
+        targets: normalizeTargets(row.targets, mediaType),
+        title: row.title,
+        tags: normalizeTags(row.tags),
+        privacyStatus: normalizePrivacy(row.privacyStatus),
+    };
+};
 
 /** Следующий пост: сначала действительно новые, затем (когда очередь пройдена) самый давний опубликованный по кругу. */
 export async function nextQueuedPost(): Promise<QueuedPost> {
@@ -137,6 +182,9 @@ export async function nextQueuedPost(): Promise<QueuedPost> {
 }
 
 export async function markPostPublished(id: string, result: PublishResult): Promise<void> {
+    // Ошибки отдельных площадок не отменяют публикацию: пост вышел хотя бы в одной сети, а причина
+    // отказа остаётся в записи очереди и в журнале робота.
+    const failures = (Object.entries(result.errors) as Array<[string, string]>).map(([target, message]) => `${target}: ${message}`);
     await prisma.socialPost.update({
         where: { id },
         data: {
@@ -146,9 +194,11 @@ export async function markPostPublished(id: string, result: PublishResult): Prom
             fbUrl: result.fbUrl,
             igMediaId: result.igMediaId,
             igUrl: result.igUrl,
-            // Instagram мог не принять пост — Facebook уже вышел, поэтому пост считается опубликованным,
-            // а причина видна в журнале робота и в этой записи
-            error: result.igError ? `Instagram: ${result.igError}`.slice(0, 900) : "",
+            youtubeVideoId: result.youtubeVideoId,
+            youtubeUrl: result.youtubeUrl,
+            tiktokPublishId: result.tiktokPublishId,
+            tiktokUrl: result.tiktokUrl,
+            error: failures.join("; ").slice(0, 900),
             attempts: { increment: 1 },
         },
     });

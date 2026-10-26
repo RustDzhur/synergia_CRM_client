@@ -21,6 +21,7 @@ import IrisBotCard from "./IrisBotCard";
 import AgentsCard from "./AgentsCard";
 import EnvCard from "./EnvCard";
 import ConnectCard from "./ConnectCard";
+import SocialPublishCard from "./SocialPublishCard";
 
 interface Integration {
 	id: string;
@@ -158,6 +159,8 @@ export default function IntegrationSettings() {
 			<IrisBotCard />
 			<EnvCard />
 			<ConnectCard />
+			{/* Публикация платформы в YouTube/TikTok: карточка видна только владельцу платформы */}
+			<SocialPublishCard />
 			<AgentsCard />
 			<div className="flex flex-col gap-20 lg:flex-row">
 				<SettingsTabs className="shrink-0 md:self-start" />
