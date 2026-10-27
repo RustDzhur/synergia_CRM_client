@@ -31,7 +31,7 @@ export default function FinanceSettingsTab() {
 	const [switchTo, setSwitchTo] = useState<Market | null>(null);
 	const [applyDefaults, setApplyDefaults] = useState(true);
 	// пустые сборы = сборы не начисляются (как и на сервере); поля заполнятся настоящими значениями, когда придут настройки
-	const [form, setForm] = useState({ country: "", currency: "EUR", smallBusiness: false, rateMargin: "0", uaLegalForm: "fop", uaTaxSystem: "single_3", uaGroup: "3", uaSingleRate: "5", uaVatPayer: false, uaVatRegDate: "", uaVatCertificate: "", uaVatRates: [20, 7, 0] as number[], uaEdrpou: "", uaIpn: "", uaKved: "", uaBank: "", uaIban: "", uaMfo: "", uaSignerName: "", uaSignerPosition: "", uaSignature: "", uaSeal: "", uaLimitsText: {} as Record<string, string>, uaEsvMonthly: "1760", uaMilitaryRate: "1", uaMilitaryFixed: "800", uaVatLimit: "1000000", uaVatPeriod: "month", legalName: "", address: "", taxId: "", vatId: "", registerNumber: "", managingDirector: "", phone: "", email: "", website: "", logo: "", footerText: "", iban: "", bic: "", paymentTermsDays: "14", invoicePrefix: "RE", quotePrefix: "AN", creditNotePrefix: "GS", reminderIntervalDays: "7", dunningFees: ["", "", "", "", ""], dunningInterestRate: "", dunningPaymentDays: "7", template: "classic", paymentQr: true });
+	const [form, setForm] = useState({ country: "", currency: "EUR", smallBusiness: false, rateMargin: "0", uaLegalForm: "fop", uaTaxSystem: "single_3", uaGroup: "3", uaSingleRate: "5", uaVatPayer: false, uaVatRegDate: "", uaVatCertificate: "", uaVatRates: [20, 7, 0] as number[], uaEdrpou: "", uaIpn: "", uaKved: "", uaBank: "", uaIban: "", uaMfo: "", uaSignerName: "", uaSignerPosition: "", uaSignature: "", uaSeal: "", uaLimitsText: {} as Record<string, string>, uaEsvMonthly: "1760", uaMilitaryRate: "1", uaMilitaryFixed: "800", uaVatLimit: "1000000", uaVatPeriod: "month", legalName: "", address: "", taxId: "", vatId: "", registerNumber: "", managingDirector: "", phone: "", email: "", website: "", logo: "", footerText: "", iban: "", bic: "", paymentTermsDays: "14", invoicePrefix: "RE", quotePrefix: "AN", creditNotePrefix: "GS", reminderIntervalDays: "7", dunningFees: ["", "", "", "", ""], dunningInterestRate: "", dunningPaymentDays: "7", template: "classic", paymentQr: true, kleinunternehmer: false, sollIst: "SOLL" as "SOLL" | "IST", wirtschaftsjahr: String(new Date().getFullYear()) });
 	// Реквизиты рынка UZ живут отдельным объектом: на сервере это одно поле settings.uz
 	const [uz, setUz] = useState<UzProfile>(emptyUz());
 	const [saving, setSaving] = useState(false);
@@ -55,7 +55,12 @@ export default function FinanceSettingsTab() {
 		const year = new Date().getFullYear();
 		const limitsText: Record<string, string> = {};
 		for (const l of settings.uaLimits ?? []) if (l.year === year && l.amount > 0) limitsText[String(l.group)] = String(l.amount);
-		setForm({ country: settings.country, currency: settings.currency, smallBusiness: settings.smallBusiness, rateMargin: String(settings.rateMargin ?? 0), uaLegalForm: settings.uaLegalForm ?? "fop", uaTaxSystem: settings.uaTaxSystem || (settings.uaLegalForm === "tov" ? "general_tov" : `single_${settings.uaGroup ?? 3}`), uaGroup: String(settings.uaGroup ?? 3), uaSingleRate: String(settings.uaSingleRate ?? 5), uaVatPayer: !!settings.uaVatPayer, uaVatRegDate: settings.uaVatRegDate ?? "", uaVatCertificate: settings.uaVatCertificate ?? "", uaVatRates: Array.isArray(settings.uaVatRates) && settings.uaVatRates.length ? settings.uaVatRates : [20, 7, 0], uaEdrpou: settings.uaEdrpou ?? "", uaIpn: settings.uaIpn ?? "", uaKved: (settings.uaKved ?? []).join(", "), uaBank: settings.uaBank ?? "", uaIban: settings.uaIban ?? "", uaMfo: settings.uaMfo ?? "", uaSignerName: settings.uaSignerName ?? "", uaSignerPosition: settings.uaSignerPosition ?? "", uaSignature: settings.uaSignature ?? "", uaSeal: settings.uaSeal ?? "", uaLimitsText: limitsText, uaEsvMonthly: String(settings.uaEsvMonthly ?? 1760), uaMilitaryRate: String(settings.uaMilitaryRate ?? 1), uaMilitaryFixed: String(settings.uaMilitaryFixed ?? 800), uaVatLimit: String(settings.uaVatLimit ?? 1000000), uaVatPeriod: settings.uaVatPeriod ?? "month", legalName: settings.legalName, address: settings.address, taxId: settings.taxId, vatId: settings.vatId, registerNumber: settings.registerNumber, managingDirector: settings.managingDirector, phone: settings.phone, email: settings.email, website: settings.website, logo: settings.logo, footerText: settings.footerText, iban: settings.iban, bic: settings.bic, paymentTermsDays: String(settings.paymentTermsDays), invoicePrefix: settings.invoicePrefix, quotePrefix: settings.quotePrefix, creditNotePrefix: settings.creditNotePrefix, reminderIntervalDays: String(settings.reminderIntervalDays), dunningFees: fees, dunningInterestRate: String(dn.dunningInterestRate ?? 0), dunningPaymentDays: String(dn.dunningPaymentDays ?? 7), template: settings.template || "classic", paymentQr: settings.paymentQr !== false });
+		setForm({ country: settings.country, currency: settings.currency, smallBusiness: settings.smallBusiness, rateMargin: String(settings.rateMargin ?? 0), uaLegalForm: settings.uaLegalForm ?? "fop", uaTaxSystem: settings.uaTaxSystem || (settings.uaLegalForm === "tov" ? "general_tov" : `single_${settings.uaGroup ?? 3}`), uaGroup: String(settings.uaGroup ?? 3), uaSingleRate: String(settings.uaSingleRate ?? 5), uaVatPayer: !!settings.uaVatPayer, uaVatRegDate: settings.uaVatRegDate ?? "", uaVatCertificate: settings.uaVatCertificate ?? "", uaVatRates: Array.isArray(settings.uaVatRates) && settings.uaVatRates.length ? settings.uaVatRates : [20, 7, 0], uaEdrpou: settings.uaEdrpou ?? "", uaIpn: settings.uaIpn ?? "", uaKved: (settings.uaKved ?? []).join(", "), uaBank: settings.uaBank ?? "", uaIban: settings.uaIban ?? "", uaMfo: settings.uaMfo ?? "", uaSignerName: settings.uaSignerName ?? "", uaSignerPosition: settings.uaSignerPosition ?? "", uaSignature: settings.uaSignature ?? "", uaSeal: settings.uaSeal ?? "", uaLimitsText: limitsText, uaEsvMonthly: String(settings.uaEsvMonthly ?? 1760), uaMilitaryRate: String(settings.uaMilitaryRate ?? 1), uaMilitaryFixed: String(settings.uaMilitaryFixed ?? 800), uaVatLimit: String(settings.uaVatLimit ?? 1000000), uaVatPeriod: settings.uaVatPeriod ?? "month", legalName: settings.legalName, address: settings.address, taxId: settings.taxId, vatId: settings.vatId, registerNumber: settings.registerNumber, managingDirector: settings.managingDirector, phone: settings.phone, email: settings.email, website: settings.website, logo: settings.logo, footerText: settings.footerText, iban: settings.iban, bic: settings.bic, paymentTermsDays: String(settings.paymentTermsDays), invoicePrefix: settings.invoicePrefix, quotePrefix: settings.quotePrefix, creditNotePrefix: settings.creditNotePrefix, reminderIntervalDays: String(settings.reminderIntervalDays), dunningFees: fees, dunningInterestRate: String(dn.dunningInterestRate ?? 0), dunningPaymentDays: String(dn.dunningPaymentDays ?? 7), template: settings.template || "classic", paymentQr: settings.paymentQr !== false,
+			// ELSTER/Anlage EÜR: флаг §19 берём из kleinunternehmer, а у старых фирм — из smallBusiness,
+			// чтобы первая выгрузка после обновления не посчитала расходы нетто
+			kleinunternehmer: !!(settings.kleinunternehmer ?? settings.smallBusiness),
+			sollIst: settings.sollIst === "IST" ? "IST" : "SOLL",
+			wirtschaftsjahr: String(settings.wirtschaftsjahr ?? year) });
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [settings]);
 
@@ -72,6 +77,11 @@ export default function FinanceSettingsTab() {
 			dunningFees: form.dunningFees.map((v) => Math.max(0, Number(v) || 0)),
 			dunningInterestRate: Math.max(0, Math.min(30, Number(form.dunningInterestRate) || 0)),
 			dunningPaymentDays: Math.max(1, Math.min(60, Math.round(Number(form.dunningPaymentDays) || 7))),
+			// ELSTER/EÜR: §19-флаг и smallBusiness — один статус, отправляем их вместе; год — числом в диапазоне
+			kleinunternehmer: form.kleinunternehmer,
+			smallBusiness: form.kleinunternehmer,
+			sollIst: form.sollIst === "IST" ? "IST" : "SOLL",
+			wirtschaftsjahr: Math.max(2000, Math.min(2100, Math.round(Number(form.wirtschaftsjahr)) || new Date().getFullYear())),
 			// украинская налоговая модель: числа приходят строками из полей ввода
 			...(market === "UZ" ? { uz } : {}),
 			rateMargin: Math.max(0, Math.min(50, Number(form.rateMargin) || 0)),
@@ -166,13 +176,58 @@ export default function FinanceSettingsTab() {
 				{market === "DE" && (
 					<>
 						<label className="mt-14 flex items-center gap-10 text-13 text-[#cfd4cb]">
-							<input type="checkbox" checked={form.smallBusiness} onChange={(e) => setForm({ ...form, smallBusiness: e.target.checked })} className="h-16 w-16 accent-[#7c93ff]" />
+							<input type="checkbox" checked={form.smallBusiness} onChange={(e) => setForm({ ...form, smallBusiness: e.target.checked, kleinunternehmer: e.target.checked })} className="h-16 w-16 accent-[#7c93ff]" />
 							{t("smallBusiness")}
 						</label>
 						<p className="mt-[4px] pl-[26px] text-11 text-[#9AA7C9]">{t("smallBusinessHint")}</p>
 					</>
 				)}
 			</div>
+
+			{/* ELSTER/Anlage EÜR: без этих мандатных признаков выгрузка расходов неверна —
+			    §19 UStG (brutto вместо netto, USt 0), Soll-/Ist-Versteuerung (Zahlungsdatum)
+			    и Wirtschaftsjahr (имя файла выгрузки и summary). Флаг §19 — тот же статус,
+			    что «Kleinunternehmerregelung» выше, поэтому оба тумблера пишут оба поля. */}
+			{market === "DE" && (
+				<div className="mb-16 fs-card p-16 md:p-20">
+					<h3 className="mb-8 text-14 font-semibold text-[#edf2ff]">{t("elsterSection")}</h3>
+					<p className="mb-14 text-12 leading-[1.5] text-[#9aa7c9]">{t("elsterSectionHint")}</p>
+					<label className="flex items-center gap-10 text-13 text-[#cfd4cb]">
+						<input
+							type="checkbox"
+							checked={form.kleinunternehmer}
+							onChange={(e) => setForm({ ...form, kleinunternehmer: e.target.checked, smallBusiness: e.target.checked })}
+							className="h-16 w-16 accent-[#7c93ff]"
+						/>
+						{t("elsterKleinunternehmer")}
+					</label>
+					<p className={hint}>{t("elsterKleinunternehmerHint")}</p>
+					<div className="mt-14 grid grid-cols-1 gap-12 md:grid-cols-2">
+						<div>
+							<span className={label}>{t("elsterSollIst")}</span>
+							<select
+								value={form.sollIst}
+								onChange={(e) => setForm({ ...form, sollIst: e.target.value === "IST" ? "IST" : "SOLL" })}
+								className="fs-field h-40 w-full px-10 text-13 outline-none">
+								<option value="SOLL">{t("elsterSoll")}</option>
+								<option value="IST">{t("elsterIst")}</option>
+							</select>
+							<span className={hint}>{t("elsterSollIstHint")}</span>
+						</div>
+						<div>
+							<FormField
+								label={t("elsterWirtschaftsjahr")}
+								type="number"
+								min={2000}
+								max={2100}
+								value={form.wirtschaftsjahr}
+								onChange={(e) => setForm({ ...form, wirtschaftsjahr: e.target.value })}
+							/>
+							<span className={hint}>{t("elsterWirtschaftsjahrHint")}</span>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{/* Подтверждение смены режима: ничего не удаляется, но набор экранов, документов и интеграций
 			    меняется целиком — человек должен видеть, что именно скроется и что появится (ТЗ §3). */}

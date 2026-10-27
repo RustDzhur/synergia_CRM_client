@@ -5,8 +5,9 @@ import { toCsv } from "@/lib/import/csv";
 import { computeTotals } from "@/lib/finance/totals";
 import { prisma } from "@/lib/prisma";
 import { datevCsv } from "@/lib/finance/datev";
+import { financeSettings } from "@/lib/finance/settings";
 import { loadExpenseCategories } from "@/lib/finance/expenseCatalogDb";
-import { EXPENSE_EXPORT_COLUMNS, expenseExportRows } from "@/lib/finance/expenseExport";
+import { buildExpenseExport, expenseExportCsv, type ExpenseExportResult } from "@/lib/finance/expenseExport";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -47,6 +48,9 @@ export async function GET(req: Request) {
 
     let columns: string[] = [];
     let rows: Array<Array<string | number>> = [];
+    // Расходы — единственный вид с двумя блоками и summary: держим результат рядом,
+    // чтобы JSON/CSV ниже отдали его целиком, а не только плоский список строк.
+    let expenseExport: ExpenseExportResult | null = null;
 
     if (kind === "products") {
         const list = await prisma.product.findMany({ where: { org: user.id }, orderBy: { name: "asc" } });
@@ -84,25 +88,64 @@ export async function GET(req: Request) {
         });
     } else {
         // Расходы: полный набор налоговых колонок для бухгалтера (DATEV-импорт: Belegdatum, Konto,
-        // Netto/USt/Brutto, Vorsteuer, Buchungsart, AfA). Старые строки без net/gross считаются из amount.
+        // Netto/USt/Brutto, Vorsteuer, Buchungsart, AfA) + правила ELSTER из настроек фирмы:
+        // Kleinunternehmer (§19 UStG), Soll/Ist-Versteuerung и Wirtschaftsjahr. Старые строки без
+        // net/gross считаются из amount. Приватные и доходные записи уходят в блок «Einnahmen/Privat».
         const from = url.searchParams.get("from"); const to = url.searchParams.get("to");
         const where: Record<string, unknown> = { org: user.id };
         if (from || to) where.date = { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) };
         const list = await prisma.expense.findMany({ where: where as never, orderBy: { date: "desc" }, take: 2000 });
+        const s = await financeSettings(user.id);
+        // ?year= сильнее настройки: бухгалтер может выгрузить прошлый год, не меняя Wirtschaftsjahr фирмы
+        const yearParam = Math.round(Number(url.searchParams.get("year")));
+        const yearFromQuery = Number.isInteger(yearParam) && yearParam >= 2000 && yearParam <= 2100 ? yearParam : 0;
         const { entries } = await loadExpenseCategories();
-        columns = [...EXPENSE_EXPORT_COLUMNS];
-        rows = expenseExportRows(list as never, entries);
+        expenseExport = buildExpenseExport(list as never, entries, {
+            kleinunternehmer: !!s.kleinunternehmer,
+            sollIst: s.sollIst === "IST" ? "IST" : "SOLL",
+            wirtschaftsjahr: yearFromQuery || Number(s.wirtschaftsjahr) || new Date().getFullYear(),
+        });
+        columns = expenseExport.columns;
+        rows = expenseExport.rows;
     }
 
     if (format === "json") {
-        return new Response(JSON.stringify(rows.map((r) => Object.fromEntries(columns.map((c, i) => [c, r[i]]))), null, 2), {
+        // Для расходов JSON самодокументирован: колонки, оба блока и summary с предупреждениями
+        const payload = expenseExport
+            ? {
+                  columns: expenseExport.columns,
+                  rows: toObjects(expenseExport.columns, expenseExport.rows),
+                  einnahmenPrivat: {
+                      title: expenseExport.privat.title,
+                      columns: expenseExport.privat.columns,
+                      rows: toObjects(expenseExport.privat.columns, expenseExport.privat.rows),
+                  },
+                  summary: expenseExport.summary,
+              }
+            : rows.map((r) => Object.fromEntries(columns.map((c, i) => [c, r[i]])));
+        return new Response(JSON.stringify(payload, null, 2), {
             headers: { "Content-Type": "application/json; charset=utf-8", "Content-Disposition": `attachment; filename="${kind}.json"`, "Cache-Control": "no-store" },
+        });
+    }
+    if (expenseExport) {
+        // Предупреждения — в заголовке ответа: сам CSV остаётся пригодным для импорта, а интерфейс/скрипт
+        // может прочитать summary, не разбирая файл (значения совпадают с JSON-полем summary).
+        return new Response(expenseExportCsv(expenseExport), {
+            headers: {
+                "Content-Type": "text/csv; charset=utf-8",
+                "Content-Disposition": `attachment; filename="expenses_${expenseExport.summary.wirtschaftsjahr}.csv"`,
+                "Cache-Control": "no-store",
+                "X-Export-Summary": encodeURIComponent(JSON.stringify(expenseExport.summary)),
+            },
         });
     }
     return new Response(toCsv(columns, rows), {
         headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${kind}.csv"`, "Cache-Control": "no-store" },
     });
 }
+
+const toObjects = (columns: string[], rows: Array<Array<string | number>>): Array<Record<string, string | number>> =>
+    rows.map((r) => Object.fromEntries(columns.map((c, i) => [c, r[i]])));
 
 // YML для маркетплейсов: название, цена, валюта, категория; остальное площадки берут из шаблона
 async function ymlProducts(org: string, origin: string) {

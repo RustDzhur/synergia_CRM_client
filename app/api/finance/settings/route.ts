@@ -78,6 +78,10 @@ function toDTO(s: any) {
         expenseCategories: parseCategories(s.expenseCategories),
         // План счетов DATEV для новых расходов (SKR03 по умолчанию)
         datevChart: s.datevChart === "SKR04" ? "SKR04" : "SKR03",
+        // Мандатные признаки ELSTER/Anlage EÜR: §19 UStG, Soll/Ist-Versteuerung и Wirtschaftsjahr
+        kleinunternehmer: !!s.kleinunternehmer,
+        sollIst: s.sollIst === "IST" ? "IST" : "SOLL",
+        wirtschaftsjahr: Number.isInteger(Number(s.wirtschaftsjahr)) && Number(s.wirtschaftsjahr) >= 2000 ? Number(s.wirtschaftsjahr) : new Date().getFullYear(),
         // Типовой текст договора фирмы (подстановки {{…}} заполняет PDF); пусто — встроенный типовой
         contractTemplate: s.contractTemplate ?? "",
         // реквизиты фирмы для договоров, которых нет в настройках (должность и основание подписанта, регистрационные номера, банковские коды…)
@@ -181,6 +185,19 @@ export async function PATCH(req: Request) {
     if (Array.isArray(b.expenseCategories)) set.expenseCategories = parseCategories(b.expenseCategories);
     // План счетов DATEV: влияет на счёт, который автоопределение подставляет в новый расход
     if (b.datevChart !== undefined) set.datevChart = b.datevChart === "SKR04" ? "SKR04" : "SKR03";
+    // ELSTER/Anlage EÜR: §19-флаг и smallBusiness описывают один и тот же статус (документы без USt).
+    // Клиент может прислать только один из них — второй заполняем тем же значением, чтобы настройки
+    // фирмы, счета и выгрузка расходов не расходились. Явно присланные значения сильнее зеркала.
+    if (typeof b.kleinunternehmer === "boolean") set.kleinunternehmer = b.kleinunternehmer;
+    else if (typeof b.smallBusiness === "boolean") set.kleinunternehmer = b.smallBusiness;
+    if (typeof b.kleinunternehmer === "boolean" && typeof b.smallBusiness !== "boolean") set.smallBusiness = b.kleinunternehmer;
+    // Soll-/Ist-Versteuerung: от неё зависит, заполняется ли Zahlungsdatum в выгрузке
+    if (b.sollIst === "IST" || b.sollIst === "SOLL") set.sollIst = b.sollIst;
+    // Wirtschaftsjahr: 2000..2100; при отсутствии значения действует умолчание БД (текущий год)
+    if (b.wirtschaftsjahr !== undefined) {
+        const year = Math.round(Number(b.wirtschaftsjahr));
+        if (Number.isInteger(year) && year >= 2000 && year <= 2100) set.wirtschaftsjahr = year;
+    }
     // Типовой текст договора: длинный текст, ограничение только по размеру поля
     if (typeof b.contractTemplate === "string") set.contractTemplate = b.contractTemplate.trim().slice(0, 20000);
     if (b.contractData && typeof b.contractData === "object") {

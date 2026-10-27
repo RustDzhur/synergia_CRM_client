@@ -9,6 +9,7 @@ import { marketOf } from "@/lib/finance/market";
 import { categoriesFor, hasCategory } from "@/lib/finance/expenseCategories";
 import { defaultRateFor } from "@/lib/finance/tax";
 import { normalizeAmounts } from "@/lib/finance/expenseTax";
+import { elsterMappingFor } from "@/lib/finance/elsterMapping";
 import Modal from "../shared/Modal";
 import ConfirmDialog from "../shared/ConfirmDialog";
 import FormField from "../shared/FormField";
@@ -123,6 +124,9 @@ export default function Expenses() {
 	const groupByCode = useMemo(() => new Map(groups.map((c) => [c.code, c])), [groups]);
 	const subOptions = useMemo(() => leaves.filter((c) => c.parentCode === form.categoryCode), [leaves, form.categoryCode]);
 	const currentLeaf = leafByCode.get(form.subcategory) ?? null;
+	// Строка Anlage EÜR и Kennzahl для выбранной подкатегории: подсказка бухгалтеру, куда попадёт
+	// Beleg, и ранняя проверка «код без EÜR-строки» — до выгрузки, а не после
+	const elster = useMemo(() => elsterMappingFor(form.subcategory || form.categoryCode), [form.subcategory, form.categoryCode]);
 
 	const shownExpenses = useMemo(
 		() =>
@@ -574,6 +578,19 @@ export default function Expenses() {
 								<FormField label={t("expTaxAfaResidual")} type="number" min="0" step="0.01" value={form.afaResidualValue} onChange={(e) => setForm({ ...form, afaResidualValue: e.target.value })} />
 							</>
 						)}
+						<div className="col-span-2 rounded-10 border border-inkLine px-12 py-10 text-12 leading-[1.5] text-[#cfd4cb]">
+							{/* Подсказка EÜR: строка Vordruck и Kennzahl из lib/finance/elsterMapping.ts;
+							    у групп и неизвестных кодов строки нет — предупреждаем до выгрузки */}
+							{elster?.euerLine ? (
+								<>
+									<span className="text-[#edf2ff]">{t("expTaxEuerLine", { line: elster.euerLine, kz: elster.euerKz || "—" })}</span>
+									{elster.ustKz && <span className="ml-10 text-[#9aa7c9]">{t("expTaxEuerUstKz", { kz: elster.ustKz })}</span>}
+									<span className="mt-4 block text-11 text-[#9aa7c9]">{elster.euerLabel}</span>
+								</>
+							) : (
+								<span className="text-[#F4A100]">{elster?.group ? t("expTaxEuerGroup") : t("expTaxEuerNone")}</span>
+							)}
+						</div>
 						<div className="col-span-2">
 							<span className={labelClass}>{t("expTaxStatus")}</span>
 							<select value={form.reviewStatus} onChange={(e) => setForm({ ...form, reviewStatus: e.target.value as ReviewStatus })} className={selectClass}>

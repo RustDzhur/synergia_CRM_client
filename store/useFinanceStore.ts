@@ -148,6 +148,9 @@ export interface FinanceSettings {
 	expenseCategories: string[];
 	// План счетов DATEV для новых расходов (SKR03/SKR04)
 	datevChart?: "SKR03" | "SKR04";
+	// Мандатные признаки ELSTER/Anlage EÜR: §19 UStG (Kleinunternehmer), Soll-/Ist-Versteuerung
+	// и Wirtschaftsjahr — по ним считается выгрузка расходов для бухгалтера
+	kleinunternehmer: boolean; sollIst: "SOLL" | "IST"; wirtschaftsjahr: number;
 	// Типовой текст договора фирмы с подстановками {{…}}; пусто — встроенный типовой текст
 	contractTemplate: string;
 	contractData?: Record<string, string>;

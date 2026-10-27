@@ -626,6 +626,11 @@ model FinanceSettings {
   expenseCategories    String[] @default([])
   // Используемый план счетов DATEV для новых расходов: SKR03 (по умолчанию) или SKR04
   datevChart           String   @default("SKR03")
+  // Налоговый статус для ELSTER/Anlage EÜR: §19 UStG (Kleinunternehmer) — расходы в EÜR brutto без USt;
+  // Soll- oder Ist-Versteuerung (при IST дата оплаты — расчётная); Wirtschaftsjahr ≠ Kalenderjahr
+  kleinunternehmer     Boolean  @default(false)
+  sollIst              String   @default("SOLL")
+  wirtschaftsjahr      Int      @default(dbgenerated("EXTRACT(YEAR FROM CURRENT_DATE)::int"))
   contractTemplate     String   @default("")
   contractData        Json?
   counters             Json?
