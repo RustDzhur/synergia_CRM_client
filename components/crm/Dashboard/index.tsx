@@ -18,6 +18,7 @@ import FinanceCard from "./FinanceCard";
 import StageBars from "./StageBars";
 import ActivitySparkline from "./ActivitySparkline";
 import RevenueTrend from "./RevenueTrend";
+import CrmPulse from "./CrmPulse";
 
 // Dashboard: сверху графики сеткой, ниже — задачи выбранного дня.
 // Раньше графики стояли одним узким столбцом справа, из-за чего страница вытягивалась вниз,
@@ -41,6 +42,7 @@ export default function Dashboard() {
 			{/* Сверху — то, что требует внимания сегодня: деньги и календарь дня. Общая картина
 			    (воронка сделок, задачи по статусам, реклама) стоит ниже: на неё смотрят реже,
 			    а место на первом экране нужно тому, что горит. */}
+			<CrmPulse />
 			<div className="grid gap-16 md:grid-cols-2 lg:gap-20">
 				<FinanceCard />
 				{hasCollab && <DayEvents selected={selected} />}

@@ -711,7 +711,29 @@
     "activityTitle": "Activity",
     "activityLastDays": "Last {n} days",
     "activityNewDeals": "New deals",
-    "revenueTrendTitle": "Revenue trend"
+    "revenueTrendTitle": "Revenue trend",
+    "crmPulse": {
+      "aria": "Overview of finance, deals and tasks",
+      "eyebrow": "Today at a glance",
+      "title": "Numbers, pipeline and tasks at a glance",
+      "money": "Cash flow",
+      "moneyPill": "This year",
+      "income": "Income",
+      "expenses": "Expenses",
+      "profit": "Profit",
+      "outstanding": "Outstanding",
+      "chartAria": "Income and expenses per month",
+      "tasks": "Tasks",
+      "tasksPill": "Active and done",
+      "tasksAria": "Task distribution",
+      "tasksTotal": "tasks",
+      "active": "Active",
+      "completed": "Completed",
+      "ended": "Overdue",
+      "pipeline": "Deals by stage",
+      "pipelinePill": "Top 5",
+      "noDeals": "No deals yet"
+    }
   },
   "tasks": {
     "projectNew": "New project",

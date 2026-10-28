@@ -636,7 +636,29 @@
     "activityTitle": "Faollik",
     "activityLastDays": "So‘nggi {n} kun",
     "activityNewDeals": "Yangi bitimlar",
-    "revenueTrendTitle": "Daromad trendi"
+    "revenueTrendTitle": "Daromad trendi",
+    "crmPulse": {
+      "aria": "Moliya, bitimlar va vazifalar sharhi",
+      "eyebrow": "Bugungi umumiy ko'rinish",
+      "title": "Raqamlar, voronka va vazifalar bir ekranda",
+      "money": "Pul oqimi",
+      "moneyPill": "Bu yil",
+      "income": "Daromad",
+      "expenses": "Xarajatlar",
+      "profit": "Foyda",
+      "outstanding": "Qarzdorlik",
+      "chartAria": "Oylar bo'yicha daromad va xarajatlar",
+      "tasks": "Vazifalar",
+      "tasksPill": "Faol va bajarilgan",
+      "tasksAria": "Vazifalar taqsimoti",
+      "tasksTotal": "vazifa",
+      "active": "Faol",
+      "completed": "Bajarilgan",
+      "ended": "Muddati o'tgan",
+      "pipeline": "Bosqichlar bo'yicha bitimlar",
+      "pipelinePill": "Top 5",
+      "noDeals": "Hozircha bitimlar yo'q"
+    }
   },
   "tasks": {
     "projectNew": "Yangi loyiha",

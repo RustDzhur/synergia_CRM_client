@@ -711,7 +711,29 @@
     "activityTitle": "Активність",
     "activityLastDays": "Останні {n} днів",
     "activityNewDeals": "Нові угоди",
-    "revenueTrendTitle": "Тренд доходу"
+    "revenueTrendTitle": "Тренд доходу",
+    "crmPulse": {
+      "aria": "Огляд фінансів, угод і завдань",
+      "eyebrow": "Сьогодні з першого погляду",
+      "title": "Цифри, воронка та завдання на одному екрані",
+      "money": "Грошовий потік",
+      "moneyPill": "Цього року",
+      "income": "Доходи",
+      "expenses": "Витрати",
+      "profit": "Прибуток",
+      "outstanding": "До сплати",
+      "chartAria": "Доходи та витрати за місяцями",
+      "tasks": "Завдання",
+      "tasksPill": "Активні та виконані",
+      "tasksAria": "Розподіл завдань",
+      "tasksTotal": "завдань",
+      "active": "Активні",
+      "completed": "Виконані",
+      "ended": "Прострочені",
+      "pipeline": "Угоди за етапами",
+      "pipelinePill": "Топ-5",
+      "noDeals": "Ще немає угод"
+    }
   },
   "tasks": {
     "projectNew": "Новий проєкт",
