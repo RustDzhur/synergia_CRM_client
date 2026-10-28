@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCrmStore } from "@/store/useCrmStore";
 import { useTaskStore, taskStatus } from "@/store/useTaskStore";
@@ -40,10 +40,18 @@ export default function CrmPulse() {
 	const locale = useLocale();
 	const enabled = useFeature("inventory");
 	const planLoaded = useOrgStore((s) => s.loaded);
-	const { dashboard, settings } = useFinanceStore();
+	const { dashboard, settings, loadDashboard, loadSettings } = useFinanceStore();
 	const deals = useCrmStore((s) => s.deals);
 	const stages = useCrmStore((s) => s.stages);
 	const tasks = useTaskStore((s) => s.tasks);
+
+	// The pulse is the only block that feeds on the finance store now, so it triggers the load itself.
+	useEffect(() => {
+		if (planLoaded && enabled) {
+			loadSettings();
+			loadDashboard(12, new Date().getFullYear());
+		}
+	}, [planLoaded, enabled, loadSettings, loadDashboard]);
 
 	const currency = settings?.currency ?? "EUR";
 	const view = useMemo(() => {
