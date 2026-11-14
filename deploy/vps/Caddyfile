@@ -92,3 +92,18 @@ harness.firmspace.de, www.harness.firmspace.de {
 	}
 	reverse_proxy 127.0.0.1:3080
 }
+
+# OmniRoute (отдельный compose-проект deploy/vps/omniroute, порты только на 127.0.0.1): панель и API.
+# Пароль на уровне Caddy (тот же логин, что у Harness) + собственный вход OmniRoute.
+# /live-ws — отдельный порт живой панели (20132), у основного HTTP-порта обработчика upgrade нет.
+omnirouter.firmspace.de {
+	basic_auth {
+		{$HARNESS_USER} {$HARNESS_PASS_HASH}
+	}
+	handle /live-ws* {
+		reverse_proxy 127.0.0.1:20132
+	}
+	handle {
+		reverse_proxy 127.0.0.1:3111
+	}
+}
