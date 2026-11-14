@@ -97,7 +97,10 @@ harness.firmspace.de, www.harness.firmspace.de {
 # Пароль на уровне Caddy (тот же логин, что у Harness) + собственный вход OmniRoute.
 # /live-ws — отдельный порт живой панели (20132), у основного HTTP-порта обработчика upgrade нет.
 omnirouter.firmspace.de {
-	basic_auth {
+	# Пароль Caddy — только для панели. API (/v1/*) открыт для программ: им пароль не ввести,
+	# а сам OmniRoute (REQUIRE_API_KEY) пускает только с действующим ключом API.
+	@panel not path /v1/*
+	basic_auth @panel {
 		{$HARNESS_USER} {$HARNESS_PASS_HASH}
 	}
 	handle /live-ws* {
