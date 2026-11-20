@@ -81,16 +81,31 @@ async function openai(system: string, msgs: Msg[], tools: ToolDef[], model = aiM
         else if (m.role === "assistant") messages.push({ role: "assistant", content: m.text || null, ...(m.calls?.length ? { tool_calls: m.calls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: JSON.stringify(c.args) } })) } : {}) });
         else messages.push({ role: "tool", tool_call_id: m.callId, content: m.content });
     }
-    const j = await post<{ choices?: { message?: { content?: string | null; tool_calls?: { id: string; function: { name: string; arguments: string } }[] } }[] }>(
-        `${ep.url}/chat/completions`,
-        { Authorization: `Bearer ${ep.key}` },
+    const payload = (cap: number, completionParam: boolean): Record<string, unknown> => ({
+        model, [completionParam ? "max_completion_tokens" : "max_tokens"]: cap, messages,
         // Ограничение сверху обязательно: без него провайдер считает бюджет на максимум модели (~65k токенов) и может отказать при малом балансе.
         // Пустой список инструментов не отправляем: некоторые модели в ответ на tools: [] заставляли «вызвать инструмент», и текст приходил пустым —
         // именно так молчал «Проанализировать с помощью ИИ» в отчётах
-        { model, max_tokens: maxTokens, messages, ...(tools.length ? { tools: tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) } : {}) },
-        timeoutMs
-    );
-    const msg = j.choices?.[0]?.message;
+        ...(tools.length ? { tools: tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) } : {}),
+    });
+    type Chat = { choices?: { message?: { content?: string | null; tool_calls?: { id: string; function: { name: string; arguments: string } }[] } }[] };
+    let cap = maxTokens, completionParam = false;
+    let j: Chat | undefined;
+    // 400 из-за лимита ответа: у модели потолок ниже запрошенного («supports at most N») или она требует max_completion_tokens.
+    // Это лечится подстройкой параметра на той же модели, а не отказом (так падали длинные статьи блога на моделях с малым потолком).
+    for (let attempt = 0; attempt < 3 && !j; attempt++) {
+        try {
+            j = await post<Chat>(`${ep.url}/chat/completions`, { Authorization: `Bearer ${ep.key}` }, payload(cap, completionParam), timeoutMs);
+        } catch (e) {
+            if (!(e instanceof GatewayError) || e.status !== 400 || attempt === 2) throw e;
+            if (!completionParam && /max_completion_tokens/i.test(e.detail)) { completionParam = true; continue; }
+            const lim = e.detail.match(/(?:at most|maximum(?: allowed)?(?: value)?(?: of| is)?|limit(?: of| is)?|supports)\D{0,30}(\d{3,6})/i);
+            const n = lim ? Number(lim[1]) : 0;
+            if (n >= 100 && n < cap) { cap = n; continue; }
+            throw e;
+        }
+    }
+    const msg = j?.choices?.[0]?.message;
     if (!msg) throw new ProviderError("The AI provider returned an empty answer");
     return { text: msg.content ?? "", calls: (msg.tool_calls ?? []).map((c) => ({ id: c.id, name: c.function.name, args: parseArgs(c.function.arguments) })) };
 }
