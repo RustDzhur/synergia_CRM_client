@@ -62,7 +62,7 @@ async function post<T>(url: string, headers: Record<string, string>, body: unkno
     if (!res.ok || !json) {
         const detail = typeof json?.error === "string" ? json.error : json?.error?.message;
         console.warn("[ai] provider error", res.status, String(detail ?? "").slice(0, 200)); // не console.error: о цепочке запасных моделей сообщает complete(), а не каждая попытка
-        throw new GatewayError(res.status === 401 ? "The AI provider rejected the API key" : res.status === 429 ? "The AI provider is busy or out of quota. Try again later." : `The AI provider returned an error (${res.status})`, res.status, String(detail ?? ""));
+        throw new GatewayError(res.status === 401 ? "The AI provider rejected the API key" : res.status === 429 ? "The AI provider is busy or out of quota. Try again later." : `The AI provider returned an error (${res.status})${detail ? `: ${String(detail).replace(/\s+/g, " ").slice(0, 180)}` : ""}`, res.status, String(detail ?? ""));
     }
     return json;
 }
